@@ -25,8 +25,8 @@ const deleteHostProvider = createAsyncThunk(
   },
 );
 
-const deleteWithUpdateHostProviders = createAsyncThunk(
-  'adcm/hostProvidersActions/deleteWithUpdateHostProviders',
+const deleteWithUpdateHostProvider = createAsyncThunk(
+  'adcm/hostProvidersActions/deleteWithUpdateHostProvider',
   async (deletableId: number, thunkAPI) => {
     thunkAPI.dispatch(setIsLoading(true));
     await thunkAPI.dispatch(deleteHostProvider(deletableId));
@@ -55,13 +55,13 @@ const hostProvidersActionsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(deleteWithUpdateHostProviders.pending, (state) => {
+    builder.addCase(deleteWithUpdateHostProvider.pending, (state) => {
       hostProvidersActionsSlice.caseReducers.closeDeleteDialog(state);
     });
   },
 });
 
 const { openDeleteDialog, closeDeleteDialog } = hostProvidersActionsSlice.actions;
-export { openDeleteDialog, closeDeleteDialog, deleteWithUpdateHostProviders };
+export { openDeleteDialog, closeDeleteDialog, deleteWithUpdateHostProvider, deleteHostProvider };
 
 export default hostProvidersActionsSlice.reducer;

@@ -2,7 +2,7 @@ import { useDispatch, useStore } from '@hooks';
 import { setPaginationParams } from '@store/adcm/hostProviders/hostProvidersTableSlice';
 import { Pagination, PaginationData } from '@uikit';
 
-const HostProviderTableFooter = () => {
+const HostProvidersTableFooter = () => {
   const dispatch = useDispatch();
 
   const totalCount = useStore(({ adcm }) => adcm.hostProviders.totalCount);
@@ -15,4 +15,4 @@ const HostProviderTableFooter = () => {
   return <Pagination totalItems={totalCount} pageData={paginationParams} onChangeData={handlePaginationChange} />;
 };
 
-export default HostProviderTableFooter;
+export default HostProvidersTableFooter;

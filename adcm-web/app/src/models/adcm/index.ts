@@ -18,6 +18,7 @@ export * from './clusterServiceComponent';
 export * from './clusterHosts';
 export * from './profile';
 export * from './license';
+export * from './dynamicAction';
 
 export interface Batch<T> {
   results: T[];

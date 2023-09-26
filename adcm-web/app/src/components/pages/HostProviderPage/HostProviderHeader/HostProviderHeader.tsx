@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
-import { BaseStatus, Button, ButtonGroup, Statusable } from '@uikit';
+import { BaseStatus, ButtonGroup, Statusable } from '@uikit';
 import EntityHeader from '@commonComponents/EntityHeader/EntityHeader';
 import { useDispatch, useStore } from '@hooks';
 import { orElseGet } from '@utils/checkUtils';
 import HostProviderDeleteButton from './HostProviderDeleteButton/HostProviderDeleteButton';
 import s from './HostProviderHeader.module.scss';
 import { getHostsCount } from '@store/adcm/hostProviders/hostProviderSlice';
+import HostProviderDynamicActionsButton from './HostProviderDynamicActionsButton/HostProviderDynamicActionsButton';
 
 const HostProviderHeader: React.FC = () => {
   const dispatch = useDispatch();
@@ -33,12 +34,7 @@ const HostProviderHeader: React.FC = () => {
       ))}
       actions={
         <ButtonGroup>
-          <Button iconLeft="g1-actions" variant="secondary">
-            Actions
-          </Button>
-          <Button iconLeft="g1-delete" variant="secondary">
-            Delete
-          </Button>
+          {hostProvider && <HostProviderDynamicActionsButton hostProvider={hostProvider} />}
           <HostProviderDeleteButton />
         </ButtonGroup>
       }

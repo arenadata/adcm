@@ -1,9 +1,15 @@
 import qs from 'qs';
-import type { Batch } from '@models/adcm';
+import type {
+  AdcmHostProviderPayload,
+  AdcmDynamicAction,
+  Batch,
+  AdcmDynamicActionDetails,
+  AdcmDynamicActionRunConfig,
+  AdcmHostProvider,
+  AdcmHostProviderFilter,
+} from '@models/adcm';
 import { httpClient } from '@api/httpClient';
-import { AdcmHostProvider, AdcmHostProviderFilter } from '@models/adcm/hostProvider';
 import { PaginationParams, SortParams } from '@models/table';
-import { AdcmHostProviderPayload } from '@models/adcm';
 import { prepareQueryParams } from '@utils/apiUtils';
 
 export class AdcmHostProvidersApi {
@@ -35,6 +41,31 @@ export class AdcmHostProvidersApi {
 
   public static async getHostProvider(id: number) {
     const response = await httpClient.get<AdcmHostProvider>(`/api/v2/hostproviders/${id}/`);
+    return response.data;
+  }
+
+  public static async getHostProviderActions(hostProviderId: number) {
+    const response = await httpClient.get<AdcmDynamicAction[]>(`/api/v2/hostproviders/${hostProviderId}/actions/`);
+    return response.data;
+  }
+
+  public static async getHostProviderActionsDetails(hostProviderId: number, actionId: number) {
+    const response = await httpClient.get<AdcmDynamicActionDetails>(
+      `/api/v2/hostproviders/${hostProviderId}/actions/${actionId}/`,
+    );
+    return response.data;
+  }
+
+  public static async runHostProviderAction(
+    hostProviderId: number,
+    actionId: number,
+    actionRunConfig: AdcmDynamicActionRunConfig,
+  ) {
+    const response = await httpClient.post(
+      `/api/v2/hostproviders/${hostProviderId}/actions/${actionId}/run/`,
+      actionRunConfig,
+    );
+
     return response.data;
   }
 }

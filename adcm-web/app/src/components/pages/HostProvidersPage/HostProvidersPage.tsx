@@ -1,8 +1,8 @@
 import TableContainer from '@commonComponents/Table/TableContainer/TableContainer';
-import HostProviderTable from '@pages/HostProvidersPage/HostProviderTable/HostProviderTable';
+import HostProvidersTable from '@pages/HostProvidersPage/HostProvidersTable/HostProvidersTable';
 import { useRequestHostProviders } from '@pages/HostProvidersPage/useRequestHostProviders';
-import HostProviderTableToolbar from '@pages/HostProvidersPage/HostProviderTableToolbar/HostProviderTableToolbar';
-import HostProviderTableFooter from '@pages/HostProvidersPage/HostProviderTableFooter/HostProviderTableFooter';
+import HostProvidersTableToolbar from '@pages/HostProvidersPage/HostProviderTableToolbar/HostProviderTableToolbar';
+import HostProvidersTableFooter from '@pages/HostProvidersPage/HostProvidersTableFooter/HostProvidersTableFooter';
 import HostProvidersActionsDialogs from '@pages/HostProvidersPage/HostProvidersActionsDialogs/HostProvidersActionsDialogs';
 import Dialogs from '@pages/HostProvidersPage/Dialogs';
 import { useDispatch } from '@hooks';
@@ -20,9 +20,9 @@ const HostProvidersPage = () => {
 
   return (
     <TableContainer variant="easy">
-      <HostProviderTableToolbar />
-      <HostProviderTable />
-      <HostProviderTableFooter />
+      <HostProvidersTableToolbar />
+      <HostProvidersTable />
+      <HostProvidersTableFooter />
       <HostProvidersActionsDialogs />
       <Dialogs />
     </TableContainer>

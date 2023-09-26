@@ -1,5 +1,5 @@
 import { useDispatch, useStore } from '@hooks';
-import { columns } from '@pages/HostProvidersPage/HostProviderTable/HostProviderTable.constants';
+import { columns } from '@pages/HostProvidersPage/HostProvidersTable/HostProvidersTable.constants';
 import { IconButton, Table, TableCell, TableRow } from '@uikit';
 import { orElseGet } from '@utils/checkUtils';
 import { openDeleteDialog } from '@store/adcm/hostProviders/hostProvidersActionsSlice';
@@ -8,6 +8,7 @@ import { SortParams } from '@models/table';
 import Concern from '@commonComponents/Concern/Concern';
 import { Link } from 'react-router-dom';
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
+import HostProvidersDynamicActionsIcon from '../HostProvidersDynamicActionsIcon/HostProvidersDynamicActionsIcon';
 
 const HostProviderTable = () => {
   const dispatch = useDispatch();
@@ -39,13 +40,7 @@ const HostProviderTable = () => {
             <Concern concerns={hostProvider.concerns} />
           </TableCell>
           <TableCell hasIconOnly align="center">
-            <IconButton
-              disabled={!hostProvider.isUpgradable}
-              icon="g1-actions"
-              size={32}
-              onClick={() => null}
-              title="Upgrade"
-            />
+            <HostProvidersDynamicActionsIcon hostProvider={hostProvider} />
             <IconButton
               disabled={!hostProvider.isUpgradable}
               icon="g1-upgrade"

@@ -4,6 +4,7 @@ import s from './HostProviderPage.module.scss';
 import HostProviderNavigation from './HostProviderNavigation/HostProviderNavigation';
 import HostProviderHeader from './HostProviderHeader/HostProviderHeader';
 import { useRequestHostProviderPage } from './useRequestHostProviderPage';
+import HostProviderDialogs from './HostProviderDialogs/HostProviderDialogs';
 
 const HostProviderPage: React.FC = () => {
   useRequestHostProviderPage();
@@ -13,6 +14,7 @@ const HostProviderPage: React.FC = () => {
       <HostProviderHeader />
       <HostProviderNavigation />
       <Outlet />
+      <HostProviderDialogs />
     </div>
   );
 };

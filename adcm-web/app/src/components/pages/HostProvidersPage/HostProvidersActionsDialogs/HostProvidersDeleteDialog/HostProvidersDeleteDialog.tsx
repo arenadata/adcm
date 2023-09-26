@@ -1,6 +1,6 @@
 import Dialog from '@uikit/Dialog/Dialog';
 import { useDispatch, useStore } from '@hooks';
-import { deleteWithUpdateHostProviders, closeDeleteDialog } from '@store/adcm/hostProviders/hostProvidersActionsSlice';
+import { deleteWithUpdateHostProvider, closeDeleteDialog } from '@store/adcm/hostProviders/hostProvidersActionsSlice';
 
 const HostProvidersDeleteDialog = () => {
   const dispatch = useDispatch();
@@ -28,7 +28,7 @@ const HostProvidersDeleteDialog = () => {
   const handleConfirmDialog = () => {
     if (!deletableHostProvider?.id) return;
 
-    dispatch(deleteWithUpdateHostProviders(deletableHostProvider.id));
+    dispatch(deleteWithUpdateHostProvider(deletableHostProvider.id));
   };
 
   const hostProviderName = deletableHostProvider?.name;
