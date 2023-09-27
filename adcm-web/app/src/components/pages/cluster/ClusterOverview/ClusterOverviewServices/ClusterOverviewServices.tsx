@@ -33,7 +33,7 @@ const ClusterOverviewServices = () => {
         <ClusterOverviewDiagram totalCount={allServicesCount} currentCount={count} status={filter.servicesStatus} />
         <div className={s.clusterOverviewServices__servicesContainer}>
           <ClusterOverviewFilter status={filter.servicesStatus} onStatusChange={onServicesStatusHandler} />
-          {!isLoading ? (
+          {isLoading ? (
             <div className={s.clusterOverviewServices__spinnerWrapper}>
               <Spinner />
             </div>
