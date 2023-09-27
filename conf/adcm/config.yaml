@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 2.8
+  version: 2.9
 
   actions:
     run_ldap_sync:
@@ -40,6 +40,18 @@
             Bundle verification GPG public key to verify the signature of the bundle (*.sig file) when uploading the bundle to ADCM.
           type: file
           default: "gpg_key.pub"
+    - name: "statistics_collection"
+      display_name: "Statistics Collection"
+      type: "group"
+      activatable: true
+      active: true
+      subs:
+        - name: "url"
+          description: "URL to send collected statistic"
+          type: string
+          default: adcm-usage-ss.arenadata.io
+          ui_options:
+            invisible: true
     - name: "google_oauth"
       display_name: "Google Auth"
       type: "group"
