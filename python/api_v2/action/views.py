@@ -31,6 +31,7 @@ from api_v2.config.utils import (
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
 from cm.adcm_config.config import get_prototype_config
+from cm.errors import AdcmEx
 from cm.job import start_task
 from cm.models import Action, ConcernType, Host, HostComponent
 from django.conf import settings
@@ -142,6 +143,10 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
             raise NotFound("Can't find action's parent object")
 
         target_action = get_object_for_user(user=request.user, perms=VIEW_ACTION_PERM, klass=Action, pk=kwargs["pk"])
+
+        if reason := target_action.get_start_impossible_reason(parent_object):
+            raise AdcmEx("ACTION_ERROR", msg=reason)
+
         if not check_run_perms(user=request.user, action=target_action, obj=parent_object):
             return Response(data="Run action forbidden", status=HTTP_403_FORBIDDEN)
 

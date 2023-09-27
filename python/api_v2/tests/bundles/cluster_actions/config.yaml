@@ -3,6 +3,24 @@
   version: "1.0"
 
   actions: &actions
+
+    # maintenance mode
+
+    cluster_host_action_allowed: &job
+      type: job
+      script: ./actions.yaml
+      script_type: ansible
+      params:
+        ansible_tags: simple_action
+      host_action: true
+      allow_in_maintenance_mode: true
+      states:
+        available: any
+
+    cluster_host_action_disallowed:
+      <<: *job
+      allow_in_maintenance_mode: false
+
     # simple
 
     state_any: &simple_action
