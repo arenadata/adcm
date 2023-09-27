@@ -28,9 +28,9 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 from adcm.permissions import VIEW_ACTION_PERM, DjangoModelPermissionsAudit
 
 
-class BundleViewSet(
+class BundleViewSet(  # pylint: disable=too-many-ancestors
     ListModelMixin, RetrieveModelMixin, DestroyModelMixin, CreateModelMixin, CamelCaseGenericViewSet
-):  # pylint: disable=too-many-ancestors
+):
     queryset = (
         Bundle.objects.exclude(name="ADCM")
         .annotate(type=F("prototype__type"))
