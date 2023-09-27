@@ -14,6 +14,7 @@
 
 import django.db.models.deletion
 from django.db import migrations, models
+from django.utils import timezone
 
 
 def create_and_link_audit_users(apps, schema_editor):
@@ -34,11 +35,10 @@ def create_and_link_audit_users(apps, schema_editor):
     ]
     auth_user_pks = [AuthUser.objects.get(username=username).pk for username in auditlog_usernames]
     for log_username, auth_pk in zip(auditlog_usernames, auth_user_pks):
-        audit_user, created = AuditUser.objects.get_or_create(username=log_username)
+        audit_user, created = AuditUser.objects.get_or_create(username=log_username, auth_user_id=auth_pk)
         if created:
             audit_user.created_at = AuthUser.objects.get(username=log_username).date_joined
-            audit_user.auth_user_id = auth_pk
-            audit_user.save(update_fields=["created_at", "auth_user_id"])
+            audit_user.save(update_fields=["created_at"])
 
         AuditLog.objects.filter(user__username=log_username).update(audit_user=audit_user)
 
@@ -49,13 +49,15 @@ def create_and_link_audit_users(apps, schema_editor):
     ]
     auth_user_pks = [AuthUser.objects.get(username=username).pk for username in auditsession_usernames]
     for session_username, auth_pk in zip(auditsession_usernames, auth_user_pks):
-        audit_user, created = AuditUser.objects.get_or_create(username=session_username)
+        audit_user, created = AuditUser.objects.get_or_create(username=session_username, auth_user_id=auth_pk)
         if created:
             audit_user.created_at = AuthUser.objects.get(username=session_username).date_joined
-            audit_user.auth_user_id = auth_pk
-            audit_user.save(update_fields=["created_at", "auth_user_id"])
+            audit_user.save(update_fields=["created_at"])
 
         AuditSession.objects.filter(user__username=session_username).update(audit_user=audit_user)
+
+    deleting_users = AuthUser.objects.filter(is_active=False).values_list("username", flat=True)
+    AuditUser.objects.filter(username__in=deleting_users).update(deleted_at=timezone.now())
 
 
 def create_and_link_audit_users_reverse(apps, schema_editor):
