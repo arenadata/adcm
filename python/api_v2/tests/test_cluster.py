@@ -31,6 +31,7 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
 )
 
 
@@ -128,6 +129,17 @@ class TestCluster(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_create_same_name_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-list"),
+            data={
+                "prototype_id": self.cluster_1.prototype.pk,
+                "name": self.cluster_1.name,
+                "description": "Test cluster description",
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     def test_update_failed(self):
         wrong_cluster_name = "__new_test_cluster_name"

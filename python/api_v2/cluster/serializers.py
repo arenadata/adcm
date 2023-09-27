@@ -81,7 +81,18 @@ class ClusterRelatedSerializer(ModelSerializer):
 
 class ClusterCreateSerializer(EmptySerializer):
     prototype_id = IntegerField()
-    name = CharField()
+    name = CharField(
+        validators=[
+            ClusterUniqueValidator(queryset=Cluster.objects.all()),
+            StartMidEndValidator(
+                start=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                mid=settings.ALLOWED_CLUSTER_NAME_MID_CHARS,
+                end=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                err_code="BAD_REQUEST",
+                err_msg="Wrong cluster name.",
+            ),
+        ],
+    )
     description = CharField(required=False, allow_blank=True)
 
 
