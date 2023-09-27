@@ -70,8 +70,7 @@
     align-items: center;
     justify-content: center;
     border: 1px solid var(--checkbox-border);
-    --checkbox-mark-color: var(--checkbox-border);
-    color: var(--checkbox-mark-color);
+    color: var(--checkbox-mark-color, var(--checkbox-border));
     border-radius: 3px;
     transition: border-color 250ms, color 250ms;
   }
@@ -82,7 +81,7 @@
     transition: color 250ms;
   }
 
-  &__input:not(:checked) ~ &__square {
+  &__input:not(:checked):not(.checkbox_disabled) ~ &__square {
     --checkbox-mark-color: transparent !important;
   }
 
@@ -106,15 +105,12 @@
   &.checkbox_disabled {
     --checkbox-border: var(--checkbox-border-disabled);
     --checkbox-label-color: var(--checkbox-label-color-disabled);
+    --checkbox-mark-color: var(--checkbox-mark-color-disabled);
 
     cursor: not-allowed !important;
 
     .checkbox__square {
       background-color: var(--checkbox-border);
-    }
-
-    .checkbox__mark {
-      color: var(--checkbox-mark-color-disabled);
     }
   }
 
