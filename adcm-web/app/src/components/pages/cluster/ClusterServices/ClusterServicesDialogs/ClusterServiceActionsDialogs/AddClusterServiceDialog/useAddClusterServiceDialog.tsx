@@ -53,7 +53,7 @@ export const useAddClusterServiceForm = () => {
   }, [formData, nonAppendedServices]);
 
   const servicePrototypesOptions = useMemo(() => {
-    return nonAppendedServices.map(({ name, id }) => ({ value: id, label: name }));
+    return nonAppendedServices.map(({ displayName, id }) => ({ value: id, label: displayName }));
   }, [nonAppendedServices]);
 
   const isServicesWithLicenseSelected = useMemo(() => {

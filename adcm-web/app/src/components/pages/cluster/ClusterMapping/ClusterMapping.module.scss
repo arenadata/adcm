@@ -1,14 +1,12 @@
 :global {
   body.theme-dark {
     --component-container-valid-color: var(--color-xgreen-saturated);
-    --component-container-warning-color: var(--color-yellow-light);
     --component-container-error-color: var(--color-xred);
     --component-container-disabled-color: var(--color-xdark-plate20);
   }
 
   body.theme-light {
     --component-container-valid-color: var(--color-xgreen-saturated);
-    --component-container-warning-color: var(--color-json-orange);
     --component-container-error-color: var(--color-xred-light);
     --component-container-disabled-color: var(--color-xdark-plate20);
   }

@@ -1,6 +1,6 @@
 import { AdcmHostShortView, AdcmComponent, AdcmMaintenanceMode, AdcmMapping } from '@models/adcm';
-import { HostMapping, ServiceMapping, ServiceMappingFilter, HostMappingFilter } from './ClusterMapping.types';
-import { getHostsMapping, getServicesMapping, mapComponentsToHost, mapHostsToComponent } from './ClusterMapping.utils';
+import { HostMapping, ServiceMapping } from './ClusterMapping.types';
+import { getComponentsMapping, getHostsMapping, getServicesMapping, mapHostsToComponent } from './ClusterMapping.utils';
 import { arrayToHash } from '@utils/arrayUtils';
 import { validateConstraints } from './ClusterMapping.utils';
 
@@ -84,8 +84,7 @@ const hostsDictionary = arrayToHash(hosts, (h) => h.id);
 
 describe('Cluster mapping utils', () => {
   test('test getHostsMapping empty mapping', () => {
-    const filter: HostMappingFilter = { componentDisplayName: '' };
-    const hostsMapping = getHostsMapping(hosts, emptyMapping, componentsDictionary, filter);
+    const hostsMapping = getHostsMapping(emptyMapping, hosts, componentsDictionary);
 
     const expected: HostMapping[] = [
       {
@@ -106,8 +105,7 @@ describe('Cluster mapping utils', () => {
   });
 
   test('test getHostsMapping', () => {
-    const filter: HostMappingFilter = { componentDisplayName: '' };
-    const hostsMapping = getHostsMapping(hosts, mapping, componentsDictionary, filter);
+    const hostsMapping = getHostsMapping(mapping, hosts, componentsDictionary);
 
     const expected: HostMapping[] = [
       {
@@ -128,43 +126,29 @@ describe('Cluster mapping utils', () => {
   });
 
   test('test getServicesMapping empty mapping', () => {
-    const filter: ServiceMappingFilter = { hostName: '' };
-    const servicesMapping = getServicesMapping(components, emptyMapping, hostsDictionary, filter);
+    const componentsMapping = getComponentsMapping(emptyMapping, components, hostsDictionary);
+    const servicesMapping = getServicesMapping(componentsMapping);
 
     const expected: ServiceMapping[] = [
       {
         service: services[0],
-        validationSummary: 'valid',
         componentsMapping: [
           {
             component: components[0],
-            constraintsValidationResult: { isValid: true },
-            filteredHosts: [],
             hosts: [],
-            requireValidationResults: { isValid: true },
-            validationSummary: 'valid',
           },
           {
             component: components[1],
-            constraintsValidationResult: { isValid: true },
-            filteredHosts: [],
             hosts: [],
-            requireValidationResults: { isValid: true },
-            validationSummary: 'valid',
           },
         ],
       },
       {
         service: services[1],
-        validationSummary: 'valid',
         componentsMapping: [
           {
             component: components[2],
-            constraintsValidationResult: { isValid: true },
-            filteredHosts: [],
             hosts: [],
-            requireValidationResults: { isValid: true },
-            validationSummary: 'valid',
           },
         ],
       },
@@ -174,43 +158,29 @@ describe('Cluster mapping utils', () => {
   });
 
   test('test getServicesMapping mapping', () => {
-    const filter: ServiceMappingFilter = { hostName: '' };
-    const servicesMapping = getServicesMapping(components, mapping, hostsDictionary, filter);
+    const componentsMapping = getComponentsMapping(mapping, components, hostsDictionary);
+    const servicesMapping = getServicesMapping(componentsMapping);
 
     const expected: ServiceMapping[] = [
       {
         service: services[0],
-        validationSummary: 'valid',
         componentsMapping: [
           {
             component: components[0],
-            constraintsValidationResult: { isValid: true },
-            filteredHosts: [hosts[0]],
             hosts: [hosts[0]],
-            requireValidationResults: { isValid: true },
-            validationSummary: 'valid',
           },
           {
             component: components[1],
-            constraintsValidationResult: { isValid: true },
-            filteredHosts: [hosts[0]],
             hosts: [hosts[0]],
-            requireValidationResults: { isValid: true },
-            validationSummary: 'valid',
           },
         ],
       },
       {
         service: services[1],
-        validationSummary: 'valid',
         componentsMapping: [
           {
             component: components[2],
-            constraintsValidationResult: { isValid: true },
-            filteredHosts: [hosts[2]],
             hosts: [hosts[2]],
-            requireValidationResults: { isValid: true },
-            validationSummary: 'valid',
           },
         ],
       },
@@ -219,25 +189,9 @@ describe('Cluster mapping utils', () => {
     expect(servicesMapping).toStrictEqual(expected);
   });
 
-  test('test mapComponentsToHost', () => {
-    const filter: HostMappingFilter = { componentDisplayName: '' };
-    const hostsMapping = getHostsMapping(hosts, mapping, componentsDictionary, filter);
-    const newMapping = mapComponentsToHost(hostsMapping, [components[0], components[1]], hosts[1]);
-
-    const expected: AdcmMapping[] = [
-      { hostId: 1, componentId: 1 },
-      { hostId: 1, componentId: 2 },
-      { hostId: 2, componentId: 1 },
-      { hostId: 2, componentId: 2 },
-      { hostId: 3, componentId: 3 },
-    ];
-
-    expect(newMapping).toEqual(expect.arrayContaining(expected));
-  });
-
   test('test mapHostsToComponent', () => {
-    const filter: ServiceMappingFilter = { hostName: '' };
-    const servicesMapping = getServicesMapping(components, mapping, hostsDictionary, filter);
+    const componentsMapping = getComponentsMapping(mapping, components, hostsDictionary);
+    const servicesMapping = getServicesMapping(componentsMapping);
     const newMapping = mapHostsToComponent(servicesMapping, [hosts[1]], components[0]);
 
     const expected: AdcmMapping[] = [

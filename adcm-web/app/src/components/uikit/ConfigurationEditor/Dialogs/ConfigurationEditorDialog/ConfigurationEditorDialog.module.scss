@@ -1,0 +1,23 @@
+.configurationEditorDialog {
+  background: var(--dialog-background);
+  border: 1px solid var(--dialog-border);
+  border-radius: 8px;
+  position: relative;
+  box-sizing: border-box;
+
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-xgray-light);
+
+  &__close {
+    position: absolute;
+    right: 0;
+    width: 40px;
+    height: 40px;
+  }
+
+  &__body {
+    padding: 12px 12px
+  }
+}

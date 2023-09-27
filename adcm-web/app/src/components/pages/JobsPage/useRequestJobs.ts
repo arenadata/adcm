@@ -8,6 +8,7 @@ export const useRequestJobs = () => {
   const filter = useStore((s) => s.adcm.jobsTable.filter);
   const sortParams = useStore((s) => s.adcm.jobsTable.sortParams);
   const paginationParams = useStore((s) => s.adcm.jobsTable.paginationParams);
+  const { requestFrequency } = useStore(({ adcm }) => adcm.jobsTable);
 
   useEffect(() => {
     return () => {
@@ -23,5 +24,5 @@ export const useRequestJobs = () => {
     dispatch(refreshJobs());
   }, defaultDebounceDelay);
 
-  useRequestTimer(debounceGetData, debounceRefreshData, 0, [filter, sortParams, paginationParams]);
+  useRequestTimer(debounceGetData, debounceRefreshData, requestFrequency, [filter, sortParams, paginationParams]);
 };

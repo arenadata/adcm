@@ -1,0 +1,40 @@
+:global {
+  body.theme-dark {
+    --suggestion-background: transparent;
+    --suggestion-color: var(--color-xgray-light);
+
+    --suggestion-background-hover: var(--color-xdark-plate20);
+    --suggestion-color-hover: var(--color-xwhite-off);
+  }
+  body.theme-light {
+    --suggestion-background: transparent;
+    --suggestion-color: var(--color-xgray-light);
+
+    --suggestion-background-hover: var(--color-xwhite-50);
+    --suggestion-color-hover: var(--color-xdark);
+  }
+}
+
+.suggestionsList {
+  overflow: auto;
+}
+
+.suggestion {
+  padding: 7px 8px;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 18px;
+
+  border-radius: 5px;
+
+  transition: color 250ms, background-color 250ms;
+
+  background: var(--suggestion-background);
+  color: var(--suggestion-color);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--suggestion-background-hover);
+    color: var(--suggestion-color-hover);
+  }
+}

@@ -24,6 +24,14 @@
 .copyCodeWrapper {
   position: relative;
 
+  & .codeHighlighter__showSecretBtn {
+    display: none;
+    position: absolute;
+    top: 8px;
+    right: 80px;
+    z-index: 1;
+  }
+
   & .codeHighlighter__copyBtn {
     display: none;
     position: absolute;
@@ -50,6 +58,10 @@
           background: var(--code-highlite-background-hover);
         }
       }
+    }
+
+    & .codeHighlighter__showSecretBtn {
+      display: block;
     }
   }
 
@@ -98,8 +110,9 @@
 }
 
 .code-wrapper__code-lines {
+  flex: 1;
   padding: 24px;
-  width: 100%;
+  width: 1px;
   overflow-x: scroll;
   display: flex;
   flex-direction: column;

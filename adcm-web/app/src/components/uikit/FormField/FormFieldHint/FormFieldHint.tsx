@@ -11,10 +11,10 @@ interface FormFieldHintProps {
 const FormFieldHint: React.FC<FormFieldHintProps> = ({ description, hasError }) => {
   return (
     <>
-      {hasError && <MarkerIcon type="alert" className={s.formField__marker} />}
+      {hasError && <MarkerIcon type="alert" variant="square" className={s.formField__marker} />}
       {description && (
         <Tooltip label={description} placement="top-start">
-          <MarkerIcon type="info" className={cn(s.formField__marker, s.formField__marker_info)} />
+          <MarkerIcon type="info" variant="square" className={cn(s.formField__marker, s.formField__marker_info)} />
         </Tooltip>
       )}
     </>

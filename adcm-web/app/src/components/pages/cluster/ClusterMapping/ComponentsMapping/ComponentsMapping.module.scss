@@ -5,17 +5,10 @@
     display: flex;
     align-items: center;
     gap: 12px;
-
-    &_valid {
-      color: var(--component-container-valid-color);
-    }
+    color: var(--component-container-valid-color);
 
     &_error {
       color: var(--component-container-error-color);
-    }
-
-    &_warning {
-      color: var(--component-container-warning-color);
     }
   }
 
@@ -27,6 +20,23 @@
 .componentsMapping {
   &__toolbar {
     margin-bottom: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  &__toolbarButtonsAndSwitch {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  &__toolbarButtons {
+    display: flex;
+    justify-content: flex-end;
+
+    &>*:not(:last-child) {
+      margin-right: 12px;
+    }
   }
 
   &__content {

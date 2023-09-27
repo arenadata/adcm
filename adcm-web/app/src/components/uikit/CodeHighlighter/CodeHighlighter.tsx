@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import cn from 'classnames';
 import s from './CodeHighlighter.module.scss';
 import './Themes/CodeHighlighter.module.themes.scss';
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/default-highlight';
 import customTheme from './Themes/customTheme';
 import CopyButton from './CopyButton/CopyButton';
+import IconButton from '@uikit/IconButton/IconButton';
 
 type LinesWrapperProps = {
   children: React.ReactNode;
@@ -56,6 +57,7 @@ export type CodeHighlighterProps = {
   code: string;
   language: string;
   notCopy?: boolean;
+  isSecret?: boolean;
   className?: string;
   CodeTagComponent?: React.ComponentType<DefaultCodeTagProps>;
 };
@@ -63,13 +65,30 @@ export type CodeHighlighterProps = {
 const CodeHighlighter = ({
   code,
   language,
+  isSecret,
   notCopy = false,
   className,
   CodeTagComponent = DefaultCodeTag,
 }: CodeHighlighterProps) => {
+  const [isSecretVisible, setIsSecretVisible] = useState(!isSecret);
+  const text = useMemo(() => (isSecretVisible ? code : code.replace(/./g, '*')), [code, isSecretVisible]);
+
+  const toggleShowSecret = () => {
+    setIsSecretVisible((prevValue) => !prevValue);
+  };
+
   return (
     <div className={cn(s.copyCodeWrapper, className)}>
       {!notCopy && <CopyButton code={code} className={s.codeHighlighter__copyBtn} />}
+      {isSecret && (
+        <IconButton
+          className={s.codeHighlighter__showSecretBtn}
+          type="button"
+          icon={isSecretVisible ? 'eye' : 'eye-crossed'}
+          size={20}
+          onClick={toggleShowSecret}
+        />
+      )}
       <SyntaxHighlighter
         language={language}
         showLineNumbers={false}
@@ -79,7 +98,7 @@ const CodeHighlighter = ({
         style={customTheme}
         useInlineStyles={false}
       >
-        {code}
+        {text}
       </SyntaxHighlighter>
     </div>
   );

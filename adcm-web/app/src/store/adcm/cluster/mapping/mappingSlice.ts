@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 import { RequestError, AdcmClusterMappingApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { showError } from '@store/notificationsSlice';
@@ -15,6 +15,7 @@ type SaveClusterMappingArg = {
 
 type AdcmClusterMappingsState = {
   mapping: AdcmMapping[];
+  localMapping: AdcmMapping[];
   hosts: AdcmHostShortView[];
   components: AdcmComponent[];
   isLoading: boolean;
@@ -83,6 +84,7 @@ const getMappings = createAsyncThunk(
 
 const createInitialState = (): AdcmClusterMappingsState => ({
   mapping: [],
+  localMapping: [],
   hosts: [],
   components: [],
   isLoading: false,
@@ -94,6 +96,9 @@ const mappingSlice = createSlice({
   name: 'adcm/cluster/mapping',
   initialState: createInitialState(),
   reducers: {
+    setLocalMapping(state, action: PayloadAction<AdcmMapping[]>) {
+      state.localMapping = action.payload;
+    },
     cleanupMappings() {
       return createInitialState();
     },
@@ -112,6 +117,7 @@ const mappingSlice = createSlice({
     });
     builder.addCase(loadMapping.fulfilled, (state, action) => {
       state.mapping = action.payload;
+      state.localMapping = action.payload;
     });
     builder.addCase(loadMappingHosts.fulfilled, (state, action) => {
       state.hosts = action.payload;
@@ -128,6 +134,6 @@ const mappingSlice = createSlice({
   },
 });
 
-const { cleanupMappings } = mappingSlice.actions;
-export { getMappings, saveMapping, cleanupMappings };
+const { setLocalMapping, cleanupMappings } = mappingSlice.actions;
+export { getMappings, saveMapping, setLocalMapping, cleanupMappings };
 export default mappingSlice.reducer;

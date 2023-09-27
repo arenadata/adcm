@@ -12,6 +12,9 @@ import Dialog from '@uikit/Dialog/Dialog';
 import DialogDefaultControls from '@uikit/Dialog/DialogDefaultControls';
 import type { DialogDefaultControlsProps } from '@uikit/Dialog/DialogDefaultControls';
 import Input from '@uikit/Input/Input';
+import InputNumber from '@uikit/InputNumber/InputNumber';
+import InputPassword from './InputPassword/InputPassword';
+import InputWithAutoComplete from './InputWithAutocomplete/InputWithAutocomplete';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import type { MarkerIconType } from '@uikit/MarkerIcon/MarkerIcon.types';
 import MultiSelectList from '@uikit/Select/MultiSelect/MultiSelectList/MultiSelectList';
@@ -29,6 +32,7 @@ import Select from '@uikit/Select/SingleSelect/Select/Select';
 import type { SelectOption } from '@uikit/Select/Select.types';
 import Statusable from '@uikit/Statusable/Statusable';
 import type { BaseStatus } from '@uikit/Statusable/Statusable.types';
+import Switch from './Switch/Switch';
 import Table from '@uikit/Table/Table';
 import TableRow from '@uikit/Table/TableRow/TableRow';
 import TableCell from '@uikit/Table/TableCell/TableCell';
@@ -74,6 +78,9 @@ export {
   MultiSelectList,
   MultiSelectPanel,
   Input,
+  InputNumber,
+  InputPassword,
+  InputWithAutoComplete,
   Pagination,
   PaginationData,
   Popover,
@@ -84,6 +91,7 @@ export {
   Spinner,
   Statusable,
   BaseStatus,
+  Switch,
   Table,
   TableRow,
   TableCell,

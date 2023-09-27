@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useDispatch } from '@hooks';
 import ToolbarPanel from '@uikit/ToolbarPanel/ToolbarPanel';
 import { Button, ButtonGroup, SearchInput } from '@uikit';
 import { DynamicActionCommonOptions } from '@commonComponents/DynamicActionDialog/DynamicAction.types';
@@ -7,6 +8,7 @@ import { useClusterMapping } from '@pages/cluster/ClusterMapping/useClusterMappi
 import ComponentContainer from '@pages/cluster/ClusterMapping/ComponentsMapping/ComponentContainer/ComponentContainer';
 import { AdcmComponent, AdcmComponentService } from '@models/adcm';
 import { SpinnerPanel } from '@uikit/Spinner/Spinner';
+import { getMappings, cleanupMappings } from '@store/adcm/cluster/mapping/mappingSlice';
 
 interface DynamicActionHostMappingProps extends DynamicActionCommonOptions {
   submitLabel?: string;
@@ -20,19 +22,32 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
   onCancel,
   submitLabel = 'Run',
 }) => {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (!Number.isNaN(clusterId)) {
+      dispatch(getMappings({ clusterId }));
+    }
+
+    return () => {
+      dispatch(cleanupMappings());
+    };
+  }, [clusterId, dispatch]);
+
   const {
     hostComponentMapping,
     hosts,
     servicesMapping,
+    servicesMappingFilter,
     handleServicesMappingFilterChange,
-    isValid,
+    mappingValidation,
     hasSaveError,
     handleMapHostsToComponent,
     handleUnmap,
     handleRevert,
     isLoading,
     isLoaded,
-  } = useClusterMapping(clusterId);
+  } = useClusterMapping();
 
   const handleSubmit = () => {
     onSubmit({ hostComponentMap: hostComponentMapping });
@@ -57,7 +72,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
           <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!isValid} hasError={hasSaveError}>
+          <Button onClick={handleSubmit} disabled={!mappingValidation.isAllMappingValid} hasError={hasSaveError}>
             {submitLabel}
           </Button>
         </ButtonGroup>
@@ -76,7 +91,9 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
                 <ComponentContainer
                   key={componentMapping.component.id}
                   componentMapping={componentMapping}
+                  filter={servicesMappingFilter}
                   allHosts={hosts}
+                  componentMappingValidation={mappingValidation.byComponents[componentMapping.component.id]}
                   onMap={handleMapHostsToComponent}
                   onUnmap={handleUnmap}
                   allowActions={allowActions}
