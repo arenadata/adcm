@@ -6,6 +6,7 @@ import cn from 'classnames';
 
 interface MarkerIconProps extends Omit<HTMLAttributes<HTMLButtonElement>, 'type'> {
   type: MarkerIconType;
+  variant: 'square' | 'round';
   size?: IconProps['size'];
 }
 
@@ -29,9 +30,9 @@ const typesSettings: Record<MarkerIconType, MarkerSettings> = {
 };
 
 const MarkerIcon = React.forwardRef<HTMLButtonElement, MarkerIconProps>(
-  ({ type, size = 16, className, ...props }, ref) => {
+  ({ type, size = 16, variant, className, ...props }, ref) => {
     const markerSettings = typesSettings[type];
-    const classes = cn(className, s.markerIcon, markerSettings.className);
+    const classes = cn(className, s.markerIcon, markerSettings.className, s[`markerIcon_${variant}`]);
 
     return (
       <button type="button" className={classes} {...props} ref={ref}>

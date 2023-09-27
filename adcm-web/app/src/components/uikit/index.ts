@@ -29,6 +29,7 @@ import Select from '@uikit/Select/SingleSelect/Select/Select';
 import type { SelectOption } from '@uikit/Select/Select.types';
 import Statusable from '@uikit/Statusable/Statusable';
 import type { BaseStatus } from '@uikit/Statusable/Statusable.types';
+import Switch from './Switch/Switch';
 import Table from '@uikit/Table/Table';
 import TableRow from '@uikit/Table/TableRow/TableRow';
 import TableCell from '@uikit/Table/TableCell/TableCell';
@@ -84,6 +85,7 @@ export {
   Spinner,
   Statusable,
   BaseStatus,
+  Switch,
   Table,
   TableRow,
   TableCell,

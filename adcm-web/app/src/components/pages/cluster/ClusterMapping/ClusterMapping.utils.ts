@@ -6,32 +6,55 @@ import {
   AdcmComponentService,
 } from '@models/adcm';
 import {
-  HostMappingFilter,
   HostMapping,
-  ServiceMappingFilter,
   ServiceMapping,
   ComponentMapping,
   ValidationResult,
-  ValidationSummary,
+  ComponentId,
+  ServiceId,
+  ComponentMappingValidation,
+  HostId,
+  HostsDictionary,
+  MappingValidation,
 } from './ClusterMapping.types';
 
-export const getHostsMapping = (
-  hosts: AdcmHostShortView[],
+export const getComponentsMapping = (
   mapping: AdcmMapping[],
-  componentsDictionary: Record<number, AdcmComponent>,
-  filter: HostMappingFilter,
+  components: AdcmComponent[],
+  hostsDictionary: HostsDictionary,
+): ComponentMapping[] => {
+  const result: ComponentMapping[] = [];
+  const componentHostsDictionary: Record<ComponentId, AdcmHostShortView[]> = {};
+
+  for (const m of mapping) {
+    componentHostsDictionary[m.componentId] = componentHostsDictionary[m.componentId] ?? [];
+
+    const host = hostsDictionary[m.hostId];
+    componentHostsDictionary[m.componentId].push(host);
+  }
+
+  for (const component of components) {
+    result.push({
+      component,
+      hosts: componentHostsDictionary[component.id] ?? [],
+    });
+  }
+
+  return result;
+};
+
+export const getHostsMapping = (
+  mapping: AdcmMapping[],
+  hosts: AdcmHostShortView[],
+  componentsDictionary: Record<ComponentId, AdcmComponent>,
 ): HostMapping[] => {
-  const hostComponentsDictionary: Record<number, AdcmComponent[]> = {}; // key - component Id
+  const hostComponentsDictionary: Record<HostId, AdcmComponent[]> = {}; // key - component Id
 
   for (const m of mapping) {
     hostComponentsDictionary[m.hostId] = hostComponentsDictionary[m.hostId] ?? [];
 
     const component = componentsDictionary[m.componentId];
-    if (!component.displayName.toLowerCase().includes(filter.componentDisplayName.toLowerCase())) {
-      continue;
-    } else {
-      hostComponentsDictionary[m.hostId].push(component);
-    }
+    hostComponentsDictionary[m.hostId].push(component);
   }
 
   const result = hosts.map((host) => ({
@@ -42,89 +65,51 @@ export const getHostsMapping = (
   return result;
 };
 
-export const getServicesMapping = (
-  components: AdcmComponent[],
-  mapping: AdcmMapping[],
-  hostsDictionary: Record<number, AdcmHostShortView>,
-  filter: ServiceMappingFilter,
-): ServiceMapping[] => {
-  const componentHostsDictionary: Record<number, AdcmHostShortView[]> = {}; // key - component Id
-  const filteredComponentHostsDictionary: Record<number, AdcmHostShortView[]> = {}; // key - component Id
-  const allHostsCount = Object.keys(hostsDictionary).length;
-
-  // group hosts by component id
-  for (const m of mapping) {
-    componentHostsDictionary[m.componentId] = componentHostsDictionary[m.componentId] ?? [];
-    filteredComponentHostsDictionary[m.componentId] = filteredComponentHostsDictionary[m.componentId] ?? [];
-
-    const host = hostsDictionary[m.hostId];
-    componentHostsDictionary[m.componentId].push(host);
-
-    if (host.name.toLowerCase().includes(filter.hostName.toLowerCase())) {
-      filteredComponentHostsDictionary[m.componentId].push(host);
-    }
-  }
-
-  const uniqueServiceIds: number[] = [];
-  const servicesDictionary: Record<number, AdcmComponentService> = {}; // key - service Id
-  const serviceComponentsDictionary: Record<number, ComponentMapping[]> = {}; // // key - service Id
+export const getServicesMapping = (componentMapping: ComponentMapping[]): ServiceMapping[] => {
+  const servicesDictionary: Record<ServiceId, AdcmComponentService> = {}; // key - service Id
+  const serviceComponentsDictionary: Record<ServiceId, ComponentMapping[]> = {}; // // key - service Id
 
   // group components by service id
-  for (const c of components) {
-    if (!servicesDictionary[c.service.id]) {
-      servicesDictionary[c.service.id] = c.service;
-      uniqueServiceIds.push(c.service.id);
-    }
-
-    const componentHosts = componentHostsDictionary[c.id] ?? [];
-    const constraintsValidationResult = validateConstraints(c.constraints, allHostsCount, componentHosts.length);
-    const requireValidationResults = validateRequire();
-    const componentValidationSummary = getComponentValidationSummary(
-      constraintsValidationResult.isValid,
-      requireValidationResults.isValid,
-    );
-
-    (serviceComponentsDictionary[c.service.id] = serviceComponentsDictionary[c.service.id] ?? []).push({
-      component: c,
-      hosts: componentHosts,
-      constraintsValidationResult,
-      requireValidationResults,
-      filteredHosts: filteredComponentHostsDictionary[c.id] ?? [],
-      validationSummary: componentValidationSummary,
-    });
+  for (const cm of componentMapping) {
+    const service = cm.component.service;
+    servicesDictionary[service.id] = service;
+    serviceComponentsDictionary[service.id] = serviceComponentsDictionary[service.id] ?? [];
+    serviceComponentsDictionary[service.id].push(cm);
   }
 
-  const result: ServiceMapping[] = uniqueServiceIds.map((serviceId) => ({
-    service: servicesDictionary[serviceId],
-    componentsMapping: serviceComponentsDictionary[serviceId],
-    validationSummary: getServiceValidationSummary(serviceComponentsDictionary[serviceId]),
-  }));
+  const result: ServiceMapping[] = [];
+  for (const [, service] of Object.entries(servicesDictionary)) {
+    result.push({
+      service,
+      componentsMapping: serviceComponentsDictionary[service.id],
+    });
+  }
 
   return result;
 };
 
-export const mapComponentsToHost = (
-  hostsMapping: HostMapping[],
-  components: AdcmComponent[],
-  host: AdcmHostShortView,
-) => {
-  const result: AdcmMapping[] = [];
+export const validate = (componentMapping: ComponentMapping[], allHostsCount: number): MappingValidation => {
+  const byComponents: Record<ComponentId, ComponentMappingValidation> = {};
+  let isAllMappingValid = true;
 
-  // copy unchanged mappings
-  for (const mapping of hostsMapping) {
-    if (host.id !== mapping.host.id) {
-      for (const component of mapping.components) {
-        result.push({ hostId: mapping.host.id, componentId: component.id });
-      }
-    }
+  for (const cm of componentMapping) {
+    const constraintsValidationResult = validateConstraints(cm.component.constraints, allHostsCount, cm.hosts.length);
+    const requireValidationResults = validateRequire();
+    const isValid = constraintsValidationResult.isValid && requireValidationResults.isValid;
+
+    isAllMappingValid = isAllMappingValid && isValid;
+
+    byComponents[cm.component.id] = {
+      constraintsValidationResult,
+      requireValidationResults,
+      isValid,
+    };
   }
 
-  // add changed mappings
-  for (const component of components) {
-    result.push({ hostId: host.id, componentId: component.id });
-  }
-
-  return result;
+  return {
+    isAllMappingValid,
+    byComponents,
+  };
 };
 
 export const mapHostsToComponent = (
@@ -210,34 +195,4 @@ export const getConstraintsLimit = (constraints: AdcmComponentConstraint[]) => {
 // TODO: implement
 export const validateRequire = (): ValidationResult => {
   return { isValid: true };
-};
-
-export const getComponentValidationSummary = (
-  isConstraintValid: boolean,
-  isRequireValid: boolean,
-): ValidationSummary => {
-  if (isConstraintValid && isRequireValid) {
-    return 'valid';
-  }
-
-  if (isConstraintValid && !isRequireValid) {
-    return 'warning';
-  }
-
-  return 'error';
-};
-
-export const getServiceValidationSummary = (componentMapping: ComponentMapping[]): ValidationSummary => {
-  let result: ValidationSummary = 'valid';
-
-  for (const mapping of componentMapping) {
-    if (mapping.validationSummary === 'error') {
-      result = 'error';
-      break;
-    } else if (mapping.validationSummary === 'warning') {
-      result = 'warning';
-    }
-  }
-
-  return result;
 };

@@ -1,9 +1,8 @@
 import { useMemo } from 'react';
-import { AnchorBar, AnchorBarItem, AnchorList, MarkerIcon, Text } from '@uikit';
+import { AnchorBar, AnchorBarItem, AnchorList, Button, MarkerIcon, SearchInput, Switch, Text } from '@uikit';
 import { useClusterMapping } from '../useClusterMapping';
 import ComponentContainer from './ComponentContainer/ComponentContainer';
 import ClusterMappingToolbar from '../ClusterMappingToolbar/ClusterMappingToolbar';
-import { serviceMarkerIcons } from './ComponentsMapping.constants';
 import s from './ComponentsMapping.module.scss';
 import cn from 'classnames';
 import { useParams } from 'react-router-dom';
@@ -25,12 +24,12 @@ const ComponentsMapping = () => {
     servicesMappingFilter,
     handleServicesMappingFilterChange,
     isMappingChanged,
-    isValid,
+    mappingValidation,
     hasSaveError,
     handleMapHostsToComponent,
     handleUnmap,
     handleRevert,
-  } = useClusterMapping(clusterId);
+  } = useClusterMapping();
 
   const anchorItems: AnchorBarItem[] = useMemo(
     () =>
@@ -41,8 +40,12 @@ const ComponentsMapping = () => {
     [servicesMapping],
   );
 
-  const handleFilterChange = (hostName: string) => {
-    handleServicesMappingFilterChange({ hostName });
+  const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    handleServicesMappingFilterChange({ hostName: event.target.value });
+  };
+
+  const handleHideEmptyComponentsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    handleServicesMappingFilterChange({ isHideEmptyComponents: event.target.checked });
   };
 
   const handleSave = () => {
@@ -51,31 +54,52 @@ const ComponentsMapping = () => {
 
   return (
     <div className={s.componentsMapping}>
-      <ClusterMappingToolbar
-        className={s.componentsMapping__toolbar}
-        filter={servicesMappingFilter.hostName}
-        filterPlaceHolder="Search hosts"
-        hasError={hasSaveError}
-        isSaveDisabled={!isMappingChanged || !isValid}
-        onSave={handleSave}
-        onFilterChange={handleFilterChange}
-        onRevert={handleRevert}
-      />
+      <ClusterMappingToolbar className={s.componentsMapping__toolbar}>
+        <SearchInput placeholder="Search hosts" value={servicesMappingFilter.hostName} onChange={handleFilterChange} />
+        <div className={s.componentsMapping__toolbarButtonsAndSwitch}>
+          <Switch
+            isToggled={servicesMappingFilter.isHideEmptyComponents}
+            onChange={handleHideEmptyComponentsChange}
+            label="Hide empty components"
+          />
+          <div className={s.componentsMapping__toolbarButtons}>
+            <Button variant="secondary" onClick={handleRevert}>
+              Revert
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={!isMappingChanged || !mappingValidation.isAllMappingValid}
+              hasError={hasSaveError}
+            >
+              Save mapping
+            </Button>
+          </div>
+        </div>
+      </ClusterMappingToolbar>
       <div className={s.componentsMapping__content}>
         <div>
-          {servicesMapping.map(({ service, componentsMapping, validationSummary }) => {
-            const titleClassName = cn(s.serviceMapping__title, s[`serviceMapping__title_${validationSummary}`]);
+          {servicesMapping.map(({ service, componentsMapping }) => {
+            const isServiceValid = componentsMapping.every(
+              (cm) => mappingValidation.byComponents[cm.component.id].isValid,
+            );
+            const titleClassName = cn(s.serviceMapping__title, {
+              [s['serviceMapping__title_error']]: !isServiceValid,
+            });
+
+            const markerType = isServiceValid ? 'check' : 'alert';
 
             return (
               <div key={service.id} className={s.serviceMapping}>
                 <Text className={titleClassName} variant="h2" id={buildServiceAnchorId(service.id)}>
                   {service.displayName}
-                  <MarkerIcon type={serviceMarkerIcons[validationSummary]} size="medium" />
+                  <MarkerIcon type={markerType} variant="square" size="medium" />
                 </Text>
                 {componentsMapping.map((componentMapping) => (
                   <ComponentContainer
                     key={componentMapping.component.id}
                     componentMapping={componentMapping}
+                    componentMappingValidation={mappingValidation.byComponents[componentMapping.component.id]}
+                    filter={servicesMappingFilter}
                     allHosts={hosts}
                     onMap={handleMapHostsToComponent}
                     onUnmap={handleUnmap}

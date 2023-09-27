@@ -1,85 +1,85 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { getMappings, cleanupMappings } from '@store/adcm/cluster/mapping/mappingSlice';
-import { AdcmComponent, AdcmHostShortView, AdcmMapping } from '@models/adcm';
+import { setLocalMapping } from '@store/adcm/cluster/mapping/mappingSlice';
+import { AdcmComponent, AdcmHostShortView } from '@models/adcm';
 import { arrayToHash } from '@utils/arrayUtils';
-import { getHostsMapping, getServicesMapping, mapComponentsToHost, mapHostsToComponent } from './ClusterMapping.utils';
-import { HostMappingFilter, HostMapping, ServiceMappingFilter, ServiceMapping } from './ClusterMapping.types';
+import {
+  getComponentsMapping,
+  getHostsMapping,
+  getServicesMapping,
+  mapHostsToComponent,
+  validate,
+} from './ClusterMapping.utils';
+import {
+  HostMappingFilter,
+  HostMapping,
+  ComponentMapping,
+  ServiceMappingFilter,
+  ServiceMapping,
+  HostsDictionary,
+  ComponentsDictionary,
+} from './ClusterMapping.types';
 
-export const useClusterMapping = (clusterId: number) => {
+export const useClusterMapping = () => {
   const dispatch = useDispatch();
 
   const {
     hosts,
     components,
     mapping: originalMapping,
+    localMapping,
     isLoaded,
     isLoading,
     hasSaveError,
   } = useStore(({ adcm }) => adcm.clusterMapping);
 
-  const [localMapping, setLocalMapping] = useState<AdcmMapping[]>([]);
   const [isMappingChanged, setIsMappingChanged] = useState(false);
 
-  const hostsDictionary = useMemo(() => arrayToHash(hosts, (h) => h.id), [hosts]);
-  const componentsDictionary = useMemo(() => arrayToHash(components, (c) => c.id), [components]);
+  const hostsDictionary: HostsDictionary = useMemo(() => arrayToHash(hosts, (h) => h.id), [hosts]);
+  const componentsDictionary: ComponentsDictionary = useMemo(() => arrayToHash(components, (c) => c.id), [components]);
 
-  const [hostsMappingFilter, setHostsMappingFilter] = useState<HostMappingFilter>({ componentDisplayName: '' });
-  const [servicesMappingFilter, setServicesMappingFilter] = useState<ServiceMappingFilter>({ hostName: '' });
+  const [hostsMappingFilter, setHostsMappingFilter] = useState<HostMappingFilter>({
+    componentDisplayName: '',
+    isHideEmptyHosts: false,
+  });
+  const [servicesMappingFilter, setServicesMappingFilter] = useState<ServiceMappingFilter>({
+    hostName: '',
+    isHideEmptyComponents: false,
+  });
 
-  useEffect(() => {
-    if (!Number.isNaN(clusterId)) {
-      dispatch(getMappings({ clusterId }));
-    }
-
-    return () => {
-      // TODO: should think about next case: open action with hostMapping on page ClusterMapping.
-      // cleanupMappings will run after close action dialog and clear data from page too
-      dispatch(cleanupMappings());
-    };
-  }, [clusterId, dispatch]);
-
-  useEffect(() => {
-    setLocalMapping(originalMapping);
-  }, [originalMapping]);
+  const componentsMapping: ComponentMapping[] = useMemo(
+    () => (isLoaded ? getComponentsMapping(localMapping, components, hostsDictionary) : []),
+    [components, hostsDictionary, isLoaded, localMapping],
+  );
 
   const hostsMapping: HostMapping[] = useMemo(
-    () => (isLoaded ? getHostsMapping(hosts, localMapping, componentsDictionary, hostsMappingFilter) : []),
-    [isLoaded, hosts, localMapping, componentsDictionary, hostsMappingFilter],
+    () => (isLoaded ? getHostsMapping(localMapping, hosts, componentsDictionary) : []),
+    [isLoaded, localMapping, hosts, componentsDictionary],
   );
 
   const servicesMapping: ServiceMapping[] = useMemo(
-    () => (isLoaded ? getServicesMapping(components, localMapping, hostsDictionary, servicesMappingFilter) : []),
-    [isLoaded, components, localMapping, hostsDictionary, servicesMappingFilter],
+    () => (isLoaded ? getServicesMapping(componentsMapping) : []),
+    [isLoaded, componentsMapping],
   );
 
-  const isValid = useMemo(() => servicesMapping.every((m) => m.validationSummary === 'valid'), [servicesMapping]);
+  const mappingValidation = useMemo(() => validate(componentsMapping, hosts.length), [componentsMapping, hosts.length]);
 
   const handleMapHostsToComponent = useCallback(
     (hosts: AdcmHostShortView[], component: AdcmComponent) => {
       const newLocalMapping = mapHostsToComponent(servicesMapping, hosts, component);
-      setLocalMapping(newLocalMapping);
+      dispatch(setLocalMapping(newLocalMapping));
       setIsMappingChanged(true);
     },
-    [servicesMapping],
-  );
-
-  const handleMapComponentsToHost = useCallback(
-    (components: AdcmComponent[], host: AdcmHostShortView) => {
-      const newMapping = mapComponentsToHost(hostsMapping, components, host);
-      setLocalMapping(newMapping);
-      setIsMappingChanged(true);
-    },
-    [hostsMapping],
+    [dispatch, servicesMapping],
   );
 
   const handleUnmap = useCallback(
     (hostId: number, componentId: number) => {
       const newLocalMapping = localMapping.filter((m) => !(m.hostId === hostId && m.componentId === componentId));
-      setLocalMapping(newLocalMapping);
+      dispatch(setLocalMapping(newLocalMapping));
       setIsMappingChanged(true);
     },
-    [localMapping],
+    [dispatch, localMapping],
   );
 
   const handleServicesMappingFilterChange = (changes: Partial<ServiceMappingFilter>) => {
@@ -97,9 +97,9 @@ export const useClusterMapping = (clusterId: number) => {
   };
 
   const handleRevert = useCallback(() => {
-    setLocalMapping(originalMapping);
+    dispatch(setLocalMapping(originalMapping));
     setIsMappingChanged(false);
-  }, [originalMapping]);
+  }, [dispatch, originalMapping]);
 
   return {
     hostComponentMapping: localMapping,
@@ -114,10 +114,9 @@ export const useClusterMapping = (clusterId: number) => {
     servicesMappingFilter,
     handleServicesMappingFilterChange,
     isMappingChanged,
-    isValid,
+    mappingValidation,
     hasSaveError,
     handleMapHostsToComponent,
-    handleMapComponentsToHost,
     handleUnmap,
     handleRevert,
   };

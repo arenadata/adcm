@@ -1,0 +1,41 @@
+import React, { useState } from 'react';
+import Switch, { SwitchProps } from './Switch';
+import { Meta, StoryObj } from '@storybook/react';
+
+type Story = StoryObj<typeof Switch>;
+
+export default {
+  title: 'uikit/Switch',
+  component: Switch,
+  argTypes: {
+    disabled: {
+      description: 'Disabled',
+      control: { type: 'boolean' },
+    },
+    size: {
+      defaultValue: 'medium',
+      options: ['medium', 'small'],
+      control: { type: 'radio' },
+    },
+  },
+} as Meta<typeof Switch>;
+
+const SwitchWithHooks = ({ ...args }: Partial<SwitchProps>) => {
+  const [checked, setChecked] = useState(false);
+
+  const handleChangeCheckedBox = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setChecked(event.target.checked);
+  };
+
+  return <Switch isToggled={checked} onChange={handleChangeCheckedBox} size={args.size} disabled={args.disabled} />;
+};
+
+export const SwitchStory: Story = {
+  args: {
+    size: 'medium',
+    disabled: false,
+  },
+  render: ({ ...args }) => {
+    return <SwitchWithHooks {...args} />;
+  },
+};

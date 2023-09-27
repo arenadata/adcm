@@ -9,19 +9,7 @@
 }
 
 .clusterMappingToolbar {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
   border-radius: 12px;
   background: var(--cluster-mapping-toolbar-background);
   padding: 8px;
-
-  &__buttons {
-    display: flex;
-    justify-content: flex-end;
-
-    &>*:not(:last-child) {
-      margin-right: 12px;
-    }
-  }
 }

@@ -1,0 +1,146 @@
+:global {
+  body.theme-dark {
+    --switch-on-background: var(--color-xgreen-saturated);
+    --switch-on-button-background: var(--color-xdark);
+    --switch-on-button-shadow: 0px 1px 5px 0px rgba(5, 5, 5, 0.7);
+    --switch-on-background-hover: var(--color-xgreen-saturated);
+    --switch-on-button-background-hover: var(--color-dark-card-hover);
+    
+    --switch-off-background: var(--color-xdark);
+    --switch-off-button-background: var(--color-xgray-light);
+    --switch-off-background-hover: var(--color-dark-card-hover);
+    --switch-off-button-background-hover: var(--color-xgray-light);
+
+    --switch-disabled-background: var(--color-xdark-plate20);
+    --switch-disabled-button-background: var(--color-xdark-plate20);
+    --switch-disabled-button-shadow: 0px 1px 5px 0px rgba(5, 5, 5, 0.7);
+  }
+
+  body.theme-light {
+    --switch-on-background: var(--color-xgreen-saturated);
+    --switch-on-button-background: var(--color-xwhite);
+    --switch-on-button-shadow: 0px 20px 20px 0px rgba(2, 1, 17, 0.2);
+    --switch-on-background-hover: var(--color-xgreen);
+    --switch-on-button-background-hover: var(--color-xwhite);
+
+    --switch-off-background: rgba(127, 130, 133, 0.2);
+    --switch-off-button-background: var(--color-xgray-light);
+    --switch-off-background-hover: rgba(127, 130, 133, 0.4);
+    --switch-off-button-background-hover: var(--color-xgray-light);
+
+    --switch-disabled-background: var(--color-xdark-plate20);
+    --switch-disabled-button-background: var(--color-xdark-plate20);
+    --switch-disabled-button-shadow: 0px 1px 5px 0px rgba(202, 217, 226, 0.7);
+  }
+}
+
+.switch_medium {
+  --switch-width: 40px;
+  --switch-height: 20px;
+  --switch-button-width: 16px;
+  --switch-button-height: 16px;
+  --switch-button-padding: 2px;
+}
+
+.switch_small {
+  --switch-width: 24px;
+  --switch-height: 12px;
+  --switch-button-width: 10px;
+  --switch-button-height: 10px;
+  --switch-button-padding: 1px;
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  font-weight: 500;
+}
+
+.switchCheckbox {
+  display: none;
+
+  &:checked {
+    & + .switchLabel::before {
+      left: calc(100% - var(--switch-button-padding));
+      transform: translateX(-100%);
+    }
+  }
+
+  &:not(:disabled) {
+    &:checked {
+      & + .switchLabel {
+        background: var(--switch-on-background);
+      }
+
+      & + .switchLabel::before {
+        background: var(--switch-on-button-background);
+        box-shadow: var(--switch-on-button-shadow);
+      }
+
+      & + .switchLabel:hover {
+        background: var(--switch-on-background-hover);
+      }
+
+      & + .switchLabel:hover::before {
+        background: var(--switch-on-button-background-hover);
+        box-shadow: var(--switch-on-button-shadow);
+      }
+    }
+  }
+
+  &:disabled {
+    & + .switchLabel {
+      cursor: not-allowed;
+      background: var(--switch-disabled-background);
+    }
+
+    & + .switchLabel:hover {
+      background: var(--switch-disabled-background);
+    }
+
+    & + .switchLabel::before {
+      background: var(--switch-disabled-button-background);
+      box-shadow: var(--switch-disabled-button-shadow);
+    }
+
+    & + .switchLabel:hover::before {
+      background: var(--switch-disabled-button-background);
+      box-shadow: var(--switch-disabled-button-shadow);
+    }
+  }
+}
+
+.switchLabel {
+  display: inline-flex;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  width: var(--switch-width);
+  height: var(--switch-height);
+  background: var(--switch-off-background);
+  border-radius: 20px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: var(--switch-button-padding);
+    left: var(--switch-button-padding);
+    width: var(--switch-button-width);
+    height: var(--switch-button-height);
+    border-radius: 20px;
+    box-shadow: var(--switch-off-button-shadow);
+    background: var(--switch-off-button-background);
+    transition: 0.2s;
+  }
+
+  &:hover {
+    background: var(--switch-off-background-hover);
+  }
+
+  &:hover::before {
+    background: var(--switch-off-button-background-hover);
+    box-shadow: var(--switch-off-button-shadow);
+  }
+}
