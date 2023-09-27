@@ -1,0 +1,19 @@
+.configurationField {
+  display: flex;
+  gap: 12px;
+
+  &__control {
+    flex: 1;
+  }
+
+  &__actions {
+    margin-top: 28px;
+    > *:not(:last-child) {
+      margin-right: 12px;
+  }
+  }
+
+  &__checkbox {
+    margin-top: 6px;
+  }
+}

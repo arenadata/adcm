@@ -8,8 +8,9 @@ import cn from 'classnames';
 export interface CodeEditorProps {
   code: string;
   language: string;
+  isSecret?: boolean;
   className?: string;
-  setCode: (code: string) => void;
+  onChange: (code: string) => void;
 }
 
 interface CodeProviderInterface extends CodeEditorProps {
@@ -18,22 +19,22 @@ interface CodeProviderInterface extends CodeEditorProps {
 
 const CodeCtx = createContext({} as CodeEditorProps);
 
-const CodeProvider = ({ children, code, language, setCode }: CodeProviderInterface) => {
-  const codeData = { code, language, setCode };
+const CodeProvider = ({ children, code, language, onChange }: CodeProviderInterface) => {
+  const codeData = { code, language, onChange };
   return <CodeCtx.Provider value={codeData}>{children}</CodeCtx.Provider>;
 };
 
 const TagWithContext: React.FC<{ children: HighlighterChildType }> = ({ children }) => {
-  const { code, setCode } = useContext(CodeCtx);
+  const { code, onChange } = useContext(CodeCtx);
 
-  return <CodeEditorContent children={children} code={code} setCode={setCode} />;
+  return <CodeEditorContent children={children} code={code} onChange={onChange} />;
 };
 
-const CodeEditor = ({ code, language, className, setCode }: CodeEditorProps) => {
+const CodeEditor = ({ code, language, isSecret, className, onChange }: CodeEditorProps) => {
   return (
-    <CodeProvider code={code} setCode={setCode} language={language}>
+    <CodeProvider code={code} onChange={onChange} language={language}>
       <div className={cn(s.codeEditor, className)}>
-        <CodeHighlighter code={code} language={language} CodeTagComponent={TagWithContext} />
+        <CodeHighlighter code={code} language={language} isSecret={isSecret} CodeTagComponent={TagWithContext} />
       </div>
     </CodeProvider>
   );

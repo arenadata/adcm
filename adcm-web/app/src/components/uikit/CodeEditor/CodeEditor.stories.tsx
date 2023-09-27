@@ -30,18 +30,22 @@ export default {
       description: 'highlighter language',
       defaultValue: 'json',
     },
+    isSecret: {
+      defaultValue: false,
+    },
   },
 } as Meta<typeof CodeEditor>;
 
 const CodeEditorExample = ({ ...args }) => {
   const [code, setCode] = useState(args.code);
-  return <CodeEditor code={code} language={args.language} setCode={setCode} />;
+  return <CodeEditor code={code} language={args.language} isSecret={args.isSecret} onChange={setCode} />;
 };
 
 export const CodeEditorStory: Story = {
   args: {
     language: 'json',
     code: jsonText,
+    isSecret: false,
   },
   render: (args) => {
     return <CodeEditorExample {...args} />;
