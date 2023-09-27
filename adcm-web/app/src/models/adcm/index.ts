@@ -9,6 +9,7 @@ export * from './maintenanceMode';
 export * from './users';
 export * from './group';
 export * from './audit';
+export * from './configuration';
 export * from './jobs';
 export * from './policy';
 export * from './clusterImports';

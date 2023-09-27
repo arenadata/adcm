@@ -12,6 +12,9 @@ import Dialog from '@uikit/Dialog/Dialog';
 import DialogDefaultControls from '@uikit/Dialog/DialogDefaultControls';
 import type { DialogDefaultControlsProps } from '@uikit/Dialog/DialogDefaultControls';
 import Input from '@uikit/Input/Input';
+import InputNumber from '@uikit/InputNumber/InputNumber';
+import InputPassword from './InputPassword/InputPassword';
+import InputWithAutoComplete from './InputWithAutocomplete/InputWithAutocomplete';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import type { MarkerIconType } from '@uikit/MarkerIcon/MarkerIcon.types';
 import MultiSelectList from '@uikit/Select/MultiSelect/MultiSelectList/MultiSelectList';
@@ -75,6 +78,9 @@ export {
   MultiSelectList,
   MultiSelectPanel,
   Input,
+  InputNumber,
+  InputPassword,
+  InputWithAutoComplete,
   Pagination,
   PaginationData,
   Popover,

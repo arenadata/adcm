@@ -7,3 +7,11 @@ export const snakeToCamelCase = (name: string) => {
 };
 
 export const camelToSnakeCase = (name: string) => name.replace(/([A-Z])/g, '_$1').toLowerCase();
+
+export const prettifyJson = (jsonString: string) => {
+  try {
+    return JSON.stringify(JSON.parse(jsonString), null, 4);
+  } catch {
+    return jsonString;
+  }
+};

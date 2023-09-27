@@ -6,10 +6,10 @@ import { HighlighterChildType } from './CodeEditor.types';
 export interface CodeEditorContentProps {
   code: string;
   children: HighlighterChildType;
-  setCode: (code: string) => void;
+  onChange: (code: string) => void;
 }
 
-const CodeEditorContent = ({ code, children, setCode }: CodeEditorContentProps) => {
+const CodeEditorContent = ({ code, children, onChange }: CodeEditorContentProps) => {
   const [, childArray] = children;
   const rowCount = childArray.length || 1;
 
@@ -18,7 +18,7 @@ const CodeEditorContent = ({ code, children, setCode }: CodeEditorContentProps) 
       <LineNumbers lineCount={rowCount} />
       <LinesWrapper
         children={childArray}
-        subComponent={<CodeEditorTextArea code={code} setCode={setCode} rowCount={rowCount} />}
+        subComponent={<CodeEditorTextArea code={code} onChange={onChange} rowCount={rowCount} />}
       />
     </div>
   );
