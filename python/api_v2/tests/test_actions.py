@@ -14,16 +14,18 @@ from typing import TypeAlias
 
 from api_v2.tests.base import BaseAPITestCase
 from cm.models import (
+    Action,
     Cluster,
     ClusterObject,
     Host,
     HostComponent,
     HostProvider,
+    MaintenanceMode,
     ServiceComponent,
 )
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 
 ObjectWithActions: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
 
@@ -141,23 +143,33 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
         )
         any_cluster = "from cluster any"
         any_all = (any_cluster, "from service any", "from component any")
+        cluster_host_actions = ["cluster_host_action_allowed", "cluster_host_action_disallowed"]
 
         self.add_host_to_cluster(self.cluster, self.host_1)
-        check_host_1_actions(expected_actions=[*self.available_at_created_no_multi, any_cluster])
+        check_host_1_actions(expected_actions=[*self.available_at_created_no_multi, any_cluster, *cluster_host_actions])
         check_host_2_actions(expected_actions=self.available_at_created_no_multi)
 
         HostComponent.objects.create(
             cluster=self.cluster, host=self.host_1, service=self.service_1, component=self.component_1
         )
-        check_host_1_actions(expected_actions=[*self.available_at_created_no_multi, *any_all])
+        check_host_1_actions(
+            expected_actions=[*self.available_at_created_no_multi, *any_all, *cluster_host_actions * 3]
+        )
         check_host_2_actions(expected_actions=self.available_at_created_no_multi)
 
         self.add_host_to_cluster(self.cluster, self.host_2)
-        check_host_2_actions(expected_actions=[*self.available_at_created_no_multi, any_cluster])
+        check_host_2_actions(expected_actions=[*self.available_at_created_no_multi, any_cluster, *cluster_host_actions])
 
         self.service_1.set_state(self.installed_state)
-        check_host_1_actions(expected_actions=[*self.available_at_created_no_multi, *any_all, "from service installed"])
-        check_host_2_actions(expected_actions=[*self.available_at_created_no_multi, any_cluster])
+        check_host_1_actions(
+            expected_actions=[
+                *self.available_at_created_no_multi,
+                *any_all,
+                *cluster_host_actions * 3,
+                "from service installed",
+            ]
+        )
+        check_host_2_actions(expected_actions=[*self.available_at_created_no_multi, any_cluster, *cluster_host_actions])
 
         self.component_1.set_state(self.installed_state)
         self.component_1.set_multi_state(self.flag_multi_state)
@@ -168,9 +180,10 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
                 "from service installed",
                 "from component installed",
                 "from component multi flag",
+                *cluster_host_actions * 3,
             ]
         )
-        check_host_2_actions(expected_actions=[*self.available_at_created_no_multi, any_cluster])
+        check_host_2_actions(expected_actions=[*self.available_at_created_no_multi, any_cluster, *cluster_host_actions])
 
         self.cluster.set_state("woohoo")
         self.cluster.set_multi_state("flag")
@@ -182,11 +195,53 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
                 "from service installed",
                 "from component installed",
                 "from component multi flag",
+                *cluster_host_actions * 3,
             ]
         )
         check_host_2_actions(
-            expected_actions=[*self.available_at_created_no_multi, any_cluster, "from cluster multi flag"]
+            expected_actions=[
+                *self.available_at_created_no_multi,
+                any_cluster,
+                "from cluster multi flag",
+                *cluster_host_actions,
+            ]
         )
+
+    def test_adcm_4516_disallowed_host_action_not_executable_success(self) -> None:
+        self.add_host_to_cluster(self.cluster, self.host_1)
+        allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
+        disallowed_action = Action.objects.filter(display_name="cluster_host_action_disallowed").first()
+        check_host_1_actions = partial(
+            self.check_object_action_list, *self.get_viewname_and_kwargs_for_object(object_=self.host_1)
+        )
+        check_host_1_actions(
+            expected_actions=[
+                *self.available_at_created_no_multi,
+                "from cluster any",
+                "cluster_host_action_allowed",
+                "cluster_host_action_disallowed",
+            ]
+        )
+
+        self.host_1.maintenance_mode = MaintenanceMode.ON
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:cluster-action-run",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": allowed_action.pk},
+            ),
+            data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:cluster-action-run",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": disallowed_action.pk},
+            ),
+            data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     @staticmethod
     def get_viewname_and_kwargs_for_object(object_: ObjectWithActions) -> tuple[str, dict[str, int]]:
