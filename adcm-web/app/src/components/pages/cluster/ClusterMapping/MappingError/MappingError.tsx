@@ -1,14 +1,12 @@
 import { useState, useRef } from 'react';
 import { Popover } from '@uikit';
 import s from './MappingError.module.scss';
-import cn from 'classnames';
 
 export interface MappingErrorProps {
   message: string;
-  variant: 'error' | 'warning';
 }
 
-const MappingError = ({ message, variant }: MappingErrorProps) => {
+const MappingError = ({ message }: MappingErrorProps) => {
   const [hasOverflowingChildren, setHasOverflowingChildren] = useState(false);
   const triggerRef = useRef(null);
 
@@ -26,12 +24,14 @@ const MappingError = ({ message, variant }: MappingErrorProps) => {
     setHasOverflowingChildren(false);
   };
 
-  const tooltipClassName = cn(s.mappingError__tooltip, s[`mappingError__tooltip_${variant}`]);
-  const messageClassName = cn(s.mappingError__message, s[`mappingError__message_${variant}`]);
-
   return (
     <>
-      <span ref={triggerRef} className={messageClassName} onMouseEnter={handleHover} onMouseLeave={handleMouseLeave}>
+      <span
+        ref={triggerRef}
+        className={s.mappingError__message}
+        onMouseEnter={handleHover}
+        onMouseLeave={handleMouseLeave}
+      >
         {message}
       </span>
       <Popover
@@ -41,7 +41,7 @@ const MappingError = ({ message, variant }: MappingErrorProps) => {
         dependencyWidth="min-parent"
         offset={12}
       >
-        <div className={tooltipClassName}>{message}</div>
+        <div className={s.mappingError__tooltip}>{message}</div>
       </Popover>
     </>
   );

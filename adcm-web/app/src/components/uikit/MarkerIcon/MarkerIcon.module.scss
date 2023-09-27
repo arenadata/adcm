@@ -34,7 +34,15 @@
   border: none;
   background: var(--marker-background);
   color: var(--marker-color);
-  border-radius: 4px;
+
+  &_square {
+    border-radius: 4px;
+  }
+
+  &_round {
+    border-radius: 50%;
+  }
+  
 
   &_alert {
     --marker-background: var(--marker-alert-background);

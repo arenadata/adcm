@@ -125,7 +125,7 @@ function App() {
                     />
                   </Route>
                   <Route path="/clusters/:clusterId/mapping" element={<ClusterMapping />}>
-                    <Route index element={<Navigate to="hosts" replace />} />
+                    <Route index element={<Navigate to="components" replace />} />
                     <Route path="/clusters/:clusterId/mapping/hosts" element={<ClusterHostsMapping />} />
                     <Route path="/clusters/:clusterId/mapping/components" element={<ClusterComponentsMapping />} />
                   </Route>

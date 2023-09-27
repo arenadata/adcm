@@ -6,7 +6,7 @@ import MappingItemTag from '../../MappingItemTag/MappingItemTag';
 import AddMappingButton from '../../AddMappingButton/AddMappingButton';
 import MappingError from '../../MappingError/MappingError';
 import { AdcmHostShortView, AdcmComponent } from '@models/adcm';
-import { ComponentMapping } from '../../ClusterMapping.types';
+import { ComponentMapping, ServiceMappingFilter, ComponentMappingValidation } from '../../ClusterMapping.types';
 import { getConstraintsLimit } from '../../ClusterMapping.utils';
 import s from './ComponentContainer.module.scss';
 import cn from 'classnames';
@@ -14,6 +14,8 @@ import { AdcmHostComponentMapRuleAction } from '@models/adcm/dynamicAction';
 
 export interface ComponentContainerProps {
   componentMapping: ComponentMapping;
+  componentMappingValidation: ComponentMappingValidation;
+  filter: ServiceMappingFilter;
   allHosts: AdcmHostShortView[];
   onMap: (hosts: AdcmHostShortView[], component: AdcmComponent) => void;
   onUnmap: (hostId: number, componentId: number) => void;
@@ -25,6 +27,8 @@ const defaultAllowActions = [AdcmHostComponentMapRuleAction.Add, AdcmHostCompone
 
 const ComponentContainer = ({
   componentMapping,
+  componentMappingValidation,
+  filter,
   allHosts,
   onUnmap,
   onMap,
@@ -34,7 +38,12 @@ const ComponentContainer = ({
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const addIconRef = useRef(null);
   const hostsOptions = useMemo(() => getOptionsFromArray(allHosts, (h) => h.name), [allHosts]);
-  const { component, hosts: componentHosts, filteredHosts: visibleHosts, validationSummary } = componentMapping;
+  const { component, hosts } = componentMapping;
+
+  const visibleHosts = useMemo(
+    () => hosts.filter((host) => host.name.toLowerCase().includes(filter.hostName.toLowerCase())),
+    [filter.hostName, hosts],
+  );
 
   const handleAddClick = () => {
     setIsSelectOpen(true);
@@ -49,16 +58,24 @@ const ComponentContainer = ({
     onMap(hosts, component);
   };
 
-  const containerClassName = cn(s.componentContainer, s[`componentContainer_${validationSummary}`], {
+  const isNotRequired = componentMappingValidation.isValid && hosts.length === 0;
+
+  const containerClassName = cn(s.componentContainer, {
+    [s.componentContainer_error]: !componentMappingValidation.isValid,
+    [s.componentContainer_notRequired]: isNotRequired,
     [s.componentContainer_disabled]: isDisabled,
   });
 
-  const titleClassName = cn(
-    s.componentContainerHeader__title,
-    s[`componentContainerHeader__title_${validationSummary}`],
-  );
+  const titleClassName = cn(s.componentContainerHeader__title, {
+    [s.componentContainerHeader__title_error]: !componentMappingValidation.isValid,
+    [s.componentContainerHeader__title_notRequired]: isNotRequired,
+  });
 
   const limit = getConstraintsLimit(component.constraints);
+
+  if (visibleHosts.length === 0 && filter.isHideEmptyComponents) {
+    return null;
+  }
 
   return (
     <>
@@ -66,13 +83,10 @@ const ComponentContainer = ({
         <div className={s.componentContainerHeader}>
           <span className={titleClassName}>{component.displayName}</span>
           <span className={s.componentContainerHeader__count}>
-            {componentHosts.length} / {limit}
+            {hosts.length} / {limit}
           </span>
-          {componentMapping.validationSummary !== 'valid' && !componentMapping.constraintsValidationResult.isValid && (
-            <MappingError
-              message={componentMapping.constraintsValidationResult.error}
-              variant={componentMapping.validationSummary}
-            />
+          {!componentMappingValidation.isValid && !componentMappingValidation.constraintsValidationResult.isValid && (
+            <MappingError message={componentMappingValidation.constraintsValidationResult.error} />
           )}
           <AddMappingButton
             className={s.componentContainerHeader__add}
@@ -101,7 +115,7 @@ const ComponentContainer = ({
         checkAllLabel="All hosts"
         searchPlaceholder="Search host"
         options={hostsOptions}
-        value={visibleHosts}
+        value={hosts}
         onChange={handleMappingChange}
         onOpenChange={setIsSelectOpen}
         triggerRef={addIconRef}

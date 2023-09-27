@@ -3,12 +3,18 @@
     --component-container-title-color: var(--color-xwhite-off);
     --component-container-background: var(--color-xdark-new-20);
     --component-container-default-border-color: var(--color-xdark);
+
+    --component-container-notRequired-title-color: var(--color-xwhite-off);
+    --component-container-notRequired-border-color: var(--color-xdark);
   }
 
   body.theme-light {
     --component-container-title-color: var(--color-xdark);
     --component-container-background: var(--color-xgray-alt-30);
     --component-container-default-border-color: var(--color-stroke-light);
+
+    --component-container-notRequired-border-color: var(--color-xdark);
+    --component-container-notRequired-border-color: var(--color-stroke-light);
   }
 }
 
@@ -17,21 +23,18 @@
   border-radius: 10px;
   border: 2px solid var(--component-container-default-border-color);
   background: var(--component-container-background);
+  border-color: var(--component-container-valid-color);
 
   &:not(:last-child) {
     margin-bottom: 8px;
   }
 
-  &_valid {
-    border-color: var(--component-container-valid-color);
-  }
-
-  &_warning {
-    border-color: var(--component-container-warning-color);
-  }
-
   &_error {
     border-color: var(--component-container-error-color);
+  }
+
+  &_notRequired {
+    border-color: var(--component-container-notRequired-border-color);
   }
 
   &__hosts {
@@ -52,17 +55,14 @@
     flex-shrink: 0;
     color: var(--component-container-title-color);
     font-size: 15px;
-
-    &_valid {
-      color: var(--component-container-valid-color);
-    }
-
-    &_warning {
-      color: var(--component-container-warning-color);
-    }
+    color: var(--component-container-valid-color);
 
     &_error {
       color: var(--component-container-error-color);
+    }
+
+    &_notRequired {
+      color: var(--component-container-notRequired-title-color);
     }
   }
 
