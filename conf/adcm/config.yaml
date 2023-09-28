@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 2.9
+  version: 3.0
 
   actions:
     run_ldap_sync:
@@ -45,6 +45,8 @@
       type: "group"
       activatable: true
       active: true
+      ui_options:
+        advanced: true
       subs:
         - name: "url"
           description: "URL to send collected statistic"

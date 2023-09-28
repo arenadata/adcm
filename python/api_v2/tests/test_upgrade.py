@@ -407,8 +407,8 @@ class TestAdcmUpgrade(APITestCase):
         config_log = ConfigLog.objects.get(pk=self.original_adcm.config.current)
         config_log.config["job_log"]["log_rotation_on_fs"] = 120
         config_log.config["job_log"]["log_rotation_in_db"] = 50
-        config_log.config["config_rotation"] = 10
-        config_log.save()
+        config_log.config["config_rotation"]["config_rotation_in_db"] = 10
+        config_log.save(update_fields=["config"])
 
     def test_adcm_2_6_upgrade_success(self):
         init()

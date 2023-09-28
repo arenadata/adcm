@@ -91,7 +91,7 @@ class TestStatistics(BaseAPITestCase):
         bundles = [
             {
                 "name": "ADCM",
-                "version": "2.9",
+                "version": Bundle.objects.get(name="ADCM").version,
                 "edition": "community",
                 "date": Bundle.objects.get(name="ADCM").date.strftime(date_fmt),
             },
