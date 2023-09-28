@@ -120,8 +120,7 @@ class Command(BaseCommand):
                 "active": current_configlog.attr["logrotate"]["active"],
                 "nginx": adcm_conf["logrotate"],
             },
-            "job": adcm_conf["job_log"],
-            "config": adcm_conf["config_rotation"],
+            "config": adcm_conf["audit_data_retention"],
         }
         self.__log(f"Got rotation config: {logrotate_config}")
         return logrotate_config
@@ -213,8 +212,8 @@ class Command(BaseCommand):
 
     def __run_joblog_rotation(self):
         try:  # pylint: disable=too-many-nested-blocks
-            days_delta_db = self.config["job"]["log_rotation_in_db"]
-            days_delta_fs = self.config["job"]["log_rotation_on_fs"]
+            days_delta_db = self.config["config"]["log_rotation_in_db"]
+            days_delta_fs = self.config["config"]["log_rotation_on_fs"]
             if days_delta_db <= 0 and days_delta_fs <= 0:
                 return
 
@@ -239,7 +238,7 @@ class Command(BaseCommand):
                         JobLog.objects.filter(task__isnull=True).delete()
 
                 self.__log("db JobLog rotated", "info")
-            if days_delta_fs > 0:  # pylint: disable=too-many-nested-blocks
+            if days_delta_fs > 0:
                 for name in os.listdir(settings.RUN_DIR):
                     if not name.startswith("."):  # a line of code is used for development
                         path = settings.RUN_DIR / name

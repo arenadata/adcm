@@ -11,8 +11,9 @@
 # limitations under the License.
 from typing import Dict
 
+from api_v2.bundle.serializers import BundleIdSerializer
 from api_v2.prototype.utils import get_license_text
-from cm.models import LICENSE_STATE, Prototype
+from cm.models import Prototype
 from rest_framework.fields import CharField, IntegerField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
@@ -21,7 +22,7 @@ from adcm.serializers import EmptySerializer
 
 class PrototypeListSerializer(ModelSerializer):
     license = SerializerMethodField()
-    bundle_id = IntegerField(source="bundle.id")
+    bundle = BundleIdSerializer(read_only=True)
 
     class Meta:
         model = Prototype
@@ -31,8 +32,9 @@ class PrototypeListSerializer(ModelSerializer):
             "display_name",
             "description",
             "type",
-            "bundle_id",
+            "bundle",
             "license",
+            "version",
         )
 
     def get_license(self, obj: Prototype) -> Dict:
@@ -42,32 +44,28 @@ class PrototypeListSerializer(ModelSerializer):
 class PrototypeVersionSerializer(ModelSerializer):
     id = IntegerField(source="pk")
     version = CharField()
-    bundle_id = CharField()
-    is_license_accepted = SerializerMethodField()
+    bundle = BundleIdSerializer(read_only=True)
+    license_status = CharField(source="license")
 
     class Meta:
         model = Prototype
-        fields = ("id", "bundle_id", "version", "is_license_accepted")
-
-    def get_versions(self, obj: Prototype) -> Dict:
-        return {
-            "id": obj.id,
-            "version": obj.version,
-            "is_license_accepted": self.get_is_license_accepted(obj),
-            "bundle_id": obj.bundle.id,
-        }
-
-    def get_is_license_accepted(self, obj: Prototype):
-        return obj.license == LICENSE_STATE[1][0]
+        fields = ("id", "bundle", "version", "license_status")
 
 
 class PrototypeTypeSerializer(EmptySerializer):
     name = CharField()
+    display_name = CharField()
     versions = SerializerMethodField()
 
     @staticmethod
     def get_versions(obj: Prototype) -> str | None:
-        queryset = Prototype.objects.filter(type=obj.type, name=obj.display_name).order_by("-version")
+        queryset = Prototype.objects.filter(type=obj.type, name=obj.name).order_by("-version")
         serializer = PrototypeVersionSerializer(instance=queryset, many=True)
 
         return serializer.data
+
+
+class PrototypeRelatedSerializer(ModelSerializer):
+    class Meta:
+        model = Prototype
+        fields = ("id", "name", "display_name", "type", "version")

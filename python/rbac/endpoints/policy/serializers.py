@@ -13,7 +13,7 @@
 import jsonschema
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 from rbac.endpoints.serializers import BaseRelatedSerializer
-from rbac.models import Group, Policy, Role, RoleTypes, User
+from rbac.models import Group, Policy, Role, RoleTypes
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import (
@@ -92,11 +92,6 @@ class PolicyRoleSerializer(BaseRelatedSerializer):
     url = HyperlinkedIdentityField(view_name="v1:rbac:role-detail")
 
 
-class PolicyUserSerializer(BaseRelatedSerializer):
-    id = PrimaryKeyRelatedField(queryset=User.objects.all())
-    url = HyperlinkedIdentityField(view_name="v1:rbac:user-detail")
-
-
 class PolicyGroupSerializer(BaseRelatedSerializer):
     id = PrimaryKeyRelatedField(queryset=Group.objects.all())
     url = HyperlinkedIdentityField(view_name="v1:rbac:group-detail")
@@ -108,8 +103,7 @@ class PolicySerializer(FlexFieldsSerializerMixin, ModelSerializer):
     object = ObjectField(required=True)
     built_in = BooleanField(read_only=True)
     role = PolicyRoleSerializer()
-    user = PolicyUserSerializer(many=True, required=False)
-    group = PolicyGroupSerializer(many=True, required=False)
+    group = PolicyGroupSerializer(many=True, required=True)
 
     class Meta:
         model = Policy
@@ -120,12 +114,10 @@ class PolicySerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "object",
             "built_in",
             "role",
-            "user",
             "group",
             "url",
         )
         expandable_fields = {
-            "user": ("rbac.endpoints.user.views.UserSerializer", {"many": True}),
             "group": ("rbac.endpoints.group.views.GroupSerializer", {"many": True}),
             "role": "rbac.endpoints.role.views.RoleSerializer",
         }
@@ -141,7 +133,6 @@ class PolicySerializer(FlexFieldsSerializerMixin, ModelSerializer):
 class PolicyAuditSerializer(ModelSerializer):
     role = SerializerMethodField()
     object = SerializerMethodField()
-    user = SerializerMethodField()
     group = SerializerMethodField()
 
     class Meta:
@@ -151,7 +142,6 @@ class PolicyAuditSerializer(ModelSerializer):
             "description",
             "role",
             "object",
-            "user",
             "group",
         )
 
@@ -172,10 +162,6 @@ class PolicyAuditSerializer(ModelSerializer):
             }
             for obj in obj.object.all()
         ]
-
-    @staticmethod
-    def get_user(obj: Policy) -> list[str, ...]:
-        return [user.username for user in obj.user.all()]
 
     @staticmethod
     def get_group(obj: Policy) -> list[str, ...]:

@@ -70,6 +70,7 @@ import {
 } from "@app/components/columns/download-button-column/download-button-column.component";
 import { RbacAuditLoginService } from "@app/services/rbac-audit-login.service";
 import { ResetLoginAttemptsButtonComponent } from "./reset-login-attempts-button/reset-login-attempts-button.component";
+import { SignatureColumnComponent } from "@app/components/columns/signature-column/signature-column.component";
 
 @NgModule({
   imports: [
@@ -108,6 +109,7 @@ import { ResetLoginAttemptsButtonComponent } from "./reset-login-attempts-button
     UpgradeMasterComponent,
     UpgradeMasterConfigComponent,
     StatusColumnComponent,
+    SignatureColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,
     ClusterColumnComponent,
@@ -147,6 +149,7 @@ import { ResetLoginAttemptsButtonComponent } from "./reset-login-attempts-button
     ImportComponent,
     ExportComponent,
     StatusColumnComponent,
+    SignatureColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,
     ClusterColumnComponent,

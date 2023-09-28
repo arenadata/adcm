@@ -17,8 +17,8 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
-from django.conf import settings
 from django.urls import reverse
+from rbac.models import Group
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
@@ -30,24 +30,27 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase):
         super().setUp()
 
         self.new_user_password = "new_user_password"
-        self.new_user = self.get_new_user(username="new_user", password=self.new_user_password)
+        self.new_user_group = Group.objects.create(name="new_group")
+        new_user = self.get_new_user(
+            username="new_user", password=self.new_user_password, group_pk=self.new_user_group.pk
+        )
 
         self.cluster_bundle = self.upload_and_load_bundle(
-            path=settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "service_admin_cluster.tar"
+            path=self.base_dir / "python" / "rbac" / "tests" / "files" / "service_admin_cluster.tar"
         )
         self.cluster_pk = self.get_cluster_pk()
         self.host_pk = self.get_host_pk()
         self.service = self.get_service()
         self.add_host_to_cluster(cluster_pk=self.cluster_pk, host_pk=self.host_pk)
 
-        self.create_policy(role_name="Service Administrator", obj=self.service, user_pk=self.new_user.pk)
-        self.another_user_log_in(username=self.new_user.username, password=self.new_user_password)
+        self.create_policy(role_name="Service Administrator", obj=self.service, group_pk=self.new_user_group.pk)
+        self.another_user_log_in(username=new_user.username, password=self.new_user_password)
 
         self.group_config_pk = self.get_group_config_pk()
 
     def get_provider_pk(self):
         provider_bundle = self.upload_and_load_bundle(
-            path=settings.BASE_DIR / "python" / "rbac" / "tests" / "files" / "service_admin_provider.tar"
+            path=self.base_dir / "python" / "rbac" / "tests" / "files" / "service_admin_provider.tar"
         )
         response: Response = self.client.post(
             path=reverse(viewname="v1:provider"),

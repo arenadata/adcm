@@ -27,7 +27,6 @@ from cm.models import (
     ClusterBind,
     ClusterObject,
     ConfigLog,
-    MaintenanceMode,
     ObjectConfig,
     Prototype,
     PrototypeExport,
@@ -35,7 +34,7 @@ from cm.models import (
 )
 from django.conf import settings
 from django.urls import reverse
-from rbac.models import Policy, Role, User
+from rbac.models import Group, Policy, Role, User
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_201_CREATED,
@@ -102,7 +101,7 @@ class TestServiceAudit(BaseTestCase):
         self.assertEqual(log.operation_type, operation_type)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.user.username, user.username)
         self.assertEqual(log.object_changes, object_changes)
 
     def check_action_log(self, log: AuditLog) -> None:
@@ -304,7 +303,7 @@ class TestServiceAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.FAIL)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.user.username, self.test_user.username)
         self.assertEqual(log.object_changes, {})
 
         self.assertFalse(log.audit_object)
@@ -312,7 +311,7 @@ class TestServiceAudit(BaseTestCase):
     def test_delete_denied(self):
         role = Role.objects.get(name="View service config")
         policy = Policy.objects.create(name="test_policy", role=role)
-        policy.user.add(self.no_rights_user)
+        policy.group.add(self.no_rights_user_group)
         policy.add_object(self.service)
         policy.apply()
 
@@ -340,7 +339,7 @@ class TestServiceAudit(BaseTestCase):
         role = Role.objects.get(name="View service configurations")
         bundle_filename = "import.tar"
         with open(
-            Path(settings.BASE_DIR, "python/audit/tests/files", bundle_filename),
+            Path(self.base_dir, "python/audit/tests/files", bundle_filename),
             encoding=settings.ENCODING_UTF_8,
         ) as f:
             self.client.post(
@@ -387,6 +386,8 @@ class TestServiceAudit(BaseTestCase):
         )
 
         user = User.objects.get(pk=response.data["id"])
+        group = Group.objects.create(name="group")
+        group.user_set.add(user)
         response: Response = self.client.post(
             path=reverse(viewname="v1:rbac:role-list"),
             data={
@@ -405,8 +406,7 @@ class TestServiceAudit(BaseTestCase):
             data={
                 "name": "policy_name",
                 "role": {"id": created_role.pk},
-                "user": [{"id": user.pk}],
-                "group": [],
+                "group": [{"id": group.pk}],
                 "object": [{"name": service.name, "type": "service", "id": service.pk}],
             },
             content_type=APPLICATION_JSON,
@@ -641,7 +641,7 @@ class TestServiceAudit(BaseTestCase):
     def test_change_maintenance_mode(self):
         self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -655,7 +655,10 @@ class TestServiceAudit(BaseTestCase):
             operation_type=AuditLogOperationType.UPDATE,
             operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
-            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+            object_changes={
+                "current": {"maintenance_mode": "ON"},
+                "previous": {"maintenance_mode": "OFF"},
+            },
         )
 
     def test_change_maintenance_mode_via_cluster(self):
@@ -664,7 +667,7 @@ class TestServiceAudit(BaseTestCase):
                 viewname="v1:service-maintenance-mode",
                 kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
             ),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -678,13 +681,16 @@ class TestServiceAudit(BaseTestCase):
             operation_type=AuditLogOperationType.UPDATE,
             operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
-            object_changes={"current": {"maintenance_mode": "ON"}, "previous": {"maintenance_mode": "OFF"}},
+            object_changes={
+                "current": {"maintenance_mode": "ON"},
+                "previous": {"maintenance_mode": "OFF"},
+            },
         )
 
     def test_change_maintenance_mode_failed(self):
         self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": MaintenanceMode.CHANGING},
+            data={"maintenance_mode": "CHANGING"},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -704,7 +710,7 @@ class TestServiceAudit(BaseTestCase):
         with self.no_rights_user_logged_in:
             self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-                data={"maintenance_mode": MaintenanceMode.ON},
+                data={"maintenance_mode": "ON"},
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

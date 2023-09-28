@@ -1,19 +1,20 @@
-/data/ @aas @d.skrynnik @tsd
-/conf/ @aas @d.skrynnik @tsd @a.starovoitov
-/go/ @aas @d.skrynnik @tsd @aer
-/os/ @aas @d.skrynnik @tsd
-/python/ @aas @d.skrynnik @tsd @a.starovoitov
-/spec/ @aas @d.skrynnik @tsd
+tests/ @aer @v.chudasov
+/data/ @aas @d.skrynnik @aer
+/conf/ @aas @d.skrynnik @a.starovoitov @aer
+/go/ @aas @d.skrynnik @aer
+/os/ @aas @d.skrynnik @aer
+/python/ @aas @d.skrynnik @a.starovoitov @aer
+/spec/ @aas @d.skrynnik @aer
 /web/ @v.remizov @d.bardin @k.fedorenko
-.dockerignore @aas @v.remizov @d.skrynnik @tsd
-.gitignore @aas @d.skrynnik @tsd @v.remizov @d.bardin @k.fedorenko
-.gitlab-ci.yaml @aas @v.remizov @d.skrynnik @tsd
-.pre-commit-config.yaml @aas @d.skrynnik @tsd @v.remizov @d.bardin @k.fedorenko
-CODEOWNERS @aas @v.remizov @tsd @d.skrynnik
-COPYRIGHT @aas @v.remizov @d.skrynnik @tsd
-Dockerfile @aas @v.remizov @d.skrynnik @tsd
-LICENSE @aas @v.remizov @d.skrynnik @tsd
-license_checker.py @aas @d.skrynnik @tsd
-Makefile @aas @d.skrynnik @tsd
-pyproject.toml @aas @d.skrynnik @tsd
-README.md @aas @d.skrynnik @tsd @v.remizov @d.bardin @k.fedorenko @a.starovoitov
+.dockerignore @aas @v.remizov @d.skrynnik @aer @v.chudasov
+.gitignore @aas @d.skrynnik @v.remizov @d.bardin @k.fedorenko @aer @v.chudasov
+.gitlab-ci.yaml @aas @v.remizov @d.skrynnik @aer @v.chudasov
+.pre-commit-config.yaml @aas @d.skrynnik @v.remizov @d.bardin @k.fedorenko @aer @v.chudasov
+CODEOWNERS @aas @v.remizov @d.skrynnik @aer @v.chudasov
+COPYRIGHT @aas @v.remizov @d.skrynnik @aer
+Dockerfile @aas @v.remizov @d.skrynnik @aer
+LICENSE @aas @v.remizov @d.skrynnik @aer
+license_checker.py @aas @d.skrynnik @aer
+Makefile @aas @d.skrynnik @aer
+pyproject.toml @aas @d.skrynnik @aer @v.chudasov
+README.md @aas @d.skrynnik @v.remizov @d.bardin @k.fedorenko @a.starovoitov @aer @v.chudasov

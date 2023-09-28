@@ -81,7 +81,7 @@ class ObjectTypeField(serializers.Field):
 class GroupConfigsHyperlinkedIdentityField(serializers.HyperlinkedIdentityField):
     """Return url for group_config for Cluster, Provider, Component or Service"""
 
-    def get_url(self, obj, view_name, request, _format):  # pylint: disable=redefined-builtin
+    def get_url(self, obj, view_name, request, _format):
         url = reverse(viewname=view_name, request=request, format=_format)
         return f"{url}?object_id={obj.id}&object_type={obj.prototype.type}"
 
@@ -171,6 +171,12 @@ class GroupConfigHostSerializer(serializers.ModelSerializer):
             "bundle_id",
             "locked",
         )
+
+    def to_representation(self, instance: Host) -> dict:
+        data = super().to_representation(instance=instance)
+        data["maintenance_mode"] = data["maintenance_mode"].upper()
+
+        return data
 
 
 class GroupConfigHostCandidateSerializer(GroupConfigHostSerializer):

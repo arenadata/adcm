@@ -46,7 +46,7 @@ def _rbac_case(
             operation_type = AuditLogOperationType.UPDATE
             try:
                 obj = AUDIT_OBJECT_TYPE_TO_MODEL_MAP[obj_type].objects.get(pk=data.obj_pk)
-            except ObjectDoesNotExist:
+            except (ObjectDoesNotExist, ValueError):
                 obj = None
 
         if obj:

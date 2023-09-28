@@ -8,6 +8,7 @@ RUN apk update && \
         bash \
         curl \
         git \
+        gnupg \
         libc6-compat \
         libffi \
         libstdc++ \

@@ -19,7 +19,8 @@ const simpleField: IYField = {
   validator: {
     required: false,
     pattern: null
-  }
+  },
+  isInvisible: false
 };
 
 const simpleStr: IYspec = {
@@ -121,14 +122,16 @@ describe('YspecService', () => {
             type: 'string',
             path: ['country', 'country_code'],
             controlType: 'textbox',
-            validator: { required: false, pattern: null }
+            validator: { required: false, pattern: null },
+            isInvisible: false
           },
           {
             name: 'code',
             type: 'integer',
             path: ['code', 'country_code'],
             controlType: 'textbox',
-            validator: { required: false, pattern: /^[-]?\d+$/ }
+            validator: { required: false, pattern: /^[-]?\d+$/ },
+            isInvisible: false
           }
         ]
       }
@@ -165,14 +168,16 @@ describe('YspecService', () => {
             type: 'string',
             path: ['name', 'policy'],
             controlType: 'textbox',
-            validator: { required: false, pattern: null }
+            validator: { required: false, pattern: null },
+            isInvisible: false
           },
           {
             name: 'move_factor',
             type: 'float',
             path: ['move_factor', 'policy'],
             controlType: 'textbox',
-            validator: { required: true, pattern: /^[-]?[0-9]+(\.[0-9]+)?$/ }
+            validator: { required: true, pattern: /^[-]?[0-9]+(\.[0-9]+)?$/ },
+            isInvisible: false
           },
           {
             type: 'list',
@@ -186,21 +191,24 @@ describe('YspecService', () => {
                   type: 'string',
                   path: ['name', 'volume', 'volumes_list', 'policy'],
                   controlType: 'textbox',
-                  validator: { required: true, pattern: null }
+                  validator: { required: true, pattern: null },
+                  isInvisible: false
                 },
                 {
                   name: 'disk',
                   type: 'string',
                   path: ['disk', 'volume', 'volumes_list', 'policy'],
                   controlType: 'textbox',
-                  validator: { required: false, pattern: null }
+                  validator: { required: false, pattern: null },
+                  isInvisible: false
                 },
                 {
                   name: 'max_data_part_size_bytes',
                   type: 'int',
                   path: ['max_data_part_size_bytes', 'volume', 'volumes_list', 'policy'],
                   controlType: 'textbox',
-                  validator: { required: false, pattern: /^[-]?\d+$/ }
+                  validator: { required: false, pattern: /^[-]?\d+$/ },
+                  isInvisible: false
                 }
               ]
             }
@@ -236,28 +244,32 @@ describe('YspecService', () => {
           type: 'bool',
           path: ['key1'],
           controlType: 'boolean',
-          validator: { required: false, pattern: null }
+          validator: { required: false, pattern: null },
+          isInvisible: false
         },
         {
           name: 'key2',
           type: 'string',
           path: ['key2'],
           controlType: 'textbox',
-          validator: { required: false, pattern: null }
+          validator: { required: false, pattern: null },
+          isInvisible: false
         },
         {
           name: 'key3',
           type: 'int',
           path: ['key3'],
           controlType: 'textbox',
-          validator: { required: false, pattern: /^[-]?\d+$/ }
+          validator: { required: false, pattern: /^[-]?\d+$/ },
+          isInvisible: false
         },
         {
           name: 'key4',
           type: 'float',
           path: ['key4'],
           controlType: 'textbox',
-          validator: { required: false, pattern: /^[-]?[0-9]+(\.[0-9]+)?$/ }
+          validator: { required: false, pattern: /^[-]?[0-9]+(\.[0-9]+)?$/ },
+          isInvisible: false
         },
         {
           type: 'list',
@@ -270,7 +282,8 @@ describe('YspecService', () => {
             validator: {
               required: false,
               pattern: null
-            }
+            },
+            isInvisible: false
           }
         },
         {
@@ -288,7 +301,8 @@ describe('YspecService', () => {
                 validator: {
                   required: false,
                   pattern: null
-                }
+                },
+                isInvisible: false
               }
             },
             {
@@ -300,28 +314,32 @@ describe('YspecService', () => {
                   type: 'bool',
                   path: ['key1', 'key2', 'key6'],
                   controlType: 'boolean',
-                  validator: { required: false, pattern: null }
+                  validator: { required: false, pattern: null },
+                  isInvisible: false
                 },
                 {
                   name: 'key2',
                   type: 'string',
                   path: ['key2', 'key2', 'key6'],
                   controlType: 'textbox',
-                  validator: { required: false, pattern: null }
+                  validator: { required: false, pattern: null },
+                  isInvisible: false
                 },
                 {
                   name: 'key3',
                   type: 'int',
                   path: ['key3', 'key2', 'key6'],
                   controlType: 'textbox',
-                  validator: { required: false, pattern: /^[-]?\d+$/ }
+                  validator: { required: false, pattern: /^[-]?\d+$/ },
+                  isInvisible: false
                 },
                 {
                   name: 'key4',
                   type: 'float',
                   path: ['key4', 'key2', 'key6'],
                   controlType: 'textbox',
-                  validator: { required: false, pattern: /^[-]?[0-9]+(\.[0-9]+)?$/ }
+                  validator: { required: false, pattern: /^[-]?[0-9]+(\.[0-9]+)?$/ },
+                  isInvisible: false
                 },
                 {
                   type: 'list',
@@ -334,7 +352,8 @@ describe('YspecService', () => {
                     validator: {
                       required: false,
                       pattern: null
-                    }
+                    },
+                    isInvisible: false
                   }
                 }
               ]

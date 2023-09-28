@@ -10,11 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+from api_v2.host.filters import HostClusterFilter, HostFilter
 from api_v2.host.serializers import (
     ClusterHostCreateSerializer,
-    ClusterHostSerializer,
+    ClusterHostStatusSerializer,
     HostChangeMaintenanceModeSerializer,
     HostCreateSerializer,
+    HostGroupConfigSerializer,
+    HostListIdCreateSerializer,
     HostSerializer,
     HostUpdateSerializer,
 )
@@ -23,10 +27,12 @@ from api_v2.host.utils import (
     maintenance_mode,
     map_list_of_hosts,
 )
+from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.api import add_host_to_cluster, delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
-from cm.models import Cluster, Host
+from cm.models import Cluster, GroupConfig, Host, HostProvider
+from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -37,11 +43,11 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
     HTTP_404_NOT_FOUND,
 )
-from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HOST_PERM,
+    VIEW_PROVIDER_PERM,
     DjangoModelPermissionsAudit,
     check_custom_perm,
     get_object_for_user,
@@ -49,13 +55,17 @@ from adcm.permissions import (
 
 
 # pylint:disable-next=too-many-ancestors
-class HostViewSet(PermissionListMixin, ModelViewSet):
-    queryset = Host.objects.prefetch_related("provider", "concerns").all()
+class HostViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
+    queryset = (
+        Host.objects.select_related("provider", "cluster")
+        .prefetch_related("concerns", "hostcomponent_set")
+        .order_by("fqdn")
+    )
     serializer_class = HostSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_HOST_PERM]
-    filterset_fields = ["provider__name", "state", "fqdn"]
-    ordering_fields = ["fqdn"]
+    filterset_class = HostFilter
+    filter_backends = (DjangoFilterBackend,)
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -67,16 +77,27 @@ class HostViewSet(PermissionListMixin, ModelViewSet):
 
         return self.serializer_class
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        valid = serializer.validated_data
+
+        request_hostprovider = get_object_for_user(
+            user=request.user,
+            perms=VIEW_PROVIDER_PERM,
+            klass=HostProvider,
+            id=serializer.validated_data["hostprovider_id"],
+        )
+        request_cluster = None
+        if serializer.validated_data.get("cluster_id"):
+            request_cluster = get_object_for_user(
+                user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=serializer.validated_data["cluster_id"]
+            )
 
         host = add_new_host_and_map_it(
-            provider=valid.get("provider"), fqdn=valid.get("fqdn"), cluster=valid.get("cluster")
+            provider=request_hostprovider, fqdn=serializer.validated_data["fqdn"], cluster=request_cluster
         )
 
-        return Response(data=HostSerializer(host).data, status=HTTP_201_CREATED)
+        return Response(data=HostSerializer(instance=host).data, status=HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         host = self.get_object()
@@ -113,7 +134,7 @@ class HostViewSet(PermissionListMixin, ModelViewSet):
             update_hierarchy_issues(host.provider)
             update_issue_after_deleting()
 
-        return Response(status=HTTP_200_OK)
+        return Response(status=HTTP_200_OK, data=HostSerializer(host).data)
 
     def partial_update(self, request, *args, **kwargs):
         return self._host_update(request, *args, partial=True, **kwargs)
@@ -126,12 +147,11 @@ class HostViewSet(PermissionListMixin, ModelViewSet):
         return maintenance_mode(request=request, **kwargs)
 
 
-class HostClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=too-many-ancestors
-    serializer_class = ClusterHostSerializer
+class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pylint:disable=too-many-ancestors
+    serializer_class = HostSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_HOST_PERM]
-    filterset_fields = ["provider__name", "state", "fqdn"]
-    ordering_fields = ["fqdn"]
+    filterset_class = HostClusterFilter
 
     def get_serializer_class(self):
         if self.action == "maintenance_mode":
@@ -141,11 +161,15 @@ class HostClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=t
 
         return self.serializer_class
 
-    def get_queryset(self, *args, **kwargs):  # pylint: disable=unused-argument
-        return Host.objects.filter(cluster=self.kwargs["cluster_pk"])
+    def get_queryset(self, *args, **kwargs):
+        return (
+            Host.objects.filter(cluster=self.kwargs["cluster_pk"])
+            .select_related("cluster")
+            .prefetch_related("hostcomponent_set")
+        )
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+    def create(self, request, *args, **kwargs):  # pylint:disable=unused-argument
+        serializer = self.get_serializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
 
         cluster = get_object_for_user(
@@ -156,23 +180,23 @@ class HostClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=t
 
         check_custom_perm(request.user, "map_host_to", "cluster", cluster)
 
-        map_list_of_hosts(hosts=serializer.validated_data["hosts"], cluster=cluster)
+        target_hosts = Host.objects.filter(pk__in=[host_data["host_id"] for host_data in serializer.validated_data])
+        map_list_of_hosts(hosts=target_hosts, cluster=cluster)
 
         return Response(
-            data=ClusterHostSerializer(
+            data=HostSerializer(
                 instance=Host.objects.prefetch_related("hostcomponent_set").filter(cluster=cluster),
                 many=True,
             ).data,
             status=HTTP_201_CREATED,
         )
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         host = self.get_object()
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
         if host.cluster != cluster:
-            msg = f"Host #{host.id} doesn't belong to cluster #{cluster.id}"
+            raise AdcmEx(code="FOREIGN_HOST", msg=f"Host #{host.id} doesn't belong to cluster #{cluster.id}")
 
-            raise AdcmEx("FOREIGN_HOST", msg)
         check_custom_perm(request.user, "unmap_host_from", "cluster", cluster)
         remove_host_from_cluster(host=host)
         return Response(status=HTTP_204_NO_CONTENT)
@@ -180,3 +204,60 @@ class HostClusterViewSet(PermissionListMixin, ModelViewSet):  # pylint:disable=t
     @action(methods=["post"], detail=True, url_path="maintenance-mode")
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         return maintenance_mode(request=request, **kwargs)
+
+    @action(methods=["get"], detail=True, url_path="statuses")
+    def statuses(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        host = self.get_object()
+        cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
+        if host.cluster != cluster:
+            raise AdcmEx(code="FOREIGN_HOST", msg=f"Host #{host.id} doesn't belong to cluster #{cluster.id}")
+
+        return Response(data=ClusterHostStatusSerializer(instance=host).data)
+
+
+class HostGroupConfigViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+    queryset = (
+        Host.objects.select_related("provider", "cluster")
+        .prefetch_related("concerns", "hostcomponent_set")
+        .order_by("fqdn")
+    )
+    permission_classes = [DjangoModelPermissionsAudit]
+    permission_required = [VIEW_HOST_PERM]
+    filterset_class = HostClusterFilter
+    filter_backends = (DjangoFilterBackend,)
+
+    def get_queryset(self, *args, **kwargs):
+        return self.queryset.filter(group_config__id=self.kwargs["group_config_pk"])
+
+    def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+        serializer = self.get_serializer_class()(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        host_ids = serializer.validated_data
+        group_config = GroupConfig.objects.filter(id=self.kwargs["group_config_pk"]).first()
+
+        if not group_config:
+            raise AdcmEx(code="HOST_GROUP_CONFIG_NOT_FOUND")
+
+        group_config.check_host_candidate(host_ids)
+        group_config.hosts.add(*host_ids)
+
+        return Response(
+            data=HostGroupConfigSerializer(group_config.hosts.filter(id__in=host_ids), many=True).data,
+            status=HTTP_201_CREATED,
+        )
+
+    def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+        group_config = GroupConfig.objects.filter(id=self.kwargs["group_config_pk"]).first()
+
+        if not group_config:
+            raise AdcmEx(code="HOST_GROUP_CONFIG_NOT_FOUND")
+
+        host: Host = self.get_object()
+        group_config.hosts.remove(host)
+        return Response(status=HTTP_204_NO_CONTENT)
+
+    def get_serializer_class(self) -> type[HostGroupConfigSerializer | HostListIdCreateSerializer]:
+        if self.action == "create":
+            return HostListIdCreateSerializer
+
+        return HostGroupConfigSerializer

@@ -57,7 +57,9 @@ class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         super().run(tmp, task_vars)
         msg = "You can delete host only in host context"
-        host_id = get_object_id_from_context(task_vars, "host_id", "host", err_msg=msg)
+        host_id = get_object_id_from_context(
+            task_vars=task_vars, id_type="host_id", context_types=("host",), err_msg=msg
+        )
         logger.info("ansible module adcm_delete_host: host #%s", host_id)
 
         try:

@@ -19,10 +19,10 @@ from rest_framework_nested.routers import NestedSimpleRouter
 router = SimpleRouter()
 router.register("", HostProviderViewSet)
 
-hostprovider_action_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="provider")
+hostprovider_action_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
 hostprovider_action_router.register(prefix="actions", viewset=ActionViewSet, basename="provider-action")
 
-hostprovider_config_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="provider")
+hostprovider_config_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
 hostprovider_config_router.register(prefix="configs", viewset=ConfigLogViewSet, basename="provider-config")
 
 hostprovider_upgrade_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")

@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.errors import raise_adcm_ex
+from cm.errors import AdcmEx
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
@@ -22,7 +22,7 @@ from rest_framework.authtoken.models import Token
 
 def _set_password(user: User, value: str) -> None:
     if not value:
-        raise_adcm_ex("USER_UPDATE_ERROR", msg="Password could not be empty")
+        raise AdcmEx(code="USER_UPDATE_ERROR", msg="Password could not be empty")
 
     if value is Empty or user.check_password(value):
         return
@@ -44,12 +44,12 @@ def _update_groups(user: User, groups: [Empty, list[dict]]) -> None:
 
         try:
             group = Group.objects.get(id=group_id)
-        except ObjectDoesNotExist:
+        except ObjectDoesNotExist as e:
             msg = f"Group with ID {group_id} was not found"
-            raise_adcm_ex("USER_UPDATE_ERROR", msg=msg)
+            raise AdcmEx(code="USER_UPDATE_ERROR", msg=msg) from e
 
         if group and group.type == OriginType.LDAP:
-            raise_adcm_ex("USER_CONFLICT", msg="You cannot add user to LDAP group")
+            raise AdcmEx(code="USER_CONFLICT", msg="You cannot add user to LDAP group")
 
         user.groups.add(group)
         user_groups[group_id] = group
@@ -59,7 +59,7 @@ def _update_groups(user: User, groups: [Empty, list[dict]]) -> None:
             continue
 
         if group.type == OriginType.LDAP:
-            raise_adcm_ex("USER_CONFLICT", msg="You cannot remove user from original LDAP group")
+            raise AdcmEx(code="USER_CONFLICT", msg="You cannot remove user from original LDAP group")
 
         user.groups.remove(group)
 
@@ -73,12 +73,13 @@ def _regenerate_token(user: User) -> Token:
 
 
 @transaction.atomic
-def update(
+def update_user(
     user: User,
     context_user: User = None,  # None is for use outside of web context
     *,
     partial: bool = False,
     need_current_password: bool = True,
+    api_v2_behaviour: bool = False,
     username: str = Empty,
     first_name: str = Empty,
     last_name: str = Empty,
@@ -92,39 +93,42 @@ def update(
 ) -> User:
     # pylint: disable=too-many-locals
 
+    if api_v2_behaviour:
+        if not context_user.is_superuser and user != User.objects.get(user_ptr=context_user):
+            raise AdcmEx(code="USER_UPDATE_ERROR", msg="Can't update other user")
+
     if (username is not Empty) and (username != user.username):
-        raise_adcm_ex("USER_CONFLICT", msg="Username could not be changed")
+        raise AdcmEx(code="USER_CONFLICT", msg="Username could not be changed")
 
     args = (username, first_name, last_name, email, is_superuser, is_active)
     if not partial and not all(arg is not Empty for arg in args):
-        raise_adcm_ex("USER_UPDATE_ERROR", msg="Full User update with partial argset is forbidden")
+        raise AdcmEx(code="USER_UPDATE_ERROR", msg="Full User update with partial argset is forbidden")
 
     user_exist = User.objects.filter(email=email).exists()
     if user_exist and (email != ""):
         email_user = User.objects.get(email=email)
         if email_user != user:
-            raise_adcm_ex(code="USER_CONFLICT", msg="User with the same email already exist")
+            raise AdcmEx(code="USER_CONFLICT", msg="User with the same email already exist")
 
     names = {
         "username": username,
         "first_name": first_name,
         "last_name": last_name,
         "email": email,
-        "is_superuser": is_superuser,
         "password": password,
         "is_active": is_active,
     }
     if user.type == OriginType.LDAP and any(
         (value is not Empty and getattr(user, key) != value) for key, value in names.items()
     ):
-        raise_adcm_ex(code="USER_CONFLICT", msg='You can change only "profile" for LDAP type user')
+        raise AdcmEx(code="USER_CONFLICT", msg='You can change only "profile" for LDAP type user')
 
     is_password_changing = password is not Empty and not user.check_password(raw_password=password)
     if is_password_changing:
         if need_current_password and (
             current_password is Empty or not user.check_password(raw_password=current_password)
         ):
-            raise_adcm_ex(code="USER_PASSWORD_CURRENT_PASSWORD_REQUIRED_ERROR")
+            raise AdcmEx(code="USER_PASSWORD_CURRENT_PASSWORD_REQUIRED_ERROR")
 
         validate_password(
             password=password,
@@ -148,15 +152,15 @@ def update(
 
 
 @transaction.atomic
-def create(
+def create_user(
     *,
     username: str,
     password: str,
-    first_name: str = None,
-    last_name: str = None,
-    email: str = None,
-    is_superuser: bool = None,
-    profile: dict = None,
+    first_name: str = "",
+    last_name: str = "",
+    email: str = "",
+    is_superuser: bool = False,
+    profile: str = "",
     groups: list = None,
     is_active: bool = True,
 ) -> User:
@@ -167,7 +171,7 @@ def create(
 
     user_exist = User.objects.filter(email=email).exists()
     if user_exist and (email != ""):
-        raise_adcm_ex("USER_CREATE_ERROR", msg="User with the same email already exist")
+        raise AdcmEx(code="USER_CREATE_ERROR", msg="User with the same email already exist")
 
     validate_password(
         password=password,
@@ -186,10 +190,10 @@ def create(
             is_active=is_active,
         )
     except IntegrityError as e:
-        raise_adcm_ex("USER_CREATE_ERROR", msg=f"User creation failed with error {e}")
+        raise AdcmEx(code="USER_CREATE_ERROR", msg=f"User creation failed with error {e}") from e
 
     if not User:
-        raise_adcm_ex("USER_CREATE_ERROR", msg="User creation failed")
+        raise AdcmEx(code="USER_CREATE_ERROR", msg="User creation failed")
 
     _update_groups(user, groups or [])
     _regenerate_token(user)

@@ -12,6 +12,7 @@
 
 from api_v2.group_config.serializers import GroupConfigSerializer
 from api_v2.host.serializers import HostGroupConfigSerializer
+from api_v2.views import CamelCaseModelViewSet
 from cm.models import GroupConfig
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
@@ -20,17 +21,18 @@ from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
-from rest_framework.viewsets import ModelViewSet
 
 from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import VIEW_GROUP_CONFIG_PERM, check_config_perm
 
 
-class GroupConfigViewSet(PermissionListMixin, ModelViewSet, GetParentObjectMixin):  # pylint: disable=too-many-ancestors
-    queryset = GroupConfig.objects.all()
+class GroupConfigViewSet(
+    PermissionListMixin, GetParentObjectMixin, CamelCaseModelViewSet
+):  # pylint: disable=too-many-ancestors
+    queryset = GroupConfig.objects.order_by("name")
     serializer_class = GroupConfigSerializer
     permission_required = [VIEW_GROUP_CONFIG_PERM]
-    ordering = ["id"]
+    filter_backends = []
 
     def get_queryset(self, *args, **kwargs):
         parent_object = self.get_parent_object()
@@ -61,24 +63,6 @@ class GroupConfigViewSet(PermissionListMixin, ModelViewSet, GetParentObjectMixin
         )
 
         return Response(data=self.get_serializer(group_config).data, status=HTTP_201_CREATED)
-
-    @action(methods=["get", "post"], detail=True)
-    def hosts(self, request: Request, *args, **kwargs):  # pylint: disable=unused-argument
-        group_config: GroupConfig = self.get_object()
-
-        if request.method == "POST":
-            serializer = HostGroupConfigSerializer(data=request.data, many=True)
-            serializer.is_valid(raise_exception=True)
-            hosts = [host_data["id"] for host_data in serializer.validated_data]
-            group_config.check_host_candidate([host.pk for host in hosts])
-            group_config.hosts.add(*hosts)
-
-            return Response(data=HostGroupConfigSerializer(hosts, many=True).data, status=HTTP_201_CREATED)
-
-        queryset = group_config.hosts.order_by("id")
-        serializer = HostGroupConfigSerializer(self.paginate_queryset(queryset=queryset), many=True)
-
-        return self.get_paginated_response(data=serializer.data)
 
     @action(methods=["get"], detail=True, url_path="host-candidates", url_name="host-candidates")
     def host_candidates(self, request: Request, *args, **kwargs):  # pylint: disable=unused-argument

@@ -68,7 +68,7 @@ class TestHostAPI(BaseTestCase):
     def test_change_mm_to_changing_fail(self):
         response: Response = self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.CHANGING},
+            data={"maintenance_mode": "CHANGING"},
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -76,13 +76,13 @@ class TestHostAPI(BaseTestCase):
     def test_change_mm_on_no_action_success(self):
         response: Response = self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         self.host.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.ON)
+        self.assertEqual(response.data["maintenance_mode"], "ON")
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.ON)
 
     def test_change_mm_on_with_action_success(self):
@@ -96,13 +96,13 @@ class TestHostAPI(BaseTestCase):
         with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-                data={"maintenance_mode": MaintenanceMode.ON},
+                data={"maintenance_mode": "ON"},
             )
 
         self.host.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
+        self.assertEqual(response.data["maintenance_mode"], "CHANGING")
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
             action=action,
@@ -121,7 +121,7 @@ class TestHostAPI(BaseTestCase):
         with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-                data={"maintenance_mode": MaintenanceMode.ON},
+                data={"maintenance_mode": "ON"},
             )
 
         self.host.refresh_from_db()
@@ -136,13 +136,13 @@ class TestHostAPI(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.OFF},
+            data={"maintenance_mode": "OFF"},
         )
 
         self.host.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.OFF)
+        self.assertEqual(response.data["maintenance_mode"], "OFF")
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.OFF)
 
     def test_change_mm_off_with_action_success(self):
@@ -156,13 +156,13 @@ class TestHostAPI(BaseTestCase):
         with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-                data={"maintenance_mode": MaintenanceMode.OFF},
+                data={"maintenance_mode": "OFF"},
             )
 
         self.host.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
+        self.assertEqual(response.data["maintenance_mode"], "CHANGING")
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
             action=action,
@@ -181,7 +181,7 @@ class TestHostAPI(BaseTestCase):
         with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-                data={"maintenance_mode": MaintenanceMode.OFF},
+                data={"maintenance_mode": "OFF"},
             )
 
         self.host.refresh_from_db()
@@ -196,14 +196,14 @@ class TestHostAPI(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
         response: Response = self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.OFF},
+            data={"maintenance_mode": "OFF"},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -211,14 +211,14 @@ class TestHostAPI(BaseTestCase):
     def test_cluster_clear_issue_success(self):
         provider_bundle = self.upload_and_load_bundle(
             path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/api/tests/files/bundle_test_provider_concern.tar",
             ),
         )
 
         cluster_bundle = self.upload_and_load_bundle(
             path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/api/tests/files/bundle_test_cluster_with_mm.tar",
             ),
         )
@@ -271,7 +271,7 @@ class TestHostAPI(BaseTestCase):
 
         self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": host.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         self.assertFalse(cluster.concerns.exists())
@@ -282,7 +282,7 @@ class TestHostAPI(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -293,7 +293,7 @@ class TestHostAPI(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -301,7 +301,7 @@ class TestHostAPI(BaseTestCase):
     def test_change_maintenance_mode_on_with_action_via_bundle_success(self):
         bundle = self.upload_and_load_bundle(
             path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/api/tests/files/cluster_using_plugin.tar",
             ),
         )
@@ -332,13 +332,13 @@ class TestHostAPI(BaseTestCase):
         with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": host.pk}),
-                data={"maintenance_mode": MaintenanceMode.ON},
+                data={"maintenance_mode": "ON"},
             )
 
         host.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
+        self.assertEqual(response.data["maintenance_mode"], "CHANGING")
         self.assertEqual(host.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
             action=action,

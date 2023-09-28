@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-lines
 
 from datetime import timedelta
 
@@ -25,7 +24,7 @@ class TestAudit(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
         self.username = self.password = "user"
-        self.user = User.objects.create_user(self.username, "user@example.com", self.password)
+        self.user = User.objects.create_superuser(self.username, "user@example.com", self.password)
         self.login_for_audit(username=self.username, password=self.password)
         last_login = AuditSession.objects.last()
         self.last_login_id = last_login.id
@@ -44,31 +43,31 @@ class TestAudit(BaseAPITestCase):
         response = self.client.get(
             path=reverse(viewname="v2:audit:auditsession-list"),
         )
-        self.assertEqual(response.json()["results"][0]["login_details"], {"username": self.username})
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["results"][0]["user"], {"name": self.username})
 
     def test_logins_time_filtering_success(self):
         response = self.client.get(
             path=reverse(viewname="v2:audit:auditsession-list"),
             data={"time_to": self.time_to, "time_from": self.time_from},
         )
-        self.assertEqual(response.json()["results"][0]["login_details"], {"username": self.username})
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["results"][0]["user"], {"name": self.username})
 
     def test_logins_time_filtering_empty_list_success(self):
         response = self.client.get(
             path=reverse(viewname="v2:audit:auditsession-list"),
-            data={"time_to": self.time_from, "time_from": self.time_to},
+            data={"timeTo": self.time_from, "timeFrom": self.time_to},
         )
-        self.assertEqual(len(response.json()["results"]), 0)
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()["results"]), 0)
 
     def test_logins_retrieve_success(self):
         response = self.client.get(
             path=reverse(viewname="v2:audit:auditsession-detail", kwargs={"pk": self.last_login_id})
         )
-        self.assertEqual(response.json()["login_details"]["username"], self.username)
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["user"]["name"], self.username)
 
     def test_logins_retrieve_not_found_fail(self):
         response = self.client.get(

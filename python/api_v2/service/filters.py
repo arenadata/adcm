@@ -35,4 +35,4 @@ class ServiceFilter(FilterSet):
 
     @staticmethod
     def filter_name(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument
-        return queryset.filter(prototype__type=ObjectType.SERVICE, prototype__name=value)
+        return queryset.filter(prototype__type=ObjectType.SERVICE, prototype__name__icontains=value)

@@ -5,33 +5,30 @@
 <div class="row">
   <mat-form-field class="full-width">
     <mat-select
-      [formControl]="form.controls['role']"
       placeholder="Role"
+      [formControl]="form.controls['role']"
       [compareWith]="comparator"
       (selectionChange)="roleChanged.emit()">
       <mat-option>
-        <ngx-mat-select-search noEntriesFoundLabel="No options available" placeholderLabel="Select role"
-                               [(ngModel)]="roleFilter">
+        <ngx-mat-select-search
+          noEntriesFoundLabel="No options available"
+          placeholderLabel="Select role"
+          [(ngModel)]="roleFilter">
         </ngx-mat-select-search>
       </mat-option>
       <ng-container [rbac-roles-as-options]="{search: roleFilter, type: 'role'}" #roles="rbacRoles">
         <mat-option
           *ngFor="let role of roles.options$ | async | falseAsEmptyArray | adwpFilter:matcher:roleFilter:roles.label"
           [value]="role">
-          {{ role | adwpMapper:roles.label }}
+          {{ role | adwpMapper: roles.label }}
         </mat-option>
       </ng-container>
     </mat-select>
+    <mat-error *ngIf="isError('role')">
+      <mat-error *ngIf="hasError('required', 'role')">Role is required.</mat-error>
+    </mat-error>
   </mat-form-field>
 </div>
-
-<ng-container [rbac-users-as-options]="{search: userFilter}" #users="rbacUsers">
-  <adwp-input-select [form]="form" label="User" controlName="user"
-                     [options]="users.options$ | async | falseAsEmptyArray"
-                     [handler]="users.label"
-                     (filter)="userFilter = $event"
-  ></adwp-input-select>
-</ng-container>
 
 <ng-container [rbac-groups-as-options]="{search: groupFilter}" #groups="rbacGroups">
   <adwp-input-select [form]="form" label="Group" controlName="group"

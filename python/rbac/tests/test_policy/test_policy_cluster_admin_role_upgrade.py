@@ -13,7 +13,6 @@
 from unittest.mock import patch
 
 from cm.models import ServiceComponent, Upgrade
-from django.conf import settings
 from django.urls import reverse
 from rbac.tests.test_policy.base import PolicyBaseTestCase
 from rest_framework.response import Response
@@ -26,7 +25,7 @@ class PolicyWithClusterAdminRoleUpgradeTestCase(PolicyBaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.create_policy(role_name="Cluster Administrator", obj=self.cluster, user_pk=self.new_user.pk)
+        self.create_policy(role_name="Cluster Administrator", obj=self.cluster, group_pk=self.new_user_group.pk)
         self.another_user_log_in(username=self.new_user.username, password=self.new_user_password)
         self.upgrade_cluster()
         self.component_upgrade = ServiceComponent.objects.get(prototype__name="component_upgrade")
@@ -34,7 +33,7 @@ class PolicyWithClusterAdminRoleUpgradeTestCase(PolicyBaseTestCase):
     def upgrade_cluster(self):
         self.upload_and_load_bundle(
             path=(
-                settings.BASE_DIR
+                self.base_dir
                 / "python"
                 / "rbac"
                 / "tests"

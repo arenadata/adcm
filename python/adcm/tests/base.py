@@ -15,6 +15,7 @@ import string
 from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
+from tempfile import mkdtemp
 
 from cm.models import (
     ADCM,
@@ -30,10 +31,10 @@ from cm.models import (
     ServiceComponent,
 )
 from django.conf import settings
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from init_db import init
-from rbac.models import Role, RoleTypes, User
+from rbac.models import Group, Role, RoleTypes, User
 from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
@@ -41,7 +42,36 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 APPLICATION_JSON = "application/json"
 
 
-class BaseTestCase(TestCase):
+class ParallelReadyTestCase:
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        directories = cls._prepare_temporal_directories_for_adcm()
+        override_settings(**directories)(cls)
+
+    @staticmethod
+    def _prepare_temporal_directories_for_adcm() -> dict:
+        stack = Path(mkdtemp())
+        data = Path(mkdtemp()) / "data"
+
+        temporary_directories = {
+            "STACK_DIR": stack,
+            "BUNDLE_DIR": stack / "data" / "bundle",
+            "DOWNLOAD_DIR": Path(stack, "data", "download"),
+            "DATA_DIR": data,
+            "RUN_DIR": data / "run",
+            "FILE_DIR": stack / "data" / "file",
+            "LOG_DIR": data / "log",
+            "VAR_DIR": data / "var",
+        }
+
+        for directory in temporary_directories.values():
+            directory.mkdir(exist_ok=True, parents=True)
+
+        return temporary_directories
+
+
+class BaseTestCase(TestCase, ParallelReadyTestCase):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
     def setUp(self) -> None:
@@ -53,6 +83,8 @@ class BaseTestCase(TestCase):
             password=self.test_user_password,
             is_superuser=True,
         )
+        self.test_user_group = Group.objects.create(name="simple_test_group")
+        self.test_user_group.user_set.add(self.test_user)
 
         self.no_rights_user_username = "no_rights_user"
         self.no_rights_user_password = "no_rights_user_password"
@@ -60,6 +92,8 @@ class BaseTestCase(TestCase):
             username="no_rights_user",
             password="no_rights_user_password",
         )
+        self.no_rights_user_group = Group.objects.create(name="no_right_group")
+        self.no_rights_user_group.user_set.add(self.no_rights_user)
 
         self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
         self.login()
@@ -67,6 +101,8 @@ class BaseTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+
+        cls.base_dir = Path(__file__).parent.parent.parent.parent
 
         init_roles()
         init()
@@ -176,7 +212,6 @@ class BaseTestCase(TestCase):
         self,
         role_name: str,
         obj: ADCMEntity,
-        user_pk: int | None = None,
         group_pk: int | None = None,
     ) -> int:
         role_data = self.get_role_data(role_name=role_name)
@@ -186,8 +221,7 @@ class BaseTestCase(TestCase):
             data={
                 "name": f"test_policy_{obj.prototype.type}_{obj.pk}_admin",
                 "role": {"id": role_data["id"]},
-                "user": [{"id": user_pk}] if user_pk else [],
-                "group": [{"id": group_pk}] if group_pk else [],
+                "group": [{"id": group_pk}],
                 "object": [{"name": obj.name, "type": obj.prototype.type, "id": obj.pk}],
             },
             content_type=APPLICATION_JSON,

@@ -14,6 +14,7 @@
 
 import json
 from itertools import chain
+from pathlib import Path
 from secrets import token_hex
 
 from django.conf import settings
@@ -85,7 +86,7 @@ def recheck_issues():
             update_hierarchy_issues(obj)
 
 
-def init():
+def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.yaml")):
     logger.info("Start initializing ADCM DB...")
     if not User.objects.filter(username="admin").exists():
         User.objects.create_superuser("admin", "admin@example.com", "admin", built_in=True)
@@ -98,7 +99,7 @@ def init():
     abort_all(event)
     clear_temp_tables()
     event.send_state()
-    load_adcm()
+    load_adcm(adcm_conf_file)
     drop_locks()
     recheck_issues()
     logger.info("ADCM DB is initialized")

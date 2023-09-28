@@ -15,6 +15,7 @@ from django.urls import include, path
 
 urlpatterns = [
     path("", APIRoot.as_view(), name="api-root-v2"),
+    path("rbac/", include(("api_v2.rbac.urls", "rbac"))),
     path("clusters/", include("api_v2.cluster.urls")),
     path("bundles/", include("api_v2.bundle.urls")),
     path("prototypes/", include("api_v2.prototype.urls")),
@@ -22,4 +23,6 @@ urlpatterns = [
     path("hostproviders/", include("api_v2.hostprovider.urls")),
     path("audit/", include(("api_v2.audit.urls", "audit"))),
     path("jobs/", include("api_v2.job.urls")),
+    path("tasks/", include("api_v2.task.urls")),
+    path("adcm/", include(("api_v2.adcm.urls", "adcm"))),
 ]

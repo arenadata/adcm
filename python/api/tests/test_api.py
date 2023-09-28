@@ -36,7 +36,6 @@ from cm.tests.utils import (
     gen_service,
     gen_task_log,
 )
-from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.response import Response
@@ -58,7 +57,7 @@ class TestAPI(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"
+        self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
         self.bundle_adh_name = "adh.1.5.tar"
         self.bundle_ssh_name = "ssh.1.0.tar"
         self.cluster = "adh42"
@@ -173,10 +172,10 @@ class TestAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_cluster(self):  # pylint: disable=too-many-statements
+    def test_cluster(self):
         cluster_name = "test-cluster"
         cluster_url = reverse(viewname="v1:cluster")
-        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.test_files_dir / self.bundle_adh_name)
         bundle_id, proto_id = self.get_cluster_proto_id()
 
         response: Response = self.client.post(cluster_url, {})
@@ -259,7 +258,7 @@ class TestAPI(BaseTestCase):
         name = "test-cluster"
         cluster_url = reverse(viewname="v1:cluster")
 
-        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.test_files_dir / self.bundle_adh_name)
         bundle_id, proto_id = self.get_cluster_proto_id()
 
         response: Response = self.client.post(cluster_url, {"name": name, "prototype_id": proto_id})
@@ -324,8 +323,8 @@ class TestAPI(BaseTestCase):
         host = "test.host.net"
         cluster_url = reverse(viewname="v1:cluster")
 
-        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
-        self.upload_and_load_bundle(path=self.files_dir / self.bundle_ssh_name)
+        self.upload_and_load_bundle(path=self.test_files_dir / self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.test_files_dir / self.bundle_ssh_name)
 
         adh_bundle_id, cluster_proto = self.get_cluster_proto_id()
 
@@ -391,7 +390,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.json()["code"], "BUNDLE_CONFLICT")
 
     def test_service(self):
-        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.test_files_dir / self.bundle_adh_name)
         service_id = self.get_service_proto_id()
         service_url = reverse(viewname="v1:service-prototype-list")
         this_service_url = reverse(viewname="v1:service-prototype-detail", kwargs={"prototype_pk": service_id})
@@ -425,7 +424,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
     def test_cluster_service(self):
-        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.test_files_dir / self.bundle_adh_name)
 
         service_proto_id = self.get_service_proto_id()
         bundle_id, cluster_proto_id = self.get_cluster_proto_id()
@@ -499,8 +498,8 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
     def test_hostcomponent(self):  # pylint: disable=too-many-statements,too-many-locals
-        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
-        self.upload_and_load_bundle(path=self.files_dir / self.bundle_ssh_name)
+        self.upload_and_load_bundle(path=self.test_files_dir / self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.test_files_dir / self.bundle_ssh_name)
 
         adh_bundle_id, cluster_proto = self.get_cluster_proto_id()
         ssh_bundle_id, _, host_id = self.get_host_in_cluster(self.host)
@@ -681,7 +680,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.json()["code"], "BUNDLE_CONFLICT")
 
     def test_config(self):  # pylint: disable=too-many-statements
-        self.upload_and_load_bundle(path=self.files_dir / self.bundle_adh_name)
+        self.upload_and_load_bundle(path=self.test_files_dir / self.bundle_adh_name)
         adh_bundle_id, proto_id = self.get_cluster_proto_id()
         service_proto_id = self.get_service_proto_id()
         response: Response = self.client.post(

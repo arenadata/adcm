@@ -19,8 +19,4 @@ class ConcernSerializer(ModelSerializer):
 
     class Meta:
         model = ConcernItem
-        fields = (
-            "id",
-            "reason",
-            "is_blocking",
-        )
+        fields = ("id", "reason", "is_blocking", "cause")

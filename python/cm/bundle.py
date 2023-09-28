@@ -14,26 +14,29 @@
 
 import functools
 import hashlib
+import os
 import shutil
 import tarfile
 from collections.abc import Iterable
 from pathlib import Path
 
 from cm.adcm_config.config import init_object_config, switch_config
-from cm.adcm_config.utils import proto_ref
-from cm.errors import raise_adcm_ex
+from cm.adcm_config.utils import cook_file_type_name, proto_ref
+from cm.errors import AdcmEx, raise_adcm_ex
 from cm.logger import logger
 from cm.models import (
     ADCM,
     Action,
     Bundle,
     Cluster,
+    ConfigLog,
     HostProvider,
     ProductCategory,
     Prototype,
     PrototypeConfig,
     PrototypeExport,
     PrototypeImport,
+    SignatureStatus,
     StageAction,
     StagePrototype,
     StagePrototypeConfig,
@@ -48,6 +51,7 @@ from cm.stack import get_config_files, read_definition, save_definition
 from cm.status_api import post_event
 from django.conf import settings
 from django.db import IntegrityError, transaction
+from gnupg import GPG, ImportResult
 from rbac.models import Role
 from rbac.upgrade.role import prepare_action_roles
 from version_utils import rpm
@@ -62,11 +66,13 @@ STAGE = (
 )
 
 
-def prepare_bundle(bundle_file: str, bundle_hash: str, path: Path) -> Bundle:
+def prepare_bundle(
+    bundle_file: str, bundle_hash: str, path: Path, verification_status: SignatureStatus = SignatureStatus.ABSENT
+) -> Bundle:
     try:
         check_stage()
         process_bundle(path=path, bundle_hash=bundle_hash)
-        bundle_proto = get_stage_bundle(bundle_file)
+        bundle_proto = get_stage_bundle(bundle_file=bundle_file)
         second_pass()
     except Exception:
         clear_stage()
@@ -74,7 +80,7 @@ def prepare_bundle(bundle_file: str, bundle_hash: str, path: Path) -> Bundle:
         raise
 
     try:
-        bundle = copy_stage(bundle_hash=bundle_hash, bundle_proto=bundle_proto)
+        bundle = copy_stage(bundle_hash=bundle_hash, bundle_proto=bundle_proto, verification_status=verification_status)
         order_versions()
         clear_stage()
         ProductCategory.re_collect()
@@ -91,7 +97,80 @@ def prepare_bundle(bundle_file: str, bundle_hash: str, path: Path) -> Bundle:
 def load_bundle(bundle_file: str) -> Bundle:
     logger.info('loading bundle file "%s" ...', bundle_file)
     bundle_hash, path = process_file(bundle_file=bundle_file)
-    return prepare_bundle(bundle_file=bundle_file, bundle_hash=bundle_hash, path=path)
+
+    bundle_archive, signature_file = get_bundle_and_signature_paths(path=path)
+    verification_status = get_verification_status(bundle_archive=bundle_archive, signature_file=signature_file)
+    untar_and_cleanup(bundle_archive=bundle_archive, signature_file=signature_file, bundle_hash=bundle_hash)
+
+    return prepare_bundle(
+        bundle_file=bundle_file, bundle_hash=bundle_hash, path=path, verification_status=verification_status
+    )
+
+
+def get_bundle_and_signature_paths(path: Path) -> tuple[Path | None, Path | None]:
+    """
+    Search for tarfile (actual bundle archive), `.sig` file (detached signature file)
+    This paths can be None when processing old style bundles
+    """
+
+    bundle_archive, signature_file = None, None
+
+    for item in path.glob("*"):
+        if item.match("*.sig"):
+            if signature_file is not None:
+                raise AdcmEx(code="BUNDLE_ERROR", msg='More than one ".sig" file found')
+            signature_file = item.absolute()
+            continue
+
+        if item.is_file() and tarfile.is_tarfile(item):
+            if bundle_archive is not None:
+                raise AdcmEx(code="BUNDLE_ERROR", msg="More than one tar file found")
+            bundle_archive = item.absolute()
+            continue
+
+    return bundle_archive, signature_file
+
+
+def untar_and_cleanup(bundle_archive: Path | None, signature_file: Path | None, bundle_hash: str) -> None:
+    if bundle_archive is not None:
+        untar_safe(bundle_hash=bundle_hash, path=bundle_archive)
+        bundle_archive.unlink()
+    if signature_file is not None:
+        signature_file.unlink()
+
+
+def get_verification_status(bundle_archive: Path | None, signature_file: Path | None) -> SignatureStatus:
+    if bundle_archive is None or signature_file is None:
+        return SignatureStatus.ABSENT
+
+    gpg = GPG(gpgbinary=os.popen("which gpg").read().strip())
+    gpg.encoding = settings.ENCODING_UTF_8
+    key_filepath = cook_file_type_name(obj=ADCM.objects.get(), key="global", sub_key="verification_public_key")
+
+    try:
+        res: ImportResult = gpg.import_keys_file(key_path=key_filepath)
+    except (PermissionError, FileNotFoundError):
+        logger.warning("Can't read public key file: %s", key_filepath)
+        return SignatureStatus.INVALID
+
+    if res.returncode != 0:
+        logger.warning("Bad gpg key: %s", res.stderr)
+        return SignatureStatus.INVALID
+
+    with open(signature_file, mode="rb") as sign_stream:
+        if bool(gpg.verify_file(fileobj_or_path=sign_stream, data_filename=bundle_archive)):
+            return SignatureStatus.VALID
+        else:
+            return SignatureStatus.INVALID
+
+
+def upload_file(file) -> Path:
+    file_path = Path(settings.DOWNLOAD_DIR, file.name)
+    with open(file_path, "wb+") as f:
+        for chunk in file.chunks():
+            f.write(chunk)
+
+    return file_path
 
 
 def update_bundle(bundle):
@@ -145,7 +224,7 @@ def untar_safe(bundle_hash: str, path: Path) -> Path:
     try:
         dir_path = untar(bundle_hash=bundle_hash, bundle=path)
     except tarfile.ReadError:
-        raise_adcm_ex("BUNDLE_ERROR", f"Can't open bundle tar file: {path}")
+        raise_adcm_ex(code="BUNDLE_ERROR", msg=f"Can't open bundle tar file: {path}")
 
     return dir_path
 
@@ -196,9 +275,8 @@ def get_hash(bundle_file: str) -> str:
     return sha1.hexdigest()
 
 
-def load_adcm():
+def load_adcm(adcm_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.yaml")):
     check_stage()
-    adcm_file = Path(settings.BASE_DIR, "conf", "adcm", "config.yaml")
     conf = read_definition(conf_file=adcm_file)
     if not conf:
         logger.warning("Empty adcm config (%s)", adcm_file)
@@ -263,6 +341,26 @@ def upgrade_adcm(adcm, bundle):
         adcm.prototype = new_proto
         adcm.save()
         switch_config(adcm, new_proto, old_proto)
+
+        if rpm.compare_versions(old_proto.version, "2.6") <= 0 <= rpm.compare_versions(new_proto.version, "2.7"):
+            config_log_old = ConfigLog.objects.get(obj_ref=adcm.config, id=adcm.config.previous)
+            config_log_new = ConfigLog.objects.get(obj_ref=adcm.config, id=adcm.config.current)
+            log_rotation_on_fs = config_log_old.config.get("job_log", {}).get(
+                "log_rotation_on_fs", config_log_new.config["audit_data_retention"]["log_rotation_on_fs"]
+            )
+            config_log_new.config["audit_data_retention"]["log_rotation_on_fs"] = log_rotation_on_fs
+
+            log_rotation_in_db = config_log_old.config.get("job_log", {}).get(
+                "log_rotation_in_db", config_log_new.config["audit_data_retention"]["log_rotation_in_db"]
+            )
+            config_log_new.config["audit_data_retention"]["log_rotation_in_db"] = log_rotation_in_db
+
+            config_rotation_in_db = config_log_old.config.get("config_rotation", {}).get(
+                "config_rotation_in_db", config_log_new.config["audit_data_retention"]["config_rotation_in_db"]
+            )
+            config_log_new.config["audit_data_retention"]["config_rotation_in_db"] = config_rotation_in_db
+
+            config_log_new.save(update_fields=["config"])
 
     logger.info(
         "upgrade adcm OK from version %s to %s",
@@ -526,6 +624,7 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 "venv",
                 "config_group_customization",
                 "allow_maintenance_mode",
+                "allow_flags",
             ),
         )
         if proto.license_path:
@@ -681,6 +780,7 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
                 "description",
                 "adcm_min_version",
                 "config_group_customization",
+                "allow_flags",
                 "venv",
             ),
         )
@@ -753,13 +853,15 @@ def check_license(proto):
     return Prototype.objects.filter(license_hash=proto.license_hash, license="accepted").exists()
 
 
-def copy_stage(bundle_hash, bundle_proto):
+def copy_stage(bundle_hash: str, bundle_proto, verification_status: SignatureStatus = SignatureStatus.ABSENT) -> Bundle:
     bundle = copy_obj(
         bundle_proto,
         Bundle,
         ("name", "version", "edition", "description"),
     )
     bundle.hash = bundle_hash
+    bundle.signature_status = verification_status
+
     try:
         bundle.save()
     except IntegrityError:
@@ -770,7 +872,7 @@ def copy_stage(bundle_hash, bundle_proto):
         )
 
     stage_prototypes = StagePrototype.objects.exclude(type="component").order_by("id")
-    copy_stage_prototype(stage_prototypes, bundle)
+    copy_stage_prototype(stage_prototypes=stage_prototypes, bundle=bundle)
 
     for stage_prototype in stage_prototypes:
         proto = Prototype.objects.get(name=stage_prototype.name, type=stage_prototype.type, bundle=bundle)
@@ -791,17 +893,19 @@ def copy_stage(bundle_hash, bundle_proto):
             prototype_export = PrototypeExport(prototype=proto, name=stage_prototype_export.name)
             prototype_export.save()
 
-        copy_stage_import(StagePrototypeImport.objects.filter(prototype=stage_prototype).order_by("id"), proto)
+        copy_stage_import(
+            stage_imports=StagePrototypeImport.objects.filter(prototype=stage_prototype).order_by("id"), prototype=proto
+        )
 
-    copy_stage_sub_actions(bundle)
-    copy_stage_upgrade(StageUpgrade.objects.order_by("id"), bundle)
+    copy_stage_sub_actions(bundle=bundle)
+    copy_stage_upgrade(stage_upgrades=StageUpgrade.objects.order_by("id"), bundle=bundle)
 
     return bundle
 
 
 def update_bundle_from_stage(
     bundle,
-):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+):  # pylint: disable=too-many-locals,too-many-statements
     for stage_prototype in StagePrototype.objects.order_by("id"):
         try:
             prototype = Prototype.objects.get(
@@ -821,6 +925,7 @@ def update_bundle_from_stage(
             prototype.venv = stage_prototype.venv
             prototype.config_group_customization = stage_prototype.config_group_customization
             prototype.allow_maintenance_mode = stage_prototype.allow_maintenance_mode
+            prototype.allow_flags = stage_prototype.allow_flags
         except Prototype.DoesNotExist:
             prototype = copy_obj(
                 stage_prototype,
@@ -842,6 +947,7 @@ def update_bundle_from_stage(
                     "venv",
                     "config_group_customization",
                     "allow_maintenance_mode",
+                    "allow_flags",
                 ),
             )
             prototype.bundle = bundle
@@ -1064,7 +1170,7 @@ def check_services():
         prototype_data[prototype.name] = prototype.version
 
 
-def get_stage_bundle(bundle_file):
+def get_stage_bundle(bundle_file: str) -> StagePrototype:
     bundle = None
     clusters = StagePrototype.objects.filter(type="cluster")
     providers = StagePrototype.objects.filter(type="provider")

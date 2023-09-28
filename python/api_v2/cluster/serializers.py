@@ -13,24 +13,34 @@
 from typing import Any
 
 from api_v2.concern.serializers import ConcernSerializer
+from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from cm.adcm_config.config import get_main_info
-from cm.models import Cluster, HostComponent, Prototype
+from cm.models import (
+    Cluster,
+    ClusterObject,
+    Host,
+    HostComponent,
+    Prototype,
+    ServiceComponent,
+)
 from cm.status_api import get_obj_status
 from cm.upgrade import get_upgrade
+from cm.validators import ClusterUniqueValidator, StartMidEndValidator
+from django.conf import settings
+from rest_framework.fields import CharField, IntegerField
 from rest_framework.serializers import (
     BooleanField,
-    CharField,
     ModelSerializer,
     SerializerMethodField,
 )
 
+from adcm.serializers import EmptySerializer
 from adcm.utils import get_requires
 
 
 class ClusterSerializer(ModelSerializer):
     status = SerializerMethodField()
-    prototype_name = CharField(source="prototype.name")
-    prototype_version = CharField(source="prototype.version")
+    prototype = PrototypeRelatedSerializer(read_only=True)
     concerns = ConcernSerializer(many=True, read_only=True)
     is_upgradable = SerializerMethodField()
     main_info = SerializerMethodField()
@@ -43,8 +53,7 @@ class ClusterSerializer(ModelSerializer):
             "state",
             "multi_state",
             "status",
-            "prototype_name",
-            "prototype_version",
+            "prototype",
             "description",
             "concerns",
             "is_upgradable",
@@ -64,13 +73,46 @@ class ClusterSerializer(ModelSerializer):
         return get_main_info(obj=cluster)
 
 
-class ClusterCreateSerializer(ModelSerializer):
+class ClusterRelatedSerializer(ModelSerializer):
     class Meta:
         model = Cluster
-        fields = ["prototype", "name", "description"]
+        fields = ["id", "name"]
+
+
+class ClusterCreateSerializer(EmptySerializer):
+    prototype_id = IntegerField()
+    name = CharField(
+        validators=[
+            ClusterUniqueValidator(queryset=Cluster.objects.all()),
+            StartMidEndValidator(
+                start=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                mid=settings.ALLOWED_CLUSTER_NAME_MID_CHARS,
+                end=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                err_code="BAD_REQUEST",
+                err_msg="Wrong cluster name.",
+            ),
+        ],
+    )
+    description = CharField(required=False, allow_blank=True)
 
 
 class ClusterUpdateSerializer(ModelSerializer):
+    name = CharField(
+        max_length=80,
+        validators=[
+            ClusterUniqueValidator(queryset=Cluster.objects.all()),
+            StartMidEndValidator(
+                start=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                mid=settings.ALLOWED_CLUSTER_NAME_MID_CHARS,
+                end=settings.ALLOWED_CLUSTER_NAME_START_END_CHARS,
+                err_code="BAD_REQUEST",
+                err_msg="Wrong cluster name.",
+            ),
+        ],
+        required=False,
+        help_text="Cluster name",
+    )
+
     class Meta:
         model = Cluster
         fields = ["name"]
@@ -79,10 +121,11 @@ class ClusterUpdateSerializer(ModelSerializer):
 class ServicePrototypeSerializer(ModelSerializer):
     is_required = BooleanField(source="required")
     depend_on = SerializerMethodField()
+    license_status = CharField(source="license")
 
     class Meta:
         model = Prototype
-        fields = ["id", "name", "display_name", "version", "is_required", "depend_on", "is_license_accepted"]
+        fields = ["id", "name", "display_name", "version", "is_required", "depend_on", "license_status"]
 
     @staticmethod
     def get_depend_on(prototype: Prototype) -> list[dict[str, list[dict[str, Any]] | Any]] | None:
@@ -92,10 +135,46 @@ class ServicePrototypeSerializer(ModelSerializer):
 class HostComponentListSerializer(ModelSerializer):
     class Meta:
         model = HostComponent
-        fields = ["service", "host", "component", "cluster"]
+        fields = ["id", "host_id", "component_id"]
 
 
-class HostComponentPostSerializer(ModelSerializer):
+class HostComponentPostSerializer(EmptySerializer):
+    host_id = IntegerField()
+    component_id = IntegerField()
+
+
+class RelatedComponentStatusSerializer(ModelSerializer):
+    status = SerializerMethodField()
+
     class Meta:
-        model = HostComponent
-        fields = ["service", "host", "component", "cluster"]
+        model = ServiceComponent
+        fields = ["id", "name", "display_name", "status"]
+
+    @staticmethod
+    def get_status(instance: ServiceComponent) -> str:
+        return get_obj_status(obj=instance)
+
+
+class RelatedServicesStatusesSerializer(ModelSerializer):
+    status = SerializerMethodField()
+    components = RelatedComponentStatusSerializer(many=True, source="servicecomponent_set")
+
+    @staticmethod
+    def get_status(instance: ClusterObject) -> str:
+        return get_obj_status(obj=instance)
+
+    class Meta:
+        model = ClusterObject
+        fields = ["id", "name", "display_name", "status", "components"]
+
+
+class RelatedHostsStatusesSerializer(ModelSerializer):
+    status = SerializerMethodField()
+
+    @staticmethod
+    def get_status(instance: ClusterObject) -> str:
+        return get_obj_status(obj=instance)
+
+    class Meta:
+        model = Host
+        fields = ["id", "name", "status"]

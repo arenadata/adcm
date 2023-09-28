@@ -9,20 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any
 
-from cm.adcm_config.config import get_default
-from cm.adcm_config.utils import group_is_activatable
-from cm.models import ConfigLog, PrototypeConfig
-from rest_framework.fields import BooleanField, CharField, JSONField
+from cm.models import ConfigLog
 from rest_framework.serializers import (
     DateTimeField,
+    JSONField,
     ModelSerializer,
     SerializerMethodField,
     ValidationError,
 )
-
-from adcm.serializers import EmptySerializer
 
 
 class ConfigLogListSerializer(ModelSerializer):
@@ -39,9 +34,11 @@ class ConfigLogListSerializer(ModelSerializer):
 
 
 class ConfigLogSerializer(ConfigLogListSerializer):
+    adcm_meta = JSONField(source="attr")
+
     class Meta:
         model = ConfigLog
-        fields = ["id", "is_current", "creation_time", "config", "attr", "description"]
+        fields = ["id", "is_current", "creation_time", "config", "adcm_meta", "description"]
 
     def validate_config(self, value):
         auth_policy = value.get("auth_policy")
@@ -60,39 +57,3 @@ class ConfigLogSerializer(ConfigLogListSerializer):
             raise ValidationError('"min_password_length" must be less or equal than "max_password_length"')
 
         return value
-
-
-class ConfigSerializer(EmptySerializer):
-    name = CharField()
-    description = CharField(required=False)
-    display_name = SerializerMethodField()
-    subname = CharField()
-    default = SerializerMethodField(method_name="get_default_field")
-    value = SerializerMethodField()
-    type = CharField()
-    limits = JSONField(required=False)
-    ui_options = JSONField(required=False)
-    required = BooleanField()
-
-    @staticmethod
-    def get_display_name(obj: PrototypeConfig) -> str:
-        if not obj.display_name:
-            return obj.name
-
-        return obj.display_name
-
-    @staticmethod
-    def get_default_field(obj: PrototypeConfig) -> Any:
-        return get_default(obj)
-
-    def get_value(self, obj: PrototypeConfig) -> Any:  # pylint: disable=arguments-renamed
-        proto = self.context.get("prototype", None)
-        return get_default(obj, proto)
-
-
-class ConfigSerializerUI(ConfigSerializer):
-    activatable = SerializerMethodField()
-
-    @staticmethod
-    def get_activatable(obj):
-        return bool(group_is_activatable(obj))

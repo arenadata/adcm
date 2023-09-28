@@ -9,27 +9,33 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from api_v2.cluster.serializers import RelatedComponentStatusSerializer
 from api_v2.concern.serializers import ConcernSerializer
-from cm.models import Cluster, Host, HostComponent, HostProvider, MaintenanceMode
-from cm.status_api import get_host_status
+from api_v2.prototype.serializers import PrototypeRelatedSerializer
+from cm.models import Cluster, Host, HostProvider, MaintenanceMode, ServiceComponent
+from cm.status_api import get_obj_status
 from cm.validators import HostUniqueValidator, StartMidEndValidator
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     CharField,
     ChoiceField,
+    IntegerField,
+    ListSerializer,
     ModelSerializer,
     PrimaryKeyRelatedField,
     SerializerMethodField,
 )
 
 from adcm import settings
-from adcm.permissions import VIEW_CLUSTER_PERM, VIEW_PROVIDER_PERM
+from adcm.permissions import VIEW_CLUSTER_PERM
+from adcm.serializers import EmptySerializer
 
 
 class HostProviderSerializer(ModelSerializer):
     class Meta:
         model = HostProvider
-        fields = ["id", "name"]
+        fields = ["id", "name", "display_name"]
 
 
 class HostClusterSerializer(ModelSerializer):
@@ -38,20 +44,18 @@ class HostClusterSerializer(ModelSerializer):
         fields = ["id", "name"]
 
 
-class HostComponentSerializer(ModelSerializer):
-    name = CharField(source="component.name")
-    display_name = CharField(source="component.display_name")
-
+class HCComponentNameSerializer(ModelSerializer):
     class Meta:
-        model = HostComponent
+        model = ServiceComponent
         fields = ["id", "name", "display_name"]
 
 
 class HostSerializer(ModelSerializer):
     status = SerializerMethodField()
-    provider = HostProviderSerializer()
+    hostprovider = HostProviderSerializer(source="provider")
+    prototype = PrototypeRelatedSerializer(read_only=True)
     concerns = ConcernSerializer(many=True)
-    fqdn = CharField(
+    name = CharField(
         max_length=253,
         help_text="fully qualified domain name",
         validators=[
@@ -64,28 +68,41 @@ class HostSerializer(ModelSerializer):
                 err_msg="Wrong FQDN.",
             ),
         ],
+        source="fqdn",
     )
+    cluster = HostClusterSerializer(read_only=True)
+    components = SerializerMethodField()
 
     class Meta:
         model = Host
         fields = [
             "id",
-            "fqdn",
+            "name",
             "state",
             "status",
-            "provider",
+            "hostprovider",
+            "prototype",
             "concerns",
             "is_maintenance_mode_available",
             "maintenance_mode",
+            "multi_state",
+            "cluster",
+            "components",
         ]
 
     @staticmethod
-    def get_status(host: Host) -> int:
-        return get_host_status(host=host)
+    def get_status(host: Host) -> str:
+        return get_obj_status(obj=host)
+
+    @staticmethod
+    def get_components(instance: Host) -> list[dict]:
+        return HCComponentNameSerializer(
+            instance=[hc.component for hc in instance.hostcomponent_set.all()], many=True
+        ).data
 
 
 class HostUpdateSerializer(ModelSerializer):
-    fqdn = CharField(
+    name = CharField(
         max_length=253,
         help_text="fully qualified domain name",
         required=False,
@@ -99,11 +116,12 @@ class HostUpdateSerializer(ModelSerializer):
                 err_msg="Wrong FQDN.",
             ),
         ],
+        source="fqdn",
     )
 
     class Meta:
         model = Host
-        fields = ["fqdn", "cluster"]
+        fields = ["name", "cluster"]
         extra_kwargs = {"cluster": {"required": False}}
 
     def validate_cluster(self, cluster):
@@ -112,45 +130,41 @@ class HostUpdateSerializer(ModelSerializer):
 
         if not self.context["request"].user.has_perm(perm=VIEW_CLUSTER_PERM, obj=cluster):
             raise ValidationError("Current user has no permission to view this cluster")
+
         if not self.context["request"].user.has_perm(perm="cm.map_host_to_cluster", obj=cluster):
             raise ValidationError("Current user has no permission to map host to this cluster")
 
         return cluster
 
 
-class HostCreateSerializer(HostUpdateSerializer):
-    class Meta:
-        model = Host
-        fields = ["provider", "fqdn", "cluster"]
-        extra_kwargs = {"fqdn": {"allow_null": False}}
-
-    def validate_provider(self, provider):
-        if not provider:
-            raise ValidationError("Missing required field provider")
-
-        if not self.context["request"].user.has_perm(perm=VIEW_PROVIDER_PERM, obj=provider):
-            raise ValidationError("Current user has no permission to view this provider")
-
-        return provider
-
-
-class ClusterHostSerializer(HostSerializer):
-    components = HostComponentSerializer(source="hostcomponent_set", many=True)
-
-    class Meta:
-        model = Host
-        fields = [*HostSerializer.Meta.fields, "components"]
-
-
-class ClusterHostCreateSerializer(ModelSerializer):
-    hosts = PrimaryKeyRelatedField(
-        queryset=Host.objects.select_related("cluster").filter(cluster__isnull=True), many=True
+class HostCreateSerializer(EmptySerializer):
+    name = CharField(
+        allow_null=False,
+        required=True,
+        max_length=253,
+        help_text="fully qualified domain name",
+        validators=[
+            HostUniqueValidator(queryset=Host.objects.all()),
+            StartMidEndValidator(
+                start=settings.ALLOWED_HOST_FQDN_START_CHARS,
+                mid=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                end=settings.ALLOWED_HOST_FQDN_MID_END_CHARS,
+                err_code="BAD_REQUEST",
+                err_msg="Wrong FQDN.",
+            ),
+        ],
+        source="fqdn",
     )
+    hostprovider_id = IntegerField(required=True)
+    cluster_id = IntegerField(required=False)
 
-    class Meta:
-        model = Host
-        fields = ["hosts", "fqdn"]
-        extra_kwargs = {"fqdn": {"read_only": True}}
+
+class ClusterHostCreateSerializer(EmptySerializer):
+    host_id = IntegerField()
+
+
+class HostListIdCreateSerializer(ListSerializer):  # pylint: disable=abstract-method
+    child = IntegerField()
 
 
 class HostMappingSerializer(ModelSerializer):
@@ -168,9 +182,11 @@ class HostChangeMaintenanceModeSerializer(ModelSerializer):
 
 
 class HostShortSerializer(ModelSerializer):
+    name = CharField(source="fqdn")
+
     class Meta:
         model = Host
-        fields = ["id", "fqdn"]
+        fields = ["id", "name"]
 
 
 class HostGroupConfigSerializer(ModelSerializer):
@@ -180,3 +196,16 @@ class HostGroupConfigSerializer(ModelSerializer):
         model = Host
         fields = ["id", "name"]
         extra_kwargs = {"name": {"read_only": True}}
+
+
+class ClusterHostStatusSerializer(EmptySerializer):
+    host_components = SerializerMethodField()
+
+    class Meta:
+        model = Host
+        fields = ["host_components"]
+
+    def get_host_components(self, instance: Host) -> list:
+        return RelatedComponentStatusSerializer(
+            instance=[hc.component for hc in instance.hostcomponent_set.select_related("component")], many=True
+        ).data

@@ -10,23 +10,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from itertools import compress
+
 from api_v2.action.filters import ActionFilter
 from api_v2.action.serializers import (
     ActionListSerializer,
     ActionRetrieveSerializer,
     ActionRunSerializer,
 )
-from api_v2.action.utils import check_run_perms, filter_actions_by_user_perm
+from api_v2.action.utils import (
+    check_run_perms,
+    filter_actions_by_user_perm,
+    insert_service_ids,
+)
+from api_v2.config.utils import (
+    convert_adcm_meta_to_attr,
+    convert_attr_to_adcm_meta,
+    get_config_schema,
+)
+from api_v2.task.serializers import TaskListSerializer
+from api_v2.views import CamelCaseGenericViewSet
+from cm.adcm_config.config import get_prototype_config
+from cm.errors import AdcmEx
 from cm.job import start_task
-from cm.models import Action
+from cm.models import Action, ConcernType, Host, HostComponent
+from django.conf import settings
+from django.db.models import Q
+from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_403_FORBIDDEN
-from rest_framework.viewsets import GenericViewSet
+from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 
 from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import (
@@ -34,16 +51,20 @@ from adcm.permissions import (
     DjangoModelPermissionsAudit,
     get_object_for_user,
 )
-from adcm.utils import filter_actions
 
 
 class ActionViewSet(  # pylint: disable=too-many-ancestors
-    PermissionListMixin, GenericViewSet, ListModelMixin, RetrieveModelMixin, GetParentObjectMixin
+    PermissionListMixin, ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, CamelCaseGenericViewSet
 ):
-    queryset = Action.objects.all()
-    serializer_class = ActionListSerializer
+    queryset = (
+        Action.objects.select_related("prototype")
+        .filter(upgrade__isnull=True)
+        .exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET)
+        .order_by("pk")
+    )
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_ACTION_PERM]
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = ActionFilter
 
     def get_serializer_class(
@@ -55,29 +76,41 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
         if self.action == "run":
             return ActionRunSerializer
 
-        return self.serializer_class
-
-    def get_queryset(self, *args, **kwargs):
-        parent_object = self.get_parent_object()
-        if parent_object is None:
-            raise NotFound("Can't find action's parent object")
-
-        return super().get_queryset(*args, **kwargs).filter(prototype=parent_object.prototype)
+        return ActionListSerializer
 
     def list(self, request: Request, *args, **kwargs) -> Response:
         parent_object = self.get_parent_object()
+
         if parent_object is None:
             raise NotFound("Can't find action's parent object")
 
-        allowed_actions = filter_actions(
-            obj=parent_object,
-            actions=filter_actions_by_user_perm(
-                user=request.user,
-                obj=parent_object,
-                actions=self.filter_queryset(queryset=self.get_queryset()),
-            ),
+        if parent_object.concerns.filter(type=ConcernType.LOCK).exists():
+            return Response(data=[])
+
+        prototype_object = {}
+
+        if isinstance(parent_object, Host) and parent_object.cluster:
+            prototype_object[parent_object.cluster.prototype] = parent_object.cluster
+
+            for hc_item in HostComponent.objects.filter(host=parent_object).select_related(
+                "service__prototype", "component__prototype"
+            ):
+                prototype_object[hc_item.service.prototype] = hc_item.service
+                prototype_object[hc_item.component.prototype] = hc_item.component
+
+        actions = self.filter_queryset(
+            self.get_queryset().filter(
+                Q(prototype=parent_object.prototype, host_action=False)
+                | Q(prototype__in=prototype_object.keys(), host_action=True)
+            )
         )
-        serializer = self.get_serializer_class()(instance=allowed_actions, many=True, context={"obj": parent_object})
+        prototype_object[parent_object.prototype] = parent_object
+
+        allowed_actions_mask = [act.allowed(prototype_object[act.prototype]) for act in actions]
+        actions = list(compress(actions, allowed_actions_mask))
+        actions = filter_actions_by_user_perm(user=request.user, obj=parent_object, actions=actions)
+
+        serializer = self.get_serializer_class()(instance=actions, many=True, context={"obj": parent_object})
 
         return Response(data=serializer.data)
 
@@ -89,7 +122,19 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
         # check permissions
         get_object_for_user(user=request.user, perms=VIEW_ACTION_PERM, klass=Action, pk=kwargs["pk"])
 
-        return super().retrieve(request, *args, **kwargs)
+        action_ = self.get_object()
+        schema = {"fields": get_config_schema(parent_object=parent_object, action=action_)}
+
+        attr = {}
+        if not action_.config_jinja:
+            _, _, _, attr = get_prototype_config(prototype=action_.prototype, action=action_)
+
+        adcm_meta = convert_attr_to_adcm_meta(attr=attr)
+        serializer = self.get_serializer_class()(
+            instance=action_, context={"obj": parent_object, "config_schema": schema, "adcm_meta": adcm_meta}
+        )
+
+        return Response(data=serializer.data)
 
     @action(methods=["post"], detail=True, url_path="run")
     def run(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
@@ -98,20 +143,24 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
             raise NotFound("Can't find action's parent object")
 
         target_action = get_object_for_user(user=request.user, perms=VIEW_ACTION_PERM, klass=Action, pk=kwargs["pk"])
+
+        if reason := target_action.get_start_impossible_reason(parent_object):
+            raise AdcmEx("ACTION_ERROR", msg=reason)
+
         if not check_run_perms(user=request.user, action=target_action, obj=parent_object):
             return Response(data="Run action forbidden", status=HTTP_403_FORBIDDEN)
 
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        start_task(
+        task = start_task(
             action=target_action,
             obj=parent_object,
             conf=serializer.validated_data["config"],
-            attr=serializer.validated_data["attr"],
-            hostcomponent=serializer.validated_data["host_component_map"],
+            attr=convert_adcm_meta_to_attr(adcm_meta=serializer.validated_data["adcm_meta"]),
+            hostcomponent=insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),
             hosts=[],
             verbose=serializer.validated_data["is_verbose"],
         )
 
-        return Response()
+        return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)

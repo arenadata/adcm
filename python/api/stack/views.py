@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
 
 from api.action.serializers import StackActionSerializer
 from api.base_view import GenericUIViewSet, ModelPermOrReadOnlyForAuth
@@ -39,7 +38,7 @@ from api.stack.serializers import (
 from api.utils import check_obj
 from audit.utils import audit
 from cm.api import accept_license, get_license, load_service_map
-from cm.bundle import delete_bundle, load_bundle, update_bundle
+from cm.bundle import delete_bundle, load_bundle, update_bundle, upload_file
 from cm.models import (
     Action,
     Bundle,
@@ -49,7 +48,6 @@ from cm.models import (
     PrototypeImport,
     Upgrade,
 )
-from django.conf import settings
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
@@ -126,11 +124,7 @@ class UploadBundleView(CreateModelMixin, GenericUIViewSet):
         if not serializer.is_valid():
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
-        file_data = request.data["file"]
-        with open(Path(settings.DOWNLOAD_DIR, file_data.name), "wb+") as f:
-            for chunk in file_data.chunks():
-                f.write(chunk)
-
+        upload_file(file=request.data["file"])
         return Response(status=HTTP_201_CREATED)
 
 
@@ -269,7 +263,6 @@ class ProtoActionViewSet(RetrieveModelMixin, GenericUIViewSet):
         return Response(serializer.data)
 
 
-#  pylint:disable-next=too-many-ancestors
 class ServicePrototypeViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
     queryset = Prototype.objects.filter(type="service")
     serializer_class = ServicePrototypeSerializer

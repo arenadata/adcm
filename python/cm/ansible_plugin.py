@@ -10,12 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=line-too-long
-
 import fcntl
 import json
 from collections import defaultdict
 from copy import deepcopy
+from typing import Any
 
 # isort: off
 from ansible.errors import AnsibleError
@@ -23,7 +22,9 @@ from ansible.utils.vars import merge_hash
 from ansible.plugins.action import ActionBase
 
 # isort: on
-from cm.api import add_hc, get_hc, set_object_config
+
+from cm.adcm_config.config import get_option_value
+from cm.api import add_hc, get_hc, set_object_config_with_plugin
 from cm.api_context import CTX
 from cm.errors import AdcmEx
 from cm.errors import raise_adcm_ex as err
@@ -43,13 +44,14 @@ from cm.models import (
     Prototype,
     PrototypeConfig,
     ServiceComponent,
+    get_model_by_type,
 )
 from cm.status_api import post_event
 from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from rbac.models import Policy, Role
-from rbac.roles import assign_user_or_group_perm
+from rbac.roles import assign_group_perm
 
 MSG_NO_CONFIG = (
     "There are no job related vars in inventory. It's mandatory for that module to have some"
@@ -90,40 +92,57 @@ def job_lock(job_id):
         encoding=settings.ENCODING_UTF_8,
     )
     try:
-        fcntl.flock(file_descriptor.fileno(), fcntl.LOCK_EX)  # pylint: disable=I1101
+        fcntl.flock(file_descriptor.fileno(), fcntl.LOCK_EX)
 
         return file_descriptor
     except OSError as e:
         return err("LOCK_ERROR", e)
 
 
-def check_context_type(task_vars, *context_type, err_msg=None):
+def check_context_type(task_vars: dict, context_types: tuple, err_msg: str | None = None) -> None:
     """
     Check context type. Check if inventory.json and config.json were passed
     and check if `context` exists in task variables, сheck if a context is of a given type.
     """
     if not task_vars:
         raise AnsibleError(MSG_NO_CONFIG)
+
     if "context" not in task_vars:
         raise AnsibleError(MSG_NO_CONTEXT)
+
     if not isinstance(task_vars["context"], dict):
         raise AnsibleError(MSG_NO_CONTEXT)
+
     context = task_vars["context"]
-    if context["type"] not in context_type:
+    if context["type"] not in context_types:
         if err_msg is None:
-            err_msg = MSG_WRONG_CONTEXT.format(", ".join(context_type), context["type"])
+            err_msg = MSG_WRONG_CONTEXT.format(", ".join(context_types), context["type"])
         raise AnsibleError(err_msg)
 
 
-def get_object_id_from_context(task_vars, id_type, *context_type, err_msg=None):
+def get_object_id_from_context(task_vars: dict, id_type: str, context_types: tuple, err_msg: str | None = None) -> int:
     """
     Get object id from context.
     """
-    check_context_type(task_vars, *context_type, err_msg=err_msg)
+    check_context_type(task_vars=task_vars, context_types=context_types, err_msg=err_msg)
     context = task_vars["context"]
     if id_type not in context:
         raise AnsibleError(MSG_WRONG_CONTEXT_ID.format(id_type))
     return context[id_type]
+
+
+def get_context_object(task_vars: dict, err_msg: str = None) -> ADCMEntity:
+    obj_type = task_vars["context"]["type"]
+
+    obj_pk = get_object_id_from_context(
+        task_vars=task_vars, id_type=f"{obj_type}_id", context_types=(obj_type,), err_msg=err_msg
+    )
+    obj = get_model_by_type(object_type=obj_type).objects.filter(pk=obj_pk).first()
+
+    if not obj:
+        raise AnsibleError(f'Object of type "{obj_type}" with PK "{obj_pk}" does not exist')
+
+    return obj
 
 
 class ContextActionModule(ActionBase):
@@ -173,20 +192,20 @@ class ContextActionModule(ActionBase):
     def _do_host_from_provider(self, task_vars, context):
         raise NotImplementedError
 
-    def run(self, tmp=None, task_vars=None):  # pylint: disable=too-many-branches
+    def run(self, tmp=None, task_vars=None):
         self._check_mandatory()
         obj_type = self._task.args["type"]
         job_id = task_vars["job"]["id"]
         file_descriptor = job_lock(job_id)
 
         if obj_type == "cluster":
-            check_context_type(task_vars, "cluster", "service", "component")
+            check_context_type(task_vars=task_vars, context_types=("cluster", "service", "component"))
             res = self._do_cluster(task_vars, {"cluster_id": self._get_job_var(task_vars, "cluster_id")})
         elif obj_type == "service" and "service_name" in self._task.args:
-            check_context_type(task_vars, "cluster", "service", "component")
+            check_context_type(task_vars=task_vars, context_types=("cluster", "service", "component"))
             res = self._do_service_by_name(task_vars, {"cluster_id": self._get_job_var(task_vars, "cluster_id")})
         elif obj_type == "service":
-            check_context_type(task_vars, "service", "component")
+            check_context_type(task_vars=task_vars, context_types=("service", "component"))
             res = self._do_service(
                 task_vars,
                 {
@@ -195,17 +214,17 @@ class ContextActionModule(ActionBase):
                 },
             )
         elif obj_type == "host" and "host_id" in self._task.args:
-            check_context_type(task_vars, "provider")
+            check_context_type(task_vars=task_vars, context_types=("provider",))
             res = self._do_host_from_provider(task_vars, {})
         elif obj_type == "host":
-            check_context_type(task_vars, "host")
+            check_context_type(task_vars=task_vars, context_types=("host",))
             res = self._do_host(task_vars, {"host_id": self._get_job_var(task_vars, "host_id")})
         elif obj_type == "provider":
-            check_context_type(task_vars, "provider", "host")
+            check_context_type(task_vars=task_vars, context_types=("provider", "host"))
             res = self._do_provider(task_vars, {"provider_id": self._get_job_var(task_vars, "provider_id")})
         elif obj_type == "component" and "component_name" in self._task.args:
             if "service_name" in self._task.args:
-                check_context_type(task_vars, "cluster", "service", "component")
+                check_context_type(task_vars=task_vars, context_types=("cluster", "service", "component"))
                 res = self._do_component_by_name(
                     task_vars,
                     {
@@ -214,7 +233,7 @@ class ContextActionModule(ActionBase):
                     },
                 )
             else:
-                check_context_type(task_vars, "cluster", "service", "component")
+                check_context_type(task_vars=task_vars, context_types=("cluster", "service", "component"))
                 if task_vars["job"].get("service_id", None) is None:
                     raise AnsibleError(MSG_NO_SERVICE_NAME)
                 res = self._do_component_by_name(
@@ -225,7 +244,7 @@ class ContextActionModule(ActionBase):
                     },
                 )
         elif obj_type == "component":
-            check_context_type(task_vars, "component")
+            check_context_type(task_vars=task_vars, context_types=("component",))
             res = self._do_component(task_vars, {"component_id": self._get_job_var(task_vars, "component_id")})
         else:
             raise AnsibleError(MSG_NO_ROUTE)
@@ -339,7 +358,7 @@ def set_host_multi_state(host_id, multi_state):
     return _set_object_multi_state(obj, multi_state)
 
 
-def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branches
+def change_hc(job_id, cluster_id, operations):
     """
     For use in ansible plugin adcm_hc
     """
@@ -379,6 +398,21 @@ def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branc
     file_descriptor.close()
 
 
+def cast_to_type(field_type: str, value: Any, limits: dict) -> Any:
+    try:
+        match field_type:
+            case "float":
+                return float(value)
+            case "integer":
+                return int(value)
+            case "option":
+                return get_option_value(value=value, limits=limits)
+            case _:
+                return value
+    except ValueError as error:
+        raise AnsibleError(f"Could not convert '{value}' to '{field_type}'") from error
+
+
 def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> dict | int | str:
     config_log = ConfigLog.objects.get(id=obj.config.current)
     new_config = deepcopy(config_log.config)
@@ -392,12 +426,26 @@ def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> dict | int | str:
             subkey = keys_list[1]
 
         if subkey:
-            new_config[key][subkey] = value
+            try:
+                prototype_conf = PrototypeConfig.objects.get(
+                    name=key, subname=subkey, prototype=obj.prototype, action=None
+                )
+            except PrototypeConfig.DoesNotExist as error:
+                raise AnsibleError(f"Config parameter '{key}/{subkey}' does not exist") from error
+            new_config[key][subkey] = cast_to_type(
+                field_type=prototype_conf.type, value=value, limits=prototype_conf.limits
+            )
         else:
-            new_config[key] = value
+            try:
+                prototype_conf = PrototypeConfig.objects.get(name=key, subname="", prototype=obj.prototype, action=None)
+            except PrototypeConfig.DoesNotExist as error:
+                raise AnsibleError(f"Config parameter '{key}' does not exist") from error
+            new_config[key] = cast_to_type(field_type=prototype_conf.type, value=value, limits=prototype_conf.limits)
 
         if key in attr:
-            prototype_conf = PrototypeConfig.objects.filter(name=key, prototype=obj.prototype, type="group")
+            prototype_conf = PrototypeConfig.objects.filter(
+                name=key, prototype=obj.prototype, type="group", action=None
+            )
 
             if not prototype_conf or "activatable" not in prototype_conf.first().limits:
                 raise AnsibleError("'active' key should be used only with activatable group")
@@ -409,7 +457,7 @@ def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> dict | int | str:
             if not new_config[key] or subkey not in new_config[key]:
                 new_config[key][subkey] = value
 
-    set_object_config(obj=obj, config=new_config, attr=new_attr)
+    set_object_config_with_plugin(obj=obj, config=new_config, attr=new_attr)
 
     if len(conf) == 1:
         return list(conf.values())[0]
@@ -557,7 +605,7 @@ def log_check(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
             codename=f"view_{LogStorage.__name__.lower()}",
         )
         for policy in (policy for policy in Policy.objects.all() if task_role in policy.role.child.all()):
-            assign_user_or_group_perm(policy=policy, permission=view_logstorage_permission, obj=log_storage)
+            assign_group_perm(policy=policy, permission=view_logstorage_permission, obj=log_storage)
 
     post_event(
         event="add_job_log",

@@ -10,18 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action
-from django.db.models import QuerySet
-from django_filters.rest_framework import CharFilter, FilterSet
+from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
 
 
 class ActionFilter(FilterSet):
-    name = CharFilter(label="Action name", method="filter_name")
-
-    class Meta:
-        model = Action
-        fields = ["name"]
-
-    @staticmethod
-    def filter_name(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument
-        return queryset.filter(name=value)
+    name = CharFilter(label="Action name", field_name="name", lookup_expr="icontains")
+    ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "ID"}, label="ordering")

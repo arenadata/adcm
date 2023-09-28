@@ -16,6 +16,11 @@
           type: string
           required: false
           default: string
+  import:
+    NonExistentCluster:
+      versions:
+        min: 1.0
+        max: 2.0
 
 - name: service
   type: service

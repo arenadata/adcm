@@ -10,10 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines
-
 import copy
 import json
+import re
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any
@@ -35,7 +34,7 @@ from cm.adcm_config.utils import (
     sub_key_is_required,
     to_flat_dict,
 )
-from cm.errors import raise_adcm_ex
+from cm.errors import AdcmEx, raise_adcm_ex
 from cm.models import (
     ADCM,
     Action,
@@ -43,6 +42,7 @@ from cm.models import (
     ConfigLog,
     GroupConfig,
     ObjectConfig,
+    ObjectType,
     Prototype,
     PrototypeConfig,
     StagePrototype,
@@ -59,7 +59,9 @@ def read_bundle_file(proto: Prototype | StagePrototype, fname: str, bundle_hash:
 
     file_descriptor = None
 
-    if fname[0:2] == "./":
+    if proto.type == ObjectType.ADCM:
+        path = settings.BASE_DIR / "conf/adcm" / fname
+    elif fname.startswith("./"):
         path = Path(settings.BUNDLE_DIR, bundle_hash, proto.path, fname)
     else:
         path = Path(settings.BUNDLE_DIR, bundle_hash, fname)
@@ -152,6 +154,7 @@ def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many
         return
 
     config_log = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+
     _, old_spec, _, _ = get_prototype_config(prototype=old_prototype)
     new_unflat_spec, new_spec, _, _ = get_prototype_config(prototype=new_prototype)
     old_conf = to_flat_dict(config=config_log.config, spec=old_spec)
@@ -318,66 +321,6 @@ def process_file_type(obj: Any, spec: dict, conf: dict):
                         value = None
 
                     save_file_type(obj, key, subkey, value)
-
-
-def process_secret_params(spec, conf):
-    for key in conf:  # pylint: disable=too-many-nested-blocks
-        if "type" in spec[key]:
-            if spec[key]["type"] in {"password", "secrettext", "secretfile"} and conf[key]:
-                if conf[key].startswith(settings.ANSIBLE_VAULT_HEADER):
-                    try:
-                        ansible_decrypt(msg=conf[key])
-                    except AnsibleError:
-                        raise_adcm_ex(
-                            code="CONFIG_VALUE_ERROR",
-                            msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
-                        )
-                else:
-                    conf[key] = ansible_encrypt_and_format(msg=conf[key])
-        else:
-            for subkey in conf[key]:
-                if spec[key][subkey]["type"] in {"password", "secrettext", "secretfile"} and conf[key][subkey]:
-                    if conf[key][subkey].startswith(settings.ANSIBLE_VAULT_HEADER):
-                        try:
-                            ansible_decrypt(msg=conf[key][subkey])
-                        except AnsibleError:
-                            raise_adcm_ex(
-                                code="CONFIG_VALUE_ERROR",
-                                msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
-                            )
-                    else:
-                        conf[key][subkey] = ansible_encrypt_and_format(msg=conf[key][subkey])
-
-    return conf
-
-
-def process_secretmap(spec: dict, conf: dict) -> dict:
-    for key in conf:
-        if "type" not in spec[key]:
-            for _ in conf:
-                process_secretmap(spec[key], conf[key])
-
-        if spec[key].get("type") != "secretmap":
-            continue
-
-        if conf[key] is None:
-            continue
-
-        for conf_key, conf_value in conf[key].items():
-            if conf_value.startswith(settings.ANSIBLE_VAULT_HEADER):
-                try:
-                    ansible_decrypt(msg=conf_value)
-                except AnsibleError:
-                    raise_adcm_ex(
-                        code="CONFIG_VALUE_ERROR",
-                        msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
-                    )
-
-                conf[key][conf_key] = conf_value
-            else:
-                conf[key][conf_key] = ansible_encrypt_and_format(msg=conf_value)
-
-    return conf
 
 
 def process_config(  # pylint: disable=too-many-branches
@@ -556,7 +499,7 @@ def check_config_spec(
     conf: dict,
     attr: dict = None,
 ) -> None:
-    # pylint: disable=too-many-branches,too-many-statements
+    # pylint: disable=too-many-branches
     ref = proto_ref(proto)
     if isinstance(conf, (float, int)):
         raise_adcm_ex(code="JSON_ERROR", msg="config should not be just one int or float")
@@ -622,24 +565,124 @@ def check_config_spec(
                         )
 
 
+def _process_secretfile(obj: ADCMEntity, key: str, subkey: str, value: Any) -> None:
+    if value is not None and value.startswith(settings.ANSIBLE_VAULT_HEADER):
+        try:
+            value = ansible_decrypt(msg=value)
+        except AnsibleError as e:
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Can't decrypt value") from e
+
+    save_file_type(obj=obj, key=key, subkey=subkey, value=value)
+
+
+def _process_secret_param(conf: dict, key: str, subkey: str) -> None:
+    value = conf[key]
+    if subkey:
+        value = conf[key][subkey]
+
+    if not value:
+        return
+
+    if value.startswith(settings.ANSIBLE_VAULT_HEADER):
+        try:
+            ansible_decrypt(msg=value)
+        except AnsibleError as e:
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Can't decrypt value") from e
+
+    else:
+        value = ansible_encrypt_and_format(msg=value)
+
+        if subkey:
+            conf[key][subkey] = value
+        else:
+            conf[key] = value
+
+
+def _process_secretmap(conf: dict, key: str, subkey: str) -> None:
+    value = conf[key]
+    if subkey:
+        value = conf[key][subkey]
+
+    if value is None:
+        return
+
+    for secretmap_key, secretmap_value in value.items():
+        if secretmap_value.startswith(settings.ANSIBLE_VAULT_HEADER):
+            try:
+                ansible_decrypt(msg=secretmap_value)
+            except AnsibleError as e:
+                raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Can't decrypt value") from e
+
+            if subkey:
+                conf[key][subkey][secretmap_key] = secretmap_value
+            else:
+                conf[key][secretmap_key] = secretmap_value
+
+        else:
+            if subkey:
+                conf[key][subkey][secretmap_key] = ansible_encrypt_and_format(msg=secretmap_value)
+            else:
+                conf[key][secretmap_key] = ansible_encrypt_and_format(msg=secretmap_value)
+
+
 def process_config_spec(obj: ADCMEntity, spec: dict, new_config: dict, current_config: dict = None) -> dict:
     if current_config:
         new_config = restore_read_only(obj=obj, spec=spec, conf=new_config, old_conf=current_config)
 
-    process_file_type(obj=obj, spec=spec, conf=new_config)
-    conf = process_secret_params(spec=spec, conf=new_config)
-    conf = process_secretmap(spec=spec, conf=conf)
+    for cfg_key, cfg_value in new_config.items():
+        spec_type = spec[cfg_key].get("type")
 
-    return conf
+        if spec_type == "file":
+            save_file_type(obj=obj, key=cfg_key, subkey="", value=cfg_value)
+
+        elif spec_type == "secretfile":
+            _process_secretfile(obj=obj, key=cfg_key, subkey="", value=cfg_value)
+            _process_secret_param(conf=new_config, key=cfg_key, subkey="")
+
+        elif spec_type in {"password", "secrettext"}:
+            _process_secret_param(conf=new_config, key=cfg_key, subkey="")
+
+        elif spec_type == "secretmap":
+            _process_secretmap(conf=new_config, key=cfg_key, subkey="")
+
+        elif spec_type is None and bool(cfg_value):
+            for sub_cfg_key, sub_cfg_value in cfg_value.items():
+                sub_spec_type = spec[cfg_key][sub_cfg_key]["type"]
+
+                if sub_spec_type == "file":
+                    save_file_type(obj=obj, key=cfg_key, subkey=sub_cfg_key, value=sub_cfg_value)
+
+                elif sub_spec_type == "secretfile":
+                    _process_secretfile(obj=obj, key=cfg_key, subkey=sub_cfg_key, value=sub_cfg_value)
+                    _process_secret_param(conf=new_config, key=cfg_key, subkey=sub_cfg_key)
+
+                elif sub_spec_type in {"password", "secrettext"}:
+                    _process_secret_param(conf=new_config, key=cfg_key, subkey=sub_cfg_key)
+
+                elif sub_spec_type == "secretmap":
+                    _process_secretmap(conf=new_config, key=cfg_key, subkey=sub_cfg_key)
+
+    return new_config
 
 
 def get_adcm_config(section=None):
-    adcm_object = ADCM.objects.last()
+    adcm_object = ADCM.objects.get()
     current_configlog = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     if not section:
         return current_configlog.attr, current_configlog.config
 
     return current_configlog.attr.get(section, None), current_configlog.config.get(section, None)
+
+
+def get_option_value(value: str, limits: dict) -> str | int | float:
+    if value in limits["option"].values():
+        return value
+    elif re.match(r"^\d+$", value):
+        return int(value)
+    elif re.match(r"^\d+\.\d+$", value):
+        return float(value)
+
+    return raise_adcm_ex("CONFIG_OPTION_ERROR")
 
 
 def get_default(  # pylint: disable=too-many-branches
@@ -671,20 +714,7 @@ def get_default(  # pylint: disable=too-many-branches
         else:
             value = bool(conf.default.lower() in {"true", "yes"})
     elif conf.type == "option":
-        if conf.default in conf.limits["option"]:
-            value = conf.limits["option"][conf.default]
-
-        for option in conf.limits["option"].values():
-            if not isinstance(option, type(value)):
-                if isinstance(option, bool):
-                    value = bool(value)
-                elif isinstance(option, int):
-                    value = int(value)
-                elif isinstance(option, float):
-                    value = float(value)
-                elif isinstance(option, str):
-                    value = str(value)
-
+        value = get_option_value(value=value, limits=conf.limits)
     elif conf.type == "file":
         if prototype:
             if conf.default:

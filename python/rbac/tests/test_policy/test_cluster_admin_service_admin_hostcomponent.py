@@ -13,6 +13,7 @@
 
 from cm.models import ClusterObject, Host, ServiceComponent
 from django.urls import reverse
+from rbac.models import Group
 from rbac.tests.test_policy.base import PolicyBaseTestCase
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
@@ -24,11 +25,14 @@ class ClusterAdminServiceAdminHostcomponentTestCase(PolicyBaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.new_user_2 = self.get_new_user(username="new_user_2", password=self.new_user_password)
+        self.new_user_group_2 = Group.objects.create(name="new_group_2")
+        self.new_user_2 = self.get_new_user(
+            username="new_user_2", password=self.new_user_password, group_pk=self.new_user_group_2.pk
+        )
         self.service = ClusterObject.objects.get(prototype__name="service_1")
 
-        self.create_policy(role_name="Cluster Administrator", obj=self.cluster, user_pk=self.new_user.pk)
-        self.create_policy(role_name="Service Administrator", obj=self.service, user_pk=self.new_user_2.pk)
+        self.create_policy(role_name="Cluster Administrator", obj=self.cluster, group_pk=self.new_user_group.pk)
+        self.create_policy(role_name="Service Administrator", obj=self.service, group_pk=self.new_user_group_2.pk)
 
     def test_cluster_admin_can_change_host_config(self):
         response: Response = self.client.post(
@@ -49,7 +53,7 @@ class ClusterAdminServiceAdminHostcomponentTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertIn(
             "cm.add_configlog",
-            {f"{perm.content_type.app_label}.{perm.codename}" for perm in self.new_user.user_permissions.all()},
+            {f"{perm.content_type.app_label}.{perm.codename}" for perm in self.new_user_group.permissions.all()},
         )
 
         component = ServiceComponent.objects.get(prototype__name="component_1_1")
@@ -65,7 +69,7 @@ class ClusterAdminServiceAdminHostcomponentTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertIn(
             "cm.add_configlog",
-            {f"{perm.content_type.app_label}.{perm.codename}" for perm in self.new_user.user_permissions.all()},
+            {f"{perm.content_type.app_label}.{perm.codename}" for perm in self.new_user_group.permissions.all()},
         )
 
         with self.another_user_logged_in(username=self.new_user.username, password=self.new_user_password):

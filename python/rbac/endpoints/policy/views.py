@@ -19,7 +19,7 @@ from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
-    HTTP_405_METHOD_NOT_ALLOWED,
+    HTTP_409_CONFLICT,
 )
 from rest_framework.viewsets import ModelViewSet
 
@@ -31,18 +31,15 @@ class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-m
     serializer_class = PolicySerializer
     permission_classes = (DjangoModelPermissionsAudit,)
     permission_required = ["rbac.view_policy"]
-    filterset_fields = ("id", "name", "built_in", "role", "user", "group")
+    filterset_fields = ("id", "name", "built_in", "role", "group")
     ordering_fields = ("id", "name", "built_in", "role")
 
     @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            policy = policy_create(**serializer.validated_data)
-
-            return Response(data=self.get_serializer(policy).data, status=HTTP_201_CREATED)
-        else:
-            return Response(data=serializer.errors, status=HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        policy = policy_create(**serializer.validated_data)
+        return Response(data=self.get_serializer(policy).data, status=HTTP_201_CREATED)
 
     @audit
     def update(self, request, *args, **kwargs):
@@ -50,7 +47,7 @@ class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-m
         policy = self.get_object()
 
         if policy.built_in:
-            return Response(status=HTTP_405_METHOD_NOT_ALLOWED)
+            return Response(status=HTTP_409_CONFLICT)
 
         serializer = self.get_serializer(policy, data=request.data, partial=partial)
         if serializer.is_valid(raise_exception=True):
@@ -64,6 +61,6 @@ class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-m
     def destroy(self, request, *args, **kwargs):
         policy = self.get_object()
         if policy.built_in:
-            return Response(status=HTTP_405_METHOD_NOT_ALLOWED)
+            return Response(status=HTTP_409_CONFLICT)
 
         return super().destroy(request, *args, **kwargs)

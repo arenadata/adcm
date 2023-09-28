@@ -12,7 +12,7 @@
 
 from unittest.mock import patch
 
-from cm.models import Action, Host, MaintenanceMode
+from cm.models import Action, Host
 from django.urls import reverse
 from rbac.tests.test_policy.base import PolicyBaseTestCase
 from rest_framework.response import Response
@@ -31,13 +31,15 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.create_policy(role_name="Cluster Administrator", obj=self.cluster, user_pk=self.new_user.pk)
+        self.create_policy(role_name="Cluster Administrator", obj=self.cluster, group_pk=self.new_user_group.pk)
 
         self.another_user_log_in(username=self.new_user.username, password=self.new_user_password)
 
     def test_policy_with_cluster_admin_role(self):  # pylint: disable=too-many-statements
-        required_perms = {perm.codename for perm in self.new_user.user_permissions.all()}
-        required_perms.update({perm.permission.codename for perm in self.new_user.userobjectpermission_set.all()})
+        required_perms = {perm.codename for perm in self.new_user_group.permissions.all()}
+        required_perms.update(
+            {perm.permission.codename for perm in self.new_user_group.groupobjectpermission_set.all()}
+        )
 
         self.assertEqual(
             required_perms,
@@ -290,7 +292,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         response = self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.last_service_pk}),
             data={
-                "maintenance_mode": MaintenanceMode.ON,
+                "maintenance_mode": "ON",
             },
             content_type=APPLICATION_JSON,
         )
@@ -300,7 +302,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         response = self.client.post(
             path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.last_component_pk}),
             data={
-                "maintenance_mode": MaintenanceMode.ON,
+                "maintenance_mode": "ON",
             },
             content_type=APPLICATION_JSON,
         )
@@ -310,7 +312,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         response = self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.last_host_pk}),
             data={
-                "maintenance_mode": MaintenanceMode.ON,
+                "maintenance_mode": "ON",
             },
             content_type=APPLICATION_JSON,
         )
@@ -320,7 +322,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         response = self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.last_host_pk}),
             data={
-                "maintenance_mode": MaintenanceMode.OFF,
+                "maintenance_mode": "OFF",
             },
             content_type=APPLICATION_JSON,
         )
@@ -397,8 +399,10 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_adding_new_policy_keeps_previous_permission(self):
-        required_perms = {perm.codename for perm in self.new_user.user_permissions.all()}
-        required_perms.update({perm.permission.codename for perm in self.new_user.userobjectpermission_set.all()})
+        required_perms = {perm.codename for perm in self.new_user_group.permissions.all()}
+        required_perms.update(
+            {perm.permission.codename for perm in self.new_user_group.groupobjectpermission_set.all()}
+        )
 
         self.assertEqual(
             required_perms,
@@ -456,10 +460,12 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
         self.client.post(path=reverse(viewname="v1:rbac:logout"))
         self.login()
 
-        self.create_policy(role_name="Provider Administrator", obj=self.provider, user_pk=self.new_user.pk)
+        self.create_policy(role_name="Provider Administrator", obj=self.provider, group_pk=self.new_user_group.pk)
 
-        required_perms = {perm.codename for perm in self.new_user.user_permissions.all()}
-        required_perms.update({perm.permission.codename for perm in self.new_user.userobjectpermission_set.all()})
+        required_perms = {perm.codename for perm in self.new_user_group.permissions.all()}
+        required_perms.update(
+            {perm.permission.codename for perm in self.new_user_group.groupobjectpermission_set.all()}
+        )
 
         self.assertEqual(
             required_perms,

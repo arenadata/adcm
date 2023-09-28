@@ -22,11 +22,10 @@ from typing import Any
 
 import ruyaml
 import yaml
-import yspec.checker
 from cm.adcm_config.checks import check_config_type
 from cm.adcm_config.config import read_bundle_file
 from cm.adcm_config.utils import proto_ref
-from cm.checker import FormatError, check, round_trip_load
+from cm.checker import FormatError, check, check_rule, round_trip_load
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
 from cm.models import (
@@ -280,6 +279,7 @@ def save_prototype(path: Path, conf: dict, def_type: str, bundle_hash: str) -> S
 
     dict_to_obj(dictionary=conf, key="config_group_customization", obj=proto)
     dict_to_obj(dictionary=conf, key="allow_maintenance_mode", obj=proto)
+    dict_to_obj(dictionary=conf, key="allow_flags", obj=proto)
 
     fix_display_name(conf=conf, obj=proto)
     license_hash = get_license_hash(proto=proto, conf=conf, bundle_hash=bundle_hash)
@@ -318,6 +318,11 @@ def check_component_constraint(proto, name, conf):
             code="INVALID_COMPONENT_DEFINITION",
             msg=f'constraint of component "{name}" in {proto_ref(prototype=proto)} should have only 1 or 2 elements',
         )
+    if not conf["constraint"]:
+        raise_adcm_ex(
+            code="INVALID_COMPONENT_DEFINITION",
+            msg=f'constraint of component "{name}" in {proto_ref(prototype=proto)} should not be empty',
+        )
 
 
 def save_components(proto: StagePrototype, conf: dict, bundle_hash: str) -> None:
@@ -355,6 +360,8 @@ def save_components(proto: StagePrototype, conf: dict, bundle_hash: str) -> None
         process_config_group_customization(actual_config=component_conf, obj=component)
 
         dict_to_obj(dictionary=component_conf, key="config_group_customization", obj=component)
+        dict_to_obj(dictionary=component_conf, key="allow_flags", obj=component)
+
         component.save()
 
         save_actions(prototype=component, config=component_conf, bundle_hash=bundle_hash)
@@ -781,14 +788,14 @@ def get_yspec(prototype: StagePrototype | Prototype, bundle_hash: str, conf: dic
             msg=f'yspec file of config key "{name}/{subname}" yaml decode error: {e}',
         )
 
-    success, error = yspec.checker.check_rule(rules=schema)
+    success, error = check_rule(rules=schema)
     if not success:
         raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'yspec file of config key "{name}/{subname}" error: {error}')
 
     return schema
 
 
-def check_variant(config: dict) -> dict:  # pylint: disable=unused-argument
+def check_variant(config: dict) -> dict:
     vtype = config["source"]["type"]
     source = {"type": vtype, "args": None}
 
@@ -906,7 +913,7 @@ def save_prototype_config(
     proto_conf: dict,
     bundle_hash: str,
     action: StageAction | None = None,
-) -> None:  # pylint: disable=too-many-statements,too-many-locals
+) -> None:
     if not in_dict(dictionary=proto_conf, key="config"):
         return
 

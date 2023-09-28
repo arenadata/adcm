@@ -23,7 +23,6 @@ from cm.models import (
     ClusterObject,
     Host,
     HostProvider,
-    MaintenanceMode,
     ProductCategory,
     Prototype,
     ServiceComponent,
@@ -575,7 +574,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         self.assertEqual(sa_role_count, 6, "Roles missing from base roles")
 
 
-# pylint: disable=too-many-instance-attributes, protected-access
+# pylint: disable=protected-access
 class TestMMRoles(RBACBaseTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -659,12 +658,12 @@ class TestMMRoles(RBACBaseTestCase):
             )
 
     def test_mm_host_role(self):
-        policy_create(name="mm host policy", object=[self.host], role=self.mm_role_host, user=[self.test_user])
+        policy_create(name="mm host policy", object=[self.host], role=self.mm_role_host, group=[self.test_user_group])
         check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
 
         response = self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
             format="json",
             content_type=APPLICATION_JSON,
         )
@@ -675,7 +674,7 @@ class TestMMRoles(RBACBaseTestCase):
             name="mm cluster policy",
             object=[self.cluster],
             role=self.mm_role_cluster,
-            user=[self.test_user],
+            group=[self.test_user_group],
         )
         check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
         check_custom_perm(
@@ -688,7 +687,7 @@ class TestMMRoles(RBACBaseTestCase):
 
         response = self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
             format="json",
             content_type=APPLICATION_JSON,
         )
@@ -696,7 +695,7 @@ class TestMMRoles(RBACBaseTestCase):
 
         response = self.client.post(
             path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
             format="json",
             content_type=APPLICATION_JSON,
         )
@@ -704,7 +703,7 @@ class TestMMRoles(RBACBaseTestCase):
 
         response = self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
             format="json",
             content_type=APPLICATION_JSON,
         )
@@ -715,7 +714,7 @@ class TestMMRoles(RBACBaseTestCase):
             name="mm cluster policy",
             object=[self.cluster],
             role=Role.objects.get(name="Cluster Administrator"),
-            user=[self.test_user],
+            group=[self.test_user_group],
         )
         check_custom_perm(self.test_user, "change_maintenance_mode", self.host._meta.model_name, self.host)
         check_custom_perm(
@@ -728,7 +727,7 @@ class TestMMRoles(RBACBaseTestCase):
 
         response = self.client.post(
             path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
             format="json",
             content_type=APPLICATION_JSON,
         )
@@ -736,7 +735,7 @@ class TestMMRoles(RBACBaseTestCase):
 
         response = self.client.post(
             path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
             format="json",
             content_type=APPLICATION_JSON,
         )
@@ -744,7 +743,7 @@ class TestMMRoles(RBACBaseTestCase):
 
         response = self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
             format="json",
             content_type=APPLICATION_JSON,
         )

@@ -10,17 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
-
-from rest_framework.request import Request
-
-from adcm import settings
+from rest_framework.permissions import AllowAny
+from rest_framework.routers import APIRootView
 
 
-def upload_file(request: Request) -> Path:
-    file_data = request.data["file"]
-    file_path = Path(settings.DOWNLOAD_DIR, file_data.name)
-    with open(file_path, "wb+") as f:
-        for chunk in file_data.chunks():
-            f.write(chunk)
-    return file_path
+class RbacRoot(APIRootView):
+    permission_classes = (AllowAny,)
+    api_root_dict = {
+        "roles": "role-list",
+        "users": "user-list",
+        "groups": "group-list",
+        "policies": "policy-list",
+    }

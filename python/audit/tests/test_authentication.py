@@ -29,7 +29,10 @@ class TestAuthenticationAudit(BaseTestCase):
     def check_audit_session(self, user_id: int | None, login_result: AuditSessionLoginResult, username: str) -> None:
         log: AuditSession = AuditSession.objects.order_by("login_time").last()
 
-        self.assertEqual(log.user_id, user_id)
+        if log.user:
+            self.assertEqual(log.user.username, User.objects.get(pk=user_id).username)
+        else:
+            self.assertEqual(log.user, user_id)
         self.assertEqual(log.login_result, login_result)
         self.assertDictEqual(log.login_details, {"username": username})
 

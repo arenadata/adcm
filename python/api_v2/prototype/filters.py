@@ -11,15 +11,15 @@
 # limitations under the License.
 
 from cm.models import ObjectType, Prototype
-from django_filters import ChoiceFilter
+from django_filters import CharFilter, ChoiceFilter, NumberFilter
 from django_filters.rest_framework import FilterSet
 
 
 class PrototypeFilter(FilterSet):
-    type = ChoiceFilter(choices=ObjectType.choices)
+    bundle_id = NumberFilter(field_name="bundle__id", label="Bundle ID")
+    type = ChoiceFilter(choices=ObjectType.choices, label="Type")
+    display_name = CharFilter(label="Display name")
 
     class Meta:
         model = Prototype
-        fields = [
-            "type",
-        ]
+        fields = ["id", "type", "bundle_id"]

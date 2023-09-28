@@ -23,8 +23,8 @@ from cm.api import (
     add_components_to_service,
     add_service_to_cluster,
     check_license,
+    is_version_suitable,
     save_hc,
-    version_in,
 )
 from cm.errors import raise_adcm_ex
 from cm.issue import update_hierarchy_issues
@@ -174,7 +174,7 @@ def check_upgrade_import(
 
         try:
             prototype_import = PrototypeImport.objects.get(prototype=prototype, name=export.prototype.name)
-            if not version_in(export.prototype.version, prototype_import):
+            if not is_version_suitable(export.prototype.version, prototype_import):
                 return (
                     False,
                     f'Import "{export.prototype.name}" of {prototype.type} "{prototype.name}" {prototype.version} '
@@ -201,7 +201,7 @@ def check_upgrade_import(
 
         import_obj = cbind.service if cbind.service else cbind.cluster
         prototype_import = PrototypeImport.objects.get(prototype=import_obj.prototype, name=export.prototype.name)
-        if not version_in(prototype.version, prototype_import):
+        if not is_version_suitable(prototype.version, prototype_import):
             return (
                 False,
                 f'Export of {prototype.type} "{prototype.name}" {prototype.version} '

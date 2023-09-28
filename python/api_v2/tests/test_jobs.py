@@ -11,8 +11,18 @@
 # limitations under the License.
 
 from datetime import timedelta
+from unittest.mock import patch
 
-from cm.models import ADCM, Action, ActionType, JobLog, TaskLog
+from cm.models import (
+    ADCM,
+    Action,
+    ActionType,
+    JobLog,
+    JobStatus,
+    LogStorage,
+    SubAction,
+    TaskLog,
+)
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils import timezone
@@ -41,17 +51,27 @@ class TestJob(BaseTestCase):
             action=self.action,
         )
         self.job_1 = JobLog.objects.create(
-            status="created",
+            status=JobStatus.CREATED,
             start_date=timezone.now(),
             finish_date=timezone.now() + timedelta(days=1),
         )
         self.job_2 = JobLog.objects.create(
-            status="failed",
+            status=JobStatus.RUNNING,
             start_date=timezone.now() + timedelta(days=1),
             finish_date=timezone.now() + timedelta(days=2),
             action=self.action,
             task=self.task,
-            pid=self.job_1.pid + 1,
+            pid=9999,
+            sub_action=SubAction.objects.create(
+                action=self.action,
+                allow_to_terminate=True,
+            ),
+        )
+        self.log_1 = LogStorage.objects.create(
+            job=self.job_1,
+            name="ansible",
+            type="stderr",
+            format="txt",
         )
 
     def test_job_list_success(self):
@@ -74,4 +94,25 @@ class TestJob(BaseTestCase):
 
     def test_job_log_list_success(self):
         response: Response = self.client.get(path=reverse(viewname="v2:log-list", kwargs={"job_pk": self.job_1.pk}))
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()), 1)
+
+    def test_job_log_download_success(self):
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:log-download", kwargs={"job_pk": self.job_1.pk, "log_pk": self.log_1.pk})
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_job_log_not_found_download_fail(self):
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:log-download", kwargs={"job_pk": self.job_1.pk, "log_pk": self.log_1.pk + 10})
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_job_terminate_success(self):
+        with patch("cm.models.os.kill") as kill_mock:
+            response: Response = self.client.post(
+                path=reverse(viewname="v2:joblog-terminate", kwargs={"pk": self.job_2.pk}), data={}
+            )
+            kill_mock.assert_called()
         self.assertEqual(response.status_code, HTTP_200_OK)

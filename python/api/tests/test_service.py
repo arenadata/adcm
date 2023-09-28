@@ -64,7 +64,7 @@ class TestServiceAPI(BaseTestCase):
 
     def get_host(self, bundle_path: str):
         provider_bundle = self.upload_and_load_bundle(
-            path=Path(settings.BASE_DIR, bundle_path),
+            path=Path(self.base_dir, bundle_path),
         )
         provider_prototype = Prototype.objects.get(bundle=provider_bundle, type="provider")
         provider_response: Response = self.client.post(
@@ -81,7 +81,7 @@ class TestServiceAPI(BaseTestCase):
         return Host.objects.get(pk=host_response.data["id"])
 
     def get_cluster(self, bundle_path: str):
-        cluster_bundle = self.upload_and_load_bundle(path=Path(settings.BASE_DIR, bundle_path))
+        cluster_bundle = self.upload_and_load_bundle(path=Path(self.base_dir, bundle_path))
         cluster_prototype = Prototype.objects.get(bundle_id=cluster_bundle.pk, type="cluster")
         cluster_response: Response = self.client.post(
             path=reverse(viewname="v1:cluster"),
@@ -102,13 +102,13 @@ class TestServiceAPI(BaseTestCase):
     def test_change_maintenance_mode_on_no_action_success(self):
         response: Response = self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         self.service.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.ON)
+        self.assertEqual(response.data["maintenance_mode"], "ON")
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.ON)
 
     def test_change_maintenance_mode_on_with_action_success(self):
@@ -123,13 +123,13 @@ class TestServiceAPI(BaseTestCase):
         with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-                data={"maintenance_mode": MaintenanceMode.ON},
+                data={"maintenance_mode": "ON"},
             )
 
         self.service.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
+        self.assertEqual(response.data["maintenance_mode"], "CHANGING")
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
             action=action,
@@ -148,7 +148,7 @@ class TestServiceAPI(BaseTestCase):
         with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-                data={"maintenance_mode": MaintenanceMode.ON},
+                data={"maintenance_mode": "ON"},
             )
 
         self.service.refresh_from_db()
@@ -163,13 +163,13 @@ class TestServiceAPI(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": MaintenanceMode.OFF},
+            data={"maintenance_mode": "OFF"},
         )
 
         self.service.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.OFF)
+        self.assertEqual(response.data["maintenance_mode"], "OFF")
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.OFF)
 
     def test_change_maintenance_mode_off_with_action_success(self):
@@ -186,13 +186,13 @@ class TestServiceAPI(BaseTestCase):
         with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-                data={"maintenance_mode": MaintenanceMode.OFF},
+                data={"maintenance_mode": "OFF"},
             )
 
         self.service.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.data["maintenance_mode"], MaintenanceMode.CHANGING)
+        self.assertEqual(response.data["maintenance_mode"], "CHANGING")
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
         start_task_mock.assert_called_once_with(
             action=action,
@@ -211,7 +211,7 @@ class TestServiceAPI(BaseTestCase):
         with patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-                data={"maintenance_mode": MaintenanceMode.OFF},
+                data={"maintenance_mode": "OFF"},
             )
 
         self.service.refresh_from_db()
@@ -226,14 +226,14 @@ class TestServiceAPI(BaseTestCase):
 
         response: Response = self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": MaintenanceMode.ON},
+            data={"maintenance_mode": "ON"},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
         response: Response = self.client.post(
             path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
-            data={"maintenance_mode": MaintenanceMode.OFF},
+            data={"maintenance_mode": "OFF"},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -248,7 +248,7 @@ class TestServiceAPI(BaseTestCase):
     def test_delete_with_action(self):
         action = Action.objects.create(prototype=self.service.prototype, name=settings.ADCM_DELETE_SERVICE_ACTION_NAME)
 
-        with patch("api.service.views.delete_service"), patch("api.service.views.start_task") as start_task_mock:
+        with patch("adcm.utils.delete_service"), patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
@@ -279,7 +279,7 @@ class TestServiceAPI(BaseTestCase):
             component=service_component,
         )
 
-        with patch("api.service.views.delete_service"), patch("api.service.views.start_task") as start_task_mock:
+        with patch("adcm.utils.delete_service"), patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
@@ -300,7 +300,7 @@ class TestServiceAPI(BaseTestCase):
         self.service.state = "not created"
         self.service.save(update_fields=["state"])
 
-        with patch("api.service.views.delete_service"), patch("api.service.views.start_task") as start_task_mock:
+        with patch("adcm.utils.delete_service"), patch("adcm.utils.start_task") as start_task_mock:
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
@@ -317,7 +317,7 @@ class TestServiceAPI(BaseTestCase):
         )
 
     def test_upload_with_cyclic_requires(self):
-        self.upload_and_load_bundle(path=Path(settings.BASE_DIR, "python/api/tests/files/bundle_cluster_requires.tar"))
+        self.upload_and_load_bundle(path=Path(self.base_dir, "python/api/tests/files/bundle_cluster_requires.tar"))
 
     def test_delete_service_with_requires_fail(self):
         host = self.get_host(bundle_path="python/api/tests/files/bundle_test_provider_concern.tar")
@@ -365,7 +365,7 @@ class TestServiceAPI(BaseTestCase):
         self.service.prototype.required = True
         self.service.prototype.save(update_fields=["required"])
 
-        with patch("api.service.views.delete_service"):
+        with patch("adcm.utils.delete_service"):
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
@@ -382,7 +382,7 @@ class TestServiceAPI(BaseTestCase):
             source_service=self.service,
         )
 
-        with patch("api.service.views.delete_service"):
+        with patch("adcm.utils.delete_service"):
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
@@ -399,7 +399,7 @@ class TestServiceAPI(BaseTestCase):
             source_service=service_2,
         )
 
-        with patch("api.service.views.delete_service"):
+        with patch("adcm.utils.delete_service"):
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )

@@ -9,24 +9,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from cm.models import Bundle
-from django_filters import DateFilter
-from django_filters.rest_framework import CharFilter, FilterSet
+from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
 
 
 class BundleFilter(FilterSet):
-    name = CharFilter(field_name="name", label="Bundle name")
-    version = CharFilter(field_name="version", label="Bundle version")
-    edition = CharFilter(field_name="edition", label="Bundle edition")
-    date = DateFilter(field_name="date", lookup_expr="date", label="Bundle upload date")
-    product = CharFilter(field_name="category__value", label="Product name")
+    display_name = CharFilter(label="Display name", field_name="prototype__display_name", lookup_expr="icontains")
+    product = CharFilter(label="Product name", field_name="prototype__display_name", lookup_expr="iexact")
+    ordering = OrderingFilter(
+        fields={"prototype__display_name": "displayName", "date": "uploadTime"},
+        field_labels={"prototype__display_name": "Display name", "date": "Upload time"},
+        label="ordering",
+    )
 
     class Meta:
         model = Bundle
-        fields = [
-            "name",
-            "version",
-            "edition",
-            "date",
-            "product",
-        ]
+        fields = ["id"]

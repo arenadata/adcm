@@ -114,7 +114,7 @@ class TestActionAudit(BaseTestCase):
         self.assertIsInstance(log.operation_time, datetime)
 
         if log.user:
-            self.assertEqual(log.user.pk, user.pk)
+            self.assertEqual(log.user.username, user.username)
 
         self.assertEqual(log.object_changes, {})
 
@@ -234,14 +234,14 @@ class TestActionAudit(BaseTestCase):
         )
         host_role = Role.objects.get(name="View host configurations")
         host_policy = Policy.objects.create(name="test_host_policy", role=host_role)
-        host_policy.user.add(self.no_rights_user)
+        host_policy.group.add(self.no_rights_user_group)
         host_policy.add_object(host)
         host_policy.apply()
 
         cluster, service, component = self.get_cluster_service_component()
         component_role = Role.objects.get(name="View component configurations")
         component_policy = Policy.objects.create(name="test_component_policy", role=component_role)
-        component_policy.user.add(self.no_rights_user)
+        component_policy.group.add(self.no_rights_user_group)
         component_policy.add_object(component)
         component_policy.apply()
 

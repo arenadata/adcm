@@ -40,8 +40,12 @@ from cm.models import (
 )
 from django.conf import settings
 from init_db import init
+from rbac.models import User
+from rbac.services.user import create_user
 from rbac.upgrade.role import init_roles
 from rest_framework.test import APITestCase
+
+from adcm.tests.base import ParallelReadyTestCase
 
 
 class HostComponentMapDictType(TypedDict):
@@ -50,24 +54,27 @@ class HostComponentMapDictType(TypedDict):
     component_id: int
 
 
-class BaseAPITestCase(APITestCase):  # pylint: disable=too-many-instance-attributes
+class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+
+        cls.test_bundles_dir = Path(__file__).parent / "bundles"
+
         init_roles()
         init()
 
         adcm = ADCM.objects.first()
-        config_log = ConfigLog.objects.get(obj_ref=adcm.config)
+        config_log = ConfigLog.objects.get(id=adcm.config.current)
         config_log.config["auth_policy"]["max_password_length"] = 20
         config_log.save(update_fields=["config"])
 
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
-        cluster_bundle_1_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_one"
-        cluster_bundle_2_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_two"
-        provider_bundle_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "provider"
+        cluster_bundle_1_path = self.test_bundles_dir / "cluster_one"
+        cluster_bundle_2_path = self.test_bundles_dir / "cluster_two"
+        provider_bundle_path = self.test_bundles_dir / "provider"
 
         self.bundle_1 = self.add_bundle(source_dir=cluster_bundle_1_path)
         self.bundle_2 = self.add_bundle(source_dir=cluster_bundle_2_path)
@@ -142,8 +149,21 @@ class BaseAPITestCase(APITestCase):  # pylint: disable=too-many-instance-attribu
         return add_hc(cluster=cluster, hc_in=hc_map)
 
     @staticmethod
-    def get_non_existent_pk(model: type[ADCMEntity] | type[ADCMModel]):
+    def get_non_existent_pk(model: type[ADCMEntity] | type[ADCMModel] | type[User]):
         try:
             return model.objects.order_by("-pk").first().pk + 1
         except model.DoesNotExist:
             return 1
+
+    def create_user(self, user_data: dict | None = None) -> User:
+        if user_data is None:
+            user_data = {
+                "username": "test_user_username",
+                "password": "test_user_password",
+                "email": "testuser@mail.ru",
+                "first_name": "test_user_first_name",
+                "last_name": "test_user_last_name",
+                "profile": "",
+            }
+
+        return create_user(**user_data)

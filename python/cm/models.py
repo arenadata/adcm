@@ -23,6 +23,7 @@ from copy import deepcopy
 from enum import Enum
 from itertools import chain
 from typing import Optional
+from uuid import uuid4
 
 from cm.errors import AdcmEx
 from cm.logger import logger
@@ -53,9 +54,23 @@ class ObjectType(models.TextChoices):
 
 
 class MaintenanceMode(models.TextChoices):
-    ON = "ON", "ON"
-    OFF = "OFF", "OFF"
-    CHANGING = "CHANGING", "CHANGING"
+    ON = "on", "on"
+    OFF = "off", "off"
+    CHANGING = "changing", "changing"
+
+
+MAINTENANCE_MODE_BOTH_CASES_CHOICES = (
+    ("on", "on"),
+    ("off", "off"),
+    ("ON", "ON"),
+    ("OFF", "OFF"),
+)
+
+
+class SignatureStatus(models.TextChoices):
+    VALID = "valid", "valid"
+    INVALID = "invalid", "invalid"
+    ABSENT = "absent", "absent"
 
 
 LICENSE_STATE = (
@@ -182,6 +197,7 @@ class Bundle(ADCMModel):
     description = models.TextField(blank=True)
     date = models.DateTimeField(auto_now=True)
     category = models.ForeignKey("ProductCategory", on_delete=models.RESTRICT, null=True)
+    signature_status = models.CharField(max_length=10, choices=SignatureStatus.choices, default=SignatureStatus.ABSENT)
 
     __error_code__ = "BUNDLE_NOT_FOUND"
 
@@ -255,6 +271,7 @@ class Prototype(ADCMModel):
     config_group_customization = models.BooleanField(default=False)
     venv = models.CharField(default="default", max_length=1000, blank=False)
     allow_maintenance_mode = models.BooleanField(default=False)
+    allow_flags = models.BooleanField(default=False)
 
     __error_code__ = "PROTOTYPE_NOT_FOUND"
 
@@ -263,10 +280,6 @@ class Prototype(ADCMModel):
 
     class Meta:
         unique_together = (("bundle", "type", "parent", "name", "version"),)
-
-    @property
-    def is_license_accepted(self) -> bool:
-        return self.license == LICENSE_STATE[1][0]
 
 
 class ObjectConfig(ADCMModel):
@@ -452,14 +465,14 @@ class ADCMEntity(ADCMModel):
     def get_id_chain(self) -> dict:
         """
         Get object ID chain for front-end URL generation in message templates
-        result looks like {'cluster': 12, 'service': 34, 'component': 45}
+        result looks like {'cluster_id': 12, 'service_id': 34, 'component_id': 45}
         """
         ids = {}
-        ids[self.prototype.type] = self.pk
-        for attr in ["cluster", "service", "provider"]:
+        ids[f"{self.prototype.type}_id"] = self.pk
+        for attr in ["cluster_id", "service_id", "provider_id"]:
             value = getattr(self, attr, None)
-            if value:
-                ids[attr] = value.pk
+            if value is not None:
+                ids[attr] = value
 
         return ids
 
@@ -502,6 +515,10 @@ class ADCMEntity(ADCMModel):
         return ContentType.objects.get(app_label="cm", model=model_name)
 
     def delete(self, using=None, keep_parents=False):
+        for concern in self.concerns.filter(owner_type=self.content_type, owner_id=self.id):
+            logger.debug("Delete %s", str(concern))
+            concern.delete()
+
         super().delete(using, keep_parents)
         if self.config is not None and not isinstance(self, ServiceComponent):
             self.config.delete()
@@ -542,6 +559,7 @@ class Upgrade(ADCMModel):
 
 class ADCM(ADCMEntity):
     name = models.CharField(max_length=1000, choices=(("ADCM", "ADCM"),), unique=True)
+    uuid = models.UUIDField(default=uuid4, editable=False)
 
     @property
     def bundle_id(self):
@@ -1253,11 +1271,11 @@ class Action(AbstractAction):
 
     def get_id_chain(self, target_ids: dict) -> dict:
         """Get action ID chain for front-end URL generation in message templates"""
-        target_ids["action"] = self.pk
+        target_ids["action_id"] = self.pk
         result = {
-            "type": self.prototype.type + "_action_run",
+            "type": f"{self.prototype.type}_action_run",
             "name": self.display_name or self.name,
-            "ids": target_ids,
+            "params": target_ids,
         }
         return result
 
@@ -1536,6 +1554,8 @@ class TaskLog(ADCMModel):
             obj.add_to_concerns(item=self.lock)
 
     def unlock_affected(self) -> None:
+        self.refresh_from_db()
+
         if not self.lock:
             return
 
@@ -1585,6 +1605,10 @@ class TaskLog(ADCMModel):
         except OSError as e:
             raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
 
+    @property
+    def duration(self) -> float:
+        return (self.finish_date - self.start_date).total_seconds()
+
 
 class JobLog(ADCMModel):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
@@ -1629,6 +1653,10 @@ class JobLog(ADCMModel):
 
         if event_queue:
             event_queue.send_state()
+
+    @property
+    def duration(self) -> float:
+        return (self.finish_date - self.start_date).total_seconds()
 
 
 class GroupCheckLog(ADCMModel):
@@ -1699,6 +1727,7 @@ class StagePrototype(ADCMModel):
     config_group_customization = models.BooleanField(default=False)
     venv = models.CharField(default="default", max_length=1000, blank=False)
     allow_maintenance_mode = models.BooleanField(default=False)
+    allow_flags = models.BooleanField(default=False)
 
     __error_code__ = "PROTOTYPE_NOT_FOUND"
 
@@ -1780,6 +1809,7 @@ class KnownNames(Enum):
     REQUIRED_IMPORT_ISSUE = "required import issue"  # kwargs=(source, )
     HOST_COMPONENT_ISSUE = "host component issue"  # kwargs=(source, )
     UNSATISFIED_REQUIREMENT_ISSUE = "unsatisfied service requirement"  # kwargs=(source, )
+    CONFIG_FLAG = "outdated configuration flag"  # kwargs=(source, )
 
 
 class PlaceHolderType(Enum):
@@ -1867,11 +1897,11 @@ class MessageTemplate(ADCMModel):
             return {}
 
         ids = target.get_id_chain()
-        ids["action"] = action.pk
+        ids["action_id"] = action.pk
         return {
             "type": PlaceHolderType.ACTION.value,
             "name": action.display_name,
-            "ids": ids,
+            "params": ids,
         }
 
     @classmethod
@@ -1880,7 +1910,7 @@ class MessageTemplate(ADCMModel):
 
         if proto:
             return {
-                "id": proto.id,
+                "params": {"prototype_id": proto.id},
                 "type": "prototype",
                 "name": proto.display_name or proto.name,
             }
@@ -1896,7 +1926,7 @@ class MessageTemplate(ADCMModel):
         return {
             "type": obj.prototype.type,
             "name": obj.display_name,
-            "ids": obj.get_id_chain(),
+            "params": obj.get_id_chain(),
         }
 
     @classmethod
@@ -1910,7 +1940,7 @@ class MessageTemplate(ADCMModel):
         return {
             "type": PlaceHolderType.JOB.value,
             "name": action.display_name or action.name,
-            "ids": job.id,
+            "params": {"job_id": job.id},
         }
 
 
@@ -1975,5 +2005,5 @@ class ConcernItem(ADCMModel):
 
 
 class ADCMEntityStatus(models.TextChoices):
-    UP = "UP", "UP"
-    DOWN = "DOWN", "DOWN"
+    UP = "up", "up"
+    DOWN = "down", "down"

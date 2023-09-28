@@ -13,7 +13,6 @@
 from pathlib import Path
 
 from cm.models import Prototype
-from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
@@ -25,7 +24,7 @@ class TestPrototypeAPI(BaseTestCase):
     def test_cluster_prototype_retrieve_success(self):
         bundle = self.upload_and_load_bundle(
             path=Path(
-                settings.BASE_DIR,
+                self.base_dir,
                 "python/api/tests/files/test_actions_data.tar",
             ),
         )

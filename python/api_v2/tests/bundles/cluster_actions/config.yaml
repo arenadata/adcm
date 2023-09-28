@@ -1,0 +1,210 @@
+- type: cluster
+  name: cluster_with_actions
+  version: "1.0"
+
+  actions: &actions
+
+    # maintenance mode
+
+    cluster_host_action_allowed: &job
+      type: job
+      script: ./actions.yaml
+      script_type: ansible
+      params:
+        ansible_tags: simple_action
+      host_action: true
+      allow_in_maintenance_mode: true
+      states:
+        available: any
+
+    cluster_host_action_disallowed:
+      <<: *job
+      allow_in_maintenance_mode: false
+
+    # simple
+
+    state_any: &simple_action
+      type: job
+      script: ./actions.yaml
+      script_type: ansible
+      states:
+        available: any
+
+    state_created:
+      <<: *simple_action
+      states:
+        available:
+          - created
+
+    state_installed:
+      <<: *simple_action
+      states:
+        available:
+          - installed
+
+    # masking
+
+    state_created_masking: &action
+      type: job
+      script: ./actions.yaml
+      script_type: ansible
+      masking:
+        state:
+          available:
+            - created
+
+    state_installed_masking:
+      <<: *action
+      masking:
+        state:
+          available:
+            - installed
+
+    state_created_unavailable:
+      <<: *action
+      masking:
+        state:
+          unavailable:
+            - created
+
+    # multi state masking
+
+    multi_flag_masking:
+      <<: *action
+      masking:
+        multi_state:
+          available:
+            - flag
+
+    multi_flag_unavailable:
+      <<: *action
+      masking:
+        multi_state:
+          unavailable:
+            - flag
+
+    # state + multi
+
+    state_created_available_multi_bag_available:
+      <<: *action
+      masking:
+        state:
+          available:
+            - created
+        multi_state:
+          available:
+            - bag
+
+    state_created_available_multi_bag_unavailable:
+      <<: *action
+      masking:
+        state:
+          available:
+            - created
+        multi_state:
+          unavailable:
+            - bag
+
+    state_created_unavailable_multi_bag_available:
+      <<: *action
+      masking:
+        state:
+          unavailable:
+            - created
+        multi_state:
+          available:
+            - bag
+
+    state_created_unavailable_multi_bag_unavailable:
+      <<: *action
+      masking:
+        state:
+          unavailable:
+            - created
+        multi_state:
+          unavailable:
+            - bag
+
+    # host_action: true
+
+    host_action_any: &host_action_any
+      <<: *simple_action
+      display_name: "from cluster any"
+      host_action: true
+      states:
+        available: any
+
+    host_action_installed: &host_action_masking
+      <<: *action
+      display_name: "from cluster installed"
+      host_action: true
+      masking:
+        state:
+          available:
+            - installed
+
+    host_action_multi_flag:
+      <<: *host_action_masking
+      display_name: "from cluster multi flag"
+      masking: &created_unavailable_mutli_flag_available
+        state:
+          unavailable:
+            - created
+        multi_state:
+          available:
+            - flag
+
+- type: service
+  name: service_1
+  version: "0.1"
+
+  actions:
+    <<: *actions
+
+    host_action_any:
+      <<: *host_action_any
+      display_name: "from service any"
+
+    host_action_installed:
+      <<: *host_action_masking
+      display_name: "from service installed"
+
+
+    host_action_multi_flag:
+      <<: *host_action_masking
+      display_name: "from service multi flag"
+      masking: *created_unavailable_mutli_flag_available
+
+  components:
+    component_1:
+      actions:
+        <<: *actions
+
+        host_action_any:
+          <<: *host_action_any
+          display_name: "from component any"
+
+        host_action_installed:
+          <<: *host_action_masking
+          display_name: "from component installed"
+
+        host_action_multi_flag:
+          <<: *host_action_masking
+          display_name: "from component multi flag"
+          masking: *created_unavailable_mutli_flag_available
+
+    component_2:
+      actions: *actions
+
+- type: service
+  name: service_2
+  version: "0.2"
+
+  actions: *actions
+
+  components:
+    component_1:
+      actions: *actions
+
+    component_2:
+      actions: *actions

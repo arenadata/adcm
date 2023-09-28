@@ -9,12 +9,12 @@
     <div [ngClass]="{'item-iteration': true, dif: options.type === 'list' || options.type === 'dict'}"
       *ngFor="let item of controls; let i = index;">
 
-      <app-root-scheme [form]="item.form" [options]="item.rules" [value]="item.value"
+      <app-root-scheme [form]="item.form" [options]="item.rules" [value]="item.value" [invisibleItems]="invisibleItems"  
         *ngIf="item.type === 'list' || item.type === 'dict'; else simple">
       </app-root-scheme>
 
       <ng-template #simple>
-        <app-item-scheme [item]="item" [isReadOnly]="isReadOnly" [index]="i" (remove)="remove($event)">
+        <app-item-scheme [item]="item" [isReadOnly]="isReadOnly" [index]="i" (remove)="remove($event)" [invisibleItems]="invisibleItems">
         </app-item-scheme>
       </ng-template>
 

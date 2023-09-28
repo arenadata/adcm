@@ -32,13 +32,14 @@ import { SchemeService } from './scheme.service';
     `,
   ],
   template: `<div class="main">
-    <app-root-scheme #root [isReadOnly]="field.read_only" [form]="current" [options]="rules" [value]="field.value || field.default"></app-root-scheme>
+    <app-root-scheme #root [isReadOnly]="field.read_only" [form]="current" [options]="rules" [value]="field.value || field.default" [invisibleItems]="invisibleItems"></app-root-scheme>
     <mat-error *ngIf="hasError('isEmpty')" class="error">Field [{{ field.display_name }}] is required!</mat-error>
   </div>`,
 })
 export class SchemeComponent extends FieldDirective implements OnInit, OnChanges {
   rules: IYField | IYContainer;
   current: AbstractControl;
+  invisibleItems: string[];
 
   @ViewChild('root') root: RootComponent;
 
@@ -59,6 +60,7 @@ export class SchemeComponent extends FieldDirective implements OnInit, OnChanges
 
   ngOnInit() {
     this.yspec.Root = this.field.limits.yspec;
+    this.invisibleItems = this.yspec.getInvisibleItems();
     this.rules = this.yspec.build();
     this.field.limits.rules = this.rules;
     this.rules.name = '';

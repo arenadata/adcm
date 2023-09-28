@@ -12,32 +12,32 @@
   </ng-container>
   <a
     *ngSwitchCase="IMPlaceholderItemType.Cluster"
-    [routerLink]="['/cluster', placeholder.ids.cluster, sectionByCause()]"
+    [routerLink]="['/cluster', placeholder.params.cluster_id, sectionByCause()]"
     class="issue"
   >{{placeholder.name}}</a>
   <a
     *ngSwitchCase="IMPlaceholderItemType.Service"
-    [routerLink]="['/cluster', placeholder.ids.cluster, 'service', placeholder.ids.service, sectionByCause()]"
+    [routerLink]="['/cluster', placeholder.params.cluster_id, 'service', placeholder.params.service_id, sectionByCause()]"
     class="issue"
   >{{placeholder.name}}</a>
   <a
     *ngSwitchCase="IMPlaceholderItemType.Component"
-    [routerLink]="['/cluster', placeholder.ids.cluster, 'service', placeholder.ids.service, 'component', placeholder.ids.component, 'config']"
+    [routerLink]="['/cluster', placeholder.params.cluster_id, 'service', placeholder.params.service_id, 'component', placeholder.params.component_id, 'config']"
     class="issue"
   >{{placeholder.name}}</a>
   <a
     *ngSwitchCase="IMPlaceholderItemType.HostProvider"
-    [routerLink]="['/provider', placeholder.ids.provider, 'config']"
+    [routerLink]="['/provider', placeholder.params.provider_id, 'config']"
     class="issue"
   >{{placeholder.name}} </a>
   <a
     *ngSwitchCase="IMPlaceholderItemType.Host"
-    [routerLink]="['/host', placeholder.ids.host, 'config']"
+    [routerLink]="['/host', placeholder.params.host_id, 'config']"
     class="issue"
   >{{placeholder.name}}</a>
   <a
     *ngSwitchCase="IMPlaceholderItemType.Job"
-    [routerLink]="['/job', placeholder.ids, 'main']"
+    [routerLink]="['/job', placeholder.params.job_id, 'main']"
     class="issue"
   >{{placeholder.name}}</a>
   <a *ngSwitchDefault class="issue red">{{placeholder.name}}</a>

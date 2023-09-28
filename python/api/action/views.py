@@ -23,9 +23,18 @@ from api.job.serializers import RunTaskRetrieveSerializer
 from api.utils import AdcmFilterBackend, create
 from audit.utils import audit
 from cm.errors import AdcmEx
-from cm.models import Action, Host, HostComponent, TaskLog, get_model_by_type
+from cm.models import (
+    Action,
+    ConcernType,
+    Host,
+    HostComponent,
+    PrototypeConfig,
+    TaskLog,
+    get_model_by_type,
+)
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
 from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework.exceptions import PermissionDenied
@@ -34,7 +43,6 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from adcm.permissions import VIEW_ACTION_PERM, get_object_for_user
-from adcm.utils import filter_actions
 
 
 def get_object_type_id(**kwargs) -> tuple[str, int, int]:
@@ -54,67 +62,62 @@ def get_obj(**kwargs):
 
 
 class ActionList(PermissionListMixin, GenericUIView):
-    queryset = Action.objects.filter(upgrade__isnull=True).exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET)
+    queryset = (
+        Action.objects.select_related("prototype")
+        .filter(upgrade__isnull=True)
+        .exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET)
+    )
     serializer_class = ActionSerializer
     serializer_class_ui = ActionUISerializer
     filterset_fields = ("name",)
     filter_backends = (AdcmFilterBackend,)
     permission_required = [VIEW_ACTION_PERM]
 
-    def _get_actions_for_host(self, host: Host) -> set[Action]:
-        actions = set(filter_actions(host, self.filter_queryset(self.get_queryset().filter(prototype=host.prototype))))
-        hostcomponents = HostComponent.objects.filter(host_id=host.id)
-        if hostcomponents:
-            for hostcomponent in hostcomponents:
-                cluster, _ = get_obj(object_type="cluster", cluster_id=hostcomponent.cluster_id)
-                service, _ = get_obj(object_type="service", service_id=hostcomponent.service_id)
-                component, _ = get_obj(object_type="component", component_id=hostcomponent.component_id)
-                for connect_obj in [cluster, service, component]:
-                    actions.update(
-                        filter_actions(
-                            connect_obj,
-                            self.filter_queryset(
-                                self.get_queryset().filter(prototype=connect_obj.prototype, host_action=True),
-                            ),
-                        ),
-                    )
-        else:
-            if host.cluster is not None:
-                actions.update(
-                    filter_actions(
-                        host.cluster,
-                        self.filter_queryset(
-                            self.get_queryset().filter(prototype=host.cluster.prototype, host_action=True),
-                        ),
-                    ),
-                )
-
-        return actions
-
     def get(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        if kwargs["object_type"] == "host":
-            host, _ = get_obj(object_type="host", host_id=kwargs["host_id"])
-            actions = self._get_actions_for_host(host)
+        obj, _ = get_obj(**kwargs)
 
-            obj = host
-            objects = {"host": host}
-        else:
-            obj, _ = get_obj(**kwargs)
-            actions = filter_actions(
-                obj,
-                self.filter_queryset(self.get_queryset().filter(prototype=obj.prototype, host_action=False)),
+        if obj.concerns.filter(type=ConcernType.LOCK).exists():
+            return Response(data=[])
+
+        objects = {obj.prototype.type: obj}
+        prototype_object = {}
+
+        if kwargs["object_type"] == "host" and obj.cluster:
+            prototype_object[obj.cluster.prototype] = obj.cluster
+
+            for hc_map in HostComponent.objects.filter(host=obj).select_related(
+                "service__prototype", "component__prototype"
+            ):
+                prototype_object[hc_map.service.prototype] = hc_map.service
+                prototype_object[hc_map.component.prototype] = hc_map.component
+
+        actions = self.filter_queryset(
+            self.get_queryset().filter(
+                Q(prototype=obj.prototype, host_action=False)
+                | Q(prototype__in=prototype_object.keys(), host_action=True)
             )
-            objects = {obj.prototype.type: obj}
+        )
+        prototype_object[obj.prototype] = obj
+
+        allowed_actions = []
+
+        for action in actions:
+            if action.allowed(obj=prototype_object[action.prototype]):
+                action.config = PrototypeConfig.objects.filter(action=action).order_by("id")
+                allowed_actions.append(action)
 
         # added filter actions by custom perm for run actions
-        perms = [f"cm.run_action_{hashlib.sha256(a.name.encode(settings.ENCODING_UTF_8)).hexdigest()}" for a in actions]
+        perms = [
+            f"cm.run_action_{hashlib.sha256(a.name.encode(settings.ENCODING_UTF_8)).hexdigest()}"
+            for a in allowed_actions
+        ]
         mask = [request.user.has_perm(perm, obj) for perm in perms]
-        actions = list(compress(actions, mask))
+        allowed_actions = list(compress(allowed_actions, mask))
 
         serializer = self.get_serializer(
-            actions,
+            allowed_actions,
             many=True,
-            context={"request": request, "objects": objects, "obj": obj},
+            context={"request": request, "objects": objects, "obj": obj, "prototype": obj.prototype},
         )
 
         return Response(serializer.data)

@@ -52,7 +52,7 @@ class TestBundleAudit(BaseTestCase):
 
         self.test_bundle_filename = "test_bundle.tar"
         self.test_bundle_path = Path(
-            settings.BASE_DIR,
+            self.base_dir,
             "python/audit/tests/files",
             self.test_bundle_filename,
         )
@@ -63,7 +63,7 @@ class TestBundleAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.user.username, user.username)
         self.assertEqual(log.object_changes, {})
 
     def check_log_load_no_obj(self, log: AuditLog, operation_result: AuditLogOperationResult, user: User) -> None:
@@ -72,7 +72,7 @@ class TestBundleAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.user.username, user.username)
         self.assertEqual(log.object_changes, {})
 
     def check_log_denied(self, log: AuditLog, operation_name: str, operation_type: AuditLogOperationType) -> None:
@@ -84,7 +84,7 @@ class TestBundleAudit(BaseTestCase):
         self.assertEqual(log.operation_type, operation_type)
         self.assertEqual(log.operation_result, AuditLogOperationResult.DENIED)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.no_rights_user.pk)
+        self.assertEqual(log.user.username, self.no_rights_user.username)
         self.assertEqual(log.object_changes, {})
 
     def check_prototype_licence(self, log: AuditLog, operation_result: AuditLogOperationResult, user: User):
@@ -96,7 +96,7 @@ class TestBundleAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.user.username, user.username)
         self.assertEqual(log.object_changes, {})
 
     def check_log_deleted(self, log: AuditLog, operation_result: AuditLogOperationResult):
@@ -108,7 +108,7 @@ class TestBundleAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.DELETE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.user.username, self.test_user.username)
         self.assertEqual(log.object_changes, {})
 
     def upload_bundle_and_check(self) -> Bundle:
@@ -124,7 +124,7 @@ class TestBundleAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.user.username, self.test_user.username)
         self.assertEqual(log.object_changes, {})
 
         return bundle
@@ -231,7 +231,7 @@ class TestBundleAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.user.username, self.test_user.username)
         self.assertEqual(log.object_changes, {})
 
     def test_update_denied(self):
@@ -258,7 +258,7 @@ class TestBundleAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.user.username, self.test_user.username)
         self.assertEqual(log.object_changes, {})
 
     def test_license_accepted_denied(self):

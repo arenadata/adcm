@@ -34,10 +34,11 @@ STACK_DIR = os.getenv("ADCM_STACK_DIR", BASE_DIR)
 BUNDLE_DIR = STACK_DIR / "data" / "bundle"
 CODE_DIR = BASE_DIR / "python"
 DOWNLOAD_DIR = Path(STACK_DIR, "data", "download")
-RUN_DIR = BASE_DIR / "data" / "run"
+DATA_DIR = BASE_DIR / "data"
+RUN_DIR = DATA_DIR / "run"
 FILE_DIR = STACK_DIR / "data" / "file"
-LOG_DIR = BASE_DIR / "data" / "log"
-VAR_DIR = BASE_DIR / "data" / "var"
+LOG_DIR = DATA_DIR / "log"
+VAR_DIR = DATA_DIR / "var"
 LOG_FILE = LOG_DIR / "adcm.log"
 SECRETS_FILE = VAR_DIR / "secrets.json"
 ADCM_TOKEN_FILE = VAR_DIR / "adcm_token"
@@ -102,6 +103,7 @@ MIDDLEWARE = [
     "audit.middleware.LoginMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "djangorestframework_camel_case.middleware.CamelCaseMiddleWare",
 ]
 if not DEBUG:
     MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
@@ -153,6 +155,9 @@ REST_FRAMEWORK = {
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.NamespaceVersioning",
     "DEFAULT_VERSION": "v1",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
+    "JSON_UNDERSCOREIZE": {
+        "ignore_fields": ("config", "adcmMeta"),
+    },
 }
 
 DB_PASS = os.getenv("DB_PASS")
@@ -233,18 +238,24 @@ if not DEBUG:
                 "filters": ["require_debug_false"],
                 "formatter": "adcm",
                 "class": "logging.FileHandler",
-                "filename": BASE_DIR / "data/log/adcm_debug.log",
+                "filename": LOG_DIR / "adcm_debug.log",
+            },
+            "task_runner_err_file": {
+                "filters": ["require_debug_false"],
+                "formatter": "adcm",
+                "class": "logging.FileHandler",
+                "filename": LOG_DIR / "task_runner.err",
             },
             "background_task_file_handler": {
                 "formatter": "adcm",
                 "class": "logging.handlers.TimedRotatingFileHandler",
-                "filename": BASE_DIR / "data/log/cron_task.log",
+                "filename": LOG_DIR / "cron_task.log",
                 "when": "midnight",
                 "backupCount": 10,
             },
             "audit_file_handler": {
                 "class": "logging.handlers.TimedRotatingFileHandler",
-                "filename": BASE_DIR / "data/log/audit.log",
+                "filename": LOG_DIR / "audit.log",
                 "when": "midnight",
                 "backupCount": 10,
             },
@@ -267,6 +278,11 @@ if not DEBUG:
             },
             "audit": {
                 "handlers": ["audit_file_handler"],
+                "level": LOG_LEVEL,
+                "propagate": True,
+            },
+            "task_runner_err": {
+                "handlers": ["task_runner_err_file"],
                 "level": LOG_LEVEL,
                 "propagate": True,
             },

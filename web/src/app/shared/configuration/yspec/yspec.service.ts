@@ -37,6 +37,7 @@ interface IYRoot {
   item?: string;
   items?: IRoot;
   required_items?: string[];
+  invisible_items?: string[];
   default_item?: string;
 }
 
@@ -68,6 +69,7 @@ export interface IYField {
   type: TNBase;
   controlType: controlType;
   validator: IValidator;
+  isInvisible: boolean;
 }
 
 /**
@@ -101,6 +103,18 @@ export class YspecService {
     return this.root;
   }
 
+  getInvisibleItems() {
+    const invisibleItems = [];
+    for (const item in this.Root) {
+      const { invisible_items } = this.Root[item];
+      
+      if (invisible_items !== undefined) {
+        invisibleItems.push(...invisible_items);
+      }
+    }
+    return invisibleItems;
+  }
+
   build(rule = 'root', path: string[] = []): IYContainer | IYField {
     const { match, item, items } = this.Root[rule];
 
@@ -119,7 +133,9 @@ export class YspecService {
   }
 
   field(field: { type: TNBase; path: string[] }): IYField {
+    const invisibleItems = this.getInvisibleItems();
     const name = field.path.reverse()[0];
+    const isInvisible = invisibleItems.includes(name);
     return {
       name,
       type: field.type,
@@ -129,6 +145,7 @@ export class YspecService {
         required: this.findRule(field.path, 'required_items'),
         pattern: getPattern(field.type),
       },
+      isInvisible,
     };
   }
 
@@ -143,7 +160,7 @@ export class YspecService {
     return { type: 'list', name, options: this.build(item, [...path, item]) };
   }
 
-  dict(items: IRoot, path: string[]): IYContainer {
+  dict(items: IRoot, path: string[]): IYContainer {  
     const name = [...path].reverse()[0] || 'root';
     return {
       type: 'dict',

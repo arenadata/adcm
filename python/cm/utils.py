@@ -15,9 +15,20 @@ import os
 from collections.abc import Mapping
 from pathlib import Path
 from secrets import token_hex
-from typing import Any, Iterable
+from typing import Any, Iterable, Protocol, TypeVar
 
 from django.conf import settings
+
+
+class WithPK(Protocol):
+    pk: int
+
+
+ObjectWithPk = TypeVar("ObjectWithPk", bound=WithPK)
+
+
+def build_id_object_mapping(objects: Iterable[ObjectWithPk]) -> dict[int, ObjectWithPk]:
+    return {object_.pk: object_ for object_ in objects}
 
 
 def dict_json_get_or_create(path: str | Path, field: str, value: Any = None) -> Any:

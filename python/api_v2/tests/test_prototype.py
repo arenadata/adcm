@@ -9,11 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-lines
 
 from api_v2.tests.base import BaseAPITestCase
 from cm.models import ObjectType, Prototype
-from django.conf import settings
 from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
@@ -22,8 +20,8 @@ class TestPrototype(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
-        cluster_bundle_1_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_one"
-        cluster_bundle_2_path = settings.BASE_DIR / "python" / "api_v2" / "tests" / "bundles" / "cluster_one_upgrade"
+        cluster_bundle_1_path = self.test_bundles_dir / "cluster_one"
+        cluster_bundle_2_path = self.test_bundles_dir / "cluster_one_upgrade"
 
         self.bundle_1 = self.add_bundle(source_dir=cluster_bundle_1_path)
         self.bundle_2 = self.add_bundle(source_dir=cluster_bundle_2_path)
@@ -78,3 +76,11 @@ class TestPrototype(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+    def test_filter_by_bundle_id_and_type_cluster(self):
+        response = self.client.get(
+            path=reverse(viewname="v2:prototype-list"), data={"bundleId": self.bundle_1.id, "type": "cluster"}
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)

@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.errors import raise_adcm_ex
+from cm.errors import AdcmEx, raise_adcm_ex
 from cm.models import ADCMEntity
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from django.db.transaction import atomic
-from rbac.models import Policy, PolicyObject, Role
+from rbac.models import Group, Policy, PolicyObject, Role
 
 
 def _check_objects(role: Role, objects: list[ADCMEntity]) -> None:
@@ -43,16 +43,13 @@ def _check_objects(role: Role, objects: list[ADCMEntity]) -> None:
 
 
 @atomic
-def policy_create(name: str, role: Role, built_in: bool = False, **kwargs) -> Policy | None:
-    users = kwargs.get("user", [])
+def policy_create(name: str, role: Role, built_in: bool = False, **kwargs) -> Policy:
     groups = kwargs.get("group", [])
-    if not users and not groups:
-        raise_adcm_ex(
-            "POLICY_INTEGRITY_ERROR",
-            msg="Role should be bind with some users or groups",
-        )
-
     objects = kwargs.get("object", [])
+
+    if not groups:
+        raise AdcmEx(code="POLICY_INTEGRITY_ERROR", msg="Policy should contain at least one group")
+
     _check_objects(role, objects)
     description = kwargs.get("description", "")
 
@@ -63,32 +60,28 @@ def policy_create(name: str, role: Role, built_in: bool = False, **kwargs) -> Po
             policy_object, _ = PolicyObject.objects.get_or_create(object_id=obj.id, content_type=content_type)
             policy.object.add(policy_object)
 
-        policy.user.add(*users)
         policy.group.add(*groups)
 
         policy.apply()
 
         return policy
     except IntegrityError as e:
-        raise_adcm_ex("POLICY_CREATE_ERROR", msg=f"Policy creation failed with error {e}")
-
-    return None
+        raise AdcmEx(code="POLICY_CREATE_ERROR", msg=f"Policy creation failed with error {e}") from e
 
 
 @atomic
-def policy_update(policy: Policy, **kwargs) -> Policy:
-    users = kwargs.get("user")
-    groups = kwargs.get("group")
-    if not (users or policy.user.all()) and not (groups or policy.group.all()):
-        raise_adcm_ex(
+def policy_update(policy: Policy, group: list[Group] | None = None, **kwargs) -> Policy:
+    groups = group
+    if groups is not None and len(groups) == 0:
+        raise AdcmEx(
             "POLICY_INTEGRITY_ERROR",
-            msg="Role should be bind with some users or groups",
+            msg="Policy should contain at least one group",
         )
 
     role = kwargs.get("role")
     objects = kwargs.get("object")
-    policy_old_objects = [po.object for po in policy.object.all()]
-    _check_objects(role or policy.role, objects if objects is not None else policy_old_objects)
+
+    _check_objects(role or policy.role, objects if objects is not None else [po.object for po in policy.object.all()])
 
     if "name" in kwargs:
         policy.name = kwargs["name"]
@@ -99,11 +92,7 @@ def policy_update(policy: Policy, **kwargs) -> Policy:
     if role is not None:
         policy.role = role
 
-    if users is not None:
-        policy.user.clear()
-        policy.user.add(*users)
-
-    if groups is not None:
+    if groups:
         policy.group.clear()
         policy.group.add(*groups)
 
@@ -121,7 +110,7 @@ def policy_update(policy: Policy, **kwargs) -> Policy:
     try:
         policy.save()
     except IntegrityError as e:
-        raise_adcm_ex("POLICY_UPDATE_ERROR", msg=f"Policy update failed with error {e}")
+        raise AdcmEx("POLICY_UPDATE_ERROR", msg=f"Policy update failed with error {e}") from e
 
     policy.apply()
 

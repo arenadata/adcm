@@ -1,0 +1,11 @@
+---
+- type: cluster
+  name: cluster_with_allowed_flags
+  version: '1.0'
+  edition: community
+  allow_flags: true
+  config:
+    - name: string
+      type: string
+      required: false
+

@@ -10,20 +10,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api_v2.cluster.serializers import ClusterRelatedSerializer
 from api_v2.concern.serializers import ConcernSerializer
+from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from cm.adcm_config.config import get_main_info
-from cm.models import ClusterObject, MaintenanceMode
+from cm.models import ClusterObject, MaintenanceMode, ServiceComponent
 from cm.status_api import get_obj_status
 from rest_framework.serializers import (
-    CharField,
     ChoiceField,
+    IntegerField,
     ModelSerializer,
     SerializerMethodField,
 )
 
+from adcm.serializers import EmptySerializer
+
 
 class ServiceRetrieveSerializer(ModelSerializer):
-    prototype_version = CharField(read_only=True, source="prototype.version")
+    prototype = PrototypeRelatedSerializer(read_only=True)
+    cluster = ClusterRelatedSerializer(read_only=True)
     status = SerializerMethodField()
     concerns = ConcernSerializer(read_only=True, many=True)
     main_info = SerializerMethodField()
@@ -34,13 +39,16 @@ class ServiceRetrieveSerializer(ModelSerializer):
             "id",
             "name",
             "display_name",
-            "prototype_version",
+            "prototype",
+            "cluster",
             "status",
             "state",
+            "multi_state",
             "concerns",
             "is_maintenance_mode_available",
             "maintenance_mode",
             "main_info",
+            "multi_state",
         ]
 
     def get_status(self, instance: ClusterObject) -> str:
@@ -50,10 +58,14 @@ class ServiceRetrieveSerializer(ModelSerializer):
         return get_main_info(obj=instance)
 
 
-class ServiceCreateSerializer(ModelSerializer):
+class ServiceRelatedSerializer(ModelSerializer):
     class Meta:
         model = ClusterObject
-        fields = ["prototype"]
+        fields = ["id", "name", "display_name"]
+
+
+class ServiceCreateSerializer(EmptySerializer):
+    prototype_id = IntegerField()
 
 
 class ServiceMaintenanceModeSerializer(ModelSerializer):
@@ -62,3 +74,29 @@ class ServiceMaintenanceModeSerializer(ModelSerializer):
     class Meta:
         model = ClusterObject
         fields = ["maintenance_mode"]
+
+
+class ServiceNameSerializer(ModelSerializer):
+    class Meta:
+        model = ClusterObject
+        fields = ["id", "name", "display_name"]
+
+
+class RelatedComponentsStatusesSerializer(ModelSerializer):
+    status = SerializerMethodField()
+
+    @staticmethod
+    def get_status(instance: ClusterObject) -> str:
+        return get_obj_status(obj=instance)
+
+    class Meta:
+        model = ServiceComponent
+        fields = ["id", "name", "display_name", "status"]
+
+
+class ServiceStatusSerializer(ModelSerializer):
+    components = RelatedComponentsStatusesSerializer(many=True, source="servicecomponent_set")
+
+    class Meta:
+        model = ClusterObject
+        fields = ["components"]

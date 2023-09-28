@@ -16,6 +16,7 @@ from rest_framework.serializers import (
     CharField,
     HyperlinkedModelSerializer,
     IntegerField,
+    SerializerMethodField,
 )
 
 
@@ -24,6 +25,7 @@ class AuditLogSerializer(HyperlinkedModelSerializer):
     object_type = CharField(read_only=True, source="audit_object.object_type", allow_null=True)
     object_name = CharField(read_only=True, source="audit_object.object_name", allow_null=True)
     username = CharField(read_only=True, source="user.username", allow_null=True)
+    user_id = SerializerMethodField()
 
     class Meta:
         model = AuditLog
@@ -43,8 +45,17 @@ class AuditLogSerializer(HyperlinkedModelSerializer):
         ]
         extra_kwargs = {"url": {"view_name": "audit:auditlog-detail"}}
 
+    @staticmethod
+    def get_user_id(obj: AuditLog) -> str | None:
+        if obj.user:
+            return obj.user.auth_user_id
+
+        return None
+
 
 class AuditSessionSerializer(HyperlinkedModelSerializer):
+    user_id = SerializerMethodField()
+
     class Meta:
         model = AuditSession
         fields = [
@@ -58,3 +69,10 @@ class AuditSessionSerializer(HyperlinkedModelSerializer):
         extra_kwargs = {
             "url": {"view_name": "audit:auditsession-detail"},
         }
+
+    @staticmethod
+    def get_user_id(obj: AuditSession) -> str | None:
+        if obj.user:
+            return obj.user.auth_user_id
+
+        return None

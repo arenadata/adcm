@@ -20,7 +20,6 @@ from cm.models import ADCM
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 
 
-# pylint:disable-next=too-many-ancestors
 class ADCMViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
     queryset = ADCM.objects.select_related("prototype").all()
     serializer_class = ADCMSerializer

@@ -1,4 +1,5 @@
 import { AdcmEntity } from './entity';
+import { SignatureStatus } from '@app/components/columns/signature-column/signature-column.component';
 
 export interface IBundle extends AdcmEntity {
   adcm_min_version: string;
@@ -14,4 +15,6 @@ export interface IBundle extends AdcmEntity {
   update: string;
   url: string;
   version: string;
+  signature_status: SignatureStatus;
+
 }

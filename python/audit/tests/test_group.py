@@ -58,7 +58,7 @@ class TestGroupAudit(BaseTestCase):
         self.assertEqual(log.operation_type, operation_type)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.user.username, user.username)
         self.assertEqual(log.object_changes, object_changes)
 
     def test_create(self):
@@ -78,7 +78,7 @@ class TestGroupAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.user.username, self.test_user.username)
         self.assertIsInstance(log.object_changes, dict)
 
         self.client.post(
@@ -93,7 +93,7 @@ class TestGroupAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.FAIL)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.user.username, self.test_user.username)
         self.assertIsInstance(log.object_changes, dict)
 
     def test_create_denied(self):
@@ -111,7 +111,7 @@ class TestGroupAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.DENIED)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.no_rights_user.pk)
+        self.assertEqual(log.user.username, self.no_rights_user.username)
         self.assertIsInstance(log.object_changes, dict)
 
     def test_delete(self):

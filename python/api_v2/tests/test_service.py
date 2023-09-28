@@ -24,7 +24,12 @@ from cm.models import (
 )
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_409_CONFLICT,
+)
 
 
 class TestServiceAPI(BaseAPITestCase):
@@ -72,14 +77,30 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertFalse(ClusterObject.objects.filter(pk=self.service_2.pk).exists())
 
+    def test_delete_failed(self):
+        self.service_2.state = "non_created"
+        self.service_2.save(update_fields=["state"])
+
+        response: Response = self.client.delete(
+            path=reverse(
+                viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk}
+            ),
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertTrue(ClusterObject.objects.filter(pk=self.service_2.pk).exists())
+
     def test_create_success(self):
+        initial_service_count = ClusterObject.objects.count()
         manual_add_service_proto = Prototype.objects.get(type=ObjectType.SERVICE, name="service_3_manual_add")
+
         response: Response = self.client.post(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data={"prototype": manual_add_service_proto.pk},
+            data=[{"prototype_id": manual_add_service_proto.pk}],
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(ClusterObject.objects.count(), initial_service_count + 1)
 
     def test_filter_by_name_success(self):
         response: Response = self.client.get(
@@ -157,7 +178,7 @@ class TestServiceAPI(BaseAPITestCase):
                     "pk": self.action.pk,
                 },
             ),
-            data={"host_component_map": {}, "config": {}, "attr": {}, "is_verbose": False},
+            data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

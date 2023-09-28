@@ -369,6 +369,13 @@ export class FieldService {
         return Object.keys(value).reduce((p, c) => {
           const r = rules.options.find((b: any) => b.name === c);
           const v = r ? this.runYspec(value[c], r) : null;
+          
+          if (r.isInvisible) {
+            if (v === null) return { ...p, [c]: '' };
+
+            return { ...p, [c]: v };
+          }
+
           return v !== null ? { ...p, [c]: v } : { ...p };
         }, {});
       }

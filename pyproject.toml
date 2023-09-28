@@ -30,20 +30,20 @@ jmespath = "*"
 jsonschema = "*"
 lxml = "*"
 markupsafe = "1.1.1"
-mitogen = "*"
 multipledispatch = "*"
 psycopg2-binary = "*"
 pycryptodome = "*"
 pydantic = "*"
+python-gnupg = "*"
 requests-toolbelt = "*"
 rstr = "*"
 ruyaml = "*"
 social-auth-app-django = "*"
 uwsgi = "*"
 version-utils = "*"
-yspec = "*"
 six = "*"
 django-cors-headers = "*"
+djangorestframework-camel-case = "^1.4.2"
 
 [tool.poetry.group.lint]
 optional = true
@@ -54,6 +54,12 @@ black = "*"
 flake8 = "*"
 isort = "*"
 pylint = "*"
+
+[tool.poetry.group.unittests]
+optional = true
+
+[tool.poetry.group.unittests.dependencies]
+tblib = "^2.0.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -70,6 +76,8 @@ skip = ["python/init_db.py", "python/task_runner.py", "python/backupdb.py", "pyt
 
 [tool.pylint.master]
 ignore = ["migrations"]
+enable = ["useless-suppression"]
+fail-on = ["useless-suppression"]
 
 [tool.pylint."messages control"]
 disable = ["missing-docstring", "missing-timeout", "no-else-return", "no-member", "too-few-public-methods",

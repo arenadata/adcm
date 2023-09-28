@@ -106,7 +106,7 @@ class TestClusterAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.CREATE)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.user.username, user.username)
         self.assertEqual(log.object_changes, {})
 
     def check_log(
@@ -134,7 +134,7 @@ class TestClusterAudit(BaseTestCase):
         self.assertEqual(log.operation_type, operation_type)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.user.username, user.username)
         self.assertDictEqual(log.object_changes, object_changes)
 
     def check_log_denied(self, log: AuditLog, operation_name: str, operation_type: AuditLogOperationType) -> None:
@@ -146,7 +146,7 @@ class TestClusterAudit(BaseTestCase):
         self.assertEqual(log.operation_type, operation_type)
         self.assertEqual(log.operation_result, AuditLogOperationResult.DENIED)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.no_rights_user.pk)
+        self.assertEqual(log.user.username, self.no_rights_user.username)
         self.assertEqual(log.object_changes, {})
 
     def check_cluster_update_config(self, log: AuditLog) -> None:
@@ -165,7 +165,7 @@ class TestClusterAudit(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.DELETE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.FAIL)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.user.username, self.test_user.username)
         self.assertEqual(log.object_changes, {})
 
     def check_action_log(
@@ -236,7 +236,7 @@ class TestClusterAudit(BaseTestCase):
     def add_no_rights_user_cluster_view_rights(self) -> None:
         role = Role.objects.get(name="View cluster configurations")
         policy = Policy.objects.create(name="test_policy", role=role)
-        policy.user.add(self.no_rights_user)
+        policy.group.add(self.no_rights_user_group)
         policy.add_object(self.cluster)
         policy.apply()
 
@@ -282,7 +282,7 @@ class TestClusterAudit(BaseTestCase):
         provider_bundle_filename = "test_provider_bundle.tar"
 
         with open(
-            Path(settings.BASE_DIR, "python/audit/tests/files", cluster_bundle_filename),
+            Path(self.base_dir, "python/audit/tests/files", cluster_bundle_filename),
             encoding=settings.ENCODING_UTF_8,
         ) as f:
             self.client.post(
@@ -296,7 +296,7 @@ class TestClusterAudit(BaseTestCase):
         )
 
         with open(
-            Path(settings.BASE_DIR, "python/audit/tests/files", provider_bundle_filename),
+            Path(self.base_dir, "python/audit/tests/files", provider_bundle_filename),
             encoding=settings.ENCODING_UTF_8,
         ) as f:
             self.client.post(

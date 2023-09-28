@@ -15,15 +15,17 @@ from api_v2.service.serializers import (
     ServiceCreateSerializer,
     ServiceMaintenanceModeSerializer,
     ServiceRetrieveSerializer,
+    ServiceStatusSerializer,
 )
+from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.api import add_service_to_cluster, update_mm_objects
-from cm.models import Cluster, ClusterObject
+from cm.models import Cluster, ClusterObject, ObjectType, Prototype
+from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
-from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import (
     ADD_SERVICE_PERM,
@@ -34,13 +36,14 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from adcm.utils import get_maintenance_mode_response
+from adcm.utils import delete_service_from_api, get_maintenance_mode_response
 
 
-class ServiceViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = ClusterObject.objects.all()
+class ServiceViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+    queryset = ClusterObject.objects.select_related("cluster").order_by("pk")
     serializer_class = ServiceRetrieveSerializer
     filterset_class = ServiceFilter
+    filter_backends = (DjangoFilterBackend,)
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_SERVICE_PERM]
     http_method_names = ["get", "post", "delete"]
@@ -61,20 +64,34 @@ class ServiceViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-
 
         return self.serializer_class
 
-    def create(self, request: Request, *args, **kwargs):
+    def create(self, request: Request, *args, **kwargs):  # pylint:disable=unused-argument
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, pk=kwargs["cluster_pk"]
         )
         check_custom_perm(user=request.user, action_type=ADD_SERVICE_PERM, model=Cluster.__name__.lower(), obj=cluster)
 
-        serializer = self.get_serializer_class()(data=request.data)
+        serializer = self.get_serializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
 
-        add_service_to_cluster(
-            cluster=Cluster.objects.get(pk=kwargs["cluster_pk"]), proto=serializer.validated_data["prototype"]
+        added_services = []
+        for service_prototype in Prototype.objects.filter(
+            pk__in=[prototype_data["prototype_id"] for prototype_data in serializer.validated_data],
+            type=ObjectType.SERVICE,
+        ):
+            added_services.append(
+                add_service_to_cluster(
+                    cluster=cluster,
+                    proto=service_prototype,
+                )
+            )
+
+        return Response(
+            status=HTTP_201_CREATED, data=ServiceRetrieveSerializer(instance=added_services, many=True).data
         )
 
-        return Response(status=HTTP_201_CREATED)
+    def destroy(self, request: Request, *args, **kwargs):  # pylint:disable=unused-argument
+        instance = self.get_object()
+        return delete_service_from_api(service=instance)
 
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode")
@@ -92,3 +109,9 @@ class ServiceViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-
             response.data = serializer.data
 
         return response
+
+    @action(methods=["get"], detail=True, url_path="statuses")
+    def statuses(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        service = get_object_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, id=kwargs["pk"])
+
+        return Response(data=ServiceStatusSerializer(instance=service).data)

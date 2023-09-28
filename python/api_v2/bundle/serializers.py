@@ -10,25 +10,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Bundle
+from cm.models import Bundle, ObjectType
 from rest_framework.fields import DateTimeField, FileField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
 from adcm.serializers import EmptySerializer
 
 
+class BundleIdSerializer(ModelSerializer):
+    class Meta:
+        model = Bundle
+        fields = ["id"]
+
+
 class BundleListSerializer(ModelSerializer):
-    display_name = SerializerMethodField()
     upload_time = DateTimeField(read_only=True, source="date")
+    display_name = SerializerMethodField()
 
     class Meta:
         model = Bundle
-        fields = ("id", "name", "display_name", "version", "edition", "upload_time", "category")
+        fields = ("id", "name", "display_name", "version", "edition", "upload_time", "category", "signature_status")
 
-    def get_display_name(self, instance) -> str | None:
-        prototype = instance.prototype_set.filter(type__in=["adcm", "cluster", "provider"]).first()
-        return prototype.display_name
+    @staticmethod
+    def get_display_name(bundle: Bundle) -> str:
+        proto = bundle.prototype_set.filter(type__in=[ObjectType.CLUSTER, ObjectType.PROVIDER]).first()
+        return proto.display_name
 
 
 class UploadBundleSerializer(EmptySerializer):
     file = FileField(help_text="bundle file for upload")
+
+
+class BundleRelatedSerializer(ModelSerializer):
+    class Meta:
+        model = Bundle
+        fields = ["id"]
