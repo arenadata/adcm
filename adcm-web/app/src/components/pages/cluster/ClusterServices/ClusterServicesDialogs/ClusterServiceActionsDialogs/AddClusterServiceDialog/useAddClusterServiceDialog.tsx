@@ -130,7 +130,7 @@ export const useAddClusterServiceForm = () => {
       );
     }
 
-    dispatch(cleanupServicesActions);
+    dispatch(cleanupServicesActions());
 
     if (isLicenseAcceptanceDialogOpen) {
       setLicenseAcceptanceDialogOpen(false);

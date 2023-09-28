@@ -1,6 +1,6 @@
 import { defaultDebounceDelay } from '@constants';
 import { useDebounce, useDispatch, useRequestTimer, useStore } from '@hooks';
-import { getServices, refreshServices } from '@store/adcm/cluster/services/servicesSlice';
+import { cleanupServices, getServices, refreshServices } from '@store/adcm/cluster/services/servicesSlice';
 import { cleanupRelatedData, loadRelatedData } from '@store/adcm/cluster/services/servicesTableSlice';
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
@@ -22,6 +22,7 @@ export const useRequestClusterServices = () => {
 
     return () => {
       dispatch(cleanupRelatedData());
+      dispatch(cleanupServices());
     };
   }, [dispatch, clusterId]);
 

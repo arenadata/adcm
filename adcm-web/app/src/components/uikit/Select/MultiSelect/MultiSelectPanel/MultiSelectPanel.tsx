@@ -10,18 +10,6 @@ import s from './MultiSelectPanel.module.scss';
 import MultiSelectFullCheckAll from '@uikit/Select/MultiSelect/MultiSelectFullCheckAll/MultiSelectFullCheckAll';
 import cn from 'classnames';
 
-const MultiSelectPanel = <T,>(props: MultiSelectOptions<T>) => {
-  return (
-    <div className={s.multiSelectPanel}>
-      <MultiSelectContextProvider value={props}>
-        <MultiSelectContent />
-      </MultiSelectContextProvider>
-    </div>
-  );
-};
-
-export default MultiSelectPanel;
-
 const MultiSelectContent = <T,>() => {
   const { isSearchable, options, checkAllLabel, compactMode } = useMultiSelectContext<T>();
   const isShowOptions = options.length > 0;
@@ -48,3 +36,15 @@ const MultiSelectContent = <T,>() => {
     </>
   );
 };
+
+const MultiSelectPanel = <T,>(props: MultiSelectOptions<T>) => {
+  return (
+    <div className={s.multiSelectPanel}>
+      <MultiSelectContextProvider value={props}>
+        <MultiSelectContent />
+      </MultiSelectContextProvider>
+    </div>
+  );
+};
+
+export default MultiSelectPanel;
