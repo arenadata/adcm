@@ -340,14 +340,26 @@ def upgrade_adcm(adcm, bundle):
     with transaction.atomic():
         adcm.prototype = new_proto
         adcm.save()
-        config_log_old = ConfigLog.objects.get(obj_ref=adcm.config, id=adcm.config.current)
         switch_config(adcm, new_proto, old_proto)
-        config_log_new = ConfigLog.objects.get(obj_ref=adcm.config, id=adcm.config.current)
-        if rpm.compare_versions("2.6", old_proto.version) > -1 and rpm.compare_versions(new_proto.version, "2.7") > -1:
-            config_log_new.config["audit_data_retention"].update(config_log_old.config["job_log"])
-            config_log_new.config["audit_data_retention"]["config_rotation_in_db"] = config_log_old.config.get(
-                "config_rotation", config_log_new.config["audit_data_retention"]["config_rotation_in_db"]
+
+        if rpm.compare_versions(old_proto.version, "2.6") <= 0 <= rpm.compare_versions(new_proto.version, "2.7"):
+            config_log_old = ConfigLog.objects.get(obj_ref=adcm.config, id=adcm.config.previous)
+            config_log_new = ConfigLog.objects.get(obj_ref=adcm.config, id=adcm.config.current)
+            log_rotation_on_fs = config_log_old.config.get("job_log", {}).get(
+                "log_rotation_on_fs", config_log_new.config["audit_data_retention"]["log_rotation_on_fs"]
             )
+            config_log_new.config["audit_data_retention"]["log_rotation_on_fs"] = log_rotation_on_fs
+
+            log_rotation_in_db = config_log_old.config.get("job_log", {}).get(
+                "log_rotation_in_db", config_log_new.config["audit_data_retention"]["log_rotation_in_db"]
+            )
+            config_log_new.config["audit_data_retention"]["log_rotation_in_db"] = log_rotation_in_db
+
+            config_rotation_in_db = config_log_old.config.get("config_rotation", {}).get(
+                "config_rotation_in_db", config_log_new.config["audit_data_retention"]["config_rotation_in_db"]
+            )
+            config_log_new.config["audit_data_retention"]["config_rotation_in_db"] = config_rotation_in_db
+
             config_log_new.save(update_fields=["config"])
 
     logger.info(
