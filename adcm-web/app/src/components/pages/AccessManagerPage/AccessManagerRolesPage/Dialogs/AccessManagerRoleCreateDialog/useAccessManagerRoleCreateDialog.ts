@@ -1,24 +1,38 @@
-import { useState } from 'react';
-import { useStore, useDispatch } from '@hooks';
+import { useEffect } from 'react';
+import { useStore, useDispatch, useForm } from '@hooks';
 import { AdcmCreateRolePayload } from '@models/adcm';
 import { createRole, closeCreateDialog } from '@store/adcm/roles/rolesActionsSlice';
+import { required } from '@utils/validationsUtils';
 
-const initialFormData: AdcmCreateRolePayload = {
+interface AdcmCreateRoleFormData extends Omit<AdcmCreateRolePayload, 'children'> {
+  children: Set<number>;
+}
+
+const initialFormData: AdcmCreateRoleFormData = {
   displayName: '',
   description: '',
-  children: [],
+  children: new Set<number>(),
 };
 
 export const useAccessManagerRoleCreateDialog = () => {
   const dispatch = useDispatch();
+  const isOpen = useStore((s) => s.adcm.rolesActions.isCreateDialogOpened);
+  const allPermissions = useStore((s) => s.adcm.rolesActions.relatedData.allRoles);
+  const products = useStore((s) => s.adcm.roles.relatedData.categories);
 
-  const [formData, setFormData] = useState<AdcmCreateRolePayload>(initialFormData);
+  const { formData, handleChangeFormData, setFormData, errors, setErrors, isValid } =
+    useForm<AdcmCreateRoleFormData>(initialFormData);
 
-  const {
-    isCreateDialogOpened,
-    relatedData,
-    relatedData: { isLoaded: isRelatedDataLoaded },
-  } = useStore((s) => s.adcm.rolesActions);
+  useEffect(() => {
+    setFormData(initialFormData);
+  }, [isOpen, setFormData]);
+
+  useEffect(() => {
+    setErrors({
+      displayName: required(formData.displayName) ? undefined : 'Username field is required',
+      children: formData.children.size > 0 ? undefined : 'Can not create Role without permission',
+    });
+  }, [formData, setErrors]);
 
   const handleClose = () => {
     dispatch(closeCreateDialog());
@@ -29,23 +43,20 @@ export const useAccessManagerRoleCreateDialog = () => {
       createRole({
         displayName: formData.displayName,
         description: formData.description,
-        children: formData.children,
+        children: [...formData.children],
       }),
     );
   };
 
-  const handleChangeFormData = (changes: Partial<AdcmCreateRolePayload>) => {
-    setFormData({
-      ...formData,
-      ...changes,
-    });
-  };
-
   return {
-    isCreateDialogOpened,
+    isOpen,
     formData,
-    relatedData,
-    isRelatedDataLoaded,
+    isValid,
+    errors,
+    relatedData: {
+      allPermissions,
+      products,
+    },
     onClose: handleClose,
     onCreate: handleCreate,
     onChangeFormData: handleChangeFormData,

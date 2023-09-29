@@ -10,7 +10,7 @@ export interface DialogProps extends ModalOptions, DialogDefaultControlsProps {
   children: React.ReactNode;
   title?: React.ReactNode;
   dialogControls?: React.ReactNode;
-  dialogControlsOnTop?: boolean;
+  isDialogControlsOnTop?: boolean;
   width?: string;
   height?: string;
 }
@@ -22,7 +22,7 @@ const Dialog: React.FC<DialogProps> = ({
   children,
   title,
   dialogControls,
-  dialogControlsOnTop,
+  isDialogControlsOnTop,
   cancelButtonLabel,
   actionButtonLabel,
   isActionDisabled,
@@ -74,9 +74,9 @@ const Dialog: React.FC<DialogProps> = ({
           {title}
         </Text>
       )}
-      {dialogControlsOnTop && dialogControlsComponent}
+      {isDialogControlsOnTop && dialogControlsComponent}
       <div className={s.dialog__body}>{children}</div>
-      {!dialogControlsOnTop && dialogControlsComponent}
+      {!isDialogControlsOnTop && dialogControlsComponent}
     </Modal>
   );
 };
