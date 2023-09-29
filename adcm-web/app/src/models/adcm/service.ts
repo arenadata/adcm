@@ -48,7 +48,7 @@ export interface AdcmServicePrototype {
 }
 
 export interface AdcmServicesFilter {
-  serviceName?: string;
+  displayName?: string;
 }
 
 export interface AdcmRelatedServiceComponentsState {

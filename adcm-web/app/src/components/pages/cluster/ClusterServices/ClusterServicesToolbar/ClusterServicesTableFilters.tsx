@@ -9,7 +9,7 @@ const ClusterServicesTableFilters = () => {
   const { filter } = useStore((s) => s.adcm.servicesTable);
 
   const handleClusterNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setFilter({ serviceName: event.target.value }));
+    dispatch(setFilter({ displayName: event.target.value }));
   };
 
   const handleResetFiltersClick = () => {
@@ -21,7 +21,7 @@ const ClusterServicesTableFilters = () => {
     <TableFilters>
       <SearchInput
         placeholder="Search service"
-        value={filter.serviceName || ''}
+        value={filter.displayName || ''}
         variant="primary"
         onChange={handleClusterNameChange}
       />
