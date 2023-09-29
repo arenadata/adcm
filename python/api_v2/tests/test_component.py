@@ -11,7 +11,8 @@
 # limitations under the License.
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import Action, MaintenanceMode, ServiceComponent
+from cm.models import Action, ConcernType, MaintenanceMode, ServiceComponent
+from cm.tests.utils import gen_concern_item
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_405_METHOD_NOT_ALLOWED
@@ -55,6 +56,28 @@ class TestComponentAPI(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], self.component_1.pk)
+
+    def test_adcm_4526_retrieve_concerns_regardless_owner_success(self):
+        concern_1 = gen_concern_item(ConcernType.LOCK, owner=self.cluster_1)
+        concern_2 = gen_concern_item(ConcernType.ISSUE, owner=self.service_1)
+        concern_3 = gen_concern_item(ConcernType.FLAG, owner=self.component_1)
+        self.component_1.add_to_concerns(concern_1)
+        self.component_1.add_to_concerns(concern_2)
+        self.component_1.add_to_concerns(concern_3)
+
+        response: Response = self.client.get(
+            path=reverse(
+                "v2:component-detail",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "pk": self.component_1.pk,
+                },
+            ),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()["concerns"]), 3)
 
     def test_delete_success(self):
         response: Response = self.client.delete(
