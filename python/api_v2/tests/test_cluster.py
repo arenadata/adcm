@@ -51,6 +51,18 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 2)
 
+    def test_adcm_4539_ordering_success(self):
+        cluster_3 = self.add_cluster(bundle=self.bundle_1, name="cluster_3", description="cluster_3")
+        cluster_4 = self.add_cluster(bundle=self.bundle_2, name="cluster_4", description="cluster_3")
+        cluster_list = [self.cluster_1.name, self.cluster_2.name, cluster_3.name, cluster_4.name]
+        response = self.client.get(path=reverse(viewname="v2:cluster-list"), data={"ordering": "name"})
+
+        self.assertListEqual([cluster["name"] for cluster in response.json()["results"]], cluster_list)
+
+        response = self.client.get(path=reverse(viewname="v2:cluster-list"), data={"ordering": "-name"})
+
+        self.assertListEqual([cluster["name"] for cluster in response.json()["results"]], cluster_list[::-1])
+
     def test_retrieve_success(self):
         response = self.client.get(
             path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
