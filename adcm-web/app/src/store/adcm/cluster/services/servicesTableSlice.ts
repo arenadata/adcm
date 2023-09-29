@@ -11,7 +11,7 @@ type AdcmServicesTableState = ListState<AdcmServicesFilter> & {
 
 const createInitialState = (): AdcmServicesTableState => ({
   filter: {
-    serviceName: undefined,
+    displayName: undefined,
   },
   paginationParams: {
     perPage: 10,

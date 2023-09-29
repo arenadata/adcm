@@ -42,7 +42,7 @@ const ClusterServicesTable = () => {
         return (
           <TableRow key={service.id}>
             <StatusableCell status={servicesStatusesMap[service.status]}>
-              <Link to={`/clusters/${clusterId}/services/${service.id}`}>{service.name}</Link>
+              <Link to={`/clusters/${clusterId}/services/${service.id}`}>{service.displayName}</Link>
             </StatusableCell>
             <TableCell>{service.prototype.version}</TableCell>
             <MultiStateCell entity={service} />
