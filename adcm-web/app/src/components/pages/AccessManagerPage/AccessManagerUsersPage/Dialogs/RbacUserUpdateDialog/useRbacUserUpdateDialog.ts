@@ -20,8 +20,10 @@ export const useRbacUserUpdateDialog = () => {
   const user = useStore((s) => s.adcm.usersActions.updateDialog.user);
   const isUpdating = useStore((s) => s.adcm.usersActions.updateDialog.isUpdating);
   const groups = useStore((s) => s.adcm.usersActions.relatedData.groups);
+  const isOpen = !!user;
 
-  const { formData, setFormData, errors, setErrors, isValid } = useForm<RbacUserFormData>(initialFormData);
+  const { formData, handleChangeFormData, setFormData, errors, setErrors, isValid } =
+    useForm<RbacUserFormData>(initialFormData);
 
   useEffect(() => {
     if (user) {
@@ -47,12 +49,9 @@ export const useRbacUserUpdateDialog = () => {
     });
   }, [formData, setErrors]);
 
-  const handleChangeFormData = (changes: Partial<RbacUserFormData>) => {
-    setFormData({
-      ...formData,
-      ...changes,
-    });
-  };
+  useEffect(() => {
+    setFormData(initialFormData);
+  }, [isOpen, setFormData]);
 
   const handleClose = () => {
     setFormData(initialFormData);
@@ -78,7 +77,7 @@ export const useRbacUserUpdateDialog = () => {
   };
 
   return {
-    isOpen: !!user,
+    isOpen,
     groups,
     onChangeFormData: handleChangeFormData,
     isValid: isValid && !isUpdating,

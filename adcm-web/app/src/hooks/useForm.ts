@@ -12,11 +12,19 @@ export const useForm = <FormData, ErrorsData extends object = Partial<Record<key
     return !Object.values(errors).some((v) => !!v);
   }, [errors]);
 
+  const handleChangeFormData = (changes: Partial<FormData>) => {
+    setFormData({
+      ...formData,
+      ...changes,
+    });
+  };
+
   return {
     isValid,
     formData,
     setFormData,
     errors,
     setErrors,
+    handleChangeFormData,
   };
 };

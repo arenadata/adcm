@@ -32,11 +32,14 @@
 
   &__title {
     color: var(--dialog-title-color);
-    margin-bottom: 24px;
   }
 
-  &__body:not(:last-child) {
-    margin-bottom: 24px;
+  &__title,
+  &__body,
+  &__defaultControls {
+    &:not(:last-child) {
+      margin-bottom: 24px;
+    }
   }
 
   &__defaultControls {

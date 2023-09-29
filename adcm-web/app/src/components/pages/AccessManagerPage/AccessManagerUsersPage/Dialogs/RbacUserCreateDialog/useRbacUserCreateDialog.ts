@@ -22,7 +22,8 @@ export const useRbacUserCreateDialog = () => {
   const isCreating = useStore((s) => s.adcm.usersActions.createDialog.isCreating);
   const groups = useStore((s) => s.adcm.usersActions.relatedData.groups);
 
-  const { formData, setFormData, errors, setErrors, isValid } = useForm<RbacUserFormData>(initialFormData);
+  const { formData, handleChangeFormData, setFormData, errors, setErrors, isValid } =
+    useForm<RbacUserFormData>(initialFormData);
 
   useEffect(() => {
     setErrors({
@@ -36,15 +37,11 @@ export const useRbacUserCreateDialog = () => {
     });
   }, [formData, setErrors]);
 
-  const handleChangeFormData = (changes: Partial<RbacUserFormData>) => {
-    setFormData({
-      ...formData,
-      ...changes,
-    });
-  };
+  useEffect(() => {
+    setFormData(initialFormData);
+  }, [isOpen, setFormData]);
 
   const handleClose = () => {
-    setFormData(initialFormData);
     dispatch(closeUserCreateDialog());
   };
 

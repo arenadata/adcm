@@ -1,0 +1,12 @@
+.listTransfer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+
+  &__leftPanel {
+    --list-transfer-panel-title-color: var(--text-green-color);
+  }
+  &__rightPanel {
+    --list-transfer-panel-title-color: var(--text-accent-color);
+  }
+}

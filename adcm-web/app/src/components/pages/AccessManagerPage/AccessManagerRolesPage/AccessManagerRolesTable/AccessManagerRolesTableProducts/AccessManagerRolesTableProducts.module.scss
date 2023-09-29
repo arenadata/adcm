@@ -15,8 +15,10 @@
     font-weight: 500;
   }
 
-  &__checkboxes label {
-    margin-right: 30px;
+  &__checkboxes {
+    display: flex;
+    gap: 15px 30px;
+    flex-wrap: wrap;
   }
 
   &__tags {
