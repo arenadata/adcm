@@ -36,7 +36,7 @@ class TestServiceAPI(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
         self.service_2 = self.add_service_to_cluster(service_name="service_2", cluster=self.cluster_1)
         self.action = Action.objects.filter(prototype=self.service_2.prototype).first()
 
@@ -56,6 +56,29 @@ class TestServiceAPI(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 2)
+
+    def test_adcm_4544_list_service_name_ordering_success(self):
+        service_3 = self.add_service_to_cluster(service_name="service_3_manual_add", cluster=self.cluster_1)
+        service_list = [self.service_1.display_name, self.service_2.display_name, service_3.display_name]
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"ordering": "displayName"},
+        )
+
+        self.assertListEqual(
+            [service["displayName"] for service in response.json()["results"]],
+            service_list,
+        )
+
+        response = self.client.get(
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"ordering": "-displayName"},
+        )
+
+        self.assertListEqual(
+            [service["displayName"] for service in response.json()["results"]],
+            service_list[::-1],
+        )
 
     def test_retrieve_success(self):
         response: Response = self.client.get(
