@@ -31,6 +31,7 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
 )
 
 
@@ -49,6 +50,18 @@ class TestCluster(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 2)
+
+    def test_adcm_4539_ordering_success(self):
+        cluster_3 = self.add_cluster(bundle=self.bundle_1, name="cluster_3", description="cluster_3")
+        cluster_4 = self.add_cluster(bundle=self.bundle_2, name="cluster_4", description="cluster_3")
+        cluster_list = [self.cluster_1.name, self.cluster_2.name, cluster_3.name, cluster_4.name]
+        response = self.client.get(path=reverse(viewname="v2:cluster-list"), data={"ordering": "name"})
+
+        self.assertListEqual([cluster["name"] for cluster in response.json()["results"]], cluster_list)
+
+        response = self.client.get(path=reverse(viewname="v2:cluster-list"), data={"ordering": "-name"})
+
+        self.assertListEqual([cluster["name"] for cluster in response.json()["results"]], cluster_list[::-1])
 
     def test_retrieve_success(self):
         response = self.client.get(
@@ -101,7 +114,7 @@ class TestCluster(BaseAPITestCase):
     def test_filter_by_prototype_name_success(self):
         response = self.client.get(
             path=reverse(viewname="v2:cluster-list"),
-            data={"prototypeDisplayName": self.cluster_1.prototype.name},
+            data={"prototypeName": self.cluster_1.prototype.name},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -109,6 +122,25 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(response.json()["results"][0]["id"], self.cluster_1.pk)
 
     def test_filter_by_wrong_prototype_name_success(self):
+        response = self.client.get(
+            path=reverse(viewname="v2:cluster-list"),
+            data={"prototypeName": "wrong"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 0)
+
+    def test_filter_by_prototype_display_name_success(self):
+        response = self.client.get(
+            path=reverse(viewname="v2:cluster-list"),
+            data={"prototypeDisplayName": self.cluster_1.prototype.name},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["id"], self.cluster_1.pk)
+
+    def test_filter_by_wrong_prototype_display_name_success(self):
         response = self.client.get(
             path=reverse(viewname="v2:cluster-list"),
             data={"prototypeDisplayName": "wrong"},
@@ -128,6 +160,17 @@ class TestCluster(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_create_same_name_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-list"),
+            data={
+                "prototype_id": self.cluster_1.prototype.pk,
+                "name": self.cluster_1.name,
+                "description": "Test cluster description",
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     def test_update_failed(self):
         wrong_cluster_name = "__new_test_cluster_name"

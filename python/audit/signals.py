@@ -50,6 +50,9 @@ def mark_deleted_audit_object_handler(sender, instance, **kwargs) -> None:  # py
 @receiver(signal=post_save, sender=AuthUser)
 @receiver(signal=post_save, sender=RBACUser)
 def create_audit_user(sender, instance, created, **kwargs):  # pylint: disable=unused-argument
+    if kwargs["raw"]:
+        return
+
     if created:
         AuditUser.objects.get_or_create(
             username=instance.username,

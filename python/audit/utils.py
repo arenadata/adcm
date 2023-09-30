@@ -373,6 +373,7 @@ def make_audit_log(operation_type, result, operation_status):
             "type": AuditLogOperationType.DELETE,
             "name": '"Audit log cleanup/archiving on schedule" job',
         },
+        "statistics": {"type": "", "name": '"Statistics collection on schedule" job'},
     }
     operation_name = operation_type_map[operation_type]["name"] + " " + operation_status
     audit_log = AuditLog.objects.create(

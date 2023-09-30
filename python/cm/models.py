@@ -23,6 +23,7 @@ from copy import deepcopy
 from enum import Enum
 from itertools import chain
 from typing import Optional
+from uuid import uuid4
 
 from cm.errors import AdcmEx
 from cm.logger import logger
@@ -558,6 +559,7 @@ class Upgrade(ADCMModel):
 
 class ADCM(ADCMEntity):
     name = models.CharField(max_length=1000, choices=(("ADCM", "ADCM"),), unique=True)
+    uuid = models.UUIDField(default=uuid4, editable=False)
 
     @property
     def bundle_id(self):

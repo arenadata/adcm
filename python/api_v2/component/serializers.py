@@ -17,15 +17,8 @@ from api_v2.host.serializers import HostShortSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from api_v2.service.serializers import ServiceNameSerializer, ServiceRelatedSerializer
 from cm.adcm_config.config import get_main_info
-from cm.models import (
-    ConcernItem,
-    Host,
-    HostComponent,
-    MaintenanceMode,
-    ServiceComponent,
-)
+from cm.models import Host, HostComponent, MaintenanceMode, ServiceComponent
 from cm.status_api import get_obj_status
-from django.contrib.contenttypes.models import ContentType
 from rest_framework.serializers import (
     CharField,
     ChoiceField,
@@ -84,7 +77,7 @@ class ComponentSerializer(ModelSerializer):
     prototype = PrototypeRelatedSerializer(read_only=True)
     cluster = ClusterRelatedSerializer(read_only=True)
     service = ServiceRelatedSerializer(read_only=True)
-    concerns = SerializerMethodField()
+    concerns = ConcernSerializer(read_only=True, many=True)
     main_info = SerializerMethodField()
 
     class Meta:
@@ -115,14 +108,6 @@ class ComponentSerializer(ModelSerializer):
             host_pks.add(host_component.host_id)
 
         return HostShortSerializer(instance=Host.objects.filter(pk__in=host_pks), many=True).data
-
-    def get_concerns(self, instance: ServiceComponent) -> ConcernSerializer:
-        return ConcernSerializer(
-            instance=ConcernItem.objects.filter(
-                owner_type=ContentType.objects.get_for_model(model=ServiceComponent), owner_id=instance.pk
-            ),
-            many=True,
-        ).data
 
     def get_main_info(self, instance: ServiceComponent) -> str | None:
         return get_main_info(obj=instance)

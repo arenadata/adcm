@@ -13,17 +13,27 @@
 from cm.models import ADCMEntityStatus, Cluster
 from cm.status_api import get_cluster_status
 from django.db.models import QuerySet
-from django_filters.rest_framework import CharFilter, ChoiceFilter, FilterSet
+from django_filters.rest_framework import (
+    CharFilter,
+    ChoiceFilter,
+    FilterSet,
+    OrderingFilter,
+)
 
 
 class ClusterFilter(FilterSet):
     status = ChoiceFilter(label="Cluster status", choices=ADCMEntityStatus.choices, method="filter_status")
+    prototype_name = CharFilter(label="Cluster prototype name", field_name="prototype__name")
     prototype_display_name = CharFilter(label="Cluster prototype display name", field_name="prototype__display_name")
     name = CharFilter(label="Cluster name", lookup_expr="icontains")
+    ordering = OrderingFilter(
+        fields={"name": "name"},
+        field_labels={"name": "Cluster name"},
+    )
 
     class Meta:
         model = Cluster
-        fields = ("id", "name", "status", "prototype_display_name")
+        fields = ("id", "name", "status", "prototype_name", "prototype_display_name")
 
     @staticmethod
     def filter_status(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument

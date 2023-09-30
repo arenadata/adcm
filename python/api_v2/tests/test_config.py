@@ -880,7 +880,12 @@ class TestADCMConfig(BaseAPITestCase):
         data = response.json()
         self.assertTrue(data["isCurrent"])
         self.assertDictEqual(
-            data["adcmMeta"], {"/logrotate": {"isActive": False}, "/ldap_integration": {"isActive": False}}
+            data["adcmMeta"],
+            {
+                "/logrotate": {"isActive": False},
+                "/ldap_integration": {"isActive": False},
+                "/statistics_collection": {"isActive": True},
+            },
         )
 
     def test_create_success(self):
@@ -914,6 +919,7 @@ class TestADCMConfig(BaseAPITestCase):
                     "sync_interval": 60,
                     "tls_ca_cert_file": None,
                 },
+                "statistics_collection": {"url": "statistics_url"},
                 "auth_policy": {
                     "min_password_length": 12,
                     "max_password_length": 20,
@@ -921,7 +927,11 @@ class TestADCMConfig(BaseAPITestCase):
                     "block_time": 5,
                 },
             },
-            "adcmMeta": {"/logrotate": {"isActive": False}, "/ldap_integration": {"isActive": False}},
+            "adcmMeta": {
+                "/logrotate": {"isActive": False},
+                "/ldap_integration": {"isActive": False},
+                "/statistics_collection": {"isActive": False},
+            },
             "description": "new ADCM config",
         }
 
