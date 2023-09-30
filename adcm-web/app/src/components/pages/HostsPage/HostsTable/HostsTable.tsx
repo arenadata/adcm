@@ -12,6 +12,7 @@ import { openDeleteDialog, openMaintenanceModeDialog } from '@store/adcm/hosts/h
 import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
 import HostDynamicActionsIcon from '../HostDynamicActionsIcon/HostDynamicActionsIcon';
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
+import Concern from '@commonComponents/Concern/Concern';
 
 const HostsTable: React.FC = () => {
   const dispatch = useDispatch();
@@ -44,7 +45,9 @@ const HostsTable: React.FC = () => {
             <MultiStateCell entity={host} />
             <TableCell>{host.hostprovider.name}</TableCell>
             <TableCell>{orElseGet(host.cluster?.name)}</TableCell>
-            <TableCell>{'-'}</TableCell>
+            <TableCell>
+              <Concern concerns={host.concerns} />
+            </TableCell>
             <TableCell hasIconOnly align="center">
               <HostDynamicActionsIcon host={host} />
               <MaintenanceModeButton
