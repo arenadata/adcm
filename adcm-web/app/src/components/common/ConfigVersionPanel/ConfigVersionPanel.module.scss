@@ -1,0 +1,17 @@
+.configVersionPanel {
+
+  &__body {
+
+    display: flex;
+    flex-direction: column;
+
+    .pagination {
+      margin: 0;
+    }
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: row;
+  }
+}
