@@ -1,0 +1,86 @@
+:global {
+  body.theme-dark {
+    --cell-font-color: var(--color-xgray-light);
+    --border-unselected-default: var(--color-xdark-new);
+    --border-unselected-hover: var(--color-xdark);
+    --border-selected-default: var(--color-xgreen-saturated);
+    --border-selected-hover: var(--color-xgreen-saturated);
+    --background-unselected-default: var(--color-xdark-new-20);
+    --background-unselected-hover: var(--color-xdark-new-50);
+    --background-selected-default: var(--color-xdark-new-full);
+    --background-selected-hover: var(--color-xdark-new-50);
+  }
+
+  body.theme-light {
+    --cell-font-color: var(--color-xgray-light);
+    --border-unselected-default: var(--color-stroke-light);
+    --border-unselected-hover: var(--color-stroke-light);
+    --border-selected-default:var(--color-xgreen-saturated);
+    --border-selected-hover: var(--color-xgreen-saturated);
+    --background-unselected-default: var(--color-xgray-alt-30);
+    --background-unselected-hover: #EEF2F5;
+    --background-selected-default: var(--color-xgray-alt);
+    --background-selected-hover: #EEF2F5;
+  }
+}
+
+.configVersionCell {
+
+  &__body {
+    width: 180px;
+    height: 76px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    background-color: var(--background-unselected-default);
+    border: 2px solid var(--border-unselected-default);
+    border-radius: 8px;
+    padding: 8px;
+    margin: 10px;
+    color: var(--cell-font-color);
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+
+    &:first-child {
+      margin-left: 0;
+    }
+
+    &:last-child {
+      margin-right: 0;
+    }
+
+    &_selected {
+      background-color: var(--background-unselected-hover);
+      border-color: var(--border-selected-default);
+
+      &:hover {
+        color: var(--cell-font-color);
+        background-color: var(--background-selected-hover);
+        border-color: var(--border-selected-hover);
+      }
+    }
+
+    &:hover {
+      color: var(--cell-font-color);
+      background-color: var(--background-selected-hover);
+      border-color: var(--border-unselected-hover);
+    }
+  }
+
+  &__upperBlock {
+    display: inline-flex;
+    width: 100%;
+    justify-content: space-between;
+
+    .title {
+      font-size: 15px;
+      font-weight: 500;
+
+      &_selected {
+        color: #00D2A0;
+      }
+    }
+  }
+}
