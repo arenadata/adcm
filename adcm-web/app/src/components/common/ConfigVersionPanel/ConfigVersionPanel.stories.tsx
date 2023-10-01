@@ -52,11 +52,11 @@ const handleSelectAction = () => {
 };
 
 const handlePageChange = (arg: PaginationParams) => {
-  alert('Page changed!');
+  alert('Page changed!' + JSON.stringify(arg));
 };
 
 const handleCellChange = (arg: number) => {
-  alert('Cell changed!');
+  alert('Cell changed!' + JSON.stringify(arg));
 };
 
 const ConfigVersionPanelTest: React.FC = () => {
