@@ -7,9 +7,9 @@ import { SortParams } from '@uikit/types/list.types';
 import { openRestartDialog, openStopDialog } from '@store/adcm/jobs/jobsActionsSlice';
 import { AdcmJobStatus } from '@models/adcm';
 import s from './JobsTable.module.scss';
-import { dateToString } from '@utils/date/dateConvertUtils';
 import JobsStatusCell from '../../../common/Table/Cells/JobsStatusCell/JobsStatusCell';
 import { secondsToDuration } from '@utils/date/timeConvertUtils';
+import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
 
 const JobsTable = () => {
   const dispatch = useDispatch();
@@ -54,8 +54,8 @@ const JobsTable = () => {
               })}
             </TableCell>
             <TableCell>{secondsToDuration(job.duration)}</TableCell>
-            <TableCell>{dateToString(new Date(job.startTime))}</TableCell>
-            <TableCell>{dateToString(new Date(job.endTime))}</TableCell>
+            <DateTimeCell value={job.startTime} />
+            <DateTimeCell value={job.endTime} />
             <TableCell hasIconOnly align="center">
               {job.status !== AdcmJobStatus.Success && (
                 <IconButton icon="g1-return" size={32} title="Restart job" onClick={handleRestartClick(job.id)} />
