@@ -19,7 +19,7 @@ const createInitialState = (): AdcmServicesTableState => ({
   },
   requestFrequency: 0,
   sortParams: {
-    sortBy: 'name',
+    sortBy: 'displayName',
     sortDirection: 'asc',
   },
   relatedData: {
