@@ -65,6 +65,10 @@ export const getConcernObjectPath = (placeHolderProps: AdcmConcernPlaceholder): 
 };
 
 const getConcernPath = (concern: AdcmConcerns, placeHolderProps: AdcmConcernPlaceholder): string => {
+  if (placeHolderProps.type === AdcmConcernType.Prototype) {
+    return '';
+  }
+
   const clusterPath = `/clusters/${(placeHolderProps as AdcmConcernClusterPlaceholder).params.clusterId}`;
 
   switch (concern.cause) {
