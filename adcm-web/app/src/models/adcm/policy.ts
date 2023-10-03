@@ -33,7 +33,19 @@ export interface AdcmPolicy {
 
 export type AdcmPolicyGroupPayload = Omit<AdcmPolicyGroup, 'name' | 'displayName'>;
 
-export type AdcmPolicyObjectPayload = Omit<AdcmPolicyObject, 'name' | 'displayName' | 'clusterName'>;
+export type AdcmPolicyObjectPayload = Omit<AdcmPolicyObject, 'name' | 'displayName' | 'clusterName'> & {
+  type: string;
+};
+
+export type AdcmPolicyObjectCandidate = Omit<AdcmPolicyObject, 'displayName' | 'clusterName'>;
+
+export type AdcmPolicyObjectCandidateService = AdcmPolicyObjectCandidate & {
+  displayName: string;
+  clusters: {
+    name: string;
+    id: number;
+  }[];
+};
 
 export interface AdcmPolicyPayload {
   name: string;
@@ -41,6 +53,13 @@ export interface AdcmPolicyPayload {
   role: {
     id: number;
   };
-  groups: AdcmPolicyGroupPayload[];
-  objects: AdcmPolicyGroupPayload[];
+  groups: number[];
+  objects: AdcmPolicyObjectPayload[];
+}
+
+export interface AdcmObjectCandidates {
+  cluster: AdcmPolicyObjectCandidate[];
+  provider: AdcmPolicyObjectCandidate[];
+  service: AdcmPolicyObjectCandidateService[];
+  host: AdcmPolicyObjectCandidate[];
 }
