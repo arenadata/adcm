@@ -46,8 +46,8 @@ export interface AdcmJobLog {
 }
 
 export interface AdcmJobsFilter {
-  name?: string;
-  object?: string;
+  jobName?: string;
+  objectName?: string;
   status?: AdcmJobStatus;
 }
 

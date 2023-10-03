@@ -14,11 +14,11 @@ const JobsTableFilters = () => {
   const { filter } = useStore((s) => s.adcm.jobsTable);
 
   const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setFilter({ name: event.target.value }));
+    dispatch(setFilter({ jobName: event.target.value }));
   };
 
   const handleObjectChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setFilter({ object: event.target.value }));
+    dispatch(setFilter({ objectName: event.target.value }));
   };
 
   const handleStatusChange = (value: AdcmJobStatus | null) => {
@@ -32,10 +32,15 @@ const JobsTableFilters = () => {
 
   return (
     <TableFilters>
-      <SearchInput placeholder="Search job" value={filter.name || ''} variant="primary" onChange={handleNameChange} />
+      <SearchInput
+        placeholder="Search job"
+        value={filter.jobName || ''}
+        variant="primary"
+        onChange={handleNameChange}
+      />
       <SearchInput
         placeholder="Search object"
-        value={filter.object || ''}
+        value={filter.objectName || ''}
         variant="primary"
         onChange={handleObjectChange}
       />

@@ -37,7 +37,7 @@ const JobsTable = () => {
             <TableCell>{job.id}</TableCell>
             <JobsStatusCell status={job.status}>
               <Link to={generatePath('/jobs/:jobId', { jobId: job.id + '' })} className={s.jobRow__jobName}>
-                {job.name}
+                {job.displayName}
               </Link>
             </JobsStatusCell>
             <TableCell>{job.status}</TableCell>
@@ -46,7 +46,7 @@ const JobsTable = () => {
                 return (
                   <span key={i}>
                     {i > 0 && ' / '}
-                    <Link to={`/${linkByObjectTypeMap[object.type]}/${object.id}/`} key={object.id}>
+                    <Link to={`/${linkByObjectTypeMap[object.type]}/${object.id}`} key={object.id}>
                       {object.name}
                     </Link>
                   </span>
