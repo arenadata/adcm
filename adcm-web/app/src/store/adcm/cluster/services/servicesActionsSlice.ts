@@ -52,7 +52,7 @@ const addService = createAsyncThunk(
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue([]);
     } finally {
-      thunkAPI.dispatch(setIsCreating(false));
+      thunkAPI.dispatch(cleanupServicesActions());
       thunkAPI.dispatch(getServices({ clusterId }));
     }
   },
