@@ -1,5 +1,5 @@
 import { httpClient } from '@api/httpClient';
-import { Batch } from '@models/adcm';
+import { AdcmObjectCandidates, Batch } from '@models/adcm';
 import { AdcmPoliciesFilter, AdcmPolicyPayload, AdcmPolicy } from '@models/adcm/policy';
 import { PaginationParams, SortParams } from '@models/table';
 import { prepareQueryParams } from '@utils/apiUtils';
@@ -24,7 +24,7 @@ export class AdcmPoliciesApi {
   }
 
   public static async createPolicy(payload: AdcmPolicyPayload) {
-    await httpClient.post('/api/v2/rbac/policies', payload);
+    await httpClient.post('/api/v2/rbac/policies/', payload);
   }
 
   public static async updatePolicy(policyId: number, payload: AdcmPolicyPayload) {
@@ -33,6 +33,11 @@ export class AdcmPoliciesApi {
 
   public static async deletePolicy(policyId: number) {
     const response = await httpClient.delete(`/api/v2/rbac/policies/${policyId}/`);
+    return response.data;
+  }
+
+  public static async loadObjectCandidates(roleId: number) {
+    const response = await httpClient.get<AdcmObjectCandidates>(`/api/v2/rbac/roles/${roleId}/object-candidates/`);
     return response.data;
   }
 }

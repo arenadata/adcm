@@ -13,6 +13,8 @@ export interface AdcmRole {
   categories: string[];
   type: AdcmRoleType;
   children: AdcmRole[] | null;
+  // eslint-disable-next-line spellcheck/spell-checker
+  parametrizedByType: string[];
 }
 
 export interface AdcmRolesFilter {
