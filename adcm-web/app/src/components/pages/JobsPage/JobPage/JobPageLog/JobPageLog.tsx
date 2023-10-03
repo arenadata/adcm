@@ -15,7 +15,7 @@ interface JobPageLogProps {
 const getPathLogName = (pathname: string) => {
   const parts = pathname.split('/');
   const logNamePartPath = (parts[parts.length - 1] !== '' ? parts.at(-1) : parts.at(-2)) ?? '';
-  return !isNaN(+logNamePartPath) ? 'stdout' : '';
+  return !isNaN(+logNamePartPath) ? 'stdout' : logNamePartPath;
 };
 
 const JobPageLog: React.FC<JobPageLogProps> = ({ id, isLinkEmpty = false }) => {
