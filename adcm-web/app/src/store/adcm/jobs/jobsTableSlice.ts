@@ -4,8 +4,8 @@ import { AdcmJobsFilter } from '@models/adcm';
 
 const createInitialState = (): ListState<AdcmJobsFilter> => ({
   filter: {
-    name: undefined,
-    object: undefined,
+    jobName: undefined,
+    objectName: undefined,
     status: undefined,
   },
   paginationParams: {
