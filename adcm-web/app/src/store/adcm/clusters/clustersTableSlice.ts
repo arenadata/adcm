@@ -11,8 +11,8 @@ type AdcmClustersTableState = ListState<AdcmClustersFilter> & {
 
 const createInitialState = (): AdcmClustersTableState => ({
   filter: {
-    clusterName: undefined,
-    clusterStatus: undefined,
+    name: undefined,
+    status: undefined,
     prototypeName: undefined,
   },
   paginationParams: {

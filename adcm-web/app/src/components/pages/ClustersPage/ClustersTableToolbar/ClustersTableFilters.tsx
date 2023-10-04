@@ -21,7 +21,7 @@ const ClustersTableFilters = () => {
   }, [prototypeNames]);
 
   const handleClusterNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setFilter({ clusterName: event.target.value }));
+    dispatch(setFilter({ name: event.target.value }));
   };
 
   const handleResetFiltersClick = () => {
@@ -30,7 +30,7 @@ const ClustersTableFilters = () => {
   };
 
   const handleStatusChange = (value: AdcmClusterStatus | null) => {
-    dispatch(setFilter({ clusterStatus: value ?? undefined }));
+    dispatch(setFilter({ status: value ?? undefined }));
   };
 
   const handleProductChange = (value: string | null) => {
@@ -41,14 +41,14 @@ const ClustersTableFilters = () => {
     <TableFilters>
       <SearchInput
         placeholder="Search cluster name"
-        value={filter.clusterName || ''}
+        value={filter.name || ''}
         variant="primary"
         onChange={handleClusterNameChange}
       />
       <LabeledField label="Status" direction="row">
         <Select
           placeholder="All"
-          value={filter.clusterStatus ?? null}
+          value={filter.status ?? null}
           onChange={handleStatusChange}
           options={statusOptions}
           noneLabel="All"

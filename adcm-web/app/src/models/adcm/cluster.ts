@@ -28,8 +28,8 @@ export interface AdcmCluster {
 }
 
 export interface AdcmClustersFilter {
-  clusterName?: string;
-  clusterStatus?: AdcmClusterStatus;
+  name?: string;
+  status?: AdcmClusterStatus;
   prototypeName?: string;
 }
 
