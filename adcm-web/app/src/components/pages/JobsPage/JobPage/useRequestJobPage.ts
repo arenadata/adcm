@@ -1,4 +1,4 @@
-import { useDispatch, useRequestTimer, useDebounce } from '@hooks';
+import { useDispatch, useRequestTimer, useDebounce, useStore } from '@hooks';
 import { defaultDebounceDelay } from '@constants';
 import { getTask } from '@store/adcm/jobs/jobsSlice';
 import { useParams } from 'react-router-dom';
@@ -6,6 +6,7 @@ import { useParams } from 'react-router-dom';
 export const useRequestJobPage = () => {
   const dispatch = useDispatch();
   const { jobId } = useParams();
+  const requestFrequency = useStore(({ adcm }) => adcm.jobsTable.requestFrequency);
 
   const debounceGetData = useDebounce(() => {
     if (!jobId) return;
@@ -17,5 +18,5 @@ export const useRequestJobPage = () => {
     dispatch(getTask(+jobId));
   }, defaultDebounceDelay);
 
-  useRequestTimer(debounceGetData, debounceRefreshData, 0, []);
+  useRequestTimer(debounceGetData, debounceRefreshData, requestFrequency, []);
 };
