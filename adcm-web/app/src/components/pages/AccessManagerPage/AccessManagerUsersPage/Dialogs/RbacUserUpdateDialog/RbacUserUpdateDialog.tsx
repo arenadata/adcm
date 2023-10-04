@@ -14,6 +14,7 @@ const RbacUserUpdateDialog: React.FC = () => {
       onAction={onSubmit}
       onCancel={onClose}
       isActionDisabled={!isValid}
+      actionButtonLabel="Save"
     >
       <RbacUserForm onChangeFormData={onChangeFormData} formData={formData} groups={groups} errors={errors} />
     </Dialog>

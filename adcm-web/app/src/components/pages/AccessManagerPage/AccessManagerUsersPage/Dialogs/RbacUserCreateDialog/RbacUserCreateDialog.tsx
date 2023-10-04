@@ -13,6 +13,7 @@ const RbacUserCreateDialog: React.FC = () => {
       onOpenChange={onClose}
       onAction={onSubmit}
       onCancel={onClose}
+      actionButtonLabel="Create"
       isActionDisabled={!isValid}
     >
       <RbacUserForm
