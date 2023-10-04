@@ -56,6 +56,7 @@ const LinkHostDialog = () => {
       onOpenChange={handleCloseDialog}
       onAction={submit}
       isActionDisabled={!isValid}
+      actionButtonLabel="Link"
     >
       <FormFieldsContainer>
         <FormField label="Cluster">
