@@ -49,6 +49,7 @@ const CreateHostDialog = () => {
       onOpenChange={handleCloseDialog}
       onAction={submit}
       isActionDisabled={!isValid}
+      actionButtonLabel="Create"
     >
       <FormFieldsContainer>
         <FormField label="Hostprovider">
