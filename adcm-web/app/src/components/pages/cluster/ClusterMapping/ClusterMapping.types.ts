@@ -47,3 +47,5 @@ export type ComponentMapping = {
   component: AdcmComponent;
   hosts: AdcmHostShortView[];
 };
+
+export type MappingState = 'no-changes' | 'editing' | 'saved';
