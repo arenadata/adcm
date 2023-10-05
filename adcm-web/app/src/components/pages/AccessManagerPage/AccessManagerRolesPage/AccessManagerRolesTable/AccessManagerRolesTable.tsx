@@ -1,10 +1,8 @@
-import { Link, generatePath } from 'react-router-dom';
 import { Table, TableCell, IconButton, Button, ExpandableRowComponent } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { columns } from './AccessManagerRolesTable.constants';
 import { setSortParams } from '@store/adcm/roles/rolesTableSlice';
 import { SortParams } from '@uikit/types/list.types';
-import { ACCESS_MANAGER_PAGE_URLS } from '@pages/AccessManagerPage/AccessManagerPage.constants';
 import { openDeleteDialog, openUpdateDialog } from '@store/adcm/roles/rolesActionsSlice';
 import { useState } from 'react';
 import AccessManagerRolesTableExpandedContent from './AccessManagerRolesTableExpandedContent/AccessManagerRolesTableExpandedContent';
@@ -60,9 +58,7 @@ const AccessManagerRolesTable = () => {
             className={cn(s.rolesTable__roleRow, { [s.expandedRow]: expandableRows[role.id] })}
             expandedClassName={s.rolesTable__expandedRoleRow}
           >
-            <TableCell className={s.rolesTable__roleRow__roleName}>
-              <Link to={generatePath(ACCESS_MANAGER_PAGE_URLS.Role, { roleId: role.id + '' })}>{role.displayName}</Link>
-            </TableCell>
+            <TableCell className={s.rolesTable__roleRow__roleName}>{role.displayName}</TableCell>
             <TableCell>{role.description}</TableCell>
             <TableCell>{role.children?.map((child) => child.displayName).join(', ')}</TableCell>
             <TableCell>

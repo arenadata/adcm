@@ -1,5 +1,4 @@
 import { Dispatch, SetStateAction, useCallback } from 'react';
-import { Link, generatePath } from 'react-router-dom';
 import { Table, TableRow, TableCell, IconButton, Checkbox } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { columns } from './AccessManagerGroupsTable.constants';
@@ -8,7 +7,6 @@ import { setSortParams } from '@store/adcm/groups/groupsTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { AdcmGroup } from '@models/adcm';
 import { useSelectedItems } from '@uikit/hooks/useSelectedItems';
-import { ACCESS_MANAGER_PAGE_URLS } from '@pages/AccessManagerPage/AccessManagerPage.constants';
 
 const AccessManagerGroupsTable = () => {
   const dispatch = useDispatch();
@@ -54,11 +52,7 @@ const AccessManagerGroupsTable = () => {
             <TableCell>
               <Checkbox checked={isItemSelected(group)} onChange={getHandlerSelectedItem(group)} />
             </TableCell>
-            <TableCell>
-              <Link to={generatePath(ACCESS_MANAGER_PAGE_URLS.Group, { groupId: group.id + '' })}>
-                {group.displayName}
-              </Link>
-            </TableCell>
+            <TableCell>{group.displayName}</TableCell>
             <TableCell>{group.description}</TableCell>
             <TableCell>{group.users.map((user) => user.username).join(', ')}</TableCell>
             <TableCell>{group.type}</TableCell>
