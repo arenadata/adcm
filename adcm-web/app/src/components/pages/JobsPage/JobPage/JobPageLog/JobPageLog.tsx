@@ -35,7 +35,7 @@ const JobPageLog: React.FC<JobPageLogProps> = ({ id, isLinkEmpty = false }) => {
   const logName = isLinkEmpty ? logNameClick : logNamePartPath;
   const log = logs.find((log) => log.type === logName);
 
-  const downloadLink = `${apiHost}/api/v2/jobs/${childJob?.id}/logs/${log?.type === 'stdout' ? 1 : 2}/download/`;
+  const downloadLink = `${apiHost}/api/v2/jobs/${childJob?.id}/logs/${log?.id}/download/`;
 
   return (
     <>
