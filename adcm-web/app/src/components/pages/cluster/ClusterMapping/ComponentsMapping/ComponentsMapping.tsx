@@ -64,14 +64,14 @@ const ComponentsMapping = () => {
           />
           <div className={s.componentsMapping__toolbarButtons}>
             <Button variant="secondary" onClick={handleRevert}>
-              Revert
+              Reset
             </Button>
             <Button
               onClick={handleSave}
               disabled={!isMappingChanged || !mappingValidation.isAllMappingValid}
               hasError={hasSaveError}
             >
-              Save mapping
+              Save
             </Button>
           </div>
         </div>
