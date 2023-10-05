@@ -6,9 +6,8 @@ export const useRequestJobLogPage = (id: number | undefined) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    return () => {
-      if (!id) return;
-      dispatch(getJobLog(id));
-    };
+    if (!id) return;
+
+    dispatch(getJobLog(id));
   }, [id, dispatch]);
 };
