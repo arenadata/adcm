@@ -43,7 +43,7 @@ class GroupRelatedSerializer(EmptySerializer):
     display_name = CharField()
 
 
-class GroupCreateUpdateSerializer(ModelSerializer):
+class GroupCreateSerializer(ModelSerializer):
     users = ManyRelatedField(
         child_relation=PrimaryKeyRelatedField(queryset=User.objects.all()), source="user_set", required=False
     )
@@ -53,5 +53,13 @@ class GroupCreateUpdateSerializer(ModelSerializer):
         fields = ("display_name", "description", "users")
         extra_kwargs = {
             "display_name": {"required": True},
+            "description": {"default": "", "allow_blank": True, "required": False},
+        }
+
+
+class GroupUpdateSerializer(GroupCreateSerializer):
+    class Meta(GroupCreateSerializer.Meta):
+        extra_kwargs = {
+            "display_name": {"required": False},
             "description": {"default": "", "allow_blank": True, "required": False},
         }
