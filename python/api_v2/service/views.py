@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from api_v2.config.utils import get_config_schema
 from api_v2.service.filters import ServiceFilter
 from api_v2.service.serializers import (
     ServiceCreateSerializer,
@@ -115,3 +115,9 @@ class ServiceViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pyl
         service = get_object_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, id=kwargs["pk"])
 
         return Response(data=ServiceStatusSerializer(instance=service).data)
+
+    @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
+    def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        schema = get_config_schema(object_=self.get_object())
+
+        return Response(data=schema, status=HTTP_200_OK)

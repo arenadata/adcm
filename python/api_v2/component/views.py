@@ -16,6 +16,7 @@ from api_v2.component.serializers import (
     ComponentSerializer,
     ComponentStatusSerializer,
 )
+from api_v2.config.utils import get_config_schema
 from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.api import update_mm_objects
 from cm.models import Cluster, ClusterObject, ServiceComponent
@@ -89,3 +90,9 @@ class ComponentViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # p
         )
 
         return Response(data=ComponentStatusSerializer(instance=component).data)
+
+    @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
+    def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        schema = get_config_schema(object_=self.get_object())
+
+        return Response(data=schema, status=HTTP_200_OK)

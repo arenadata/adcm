@@ -26,7 +26,7 @@ from cm.adcm_config.checks import check_config_type
 from cm.adcm_config.config import read_bundle_file
 from cm.adcm_config.utils import proto_ref
 from cm.checker import FormatError, check, check_rule, round_trip_load
-from cm.errors import raise_adcm_ex
+from cm.errors import AdcmEx, raise_adcm_ex
 from cm.logger import logger
 from cm.models import (
     Prototype,
@@ -791,6 +791,13 @@ def get_yspec(prototype: StagePrototype | Prototype, bundle_hash: str, conf: dic
     success, error = check_rule(rules=schema)
     if not success:
         raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'yspec file of config key "{name}/{subname}" error: {error}')
+
+    for _, value in schema.items():
+        if value["match"] in {"one_of", "dict_key_selection", "set", "none", "any"}:
+            raise AdcmEx(
+                code="CONFIG_TYPE_ERROR",
+                msg=f"yspec file of config key '{name}/{subname}': '{value['match']}' rule is not supported",
+            )
 
     return schema
 

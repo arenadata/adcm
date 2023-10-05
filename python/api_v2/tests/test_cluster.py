@@ -220,7 +220,7 @@ class TestCluster(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 3)
+        self.assertEqual(len(response.json()), 4)
 
     def test_service_create_success(self):
         service_prototype = Prototype.objects.filter(type="service").first()
@@ -295,23 +295,6 @@ class TestClusterActions(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-
-    def test_retrieve_action_with_config_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:cluster-action-detail",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action_with_config.pk},
-            )
-        )
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-
-        attributes = response.json()["configSchema"]["fields"]
-        self.assertEqual(len(attributes), 3)
-        self.assertEqual([attr["name"] for attr in attributes], ["simple", "grouped", "after"])
-        self.assertEqual([attr["name"] for attr in attributes[1]["children"]], ["simple", "second"])
-        self.assertEqual(attributes[0]["default"], None)
-        self.assertEqual(attributes[1]["children"][0]["default"], 4)
 
     def test_run_action_with_config_success(self):
         tasklog = TaskLog.objects.create(

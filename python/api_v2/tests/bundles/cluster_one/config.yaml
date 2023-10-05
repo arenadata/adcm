@@ -6,24 +6,9 @@
   config_group_customization: true
   license: EULA.txt
   allow_maintenance_mode: true
-  config: &config
-    - name: string
-      type: string
-      required: false
-      default: string
-    - name: map_not_required
-      type: map
-      required: False
-    - name: list
-      type: list
-      required: false
-      default:
-        - value1
-        - value2
-        - value3
+  config:
     - name: boolean
       type: boolean
-      required: false
       default: true
     - name: group
       type: group
@@ -32,16 +17,21 @@
           type: float
           required: false
           default: 0.1
-        - name: map
-          type: map
-          required: false
-          default:
-            integer_key: '10'
-            string_key: string
-        - name: text
-          type: text
-          required: false
-          default: text
+    - name: variant_not_strict
+      type: variant
+      required: false
+      source:
+        type: config
+        strict: false
+        name: list
+      default: value1
+    - name: list
+      type: list
+      required: false
+      default:
+        - value1
+        - value2
+        - value3
     - name: activatable_group
       type: group
       activatable: True
@@ -51,21 +41,6 @@
           type: integer
           required: false
           default: 10
-        - name: json
-          type: json
-          required: false
-          default:
-            key: value
-        - name: structure
-          type: structure
-          required: false
-          yspec: ./schema.yaml
-          default:
-            - integer: 1
-              string: string1
-            - integer: 2
-              string: string2
-
   actions:
     action: &action
       type: job
@@ -110,12 +85,31 @@
       host_action: true
 
   export:
-    - string
+    - boolean
 
 - name: service_1
   type: service
   version: *version
-  config: *config
+  config:
+    - name: string
+      type: string
+      required: false
+      default: string
+    - name: group
+      type: group
+      subs:
+        - name: password
+          type: password
+          default: password
+    - name: activatable_group
+      type: group
+      activatable: True
+      active: True
+      subs:
+        - name: text
+          type: text
+          required: false
+          default: text
   license: EULA.txt
   actions:
     action: *action
@@ -124,21 +118,37 @@
   components:
     component_1:
       constraint: [ 0, + ]
-      config: *config
+      config:
+        - name: secrettext
+          type: secrettext
+          default: secrettext
+        - name: group
+          type: group
+          subs:
+            - name: file
+              type: file
+              required: false
+              default: ./file.txt
+        - name: activatable_group
+          type: group
+          activatable: True
+          active: True
+          subs:
+            - name: secretfile
+              type: secretfile
+              default: ./secretfile.txt
       actions:
         action_1_comp_1: *action
         action_2_comp_1: *action
         component_on_host: *host_action
     component_2:
       constraint: [ 0, + ]
-      config: *config
       actions:
         action_1_comp_2: *action
 
 - name: service_2
   type: service
   version: *version
-  config: *config
   actions:
     action_1_service_2: *action
     action_2_service_2: *action
@@ -146,4 +156,37 @@
 - name: service_3_manual_add
   type: service
   version: *version
-  config: *config
+
+- name: service_4_save_config_without_required_field
+  type: service
+  version: *version
+  config:
+    - name: map_not_required
+      type: map
+      required: False
+    - name: variant_not_required
+      type: variant
+      required: false
+      source:
+        type: config
+        strict: false
+        name: list
+    - name: list
+      type: list
+      required: false
+      default:
+        - value1
+        - value2
+    - name: group
+      type: group
+      subs:
+        - name: map_not_required
+          type: map
+          required: False
+        - name: variant_not_required
+          type: variant
+          required: false
+          source:
+            type: config
+            strict: false
+            name: list

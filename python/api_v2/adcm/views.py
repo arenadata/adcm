@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from api_v2.adcm.serializers import LoginSerializer, ProfileSerializer
+from api_v2.config.utils import get_config_schema
 from api_v2.config.views import ConfigLogViewSet
 from cm.adcm_config.config import get_adcm_config
 from cm.errors import AdcmEx
@@ -30,11 +31,12 @@ from rbac.models import User
 from rbac.services.user import update_user
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
+from rest_framework.decorators import action
 from rest_framework.generics import GenericAPIView, RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_204_NO_CONTENT
+from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
 from adcm.serializers import EmptySerializer
 
@@ -126,3 +128,9 @@ class ADCMConfigView(ConfigLogViewSet):  # pylint: disable=too-many-ancestors
 
     def get_parent_object(self) -> ADCM | None:
         return ADCM.objects.first()
+
+    @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
+    def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        schema = get_config_schema(object_=self.get_parent_object())
+
+        return Response(data=schema, status=HTTP_200_OK)

@@ -328,11 +328,18 @@ def get_variant(obj, conf, limits):
     value = None
     source = limits["source"]
     if source["type"] == "config":
-        skey = source["name"].split("/")
-        if len(skey) == 1:
-            value = conf[skey[0]]
+        name, subname, *_ = f'{source["name"]}/'.split("/")
+        if not subname:
+            if name in conf:
+                value = conf[name]
+            elif name not in conf and source["strict"]:
+                raise AdcmEx(code="CONFIG_VARIANT_ERROR", msg=f"{name}/ field should be in config")
         else:
-            value = conf[skey[0]][skey[1]]
+            if name in conf and subname in conf[name]:
+                value = conf[name][subname]
+            elif (name not in conf or subname not in conf) and source["strict"]:
+                raise AdcmEx(code="CONFIG_VARIANT_ERROR", msg=f"{name}/{subname} field should be in config")
+
     elif source["type"] == "builtin":
         value = get_builtin_variant(obj, source["name"], source.get("args", None))
     elif source["type"] == "inline":
@@ -341,7 +348,7 @@ def get_variant(obj, conf, limits):
     return value
 
 
-def process_variant(obj, spec, conf):
+def process_variant(obj, spec, conf) -> None:
     def set_variant(_spec):
         limits = _spec["limits"]
         limits["source"]["value"] = get_variant(obj, conf, limits)
@@ -351,8 +358,14 @@ def process_variant(obj, spec, conf):
     for key in spec:
         if "type" in spec[key]:
             if spec[key]["type"] == "variant":
+                if key not in conf:
+                    return
+
                 spec[key]["limits"] = set_variant(spec[key])
         else:
             for subkey in spec[key]:
                 if spec[key][subkey]["type"] == "variant":
+                    if key not in conf or subkey not in conf[key]:
+                        return
+
                     spec[key][subkey]["limits"] = set_variant(spec[key][subkey])

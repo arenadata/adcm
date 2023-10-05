@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from api_v2.config.utils import get_config_schema
 from api_v2.group_config.serializers import GroupConfigSerializer
 from api_v2.host.serializers import HostGroupConfigSerializer
 from api_v2.views import CamelCaseModelViewSet
@@ -20,7 +20,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import VIEW_GROUP_CONFIG_PERM, check_config_perm
@@ -71,3 +71,9 @@ class GroupConfigViewSet(
         serializer = HostGroupConfigSerializer(self.paginate_queryset(queryset=hosts), many=True)
 
         return self.get_paginated_response(data=serializer.data)
+
+    @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
+    def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        schema = get_config_schema(object_=self.get_object())
+
+        return Response(data=schema, status=HTTP_200_OK)
