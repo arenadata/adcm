@@ -1,17 +1,17 @@
 import { Dialog } from '@uikit';
-import { useAccessManagerRoleCreateDialog } from './useAccessManagerRoleCreateDialog';
+import { useAccessManagerRoleUpdateDialog } from './useAccessManagerRoleUpdateDialog';
 import AccessManagerRoleDialogForm from '../AccessManagerRoleDialogForm/AccessManagerRoleDialogForm';
 
-const AccessManagerRoleCreateDialog = () => {
-  const { isOpen, isValid, formData, onCreate, onClose, onChangeFormData, errors } = useAccessManagerRoleCreateDialog();
+const AccessManagerRoleUpdateDialog = () => {
+  const { isOpen, isValid, formData, onUpdate, onClose, onChangeFormData, errors } = useAccessManagerRoleUpdateDialog();
 
   return (
     <Dialog
-      title="Create role"
-      actionButtonLabel="Create"
+      title="Edit role"
+      actionButtonLabel="Save"
       isOpen={isOpen}
       onOpenChange={onClose}
-      onAction={onCreate}
+      onAction={onUpdate}
       isActionDisabled={!isValid}
       isDialogControlsOnTop
       width="100%"
@@ -22,4 +22,4 @@ const AccessManagerRoleCreateDialog = () => {
   );
 };
 
-export default AccessManagerRoleCreateDialog;
+export default AccessManagerRoleUpdateDialog;

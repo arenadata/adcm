@@ -5,11 +5,12 @@ import { columns } from './AccessManagerRolesTable.constants';
 import { setSortParams } from '@store/adcm/roles/rolesTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { ACCESS_MANAGER_PAGE_URLS } from '@pages/AccessManagerPage/AccessManagerPage.constants';
-import { openDeleteDialog } from '@store/adcm/roles/rolesActionsSlice';
+import { openDeleteDialog, openUpdateDialog } from '@store/adcm/roles/rolesActionsSlice';
 import { useState } from 'react';
 import AccessManagerRolesTableExpandedContent from './AccessManagerRolesTableExpandedContent/AccessManagerRolesTableExpandedContent';
 import s from './AccessManagerRolesTable.module.scss';
 import cn from 'classnames';
+import { AdcmRole } from '@models/adcm';
 
 const AccessManagerRolesTable = () => {
   const dispatch = useDispatch();
@@ -33,6 +34,10 @@ const AccessManagerRolesTable = () => {
 
   const handleSorting = (sortParams: SortParams) => {
     dispatch(setSortParams(sortParams));
+  };
+
+  const getHandleOpenUpdateDialog = (role: AdcmRole) => () => {
+    dispatch(openUpdateDialog(role));
   };
 
   return (
@@ -71,7 +76,13 @@ const AccessManagerRolesTable = () => {
               />
             </TableCell>
             <TableCell hasIconOnly align="center">
-              <IconButton icon="g1-edit" size={32} title="Edit" disabled={role.isBuiltIn} />
+              <IconButton
+                icon="g1-edit"
+                size={32}
+                title="Edit"
+                disabled={role.isBuiltIn}
+                onClick={getHandleOpenUpdateDialog(role)}
+              />
               <IconButton
                 icon="g1-delete"
                 size={32}

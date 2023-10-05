@@ -34,5 +34,16 @@ export interface AdcmCreateRolePayload {
 }
 
 export interface AdcmUpdateRolePayload {
-  name: string;
+  displayName: string;
+  description: string;
+  children: number[];
+}
+
+export interface UpdateRolePayload {
+  id: number;
+  data: {
+    displayName: string;
+    description: string;
+    children: number[];
+  };
 }
