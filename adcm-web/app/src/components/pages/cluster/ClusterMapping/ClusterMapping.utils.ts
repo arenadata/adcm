@@ -147,7 +147,7 @@ export const validateConstraints = (
   if (constraints.length == 2 && typeof c1 === 'number' && typeof c2 === 'number') {
     return c1 <= componentHostsCount && componentHostsCount <= c2
       ? { isValid: true }
-      : { isValid: false, error: `Must be installed at least ${c1} and no more ${c2} components.` };
+      : { isValid: false, error: `From ${c1} to ${c2} components should be installed.` };
   }
 
   if (constraints.length == 2 && typeof c1 === 'number' && typeof c2 === 'string') {
@@ -155,12 +155,12 @@ export const validateConstraints = (
       case 'odd':
         return ((c1 === 0 && componentHostsCount === 0) || componentHostsCount % 2) && componentHostsCount >= c1
           ? { isValid: true }
-          : { isValid: false, error: `Must be installed at least ${c1} components. Total amount should be odd.` };
+          : { isValid: false, error: `${c1} or more component should be installed. Total amount should be odd.` };
       case '+':
       default:
         return componentHostsCount >= c1
           ? { isValid: true }
-          : { isValid: false, error: `Must be installed at least ${c1} components.` };
+          : { isValid: false, error: `${c1} or more components should be installed.` };
     }
   }
 
@@ -179,7 +179,7 @@ export const validateConstraints = (
       case 'odd':
         return componentHostsCount % 2
           ? { isValid: true }
-          : { isValid: false, error: 'One or more component should be installed. Total amount should be odd.' };
+          : { isValid: false, error: '1 or more components should be installed. Total amount should be odd.' };
     }
   }
 
