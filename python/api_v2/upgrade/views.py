@@ -11,10 +11,16 @@
 # limitations under the License.
 from api_v2.action.serializers import ActionRunSerializer
 from api_v2.action.utils import insert_service_ids
-from api_v2.config.utils import get_config_schema
+from api_v2.config.utils import (
+    convert_adcm_meta_to_attr,
+    convert_attr_to_adcm_meta,
+    get_config_schema,
+    represent_string_as_json_type,
+)
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
 from api_v2.views import CamelCaseGenericViewSet
+from cm.adcm_config.config import get_prototype_config
 from cm.errors import AdcmEx
 from cm.models import Cluster, HostProvider, TaskLog, Upgrade
 from cm.upgrade import check_upgrade, do_upgrade, get_upgrade
@@ -90,12 +96,17 @@ class UpgradeViewSet(
 
         upgrade = self.get_upgrade(parent=parent)
 
-        if upgrade.action:
-            schema = {"fields": get_config_schema(parent_object=parent, action=upgrade.action)}
-        else:
-            schema = None
+        schema = None
+        adcm_meta = None
 
-        serializer = self.get_serializer_class()(instance=upgrade, context={"parent": parent, "config_schema": schema})
+        if upgrade.action:
+            schema = get_config_schema(object_=parent, action=upgrade.action)
+            _, _, _, attr = get_prototype_config(prototype=upgrade.action.prototype, action=upgrade.action)
+            adcm_meta = convert_attr_to_adcm_meta(attr=attr)
+
+        serializer = self.get_serializer_class()(
+            instance=upgrade, context={"parent": parent, "config_schema": schema, "adcm_meta": adcm_meta}
+        )
 
         return Response(serializer.data)
 
@@ -108,11 +119,20 @@ class UpgradeViewSet(
 
         upgrade = self.get_upgrade(parent=parent)
 
+        prototype = None
+
+        if upgrade.action:
+            prototype = upgrade.action.prototype
+
+        config = represent_string_as_json_type(
+            prototype=prototype, value=serializer.validated_data["config"], action=upgrade.action
+        )
+        attr = convert_adcm_meta_to_attr(adcm_meta=serializer.validated_data["adcm_meta"])
         result = do_upgrade(
             obj=parent,
             upgrade=upgrade,
-            config=serializer.validated_data["config"],
-            attr=serializer.validated_data.get("attr", {}),
+            config=config,
+            attr=attr,
             hostcomponent=insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),
         )
 

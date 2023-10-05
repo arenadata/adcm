@@ -156,7 +156,7 @@ REST_FRAMEWORK = {
     "DEFAULT_VERSION": "v1",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
     "JSON_UNDERSCOREIZE": {
-        "ignore_fields": ("config", "adcmMeta"),
+        "ignore_fields": ("config", "configSchema", "adcmMeta", "properties"),
     },
 }
 

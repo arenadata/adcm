@@ -27,6 +27,7 @@ from api_v2.config.utils import (
     convert_adcm_meta_to_attr,
     convert_attr_to_adcm_meta,
     get_config_schema,
+    represent_string_as_json_type,
 )
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
@@ -123,13 +124,16 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
         get_object_for_user(user=request.user, perms=VIEW_ACTION_PERM, klass=Action, pk=kwargs["pk"])
 
         action_ = self.get_object()
-        schema = {"fields": get_config_schema(parent_object=parent_object, action=action_)}
 
-        attr = {}
-        if not action_.config_jinja:
+        schema = None
+        adcm_meta = None
+
+        if not action_.config_jinja:  # TODO add schema and adcm_meta from jinja config ADCM-4620
+            schema = get_config_schema(object_=parent_object, action=action_)
             _, _, _, attr = get_prototype_config(prototype=action_.prototype, action=action_)
+            if attr and schema:
+                adcm_meta = convert_attr_to_adcm_meta(attr=attr)
 
-        adcm_meta = convert_attr_to_adcm_meta(attr=attr)
         serializer = self.get_serializer_class()(
             instance=action_, context={"obj": parent_object, "config_schema": schema, "adcm_meta": adcm_meta}
         )
@@ -156,7 +160,9 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
         task = start_task(
             action=target_action,
             obj=parent_object,
-            conf=serializer.validated_data["config"],
+            conf=represent_string_as_json_type(
+                prototype=target_action.prototype, value=serializer.validated_data["config"], action=target_action
+            ),
             attr=convert_adcm_meta_to_attr(adcm_meta=serializer.validated_data["adcm_meta"]),
             hostcomponent=insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),
             hosts=[],

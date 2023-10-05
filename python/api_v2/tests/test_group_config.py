@@ -74,7 +74,7 @@ class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):  # pylint:
 class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable=too-many-ancestors
     def test_list_success(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v2:cluster-config-group-list", kwargs={"cluster_pk": self.cluster_1.pk})
+            path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk})
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -84,7 +84,7 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable
     def test_retrieve_success(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:cluster-config-group-detail",
+                viewname="v2:cluster-group-config-detail",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
             )
         )
@@ -94,7 +94,7 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable
 
     def test_create_success(self):
         response: Response = self.client.post(
-            path=reverse(viewname="v2:cluster-config-group-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data={"name": "group-config-new", "description": "group-config-new"},
         )
 
@@ -104,7 +104,7 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable
     def test_delete_success(self):
         response: Response = self.client.delete(
             path=reverse(
-                viewname="v2:cluster-config-group-detail",
+                viewname="v2:cluster-group-config-detail",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
             )
         )
@@ -114,7 +114,7 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable
     def test_list_hosts_success(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:cluster-config-group-hosts-list",
+                viewname="v2:cluster-group-config-hosts-list",
                 kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
             )
         )
@@ -125,7 +125,7 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable
     def test_add_hosts_success(self):
         response: Response = self.client.post(
             path=reverse(
-                viewname="v2:cluster-config-group-hosts-list",
+                viewname="v2:cluster-group-config-hosts-list",
                 kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
             ),
             data=[self.new_host.pk],
@@ -138,7 +138,7 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable
     def test_host_candidates(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:cluster-config-group-host-candidates",
+                viewname="v2:cluster-group-config-host-candidates",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
             )
         )
@@ -150,7 +150,7 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable
     def test_delete_host_success(self):
         response: Response = self.client.delete(
             path=reverse(
-                "v2:cluster-config-group-hosts-detail",
+                "v2:cluster-group-config-hosts-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "group_config_pk": self.cluster_1_group_config.pk,
@@ -168,7 +168,7 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
     def test_list_success(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:service-config-group-list",
+                viewname="v2:service-group-config-list",
                 kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
             )
         )
@@ -180,7 +180,7 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
     def test_retrieve_success(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:service-config-group-detail",
+                viewname="v2:service-group-config-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -195,7 +195,7 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
     def test_create_success(self):
         response: Response = self.client.post(
             path=reverse(
-                viewname="v2:service-config-group-list",
+                viewname="v2:service-group-config-list",
                 kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
             ),
             data={"name": "service-group-config-new", "description": "service-group-config-new"},
@@ -207,7 +207,7 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
     def test_delete_success(self):
         response: Response = self.client.delete(
             path=reverse(
-                viewname="v2:service-config-group-detail",
+                viewname="v2:service-group-config-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -219,7 +219,7 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:service-config-group-detail",
+                viewname="v2:service-group-config-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -232,7 +232,7 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
     def test_list_hosts_success(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:service-config-group-hosts-list",
+                viewname="v2:service-group-config-hosts-list",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -248,7 +248,7 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
     def test_add_hosts_success(self):
         response: Response = self.client.post(
             path=reverse(
-                viewname="v2:service-config-group-hosts-list",
+                viewname="v2:service-group-config-hosts-list",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -265,7 +265,7 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
     def test_delete_host_success(self):
         response: Response = self.client.delete(
             path=reverse(
-                "v2:service-config-group-hosts-detail",
+                "v2:service-group-config-hosts-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -283,7 +283,7 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
     def test_host_candidates_success(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:service-config-group-host-candidates",
+                viewname="v2:service-group-config-host-candidates",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -326,7 +326,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
     def test_list_success(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:component-config-group-list",
+                viewname="v2:component-group-config-list",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -342,7 +342,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
     def test_retrieve_success(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:component-config-group-detail",
+                viewname="v2:component-group-config-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -358,7 +358,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
     def test_create_success(self):
         response: Response = self.client.post(
             path=reverse(
-                viewname="v2:component-config-group-list",
+                viewname="v2:component-group-config-list",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -374,7 +374,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
     def test_delete_success(self):
         response: Response = self.client.delete(
             path=reverse(
-                viewname="v2:component-config-group-detail",
+                viewname="v2:component-group-config-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -387,7 +387,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
 
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:component-config-group-detail",
+                viewname="v2:component-group-config-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -401,7 +401,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
     def test_list_hosts(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:component-config-group-hosts-list",
+                viewname="v2:component-group-config-hosts-list",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -418,7 +418,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
     def test_add_hosts_group_config_not_found_fail(self):
         response: Response = self.client.post(
             path=reverse(
-                viewname="v2:component-config-group-hosts-list",
+                viewname="v2:component-group-config-hosts-list",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -434,7 +434,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
     def test_add_hosts_success(self):
         response: Response = self.client.post(
             path=reverse(
-                viewname="v2:component-config-group-hosts-list",
+                viewname="v2:component-group-config-hosts-list",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -452,7 +452,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
     def test_list_host_candidates_success(self):
         response: Response = self.client.get(
             path=reverse(
-                viewname="v2:component-config-group-host-candidates",
+                viewname="v2:component-group-config-host-candidates",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
@@ -469,7 +469,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
     def test_delete_host_success(self):
         response: Response = self.client.delete(
             path=reverse(
-                "v2:component-config-group-hosts-detail",
+                "v2:component-group-config-hosts-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,

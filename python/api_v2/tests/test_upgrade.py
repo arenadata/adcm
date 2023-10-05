@@ -116,13 +116,6 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             {("add", "service_1", "component_1"), ("remove", "service_1", "component_2")},
         )
 
-        attributes = upgrade_data["configSchema"]["fields"]
-        self.assertEqual(len(attributes), 3)
-        self.assertEqual([attr["name"] for attr in attributes], ["simple", "grouped", "after"])
-        self.assertEqual([attr["name"] for attr in attributes[1]["children"]], ["simple", "second"])
-        self.assertEqual(attributes[0]["default"], None)
-        self.assertEqual(attributes[1]["children"][0]["default"], 4)
-
     def test_cluster_upgrade_run_success(self):
         tasklog = TaskLog.objects.create(
             object_id=self.cluster_1.pk,
@@ -233,13 +226,6 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         self.assertFalse(upgrade_data["isAllowToTerminate"])
 
         self.assertEqual(len(upgrade_data["hostComponentMapRules"]), 0)
-
-        attributes = upgrade_data["configSchema"]["fields"]
-        self.assertEqual(len(attributes), 3)
-        self.assertEqual([attr["name"] for attr in attributes], ["simple", "grouped", "after"])
-        self.assertEqual([attr["name"] for attr in attributes[1]["children"]], ["simple", "second"])
-        self.assertEqual(attributes[0]["default"], None)
-        self.assertEqual(attributes[1]["children"][0]["default"], 4)
 
     def test_provider_upgrade_run_success(self):
         tasklog = TaskLog.objects.create(

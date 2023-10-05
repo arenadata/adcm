@@ -9,60 +9,583 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from collections import defaultdict
+import copy
+import json
+from abc import ABC, abstractmethod
+from collections import OrderedDict, defaultdict
 from copy import deepcopy
+from typing import Any
 
-from cm.adcm_config.config import config_is_ro, get_default, group_is_activatable
-from cm.models import Action, ADCMEntity, PrototypeConfig
+from cm.adcm_config.config import get_default
+from cm.errors import AdcmEx
+from cm.models import (
+    Action,
+    ADCMEntity,
+    ConfigLog,
+    GroupConfig,
+    Prototype,
+    PrototypeConfig,
+)
+from cm.variant import get_variant
 
 
-def get_item_schema(field: PrototypeConfig, parent_object: ADCMEntity) -> dict:
-    item = {
-        "name": field.subname if field.subname else field.name,
-        "displayName": field.display_name,
-        "type": field.type,
-        "default": get_default(conf=field, prototype=parent_object.prototype),
-        "isReadOnly": config_is_ro(
-            obj=parent_object,
-            key=f"{field.name}/{field.subname}",
-            limits=field.limits,
-        ),
-        "isActive": group_is_activatable(spec=field),
-        "validation": {
-            "isRequired": field.required,
-            "minValue": field.limits.get("min"),
-            "maxValue": field.limits.get("max"),
+class Field(ABC):  # pylint: disable=too-many-instance-attributes
+    def __init__(self, prototype_config: PrototypeConfig, object_: ADCMEntity | GroupConfig):
+        self.object_ = object_
+        self.is_group_config = False
+        self.config = ConfigLog.objects.get(id=self.object_.config.current).config
+
+        if isinstance(object_, GroupConfig):
+            self.is_group_config = True
+            self.object_ = object_.object
+
+        self.prototype_config = prototype_config
+
+        self.name = prototype_config.name
+        self.title = prototype_config.display_name
+        self.description = prototype_config.description
+        self.limits = self.prototype_config.limits
+        self.required = self.prototype_config.required
+
+    @property
+    @abstractmethod
+    def type(self) -> str:
+        ...
+
+    @property
+    def is_read_only(self) -> bool:
+        if not self.limits:
+            return False
+
+        readonly = self.limits.get("read_only", [])
+        writeable = self.limits.get("writable", [])
+
+        if readonly == "any" or self.object_.state in readonly:
+            return True
+
+        if writeable == "any":
+            return False
+
+        if self.object_.state not in writeable:
+            return True
+
+        return False
+
+    @property
+    def is_advanced(self) -> bool:
+        return self.prototype_config.ui_options.get("advanced", False)
+
+    @property
+    def is_invisible(self) -> bool:
+        if self.prototype_config.name == "__main_info":
+            return True
+
+        return self.prototype_config.ui_options.get("invisible", False)
+
+    @property
+    def activation(self) -> dict | None:
+        return None
+
+    @property
+    def synchronization(self) -> dict | None:
+        if not self.is_group_config:
+            return None
+
+        is_allow_change = self.prototype_config.group_customization
+        if is_allow_change is None:
+            is_allow_change = self.object_.prototype.config_group_customization
+
+        return {"isShown": True, "isAllowChange": is_allow_change}
+
+    @property
+    def null_value(self) -> list | dict | None:
+        return None
+
+    @property
+    def is_secret(self) -> bool:
+        return False
+
+    @property
+    def string_extra(self) -> dict | None:
+        return None
+
+    @property
+    def enum_extra(self) -> dict | None:
+        return None
+
+    @property
+    def default(self) -> Any:
+        return get_default(conf=self.prototype_config, prototype=self.prototype_config.prototype)
+
+    def to_dict(self) -> dict:
+        return {
+            "title": self.title,
+            "type": self.type,
+            "description": self.description,
+            "default": self.default,
+            "readOnly": self.is_read_only,
+            "adcmMeta": {
+                "isAdvanced": self.is_advanced,
+                "isInvisible": self.is_invisible,
+                "activation": self.activation,
+                "synchronization": self.synchronization,
+                "nullValue": self.null_value,
+                "isSecret": self.is_secret,
+                "stringExtra": self.string_extra,
+                "enumExtra": self.enum_extra,
+            },
+        }
+
+
+class Boolean(Field):
+    type = "boolean"
+
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+
+        if not self.required:
+            return {"oneOf": [data, {"type": "null"}]}
+
+        return data
+
+
+class Float(Field):
+    type = "number"
+
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+
+        if "min" in self.limits:
+            data.update({"minimum": self.limits["min"]})
+
+        if "max" in self.limits:
+            data.update({"maximum": self.limits["max"]})
+
+        if not self.required:
+            return {"oneOf": [data, {"type": "null"}]}
+
+        return data
+
+
+class Integer(Field):
+    type = "integer"
+
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+
+        if "min" in self.limits:
+            data.update({"minimum": self.limits["min"]})
+
+        if "max" in self.limits:
+            data.update({"maximum": self.limits["max"]})
+
+        if not self.required:
+            return {"oneOf": [data, {"type": "null"}]}
+
+        return data
+
+
+class String(Field):
+    type = "string"
+
+    @property
+    def string_extra(self) -> dict | None:
+        return {"isMultiline": False}
+
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+
+        if self.required:
+            data.update({"minLength": 1})
+        else:
+            return {"oneOf": [data, {"type": "null"}]}
+
+        return data
+
+
+class Password(String):
+    @property
+    def is_secret(self) -> bool:
+        return True
+
+
+class Text(String):
+    @property
+    def string_extra(self) -> dict | None:
+        return {"isMultiline": True}
+
+
+class SecretText(Text):
+    @property
+    def is_secret(self) -> bool:
+        return True
+
+
+class File(Text):
+    pass
+
+
+class SecretFile(SecretText):
+    pass
+
+
+class Json(Field):
+    type = "string"
+
+    @property
+    def string_extra(self) -> dict | None:
+        return {"isMultiline": True}
+
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+
+        data.update({"format": "json", "default": json.dumps(data["default"])})
+
+        if self.required:
+            data.update({"minLength": 1})
+
+        if not self.required:
+            return {"oneOf": [data, {"type": "null"}]}
+
+        return data
+
+
+class Map(Field):
+    type = "object"
+
+    @property
+    def null_value(self) -> list | dict | None:
+        return {}
+
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+
+        data.update({"additionalProperties": True, "properties": {}})
+
+        if self.required:
+            data.update({"minProperties": 1})
+
+        return data
+
+
+class SecretMap(Map):
+    @property
+    def is_secret(self) -> bool:
+        return True
+
+    @property
+    def null_value(self) -> list | dict | None:
+        return None
+
+
+class Structure(Field):
+    def __init__(self, prototype_config: PrototypeConfig, object_: ADCMEntity | GroupConfig):
+        super().__init__(prototype_config=prototype_config, object_=object_)
+
+        self.yspec = self.limits["yspec"]
+
+    @staticmethod
+    def _get_schema_type(type_: str) -> str:
+        match type_:
+            case "list":
+                return "array"
+            case "dict":
+                return "object"
+            case "bool":
+                return "boolean"
+            case "string":
+                return "string"
+            case "int":
+                return "integer"
+            case "float":
+                return "number"
+            case _:  # TODO: implement one_of, dict_key_selection, set, none, any
+                raise NotImplementedError
+
+    @property
+    def type(self) -> str:
+        return self._get_schema_type(type_=self.yspec["root"]["match"])
+
+    @property
+    def inner_synchronization(self):
+        data = self.synchronization
+
+        if data is not None:
+            data["isShown"] = False
+
+        return data
+
+    def _get_inner(self, **kwargs) -> dict:
+        type_ = self._get_schema_type(type_=kwargs["match"])
+
+        data = {
+            "type": type_,
+            "title": "",
+            "description": "",
+            "default": None,
+            "readOnly": self.is_read_only,
+            "adcmMeta": {
+                "isAdvanced": self.is_advanced,
+                "isInvisible": self.is_invisible,
+                "activation": self.activation,
+                "synchronization": self.inner_synchronization,
+                "nullValue": self.null_value,
+                "isSecret": self.is_secret,
+                "stringExtra": self.string_extra,
+                "enumExtra": self.enum_extra,
+            },
+        }
+
+        if type_ == "array":
+            data.update({"items": self._get_inner(**self.yspec[kwargs["item"]])})
+
+        elif type_ == "object":
+            data["properties"] = {}
+            data["required"] = kwargs.get("required_items", [])
+
+            for item_key, item_value in kwargs["items"].items():
+                data["properties"][item_key] = self._get_inner(**self.yspec[item_value])
+
+        return data
+
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+
+        type_ = self.type
+
+        if type_ == "array":
+            item = self.yspec["root"]["item"]
+            data["items"] = self._get_inner(**self.yspec[item])
+
+            if self.required:
+                data.update({"minItems": 1})
+
+        if type_ == "object":
+            data["properties"] = {}
+            data["required"] = self.yspec["root"].get("required_items", [])
+            items = self.yspec["root"]["items"]
+
+            for item_key, item_value in items.items():
+                data["properties"][item_key] = self._get_inner(**self.yspec[item_value])
+
+            if self.required:
+                data.update({"minProperties": 1})
+
+        return data
+
+
+class Group(Field):
+    type = "object"
+
+    def __init__(self, prototype_config: PrototypeConfig, object_: ADCMEntity | GroupConfig, action: Action = None):
+        super().__init__(prototype_config=prototype_config, object_=object_)
+        self.action = action
+
+    @property
+    def activation(self) -> dict | None:
+        if "activatable" in self.limits:
+            return {"isShown": True, "isAllowChange": self.is_read_only}
+
+        return None
+
+    @property
+    def synchronization(self) -> dict | None:
+        data = super().synchronization
+
+        if data is not None and "activatable" not in self.limits:
+            data["isShown"] = False
+
+        return data
+
+    def get_properties(self) -> dict:
+        data = {"properties": OrderedDict(), "required": []}
+
+        for field in (
+            PrototypeConfig.objects.filter(
+                name=self.prototype_config.name, prototype=self.prototype_config.prototype, action=self.action
+            )
+            .exclude(type="group")
+            .order_by("id")
+        ):
+            data["properties"][field.subname] = get_field(prototype_config=field, object_=self.object_).to_dict()
+            data["required"].append(field.subname)
+
+        return data
+
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+        data.update(**self.get_properties())
+
+        return data
+
+
+class List(Field):
+    type = "array"
+
+    @property
+    def null_value(self) -> list | dict | None:
+        return []
+
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+
+        data.update(
+            {
+                "items": {
+                    "type": "string",
+                    "title": "",
+                    "description": "",
+                    "default": None,
+                    "readOnly": self.is_read_only,
+                    "adcmMeta": {
+                        "isAdvanced": False,
+                        "isInvisible": False,
+                        "activation": None,
+                        "synchronization": None,
+                        "nullValue": None,
+                        "isSecret": False,
+                        "stringExtra": None,
+                        "enumExtra": None,
+                    },
+                },
+            }
+        )
+
+        if self.required:
+            data.update({"minItems": 1})
+
+        if not self.required:
+            return {"oneOf": [data, {"type": "null"}]}
+
+        return data
+
+
+class Option(Field):
+    type = "enum"
+
+    @property
+    def string_extra(self) -> dict | None:
+        return {"isMultiline": True}
+
+    @property
+    def enum_extra(self) -> dict | None:
+        return {"labels": list(self.limits["option"].keys())}
+
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+
+        data.pop("type")
+        data.update({"enum": [self.limits["option"][key] for key in self.enum_extra["labels"]]})
+
+        return data
+
+
+class Variant(Field):
+    type = "string"
+
+    @property
+    def string_extra(self) -> dict | None:
+        string_extra = {"isMultiline": False}
+
+        if not self.limits["source"]["strict"]:
+            string_extra.update({"suggestions": get_variant(obj=self.object_, conf=self.config, limits=self.limits)})
+
+        return string_extra
+
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+
+        if self.limits["source"]["strict"]:
+            data.pop("type")
+            data.update({"enum": get_variant(obj=self.object_, conf=self.config, limits=self.limits)})
+
+        if self.required:
+            data.update({"minLength": 1})
+
+        return data
+
+
+def get_field(prototype_config: PrototypeConfig, object_: ADCMEntity, action: Action = None):
+    match prototype_config.type:
+        case "boolean":
+            field = Boolean(prototype_config=prototype_config, object_=object_)
+        case "float":
+            field = Float(prototype_config=prototype_config, object_=object_)
+        case "integer":
+            field = Integer(prototype_config=prototype_config, object_=object_)
+        case "file":
+            field = File(prototype_config=prototype_config, object_=object_)
+        case "json":
+            field = Json(prototype_config=prototype_config, object_=object_)
+        case "password":
+            field = Password(prototype_config=prototype_config, object_=object_)
+        case "secretfile":
+            field = SecretFile(prototype_config=prototype_config, object_=object_)
+        case "secrettext":
+            field = SecretText(prototype_config=prototype_config, object_=object_)
+        case "string":
+            field = String(prototype_config=prototype_config, object_=object_)
+        case "text":
+            field = Text(prototype_config=prototype_config, object_=object_)
+        case "map":
+            field = Map(prototype_config=prototype_config, object_=object_)
+        case "secretmap":
+            field = SecretMap(prototype_config=prototype_config, object_=object_)
+        case "structure":
+            field = Structure(prototype_config=prototype_config, object_=object_)
+        case "group":
+            field = Group(prototype_config=prototype_config, object_=object_, action=action)
+        case "list":
+            field = List(prototype_config=prototype_config, object_=object_)
+        case "option":
+            field = Option(prototype_config=prototype_config, object_=object_)
+        case "variant":
+            field = Variant(prototype_config=prototype_config, object_=object_)
+        case _:
+            raise TypeError
+
+    return field
+
+
+def get_config_schema(object_: ADCMEntity | GroupConfig, action: Action | None = None) -> dict | None:
+    schema = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Configuration",
+        "description": "",
+        "default": None,
+        "readOnly": False,
+        "adcmMeta": {
+            "isAdvanced": False,
+            "isInvisible": False,
+            "activation": None,
+            "synchronization": None,
+            "nullValue": None,
+            "isSecret": False,
+            "stringExtra": None,
+            "enumExtra": None,
         },
-        "options": [{"label": k, "value": v} for k, v in field.limits.get("option", {}).items()],
-        "children": [],
+        "type": "object",
+        "properties": OrderedDict(),
+        "required": [],
     }
-
-    return item
-
-
-def get_config_schema(parent_object: ADCMEntity, action: Action | None = None) -> list:
-    schema = []
 
     if action:
         # if action is provided, it's enough to find config prototypes
         # and for upgrade's actions it is important to not operate with parent object,
         # because action is from bundle, not "created object" like cluster/provider
-        config_prototypes = PrototypeConfig.objects.filter(action=action)
+        prototype_configs = PrototypeConfig.objects.filter(action=action).order_by("pk")
     else:
-        config_prototypes = PrototypeConfig.objects.filter(prototype=parent_object.prototype, action=action)
+        prototype_configs = PrototypeConfig.objects.filter(prototype=object_.prototype, action=action).order_by("pk")
 
-    top_fields = config_prototypes.filter(subname="").order_by("id")
+    top_fields = prototype_configs.filter(subname="").order_by("id")
+
+    if not top_fields.exists():
+        return None
 
     for field in top_fields:
-        item = get_item_schema(field=field, parent_object=parent_object)
-
-        if field.type == "group":
-            child_fields = config_prototypes.filter(name=field.name).exclude(type="group").order_by("id")
-
-            for child_field in child_fields:
-                item["children"].append(get_item_schema(field=child_field, parent_object=parent_object))
-
-        schema.append(item)
+        item = get_field(prototype_config=field, object_=object_).to_dict()
+        schema["properties"][field.name] = item
+        schema["required"].append(field.name)
 
     return schema
 
@@ -116,3 +639,48 @@ def convert_adcm_meta_to_attr(adcm_meta: dict) -> dict:
         return adcm_meta
 
     return attr
+
+
+def represent_json_type_as_string(prototype: Prototype, value: dict, action: Action | None = None) -> dict:
+    value = copy.deepcopy(value)
+
+    for name, sub_name in PrototypeConfig.objects.filter(prototype=prototype, type="json", action=action).values_list(
+        "name", "subname"
+    ):
+        if name not in value or sub_name not in value[name]:
+            continue
+
+        if sub_name:
+            value[name][sub_name] = json.dumps(value[name][sub_name])
+        else:
+            value[name] = json.dumps(value[name])
+
+    return value
+
+
+def represent_string_as_json_type(prototype: Prototype | None, value: dict, action: Action | None = None) -> dict:
+    value = copy.deepcopy(value)
+
+    for name, sub_name in PrototypeConfig.objects.filter(prototype=prototype, type="json", action=action).values_list(
+        "name", "subname"
+    ):
+        if name not in value or sub_name not in value[name]:
+            continue
+
+        try:
+            if sub_name:
+                value[name][sub_name] = json.loads(value[name][sub_name])
+            else:
+                value[name] = json.loads(value[name])
+        except json.JSONDecodeError:
+            raise AdcmEx(
+                code="CONFIG_KEY_ERROR",
+                msg=f"The '{name}/{sub_name}' key must be in the json format.",
+            ) from None
+        except TypeError:
+            raise AdcmEx(
+                code="CONFIG_KEY_ERROR",
+                msg=f"The '{name}/{sub_name}' key must be a string type.",
+            ) from None
+
+    return value

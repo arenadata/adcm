@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from api_v2.config.utils import get_config_schema
 from api_v2.hostprovider.filters import HostProviderFilter
 from api_v2.hostprovider.serializers import (
     HostProviderCreateSerializer,
@@ -20,8 +20,9 @@ from cm.api import add_host_provider, delete_host_provider
 from cm.errors import raise_adcm_ex
 from cm.models import HostProvider, ObjectType, Prototype
 from django_filters.rest_framework.backends import DjangoFilterBackend
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from adcm.permissions import VIEW_HOST_PERM, DjangoModelPermissionsAudit
 
@@ -57,3 +58,9 @@ class HostProviderViewSet(CamelCaseReadOnlyModelViewSet):  # pylint:disable=too-
         host_provider = self.get_object()
         delete_host_provider(host_provider)
         return Response(status=HTTP_204_NO_CONTENT)
+
+    @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
+    def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        schema = get_config_schema(object_=self.get_object())
+
+        return Response(data=schema, status=HTTP_200_OK)
