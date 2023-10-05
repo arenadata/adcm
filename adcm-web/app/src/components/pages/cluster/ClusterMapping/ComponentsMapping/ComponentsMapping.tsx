@@ -23,7 +23,7 @@ const ComponentsMapping = () => {
     servicesMapping,
     servicesMappingFilter,
     handleServicesMappingFilterChange,
-    isMappingChanged,
+    mappingState,
     mappingValidation,
     hasSaveError,
     handleMapHostsToComponent,
@@ -63,15 +63,17 @@ const ComponentsMapping = () => {
             label="Hide empty components"
           />
           <div className={s.componentsMapping__toolbarButtons}>
-            <Button variant="secondary" onClick={handleRevert}>
-              Reset
-            </Button>
+            {mappingState !== 'saved' && (
+              <Button variant="secondary" onClick={handleRevert}>
+                Reset
+              </Button>
+            )}
             <Button
               onClick={handleSave}
-              disabled={!isMappingChanged || !mappingValidation.isAllMappingValid}
+              disabled={mappingState !== 'editing' || !mappingValidation.isAllMappingValid}
               hasError={hasSaveError}
             >
-              Save
+              {mappingState === 'saved' ? 'Mapping applied' : 'Save'}
             </Button>
           </div>
         </div>

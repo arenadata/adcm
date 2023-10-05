@@ -31,9 +31,8 @@ export const useClusterMapping = () => {
     isLoaded,
     isLoading,
     hasSaveError,
+    state,
   } = useStore(({ adcm }) => adcm.clusterMapping);
-
-  const [isMappingChanged, setIsMappingChanged] = useState(false);
 
   const hostsDictionary: HostsDictionary = useMemo(() => arrayToHash(hosts, (h) => h.id), [hosts]);
   const componentsDictionary: ComponentsDictionary = useMemo(() => arrayToHash(components, (c) => c.id), [components]);
@@ -68,7 +67,6 @@ export const useClusterMapping = () => {
     (hosts: AdcmHostShortView[], component: AdcmComponent) => {
       const newLocalMapping = mapHostsToComponent(servicesMapping, hosts, component);
       dispatch(setLocalMapping(newLocalMapping));
-      setIsMappingChanged(true);
     },
     [dispatch, servicesMapping],
   );
@@ -77,7 +75,6 @@ export const useClusterMapping = () => {
     (hostId: number, componentId: number) => {
       const newLocalMapping = localMapping.filter((m) => !(m.hostId === hostId && m.componentId === componentId));
       dispatch(setLocalMapping(newLocalMapping));
-      setIsMappingChanged(true);
     },
     [dispatch, localMapping],
   );
@@ -98,7 +95,6 @@ export const useClusterMapping = () => {
 
   const handleRevert = useCallback(() => {
     dispatch(setLocalMapping(originalMapping));
-    setIsMappingChanged(false);
   }, [dispatch, originalMapping]);
 
   return {
@@ -113,7 +109,7 @@ export const useClusterMapping = () => {
     servicesMapping,
     servicesMappingFilter,
     handleServicesMappingFilterChange,
-    isMappingChanged,
+    mappingState: state,
     mappingValidation,
     hasSaveError,
     handleMapHostsToComponent,
