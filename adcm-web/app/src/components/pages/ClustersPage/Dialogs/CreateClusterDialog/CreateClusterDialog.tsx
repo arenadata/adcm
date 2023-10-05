@@ -7,7 +7,8 @@ import { useCreateClusterDialog } from './useCreateClusterDialog';
 import LinkToLicenseText from '@commonComponents/LinkToLicenseText/LinkToLicenseText';
 
 const CreateClusterDialog = () => {
-  const { isOpen, relatedData, formData, isValid, onCreate, onClose, onChangeFormData } = useCreateClusterDialog();
+  const { isOpen, relatedData, formData, isValid, onCreate, onClose, onChangeFormData, errors } =
+    useCreateClusterDialog();
 
   const productsOptions = useMemo(
     () => getOptionsFromArray(relatedData.prototypeVersions, (x) => x.name),
@@ -81,7 +82,7 @@ const CreateClusterDialog = () => {
             options={productVersionsOptions}
           />
         </FormField>
-        <FormField label="Cluster name">
+        <FormField label="Cluster name" error={errors.name}>
           <Input
             value={formData.name}
             type="text"

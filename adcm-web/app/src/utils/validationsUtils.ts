@@ -22,3 +22,7 @@ export const isEmailValid = (email: string) => {
   // username@subDomain.domain
   return domain.split('.').filter((d) => d).length > 1;
 };
+
+export const isClusterNameValid = (clusterName: string) => {
+  return /^[a-z|A-Z]+(\w|.|-|_|\s)*[a-z|A-Z|0-9]{1}$/.test(clusterName);
+};
