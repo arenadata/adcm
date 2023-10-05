@@ -1,6 +1,6 @@
 import React, { ChangeEvent, useMemo, useState } from 'react';
 import s from './ListTransferPanel.module.scss';
-import { Button, Checkbox, Input, Tooltip } from '@uikit';
+import { Button, Checkbox, SearchInput, Tooltip } from '@uikit';
 import { ListTransferItem, ListTransferItemOptions, ListTransferPanelOptions } from '../ListTransfer.types';
 import cn from 'classnames';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
@@ -102,7 +102,7 @@ const ListTransferPanel: React.FC<ListTransferPanelProps> = ({
         )}
       </div>
       <div className={s.listTransferPanel__filters}>
-        <Input
+        <SearchInput
           value={searchStr}
           onChange={handleSearchChange}
           className={s.listTransferPanel__search}

@@ -1,4 +1,5 @@
 import AccessManagerRoleCreateDialog from './AccessManagerRoleCreateDialog/AccessManagerRoleCreateDialog';
+import AccessManagerRoleUpdateDialog from './AccessManagerRoleUpdateDialog/AccessManagerRoleUpdateDialog';
 import AccessManagerRolesDeleteDialog from './AccessManagerRolesDeleteDialog/AccessManagerRolesDeleteDialog';
 
 const AccessManagerRolesDialogs = () => {
@@ -6,6 +7,7 @@ const AccessManagerRolesDialogs = () => {
     <>
       <AccessManagerRoleCreateDialog />
       <AccessManagerRolesDeleteDialog />
+      <AccessManagerRoleUpdateDialog />
     </>
   );
 };

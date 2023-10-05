@@ -4,13 +4,16 @@ import { createAsyncThunk } from '@store/redux';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { getRoles } from './rolesSlice';
-import { AdcmCreateRolePayload, AdcmRole, AdcmRoleType } from '@models/adcm';
+import { AdcmCreateRolePayload, AdcmRole, AdcmRoleType, UpdateRolePayload } from '@models/adcm';
 
 interface AdcmRolesActionState {
   deleteDialog: {
     id: number | null;
   };
   isCreateDialogOpened: boolean;
+  updateDialog: {
+    role: AdcmRole | null;
+  };
   relatedData: {
     categories: string[];
     isLoaded: boolean;
@@ -23,6 +26,9 @@ const createInitialState = (): AdcmRolesActionState => ({
     id: null,
   },
   isCreateDialogOpened: false,
+  updateDialog: {
+    role: null,
+  },
   relatedData: {
     categories: [],
     isLoaded: false,
@@ -55,6 +61,20 @@ const createRole = createAsyncThunk(
   },
 );
 
+const updateRole = createAsyncThunk(
+  'adcm/role/editRoleDialog/updateRole',
+  async ({ id, data }: UpdateRolePayload, thunkAPI) => {
+    try {
+      await AdcmRolesApi.updateRole(id, data);
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    } finally {
+      thunkAPI.dispatch(getRoles());
+    }
+  },
+);
+
 const loadAllRoles = createAsyncThunk('adcm/role/createRoleDialog/loadAllRoles', async (arg, thunkAPI) => {
   try {
     return await AdcmRolesApi.getRoles({
@@ -70,6 +90,14 @@ const loadRelatedData = createAsyncThunk('adcm/role/createRoleDialog/loadRelated
 });
 
 const openCreateDialog = createAsyncThunk('adcm/role/createRoleDialog/open', async (arg, thunkAPI) => {
+  try {
+    thunkAPI.dispatch(loadRelatedData());
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error);
+  }
+});
+
+const openUpdateDialog = createAsyncThunk('adcm/role/editRoleDialog/open', async (role: AdcmRole, thunkAPI) => {
   try {
     thunkAPI.dispatch(loadRelatedData());
   } catch (error) {
@@ -93,6 +121,9 @@ const rolesActionsSlice = createSlice({
     closeCreateDialog() {
       return createInitialState();
     },
+    closeEditDialog() {
+      return createInitialState();
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(deleteRoleWithUpdate.pending, (state) => {
@@ -100,6 +131,9 @@ const rolesActionsSlice = createSlice({
     });
     builder.addCase(openCreateDialog.fulfilled, (state) => {
       state.isCreateDialogOpened = true;
+    });
+    builder.addCase(openUpdateDialog.fulfilled, (state, action) => {
+      state.updateDialog.role = action.meta.arg;
     });
     builder.addCase(loadRelatedData.fulfilled, (state) => {
       state.relatedData.isLoaded = true;
@@ -110,9 +144,22 @@ const rolesActionsSlice = createSlice({
     builder.addCase(createRole.fulfilled, () => {
       return createInitialState();
     });
+    builder.addCase(updateRole.fulfilled, () => {
+      return createInitialState();
+    });
   },
 });
 
-const { openDeleteDialog, closeDeleteDialog, closeCreateDialog } = rolesActionsSlice.actions;
-export { deleteRoleWithUpdate, openDeleteDialog, closeDeleteDialog, openCreateDialog, closeCreateDialog, createRole };
+const { openDeleteDialog, closeDeleteDialog, closeCreateDialog, closeEditDialog } = rolesActionsSlice.actions;
+export {
+  deleteRoleWithUpdate,
+  openDeleteDialog,
+  closeDeleteDialog,
+  openCreateDialog,
+  closeCreateDialog,
+  createRole,
+  closeEditDialog,
+  openUpdateDialog,
+  updateRole,
+};
 export default rolesActionsSlice.reducer;

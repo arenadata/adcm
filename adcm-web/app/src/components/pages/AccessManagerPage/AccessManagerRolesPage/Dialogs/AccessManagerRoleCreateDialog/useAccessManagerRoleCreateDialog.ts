@@ -17,14 +17,14 @@ const initialFormData: AdcmCreateRoleFormData = {
 export const useAccessManagerRoleCreateDialog = () => {
   const dispatch = useDispatch();
   const isOpen = useStore((s) => s.adcm.rolesActions.isCreateDialogOpened);
-  const allPermissions = useStore((s) => s.adcm.rolesActions.relatedData.allRoles);
-  const products = useStore((s) => s.adcm.roles.relatedData.categories);
 
   const { formData, handleChangeFormData, setFormData, errors, setErrors, isValid } =
     useForm<AdcmCreateRoleFormData>(initialFormData);
 
   useEffect(() => {
-    setFormData(initialFormData);
+    if (!isOpen) {
+      setFormData(initialFormData);
+    }
   }, [isOpen, setFormData]);
 
   useEffect(() => {
@@ -53,10 +53,6 @@ export const useAccessManagerRoleCreateDialog = () => {
     formData,
     isValid,
     errors,
-    relatedData: {
-      allPermissions,
-      products,
-    },
     onClose: handleClose,
     onCreate: handleCreate,
     onChangeFormData: handleChangeFormData,
