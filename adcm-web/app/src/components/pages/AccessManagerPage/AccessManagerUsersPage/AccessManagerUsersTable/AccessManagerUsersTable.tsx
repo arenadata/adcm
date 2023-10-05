@@ -1,5 +1,4 @@
 import { Dispatch, SetStateAction, useCallback } from 'react';
-import { Link, generatePath } from 'react-router-dom';
 import { Table, TableRow, TableCell, IconButton, Checkbox } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { columns } from './AccessManagerUsersTable.constants';
@@ -13,7 +12,6 @@ import { setSortParams } from '@store/adcm/users/usersTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { AdcmUser, AdcmUserStatus } from '@models/adcm';
 import { useSelectedItems } from '@uikit/hooks/useSelectedItems';
-import { ACCESS_MANAGER_PAGE_URLS } from '@pages/AccessManagerPage/AccessManagerPage.constants';
 import { openDeleteDialog } from '@store/adcm/users/usersActionsSlice';
 
 const AccessManagerUsersTable = () => {
@@ -76,9 +74,7 @@ const AccessManagerUsersTable = () => {
             <TableCell>
               <Checkbox checked={isItemSelected(user)} onChange={getHandlerSelectedItem(user)} />
             </TableCell>
-            <TableCell>
-              <Link to={generatePath(ACCESS_MANAGER_PAGE_URLS.User, { userId: user.id + '' })}>{user.username}</Link>
-            </TableCell>
+            <TableCell>{user.username}</TableCell>
             <TableCell>{user.status}</TableCell>
             <TableCell>{user.email}</TableCell>
             <TableCell>{userGroupsNames}</TableCell>
