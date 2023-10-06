@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback } from 'react';
-import { useStore, useDispatch } from '@hooks';
+import { useMemo, useCallback, useEffect } from 'react';
+import { useStore, useDispatch, useForm } from '@hooks';
 import { createHost, loadClusters, loadHostProviders } from '@store/adcm/hosts/hostsActionsSlice';
+import { isHostNameValid, required } from '@utils/validationsUtils';
 
 interface CreateHostsFormData {
   hostName: string;
@@ -27,16 +28,25 @@ export const useCreateHostForm = () => {
     return clusters.map(({ name, id }) => ({ value: id, label: name }));
   }, [clusters]);
 
-  const [formData, setFormData] = useState<CreateHostsFormData>(initialFormData);
+  const { formData, setFormData, errors, setErrors, handleChangeFormData } =
+    useForm<CreateHostsFormData>(initialFormData);
+
+  useEffect(() => {
+    setErrors({
+      hostName:
+        (required(formData.hostName) ? undefined : 'The host name field is required') ||
+        (isHostNameValid(formData.hostName) ? undefined : 'The host name field is incorrect'),
+    });
+  }, [formData, setErrors]);
 
   const isValid = useMemo(() => {
     const { hostproviderId, hostName } = formData;
-    return !!(hostproviderId && hostName);
+    return !!(hostproviderId && isHostNameValid(hostName));
   }, [formData]);
 
   const reset = useCallback(() => {
     setFormData(initialFormData);
-  }, []);
+  }, [setFormData]);
 
   const submit = useCallback(() => {
     const { clusterId, hostproviderId, hostName: name } = formData;
@@ -56,13 +66,6 @@ export const useCreateHostForm = () => {
     dispatch(loadHostProviders());
   }, [dispatch]);
 
-  const handleChangeFormData = (changes: Partial<CreateHostsFormData>) => {
-    setFormData({
-      ...formData,
-      ...changes,
-    });
-  };
-
   return {
     isValid,
     formData,
@@ -74,5 +77,6 @@ export const useCreateHostForm = () => {
       hostProvidersOptions,
       clustersOptions,
     },
+    errors,
   };
 };

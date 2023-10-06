@@ -17,6 +17,7 @@ const CreateHostDialog = () => {
     loadRelatedData,
     relatedData: { clustersOptions, hostProvidersOptions },
     isValid,
+    errors,
   } = useCreateHostForm();
 
   useEffect(() => {
@@ -60,7 +61,7 @@ const CreateHostDialog = () => {
             options={hostProvidersOptions}
           />
         </FormField>
-        <FormField label="Name">
+        <FormField label="Name" error={errors.hostName}>
           <Input
             value={formData.hostName}
             type="text"
