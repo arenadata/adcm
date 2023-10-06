@@ -39,11 +39,9 @@ export const schema: ConfigurationSchema = {
             isInvisible: false,
             activation: {
               isAllowChange: true,
-              isShown: true,
             },
             synchronization: {
               isAllowChange: true,
-              isShown: true,
             },
             isSecret: false,
             stringExtra: null,

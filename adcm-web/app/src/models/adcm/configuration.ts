@@ -8,11 +8,9 @@ export interface AdcmFieldMetaData {
   isAdvanced?: boolean;
   isInvisible?: boolean;
   activation: {
-    isShown: boolean;
     isAllowChange: boolean;
   } | null;
   synchronization: {
-    isShown: boolean;
     isAllowChange: boolean;
   } | null;
   nullValue: NullValue;

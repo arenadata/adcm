@@ -1,17 +1,12 @@
 import { Icon, IconsNames } from '@uikit';
 
 export interface SynchronizedAttributeProps {
-  isShown: boolean;
   isAllowChange: boolean;
   isSynchronized: boolean;
   onToggle: (isSynchronized: boolean) => void;
 }
 
-const SynchronizedAttribute = ({ isShown, isAllowChange, isSynchronized, onToggle }: SynchronizedAttributeProps) => {
-  if (!isShown) {
-    return null;
-  }
-
+const SynchronizedAttribute = ({ isAllowChange, isSynchronized, onToggle }: SynchronizedAttributeProps) => {
   const handleClick = () => {
     if (isAllowChange) {
       onToggle(!isSynchronized);
