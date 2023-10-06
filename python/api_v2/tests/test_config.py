@@ -2590,7 +2590,7 @@ class TestADCMConfig(BaseAPITestCase):
                     "default": None,
                     "readOnly": True,
                     "adcmMeta": {
-                        "isAdvanced": False,
+                        "isAdvanced": True,
                         "isInvisible": False,
                         "activation": {"isShown": True, "isAllowChange": True},
                         "synchronization": None,

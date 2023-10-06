@@ -1756,7 +1756,7 @@ class StageUpgrade(ADCMModel):
     action = models.OneToOneField("StageAction", on_delete=models.CASCADE, null=True)
 
 
-class StageAction(AbstractAction):  # pylint: disable=too-many-instance-attributes
+class StageAction(AbstractAction):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
 
 
