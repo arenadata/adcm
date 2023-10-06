@@ -73,7 +73,7 @@ const ComponentsMapping = () => {
               disabled={mappingState !== 'editing' || !mappingValidation.isAllMappingValid}
               hasError={hasSaveError}
             >
-              {mappingState === 'saved' ? 'Mapping applied' : 'Save'}
+              Save
             </Button>
           </div>
         </div>
