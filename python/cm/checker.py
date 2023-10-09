@@ -119,8 +119,8 @@ def match_list(data, rules, rule, path, parent=None):
 def match_dict(data, rules, rule, path, parent=None):
     check_match_type("match_dict", data, dict, path, rule, parent)
 
-    if "required_items" in rules[rule] or "invisible_items" in rules[rule]:
-        for i in rules[rule].get("required_items", []) + rules[rule].get("invisible_items", []):
+    if "required_items" in rules[rule]:
+        for i in rules[rule].get("required_items", []):
             if i not in data:
                 raise FormatError(path, f'There is no required key "{i}" in map.', data, rule)
 

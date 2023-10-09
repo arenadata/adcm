@@ -69,11 +69,10 @@ class TestYAMLChecker(TestCase):
     def test_initial_data_correct_success(self):
         process_rule(data=test_data, rules=test_rules, name="root")
 
-    def test_invisible_field_not_in_data_fail(self):
+    def test_invisible_field_not_in_data_success(self):
         rules = deepcopy(test_rules)
         rules["replica_item"]["invisible_items"].append("non_existent_field")
-        with self.assertRaises(FormatError):
-            process_rule(data=test_data, rules=rules, name="root")
+        process_rule(data=test_data, rules=rules, name="root")
 
     def test_invisible_items_in_match_none_fail(self):
         rules = deepcopy(test_rules)
