@@ -193,7 +193,7 @@ def get_before_upgrade(obj: ADCMEntity, host: Host | None) -> dict:
                     name=obj_prototype.name, parent__name=obj_prototype.parent.name, bundle_id=bundle_id
                 )
             else:
-                old_proto = Prototype.objects.get(name=obj_prototype.name, bundle_id=bundle_id)
+                old_proto = Prototype.objects.get(name=obj_prototype.name, bundle_id=bundle_id, parent=None)
 
         except Prototype.DoesNotExist:
             logger.info("Can't get old proto for %s. Old bundle id: %s", obj, bundle_id)
