@@ -52,4 +52,4 @@ lint:
 	poetry run autoflake --check --quiet -r --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python
 	poetry run isort --check license_checker.py python
 	python license_checker.py --folders python go
-	poetry run pylint --rcfile pyproject.toml --recursive y python
+	poetry run pylint -j 0 --rcfile pyproject.toml --recursive y python
