@@ -43,7 +43,7 @@ const Dialog: React.FC<DialogProps> = ({
     }
   };
 
-  const dialogControlsComponent = dialogControls || (
+  const dialogControlsComponent = dialogControls ?? (
     <DialogDefaultControls
       cancelButtonLabel={cancelButtonLabel}
       actionButtonLabel={actionButtonLabel}
