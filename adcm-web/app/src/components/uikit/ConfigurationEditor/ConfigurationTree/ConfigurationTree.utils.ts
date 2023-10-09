@@ -1,5 +1,5 @@
 import {
-  Configuration,
+  ConfigurationData,
   ConfigurationSchema,
   SchemaDefinition,
   SingleSchemaDefinition,
@@ -24,7 +24,7 @@ const getDefaultFieldSchema = (): SingleSchemaDefinition => ({
 
 export const buildTreeNodes = (
   schema: ConfigurationSchema,
-  configuration: Configuration,
+  configuration: ConfigurationData,
   attributes: ConfigurationAttributes,
 ): ConfigurationNode => {
   const rootNode = buildRootNode(schema, configuration);
@@ -32,7 +32,7 @@ export const buildTreeNodes = (
   return rootNode;
 };
 
-const buildRootNode = (schema: ConfigurationSchema, configuration: Configuration): ConfigurationNode => {
+const buildRootNode = (schema: ConfigurationSchema, configuration: ConfigurationData): ConfigurationNode => {
   const fieldSchema = determineFieldSchema(schema);
   const rootNode: ConfigurationNode = {
     key: 'root-node',
@@ -254,7 +254,7 @@ export const filterTreeNodes = (tree: ConfigurationNode, filter: ConfigurationNo
 };
 
 const filterRecursively = (tree: ConfigurationNode, filter: ConfigurationNodeFilter) => {
-  const foundInTitle = tree.data.title.includes(filter.title);
+  const foundInTitle = tree.data.title.toLowerCase().includes(filter.title.toLowerCase());
   const isVisible =
     (filter.showInvisible ? true : !tree.data.fieldSchema.adcmMeta.isInvisible) &&
     (filter.showAdvanced ? true : !tree.data.fieldSchema.adcmMeta.isAdvanced);

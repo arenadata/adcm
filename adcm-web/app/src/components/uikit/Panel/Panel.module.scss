@@ -1,0 +1,17 @@
+:global {
+  body.theme-dark {
+    --panel-background: var(--color-xdark-new-20);
+  }
+
+  body.theme-light {
+    --body-background: var(--color-xgray-alt-30);
+  }
+}
+
+.panel {
+  background-color: var(--panel-background);
+  padding: 8px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  align-items: center;
+}

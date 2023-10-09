@@ -6,6 +6,7 @@ export { AdcmPrototypesApi } from './adcm/prototypes';
 export { AdcmBundlesApi } from './adcm/bundles';
 export { AdcmClusterMappingApi } from './adcm/clusterMapping';
 export { AdcmClusterHostsApi } from './adcm/clusterHosts';
+export { AdcmClusterConfigsApi } from './adcm/clusterConfigs';
 export { AdcmHostProvidersApi } from './adcm/hostProviders';
 export { AdcmHostsApi } from './adcm/hosts';
 export { AdcmServicesApi } from './adcm/services';

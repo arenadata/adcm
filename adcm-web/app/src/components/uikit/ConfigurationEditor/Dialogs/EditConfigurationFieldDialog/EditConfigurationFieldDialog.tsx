@@ -31,10 +31,12 @@ const EditConfigurationFieldDialog = ({
   const [value, setValue] = useState<JSONPrimitive>(fieldNode.data.value);
 
   const handleOpenChange = (isOpen: boolean) => {
-    if (value === '' && adcmMeta.nullValue !== undefined) {
-      onChange(fieldNode, adcmMeta.nullValue as JSONPrimitive);
-    } else {
-      onChange(fieldNode, value);
+    if (value !== fieldNode.data.value) {
+      if (value === '' && adcmMeta.nullValue !== undefined) {
+        onChange(fieldNode, adcmMeta.nullValue as JSONPrimitive);
+      } else {
+        onChange(fieldNode, value);
+      }
     }
 
     onOpenChange(isOpen);

@@ -1,11 +1,11 @@
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import CollapseNode from '@uikit/CollapseTree2/CollapseNode';
 import FieldNodeContent from './NodeContent/FieldNodeContent';
 import AddItemNodeContent from './NodeContent/AddItemNodeContent';
 import DefaultNodeContent from './NodeContent/DefaultNodeContent';
 import { ConfigurationNode, ConfigurationNodeFilter } from '../ConfigurationEditor.types';
 import { buildTreeNodes, filterTreeNodes } from './ConfigurationTree.utils';
-import { ConfigurationAttributes, Configuration, ConfigurationSchema } from '@models/adcm';
+import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 import { validate } from '@utils/jsonSchemaUtils';
 import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from './ConfigurationTree.types';
 import s from './ConfigurationTree.module.scss';
@@ -13,7 +13,7 @@ import cn from 'classnames';
 
 export interface ConfigurationTreeProps {
   schema: ConfigurationSchema;
-  configuration: Configuration;
+  configuration: ConfigurationData;
   attributes: ConfigurationAttributes;
   filter: ConfigurationNodeFilter;
   onEditField: ChangeConfigurationNodeHandler;
@@ -22,6 +22,7 @@ export interface ConfigurationTreeProps {
   onAddArrayItem: ChangeConfigurationNodeHandler;
   onDeleteArrayItem: ChangeConfigurationNodeHandler;
   onFieldAttributesChange: ChangeFieldAttributesHandler;
+  onChangeIsValid?: (isValid: boolean) => void;
 }
 
 const getNodeClassName = (node: ConfigurationNode, hasError: boolean) =>
@@ -41,11 +42,16 @@ const ConfigurationTree = memo(
     onAddArrayItem,
     onDeleteArrayItem,
     onFieldAttributesChange,
+    onChangeIsValid,
   }: ConfigurationTreeProps) => {
     const tree: ConfigurationNode = buildTreeNodes(schema, configuration, attributes);
     const filteredTree = filterTreeNodes(tree, filter);
-    const { errors, errorsPaths } = validate(schema, configuration);
-    console.error(errors);
+    const { isValid, errors, errorsPaths } = validate(schema, configuration);
+    !isValid && console.error(errors);
+
+    useEffect(() => {
+      onChangeIsValid?.(isValid);
+    }, [isValid, onChangeIsValid]);
 
     const handleGetNodeClassName = (node: ConfigurationNode) => {
       const hasError = errorsPaths[node.key] !== undefined;
