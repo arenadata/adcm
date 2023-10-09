@@ -5,7 +5,7 @@ import ComponentContainer from './ComponentContainer/ComponentContainer';
 import ClusterMappingToolbar from '../ClusterMappingToolbar/ClusterMappingToolbar';
 import s from './ComponentsMapping.module.scss';
 import cn from 'classnames';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { saveMapping } from '@store/adcm/cluster/mapping/mappingSlice';
 import { useDispatch } from '@hooks';
 
@@ -110,6 +110,14 @@ const ComponentsMapping = () => {
               </div>
             );
           })}
+          {servicesMapping.length === 0 && (
+            <div>
+              Add services on the{' '}
+              <Link className="text-link" to={`/clusters/${clusterId}/services/`}>
+                services page
+              </Link>
+            </div>
+          )}
         </div>
         <AnchorBar>
           <AnchorList items={anchorItems} />

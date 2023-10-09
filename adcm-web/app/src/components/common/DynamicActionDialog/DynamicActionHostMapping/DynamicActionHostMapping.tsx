@@ -9,6 +9,7 @@ import ComponentContainer from '@pages/cluster/ClusterMapping/ComponentsMapping/
 import { AdcmComponent, AdcmComponentService } from '@models/adcm';
 import { SpinnerPanel } from '@uikit/Spinner/Spinner';
 import { getMappings, cleanupMappings } from '@store/adcm/cluster/mapping/mappingSlice';
+import { Link } from 'react-router-dom';
 
 interface DynamicActionHostMappingProps extends DynamicActionCommonOptions {
   submitLabel?: string;
@@ -82,6 +83,14 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
 
       {isLoaded && (
         <div>
+          {servicesMapping.length === 0 && (
+            <div>
+              Add services on the{' '}
+              <Link className="text-link" to={`/clusters/${clusterId}/services/`} onClick={onCancel}>
+                services page
+              </Link>
+            </div>
+          )}
           {servicesMapping.flatMap(({ service, componentsMapping }) =>
             componentsMapping.map((componentMapping) => {
               const actions = getMapRules(service, componentMapping.component).map((rule) => rule.action);
