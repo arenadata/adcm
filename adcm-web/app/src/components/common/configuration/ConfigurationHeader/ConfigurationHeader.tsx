@@ -33,7 +33,7 @@ const ConfigurationHeader: React.FC<ConfigurationHeaderProps> = ({
     <>
       <ConfigurationCompareDialog
         // when not set rightConfigId not need set leftConfigId
-        leftConfigId={comparedConfigId ? selectedConfigId : null}
+        leftConfigId={comparedConfigId !== null ? selectedConfigId : null}
         rightConfigId={comparedConfigId}
         draftConfiguration={draftConfiguration}
         compareOptions={compareOptions}

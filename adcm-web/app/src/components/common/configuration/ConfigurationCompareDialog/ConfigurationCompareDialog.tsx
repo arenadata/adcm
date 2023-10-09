@@ -26,7 +26,7 @@ const ConfigurationCompareDialog: React.FC<ConfigurationCompareDialogProps> = ({
 }) => {
   const [localLeftConfigId, setLocalLeftConfigId] = useState<number | null>(null);
   const [localRightConfigId, setLocalRightConfigId] = useState<number | null>(null);
-  const isOpen = leftConfigId !== null && rightConfigId !== null;
+  const isOpen = localLeftConfigId !== null && localRightConfigId !== null;
 
   const draftFullConfigurationInfo = useMemo<AdcmFullConfigurationInfo | null>(() => {
     if (draftConfiguration === null) return null;

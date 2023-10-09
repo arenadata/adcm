@@ -19,10 +19,8 @@ export class AdcmClusterConfigsApi {
     return response.data;
   }
 
-  public static async getConfigSchema(clusterId: number, configId: number) {
-    const response = await httpClient.get<ConfigurationSchema>(
-      `/api/v2/clusters/${clusterId}/configs/${configId}/schema/`,
-    );
+  public static async getConfigSchema(clusterId: number) {
+    const response = await httpClient.get<ConfigurationSchema>(`/api/v2/clusters/${clusterId}/config-schema/`);
     return response.data;
   }
 
