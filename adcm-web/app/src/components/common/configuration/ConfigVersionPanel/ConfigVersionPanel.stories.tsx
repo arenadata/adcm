@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Meta, StoryObj } from '@storybook/react';
-import ConfigVersionPanel from '@commonComponents/ConfigVersionPanel/ConfigVersionPanel';
+import ConfigVersionPanel from '@commonComponents/configuration/ConfigVersionPanel/ConfigVersionPanel';
 import { PaginationParams } from '@models/table';
+import { ConfigVersion, SelectVersionAction } from './ConfigVersionPanel.types';
 
 type Story = StoryObj<typeof ConfigVersionPanel>;
 export default {
@@ -15,23 +16,18 @@ const paginationParams = {
   pageNumber: 0,
 };
 
-const actions = [
-  {
-    id: 1,
-    displayName: 'Compare',
-  },
-  {
-    id: 2,
-    displayName: 'Delete',
-  },
-];
-
 const configs = [
   {
     id: 10,
     isCurrent: true,
     creationTime: '2023-09-27T10:29:11.735713Z',
     description: '',
+  },
+  {
+    id: null,
+    isCurrent: false,
+    creationTime: '',
+    description: 'Editing mode',
   },
   {
     id: 9,
@@ -47,28 +43,26 @@ const configs = [
   },
 ];
 
-const handleSelectAction = () => {
-  alert('Click!');
+const handleSelectAction = ({ action, configId }: SelectVersionAction) => {
+  console.info(action, configId);
 };
 
 const handlePageChange = (arg: PaginationParams) => {
-  alert('Page changed!' + JSON.stringify(arg));
-};
-
-const handleCellChange = (arg: number) => {
-  alert('Cell changed!' + JSON.stringify(arg));
+  console.info(arg);
 };
 
 const ConfigVersionPanelTest: React.FC = () => {
+  const [selectedConfigId, setSelectedConfigId] = useState<ConfigVersion['id']>(configs[0].id);
   return (
     <>
       <ConfigVersionPanel
+        totalItems={5}
         paginationParams={paginationParams}
-        configCellActionsList={actions}
-        configs={configs}
+        configsVersions={configs}
         onChangePage={handlePageChange}
-        onSelectCell={handleCellChange}
-        onSelectCellAction={handleSelectAction}
+        onSelectAction={handleSelectAction}
+        selectedConfigId={selectedConfigId}
+        onSelectConfigVersion={setSelectedConfigId}
       />
     </>
   );

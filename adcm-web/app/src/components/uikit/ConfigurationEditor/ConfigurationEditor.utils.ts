@@ -1,10 +1,10 @@
-import { Configuration, SchemaDefinition } from '@models/adcm';
+import { ConfigurationData, SchemaDefinition } from '@models/adcm';
 import { JSONObject, JSONPrimitive, JSONValue } from '@models/json';
 import { ConfigurationNodePath } from './ConfigurationEditor.types';
 import { generateFromSchema } from '@utils/jsonSchemaUtils';
 import { isObject } from '@utils/objectUtils';
 
-export const editField = (configuration: Configuration, path: ConfigurationNodePath, value: JSONPrimitive) => {
+export const editField = (configuration: ConfigurationData, path: ConfigurationNodePath, value: JSONPrimitive) => {
   if (path.length) {
     const newConfiguration = JSON.parse(JSON.stringify(configuration));
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -21,7 +21,7 @@ export const editField = (configuration: Configuration, path: ConfigurationNodeP
   }
 };
 
-export const addField = (configuration: Configuration, path: ConfigurationNodePath, value: JSONPrimitive) => {
+export const addField = (configuration: ConfigurationData, path: ConfigurationNodePath, value: JSONPrimitive) => {
   const newConfiguration = JSON.parse(JSON.stringify(configuration));
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const fieldName = path.pop()!;
@@ -36,7 +36,7 @@ export const addField = (configuration: Configuration, path: ConfigurationNodePa
   return newConfiguration;
 };
 
-export const deleteField = (configuration: Configuration, path: ConfigurationNodePath) => {
+export const deleteField = (configuration: ConfigurationData, path: ConfigurationNodePath) => {
   const newConfiguration = JSON.parse(JSON.stringify(configuration));
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const fieldName = path.pop()!;
@@ -51,7 +51,11 @@ export const deleteField = (configuration: Configuration, path: ConfigurationNod
   return newConfiguration;
 };
 
-export const addArrayItem = (configuration: Configuration, path: ConfigurationNodePath, schema: SchemaDefinition) => {
+export const addArrayItem = (
+  configuration: ConfigurationData,
+  path: ConfigurationNodePath,
+  schema: SchemaDefinition,
+) => {
   const newConfiguration = JSON.parse(JSON.stringify(configuration));
 
   let node = newConfiguration;
@@ -65,7 +69,7 @@ export const addArrayItem = (configuration: Configuration, path: ConfigurationNo
   return newConfiguration;
 };
 
-export const deleteArrayItem = (configuration: Configuration, path: ConfigurationNodePath) => {
+export const deleteArrayItem = (configuration: ConfigurationData, path: ConfigurationNodePath) => {
   const newConfiguration = JSON.parse(JSON.stringify(configuration));
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const fieldName = path.pop()!;

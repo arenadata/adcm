@@ -53,6 +53,8 @@ import HostComponents from '@pages/cluster/host/HostComponents/HostComponents';
 import HostProviderPage from '@pages/HostProviderPage/HostProviderPage';
 import HostProviderPrimaryConfiguration from '@pages/HostProviderPage/HostProviderPrimaryConfiguration/HostProviderPrimaryConfiguration';
 import HostProviderConfigurationGroups from '@pages/HostProviderPage/HostProviderConfigurationGroups/HostProviderConfigurationGroups';
+import ClusterConfigurationGroups from '@pages/cluster/ClusterConfiguration/ClusterConfigurationGroups/ClusterConfigurationGroups';
+import ClusterPrimaryConfiguration from '@pages/cluster/ClusterConfiguration/ClusterPrimaryConfiguration/ClusterPrimaryConfiguration';
 
 function App() {
   return (
@@ -129,7 +131,17 @@ function App() {
                     <Route path="/clusters/:clusterId/mapping/hosts" element={<ClusterHostsMapping />} />
                     <Route path="/clusters/:clusterId/mapping/components" element={<ClusterComponentsMapping />} />
                   </Route>
-                  <Route path="/clusters/:clusterId/configuration" element={<ClusterConfiguration />} />
+                  <Route path="/clusters/:clusterId/configuration" element={<ClusterConfiguration />}>
+                    <Route index element={<Navigate to="primary-configuration" replace />} />
+                    <Route
+                      path="/clusters/:clusterId/configuration/primary-configuration"
+                      element={<ClusterPrimaryConfiguration />}
+                    />
+                    <Route
+                      path="/clusters/:clusterId/configuration/configuration-groups"
+                      element={<ClusterConfigurationGroups />}
+                    />
+                  </Route>
                   <Route path="/clusters/:clusterId/import" element={<ClusterImport />}>
                     <Route index element={<Navigate to="cluster" replace />} />
                     <Route path="/clusters/:clusterId/import/cluster" element={<ClusterImportsCluster />} />

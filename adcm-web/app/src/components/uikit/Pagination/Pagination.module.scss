@@ -12,6 +12,7 @@
   display: flex;
   justify-content: flex-start;
   align-items: center;
+  gap: 16px;
 
   &:not(:first-child) {
     margin-top: var(--base-margin-v);
@@ -28,6 +29,7 @@
 .pagination__buttonWrapper {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .pagination__select {
@@ -37,9 +39,5 @@
 .pagination__selectLabel {
   font-size: 13px;
   font-weight: 500;
-  margin-right: 8px;
-
-  &:not(:first-of-type) {
-    margin-left: 16px;
-  }
+  margin-right: -8px;
 }

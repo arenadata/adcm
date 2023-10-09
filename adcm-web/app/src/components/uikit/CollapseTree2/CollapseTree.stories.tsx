@@ -18,7 +18,6 @@ type SomeObject = {
 
 const renderNodeContent = (node: Node<SomeObject>, isExpanded: boolean, onExpand: () => void) => {
   const handleClick = () => {
-    console.info(node.data.title);
     onExpand();
   };
 

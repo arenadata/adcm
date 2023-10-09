@@ -1,0 +1,12 @@
+.configVersionPanel {
+  max-width: max-content;
+  &__pagination {
+    margin-bottom: 20px !important;
+  }
+
+  &__content {
+    display: flex;
+    gap: 20px;
+    max-width: max-content;
+  }
+}

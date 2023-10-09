@@ -49,7 +49,7 @@ export type MultipleSchemaDefinitions = {
 export type SchemaDefinition = SingleSchemaDefinition | MultipleSchemaDefinitions;
 export type SchemaTypeName = JSONSchema7TypeName;
 export type ConfigurationSchema = SchemaDefinition;
-export type Configuration = JSONObject;
+export type ConfigurationData = JSONObject;
 
 export type FieldAttributes = {
   isActive: boolean;
@@ -57,3 +57,25 @@ export type FieldAttributes = {
 };
 
 export type ConfigurationAttributes = Record<string, FieldAttributes>; // key - path, value: attributes
+
+export interface AdcmConfigShortView {
+  id: number;
+  isCurrent: boolean;
+  creationTime: string; //ISO Date
+  description: string;
+}
+
+export interface AdcmConfig extends AdcmConfigShortView {
+  config: ConfigurationData;
+  adcmMeta: ConfigurationAttributes;
+}
+
+export interface AdcmConfiguration {
+  configurationData: ConfigurationData;
+  attributes: ConfigurationAttributes;
+  schema: ConfigurationSchema;
+}
+
+export interface AdcmFullConfigurationInfo extends AdcmConfigShortView {
+  configuration: AdcmConfiguration;
+}

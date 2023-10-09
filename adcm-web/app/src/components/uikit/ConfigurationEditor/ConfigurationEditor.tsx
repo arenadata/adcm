@@ -4,7 +4,7 @@ import AddConfigurationFieldDialog from './Dialogs/AddConfigurationFieldDialog/A
 import EditConfigurationFieldDialog from './Dialogs/EditConfigurationFieldDialog/EditConfigurationFieldDialog';
 import { ConfigurationNode, ConfigurationNodeFilter } from './ConfigurationEditor.types';
 import { editField, addField, deleteField, addArrayItem, deleteArrayItem } from './ConfigurationEditor.utils';
-import { Configuration, ConfigurationSchema, ConfigurationAttributes, FieldAttributes } from '@models/adcm';
+import { ConfigurationData, ConfigurationSchema, ConfigurationAttributes, FieldAttributes } from '@models/adcm';
 import { JSONPrimitive } from '@models/json';
 
 type SelectedNode = {
@@ -15,10 +15,11 @@ type SelectedNode = {
 export interface ConfigurationEditorProps {
   schema: ConfigurationSchema;
   attributes: ConfigurationAttributes;
-  configuration: Configuration;
+  configuration: ConfigurationData;
   filter: ConfigurationNodeFilter;
-  onConfigurationChange: (configuration: Configuration) => void;
+  onConfigurationChange: (configuration: ConfigurationData) => void;
   onAttributesChange: (attributes: ConfigurationAttributes) => void;
+  onChangeIsValid?: (isValid: boolean) => void;
 }
 
 const ConfigurationEditor = ({
@@ -28,6 +29,7 @@ const ConfigurationEditor = ({
   filter,
   onConfigurationChange,
   onAttributesChange,
+  onChangeIsValid,
 }: ConfigurationEditorProps) => {
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
   const [isEditFieldDialogOpen, setIsEditFieldDialogOpen] = useState(false);
@@ -113,6 +115,7 @@ const ConfigurationEditor = ({
         onAddArrayItem={handleAddArrayItem}
         onDeleteArrayItem={handleDeleteArrayItem}
         onFieldAttributesChange={handleFieldAttributesChange}
+        onChangeIsValid={onChangeIsValid}
       />
       {selectedNode && isEditFieldDialogOpen && (
         <EditConfigurationFieldDialog

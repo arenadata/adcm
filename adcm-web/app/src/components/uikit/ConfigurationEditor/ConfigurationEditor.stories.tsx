@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Meta, StoryObj } from '@storybook/react';
 import ConfigurationEditor from './ConfigurationEditor';
 import { schema } from './ConfigurationEditor.stories.constants';
-import { ConfigurationAttributes, Configuration } from '@models/adcm';
+import { ConfigurationAttributes, ConfigurationData } from '@models/adcm';
 import { ConfigurationNodeFilter } from './ConfigurationEditor.types';
 import { Checkbox, Input } from '@uikit';
 
@@ -32,8 +32,8 @@ const initialConfiguration = {
     someSecretField: '***secret***',
     someMultilineField:
       'lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum',
-    someJsonField: `{ 
-  "user": { 
+    someJsonField: `{
+  "user": {
     "first_name": "john",
     "last_name": "doe",
     "age": 42,
@@ -72,7 +72,7 @@ const initialAttributes: ConfigurationAttributes = {
 };
 
 const ConfigurationEditorStoryWithHooks = () => {
-  const [configuration, setConfiguration] = useState<Configuration>(initialConfiguration);
+  const [configuration, setConfiguration] = useState<ConfigurationData>(initialConfiguration);
   const [attributes, setAttributes] = useState<ConfigurationAttributes>(initialAttributes);
   const [filter, setFilter] = useState<ConfigurationNodeFilter>({
     title: '',
@@ -80,7 +80,7 @@ const ConfigurationEditorStoryWithHooks = () => {
     showInvisible: false,
   });
 
-  const handleConfigurationChange = (configuration: Configuration) => {
+  const handleConfigurationChange = (configuration: ConfigurationData) => {
     console.info(configuration);
     setConfiguration(configuration);
   };

@@ -7,7 +7,11 @@ type ExecuteWithMinDelayArgs = {
 export const executeWithMinDelay = ({ startDate, delay, callback }: ExecuteWithMinDelayArgs) => {
   const curDate = new Date();
   const dateDiff = curDate.getTime() - startDate.getTime();
-  setTimeout(() => {
+  const timerId = setTimeout(() => {
     callback();
   }, Math.max(delay - dateDiff, 0));
+
+  return () => {
+    clearTimeout(timerId);
+  };
 };
