@@ -39,6 +39,8 @@ const HostsTable: React.FC = () => {
   return (
     <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
       {hosts.map((host: AdcmHost) => {
+        const hostLinked = !!host.cluster?.id;
+
         return (
           <TableRow key={host.id}>
             <StatusableCell status={hostStatusesMap[host.status]}>{host.name}</StatusableCell>
@@ -56,7 +58,13 @@ const HostsTable: React.FC = () => {
                 onClick={handleClickMaintenanceMode(host)}
               />
               <UnlinkHostToggleButton host={host} />
-              <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(host.id)} title="Delete" />
+              <IconButton
+                icon="g1-delete"
+                size={32}
+                disabled={hostLinked}
+                onClick={getHandleDeleteClick(host.id)}
+                title={hostLinked ? 'Unlink host to enable Delete button' : 'Delete'}
+              />
             </TableCell>
           </TableRow>
         );
