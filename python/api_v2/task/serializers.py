@@ -15,6 +15,15 @@ from cm.models import Action, JobLog, JobStatus, SubAction, TaskLog
 from rest_framework.fields import CharField, DateTimeField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
+OBJECT_ORDER = {
+    "adcm": 0,
+    "cluster": 1,
+    "service": 2,
+    "component": 3,
+    "provider": 4,
+    "host": 5,
+}
+
 
 class JobListSerializer(ModelSerializer):
     name = SerializerMethodField()
@@ -102,7 +111,7 @@ class TaskSerializer(ModelSerializer):
 
     @staticmethod
     def get_objects(obj: TaskLog) -> list[dict[str, int | str]]:
-        return [{"type": k, **v} for k, v in obj.selector.items()]
+        return [{"type": k, **v} for k, v in sorted(obj.selector.items(), key=lambda k: OBJECT_ORDER[k[0]])]
 
 
 class TaskListSerializer(TaskSerializer):
