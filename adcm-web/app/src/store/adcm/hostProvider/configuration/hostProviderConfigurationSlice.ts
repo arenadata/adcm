@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmClusterConfigsApi, RequestError } from '@api';
+import { AdcmHostProviderConfigsApi, RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import {
   AdcmConfiguration,
@@ -12,31 +12,34 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 
-type AdcmClusterConfigurationState = {
+type AdcmHostProviderConfigurationState = {
   isConfigurationLoading: boolean;
   loadedConfiguration: AdcmConfiguration | null;
   configVersions: AdcmConfigShortView[];
   isVersionsLoading: boolean;
 };
 
-type LoadClusterConfigurationPayload = {
-  clusterId: number;
+type LoadHostProviderConfigurationPayload = {
+  hostProviderId: number;
   configId: number;
 };
 
-type SaveClusterConfigurationPayload = {
-  clusterId: number;
+type SaveHostProviderConfigurationPayload = {
+  hostProviderId: number;
   description?: string;
   configurationData: ConfigurationData;
   attributes: ConfigurationAttributes;
 };
 
-const createClusterConfiguration = createAsyncThunk(
-  'adcm/cluster/configuration/createClusterConfiguration',
-  async ({ clusterId, configurationData, attributes, description }: SaveClusterConfigurationPayload, thunkAPI) => {
+const createHostProviderConfiguration = createAsyncThunk(
+  'adcm/hostProvider/configuration/createHostProviderConfiguration',
+  async (
+    { hostProviderId, configurationData, attributes, description }: SaveHostProviderConfigurationPayload,
+    thunkAPI,
+  ) => {
     try {
-      const configuration = await AdcmClusterConfigsApi.createConfiguration(
-        clusterId,
+      const configuration = await AdcmHostProviderConfigsApi.createConfiguration(
+        hostProviderId,
         configurationData,
         attributes,
         description,
@@ -49,24 +52,24 @@ const createClusterConfiguration = createAsyncThunk(
   },
 );
 
-const createWithUpdateClusterConfigurations = createAsyncThunk(
-  'adcm/cluster/configuration/createAndUpdateClusterConfigurations',
-  async (arg: SaveClusterConfigurationPayload, thunkAPI) => {
-    await thunkAPI.dispatch(createClusterConfiguration(arg)).unwrap();
-    await thunkAPI.dispatch(getClusterConfigurationsVersions({ clusterId: arg.clusterId }));
+const createWithUpdateHostProviderConfigurations = createAsyncThunk(
+  'adcm/hostProvider/configuration/createAndUpdateHostProviderConfigurations',
+  async (arg: SaveHostProviderConfigurationPayload, thunkAPI) => {
+    await thunkAPI.dispatch(createHostProviderConfiguration(arg)).unwrap();
+    await thunkAPI.dispatch(getHostProviderConfigurationsVersions({ hostProviderId: arg.hostProviderId }));
   },
 );
 
-const getClusterConfiguration = createAsyncThunk(
-  'adcm/cluster/configuration/getClusterConfiguration',
-  async (arg: LoadClusterConfigurationPayload, thunkAPI) => {
+const getHostProviderConfiguration = createAsyncThunk(
+  'adcm/hostProvider/configuration/getHostProviderConfiguration',
+  async (arg: LoadHostProviderConfigurationPayload, thunkAPI) => {
     const startDate = new Date();
     thunkAPI.dispatch(setIsConfigurationLoading(true));
 
     try {
       const [config, schema] = await Promise.all([
-        AdcmClusterConfigsApi.getConfig(arg.clusterId, arg.configId),
-        AdcmClusterConfigsApi.getConfigSchema(arg.clusterId),
+        AdcmHostProviderConfigsApi.getConfig(arg.hostProviderId, arg.configId),
+        AdcmHostProviderConfigsApi.getConfigSchema(arg.hostProviderId),
       ]);
       return { config, schema };
     } catch (error) {
@@ -84,18 +87,18 @@ const getClusterConfiguration = createAsyncThunk(
   },
 );
 
-type GetClusterConfigurationsPayload = {
-  clusterId: number;
+type GetHostProviderConfigurationsPayload = {
+  hostProviderId: number;
 };
 
-const getClusterConfigurationsVersions = createAsyncThunk(
-  'adcm/clusters/configuration/getClusterConfigurationsVersions',
-  async ({ clusterId }: GetClusterConfigurationsPayload, thunkAPI) => {
+const getHostProviderConfigurationsVersions = createAsyncThunk(
+  'adcm/hostProvider/configuration/getHostProviderConfigurationsVersions',
+  async ({ hostProviderId }: GetHostProviderConfigurationsPayload, thunkAPI) => {
     const startDate = new Date();
     thunkAPI.dispatch(setIsVersionsLoading(true));
 
     try {
-      return await AdcmClusterConfigsApi.getConfigs(clusterId);
+      return await AdcmHostProviderConfigsApi.getConfigs(hostProviderId);
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -111,18 +114,18 @@ const getClusterConfigurationsVersions = createAsyncThunk(
   },
 );
 
-const createInitialState = (): AdcmClusterConfigurationState => ({
+const createInitialState = (): AdcmHostProviderConfigurationState => ({
   isVersionsLoading: false,
   isConfigurationLoading: false,
   loadedConfiguration: null,
   configVersions: [],
 });
 
-const clusterConfigurationSlice = createSlice({
-  name: 'adcm/cluster/configuration',
+const hostProviderConfigurationSlice = createSlice({
+  name: 'adcm/hostProvider/configuration',
   initialState: createInitialState(),
   reducers: {
-    cleanupClusterConfiguration() {
+    cleanupHostProviderConfiguration() {
       return createInitialState();
     },
     setIsConfigurationLoading(state, action) {
@@ -133,7 +136,7 @@ const clusterConfigurationSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(getClusterConfiguration.fulfilled, (state, action) => {
+    builder.addCase(getHostProviderConfiguration.fulfilled, (state, action) => {
       const {
         config: { config: configurationData, adcmMeta: attributes },
         schema,
@@ -150,24 +153,24 @@ const clusterConfigurationSlice = createSlice({
 
       state.isConfigurationLoading = false;
     });
-    builder.addCase(getClusterConfiguration.rejected, (state) => {
+    builder.addCase(getHostProviderConfiguration.rejected, (state) => {
       state.loadedConfiguration = null;
     });
-    builder.addCase(getClusterConfigurationsVersions.fulfilled, (state, action) => {
+    builder.addCase(getHostProviderConfigurationsVersions.fulfilled, (state, action) => {
       state.configVersions = action.payload.results;
     });
-    builder.addCase(getClusterConfigurationsVersions.rejected, (state) => {
+    builder.addCase(getHostProviderConfigurationsVersions.rejected, (state) => {
       state.configVersions = [];
     });
   },
 });
 
-const { cleanupClusterConfiguration, setIsConfigurationLoading, setIsVersionsLoading } =
-  clusterConfigurationSlice.actions;
+const { cleanupHostProviderConfiguration, setIsConfigurationLoading, setIsVersionsLoading } =
+  hostProviderConfigurationSlice.actions;
 export {
-  getClusterConfiguration,
-  getClusterConfigurationsVersions,
-  cleanupClusterConfiguration,
-  createWithUpdateClusterConfigurations,
+  getHostProviderConfiguration,
+  getHostProviderConfigurationsVersions,
+  cleanupHostProviderConfiguration,
+  createWithUpdateHostProviderConfigurations,
 };
-export default clusterConfigurationSlice.reducer;
+export default hostProviderConfigurationSlice.reducer;
