@@ -10,7 +10,8 @@ import { JSONValue, JSONObject, JSONPrimitive } from '@models/json';
 import { ConfigurationNode, ConfigurationNodeFilter, ConfigurationNodePath } from '../ConfigurationEditor.types';
 import { isObject } from '@utils/objectUtils';
 
-const getTitle = (keyName: string, fieldSchema: SingleSchemaDefinition) => fieldSchema.title ?? keyName;
+const getTitle = (keyName: string, fieldSchema: SingleSchemaDefinition) =>
+  fieldSchema.title?.length ? fieldSchema.title : keyName;
 
 const getDefaultFieldSchema = (): SingleSchemaDefinition => ({
   type: 'string',

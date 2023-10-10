@@ -29,6 +29,14 @@ export const schema: ConfigurationSchema = {
         isSecret: false,
         stringExtra: null,
       },
+      default: {
+        cluster: [
+          {
+            cluster_name: 'default cluster name',
+            shard: [],
+          },
+        ],
+      },
       required: [],
       properties: {
         cluster: {

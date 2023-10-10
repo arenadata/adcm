@@ -14,6 +14,8 @@ const ajvWithDefaults = new Ajv2020({
 });
 
 ajvWithDefaults.addVocabulary(['adcmMeta']);
+ajvWithDefaults.addFormat('json', true);
+ajvWithDefaults.addFormat('yaml', true);
 
 export const validate = <T>(schema: Schema, data: T) => {
   const validate = ajv.compile<T>(schema, true);
