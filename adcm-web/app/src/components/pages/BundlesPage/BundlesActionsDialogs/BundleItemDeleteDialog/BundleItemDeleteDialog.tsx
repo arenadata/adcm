@@ -32,7 +32,7 @@ const BundleItemDeleteDialog: React.FC = () => {
       onAction={handleConfirmDialog}
       actionButtonLabel="Delete"
     >
-      Are you sure?
+      All bundle information will be deleted
     </Dialog>
   );
 };
