@@ -1,9 +1,11 @@
 import React from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { closeMaintenanceModeDialog } from '@store/adcm/cluster/services/serviceComponents/serviceComponentsActionsSlice';
 import { getRevertedMaintenanceModeStatus } from '@commonComponents/MaintenanceModeDialog/MaintenanceModeDialog.utils';
 import MaintenanceModeDialog from '@commonComponents/MaintenanceModeDialog/MaintenanceModeDialog';
-import { toggleMaintenanceModeWithUpdate } from '@store/adcm/cluster/services/servicesActionsSlice';
+import {
+  toggleMaintenanceModeWithUpdate,
+  closeMaintenanceModeDialog,
+} from '@store/adcm/cluster/services/servicesActionsSlice';
 
 const ClusterServicesMaintenanceModeDialog: React.FC = () => {
   const dispatch = useDispatch();
