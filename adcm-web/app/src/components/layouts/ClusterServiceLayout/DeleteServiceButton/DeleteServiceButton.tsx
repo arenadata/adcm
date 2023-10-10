@@ -49,7 +49,7 @@ const DeleteServiceButton: React.FC = () => {
         onAction={handleConfirmDialog}
         actionButtonLabel="Delete"
       >
-        Are you sure?
+        All service information will be deleted
       </Dialog>
     </>
   );

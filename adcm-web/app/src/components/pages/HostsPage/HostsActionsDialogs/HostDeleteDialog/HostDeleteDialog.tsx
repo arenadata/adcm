@@ -41,7 +41,7 @@ const HostDeleteDialog: React.FC = () => {
       onAction={handleConfirmDialog}
       actionButtonLabel="Delete"
     >
-      Are you sure?
+      All host information will be deleted
     </Dialog>
   );
 };

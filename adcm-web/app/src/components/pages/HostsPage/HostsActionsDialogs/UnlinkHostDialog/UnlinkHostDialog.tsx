@@ -42,10 +42,7 @@ const UnlinkHostDialog: React.FC = () => {
         onAction={handleConfirmDialog}
         actionButtonLabel="Yes"
       >
-        <div>
-          This unlink host "{unlinkableHost?.name}" from cluster "{unlinkableHost?.cluster?.name}".
-        </div>
-        Are you sure?
+        The host will be unlinked from the cluster
       </Dialog>
     </>
   );
