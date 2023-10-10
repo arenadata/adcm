@@ -5,7 +5,7 @@ import {
   AdcmClustersFilter,
   AdcmCluster,
   CreateAdcmClusterPayload,
-  UpdateAdcmClusterPayload,
+  RenameAdcmClusterPayload,
   AdcmClusterUpgrade,
   AdcmClusterActionDetails,
   AdcmClusterActionPayload,
@@ -42,7 +42,7 @@ export class AdcmClustersApi {
     return response.data;
   }
 
-  public static async patchCluster(clusterId: number, payload: UpdateAdcmClusterPayload) {
+  public static async patchCluster(clusterId: number, payload: RenameAdcmClusterPayload) {
     await httpClient.patch(`/api/v2/clusters/${clusterId}/`, payload);
   }
 

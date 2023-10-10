@@ -6,6 +6,12 @@ export enum AdcmClusterStatus {
   Down = 'down',
 }
 
+export enum AdcmEntitySystemState {
+  Created = 'created',
+}
+
+type AdcmEntityState = AdcmEntitySystemState.Created | string;
+
 export interface AdcmClusterPrototype {
   id: number;
   name: string;
@@ -17,7 +23,7 @@ export interface AdcmClusterPrototype {
 export interface AdcmCluster {
   id: number;
   name: string;
-  state: string;
+  state: AdcmEntityState;
   multiState: string[];
   status: AdcmClusterStatus;
   prototype: AdcmClusterPrototype;
@@ -39,7 +45,7 @@ export interface CreateAdcmClusterPayload {
   description: string;
 }
 
-export interface UpdateAdcmClusterPayload {
+export interface RenameAdcmClusterPayload {
   name: string;
 }
 
