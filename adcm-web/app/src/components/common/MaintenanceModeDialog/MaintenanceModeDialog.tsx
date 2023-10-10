@@ -9,7 +9,9 @@ interface MaintenanceModeDialogProps {
   onConfirmDialog: () => void;
 }
 
-const statusLabels: { [key in Exclude<AdcmMaintenanceMode, AdcmMaintenanceMode.Pending>]: string } = {
+const statusLabels: {
+  [key in Exclude<AdcmMaintenanceMode, AdcmMaintenanceMode.Pending | AdcmMaintenanceMode.Changing>]: string;
+} = {
   [AdcmMaintenanceMode.On]: 'Enable',
   [AdcmMaintenanceMode.Off]: 'Disable',
 };

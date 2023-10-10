@@ -75,6 +75,7 @@
           "noopener",
           "noreferrer",
           "num",
+          "parametrized",
           "path",
           "pathname",
           "perf",

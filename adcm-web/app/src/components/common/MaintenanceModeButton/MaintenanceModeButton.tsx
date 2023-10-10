@@ -18,6 +18,7 @@ const getTooltipLabel = (status: string) => {
       label += AdcmMaintenanceMode.On;
       break;
     case AdcmMaintenanceMode.Pending:
+    case AdcmMaintenanceMode.Changing:
       label += 'in progress';
       break;
     case AdcmMaintenanceMode.Off:
@@ -36,6 +37,7 @@ const MaintenanceModeButton: React.FC<MaintenanceModeButtonProps> = ({
   const className = cn(s.maintenanceModeButton, {
     [s.maintenanceModeButton_on]: maintenanceModeStatus === AdcmMaintenanceMode.On,
     [s.maintenanceModeButton_pending]: maintenanceModeStatus === AdcmMaintenanceMode.Pending,
+    [s.maintenanceModeButton_changing]: maintenanceModeStatus === AdcmMaintenanceMode.Changing,
     [s.maintenanceModeButton_unavailable]: !isMaintenanceModeAvailable,
   });
 

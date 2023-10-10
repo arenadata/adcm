@@ -2,12 +2,14 @@
   body.theme-dark {
     --maintenanceModeButton-on-color: var(--color-xred);
     --maintenanceModeButton-pending-color: var(--color-orangex);
+    --maintenanceModeButton-changing-color: var(--color-orangex);
     --maintenanceModeButton-unavailable-color: var(--icon-button-color-disabled-primary);
   }
 
   body.theme-light {
     --maintenanceModeButton-on-color: var(--color-xred-light);
     --maintenanceModeButton-pending-color: var(--color-json-orange);
+    --maintenanceModeButton-changing-color: var(--color-json-orange);
     --maintenanceModeButton-unavailable-color: var(--icon-button-color-disabled-primary);
   }
 }
@@ -22,6 +24,13 @@
   &_pending {
     svg {
       color: var(--maintenanceModeButton-pending-color);
+    }
+  }
+
+  &_changing {
+    cursor: not-allowed;
+    svg {
+      color: var(--maintenanceModeButton-changing-color);
     }
   }
 
