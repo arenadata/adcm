@@ -40,7 +40,6 @@ const AccessManagerPolicyAddDialog: React.FC = () => {
   const handleRoleChange = (roleId: number | null) => {
     onChangeFormData({
       roleId: roleId,
-      // eslint-disable-next-line spellcheck/spell-checker
       objectTypes: roles.find((role) => role.id === roleId)?.parametrizedByType,
     });
     if (roleId) {
