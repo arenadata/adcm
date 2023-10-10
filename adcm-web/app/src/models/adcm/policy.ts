@@ -13,6 +13,7 @@ export interface AdcmPolicyGroup {
 export interface AdcmPolicyObject {
   id: number;
   name: string;
+  type: string;
   displayName: string;
   clusterName: string;
 }
@@ -55,6 +56,11 @@ export interface AdcmPolicyPayload {
   };
   groups: number[];
   objects: AdcmPolicyObjectPayload[];
+}
+
+export interface AdcmPolicyUpdatePayload {
+  policyId: number;
+  updatedValue: AdcmPolicyPayload;
 }
 
 export interface AdcmObjectCandidates {
