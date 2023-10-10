@@ -5,7 +5,7 @@ import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { getRoles } from '@store/adcm/roles/rolesSlice';
 import { getGroups } from '@store/adcm/groups/groupsSlice';
-import { AdcmPolicyPayload } from '@models/adcm';
+import { AdcmPolicy, AdcmPolicyPayload, AdcmPolicyUpdatePayload } from '@models/adcm';
 import { createSlice } from '@reduxjs/toolkit';
 
 interface AdcmPoliciesActionState {
@@ -13,6 +13,10 @@ interface AdcmPoliciesActionState {
   isCreating: boolean;
   deleteDialog: {
     id: number | null;
+  };
+  editDialog: {
+    policy: AdcmPolicy | null;
+    roleId: number | null;
   };
 }
 
@@ -25,6 +29,19 @@ const openPoliciesAddDialog = createAsyncThunk('adcm/policiesActions/openPolicie
   }
 });
 
+const openPoliciesEditDialog = createAsyncThunk(
+  'adcm/policiesActions/openPoliciesEditDialog',
+  async (policy: AdcmPolicy, thunkAPI) => {
+    thunkAPI.dispatch(setEditMode(policy));
+    try {
+      thunkAPI.dispatch(openPoliciesAddDialog());
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
 const createPolicy = createAsyncThunk('adcm/policiesActions/createPolicy', async (arg: AdcmPolicyPayload, thunkAPI) => {
   try {
     const policy = await AdcmPoliciesApi.createPolicy(arg);
@@ -36,6 +53,21 @@ const createPolicy = createAsyncThunk('adcm/policiesActions/createPolicy', async
     thunkAPI.dispatch(getPolicies());
   }
 });
+
+const updatePolicy = createAsyncThunk(
+  'adcm/policiesActions/updatePolicy',
+  async ({ policyId, updatedValue }: AdcmPolicyUpdatePayload, thunkAPI) => {
+    try {
+      const policy = await AdcmPoliciesApi.updatePolicy(policyId, updatedValue);
+      return policy;
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    } finally {
+      thunkAPI.dispatch(getPolicies());
+    }
+  },
+);
 
 const deletePolicyWithUpdate = createAsyncThunk(
   'adcm/policiesActions/deletePolicy',
@@ -56,6 +88,10 @@ const createInitialState = (): AdcmPoliciesActionState => ({
   deleteDialog: {
     id: null,
   },
+  editDialog: {
+    policy: null,
+    roleId: null,
+  },
 });
 
 const policiesActionsSlice = createSlice({
@@ -74,6 +110,10 @@ const policiesActionsSlice = createSlice({
     setIsCreating(state, action) {
       state.isCreating = action.payload;
     },
+    setEditMode(state, action) {
+      state.editDialog.policy = action.payload;
+      state.editDialog.roleId = action.payload.role.id;
+    },
   },
   extraReducers(builder) {
     builder.addCase(openPoliciesAddDialog.fulfilled, (state) => {
@@ -89,17 +129,30 @@ const policiesActionsSlice = createSlice({
     builder.addCase(createPolicy.fulfilled, (state) => {
       state.isCreating = false;
     });
+    builder.addCase(updatePolicy.pending, (state) => {
+      state.isAddPolicyDialogOpen = false;
+      state.isCreating = true;
+    });
+    builder.addCase(updatePolicy.fulfilled, (state) => {
+      state.editDialog.policy = null;
+      state.editDialog.roleId = null;
+      state.isCreating = false;
+    });
   },
 });
 
-const { openDeleteDialog, closeDeleteDialog, cleanupActions, setIsCreating } = policiesActionsSlice.actions;
+const { openDeleteDialog, closeDeleteDialog, cleanupActions, setEditMode, setIsCreating } =
+  policiesActionsSlice.actions;
 export {
   createPolicy,
+  updatePolicy,
   openPoliciesAddDialog,
+  openPoliciesEditDialog,
   deletePolicyWithUpdate,
   openDeleteDialog,
   closeDeleteDialog,
   cleanupActions,
+  setEditMode,
   setIsCreating,
 };
 export default policiesActionsSlice.reducer;

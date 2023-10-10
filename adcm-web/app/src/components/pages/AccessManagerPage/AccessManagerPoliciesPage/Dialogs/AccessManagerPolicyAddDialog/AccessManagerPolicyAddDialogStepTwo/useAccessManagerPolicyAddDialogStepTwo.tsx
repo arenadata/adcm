@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { getStatusLabel } from '@utils/humanizationUtils';
 
 export const useAccessManagerPolicyAddDialogStepTwo = () => {
-  const objectCandidates = useStore(({ adcm }) => adcm.policies.objectCandidates);
+  const objectCandidates = useStore(({ adcm }) => adcm.policies.relatedData.objectCandidates);
   const services = objectCandidates.service;
   const serviceClusters = services;
   const clusters = objectCandidates.cluster;

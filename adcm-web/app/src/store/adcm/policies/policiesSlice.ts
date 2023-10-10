@@ -11,7 +11,6 @@ import { AdcmCluster, AdcmHost, AdcmHostProvider, AdcmService } from '@models/ad
 
 interface AdcmPoliciesState {
   policies: AdcmPolicy[];
-  objectCandidates: AdcmObjectCandidates;
   totalCount: number;
   isLoading: boolean;
   relatedData: {
@@ -19,6 +18,8 @@ interface AdcmPoliciesState {
     services: AdcmService[];
     hosts: AdcmHost[];
     hostproviders: AdcmHostProvider[];
+    objectTypes: string[];
+    objectCandidates: AdcmObjectCandidates;
   };
 }
 
@@ -114,12 +115,6 @@ const loadHostProviders = createAsyncThunk('adcm/policies/loadHostProviders', as
 
 const createInitialState = (): AdcmPoliciesState => ({
   policies: [],
-  objectCandidates: {
-    cluster: [],
-    provider: [],
-    service: [],
-    host: [],
-  },
   totalCount: 0,
   isLoading: false,
   relatedData: {
@@ -127,6 +122,13 @@ const createInitialState = (): AdcmPoliciesState => ({
     services: [],
     hosts: [],
     hostproviders: [],
+    objectTypes: [],
+    objectCandidates: {
+      cluster: [],
+      provider: [],
+      service: [],
+      host: [],
+    },
   },
 });
 
@@ -152,10 +154,10 @@ const policiesSlice = createSlice({
     builder.addCase(loadObjectCandidates.fulfilled, (state, action) => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      state.objectCandidates = action.payload;
+      state.relatedData.objectCandidates = action.payload;
     });
     builder.addCase(loadObjectCandidates.rejected, (state) => {
-      state.objectCandidates = {
+      state.relatedData.objectCandidates = {
         cluster: [],
         provider: [],
         service: [],
