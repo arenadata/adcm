@@ -5,6 +5,7 @@ import { schema } from './ConfigurationEditor.stories.constants';
 import { ConfigurationAttributes, ConfigurationData } from '@models/adcm';
 import { ConfigurationNodeFilter } from './ConfigurationEditor.types';
 import { Checkbox, Input } from '@uikit';
+import { generateFromSchema } from '@utils/jsonSchemaUtils';
 
 type Story = StoryObj<typeof ConfigurationEditor>;
 export default {
@@ -71,8 +72,14 @@ const initialAttributes: ConfigurationAttributes = {
   },
 };
 
-const ConfigurationEditorStoryWithHooks = () => {
-  const [configuration, setConfiguration] = useState<ConfigurationData>(initialConfiguration);
+interface StoryProps {
+  initialConfigurationData: ConfigurationData | null;
+}
+
+const ConfigurationEditorStoryWithHooks = ({ initialConfigurationData: initialConfiguration }: StoryProps) => {
+  const safeConfigurationData = initialConfiguration ?? generateFromSchema(schema);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [configuration, setConfiguration] = useState<ConfigurationData>(safeConfigurationData as any);
   const [attributes, setAttributes] = useState<ConfigurationAttributes>(initialAttributes);
   const [filter, setFilter] = useState<ConfigurationNodeFilter>({
     title: '',
@@ -126,5 +133,9 @@ const ConfigurationEditorStoryWithHooks = () => {
 };
 
 export const ConfigurationEditorStory: Story = {
-  render: () => <ConfigurationEditorStoryWithHooks />,
+  render: () => <ConfigurationEditorStoryWithHooks initialConfigurationData={initialConfiguration} />,
+};
+
+export const ConfigurationEditorWithEmptyConfigurationStory: Story = {
+  render: () => <ConfigurationEditorStoryWithHooks initialConfigurationData={null} />,
 };

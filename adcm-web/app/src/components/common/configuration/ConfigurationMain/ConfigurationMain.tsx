@@ -2,6 +2,7 @@ import React from 'react';
 import { ConfigurationEditor } from '@uikit';
 import { AdcmConfiguration, ConfigurationData, ConfigurationAttributes } from '@models/adcm';
 import { useConfigurationFormContext } from '../ConfigurationFormContext/ConfigurationFormContext.context';
+import { generateFromSchema } from '@utils/jsonSchemaUtils';
 
 interface ConfigurationMainProps {
   configuration: AdcmConfiguration | null;
@@ -15,6 +16,7 @@ const ConfigurationMain: React.FC<ConfigurationMainProps> = ({ configuration, on
   if (configuration === null) return null;
 
   const { configurationData, attributes, schema } = configuration;
+  const configurationDataFromSchema = generateFromSchema(schema);
 
   const handleChangeConfigurationData = (configurationData: ConfigurationData) => {
     onChangeConfiguration({
@@ -34,7 +36,7 @@ const ConfigurationMain: React.FC<ConfigurationMainProps> = ({ configuration, on
 
   return (
     <ConfigurationEditor
-      configuration={configurationData}
+      configuration={configurationData ?? configurationDataFromSchema}
       attributes={attributes}
       schema={schema}
       filter={filter}
