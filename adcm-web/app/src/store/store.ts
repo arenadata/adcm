@@ -10,6 +10,8 @@ import clusterHostsDynamicActionsSlice from '@store/adcm/cluster/hosts/hostsDyna
 import clustersTableSlice from '@store/adcm/clusters/clustersTableSlice';
 import clusterConfigurationsCompareSlice from '@store/adcm/cluster/configuration/clusterConfigurationsCompareSlice';
 import clusterConfigurationSlice from '@store/adcm/cluster/configuration/clusterConfigurationSlice';
+import hostProviderConfigurationSlice from '@store/adcm/hostProvider/configuration/hostProviderConfigurationSlice';
+import hostProviderConfigurationsCompareSlice from '@store/adcm/hostProvider/configuration/hostProviderConfigurationsCompareSlice';
 import bundlesSlice from '@store/adcm/bundles/bundlesSlice';
 import bundleSlice from '@store/adcm/bundle/bundleSlice';
 import bundlesTableSlice from '@store/adcm/bundles/bundlesTableSlice';
@@ -93,6 +95,8 @@ const rootReducer = combineReducers({
     bundlesTable: bundlesTableSlice,
     breadcrumbs: breadcrumbsSlice,
     hostProvider: hostProviderSlice,
+    hostProviderConfigurationsCompare: hostProviderConfigurationsCompareSlice,
+    hostProviderConfiguration: hostProviderConfigurationSlice,
     hostProviders: hostProvidersSlice,
     hostProvidersActions: hostProvidersActionsSlice,
     hostProvidersTable: hostProvidersTableSlice,

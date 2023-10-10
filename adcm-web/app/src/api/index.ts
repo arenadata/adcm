@@ -8,6 +8,7 @@ export { AdcmClusterMappingApi } from './adcm/clusterMapping';
 export { AdcmClusterHostsApi } from './adcm/clusterHosts';
 export { AdcmClusterConfigsApi } from './adcm/clusterConfigs';
 export { AdcmHostProvidersApi } from './adcm/hostProviders';
+export { AdcmHostProviderConfigsApi } from './adcm/hostProviderConfigs';
 export { AdcmHostsApi } from './adcm/hosts';
 export { AdcmServicesApi } from './adcm/services';
 export { AdcmUsersApi } from './adcm/users';
