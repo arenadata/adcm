@@ -4,7 +4,14 @@ import { getHosts } from '@store/adcm/hosts/hostsSlice';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmClustersApi, AdcmHostProvidersApi, AdcmHostsApi, RequestError } from '@api';
-import { AdcmCluster, AdcmHostProvider, AdcmMaintenanceMode, CreateAdcmHostPayload } from '@models/adcm';
+import {
+  AdcmCluster,
+  AdcmHost,
+  AdcmHostProvider,
+  AdcmMaintenanceMode,
+  AdcmRenameArgs,
+  CreateAdcmHostPayload,
+} from '@models/adcm';
 import { SortParams } from '@models/table';
 import { rejectedFilter } from '@utils/promiseUtils';
 
@@ -116,6 +123,17 @@ const deleteHosts = createAsyncThunk('adcm/hostsActions/deleteHosts', async (ids
   }
 });
 
+const updateHost = createAsyncThunk('adcm/hostsActions/updateHost', async ({ id, name }: AdcmRenameArgs, thunkAPI) => {
+  try {
+    return await AdcmHostsApi.patchHost(id, { name });
+  } catch (error) {
+    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+    return thunkAPI.rejectWithValue(error);
+  } finally {
+    thunkAPI.dispatch(getHosts());
+  }
+});
+
 interface AdcmHostsActionsState {
   maintenanceModeDialog: {
     id: number | null;
@@ -131,6 +149,9 @@ interface AdcmHostsActionsState {
   };
   unlinkDialog: {
     id: null;
+  };
+  updateDialog: {
+    host: AdcmHost | null;
   };
   relatedData: {
     clusters: AdcmCluster[];
@@ -153,6 +174,9 @@ const createInitialState = (): AdcmHostsActionsState => ({
   },
   unlinkDialog: {
     id: null,
+  },
+  updateDialog: {
+    host: null,
   },
   relatedData: {
     clusters: [],
@@ -197,6 +221,12 @@ const hostsActionsSlice = createSlice({
     closeCreateDialog(state) {
       state.createDialog.isOpen = false;
     },
+    openUpdateDialog(state, action) {
+      state.updateDialog.host = action.payload;
+    },
+    closeUpdateDialog(state) {
+      state.updateDialog.host = null;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(toggleMaintenanceModeWithUpdate.pending, (state) => {
@@ -210,6 +240,9 @@ const hostsActionsSlice = createSlice({
     });
     builder.addCase(createHost.fulfilled, (state) => {
       hostsActionsSlice.caseReducers.closeCreateDialog(state);
+    });
+    builder.addCase(updateHost.fulfilled, () => {
+      return createInitialState();
     });
     builder.addCase(getHosts.pending, () => {
       // hide actions dialogs, when load new hosts list (not silent refresh)
@@ -241,6 +274,8 @@ export const {
   closeLinkDialog,
   openUnlinkDialog,
   closeUnlinkDialog,
+  openUpdateDialog,
+  closeUpdateDialog,
 } = hostsActionsSlice.actions;
 
 export {
@@ -251,6 +286,7 @@ export {
   createHost,
   deleteHosts,
   toggleMaintenanceModeWithUpdate,
+  updateHost,
 };
 
 export default hostsActionsSlice.reducer;

@@ -1,5 +1,5 @@
 import { AdcmConcerns } from '@models/adcm/concern';
-import { AdcmHostProvider } from '@models/adcm';
+import { AdcmEntityState, AdcmHostProvider } from '@models/adcm';
 
 export enum AdcmHostStatus {
   Up = 'up',
@@ -23,7 +23,7 @@ export interface AdcmHostPrototype {
 export interface AdcmHost {
   id: number;
   name: string;
-  state: string;
+  state: AdcmEntityState;
   multiState: string[];
   status: AdcmHostStatus;
   hostprovider: AdcmHostProvider;
@@ -40,5 +40,9 @@ export interface AdcmHost {
 export interface CreateAdcmHostPayload {
   clusterId?: number | null;
   hostproviderId: number | null;
+  name: string;
+}
+
+export interface AdcmUpdatePayload {
   name: string;
 }

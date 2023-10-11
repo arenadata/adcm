@@ -15,7 +15,7 @@ const RenameClusterDialog = () => {
       onOpenChange={onClose}
       onAction={onRename}
       isActionDisabled={!isValid}
-      actionButtonLabel="Rename"
+      actionButtonLabel="Save"
     >
       <FormFieldsContainer>
         <FormField label="Cluster name" error={errors.name}>

@@ -17,7 +17,7 @@ export const useRenameClusterDialog = () => {
   const { isValid, formData, setFormData, handleChangeFormData, errors, setErrors } =
     useForm<RenameClusterFormData>(initialFormData);
 
-  const { updateDialog } = useStore((s) => s.adcm.clustersActions);
+  const updatedCluster = useStore((s) => s.adcm.clustersActions.updateDialog.cluster);
   const clusters = useStore((s) => s.adcm.clusters.clusters);
 
   const isClusterNameUniq = useCallback(
@@ -28,11 +28,11 @@ export const useRenameClusterDialog = () => {
   );
 
   useEffect(() => {
-    if (updateDialog.cluster) {
-      const { name } = updateDialog.cluster;
+    if (updatedCluster) {
+      const { name } = updatedCluster;
       setFormData({ name });
     }
-  }, [updateDialog, setFormData]);
+  }, [updatedCluster, setFormData]);
 
   useEffect(() => {
     setErrors({
@@ -48,10 +48,10 @@ export const useRenameClusterDialog = () => {
   };
 
   const handleRename = () => {
-    if (updateDialog.cluster) {
+    if (updatedCluster) {
       dispatch(
         renameCluster({
-          id: updateDialog.cluster.id,
+          id: updatedCluster.id,
           name: formData.name,
         }),
       );
@@ -59,7 +59,7 @@ export const useRenameClusterDialog = () => {
   };
 
   return {
-    isOpen: !!updateDialog.cluster,
+    isOpen: !!updatedCluster,
     isValid,
     formData,
     errors,

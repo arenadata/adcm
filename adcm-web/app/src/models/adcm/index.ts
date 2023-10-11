@@ -33,3 +33,14 @@ export interface AdcmError {
   desc: string;
   // level: string;
 }
+
+export interface AdcmRenameArgs {
+  id: number;
+  name: string;
+}
+
+export enum AdcmEntitySystemState {
+  Created = 'created',
+}
+
+export type AdcmEntityState = AdcmEntitySystemState.Created | string;

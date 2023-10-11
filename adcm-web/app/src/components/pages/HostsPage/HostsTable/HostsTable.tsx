@@ -8,11 +8,12 @@ import UnlinkHostToggleButton from '@pages/HostsPage/HostsTable/Buttons/UnlinkHo
 import { SortParams } from '@uikit/types/list.types';
 import { setSortParams } from '@store/adcm/hosts/hostsTableSlice';
 import { orElseGet } from '@utils/checkUtils';
-import { openDeleteDialog, openMaintenanceModeDialog } from '@store/adcm/hosts/hostsActionsSlice';
+import { openDeleteDialog, openMaintenanceModeDialog, openUpdateDialog } from '@store/adcm/hosts/hostsActionsSlice';
 import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
 import HostDynamicActionsIcon from '../HostDynamicActionsIcon/HostDynamicActionsIcon';
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 import Concern from '@commonComponents/Concern/Concern';
+import { AdcmEntitySystemState } from '@models/adcm';
 
 const HostsTable: React.FC = () => {
   const dispatch = useDispatch();
@@ -32,6 +33,10 @@ const HostsTable: React.FC = () => {
     dispatch(openDeleteDialog(hostId));
   };
 
+  const handleUpdateClick = (host: AdcmHost) => {
+    dispatch(openUpdateDialog(host));
+  };
+
   const handleSorting = (sortParams: SortParams) => {
     dispatch(setSortParams(sortParams));
   };
@@ -43,7 +48,12 @@ const HostsTable: React.FC = () => {
 
         return (
           <TableRow key={host.id}>
-            <StatusableCell status={hostStatusesMap[host.status]}>{host.name}</StatusableCell>
+            <StatusableCell status={hostStatusesMap[host.status]}>
+              {host.name}
+              {host.state === AdcmEntitySystemState.Created && (
+                <IconButton icon="g1-edit" size={32} title="Edit" onClick={() => handleUpdateClick(host)} />
+              )}
+            </StatusableCell>
             <MultiStateCell entity={host} />
             <TableCell>{host.hostprovider.name}</TableCell>
             <TableCell>{orElseGet(host.cluster?.name)}</TableCell>

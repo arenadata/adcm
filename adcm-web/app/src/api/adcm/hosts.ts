@@ -1,5 +1,5 @@
 import qs from 'qs';
-import type { AdcmMaintenanceMode, Batch, CreateAdcmHostPayload } from '@models/adcm';
+import type { AdcmMaintenanceMode, AdcmUpdatePayload, Batch, CreateAdcmHostPayload } from '@models/adcm';
 import { PaginationParams, SortParams } from '@models/table';
 import { httpClient } from '@api/httpClient';
 import { AdcmHost, AdcmHostsFilter } from '@models/adcm/host';
@@ -41,5 +41,9 @@ export class AdcmHostsApi {
     const response = await httpClient.post(`/api/v2/hosts/${hostId}/actions/${actionId}/run/`, actionRunConfig);
 
     return response.data;
+  }
+
+  public static async patchHost(hostId: number, payload: AdcmUpdatePayload) {
+    await httpClient.patch(`/api/v2/hosts/${hostId}/`, payload);
   }
 }
