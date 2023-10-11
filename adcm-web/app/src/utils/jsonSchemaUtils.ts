@@ -51,12 +51,17 @@ const getAllErrorInstancePaths = (errors: ErrorObject[] | undefined | null) => {
   return result;
 };
 
-export const generateFromSchema = <T>(schema: Schema): T => {
+export const generateFromSchema = <T>(schema: Schema): T | null => {
   const result = {};
-  const validate = ajvWithDefaults.compile(schema);
+  try {
+    const validate = ajvWithDefaults.compile(schema);
 
-  validate(result);
-  return result as T;
+    validate(result);
+    return result as T;
+  } catch (e) {
+    console.error(e);
+  }
+  return null;
 };
 
 export { Schema };
