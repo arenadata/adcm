@@ -18,6 +18,7 @@ const DynamicActionsCommon: React.FC<DynamicActionsCommonProps> = ({ actions, ch
       label: displayName,
       value: id,
       disabled: startImpossibleReason !== null,
+      title: startImpossibleReason,
     }));
   }, [actions]);
 

@@ -4,6 +4,7 @@ export interface SelectOption<T = SelectValue> {
   value: T;
   label: string;
   disabled?: boolean;
+  title?: string;
 }
 
 export interface SingleSelectParams<T> {
