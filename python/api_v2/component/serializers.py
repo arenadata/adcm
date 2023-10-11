@@ -35,6 +35,7 @@ class ComponentMappingSerializer(ModelSerializer):
     service = ServiceNameSerializer(read_only=True)
     depend_on = SerializerMethodField()
     constraints = JSONField(source="constraint")
+    prototype = PrototypeRelatedSerializer(read_only=True)
 
     class Meta:
         model = ServiceComponent
@@ -45,6 +46,7 @@ class ComponentMappingSerializer(ModelSerializer):
             "is_maintenance_mode_available",
             "maintenance_mode",
             "constraints",
+            "prototype",
             "depend_on",
             "service",
         ]
