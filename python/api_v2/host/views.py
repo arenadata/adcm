@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.config.utils import get_config_schema
+from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.host.filters import HostClusterFilter, HostFilter
 from api_v2.host.serializers import (
     ClusterHostCreateSerializer,
@@ -55,7 +55,9 @@ from adcm.permissions import (
 
 
 # pylint:disable-next=too-many-ancestors
-class HostViewSet(ModelObjectPermissionsByActionMixin, PermissionListMixin, CamelCaseReadOnlyModelViewSet):
+class HostViewSet(
+    ModelObjectPermissionsByActionMixin, PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet
+):
     queryset = (
         Host.objects.select_related("provider", "cluster")
         .prefetch_related("concerns", "hostcomponent_set")
@@ -144,12 +146,6 @@ class HostViewSet(ModelObjectPermissionsByActionMixin, PermissionListMixin, Came
     @action(methods=["post"], detail=True, url_path="maintenance-mode")
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         return maintenance_mode(request=request, **kwargs)
-
-    @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
-    def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        schema = get_config_schema(object_=self.get_object())
-
-        return Response(data=schema, status=HTTP_200_OK)
 
 
 class HostClusterViewSet(  # pylint:disable=too-many-ancestors

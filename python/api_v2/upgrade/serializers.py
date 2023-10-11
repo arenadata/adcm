@@ -33,8 +33,7 @@ class UpgradeRetrieveSerializer(UpgradeListSerializer):
     is_allow_to_terminate = SerializerMethodField()
     host_component_map_rules = SerializerMethodField()
     disclaimer = SerializerMethodField()
-    config_schema = SerializerMethodField()
-    adcm_meta = SerializerMethodField()
+    configuration = SerializerMethodField()
     bundle = BundleRelatedSerializer()
 
     class Meta:
@@ -46,8 +45,7 @@ class UpgradeRetrieveSerializer(UpgradeListSerializer):
             "is_allow_to_terminate",
             "license_status",
             "host_component_map_rules",
-            "config_schema",
-            "adcm_meta",
+            "configuration",
             "disclaimer",
             "bundle",
         )
@@ -73,8 +71,8 @@ class UpgradeRetrieveSerializer(UpgradeListSerializer):
 
         return []
 
-    def get_config_schema(self, _: Upgrade):
-        return self.context["config_schema"]
+    def get_configuration(self, _: Upgrade):
+        if self.context["config_schema"] is None and self.context["adcm_meta"] is None:
+            return None
 
-    def get_adcm_meta(self, _: Upgrade) -> dict:
-        return self.context["adcm_meta"]
+        return {"config_schema": self.context["config_schema"], "adcm_meta": self.context["adcm_meta"]}

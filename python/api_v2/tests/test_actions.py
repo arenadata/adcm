@@ -230,7 +230,7 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
                 viewname="v2:cluster-action-run",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": allowed_action.pk},
             ),
-            data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
+            data={"host_component_map": [], "config": {}, "adcm_meta": {}, "is_verbose": False},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
@@ -239,7 +239,7 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
                 viewname="v2:cluster-action-run",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": disallowed_action.pk},
             ),
-            data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
+            data={"host_component_map": [], "config": {}, "adcm_meta": {}, "is_verbose": False},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 

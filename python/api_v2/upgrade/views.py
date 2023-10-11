@@ -22,7 +22,7 @@ from api_v2.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSer
 from api_v2.views import CamelCaseGenericViewSet
 from cm.adcm_config.config import get_prototype_config
 from cm.errors import AdcmEx
-from cm.models import Cluster, HostProvider, TaskLog, Upgrade
+from cm.models import Cluster, HostProvider, PrototypeConfig, TaskLog, Upgrade
 from cm.upgrade import check_upgrade, do_upgrade, get_upgrade
 from rbac.models import User
 from rest_framework.decorators import action
@@ -134,9 +134,13 @@ class UpgradeViewSet(  # pylint: disable=too-many-ancestors
         adcm_meta = None
 
         if upgrade.action:
-            schema = get_config_schema(object_=parent, action=upgrade.action)
-            _, _, _, attr = get_prototype_config(prototype=upgrade.action.prototype, action=upgrade.action)
-            adcm_meta = convert_attr_to_adcm_meta(attr=attr)
+            prototype_configs = PrototypeConfig.objects.filter(
+                prototype=upgrade.action.prototype, action=upgrade.action
+            ).order_by("pk")
+            if len(prototype_configs):
+                schema = get_config_schema(object_=parent, prototype_configs=prototype_configs)
+                _, _, _, attr = get_prototype_config(prototype=upgrade.action.prototype, action=upgrade.action)
+                adcm_meta = convert_attr_to_adcm_meta(attr=attr)
 
         serializer = self.get_serializer_class()(
             instance=upgrade, context={"parent": parent, "config_schema": schema, "adcm_meta": adcm_meta}
@@ -150,18 +154,24 @@ class UpgradeViewSet(  # pylint: disable=too-many-ancestors
         serializer.is_valid(raise_exception=True)
 
         parent: Cluster | HostProvider = self.get_parent_object_for_user(user=request.user)
-
         upgrade = self.get_upgrade(parent=parent)
 
-        prototype = None
+        configuration = serializer.validated_data["configuration"]
+        config = {}
+        adcm_meta = {}
+
+        if configuration is not None:
+            config = configuration["config"]
+            adcm_meta = configuration["adcm_meta"]
 
         if upgrade.action:
-            prototype = upgrade.action.prototype
+            prototype_configs = PrototypeConfig.objects.filter(
+                prototype=upgrade.action.prototype, type="json", action=upgrade.action
+            ).order_by("pk")
+            config = represent_string_as_json_type(prototype_configs=prototype_configs, value=config)
 
-        config = represent_string_as_json_type(
-            prototype=prototype, value=serializer.validated_data["config"], action=upgrade.action
-        )
-        attr = convert_adcm_meta_to_attr(adcm_meta=serializer.validated_data["adcm_meta"])
+        attr = convert_adcm_meta_to_attr(adcm_meta=adcm_meta)
+
         result = do_upgrade(
             obj=parent,
             upgrade=upgrade,

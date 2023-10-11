@@ -15,7 +15,7 @@ from api_v2.config.utils import get_config_schema
 from api_v2.config.views import ConfigLogViewSet
 from cm.adcm_config.config import get_adcm_config
 from cm.errors import AdcmEx
-from cm.models import ADCM, ConfigLog
+from cm.models import ADCM, ConfigLog, PrototypeConfig
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User as AuthUser
 from djangorestframework_camel_case.parser import (
@@ -130,6 +130,10 @@ class ADCMConfigView(ConfigLogViewSet):  # pylint: disable=too-many-ancestors
 
     @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
     def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        schema = get_config_schema(object_=self.get_parent_object())
+        instance = self.get_parent_object()
+        schema = get_config_schema(
+            object_=instance,
+            prototype_configs=PrototypeConfig.objects.filter(prototype=instance.prototype, action=None).order_by("pk"),
+        )
 
         return Response(data=schema, status=HTTP_200_OK)
