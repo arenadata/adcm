@@ -1,0 +1,7 @@
+.jobObjectsCell {
+  span:not(:last-child)::after {
+    content: '/';
+    display: inline-block;
+    margin: 0 5px;
+  }
+}
