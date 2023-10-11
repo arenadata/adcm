@@ -29,7 +29,10 @@ const DynamicActionSteps: React.FC<DynamicActionsStepsProps> = ({
   actionSteps,
 }) => {
   const [localActionRunConfig, setLocalActionRunConfig] = useState<Partial<AdcmDynamicActionRunConfig>>(() => {
-    return { config: {}, hostComponentMap: [] };
+    return {
+      configuration: null,
+      hostComponentMap: [],
+    };
   });
 
   const [currentStep, setCurrentStep] = useState<string>(actionSteps[0]);

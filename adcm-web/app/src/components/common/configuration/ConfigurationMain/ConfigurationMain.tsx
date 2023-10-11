@@ -10,13 +10,21 @@ interface ConfigurationMainProps {
   isLoading?: boolean;
 }
 
+const getCorrectConfigurationData = (configuration: AdcmConfiguration): ConfigurationData => {
+  const { configurationData, schema } = configuration;
+
+  if (Object.keys(configurationData).length > 0) {
+    return configurationData;
+  }
+  return generateFromSchema<ConfigurationData>(schema) ?? {};
+};
+
 const ConfigurationMain: React.FC<ConfigurationMainProps> = ({ configuration, onChangeConfiguration }) => {
   const { filter, onChangeIsValid } = useConfigurationFormContext();
 
   if (configuration === null) return null;
 
   const { configurationData, attributes, schema } = configuration;
-  const configurationDataFromSchema = generateFromSchema(schema);
 
   const handleChangeConfigurationData = (configurationData: ConfigurationData) => {
     onChangeConfiguration({
@@ -36,7 +44,7 @@ const ConfigurationMain: React.FC<ConfigurationMainProps> = ({ configuration, on
 
   return (
     <ConfigurationEditor
-      configuration={configurationData ?? configurationDataFromSchema}
+      configuration={getCorrectConfigurationData(configuration)}
       attributes={attributes}
       schema={schema}
       filter={filter}

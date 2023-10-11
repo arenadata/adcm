@@ -5,10 +5,7 @@ export const getDynamicActionTypes = (actionDetails: AdcmDynamicActionDetails): 
   if (actionDetails.disclaimer) return [DynamicActionType.Confirm];
 
   const res = [] as DynamicActionType[];
-  // TODO: configSchema will be changes, must change this condition in future.
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  if (actionDetails.configSchema?.fields?.length > 0) {
+  if (actionDetails.configuration !== null) {
     res.push(DynamicActionType.ConfigSchema);
   }
 
@@ -28,8 +25,8 @@ export const getDefaultHostMappingRunConfig = (): Pick<AdcmDynamicActionRunConfi
   hostComponentMap: [],
 });
 
-export const getDefaultConfigSchemaRunConfig = (): Pick<AdcmDynamicActionRunConfig, 'config'> => ({
-  config: {},
+export const getDefaultConfigurationRunConfig = (): Pick<AdcmDynamicActionRunConfig, 'configuration'> => ({
+  configuration: null,
 });
 
 export const getDefaultVerboseRunConfig = (): Pick<AdcmDynamicActionRunConfig, 'isVerbose'> => ({
@@ -38,6 +35,6 @@ export const getDefaultVerboseRunConfig = (): Pick<AdcmDynamicActionRunConfig, '
 
 export const getDefaultRunConfig = (): AdcmDynamicActionRunConfig => ({
   ...getDefaultHostMappingRunConfig(),
-  ...getDefaultConfigSchemaRunConfig(),
+  ...getDefaultConfigurationRunConfig(),
   ...getDefaultVerboseRunConfig(),
 });
