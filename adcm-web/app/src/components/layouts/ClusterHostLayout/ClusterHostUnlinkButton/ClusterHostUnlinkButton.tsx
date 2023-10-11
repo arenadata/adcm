@@ -43,7 +43,7 @@ const ClusterHostUnlinkButton = () => {
         onAction={handleConfirmDialog}
         actionButtonLabel="Unlink"
       >
-        The {clusterHost?.name} will be unlinked. Are you sure?
+        The {clusterHost?.name} will be unlinked.
       </Dialog>
     </>
   );

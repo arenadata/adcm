@@ -32,7 +32,7 @@ const AccessManagerPolicyDeleteDialog: React.FC = () => {
         onAction={handleConfirmDialog}
         actionButtonLabel="Delete"
       >
-        The policy will be deleted. Are you sure?
+        The policy will be deleted.
       </Dialog>
     </>
   );

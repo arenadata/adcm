@@ -31,7 +31,7 @@ const AccessManagerGroupsDeleteDialog: React.FC = () => {
         onAction={handleConfirmDialog}
         actionButtonLabel="Delete"
       >
-        Group will be deleted. Are you sure?
+        Group will be deleted.
       </Dialog>
     </>
   );

@@ -41,7 +41,7 @@ const JobsRestartDialog: React.FC = () => {
       onAction={handleConfirmDialog}
       actionButtonLabel="Restart"
     >
-      Job will be restarted. Are you sure?
+      Job will be restarted.
     </Dialog>
   );
 };

@@ -42,7 +42,7 @@ const AccessManagerUsersDeleteDialog: React.FC = () => {
         onAction={handleConfirmDialog}
         actionButtonLabel="Delete"
       >
-        User will be deleted. Are you sure?
+        User will be deleted.
       </Dialog>
     </>
   );

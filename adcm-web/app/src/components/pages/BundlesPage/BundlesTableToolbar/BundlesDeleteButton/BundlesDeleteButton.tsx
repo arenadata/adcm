@@ -35,7 +35,7 @@ const BundlesDeleteButton: React.FC = () => {
         onAction={handleConfirmDialog}
         actionButtonLabel="Delete"
       >
-        All selected bundles will be deleted. Are you sure?
+        All selected bundles will be deleted.
       </Dialog>
     </>
   );
