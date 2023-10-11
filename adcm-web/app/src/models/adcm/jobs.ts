@@ -16,7 +16,7 @@ export enum AdcmJobObjectType {
   Component = 'component',
 }
 
-interface AdcmJobObject {
+export interface AdcmJobObject {
   id: number;
   name: string;
   type: AdcmJobObjectType;

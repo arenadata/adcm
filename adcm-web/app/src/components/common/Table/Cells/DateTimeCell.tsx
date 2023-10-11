@@ -8,6 +8,9 @@ interface DateTimeCellProps extends TableCellProps {
 }
 
 const prepareDate = (value: string) => {
+  if (!value.length) {
+    return '';
+  }
   return dateToString(new Date(value), { toUtc: true });
 };
 

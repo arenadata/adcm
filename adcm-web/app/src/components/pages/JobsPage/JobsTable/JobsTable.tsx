@@ -1,15 +1,15 @@
 import { Link, generatePath } from 'react-router-dom';
 import { Table, TableRow, TableCell, IconButton } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
-import { columns, linkByObjectTypeMap } from './JobsTable.constants';
+import { columns } from './JobsTable.constants';
 import { setSortParams } from '@store/adcm/jobs/jobsTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { openRestartDialog, openStopDialog } from '@store/adcm/jobs/jobsActionsSlice';
 import { AdcmJobStatus } from '@models/adcm';
-import s from './JobsTable.module.scss';
 import JobsStatusCell from '../../../common/Table/Cells/JobsStatusCell/JobsStatusCell';
 import { secondsToDuration } from '@utils/date/timeConvertUtils';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
+import JobObjectsCell from '@commonComponents/Table/Cells/JobObjectsCell/JobObjectsCell';
 
 const JobsTable = () => {
   const dispatch = useDispatch();
@@ -33,26 +33,15 @@ const JobsTable = () => {
     <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
       {jobs.map((job) => {
         return (
-          <TableRow key={job.id} className={s.jobRow}>
+          <TableRow key={job.id}>
             <TableCell>{job.id}</TableCell>
             <JobsStatusCell status={job.status}>
-              <Link to={generatePath('/jobs/:jobId', { jobId: job.id + '' })} className={s.jobRow__jobName}>
+              <Link to={generatePath('/jobs/:jobId', { jobId: job.id + '' })} className="text-link">
                 {job.displayName}
               </Link>
             </JobsStatusCell>
             <TableCell>{job.status}</TableCell>
-            <TableCell className={s.jobRow__jobObjects}>
-              {job.objects?.map((object, i) => {
-                return (
-                  <span key={i}>
-                    {i > 0 && ' / '}
-                    <Link to={`/${linkByObjectTypeMap[object.type]}/${object.id}`} key={object.id}>
-                      {object.name}
-                    </Link>
-                  </span>
-                );
-              })}
-            </TableCell>
+            <JobObjectsCell objects={job.objects} />
             <TableCell>{secondsToDuration(job.duration)}</TableCell>
             <DateTimeCell value={job.startTime} />
             <DateTimeCell value={job.endTime} />
