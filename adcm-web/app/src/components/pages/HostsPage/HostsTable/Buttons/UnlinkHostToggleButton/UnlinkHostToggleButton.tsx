@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconButton } from '@uikit';
+import { IconButton, Tooltip } from '@uikit';
 import { useDispatch } from '@hooks';
 import { firstUpperCase } from '@utils/stringUtils';
 import { AdcmHost } from '@models/adcm';
@@ -27,12 +27,9 @@ const UnlinkHostToggleButton: React.FC<LinkHostProps> = ({ host }) => {
   };
 
   return (
-    <IconButton
-      icon={linkIcons[linkMode]}
-      size={32}
-      onClick={handleLinkClick}
-      title={`${firstUpperCase(linkMode)} host`}
-    />
+    <Tooltip label={`${firstUpperCase(linkMode)} host`}>
+      <IconButton icon={linkIcons[linkMode]} size={32} onClick={handleLinkClick} />
+    </Tooltip>
   );
 };
 
