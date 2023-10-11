@@ -36,7 +36,7 @@ const AccessManagerUsersDeleteButton: React.FC = () => {
         onAction={handleConfirmDialog}
         actionButtonLabel="Delete"
       >
-        All selected users will be deleted. Are you sure?
+        All selected users will be deleted.
       </Dialog>
     </>
   );

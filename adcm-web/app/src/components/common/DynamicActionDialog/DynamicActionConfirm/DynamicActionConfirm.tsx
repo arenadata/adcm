@@ -8,7 +8,7 @@ interface DynamicActionConfirmProps {
 const DynamicActionConfirm: React.FC<DynamicActionConfirmProps> = ({ actionDetails }) => {
   return (
     <div>
-      <div>{actionDetails.disclaimer || `You will run ${actionDetails.displayName} action. Are you sure?`}</div>
+      <div>{actionDetails.disclaimer || `${actionDetails.displayName} will be started.`}</div>
     </div>
   );
 };

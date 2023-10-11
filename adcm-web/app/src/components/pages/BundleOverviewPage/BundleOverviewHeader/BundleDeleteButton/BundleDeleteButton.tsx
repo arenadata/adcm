@@ -42,7 +42,7 @@ const BundleDeleteButton = () => {
         onAction={handleConfirmDialog}
         actionButtonLabel="Delete"
       >
-        The "{bundle?.name}" bundle will be deleted. Are you sure?
+        The "{bundle?.name}" bundle will be deleted.
       </Dialog>
     </>
   );

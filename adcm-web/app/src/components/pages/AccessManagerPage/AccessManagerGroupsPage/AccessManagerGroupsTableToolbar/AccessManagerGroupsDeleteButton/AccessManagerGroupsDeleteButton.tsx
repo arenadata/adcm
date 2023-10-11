@@ -36,7 +36,7 @@ const AccessManagerGroupsDeleteButton: React.FC = () => {
         onAction={handleConfirmDialog}
         actionButtonLabel="Delete"
       >
-        All selected groups will be deleted. Are you sure?
+        All selected groups will be deleted.
       </Dialog>
     </>
   );

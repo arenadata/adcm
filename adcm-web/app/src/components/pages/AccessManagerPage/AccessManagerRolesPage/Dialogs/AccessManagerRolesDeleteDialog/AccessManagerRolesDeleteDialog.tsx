@@ -42,7 +42,7 @@ const AccessManagerRolesDeleteDialog: React.FC = () => {
         onAction={handleConfirmDialog}
         actionButtonLabel="Delete"
       >
-        Role will be deleted. Are you sure?
+        Role will be deleted.
       </Dialog>
     </>
   );
