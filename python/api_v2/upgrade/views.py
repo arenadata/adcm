@@ -26,7 +26,8 @@ from cm.models import Cluster, HostProvider, TaskLog, Upgrade
 from cm.upgrade import check_upgrade, do_upgrade, get_upgrade
 from rbac.models import User
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.generics import get_object_or_404
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -38,16 +39,18 @@ from adcm.permissions import (
     VIEW_CLUSTER_UPGRADE_PERM,
     VIEW_PROVIDER_PERM,
     VIEW_PROVIDER_UPGRADE_PERM,
-    DjangoModelPermissionsAudit,
+    check_custom_perm,
     get_object_for_user,
 )
 
 
-class UpgradeViewSet(
-    ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, CamelCaseGenericViewSet
-):  # pylint: disable=too-many-ancestors
+class UpgradeViewSet(  # pylint: disable=too-many-ancestors
+    ListModelMixin,
+    GetParentObjectMixin,
+    RetrieveModelMixin,
+    CamelCaseGenericViewSet,
+):
     queryset = Upgrade.objects.select_related("action", "bundle", "action__prototype").order_by("pk")
-    permission_classes = [DjangoModelPermissionsAudit]
     filter_backends = []
 
     def get_serializer_class(self) -> type[UpgradeListSerializer | ActionRunSerializer | UpgradeRetrieveSerializer]:
@@ -59,6 +62,32 @@ class UpgradeViewSet(
 
         return UpgradeListSerializer
 
+    def get_object(self):
+        parent_object: Cluster | HostProvider | None = self.get_parent_object()
+        if parent_object is None:
+            raise NotFound("Can't get parent object for upgrade")
+
+        check_custom_perm(
+            user=self.request.user,
+            action_type="view_upgrade_of",
+            model=parent_object.__class__.__name__.lower(),
+            obj=parent_object,
+        )
+
+        if self.action == "run":
+            check_custom_perm(
+                user=self.request.user,
+                action_type="do_upgrade_of",
+                model=parent_object.__class__.__name__.lower(),
+                obj=parent_object,
+            )
+
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
+        obj = get_object_or_404(queryset, **filter_kwargs)
+        return obj
+
     def get_parent_object_for_user(self, user: User) -> Cluster | HostProvider:
         parent: Cluster | HostProvider | None = self.get_parent_object()
         if parent is None or not isinstance(parent, (Cluster, HostProvider)):
@@ -66,13 +95,18 @@ class UpgradeViewSet(
             raise NotFound(message)
 
         if isinstance(parent, Cluster):
-            return get_object_for_user(
-                user=user, perms=(VIEW_CLUSTER_PERM, VIEW_CLUSTER_UPGRADE_PERM), klass=Cluster, id=parent.pk
-            )
+            cluster = get_object_for_user(user=user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=parent.pk)
+            if not user.has_perm(perm=VIEW_CLUSTER_UPGRADE_PERM, obj=cluster):
+                raise PermissionDenied(f"You can't view upgrades of {cluster}")
+            return cluster
 
-        return get_object_for_user(
-            user=user, perms=(VIEW_PROVIDER_PERM, VIEW_PROVIDER_UPGRADE_PERM), klass=HostProvider, id=parent.pk
-        )
+        if isinstance(parent, HostProvider):
+            hostprovider = get_object_for_user(user=user, perms=VIEW_PROVIDER_PERM, klass=HostProvider, id=parent.pk)
+            if not user.has_perm(perm=VIEW_PROVIDER_UPGRADE_PERM, obj=hostprovider):
+                raise PermissionDenied(f"You can't view upgrades of {hostprovider}")
+            return hostprovider
+
+        raise ValueError("Wrong object")
 
     def get_upgrade(self, parent: Cluster | HostProvider):
         upgrade = self.get_object()

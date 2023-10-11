@@ -111,7 +111,6 @@ class ProfileView(RetrieveUpdateAPIView):
             user=instance,
             context_user=self.request.user,
             partial=True,
-            api_v2_behaviour=True,
             **serializer.validated_data,
         )
 

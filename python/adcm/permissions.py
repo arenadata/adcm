@@ -50,6 +50,16 @@ VIEW_JOBLOG_PERMISSION = "cm.view_joblog"
 VIEW_LOGSTORAGE_PERMISSION = "cm.view_logstorage"
 VIEW_USER_PERMISSION = "rbac.view_user"
 VIEW_GROUP_PERMISSION = "rbac.view_group"
+VIEW_ROLE_PERMISSION = "rbac.view_role"
+VIEW_POLICY_PERMISSION = "rbac.view_policy"
+
+
+class DjangoObjectPermissionsV2(DjangoObjectPermissions):
+    def has_permission(self, request, view):
+        # We do not need to check permissions on model in case of deletion / update object.
+        # Instead, we should implement `get_permissions()` in view
+        # and dispatch permission classes according to current action
+        return True
 
 
 class DjangoObjectPermissionsAudit(DjangoObjectPermissions):
@@ -61,6 +71,20 @@ class DjangoObjectPermissionsAudit(DjangoObjectPermissions):
 class DjangoModelPermissionsAudit(DjangoModelPermissions):
     @audit
     def has_permission(self, request, view):
+        return super().has_permission(request, view)
+
+
+class CustomModelPermissionsByMethod(DjangoModelPermissionsAudit):
+    method_permissions_map = {
+        # Example:
+        # "get": [("app_label.permission", ErrorToRaise), ...]
+    }
+
+    def has_permission(self, request, view):
+        for permission, error in view.method_permissions_map.get(request.method.lower(), []):
+            if not request.user.has_perm(perm=permission):
+                raise error
+
         return super().has_permission(request, view)
 
 
@@ -84,6 +108,19 @@ class SuperuserOnlyMixin:
             return self.queryset.model.objects.none()
 
         return super().get_queryset(*args, **kwargs)
+
+
+class ModelObjectPermissionsByActionMixin:
+    action: str
+
+    # override this list to tune permission checking behavior
+    object_actions: list = ["destroy", "update", "partial_update"]
+
+    def get_permissions(self) -> list[DjangoObjectPermissionsV2 | DjangoModelPermissionsAudit]:
+        if self.action in self.object_actions:
+            return [DjangoObjectPermissionsV2()]
+
+        return [DjangoModelPermissionsAudit()]
 
 
 def get_object_for_user(user: User, perms: str | Sequence[str], klass: type[Model], **kwargs) -> Any:

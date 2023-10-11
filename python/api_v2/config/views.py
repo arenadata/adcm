@@ -69,7 +69,11 @@ class ConfigLogViewSet(
     def create(self, request, *args, **kwargs) -> Response:
         parent_object = self.get_parent_object()
 
-        if parent_object is None:
+        parent_view_perm = f"cm.view_{parent_object.__class__.__name__.lower()}"
+        if parent_object is None or not (
+            request.user.has_perm(perm=parent_view_perm, obj=parent_object)
+            or request.user.has_perm(perm=parent_view_perm)
+        ):
             raise NotFound("Can't find config's parent object")
 
         if parent_object.config is None:
