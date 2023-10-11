@@ -13,7 +13,7 @@ const createInitialState = (): AdcmClusterHostsTableState => ({
     perPage: 10,
     pageNumber: 0,
   },
-  requestFrequency: 5,
+  requestFrequency: 0,
   sortParams: {
     sortBy: 'name',
     sortDirection: 'asc',

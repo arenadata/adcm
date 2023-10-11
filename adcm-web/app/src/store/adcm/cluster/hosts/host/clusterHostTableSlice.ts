@@ -10,7 +10,7 @@ const createInitialState = (): ListState<AdcmClusterHostsFilter> => ({
     perPage: 10,
     pageNumber: 0,
   },
-  requestFrequency: 5,
+  requestFrequency: 0,
   sortParams: {
     sortBy: 'name',
     sortDirection: 'asc',
