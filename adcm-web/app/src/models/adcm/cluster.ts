@@ -1,16 +1,10 @@
 import { AdcmConcerns } from './concern';
-import { AdcmLicenseStatus } from '@models/adcm';
+import { AdcmEntityState, AdcmLicenseStatus } from '@models/adcm';
 
 export enum AdcmClusterStatus {
   Up = 'up',
   Down = 'down',
 }
-
-export enum AdcmEntitySystemState {
-  Created = 'created',
-}
-
-type AdcmEntityState = AdcmEntitySystemState.Created | string;
 
 export interface AdcmClusterPrototype {
   id: number;

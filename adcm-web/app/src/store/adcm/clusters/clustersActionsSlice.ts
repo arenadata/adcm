@@ -11,6 +11,7 @@ import {
   AdcmPrototypeType,
   AdcmPrototypeVersions,
   CreateAdcmClusterPayload,
+  AdcmRenameArgs,
 } from '@models/adcm';
 
 interface AdcmClusterActionsState {
@@ -47,11 +48,6 @@ type LoadAdcmClusterUpgradeActionDetailsArgs = {
 type CreateAdcmClusterWithLicensePayload = CreateAdcmClusterPayload & {
   isNeedAcceptLicense: boolean;
 };
-
-interface RenameClusterArgs {
-  id: number;
-  name: string;
-}
 
 const createCluster = createAsyncThunk(
   'adcm/clustersActions/createCluster',
@@ -166,7 +162,7 @@ const deleteClusterWithUpdate = createAsyncThunk(
 
 const renameCluster = createAsyncThunk(
   'adcm/clustersActions/renameCluster',
-  async ({ id, name }: RenameClusterArgs, thunkAPI) => {
+  async ({ id, name }: AdcmRenameArgs, thunkAPI) => {
     try {
       return await AdcmClustersApi.patchCluster(id, { name });
     } catch (error) {
