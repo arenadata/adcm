@@ -50,6 +50,7 @@ from cm.models import (
 from cm.utils import dict_to_obj, obj_to_dict
 from cm.variant import get_variant, process_variant
 from django.conf import settings
+from django.db.models import QuerySet
 from jinja_config import get_jinja_config
 
 
@@ -413,11 +414,11 @@ def ui_config(obj, config_log):  # pylint: disable=too-many-locals
     return conf
 
 
-def get_action_variant(obj, config):
+def get_action_variant(obj: ADCMEntity, prototype_configs: QuerySet[PrototypeConfig] | list[PrototypeConfig]) -> None:
     if obj.config:
         config_log = ConfigLog.objects.filter(obj_ref=obj.config, id=obj.config.current).first()
         if config_log:
-            for conf in config:
+            for conf in prototype_configs:
                 if conf.type != "variant":
                     continue
 

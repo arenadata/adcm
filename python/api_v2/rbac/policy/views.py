@@ -18,18 +18,23 @@ from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rbac.models import Policy
 from rbac.services.policy import policy_create, policy_update
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
 
-from adcm.permissions import DjangoModelPermissionsAudit
+from adcm.permissions import VIEW_POLICY_PERMISSION, CustomModelPermissionsByMethod
 
 
 class PolicyViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = Policy.objects.select_related("role").prefetch_related("group", "object")
     filter_backends = (DjangoFilterBackend,)
     filterset_class = PolicyFilter
-    permission_classes = (DjangoModelPermissionsAudit,)
-    permission_required = ["rbac.view_policy"]
+    permission_classes = (CustomModelPermissionsByMethod,)
+    method_permissions_map = {
+        "patch": [(VIEW_POLICY_PERMISSION, NotFound)],
+        "delete": [(VIEW_POLICY_PERMISSION, NotFound)],
+    }
+    permission_required = [VIEW_POLICY_PERMISSION]
     http_method_names = ["get", "post", "patch", "delete"]
 
     def get_serializer_class(self) -> type[PolicySerializer | PolicyCreateSerializer]:

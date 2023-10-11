@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.service.filters import ServiceFilter
 from api_v2.service.serializers import (
     ServiceCreateSerializer,
@@ -32,28 +32,29 @@ from adcm.permissions import (
     CHANGE_MM_PERM,
     VIEW_CLUSTER_PERM,
     VIEW_SERVICE_PERM,
-    DjangoModelPermissionsAudit,
+    ModelObjectPermissionsByActionMixin,
     check_custom_perm,
     get_object_for_user,
 )
 from adcm.utils import delete_service_from_api, get_maintenance_mode_response
 
 
-class ServiceViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+class ServiceViewSet(  # pylint: disable=too-many-ancestors
+    ModelObjectPermissionsByActionMixin, PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet
+):
     queryset = ClusterObject.objects.select_related("cluster").order_by("pk")
     serializer_class = ServiceRetrieveSerializer
     filterset_class = ServiceFilter
     filter_backends = (DjangoFilterBackend,)
-    permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_SERVICE_PERM]
     http_method_names = ["get", "post", "delete"]
 
     def get_queryset(self, *args, **kwargs):
-        cluster = Cluster.objects.filter(pk=self.kwargs.get("cluster_pk")).first()
-        if not cluster:
-            return ClusterObject.objects.none()
+        cluster = get_object_for_user(
+            user=self.request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=self.kwargs["cluster_pk"]
+        )
 
-        return self.queryset.filter(cluster=cluster)
+        return super().get_queryset(*args, **kwargs).filter(cluster=cluster)
 
     def get_serializer_class(self):
         match self.action:
@@ -70,7 +71,9 @@ class ServiceViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pyl
         )
         check_custom_perm(user=request.user, action_type=ADD_SERVICE_PERM, model=Cluster.__name__.lower(), obj=cluster)
 
-        serializer = self.get_serializer(data=request.data, many=True)
+        serializer = self.get_serializer(
+            data=request.data, many=True, context={"cluster": cluster, **self.get_serializer_context()}
+        )
         serializer.is_valid(raise_exception=True)
 
         added_services = []

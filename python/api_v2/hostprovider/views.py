@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.hostprovider.filters import HostProviderFilter
 from api_v2.hostprovider.serializers import (
     HostProviderCreateSerializer,
@@ -20,17 +20,24 @@ from cm.api import add_host_provider, delete_host_provider
 from cm.errors import raise_adcm_ex
 from cm.models import HostProvider, ObjectType, Prototype
 from django_filters.rest_framework.backends import DjangoFilterBackend
+from guardian.mixins import PermissionListMixin
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
-from adcm.permissions import VIEW_HOST_PERM, DjangoModelPermissionsAudit
+from adcm.permissions import (
+    VIEW_PROVIDER_PERM,
+    DjangoModelPermissionsAudit,
+    ModelObjectPermissionsByActionMixin,
+)
 
 
-class HostProviderViewSet(CamelCaseReadOnlyModelViewSet):  # pylint:disable=too-many-ancestors
+class HostProviderViewSet(  # pylint:disable=too-many-ancestors
+    ModelObjectPermissionsByActionMixin, PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet
+):
     queryset = HostProvider.objects.select_related("prototype").order_by("name")
     serializer_class = HostProviderSerializer
     permission_classes = [DjangoModelPermissionsAudit]
-    permission_required = [VIEW_HOST_PERM]
+    permission_required = [VIEW_PROVIDER_PERM]
     filterset_class = HostProviderFilter
     filter_backends = (DjangoFilterBackend,)
 

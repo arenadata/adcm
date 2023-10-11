@@ -918,6 +918,10 @@ class GroupConfig(ADCMModel):
 
     not_changeable_fields = ("id", "object_id", "object_type")
 
+    @property
+    def prototype(self):
+        return self.object.prototype
+
     class Meta:
         unique_together = ["object_id", "name", "object_type"]
 
@@ -1752,7 +1756,7 @@ class StageUpgrade(ADCMModel):
     action = models.OneToOneField("StageAction", on_delete=models.CASCADE, null=True)
 
 
-class StageAction(AbstractAction):  # pylint: disable=too-many-instance-attributes
+class StageAction(AbstractAction):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
 
 

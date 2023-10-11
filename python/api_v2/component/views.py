@@ -16,6 +16,7 @@ from api_v2.component.serializers import (
     ComponentSerializer,
     ComponentStatusSerializer,
 )
+from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.views import CamelCaseReadOnlyModelViewSet
 from cm.api import update_mm_objects
 from cm.models import Cluster, ClusterObject, ServiceComponent
@@ -38,7 +39,9 @@ from adcm.permissions import (
 from adcm.utils import get_maintenance_mode_response
 
 
-class ComponentViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+class ComponentViewSet(
+    PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet
+):  # pylint: disable=too-many-ancestors
     queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("pk")
     serializer_class = ComponentSerializer
     permission_classes = [DjangoModelPermissionsAudit]

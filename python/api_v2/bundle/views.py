@@ -25,7 +25,7 @@ from rest_framework.mixins import (
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
-from adcm.permissions import VIEW_ACTION_PERM, DjangoModelPermissionsAudit
+from adcm.permissions import DjangoModelPermissionsAudit
 
 
 class BundleViewSet(  # pylint: disable=too-many-ancestors
@@ -39,7 +39,6 @@ class BundleViewSet(  # pylint: disable=too-many-ancestors
     )
     serializer_class = BundleListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
-    permission_required = [VIEW_ACTION_PERM]
     filterset_class = BundleFilter
     filter_backends = (DjangoFilterBackend,)
 

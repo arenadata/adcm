@@ -14,7 +14,8 @@ from api_v2.rbac.group.serializers import GroupRelatedSerializer
 from api_v2.rbac.role.serializers import RoleRelatedSerializer
 from rbac.endpoints.policy.serializers import ObjectField
 from rbac.endpoints.serializers import BaseRelatedSerializer
-from rbac.models import Group, Policy, Role
+from rbac.models import Group, Policy, Role, RoleTypes
+from rest_framework.exceptions import ValidationError
 from rest_framework.fields import BooleanField
 from rest_framework.relations import ManyRelatedField, PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
@@ -74,3 +75,10 @@ class PolicyCreateSerializer(ModelSerializer):
             "groups",
             "role",
         ]
+
+    @staticmethod
+    def validate_role(role: Role) -> Role:
+        if role.type != RoleTypes.ROLE:
+            raise ValidationError(f'Role with type "{role.type}" could not be used in policy')
+
+        return role

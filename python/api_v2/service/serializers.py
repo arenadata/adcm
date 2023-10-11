@@ -14,6 +14,7 @@ from api_v2.cluster.serializers import ClusterRelatedSerializer
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from cm.adcm_config.config import get_main_info
+from cm.errors import AdcmEx
 from cm.models import ClusterObject, MaintenanceMode, ServiceComponent
 from cm.status_api import get_obj_status
 from rest_framework.serializers import (
@@ -66,6 +67,12 @@ class ServiceRelatedSerializer(ModelSerializer):
 
 class ServiceCreateSerializer(EmptySerializer):
     prototype_id = IntegerField()
+
+    def validate_prototype_id(self, value: int) -> int:
+        if ClusterObject.objects.filter(prototype__pk=value, cluster=self.context["cluster"]).exists():
+            raise AdcmEx("SERVICE_CONFLICT")
+
+        return value
 
 
 class ServiceMaintenanceModeSerializer(ModelSerializer):

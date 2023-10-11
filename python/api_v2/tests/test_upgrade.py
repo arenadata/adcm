@@ -78,13 +78,13 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         upgrade_data = response.json()
         self.assertTrue(
             set(upgrade_data.keys()).issuperset(
-                {"id", "hostComponentMapRules", "configSchema", "isAllowToTerminate", "disclaimer"}
+                {"id", "hostComponentMapRules", "configuration", "isAllowToTerminate", "disclaimer"}
             )
         )
 
         self.assertEqual(upgrade_data["id"], self.cluster_upgrade.pk)
         self.assertEqual(len(upgrade_data["hostComponentMapRules"]), 0)
-        self.assertEqual(upgrade_data["configSchema"], None)
+        self.assertIsNone(upgrade_data["configuration"])
         self.assertEqual(upgrade_data["disclaimer"], "")
         self.assertFalse(upgrade_data["isAllowToTerminate"])
 
@@ -100,7 +100,7 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         upgrade_data = response.json()
         self.assertTrue(
             set(upgrade_data.keys()).issuperset(
-                {"id", "hostComponentMapRules", "configSchema", "isAllowToTerminate", "disclaimer"}
+                {"id", "hostComponentMapRules", "configuration", "isAllowToTerminate", "disclaimer"}
             )
         )
 
@@ -115,13 +115,6 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             },
             {("add", "service_1", "component_1"), ("remove", "service_1", "component_2")},
         )
-
-        attributes = upgrade_data["configSchema"]["fields"]
-        self.assertEqual(len(attributes), 3)
-        self.assertEqual([attr["name"] for attr in attributes], ["simple", "grouped", "after"])
-        self.assertEqual([attr["name"] for attr in attributes[1]["children"]], ["simple", "second"])
-        self.assertEqual(attributes[0]["default"], None)
-        self.assertEqual(attributes[1]["children"][0]["default"], 4)
 
     def test_cluster_upgrade_run_success(self):
         tasklog = TaskLog.objects.create(
@@ -138,11 +131,6 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                     viewname="v2:upgrade-run",
                     kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.upgrade_cluster_via_action_simple.pk},
                 ),
-                data={
-                    "host_component_map": [],
-                    "config": {},
-                    "is_verbose": True,
-                },
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -174,7 +162,10 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 ),
                 data={
                     "host_component_map": [{"hostId": host.pk, "componentId": component_1.pk}],
-                    "config": {"simple": "val", "grouped": {"simple": 5, "second": 4.3}, "after": ["x", "y"]},
+                    "configuration": {
+                        "config": {"simple": "val", "grouped": {"simple": 5, "second": 4.3}, "after": ["x", "y"]},
+                        "adcm_meta": {},
+                    },
                     "is_verbose": True,
                 },
             )
@@ -203,12 +194,12 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         upgrade_data = response.json()
         self.assertTrue(
             set(upgrade_data.keys()).issuperset(
-                {"id", "hostComponentMapRules", "configSchema", "isAllowToTerminate", "disclaimer"}
+                {"id", "hostComponentMapRules", "configuration", "isAllowToTerminate", "disclaimer"}
             )
         )
         self.assertEqual(upgrade_data["id"], self.provider_upgrade.pk)
         self.assertEqual(len(upgrade_data["hostComponentMapRules"]), 0)
-        self.assertEqual(upgrade_data["configSchema"], None)
+        self.assertIsNone(upgrade_data["configuration"])
         self.assertEqual(upgrade_data["disclaimer"], "")
         self.assertFalse(upgrade_data["isAllowToTerminate"])
 
@@ -224,7 +215,7 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         upgrade_data = response.json()
         self.assertTrue(
             set(upgrade_data.keys()).issuperset(
-                {"id", "hostComponentMapRules", "configSchema", "isAllowToTerminate", "disclaimer"}
+                {"id", "hostComponentMapRules", "configuration", "isAllowToTerminate", "disclaimer"}
             )
         )
 
@@ -233,13 +224,6 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         self.assertFalse(upgrade_data["isAllowToTerminate"])
 
         self.assertEqual(len(upgrade_data["hostComponentMapRules"]), 0)
-
-        attributes = upgrade_data["configSchema"]["fields"]
-        self.assertEqual(len(attributes), 3)
-        self.assertEqual([attr["name"] for attr in attributes], ["simple", "grouped", "after"])
-        self.assertEqual([attr["name"] for attr in attributes[1]["children"]], ["simple", "second"])
-        self.assertEqual(attributes[0]["default"], None)
-        self.assertEqual(attributes[1]["children"][0]["default"], 4)
 
     def test_provider_upgrade_run_success(self):
         tasklog = TaskLog.objects.create(
@@ -256,11 +240,6 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                     viewname="v2:upgrade-run",
                     kwargs={"hostprovider_pk": self.provider.pk, "pk": self.upgrade_host_via_action_simple.pk},
                 ),
-                data={
-                    "host_component_map": [],
-                    "config": {},
-                    "is_verbose": True,
-                },
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -274,11 +253,6 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 viewname="v2:upgrade-run",
                 kwargs={"hostprovider_pk": self.provider.pk, "pk": self.cluster_upgrade.pk},
             ),
-            data={
-                "host_component_map": [],
-                "config": {},
-                "is_verbose": True,
-            },
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -289,11 +263,6 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 viewname="v2:upgrade-run",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.provider_upgrade.pk},
             ),
-            data={
-                "host_component_map": [],
-                "config": {},
-                "is_verbose": True,
-            },
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -304,11 +273,6 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 viewname="v2:upgrade-run",
                 kwargs={"hostprovider_pk": self.provider.pk, "pk": self.provider_upgrade.pk + 10},
             ),
-            data={
-                "host_component_map": [],
-                "config": {},
-                "is_verbose": True,
-            },
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -319,11 +283,6 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 viewname="v2:upgrade-run",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_upgrade.pk + 10},
             ),
-            data={
-                "host_component_map": [],
-                "config": {},
-                "is_verbose": True,
-            },
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -354,11 +313,7 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                         viewname="v2:upgrade-run",
                         kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.upgrade_cluster_via_action_complex.pk},
                     ),
-                    data={
-                        "host_component_map": hc_data,
-                        "config": {"simple": "val", "grouped": {"simple": 5, "second": 4.3}, "after": ["x", "y"]},
-                        "is_verbose": True,
-                    },
+                    data={"host_component_map": hc_data},
                 )
 
                 self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)

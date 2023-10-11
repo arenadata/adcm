@@ -134,6 +134,15 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
 
+    def test_filter_by_display_name_success(self):
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"display_name": "vice_1"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+
     def test_filter_by_status_success(self):
         with patch("api_v2.service.filters.get_service_status", new_callable=self.get_service_status_mock):
             response: Response = self.client.get(
@@ -201,7 +210,7 @@ class TestServiceAPI(BaseAPITestCase):
                     "pk": self.action.pk,
                 },
             ),
-            data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
+            data={"host_component_map": [], "config": {}, "adcm_meta": {}, "is_verbose": False},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

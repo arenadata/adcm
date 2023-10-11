@@ -22,15 +22,20 @@ from rbac.models import ObjectType as RBACObjectType
 from rbac.models import Role, RoleTypes
 from rbac.services.role import role_create, role_update
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from adcm.permissions import DjangoModelPermissionsAudit
+from adcm.permissions import VIEW_ROLE_PERMISSION, CustomModelPermissionsByMethod
 
 
 class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = Role.objects.prefetch_related("child", "category").order_by("display_name")
-    permission_classes = (DjangoModelPermissionsAudit,)
+    permission_classes = (CustomModelPermissionsByMethod,)
+    method_permissions_map = {
+        "patch": [(VIEW_ROLE_PERMISSION, NotFound)],
+        "delete": [(VIEW_ROLE_PERMISSION, NotFound)],
+    }
     permission_required = ["rbac.view_role"]
     filterset_class = RoleFilter
 

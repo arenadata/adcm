@@ -102,7 +102,7 @@ class Group(AuthGroup):
         return self.display_name
 
 
-class Role(Model):  # pylint: disable=too-many-instance-attributes
+class Role(Model):
     name = CharField(max_length=1000)
     description = TextField(blank=True)
     display_name = CharField(max_length=1000, null=False, default="")
@@ -134,7 +134,7 @@ class Role(Model):  # pylint: disable=too-many-instance-attributes
             try:
                 role_class = getattr(role_module, self.class_name)
 
-                return role_class(**self.init_params)
+                return role_class(**dict(self.init_params))
             except AttributeError:
                 raise_adcm_ex(
                     code="ROLE_CLASS_ERROR",

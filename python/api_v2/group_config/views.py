@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.group_config.serializers import GroupConfigSerializer
 from api_v2.host.serializers import HostGroupConfigSerializer
 from api_v2.views import CamelCaseModelViewSet
@@ -27,7 +27,7 @@ from adcm.permissions import VIEW_GROUP_CONFIG_PERM, check_config_perm
 
 
 class GroupConfigViewSet(
-    PermissionListMixin, GetParentObjectMixin, CamelCaseModelViewSet
+    PermissionListMixin, GetParentObjectMixin, ConfigSchemaMixin, CamelCaseModelViewSet
 ):  # pylint: disable=too-many-ancestors
     queryset = GroupConfig.objects.order_by("name")
     serializer_class = GroupConfigSerializer

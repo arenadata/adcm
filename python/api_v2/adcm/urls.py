@@ -24,6 +24,7 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("token/", TokenView.as_view(), name="token"),
     path("profile/", ProfileView.as_view(), name="profile"),
-    path("configs/", ADCMConfigView.as_view({"get": "list", "post": "create"}), name="adcm-config-list"),
-    path("configs/<int:pk>/", ADCMConfigView.as_view({"get": "retrieve"}), name="adcm-config-detail"),
+    path("configs/", ADCMConfigView.as_view({"get": "list", "post": "create"}), name="config-list"),
+    path("configs/<int:pk>/", ADCMConfigView.as_view({"get": "retrieve"}), name="config-detail"),
+    path("config-schema/", ADCMConfigView.as_view({"get": "config_schema"}), name="config-schema"),
 ]
