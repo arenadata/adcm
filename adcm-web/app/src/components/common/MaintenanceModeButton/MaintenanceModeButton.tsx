@@ -47,7 +47,7 @@ const MaintenanceModeButton: React.FC<MaintenanceModeButtonProps> = ({
         label={isMaintenanceModeAvailable ? getTooltipLabel(maintenanceModeStatus) : 'Maintenance mode: u/a'}
         placement="bottom-start"
       >
-        <IconButton icon="g1-maintenance" size={32} onClick={onClick} title="Maintenance mode" className={className} />
+        <IconButton icon="g1-maintenance" size={32} onClick={onClick} className={className} />
       </Tooltip>
     </>
   );
