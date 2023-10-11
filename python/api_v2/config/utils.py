@@ -27,13 +27,16 @@ from cm.models import (
     PrototypeConfig,
 )
 from cm.variant import get_variant
+from django.db.models import QuerySet
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
 
 
 class Field(ABC):  # pylint: disable=too-many-instance-attributes
     def __init__(self, prototype_config: PrototypeConfig, object_: ADCMEntity | GroupConfig):
         self.object_ = object_
         self.is_group_config = False
-        self.config = ConfigLog.objects.get(id=self.object_.config.current).config
 
         if isinstance(object_, GroupConfig):
             self.is_group_config = True
@@ -66,7 +69,7 @@ class Field(ABC):  # pylint: disable=too-many-instance-attributes
         if writeable == "any":
             return False
 
-        if self.object_.state not in writeable:
+        if writeable and self.object_.state not in writeable:
             return True
 
         return False
@@ -95,7 +98,7 @@ class Field(ABC):  # pylint: disable=too-many-instance-attributes
         if is_allow_change is None:
             is_allow_change = self.object_.prototype.config_group_customization
 
-        return {"isShown": True, "isAllowChange": is_allow_change}
+        return {"isAllowChange": is_allow_change}
 
     @property
     def null_value(self) -> list | dict | None:
@@ -257,6 +260,15 @@ class Map(Field):
     def null_value(self) -> list | dict | None:
         return {}
 
+    @property
+    def default(self) -> Any:
+        default = super().default
+
+        if default is None:
+            return {}
+
+        return default
+
     def to_dict(self) -> dict:
         data = super().to_dict()
 
@@ -299,7 +311,7 @@ class Structure(Field):
                 return "integer"
             case "float":
                 return "number"
-            case _:  # TODO: implement one_of, dict_key_selection, set, none, any
+            case _:
                 raise NotImplementedError
 
     @property
@@ -307,13 +319,16 @@ class Structure(Field):
         return self._get_schema_type(type_=self.yspec["root"]["match"])
 
     @property
-    def inner_synchronization(self):
-        data = self.synchronization
+    def default(self) -> Any:
+        default = super().default
 
-        if data is not None:
-            data["isShown"] = False
+        if default is None:
+            if self.type == "array":
+                return []
+            if self.type == "object":
+                return {}
 
-        return data
+        return default
 
     def _get_inner(self, **kwargs) -> dict:
         type_ = self._get_schema_type(type_=kwargs["match"])
@@ -328,7 +343,7 @@ class Structure(Field):
                 "isAdvanced": self.is_advanced,
                 "isInvisible": self.is_invisible,
                 "activation": self.activation,
-                "synchronization": self.inner_synchronization,
+                "synchronization": None,
                 "nullValue": self.null_value,
                 "isSecret": self.is_secret,
                 "stringExtra": self.string_extra,
@@ -337,11 +352,12 @@ class Structure(Field):
         }
 
         if type_ == "array":
-            data.update({"items": self._get_inner(**self.yspec[kwargs["item"]])})
+            data.update({"items": self._get_inner(**self.yspec[kwargs["item"]]), "default": []})
 
         elif type_ == "object":
             data["properties"] = {}
             data["required"] = kwargs.get("required_items", [])
+            data["default"] = {}
 
             for item_key, item_value in kwargs["items"].items():
                 data["properties"][item_key] = self._get_inner(**self.yspec[item_value])
@@ -377,14 +393,19 @@ class Structure(Field):
 class Group(Field):
     type = "object"
 
-    def __init__(self, prototype_config: PrototypeConfig, object_: ADCMEntity | GroupConfig, action: Action = None):
+    def __init__(
+        self,
+        prototype_config: PrototypeConfig,
+        object_: ADCMEntity | GroupConfig,
+        group_fields: QuerySet[PrototypeConfig],
+    ):
         super().__init__(prototype_config=prototype_config, object_=object_)
-        self.action = action
+        self.group_fields = group_fields
 
     @property
     def activation(self) -> dict | None:
         if "activatable" in self.limits:
-            return {"isShown": True, "isAllowChange": self.is_read_only}
+            return {"isAllowChange": self.is_read_only}
 
         return None
 
@@ -392,21 +413,15 @@ class Group(Field):
     def synchronization(self) -> dict | None:
         data = super().synchronization
 
-        if data is not None and "activatable" not in self.limits:
-            data["isShown"] = False
+        if "activatable" not in self.limits:
+            return None
 
         return data
 
     def get_properties(self) -> dict:
-        data = {"properties": OrderedDict(), "required": []}
+        data = {"properties": OrderedDict(), "required": [], "default": {}}
 
-        for field in (
-            PrototypeConfig.objects.filter(
-                name=self.prototype_config.name, prototype=self.prototype_config.prototype, action=self.action
-            )
-            .exclude(type="group")
-            .order_by("id")
-        ):
+        for field in self.group_fields:
             data["properties"][field.subname] = get_field(prototype_config=field, object_=self.object_).to_dict()
             data["required"].append(field.subname)
 
@@ -425,6 +440,15 @@ class List(Field):
     @property
     def null_value(self) -> list | dict | None:
         return []
+
+    @property
+    def default(self) -> Any:
+        default = super().default
+
+        if default is None:
+            return []
+
+        return default
 
     def to_dict(self) -> dict:
         data = super().to_dict()
@@ -483,12 +507,16 @@ class Option(Field):
 class Variant(Field):
     type = "string"
 
+    def _get_variant(self) -> list | None:
+        config = ConfigLog.objects.get(id=self.object_.config.current).config
+        return get_variant(obj=self.object_, conf=config, limits=self.limits)
+
     @property
     def string_extra(self) -> dict | None:
         string_extra = {"isMultiline": False}
 
         if not self.limits["source"]["strict"]:
-            string_extra.update({"suggestions": get_variant(obj=self.object_, conf=self.config, limits=self.limits)})
+            string_extra.update({"suggestions": self._get_variant()})
 
         return string_extra
 
@@ -497,7 +525,7 @@ class Variant(Field):
 
         if self.limits["source"]["strict"]:
             data.pop("type")
-            data.update({"enum": get_variant(obj=self.object_, conf=self.config, limits=self.limits)})
+            data.update({"enum": self._get_variant()})
 
         if self.required:
             data.update({"minLength": 1})
@@ -505,7 +533,11 @@ class Variant(Field):
         return data
 
 
-def get_field(prototype_config: PrototypeConfig, object_: ADCMEntity, action: Action = None):
+def get_field(
+    prototype_config: PrototypeConfig,
+    object_: ADCMEntity,
+    group_fields: QuerySet[PrototypeConfig] | None = None,
+):
     match prototype_config.type:
         case "boolean":
             field = Boolean(prototype_config=prototype_config, object_=object_)
@@ -534,7 +566,7 @@ def get_field(prototype_config: PrototypeConfig, object_: ADCMEntity, action: Ac
         case "structure":
             field = Structure(prototype_config=prototype_config, object_=object_)
         case "group":
-            field = Group(prototype_config=prototype_config, object_=object_, action=action)
+            field = Group(prototype_config=prototype_config, object_=object_, group_fields=group_fields)
         case "list":
             field = List(prototype_config=prototype_config, object_=object_)
         case "option":
@@ -547,12 +579,13 @@ def get_field(prototype_config: PrototypeConfig, object_: ADCMEntity, action: Ac
     return field
 
 
-def get_config_schema(object_: ADCMEntity | GroupConfig, action: Action | None = None) -> dict | None:
+def get_config_schema(
+    object_: ADCMEntity | GroupConfig, prototype_configs: QuerySet[PrototypeConfig] | list[PrototypeConfig]
+) -> dict:
     schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "Configuration",
         "description": "",
-        "default": None,
         "readOnly": False,
         "adcmMeta": {
             "isAdvanced": False,
@@ -569,25 +602,39 @@ def get_config_schema(object_: ADCMEntity | GroupConfig, action: Action | None =
         "required": [],
     }
 
-    if action:
-        # if action is provided, it's enough to find config prototypes
-        # and for upgrade's actions it is important to not operate with parent object,
-        # because action is from bundle, not "created object" like cluster/provider
-        prototype_configs = PrototypeConfig.objects.filter(action=action).order_by("pk")
-    else:
-        prototype_configs = PrototypeConfig.objects.filter(prototype=object_.prototype, action=action).order_by("pk")
+    if not prototype_configs:
+        return schema
 
     top_fields = prototype_configs.filter(subname="").order_by("id")
 
-    if not top_fields.exists():
-        return None
-
     for field in top_fields:
-        item = get_field(prototype_config=field, object_=object_).to_dict()
+        if field.type == "group":
+            item = get_field(
+                prototype_config=field,
+                object_=object_,
+                group_fields=prototype_configs.filter(name=field.name, prototype=field.prototype)
+                .exclude(type="group")
+                .order_by("id"),
+            ).to_dict()
+        else:
+            item = get_field(prototype_config=field, object_=object_).to_dict()
+
         schema["properties"][field.name] = item
         schema["required"].append(field.name)
 
     return schema
+
+
+class ConfigSchemaMixin:
+    @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
+    def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        instance = self.get_object()
+        schema = get_config_schema(
+            object_=instance,
+            prototype_configs=PrototypeConfig.objects.filter(prototype=instance.prototype, action=None).order_by("pk"),
+        )
+
+        return Response(data=schema, status=HTTP_200_OK)
 
 
 def convert_attr_to_adcm_meta(attr: dict) -> dict:
@@ -641,10 +688,10 @@ def convert_adcm_meta_to_attr(adcm_meta: dict) -> dict:
     return attr
 
 
-def represent_json_type_as_string(prototype: Prototype, value: dict, action: Action | None = None) -> dict:
+def represent_json_type_as_string(prototype: Prototype, value: dict, action_: Action | None = None) -> dict:
     value = copy.deepcopy(value)
 
-    for name, sub_name in PrototypeConfig.objects.filter(prototype=prototype, type="json", action=action).values_list(
+    for name, sub_name in PrototypeConfig.objects.filter(prototype=prototype, type="json", action=action_).values_list(
         "name", "subname"
     ):
         if name not in value or sub_name not in value[name]:
@@ -658,12 +705,15 @@ def represent_json_type_as_string(prototype: Prototype, value: dict, action: Act
     return value
 
 
-def represent_string_as_json_type(prototype: Prototype | None, value: dict, action: Action | None = None) -> dict:
+def represent_string_as_json_type(
+    prototype_configs: QuerySet[PrototypeConfig] | list[PrototypeConfig], value: dict
+) -> dict:
     value = copy.deepcopy(value)
 
-    for name, sub_name in PrototypeConfig.objects.filter(prototype=prototype, type="json", action=action).values_list(
-        "name", "subname"
-    ):
+    for prototype_config in prototype_configs:
+        name = prototype_config.name
+        sub_name = prototype_config.subname
+
         if name not in value or sub_name not in value[name]:
             continue
 

@@ -103,6 +103,7 @@ class ActionShort(EmptySerializer):
         context = self.context
         context["prototype"] = obj.prototype
         _, _, _, attr = get_prototype_config(obj.prototype, obj)
+        # not obj.config, need PrototypeConfig, this code not work with variant type
         get_action_variant(context.get("object"), obj.config)
         conf = ConfigSerializerUI(obj.config, many=True, context=context, read_only=True)
 
@@ -163,7 +164,7 @@ class ActionUISerializer(ActionDetailSerializer):
             action_config = PrototypeConfig.objects.filter(prototype=action.prototype, action=action).order_by("id")
             _, _, _, attr = get_prototype_config(prototype=action.prototype, action=action)
 
-        get_action_variant(obj=self.context["obj"], config=action_config)
+        get_action_variant(obj=self.context["obj"], prototype_configs=action_config)
         conf = ConfigSerializerUI(instance=action_config, many=True, context=self.context, read_only=True)
 
         return {"attr": attr, "config": conf.data}

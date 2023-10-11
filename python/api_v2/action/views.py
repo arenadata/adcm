@@ -34,11 +34,12 @@ from api_v2.views import CamelCaseGenericViewSet
 from cm.adcm_config.config import get_prototype_config
 from cm.errors import AdcmEx
 from cm.job import start_task
-from cm.models import Action, ConcernType, Host, HostComponent
+from cm.models import Action, ConcernType, Host, HostComponent, PrototypeConfig
 from django.conf import settings
 from django.db.models import Q
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
+from jinja_config import get_jinja_config
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -125,14 +126,20 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
 
         action_ = self.get_object()
 
-        schema = None
-        adcm_meta = None
-
-        if not action_.config_jinja:  # TODO add schema and adcm_meta from jinja config ADCM-4620
-            schema = get_config_schema(object_=parent_object, action=action_)
+        if action_.config_jinja:
+            prototype_configs, attr = get_jinja_config(action=action_, obj=parent_object)
+        else:
+            prototype_configs = PrototypeConfig.objects.filter(prototype=action_.prototype, action=action_).order_by(
+                "pk"
+            )
             _, _, _, attr = get_prototype_config(prototype=action_.prototype, action=action_)
-            if attr and schema:
-                adcm_meta = convert_attr_to_adcm_meta(attr=attr)
+
+        if prototype_configs:
+            schema = get_config_schema(object_=parent_object, prototype_configs=prototype_configs)
+            adcm_meta = convert_attr_to_adcm_meta(attr=attr)
+        else:
+            schema = None
+            adcm_meta = None
 
         serializer = self.get_serializer_class()(
             instance=action_, context={"obj": parent_object, "config_schema": schema, "adcm_meta": adcm_meta}
@@ -157,13 +164,32 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        configuration = serializer.validated_data["configuration"]
+        config = {}
+        adcm_meta = {}
+
+        if configuration is not None:
+            config = configuration["config"]
+            adcm_meta = configuration["adcm_meta"]
+
+        if target_action.config_jinja:
+            prototype_configs, _ = get_jinja_config(action=target_action, obj=parent_object)
+            prototype_configs = [
+                prototype_config for prototype_config in prototype_configs if prototype_config.type == "json"
+            ]
+        else:
+            prototype_configs = PrototypeConfig.objects.filter(
+                prototype=target_action.prototype, type="json", action=target_action
+            ).order_by("pk")
+
+        config = represent_string_as_json_type(prototype_configs=prototype_configs, value=config)
+        attr = convert_adcm_meta_to_attr(adcm_meta=adcm_meta)
+
         task = start_task(
             action=target_action,
             obj=parent_object,
-            conf=represent_string_as_json_type(
-                prototype=target_action.prototype, value=serializer.validated_data["config"], action=target_action
-            ),
-            attr=convert_adcm_meta_to_attr(adcm_meta=serializer.validated_data["adcm_meta"]),
+            conf=config,
+            attr=attr,
             hostcomponent=insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),
             hosts=[],
             verbose=serializer.validated_data["is_verbose"],

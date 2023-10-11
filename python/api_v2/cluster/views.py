@@ -23,7 +23,7 @@ from api_v2.cluster.serializers import (
     ServicePrototypeSerializer,
 )
 from api_v2.component.serializers import ComponentMappingSerializer
-from api_v2.config.utils import get_config_schema
+from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.host.serializers import HostMappingSerializer
 from api_v2.views import CamelCaseGenericViewSet, CamelCaseModelViewSet
 from cm.api import add_cluster, retrieve_host_component_objects, set_host_component
@@ -63,9 +63,12 @@ from adcm.permissions import (
 )
 
 
-class ClusterViewSet(  # pylint:disable=too-many-ancestors
-    ModelObjectPermissionsByActionMixin, PermissionListMixin, CamelCaseModelViewSet
-):
+class ClusterViewSet(
+    ModelObjectPermissionsByActionMixin,
+    PermissionListMixin,
+    ConfigSchemaMixin,
+    CamelCaseModelViewSet,
+):  # pylint:disable=too-many-ancestors
     queryset = Cluster.objects.prefetch_related("prototype", "concerns").order_by("name")
     serializer_class = ClusterSerializer
     permission_required = [VIEW_CLUSTER_PERM]
@@ -164,12 +167,6 @@ class ClusterViewSet(  # pylint:disable=too-many-ancestors
             raise AdcmEx(code="BAD_REQUEST", msg=f"Status choices: {status_choices_repr}")
 
         return [obj for obj in queryset if get_obj_status(obj=obj) == status_value]
-
-    @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
-    def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        schema = get_config_schema(object_=self.get_object())
-
-        return Response(data=schema, status=HTTP_200_OK)
 
 
 class MappingViewSet(  # pylint:disable=too-many-ancestors
