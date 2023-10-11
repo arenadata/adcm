@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import ToolbarPanel from '@uikit/ToolbarPanel/ToolbarPanel';
-import { Button, ButtonGroup, SearchInput } from '@uikit';
+import React, { useCallback, useEffect, useState } from 'react';
 import { DynamicActionCommonOptions } from '@commonComponents/DynamicActionDialog/DynamicAction.types';
-import s from '../DynamicActionDialog.module.scss';
-import { getDefaultConfigSchemaRunConfig } from '@commonComponents/DynamicActionDialog/DynamicActionDialog.utils';
+import { getDefaultConfigurationRunConfig } from '@commonComponents/DynamicActionDialog/DynamicActionDialog.utils';
+import DynamicActionConfigSchemaToolbar from '@commonComponents/DynamicActionDialog/DynamicActionConfigSchema/DynamicActionConfigSchemaToolbar/DynamicActionConfigSchemaToolbar';
+import ConfigurationFormContextProvider from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContextProvider';
+import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
+import { AdcmConfiguration } from '@models/adcm';
 
 interface DynamicActionConfigSchemaProps extends DynamicActionCommonOptions {
   submitLabel?: string;
@@ -15,32 +16,47 @@ const DynamicActionConfigSchema: React.FC<DynamicActionConfigSchemaProps> = ({
   onCancel,
   submitLabel = 'Run',
 }) => {
-  const [localConfigSchema, setLocalConfigSchema] = useState(() => {
-    return getDefaultConfigSchemaRunConfig().config;
-  });
+  const [localConfiguration, setLocalConfiguration] = useState<AdcmConfiguration | null>(null);
 
-  const handleResetClick = () => {
-    setLocalConfigSchema({});
-  };
+  const handleResetClick = useCallback(() => {
+    if (actionDetails.configuration === null) {
+      setLocalConfiguration(null);
+      return;
+    }
+
+    const { config, adcmMeta } = getDefaultConfigurationRunConfig().configuration ?? {};
+    const configuration = {
+      configurationData: config ?? {},
+      attributes: actionDetails.configuration.adcmMeta ?? adcmMeta ?? {},
+      schema: actionDetails.configuration.configSchema,
+    };
+
+    setLocalConfiguration(configuration);
+  }, [actionDetails, setLocalConfiguration]);
+
+  useEffect(() => {
+    handleResetClick();
+  }, [handleResetClick]);
 
   const handleSubmit = () => {
-    onSubmit({ config: localConfigSchema });
+    if (localConfiguration) {
+      onSubmit({
+        configuration: { config: localConfiguration.configurationData, adcmMeta: localConfiguration.attributes },
+      });
+    }
   };
 
   return (
     <div>
-      <ToolbarPanel className={s.dynamicActionDialog__toolbar}>
-        <SearchInput placeholder="Search input" />
-        <ButtonGroup>
-          <Button variant="secondary" iconLeft="g1-return" onClick={handleResetClick} />
-          <Button variant="secondary" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit}>{submitLabel}</Button>
-        </ButtonGroup>
-      </ToolbarPanel>
-
-      <div>{JSON.stringify(actionDetails.configSchema, null, '\n')}</div>
+      <ConfigurationFormContextProvider>
+        <DynamicActionConfigSchemaToolbar
+          onCancel={onCancel}
+          submitLabel={submitLabel}
+          onReset={handleResetClick}
+          onSubmit={handleSubmit}
+        />
+        <ConfigurationMain configuration={localConfiguration} onChangeConfiguration={setLocalConfiguration} />
+      </ConfigurationFormContextProvider>
     </div>
   );
 };
