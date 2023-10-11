@@ -48,20 +48,20 @@ from adcm.permissions import (
     VIEW_HOST_PERM,
     VIEW_PROVIDER_PERM,
     DjangoModelPermissionsAudit,
+    ModelObjectPermissionsByActionMixin,
     check_custom_perm,
     get_object_for_user,
 )
 
 
 # pylint:disable-next=too-many-ancestors
-class HostViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
+class HostViewSet(ModelObjectPermissionsByActionMixin, PermissionListMixin, CamelCaseReadOnlyModelViewSet):
     queryset = (
         Host.objects.select_related("provider", "cluster")
         .prefetch_related("concerns", "hostcomponent_set")
         .order_by("fqdn")
     )
     serializer_class = HostSerializer
-    permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_HOST_PERM]
     filterset_class = HostFilter
     filter_backends = (DjangoFilterBackend,)
@@ -152,9 +152,11 @@ class HostViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
         return Response(data=schema, status=HTTP_200_OK)
 
 
-class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pylint:disable=too-many-ancestors
+class HostClusterViewSet(  # pylint:disable=too-many-ancestors
+    ModelObjectPermissionsByActionMixin, PermissionListMixin, CamelCaseReadOnlyModelViewSet
+):
+    object_actions = ["destroy"]
     serializer_class = HostSerializer
-    permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_HOST_PERM]
     filterset_class = HostClusterFilter
 
@@ -167,11 +169,11 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  #
         return self.serializer_class
 
     def get_queryset(self, *args, **kwargs):
-        return (
-            Host.objects.filter(cluster=self.kwargs["cluster_pk"])
-            .select_related("cluster")
-            .prefetch_related("hostcomponent_set")
+        cluster = get_object_for_user(
+            user=self.request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=self.kwargs["cluster_pk"]
         )
+
+        return Host.objects.filter(cluster=cluster).select_related("cluster").prefetch_related("hostcomponent_set")
 
     def create(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         serializer = self.get_serializer(data=request.data, many=True)

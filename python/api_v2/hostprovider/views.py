@@ -20,18 +20,25 @@ from cm.api import add_host_provider, delete_host_provider
 from cm.errors import raise_adcm_ex
 from cm.models import HostProvider, ObjectType, Prototype
 from django_filters.rest_framework.backends import DjangoFilterBackend
+from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
-from adcm.permissions import VIEW_HOST_PERM, DjangoModelPermissionsAudit
+from adcm.permissions import (
+    VIEW_PROVIDER_PERM,
+    DjangoModelPermissionsAudit,
+    ModelObjectPermissionsByActionMixin,
+)
 
 
-class HostProviderViewSet(CamelCaseReadOnlyModelViewSet):  # pylint:disable=too-many-ancestors
+class HostProviderViewSet(  # pylint:disable=too-many-ancestors
+    ModelObjectPermissionsByActionMixin, PermissionListMixin, CamelCaseReadOnlyModelViewSet
+):
     queryset = HostProvider.objects.select_related("prototype").order_by("name")
     serializer_class = HostProviderSerializer
     permission_classes = [DjangoModelPermissionsAudit]
-    permission_required = [VIEW_HOST_PERM]
+    permission_required = [VIEW_PROVIDER_PERM]
     filterset_class = HostProviderFilter
     filter_backends = (DjangoFilterBackend,)
 

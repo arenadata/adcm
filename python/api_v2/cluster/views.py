@@ -57,15 +57,17 @@ from adcm.permissions import (
     VIEW_HOST_PERM,
     VIEW_SERVICE_PERM,
     DjangoModelPermissionsAudit,
+    ModelObjectPermissionsByActionMixin,
     check_custom_perm,
     get_object_for_user,
 )
 
 
-class ClusterViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disable=too-many-ancestors
+class ClusterViewSet(  # pylint:disable=too-many-ancestors
+    ModelObjectPermissionsByActionMixin, PermissionListMixin, CamelCaseModelViewSet
+):
     queryset = Cluster.objects.prefetch_related("prototype", "concerns").order_by("name")
     serializer_class = ClusterSerializer
-    permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_CLUSTER_PERM]
     filterset_class = ClusterFilter
     filter_backends = (DjangoFilterBackend,)
@@ -171,8 +173,9 @@ class ClusterViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disa
 
 
 class MappingViewSet(  # pylint:disable=too-many-ancestors
-    PermissionListMixin, ListModelMixin, CreateModelMixin, CamelCaseGenericViewSet
+    ModelObjectPermissionsByActionMixin, PermissionListMixin, ListModelMixin, CreateModelMixin, CamelCaseGenericViewSet
 ):
+    object_actions = ["create"]
     queryset = HostComponent.objects.select_related("service", "host", "component", "cluster").order_by(
         "component__prototype__display_name"
     )

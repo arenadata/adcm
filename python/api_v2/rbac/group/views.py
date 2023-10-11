@@ -22,18 +22,22 @@ from guardian.mixins import PermissionListMixin
 from rbac.models import Group
 from rbac.services.group import create as create_group
 from rbac.services.group import update as update_group
-from rest_framework.permissions import DjangoModelPermissions
+from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from adcm.permissions import VIEW_GROUP_PERMISSION
+from adcm.permissions import VIEW_GROUP_PERMISSION, CustomModelPermissionsByMethod
 
 
 class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disable=too-many-ancestors
     queryset = Group.objects.order_by("display_name").prefetch_related("user_set")
     filterset_class = GroupFilter
-    permission_classes = (DjangoModelPermissions,)
+    permission_classes = (CustomModelPermissionsByMethod,)
+    method_permissions_map = {
+        "patch": [(VIEW_GROUP_PERMISSION, NotFound)],
+        "delete": [(VIEW_GROUP_PERMISSION, NotFound)],
+    }
     permission_required = [VIEW_GROUP_PERMISSION]
 
     def get_serializer_class(self) -> type[GroupSerializer | GroupCreateSerializer | GroupUpdateSerializer]:

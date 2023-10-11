@@ -43,19 +43,25 @@ class ImportViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-
             kwargs_get = {"perms": VIEW_SERVICE_PERM, "klass": ClusterObject, "id": self.kwargs["service_pk"]}
             kwargs_check = {
                 "action_type": VIEW_IMPORT_PERM,
-                "model": ClusterObject.__class__.__name__.lower(),
-                "second_perm": VIEW_CLUSTER_BIND,
+                "model": ClusterObject.__name__.lower(),
             }
         else:
             kwargs_get = {"perms": VIEW_CLUSTER_PERM, "klass": Cluster, "id": self.kwargs["cluster_pk"]}
             kwargs_check = {
                 "action_type": VIEW_IMPORT_PERM,
-                "model": Cluster.__class__.__name__.lower(),
-                "second_perm": VIEW_CLUSTER_BIND,
+                "model": Cluster.__name__.lower(),
             }
+
+        if self.action in {"list", "retrieve"}:
+            kwargs_check.update({"second_perm": VIEW_CLUSTER_BIND})
 
         obj = get_object_for_user(user=request.user, **kwargs_get)
         check_custom_perm(user=request.user, obj=obj, **kwargs_check)
+
+        if self.action == "create":
+            check_custom_perm(
+                user=request.user, action_type=CHANGE_IMPORT_PERM, model=obj.__class__.__name__.lower(), obj=obj
+            )
 
         return obj
 
@@ -65,7 +71,6 @@ class ImportViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-
 
     def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         obj = self.get_object_and_check_perm(request=request)
-        check_custom_perm(request.user, CHANGE_IMPORT_PERM, "cluster", obj)
         serializer = self.get_serializer(data=request.data, many=True, context={"request": request, "cluster": obj})
 
         if serializer.is_valid():

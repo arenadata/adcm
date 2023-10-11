@@ -79,7 +79,6 @@ def update_user(
     *,
     partial: bool = False,
     need_current_password: bool = True,
-    api_v2_behaviour: bool = False,
     username: str = Empty,
     first_name: str = Empty,
     last_name: str = Empty,
@@ -92,10 +91,6 @@ def update_user(
     is_active: bool = Empty,
 ) -> User:
     # pylint: disable=too-many-locals
-
-    if api_v2_behaviour:
-        if not context_user.is_superuser and user != User.objects.get(user_ptr=context_user):
-            raise AdcmEx(code="USER_UPDATE_ERROR", msg="Can't update other user")
 
     if (username is not Empty) and (username != user.username):
         raise AdcmEx(code="USER_CONFLICT", msg="Username could not be changed")
