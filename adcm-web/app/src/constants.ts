@@ -1,6 +1,6 @@
 import { getEnv } from '@utils/envVarsUtils';
 
-export const apiHost = getEnv('ADCM_API_HOST');
+export const apiHost = getEnv('ADCM_API_HOST') ?? '';
 
 export const defaultPerPagesList = [
   { value: 10, label: '10 per page' },
