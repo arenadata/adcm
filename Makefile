@@ -9,19 +9,32 @@ SELENOID_PORT ?= 4444
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-describe:
+describe_old:
 	@echo '{"version": "$(shell date '+%Y.%m.%d.%H')","commit_id": "$(shell git log --pretty=format:'%h' -n 1)"}' > config.json
 	cp config.json web/src/assets/config.json
+
+describe:
+	@echo '{"version": "$(shell date '+%Y.%m.%d.%H')","commit_id": "$(shell git log --pretty=format:'%h' -n 1)"}' > config.json
 
 buildss:
 	@docker run -i --rm -v $(CURDIR)/go:/code -w /code golang sh -c "make"
 
-buildjs:
+buildjs_old:
 	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./build.sh
+
+buildjs:
+	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/adcm-web/app:/code -w /code node:18.16-alpine ./build.sh
+
+build_base_old:
+	@docker build . -t $(APP_IMAGE):$(APP_TAG)_old
 
 build_base:
 	@docker build . -t $(APP_IMAGE):$(APP_TAG)
 
+# build ADCM_v1
+build_old: describe_old buildss buildjs_old build_base_old
+
+# build ADCM_v2
 build: describe buildss buildjs build_base
 
 unittests_sqlite: describe
