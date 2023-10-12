@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useRequestServiceComponent } from './useRequestServiceComponent';
 import ServiceComponentTable from './ServiceComponentTable/ServiceComponentTable';
 import ComponentConfigurationsNavigation from './ComponentConfigurationsNavigation/ComponentConfigurationsNavigation';
@@ -8,29 +8,19 @@ import ServiceComponentsDynamicActionDialog from '../ServiceComponents/Dialogs/S
 
 const ServiceComponent: React.FC = () => {
   const navigate = useNavigate();
-  const [isConfigShown, setIsConfigShown] = useState<boolean>(false);
 
   useRequestServiceComponent();
 
   const serviceComponent = useStore(({ adcm }) => adcm.serviceComponent.serviceComponent);
 
-  const handleClickComponentName = () => {
-    setIsConfigShown(true);
-  };
-
   const handleClickReturn = () => {
     navigate(`/clusters/${serviceComponent?.cluster.id}/services/${serviceComponent?.service.id}/components`);
-    setIsConfigShown(false);
   };
 
   return (
     <>
-      <ServiceComponentTable
-        isConfigShown={isConfigShown}
-        showConfig={handleClickComponentName}
-        onClick={handleClickReturn}
-      />
-      {isConfigShown && <ComponentConfigurationsNavigation />}
+      <ServiceComponentTable onClick={handleClickReturn} />
+      <ComponentConfigurationsNavigation />
       <ServiceComponentsDynamicActionDialog />
     </>
   );

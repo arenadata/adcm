@@ -20,6 +20,7 @@ export { AdcmClusterImportsApi } from './adcm/clusterImports';
 export { AdcmClusterServiceImportsApi } from './adcm/clusterServiceImports';
 export { AdcmRolesApi } from './adcm/roles';
 export { AdcmClusterServiceComponentsApi } from './adcm/clusterServiceComponents';
+export { AdcmClusterServiceComponentsConfigsApi } from './adcm/clusterServiceComponentsConfigs';
 export { AdcmClusterServicesConfigsApi } from './adcm/clusterServicesConfigs';
 export { AdcmProfileApi } from './adcm/profile';
 export { AdcmClusterOverviewApi } from './adcm/clusterOverview';

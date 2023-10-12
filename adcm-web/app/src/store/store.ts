@@ -71,6 +71,8 @@ import hostProviderSlice from './adcm/hostProviders/hostProviderSlice';
 import hostProvidersActionsSlice from './adcm/hostProviders/hostProvidersActionsSlice';
 import hostProvidersDynamicActionsSlice from './adcm/hostProviders/hostProvidersDynamicActionsSlice';
 import serviceComponentsDynamicActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponentsDynamicActionsSlice';
+import serviceComponentConfigurationsCompareSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configuration/serviceComponentConfigurationsCompareSlice';
+import serviceComponentConfigurationSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configuration/serviceComponentConfigurationSlice';
 import hostSlice from './adcm/host/hostSlice';
 import hostTableSlice from './adcm/host/hostTableSlice';
 import clusterServicesConfigurationSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationSlice.ts';
@@ -124,6 +126,8 @@ const rootReducer = combineReducers({
     servicesActions: servicesActionsSlice,
     servicesDynamicActions: servicesDynamicActionsSlice,
     serviceComponents: serviceComponentsSlice,
+    serviceComponentsConfigurationsCompare: serviceComponentConfigurationsCompareSlice,
+    serviceComponentConfiguration: serviceComponentConfigurationSlice,
     serviceComponentsTable: serviceComponentsTableSlice,
     serviceComponentsActions: serviceComponentsActionsSlice,
     serviceComponentsDynamicActions: serviceComponentsDynamicActionsSlice,
