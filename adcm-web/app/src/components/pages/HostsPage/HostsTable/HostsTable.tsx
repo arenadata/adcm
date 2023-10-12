@@ -14,6 +14,7 @@ import HostDynamicActionsIcon from '../HostDynamicActionsIcon/HostDynamicActions
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 import Concern from '@commonComponents/Concern/Concern';
 import { AdcmEntitySystemState } from '@models/adcm';
+import { Link } from 'react-router-dom';
 
 const HostsTable: React.FC = () => {
   const dispatch = useDispatch();
@@ -49,7 +50,9 @@ const HostsTable: React.FC = () => {
         return (
           <TableRow key={host.id}>
             <StatusableCell status={hostStatusesMap[host.status]}>
-              {host.name}
+              <Link to={`/hosts/${host.id}`} className="text-link">
+                {host.name}
+              </Link>
               {host.state === AdcmEntitySystemState.Created && (
                 <IconButton icon="g1-edit" size={32} title="Edit" onClick={() => handleUpdateClick(host)} />
               )}

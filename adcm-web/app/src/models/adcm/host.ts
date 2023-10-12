@@ -12,6 +12,10 @@ export interface AdcmHostsFilter {
   clusterName?: string;
 }
 
+export interface AdcmHostComponentsFilter {
+  name?: string;
+}
+
 export interface AdcmHostPrototype {
   id: number;
   name: string;

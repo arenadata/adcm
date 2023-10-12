@@ -18,11 +18,13 @@ const ClusterServiceHeader: React.FC = () => {
       title={orElseGet(service, (service) => (
         <ServiceName service={service} />
       ))}
-      subtitle={orElseGet(service?.prototype.version)}
       central={
-        <div>
-          {successfulComponentsCount} / {totalComponentsCount} successful components
-        </div>
+        <>
+          <span>{orElseGet(service?.prototype.version)}</span>
+          <span>
+            {successfulComponentsCount} / {totalComponentsCount} successful components
+          </span>
+        </>
       }
       actions={
         <ButtonGroup>

@@ -279,6 +279,18 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/hosts/:hostId/*': {
+    pageTitle: 'Hosts',
+    breadcrumbs: [
+      {
+        href: '/hosts',
+        label: 'Hosts',
+      },
+      {
+        label: ':hostId',
+      },
+    ],
+  },
 
   // Jobs
   '/jobs': {
