@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Table, TableRow, TableCell, Button } from '@uikit';
 import Concern from '@commonComponents/Concern/Concern';
@@ -9,11 +10,9 @@ import ServiceComponentsDynamicActionsIcon from '../../ServiceComponents/Service
 
 interface ServiceComponentTableProps {
   onClick: () => void;
-  showConfig: () => void;
-  isConfigShown: boolean;
 }
 
-const ServiceComponentTable: React.FC<ServiceComponentTableProps> = ({ onClick, showConfig, isConfigShown }) => {
+const ServiceComponentTable: React.FC<ServiceComponentTableProps> = ({ onClick }) => {
   const cluster = useStore((s) => s.adcm.cluster.cluster);
   const service = useStore((s) => s.adcm.service.service);
   const serviceComponent = useStore(({ adcm }) => adcm.serviceComponent.serviceComponent);
@@ -24,7 +23,7 @@ const ServiceComponentTable: React.FC<ServiceComponentTableProps> = ({ onClick, 
       {serviceComponent && (
         <TableRow>
           <StatusableCell status={serviceComponentStatusMap[serviceComponent.status]}>
-            <Link className="text-link" to="#" onClick={showConfig}>
+            <Link className="text-link" to="#">
               {serviceComponent?.displayName}
             </Link>
           </StatusableCell>
@@ -43,7 +42,7 @@ const ServiceComponentTable: React.FC<ServiceComponentTableProps> = ({ onClick, 
             <ServiceComponentMaintenanceModeButton />
           </TableCell>
           <TableCell>
-            <Button iconRight="g2-back" onClick={onClick} disabled={!isConfigShown} variant="secondary" />
+            <Button iconRight="g2-back" onClick={onClick} variant="secondary" />
           </TableCell>
         </TableRow>
       )}
