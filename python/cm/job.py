@@ -259,7 +259,11 @@ def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict)
         raise_adcm_ex("TASK_ERROR", "action config is required")
 
     check_attr(proto, action, attr, flat_spec)
-    object_config = ConfigLog.objects.get(id=obj.config.current).config
+
+    object_config = {}
+    if obj.config is not None:
+        object_config = ConfigLog.objects.get(id=obj.config.current).config
+
     process_variant(obj=obj, spec=spec, conf=object_config)
     check_config_spec(proto=proto, obj=action, spec=spec, flat_spec=flat_spec, conf=conf, attr=attr)
 

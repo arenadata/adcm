@@ -168,6 +168,7 @@ class TestClusterConfig(BaseAPITestCase):
                     "enumExtra": None,
                 },
                 "type": "object",
+                "additionalProperties": False,
                 "properties": {
                     "boolean": {
                         "title": "boolean",
@@ -189,6 +190,7 @@ class TestClusterConfig(BaseAPITestCase):
                     "group": {
                         "title": "group",
                         "type": "object",
+                        "additionalProperties": False,
                         "description": "",
                         "default": {},
                         "readOnly": False,
@@ -287,6 +289,7 @@ class TestClusterConfig(BaseAPITestCase):
                     "activatable_group": {
                         "title": "activatable_group",
                         "type": "object",
+                        "additionalProperties": False,
                         "description": "",
                         "default": {},
                         "readOnly": False,
@@ -577,6 +580,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
                     "enumExtra": None,
                 },
                 "type": "object",
+                "additionalProperties": False,
                 "properties": {
                     "boolean": {
                         "title": "boolean",
@@ -598,6 +602,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
                     "group": {
                         "title": "group",
                         "type": "object",
+                        "additionalProperties": False,
                         "description": "",
                         "default": {},
                         "readOnly": False,
@@ -696,6 +701,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
                     "activatable_group": {
                         "title": "activatable_group",
                         "type": "object",
+                        "additionalProperties": False,
                         "description": "",
                         "default": {},
                         "readOnly": False,
@@ -844,6 +850,7 @@ class TestServiceConfig(BaseAPITestCase):
                 "enumExtra": None,
             },
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "string": {
                     "oneOf": [
@@ -870,6 +877,7 @@ class TestServiceConfig(BaseAPITestCase):
                 "group": {
                     "title": "group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -908,6 +916,7 @@ class TestServiceConfig(BaseAPITestCase):
                 "activatable_group": {
                     "title": "activatable_group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -1159,6 +1168,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
                 "enumExtra": None,
             },
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "string": {
                     "oneOf": [
@@ -1185,6 +1195,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
                 "group": {
                     "title": "group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -1223,6 +1234,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
                 "activatable_group": {
                     "title": "activatable_group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -1394,6 +1406,7 @@ class TestComponentConfig(BaseAPITestCase):
                 "enumExtra": None,
             },
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "secrettext": {
                     "title": "secrettext",
@@ -1416,6 +1429,7 @@ class TestComponentConfig(BaseAPITestCase):
                 "group": {
                     "title": "group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -1458,6 +1472,7 @@ class TestComponentConfig(BaseAPITestCase):
                 "activatable_group": {
                     "title": "activatable_group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -1723,6 +1738,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
                 "enumExtra": None,
             },
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "secrettext": {
                     "title": "secrettext",
@@ -1745,6 +1761,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
                 "group": {
                     "title": "group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -1787,6 +1804,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
                 "activatable_group": {
                     "title": "activatable_group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -1983,6 +2001,7 @@ class TestProviderConfig(BaseAPITestCase):
                 "enumExtra": None,
             },
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "json": {
                     "oneOf": [
@@ -2010,6 +2029,7 @@ class TestProviderConfig(BaseAPITestCase):
                 "group": {
                     "title": "group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2049,6 +2069,7 @@ class TestProviderConfig(BaseAPITestCase):
                 "activatable_group": {
                     "title": "activatable_group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2208,6 +2229,7 @@ class TestHostConfig(BaseAPITestCase):
                 "enumExtra": None,
             },
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "structure": {
                     "title": "structure",
@@ -2227,6 +2249,7 @@ class TestHostConfig(BaseAPITestCase):
                     },
                     "items": {
                         "type": "object",
+                        "additionalProperties": False,
                         "title": "",
                         "description": "",
                         "default": {},
@@ -2244,7 +2267,7 @@ class TestHostConfig(BaseAPITestCase):
                         "properties": {
                             "string": {
                                 "type": "string",
-                                "title": "",
+                                "title": "string",
                                 "description": "",
                                 "default": None,
                                 "readOnly": False,
@@ -2261,7 +2284,7 @@ class TestHostConfig(BaseAPITestCase):
                             },
                             "integer": {
                                 "type": "integer",
-                                "title": "",
+                                "title": "integer",
                                 "description": "",
                                 "default": None,
                                 "readOnly": False,
@@ -2301,6 +2324,7 @@ class TestHostConfig(BaseAPITestCase):
                 "group": {
                     "title": "group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2360,6 +2384,7 @@ class TestHostConfig(BaseAPITestCase):
                 "activatable_group": {
                     "title": "activatable_group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2510,10 +2535,12 @@ class TestADCMConfig(BaseAPITestCase):
                 "enumExtra": None,
             },
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "global": {
                     "title": "Global Options",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2577,6 +2604,7 @@ class TestADCMConfig(BaseAPITestCase):
                 "statistics_collection": {
                     "title": "Statistics Collection",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2615,6 +2643,7 @@ class TestADCMConfig(BaseAPITestCase):
                 "google_oauth": {
                     "title": "Google Auth",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2679,6 +2708,7 @@ class TestADCMConfig(BaseAPITestCase):
                 "yandex_oauth": {
                     "title": "Yandex Auth",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2743,6 +2773,7 @@ class TestADCMConfig(BaseAPITestCase):
                 "ansible_settings": {
                     "title": "Ansible Settings",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2785,6 +2816,7 @@ class TestADCMConfig(BaseAPITestCase):
                 "logrotate": {
                     "title": "Nginx Server Logrotate",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2858,6 +2890,7 @@ class TestADCMConfig(BaseAPITestCase):
                 "audit_data_retention": {
                     "title": "Data retention policy",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -3006,6 +3039,7 @@ class TestADCMConfig(BaseAPITestCase):
                 "ldap_integration": {
                     "title": "LDAP integration",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -3324,6 +3358,7 @@ class TestADCMConfig(BaseAPITestCase):
                 "auth_policy": {
                     "title": "Authentication policy",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
