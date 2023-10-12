@@ -1,6 +1,5 @@
 import { useState, useRef, useMemo } from 'react';
 import { Tags } from '@uikit';
-import { getOptionsFromArray } from '@uikit/Select/Select.utils';
 import MappingItemSelect from '../../MappingItemSelect/MappingItemSelect';
 import MappingItemTag from '../../MappingItemTag/MappingItemTag';
 import AddMappingButton from '../../AddMappingButton/AddMappingButton';
@@ -37,8 +36,15 @@ const ComponentContainer = ({
 }: ComponentContainerProps) => {
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const addIconRef = useRef(null);
-  const hostsOptions = useMemo(() => getOptionsFromArray(allHosts, (h) => h.name), [allHosts]);
   const { component, hosts } = componentMapping;
+  const hostsOptions = useMemo(
+    () =>
+      allHosts.map((item) => ({
+        label: item.name,
+        value: item,
+      })),
+    [allHosts],
+  );
 
   const visibleHosts = useMemo(
     () => hosts.filter((host) => host.name.toLowerCase().includes(filter.hostName.toLowerCase())),
