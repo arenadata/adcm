@@ -38,6 +38,8 @@ const AccessManagerUsersTableFilters = () => {
         value={filter.username || ''}
         variant="primary"
         onChange={handleUserNameChange}
+        autoComplete="new-user"
+        name="foo"
       />
       <LabeledField label="Status" direction="row">
         <Select
