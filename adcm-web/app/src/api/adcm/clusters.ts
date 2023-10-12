@@ -97,6 +97,6 @@ export class AdcmClustersApi {
   }
 
   public static async unlinkHost(clusterId: number, hostId: number) {
-    await httpClient.delete(`/api/v2/clusters/${clusterId}/hosts/${hostId}`);
+    await httpClient.delete(`/api/v2/clusters/${clusterId}/hosts/${hostId}/`);
   }
 }

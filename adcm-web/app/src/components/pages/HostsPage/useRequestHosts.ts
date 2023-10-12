@@ -21,11 +21,16 @@ export const useRequestHosts = () => {
     }
 
     return () => {
-      dispatch(cleanupHosts);
       dispatch(cleanupHostDynamicActions());
       dispatch(cleanupRelatedData());
     };
   }, [dispatch, hosts]);
+
+  useEffect(() => {
+    return () => {
+      dispatch(cleanupHosts());
+    };
+  }, [dispatch]);
 
   const debounceGetHosts = useDebounce(() => {
     dispatch(getHosts());

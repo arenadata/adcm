@@ -1,8 +1,8 @@
 import qs from 'qs';
-import type { AdcmMaintenanceMode, AdcmUpdatePayload, Batch, CreateAdcmHostPayload } from '@models/adcm';
+import type { AdcmMaintenanceMode, AdcmServiceComponent, Batch, CreateAdcmHostPayload } from '@models/adcm';
 import { PaginationParams, SortParams } from '@models/table';
 import { httpClient } from '@api/httpClient';
-import { AdcmHost, AdcmHostsFilter } from '@models/adcm/host';
+import { AdcmHost, AdcmHostComponentsFilter, AdcmHostsFilter, AdcmUpdatePayload } from '@models/adcm/host';
 import { prepareQueryParams } from '@utils/apiUtils';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 
@@ -12,6 +12,24 @@ export class AdcmHostsApi {
 
     const query = qs.stringify(queryParams);
     const response = await httpClient.get<Batch<AdcmHost>>(`/api/v2/hosts/?${query}`);
+    return response.data;
+  }
+
+  public static async getHost(hostId: number) {
+    const response = await httpClient.get<AdcmHost>(`/api/v2/hosts/${hostId}/`);
+    return response.data;
+  }
+
+  public static async getRelatedHostComponents(
+    hostId: number,
+    sortParams: SortParams,
+    paginationParams: PaginationParams,
+    filter: AdcmHostComponentsFilter,
+  ) {
+    const queryParams = prepareQueryParams(filter, sortParams, paginationParams);
+
+    const query = qs.stringify(queryParams);
+    const response = await httpClient.get<Batch<AdcmServiceComponent>>(`/api/v2/hosts/${hostId}/components/?${query}`);
     return response.data;
   }
 

@@ -3,10 +3,10 @@ import { ButtonGroup } from '@uikit';
 import EntityHeader from '@commonComponents/EntityHeader/EntityHeader';
 import { useStore } from '@hooks';
 import { orElseGet } from '@utils/checkUtils';
-import HostName from '@commonComponents/Host/HostName/HostName';
 import { Link } from 'react-router-dom';
 import ClusterHostUnlinkButton from '../ClusterHostUnlinkButton/ClusterHostUnlinkButton';
 import ClusterHostsDynamicActionsButton from '@pages/cluster/ClusterHosts/ClusterHostsDynamicActionsButton/ClusterHostsDynamicActionsButton';
+import HostName from '@commonComponents/host/HostName/HostName';
 
 const ClusterHostHeader: React.FC = () => {
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
@@ -23,16 +23,16 @@ const ClusterHostHeader: React.FC = () => {
       title={orElseGet(clusterHost, (clusterHost) => (
         <HostName host={clusterHost} />
       ))}
-      subtitle={orElseGet(clusterHost, (clusterHost) => (
-        <Link className="text-link" to={`/hostproviders/${clusterHost.hostprovider.id}`}>
-          {clusterHost.prototype.displayName} {clusterHost.prototype.version}
-        </Link>
+      central={orElseGet(clusterHost, (clusterHost) => (
+        <>
+          <Link className="text-link" to={`/hostproviders/${clusterHost.hostprovider.id}`}>
+            {clusterHost.prototype.displayName} {clusterHost.prototype.version}
+          </Link>
+          <span>
+            {successfulHostComponentsCount} / {totalHostComponentsCount} successful components
+          </span>
+        </>
       ))}
-      central={
-        <div>
-          {successfulHostComponentsCount} / {totalHostComponentsCount} successful components
-        </div>
-      }
       actions={
         <ButtonGroup>
           {cluster && clusterHost && <ClusterHostsDynamicActionsButton cluster={cluster} host={clusterHost} />}
