@@ -75,6 +75,8 @@ import hostSlice from './adcm/host/hostSlice';
 import hostTableSlice from './adcm/host/hostTableSlice';
 import clusterServicesConfigurationSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationSlice.ts';
 import clusterServicesConfigurationsCompareSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationsCompareSlice.ts';
+import hostsConfigurationSlice from './adcm/host/configuration/hostsConfigurationSlice.ts';
+import hostsConfigurationCompareSlice from './adcm/host/configuration/hostsConfigurationCompareSlice.ts';
 
 const rootReducer = combineReducers({
   auth: authSlice,
@@ -114,6 +116,8 @@ const rootReducer = combineReducers({
     hostTable: hostTableSlice,
     hostsTable: hostsTableSlice,
     hostsActions: hostsActionsSlice,
+    hostsConfiguration: hostsConfigurationSlice,
+    hostsConfigurationsCompare: hostsConfigurationCompareSlice,
     service: serviceSlice,
     services: servicesSlice,
     servicesTable: servicesTableSlice,
