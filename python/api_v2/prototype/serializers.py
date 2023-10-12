@@ -68,4 +68,4 @@ class PrototypeTypeSerializer(EmptySerializer):
 class PrototypeRelatedSerializer(ModelSerializer):
     class Meta:
         model = Prototype
-        fields = ("id", "name", "display_name", "type", "version")
+        fields = ("id", "name", "display_name", "version")
