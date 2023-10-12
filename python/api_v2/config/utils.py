@@ -14,6 +14,7 @@ import json
 from abc import ABC, abstractmethod
 from collections import OrderedDict, defaultdict
 from copy import deepcopy
+from operator import attrgetter
 from typing import Any
 
 from cm.adcm_config.config import get_default
@@ -330,12 +331,12 @@ class Structure(Field):
 
         return default
 
-    def _get_inner(self, **kwargs) -> dict:
+    def _get_inner(self, title: str = "", **kwargs) -> dict:
         type_ = self._get_schema_type(type_=kwargs["match"])
 
         data = {
             "type": type_,
-            "title": "",
+            "title": title,
             "description": "",
             "default": None,
             "readOnly": self.is_read_only,
@@ -355,12 +356,17 @@ class Structure(Field):
             data.update({"items": self._get_inner(**self.yspec[kwargs["item"]]), "default": []})
 
         elif type_ == "object":
-            data["properties"] = {}
-            data["required"] = kwargs.get("required_items", [])
-            data["default"] = {}
+            data.update(
+                {
+                    "additionalProperties": False,
+                    "properties": {},
+                    "required": kwargs.get("required_items", []),
+                    "default": {},
+                }
+            )
 
             for item_key, item_value in kwargs["items"].items():
-                data["properties"][item_key] = self._get_inner(**self.yspec[item_value])
+                data["properties"][item_key] = self._get_inner(title=item_key, **self.yspec[item_value])
 
         return data
 
@@ -377,8 +383,13 @@ class Structure(Field):
                 data.update({"minItems": 1})
 
         if type_ == "object":
-            data["properties"] = {}
-            data["required"] = self.yspec["root"].get("required_items", [])
+            data.update(
+                {
+                    "additionalProperties": False,
+                    "properties": {},
+                    "required": self.yspec["root"].get("required_items", []),
+                }
+            )
             items = self.yspec["root"]["items"]
 
             for item_key, item_value in items.items():
@@ -429,6 +440,7 @@ class Group(Field):
 
     def to_dict(self) -> dict:
         data = super().to_dict()
+        data["additionalProperties"] = False
         data.update(**self.get_properties())
 
         return data
@@ -599,23 +611,25 @@ def get_config_schema(
         },
         "type": "object",
         "properties": OrderedDict(),
+        "additionalProperties": False,
         "required": [],
     }
 
     if not prototype_configs:
         return schema
 
-    top_fields = prototype_configs.filter(subname="").order_by("id")
+    prototype_configs = sorted(prototype_configs, key=attrgetter("pk"))
+
+    top_fields = [pc for pc in prototype_configs if pc.subname == ""]
 
     for field in top_fields:
         if field.type == "group":
-            item = get_field(
-                prototype_config=field,
-                object_=object_,
-                group_fields=prototype_configs.filter(name=field.name, prototype=field.prototype)
-                .exclude(type="group")
-                .order_by("id"),
-            ).to_dict()
+            group_fields = [
+                pc
+                for pc in prototype_configs
+                if pc.name == field.name and pc.prototype == field.prototype and pc.type != "group"
+            ]
+            item = get_field(prototype_config=field, object_=object_, group_fields=group_fields).to_dict()
         else:
             item = get_field(prototype_config=field, object_=object_).to_dict()
 
