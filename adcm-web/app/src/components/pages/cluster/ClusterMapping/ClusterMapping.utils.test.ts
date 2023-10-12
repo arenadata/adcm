@@ -237,13 +237,13 @@ describe('Cluster mapping utils', () => {
     // Check exact constraints
     expect(validateConstraints([1], 2, 0)).toEqual({
       isValid: false,
-      error: 'Exactly 1 component should be installed',
+      error: 'Exactly 1 component should be installed.',
     });
     expect(validateConstraints([1], 2, 1)).toEqual({ isValid: true });
     expect(validateConstraints([2], 2, 2)).toEqual({ isValid: true });
     expect(validateConstraints([1], 2, 2)).toEqual({
       isValid: false,
-      error: 'Exactly 1 component should be installed',
+      error: 'Exactly 1 component should be installed.',
     });
 
     // Check odd constraints
@@ -251,7 +251,7 @@ describe('Cluster mapping utils', () => {
     expect(validateConstraints([1, 'odd'], 4, 3)).toEqual({ isValid: true });
     expect(validateConstraints([1, 'odd'], 4, 2)).toEqual({
       isValid: false,
-      error: '1 or more component should be installed. Total amount should be odd.',
+      error: '1 or more components should be installed. Total amount should be odd.',
     });
   });
 });

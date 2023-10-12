@@ -155,7 +155,7 @@ export const validateConstraints = (
       case 'odd':
         return ((c1 === 0 && componentHostsCount === 0) || componentHostsCount % 2) && componentHostsCount >= c1
           ? { isValid: true }
-          : { isValid: false, error: `${c1} or more component should be installed. Total amount should be odd.` };
+          : { isValid: false, error: `${c1} or more components should be installed. Total amount should be odd.` };
       case '+':
       default:
         return componentHostsCount >= c1
@@ -167,7 +167,7 @@ export const validateConstraints = (
   if (constraints.length == 1 && typeof c1 === 'number') {
     return componentHostsCount === c1
       ? { isValid: true }
-      : { isValid: false, error: `Exactly ${c1} component should be installed` };
+      : { isValid: false, error: `Exactly ${c1} component should be installed.` };
   }
 
   if (constraints.length == 1 && typeof c1 === 'string') {
@@ -183,7 +183,7 @@ export const validateConstraints = (
     }
   }
 
-  return { isValid: false, error: 'Unknown constraints' };
+  return { isValid: false, error: 'Unknown constraints.' };
 };
 
 export const getConstraintsLimit = (constraints: AdcmComponentConstraint[]) => {
