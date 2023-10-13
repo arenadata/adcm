@@ -1,4 +1,4 @@
-import { SchemaDefinition } from '@models/adcm';
+import { ConfigurationSchema, SchemaDefinition } from '@models/adcm';
 import {
   editField,
   addField,
@@ -60,6 +60,17 @@ describe('modify configuration', () => {
             ],
           },
         },
+      },
+    });
+  });
+
+  test('addField: nullable value', () => {
+    const testObject = { nullableObject: null };
+    const result = addField(testObject, ['nullableObject', 'testField'], 100);
+
+    expect(result).toStrictEqual({
+      nullableObject: {
+        testField: 100,
       },
     });
   });
@@ -137,6 +148,28 @@ describe('modify configuration', () => {
           },
         },
       },
+    });
+  });
+
+  test('addArrayItem: nullable array', () => {
+    const testObject = { nullableArray: null };
+    const schema: ConfigurationSchema = {
+      type: 'integer',
+      minimum: 12,
+      default: 10,
+      readOnly: false,
+      adcmMeta: {
+        nullValue: null,
+        activation: null,
+        synchronization: null,
+        stringExtra: null,
+      },
+    };
+
+    const result = addArrayItem(testObject, ['nullableArray'], schema);
+
+    expect(result).toStrictEqual({
+      nullableArray: [10],
     });
   });
 
