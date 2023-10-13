@@ -74,6 +74,7 @@
           "nanoid",
           "noopener",
           "noreferrer",
+          "nullable",
           "num",
           "parametrized",
           "path",

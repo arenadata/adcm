@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Meta, StoryObj } from '@storybook/react';
 import ConfigurationEditor from './ConfigurationEditor';
-import { schema } from './ConfigurationEditor.stories.constants';
-import { ConfigurationAttributes, ConfigurationData } from '@models/adcm';
+import { schema, complexSchema } from './ConfigurationEditor.stories.constants';
+import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 import { ConfigurationNodeFilter } from './ConfigurationEditor.types';
 import { Checkbox, Input } from '@uikit';
 import { generateFromSchema } from '@utils/jsonSchemaUtils';
@@ -74,13 +74,19 @@ const initialAttributes: ConfigurationAttributes = {
 
 interface StoryProps {
   initialConfigurationData: ConfigurationData | null;
+  initialAttributes: ConfigurationAttributes | null;
+  schema: ConfigurationSchema;
 }
 
-const ConfigurationEditorStoryWithHooks = ({ initialConfigurationData: initialConfiguration }: StoryProps) => {
+const ConfigurationEditorStoryWithHooks = ({
+  initialConfigurationData: initialConfiguration,
+  initialAttributes,
+  schema,
+}: StoryProps) => {
   const safeConfigurationData = initialConfiguration ?? generateFromSchema(schema);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [configuration, setConfiguration] = useState<ConfigurationData>(safeConfigurationData as any);
-  const [attributes, setAttributes] = useState<ConfigurationAttributes>(initialAttributes);
+  const [attributes, setAttributes] = useState<ConfigurationAttributes>(initialAttributes ?? {});
   const [filter, setFilter] = useState<ConfigurationNodeFilter>({
     title: '',
     showAdvanced: false,
@@ -133,9 +139,27 @@ const ConfigurationEditorStoryWithHooks = ({ initialConfigurationData: initialCo
 };
 
 export const ConfigurationEditorStory: Story = {
-  render: () => <ConfigurationEditorStoryWithHooks initialConfigurationData={initialConfiguration} />,
+  render: () => (
+    <ConfigurationEditorStoryWithHooks
+      schema={schema}
+      initialConfigurationData={initialConfiguration}
+      initialAttributes={initialAttributes}
+    />
+  ),
 };
 
 export const ConfigurationEditorWithEmptyConfigurationStory: Story = {
-  render: () => <ConfigurationEditorStoryWithHooks initialConfigurationData={null} />,
+  render: () => (
+    <ConfigurationEditorStoryWithHooks schema={schema} initialConfigurationData={null} initialAttributes={null} />
+  ),
+};
+
+export const ConfigurationEditorWithComplexConfigurationStory: Story = {
+  render: () => (
+    <ConfigurationEditorStoryWithHooks
+      schema={complexSchema}
+      initialConfigurationData={null}
+      initialAttributes={null}
+    />
+  ),
 };

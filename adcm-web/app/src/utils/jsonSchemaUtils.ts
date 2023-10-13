@@ -9,6 +9,7 @@ const ajv = new Ajv2020({
 ajv.addVocabulary(['adcmMeta']);
 
 const ajvWithDefaults = new Ajv2020({
+  strictSchema: false,
   useDefaults: true,
   allErrors: true,
 });
@@ -52,15 +53,22 @@ const getAllErrorInstancePaths = (errors: ErrorObject[] | undefined | null) => {
 };
 
 export const generateFromSchema = <T>(schema: Schema): T | null => {
-  const result = {};
-  try {
-    const validate = ajvWithDefaults.compile(schema);
+  if (typeof schema === 'object') {
+    if (schema.oneOf !== undefined) {
+      return null;
+    }
 
-    validate(result);
-    return result as T;
-  } catch (e) {
-    console.error(e);
+    if (schema.type === 'object') {
+      const result = {} as T;
+      const validate = ajvWithDefaults.compile(schema);
+      validate(result);
+
+      return result;
+    }
+
+    return schema.default;
   }
+
   return null;
 };
 

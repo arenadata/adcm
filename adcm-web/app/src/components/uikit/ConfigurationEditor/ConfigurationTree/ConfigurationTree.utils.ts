@@ -8,7 +8,6 @@ import {
 } from '@models/adcm';
 import { JSONValue, JSONObject, JSONPrimitive } from '@models/json';
 import { ConfigurationNode, ConfigurationNodeFilter, ConfigurationNodePath } from '../ConfigurationEditor.types';
-import { isObject } from '@utils/objectUtils';
 
 const getTitle = (keyName: string, fieldSchema: SingleSchemaDefinition) =>
   fieldSchema.title?.length ? fieldSchema.title : keyName;
@@ -40,8 +39,9 @@ const buildRootNode = (schema: ConfigurationSchema, configuration: Configuration
     data: {
       title: getTitle('Configuration', fieldSchema),
       type: 'object',
-      fieldSchema,
       path: [],
+      parentNode: {} as ConfigurationNode,
+      fieldSchema,
       isDeletable: false,
       isReadonly: true,
     },
@@ -49,7 +49,7 @@ const buildRootNode = (schema: ConfigurationSchema, configuration: Configuration
 
   const children: ConfigurationNode[] = [];
   if (fieldSchema.properties) {
-    for (const key of Object.keys(configuration)) {
+    for (const key of Object.keys(fieldSchema.properties)) {
       children.push(buildNode(key, [key], rootNode, fieldSchema.properties[key], configuration[key]));
     }
   }
@@ -59,7 +59,7 @@ const buildRootNode = (schema: ConfigurationSchema, configuration: Configuration
   return rootNode;
 };
 
-const fieldTypes = new Set(['string', 'number', 'boolean']);
+const fieldTypes = new Set(['string', 'integer', 'number', 'boolean']);
 
 const buildNode = (
   fieldName: string,
@@ -69,14 +69,16 @@ const buildNode = (
   fieldValue: JSONValue,
 ): ConfigurationNode => {
   const singleFieldSchema = determineFieldSchema(fieldSchema);
-  if (isObject(fieldValue)) {
+  if (singleFieldSchema.type === 'object') {
     return buildObjectNode(fieldName, path, parentNode, singleFieldSchema, fieldValue);
-  } else if (Array.isArray(fieldValue)) {
+  } else if (singleFieldSchema.type === 'array') {
     return buildArrayNode(fieldName, path, parentNode, singleFieldSchema, fieldValue);
-  } else if (fieldTypes.has(typeof fieldValue) || fieldValue === null) {
+  } else if (fieldTypes.has(singleFieldSchema.type as string)) {
+    return buildFieldNode(fieldName, path, parentNode, singleFieldSchema, fieldValue);
+  } else if (singleFieldSchema.type === undefined && singleFieldSchema.adcmMeta.enumExtra) {
     return buildFieldNode(fieldName, path, parentNode, singleFieldSchema, fieldValue);
   } else {
-    return buildUnknownNode(fieldName, path, singleFieldSchema);
+    return buildUnknownNode(fieldName, path, parentNode, singleFieldSchema);
   }
 };
 
@@ -95,8 +97,9 @@ const buildObjectNode = (
     data: {
       title: (isArrayItem ? `[${fieldName}] ` : '') + getTitle(fieldName, fieldSchema),
       type: 'object',
-      fieldSchema,
       path,
+      fieldSchema,
+      parentNode,
       isDeletable: isArrayItem,
       isReadonly: Boolean(fieldSchema.readOnly),
     },
@@ -104,12 +107,24 @@ const buildObjectNode = (
 
   const children = [];
   if (fieldSchema === undefined || fieldSchema.properties === undefined) {
-    console.error(`schema for ${path}/${fieldName} not found`);
+    const fullPath = [...path, fieldName];
+    console.error(`schema for /${fullPath.join('/')} not found`);
   } else {
-    for (const [key, value] of Object.entries(objectValue)) {
+    const addedFields = new Set();
+    for (const key of Object.keys(fieldSchema.properties)) {
       const fieldPath = [...path, key];
-      children.push(buildNode(key, fieldPath, node, fieldSchema.properties[key] ?? getDefaultFieldSchema(), value));
+      children.push(buildNode(key, fieldPath, node, fieldSchema.properties[key], objectValue[key]));
+      addedFields.add(key);
     }
+
+    for (const [key, value] of Object.entries(objectValue)) {
+      if (!addedFields.has(key)) {
+        const fieldPath = [...path, key];
+        children.push(buildNode(key, fieldPath, node, fieldSchema.properties[key] ?? getDefaultFieldSchema(), value));
+        addedFields.add(key);
+      }
+    }
+
     if (fieldSchema.additionalProperties && !fieldSchema.readOnly) {
       children.push(buildAddFieldNode(path, node));
     }
@@ -140,9 +155,10 @@ const buildFieldNode = (
     data: {
       title: getTitle(fieldName, fieldSchema),
       type: 'field',
+      path,
+      parentNode,
       fieldSchema,
       value: fieldValue as JSONPrimitive,
-      path,
       isDeletable: !isRequiredField,
       isReadonly: Boolean(fieldSchema.readOnly),
     },
@@ -163,8 +179,9 @@ const buildAddFieldNode = (path: ConfigurationNodePath, parentNode: Configuratio
     data: {
       type: 'addField',
       title: '+',
-      fieldSchema,
       path,
+      parentNode,
+      fieldSchema,
     },
   };
 
@@ -186,21 +203,24 @@ const buildArrayNode = (
     data: {
       title: getTitle(fieldName, fieldSchema),
       type: 'array',
-      fieldSchema,
       path,
+      parentNode,
+      fieldSchema,
       isReadonly: Boolean(fieldSchema.readOnly),
     },
   };
 
   node.children = [];
 
-  for (let i = 0; i < array.length; i++) {
-    const elementPath = [...path, i];
-    node.children.push(buildArrayItemNode(i.toString(), elementPath, node, itemsSchema, array[i]));
+  if (array) {
+    for (let i = 0; i < array.length; i++) {
+      const elementPath = [...path, i];
+      node.children.push(buildArrayItemNode(i.toString(), elementPath, node, itemsSchema, array[i]));
+    }
   }
 
   if (!node.data.fieldSchema.readOnly) {
-    node.children.push(buildAddArrayItemNode(path, itemsSchema));
+    node.children.push(buildAddArrayItemNode(path, node, itemsSchema));
   }
 
   return node;
@@ -216,29 +236,40 @@ const buildArrayItemNode = (
   return buildNode(fieldName, path, parentNode, fieldSchema, fieldValue);
 };
 
-const buildAddArrayItemNode = (path: ConfigurationNodePath, fieldSchema: SingleSchemaDefinition) => {
+const buildAddArrayItemNode = (
+  path: ConfigurationNodePath,
+  parentNode: ConfigurationNode,
+  fieldSchema: SingleSchemaDefinition,
+) => {
   const node: ConfigurationNode = {
     key: buildKey(path),
     data: {
       type: 'addArrayItem',
       title: '+',
-      fieldSchema,
       path,
+      parentNode,
+      fieldSchema,
     },
   };
 
   return node;
 };
 
-const buildUnknownNode = (fieldName: string, path: ConfigurationNodePath, fieldSchema: SingleSchemaDefinition) => {
+const buildUnknownNode = (
+  fieldName: string,
+  path: ConfigurationNodePath,
+  parentNode: ConfigurationNode,
+  fieldSchema: SingleSchemaDefinition,
+) => {
   const node: ConfigurationNode = {
     key: buildKey(path),
     data: {
       title: `UNKNOWN FIELD: ${fieldName}, TYPE: ${fieldSchema.type}`,
       type: 'field',
+      path,
+      parentNode,
       fieldSchema,
       value: 'some value',
-      path,
       isDeletable: false,
       isReadonly: true,
     },
@@ -255,12 +286,23 @@ export const filterTreeNodes = (tree: ConfigurationNode, filter: ConfigurationNo
 };
 
 const filterRecursively = (tree: ConfigurationNode, filter: ConfigurationNodeFilter) => {
+  if (tree.data.type === 'addArrayItem' || tree.data.type === 'addField') {
+    return true;
+  }
+
   const foundInTitle = tree.data.title.toLowerCase().includes(filter.title.toLowerCase());
   const isVisible =
     (filter.showInvisible ? true : !tree.data.fieldSchema.adcmMeta.isInvisible) &&
     (filter.showAdvanced ? true : !tree.data.fieldSchema.adcmMeta.isAdvanced);
 
   tree.children = tree.children?.filter((node) => filterRecursively(node, filter));
+
+  if (!foundInTitle && tree.children?.length === 1) {
+    const singleChildType = tree.children[0].data.type;
+    if (singleChildType === 'addArrayItem' || singleChildType === 'addField') {
+      tree.children = undefined;
+    }
+  }
 
   const foundInChildren = Boolean(tree.children?.length);
   if ((foundInTitle || foundInChildren) && isVisible) {
