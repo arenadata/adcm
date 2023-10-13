@@ -9,12 +9,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from api_v2.host.serializers import HostShortSerializer
 from cm.models import GroupConfig
 from rest_framework.serializers import ModelSerializer
 
 
 class GroupConfigSerializer(ModelSerializer):
+    hosts = HostShortSerializer(many=True, read_only=True)
+
     class Meta:
         model = GroupConfig
-        fields = ["id", "name", "description"]
+        fields = ["id", "name", "description", "hosts"]

@@ -20,7 +20,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import VIEW_GROUP_CONFIG_PERM, check_config_perm
@@ -68,6 +68,6 @@ class GroupConfigViewSet(
     def host_candidates(self, request: Request, *args, **kwargs):  # pylint: disable=unused-argument
         group_config: GroupConfig = self.get_object()
         hosts = group_config.host_candidate()
-        serializer = HostGroupConfigSerializer(self.paginate_queryset(queryset=hosts), many=True)
+        serializer = HostGroupConfigSerializer(instance=hosts, many=True)
 
-        return self.get_paginated_response(data=serializer.data)
+        return Response(data=serializer.data, status=HTTP_200_OK)

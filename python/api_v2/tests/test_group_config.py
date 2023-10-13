@@ -120,7 +120,7 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(len(response.json()), 1)
 
     def test_add_hosts_success(self):
         response: Response = self.client.post(
@@ -144,8 +144,8 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["name"], self.new_host.name)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json()[0]["name"], self.new_host.name)
 
     def test_delete_host_success(self):
         response: Response = self.client.delete(
@@ -242,8 +242,8 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["name"], self.host.name)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json()[0]["name"], self.host.name)
 
     def test_add_hosts_success(self):
         response: Response = self.client.post(
@@ -293,8 +293,8 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["name"], self.host_for_service.name)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json()[0]["name"], self.host_for_service.name)
 
 
 class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable=too-many-ancestors
@@ -412,8 +412,8 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["name"], self.host.name)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json()[0]["name"], self.host.name)
 
     def test_add_hosts_group_config_not_found_fail(self):
         response: Response = self.client.post(
@@ -463,8 +463,8 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["name"], self.host_for_component.name)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json()[0]["name"], self.host_for_component.name)
 
     def test_delete_host_success(self):
         response: Response = self.client.delete(
