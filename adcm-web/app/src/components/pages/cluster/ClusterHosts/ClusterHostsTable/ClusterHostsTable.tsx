@@ -12,6 +12,7 @@ import { openMaintenanceModeDialog } from '@store/adcm/cluster/hosts/hostsAction
 import { Link, generatePath } from 'react-router-dom';
 import ClusterHostsDynamicActionsButton from '../ClusterHostsDynamicActionsButton/ClusterHostsDynamicActionsButton';
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
+import Concern from '@commonComponents/Concern/Concern';
 
 const ClusterHostsTable: React.FC = () => {
   const dispatch = useDispatch();
@@ -63,7 +64,9 @@ const ClusterHostsTable: React.FC = () => {
                 {clusterHost.components.length} {clusterHost.components.length === 1 ? 'component' : 'components'}
               </Link>
             </TableCell>
-            <TableCell>{'-'}</TableCell>
+            <TableCell>
+              <Concern concerns={clusterHost.concerns} />
+            </TableCell>
             <TableCell hasIconOnly align="center">
               {cluster && <ClusterHostsDynamicActionsButton cluster={cluster} host={clusterHost} type="icon" />}
               <MaintenanceModeButton
