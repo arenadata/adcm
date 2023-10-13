@@ -62,8 +62,10 @@ const ConfigurationTree = memo(
       const hasError = typeof errorsPaths[node.key] === 'string';
       switch (node.data.type) {
         case 'field': {
+          const deleteHandler =
+            node.data.parentNode.data.fieldSchema.type === 'array' ? onDeleteArrayItem : onDeleteField;
           return (
-            <FieldNodeContent node={node} hasError={hasError} onClick={onEditField} onDeleteClick={onDeleteField} />
+            <FieldNodeContent node={node} hasError={hasError} onClick={onEditField} onDeleteClick={deleteHandler} />
           );
         }
         case 'addArrayItem': {

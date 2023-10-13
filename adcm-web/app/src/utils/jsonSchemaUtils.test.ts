@@ -148,7 +148,7 @@ describe('validate', () => {
 });
 
 describe('generateFromSchema', () => {
-  test('generate with defaults', () => {
+  test('generate structure with defaults', () => {
     const schema: Schema = {
       description: 'shard',
       type: 'object',
@@ -171,5 +171,58 @@ describe('generateFromSchema', () => {
 
     const result = generateFromSchema(schema);
     expect(result).toStrictEqual(object);
+  });
+
+  test('generate nullable primitive with defaults', () => {
+    const schema: Schema = {
+      oneOf: [
+        {
+          type: 'boolean',
+          title: '',
+          description: '',
+          default: false,
+          readOnly: false,
+          adcmMeta: {
+            isAdvanced: false,
+            isInvisible: false,
+            activation: null,
+            synchronization: null,
+            nullValue: null,
+            isSecret: false,
+            stringExtra: null,
+            enumExtra: null,
+          },
+        },
+        {
+          type: 'null',
+        },
+      ],
+    };
+
+    const result = generateFromSchema(schema);
+    expect(result).toStrictEqual(null);
+  });
+
+  test('generate primitive with defaults', () => {
+    const schema: Schema = {
+      type: 'boolean',
+      title: '',
+      description: '',
+      default: true,
+      readOnly: false,
+      adcmMeta: {
+        isAdvanced: false,
+        isInvisible: false,
+        activation: null,
+        synchronization: null,
+        nullValue: null,
+        isSecret: false,
+        stringExtra: null,
+        enumExtra: null,
+      },
+    };
+
+    const result = generateFromSchema(schema);
+    expect(result).toStrictEqual(true);
   });
 });

@@ -60,11 +60,16 @@ export const addArrayItem = (
 
   let node = newConfiguration;
   for (const part of path) {
+    // handle case when field is not required in schema
+    if (path.at(-1) === part && node[part] == undefined) {
+      node[part] = [];
+    }
+
     node = node[part] as JSONObject;
   }
 
   const newItem = generateFromSchema(schema);
-  node = node.push(newItem);
+  node.push(newItem);
 
   return newConfiguration;
 };
@@ -79,7 +84,7 @@ export const deleteArrayItem = (configuration: ConfigurationData, path: Configur
     node = node[part] as JSONObject;
   }
 
-  node = node.splice(fieldName as number, 1);
+  node.splice(fieldName as number, 1);
 
   return newConfiguration;
 };

@@ -10,6 +10,7 @@ export type ConfigurationField = {
   title: string;
   fieldSchema: SingleSchemaDefinition;
   fieldAttributes?: FieldAttributes;
+  parentNode: ConfigurationNode;
   value: JSONPrimitive;
   path: ConfigurationNodePath;
   isDeletable: boolean;
@@ -20,6 +21,7 @@ export type ConfigurationNewField = {
   type: 'addField';
   title: string;
   fieldSchema: SingleSchemaDefinition; // parent schema
+  parentNode: ConfigurationNode;
   fieldAttributes?: FieldAttributes;
   path: ConfigurationNodePath;
 };
@@ -28,6 +30,7 @@ export type ConfigurationObject = {
   type: 'object';
   title: string;
   fieldSchema: SingleSchemaDefinition;
+  parentNode: ConfigurationNode;
   fieldAttributes?: FieldAttributes;
   path: ConfigurationNodePath;
   isDeletable: boolean;
@@ -38,6 +41,7 @@ export type ConfigurationArray = {
   type: 'array';
   title: string;
   fieldSchema: SingleSchemaDefinition;
+  parentNode: ConfigurationNode;
   fieldAttributes?: FieldAttributes;
   path: ConfigurationNodePath;
   isReadonly: boolean;
@@ -47,6 +51,7 @@ export type ConfigurationNewArrayItem = {
   type: 'addArrayItem';
   title: string;
   fieldSchema: SingleSchemaDefinition; // items schema
+  parentNode: ConfigurationNode;
   fieldAttributes?: FieldAttributes;
   path: ConfigurationNodePath;
 };

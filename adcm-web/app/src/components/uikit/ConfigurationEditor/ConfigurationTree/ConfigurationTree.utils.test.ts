@@ -48,7 +48,7 @@ describe('fillFieldAttributes', () => {
     const clusterNode = clusterConfigNode.children?.[0]!;
     expect(clusterNode.data.fieldAttributes).toStrictEqual(clusterAttributes);
 
-    const authNode = clusterConfigNode.children?.[1]!;
+    const authNode = clusterConfigNode.children?.[2]!;
     expect(authNode.data.fieldAttributes).toStrictEqual(authAttributes);
   });
 });
