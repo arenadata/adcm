@@ -18,14 +18,14 @@ from typing import Any
 
 # isort: off
 from ansible.errors import AnsibleError
-from ansible.utils.vars import merge_hash
 from ansible.plugins.action import ActionBase
-
-# isort: on
+from ansible.utils.vars import merge_hash
+from django.conf import settings
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 
 from cm.adcm_config.config import get_option_value
 from cm.api import add_hc, get_hc, set_object_config_with_plugin
-from cm.api_context import CTX
 from cm.errors import AdcmEx
 from cm.errors import raise_adcm_ex as err
 from cm.models import (
@@ -46,12 +46,11 @@ from cm.models import (
     ServiceComponent,
     get_model_by_type,
 )
-from cm.status_api import post_event
-from django.conf import settings
-from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.models import ContentType
+from cm.status_api import update_event, UpdateEventType, create_config_event
 from rbac.models import Policy, Role
 from rbac.roles import assign_group_perm
+
+# isort: on
 
 MSG_NO_CONFIG = (
     "There are no job related vars in inventory. It's mandatory for that module to have some"
@@ -277,8 +276,8 @@ def get_service_by_name(cluster_id, service_name):
 
 
 def _set_object_state(obj: ADCMEntity, state: str) -> ADCMEntity:
-    obj.set_state(state, CTX.event)
-    CTX.event.send_state()
+    obj.set_state(state)
+    update_event(obj, update=(UpdateEventType.STATE, state))
     return obj
 
 
@@ -318,8 +317,7 @@ def set_service_state(cluster_id, service_id, state):
 
 
 def _set_object_multi_state(obj: ADCMEntity, multi_state: str) -> ADCMEntity:
-    obj.set_multi_state(multi_state, CTX.event)
-    CTX.event.send_state()
+    obj.set_multi_state(multi_state)
     return obj
 
 
@@ -458,6 +456,7 @@ def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> dict | int | str:
                 new_config[key][subkey] = value
 
     set_object_config_with_plugin(obj=obj, config=new_config, attr=new_attr)
+    create_config_event(object_=obj)
 
     if len(conf) == 1:
         return list(conf.values())[0]
@@ -522,8 +521,8 @@ def check_missing_ok(obj: ADCMEntity, multi_state: str, missing_ok):
 
 def _unset_object_multi_state(obj: ADCMEntity, multi_state: str, missing_ok) -> ADCMEntity:
     check_missing_ok(obj, multi_state, missing_ok)
-    obj.unset_multi_state(multi_state, CTX.event)
-    CTX.event.send_state()
+    obj.unset_multi_state(multi_state)
+    update_event(object_=obj, update=(UpdateEventType.STATE, multi_state))
     return obj
 
 
@@ -607,17 +606,6 @@ def log_check(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
         for policy in (policy for policy in Policy.objects.all() if task_role in policy.role.child.all()):
             assign_group_perm(policy=policy, permission=view_logstorage_permission, obj=log_storage)
 
-    post_event(
-        event="add_job_log",
-        object_id=job.pk,
-        object_type="job",
-        details={
-            "id": log_storage.pk,
-            "type": log_storage.type,
-            "name": log_storage.name,
-            "format": log_storage.format,
-        },
-    )
     file_descriptor.close()
 
     return check_log

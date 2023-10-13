@@ -48,7 +48,6 @@ from cm.models import (
     Upgrade,
 )
 from cm.stack import get_config_files, read_definition, save_definition
-from cm.status_api import post_event
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from gnupg import GPG, ImportResult
@@ -86,7 +85,6 @@ def prepare_bundle(
         ProductCategory.re_collect()
         bundle.refresh_from_db()
         prepare_action_roles(bundle=bundle)
-        post_event(event="create", object_id=bundle.pk, object_type="bundle")
 
         return bundle
     except Exception:
@@ -1151,7 +1149,6 @@ def delete_bundle(bundle):
                 bundle.version,
             )
 
-    post_event(event="delete", object_id=bundle.pk, object_type="bundle")
     bundle.delete()
 
     for role in Role.objects.filter(class_name="ParentRole"):
