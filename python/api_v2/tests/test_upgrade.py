@@ -14,7 +14,16 @@ from pathlib import Path
 from unittest.mock import patch
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import ADCM, ConfigLog, HostComponent, ServiceComponent, TaskLog, Upgrade
+from cm.models import (
+    ADCM,
+    ConfigLog,
+    HostComponent,
+    ObjectType,
+    Prototype,
+    ServiceComponent,
+    TaskLog,
+    Upgrade,
+)
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils import timezone
@@ -25,9 +34,11 @@ from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NO
 from rest_framework.test import APIClient, APITestCase
 
 
-class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
+class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, too-many-instance-attributes
     def setUp(self) -> None:
         super().setUp()
+
+        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
 
         cluster_bundle_1_upgrade_path = self.test_bundles_dir / "cluster_one_upgrade"
         provider_bundle_upgrade_path = self.test_bundles_dir / "provider_upgrade"
@@ -78,7 +89,16 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         upgrade_data = response.json()
         self.assertTrue(
             set(upgrade_data.keys()).issuperset(
-                {"id", "hostComponentMapRules", "configuration", "isAllowToTerminate", "disclaimer"}
+                {
+                    "id",
+                    "name",
+                    "displayName",
+                    "hostComponentMapRules",
+                    "configuration",
+                    "isAllowToTerminate",
+                    "disclaimer",
+                    "bundle",
+                }
             )
         )
 
@@ -87,6 +107,23 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         self.assertIsNone(upgrade_data["configuration"])
         self.assertEqual(upgrade_data["disclaimer"], "")
         self.assertFalse(upgrade_data["isAllowToTerminate"])
+        self.assertDictEqual(
+            upgrade_data["bundle"],
+            {
+                "id": self.cluster_upgrade.bundle.pk,
+                "licenseStatus": "accepted",
+                "unacceptedServicesPrototypes": [
+                    {
+                        "id": Prototype.objects.get(
+                            bundle=self.cluster_upgrade.bundle,
+                            type=ObjectType.SERVICE,
+                            name=self.service_1.prototype.name,
+                        ).pk,
+                        "licenseText": "License\n",
+                    }
+                ],
+            },
+        )
 
     def test_cluster_upgrade_retrieve_complex_success(self):
         response: Response = self.client.get(
@@ -149,10 +186,9 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods
 
         host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host)
-        service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
-        component_1 = ServiceComponent.objects.get(service=service_1, prototype__name="component_1")
-        component_2 = ServiceComponent.objects.get(service=service_1, prototype__name="component_2")
-        HostComponent.objects.create(cluster=self.cluster_1, service=service_1, component=component_2, host=host)
+        component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
+        component_2 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_2")
+        HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_2, host=host)
 
         with patch("cm.upgrade.start_task", return_value=tasklog):
             response: Response = self.client.post(
