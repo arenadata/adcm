@@ -9,8 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from cm.models import Bundle, ObjectType
+from api_v2.prototype.utils import get_license_text
+from cm.models import Bundle, HostProvider, ObjectType
 from rest_framework.fields import DateTimeField, FileField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
@@ -42,6 +42,25 @@ class UploadBundleSerializer(EmptySerializer):
 
 
 class BundleRelatedSerializer(ModelSerializer):
+    license_status = SerializerMethodField()
+    unaccepted_services_prototypes = SerializerMethodField()
+
     class Meta:
         model = Bundle
-        fields = ["id"]
+        fields = ["id", "license_status", "unaccepted_services_prototypes"]
+
+    @classmethod
+    def get_license_status(cls, bundle: Bundle) -> str:
+        return bundle.prototype_set.filter(type__in=("cluster", "provider")).first().license
+
+    def get_unaccepted_services_prototypes(self, bundle: Bundle) -> list:
+        if isinstance(self.context["parent"], HostProvider):
+            return []
+
+        added_services = self.context["parent"].clusterobject_set.all().values_list("prototype__name", flat=True)
+        return [
+            {"id": prototype.pk, "license_text": get_license_text(proto=prototype)}
+            for prototype in bundle.prototype_set.filter(
+                type=ObjectType.SERVICE, license="unaccepted", name__in=added_services
+            ).order_by("pk")
+        ]
