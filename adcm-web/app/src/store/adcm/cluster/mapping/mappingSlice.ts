@@ -1,7 +1,7 @@
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 import { RequestError, AdcmClusterMappingApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { showError } from '@store/notificationsSlice';
+import { showError, showInfo } from '@store/notificationsSlice';
 import { AdcmComponent, AdcmHostShortView, AdcmMapping, AdcmError } from '@models/adcm';
 
 type MappingState = 'no-changes' | 'editing' | 'saved';
@@ -43,6 +43,8 @@ const saveMapping = createAsyncThunk(
   async ({ clusterId, mapping }: SaveClusterMappingArg, thunkAPI) => {
     try {
       await AdcmClusterMappingApi.postMapping(clusterId, mapping);
+
+      thunkAPI.dispatch(showInfo({ message: 'Mapping was applied successfully' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: (error as RequestError<AdcmError>).response?.data.desc ?? '' }));
       return thunkAPI.rejectWithValue(error);
