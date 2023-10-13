@@ -1,7 +1,8 @@
 import React from 'react';
+import PureHostPrimaryConfiguration from '@pages/host/HostPrimaryConfiguration/HostPrimaryConfiguration';
 
-const HostPrimaryConfiguration = () => {
-  return <h1>PrimaryConfiguration</h1>;
+const HostPrimaryConfiguration: React.FC = () => {
+  return <PureHostPrimaryConfiguration />;
 };
 
 export default HostPrimaryConfiguration;

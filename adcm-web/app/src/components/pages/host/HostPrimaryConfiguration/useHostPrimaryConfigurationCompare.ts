@@ -5,10 +5,12 @@ import {
   getLeftConfiguration,
   getRightConfiguration,
 } from '@store/adcm/host/configuration/hostsConfigurationCompareSlice';
+import { useParams } from 'react-router-dom';
 
 export const useHostsPrimaryConfigurationsCompare = () => {
   const dispatch = useDispatch();
-  const host = useStore(({ adcm }) => adcm.host.host);
+  const { hostId: hostIdFromUrl } = useParams();
+  const hostId = Number(hostIdFromUrl);
   const leftConfiguration = useStore(({ adcm }) => adcm.hostsConfigurationsCompare.leftConfiguration);
   const rightConfiguration = useStore(({ adcm }) => adcm.hostsConfigurationsCompare.rightConfiguration);
 
@@ -16,21 +18,21 @@ export const useHostsPrimaryConfigurationsCompare = () => {
     () => () => {
       dispatch(cleanupHostsConfigurationsCompareSlice());
     },
-    [host, dispatch],
+    [dispatch],
   );
 
   const getLeftConfig = useCallback(
     (configId: number) => {
-      host?.id && dispatch(getLeftConfiguration({ hostId: host.id, configId }));
+      dispatch(getLeftConfiguration({ hostId, configId }));
     },
-    [host, dispatch],
+    [hostId, dispatch],
   );
 
   const getRightConfig = useCallback(
     (configId: number) => {
-      host?.id && dispatch(getRightConfiguration({ hostId: host.id, configId }));
+      dispatch(getRightConfiguration({ hostId, configId }));
     },
-    [host, dispatch],
+    [hostId, dispatch],
   );
 
   return {

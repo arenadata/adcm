@@ -7,25 +7,25 @@ import {
 } from '@store/adcm/host/configuration/hostsConfigurationSlice';
 import { useCallback, useEffect } from 'react';
 import { useConfigurations } from '@commonComponents/configuration/useConfigurations.ts';
+import { useParams } from 'react-router-dom';
 
 export const useHostsPrimaryConfiguration = () => {
   const dispatch = useDispatch();
-  const host = useStore(({ adcm }) => adcm.host.host);
+  const { hostId: hostIdFromUrl } = useParams();
+  const hostId = Number(hostIdFromUrl);
   const configVersions = useStore(({ adcm }) => adcm.hostsConfiguration.configVersions);
   const loadedConfiguration = useStore(({ adcm }) => adcm.hostsConfiguration.loadedConfiguration);
   const isConfigurationLoading = useStore(({ adcm }) => adcm.hostsConfiguration.isConfigurationLoading);
   const isVersionsLoading = useStore(({ adcm }) => adcm.hostsConfiguration.isVersionsLoading);
 
   useEffect(() => {
-    if (host) {
-      // load all configurations for current Host
-      dispatch(getHostsConfigurationsVersions(host.id));
-    }
+    // load all configurations for current Host
+    dispatch(getHostsConfigurationsVersions(hostId));
 
     return () => {
       dispatch(cleanupHostsConfiguration());
     };
-  }, [host, dispatch]);
+  }, [hostId, dispatch]);
 
   const configurationsOptions = useConfigurations({
     configVersions,
@@ -33,28 +33,28 @@ export const useHostsPrimaryConfiguration = () => {
   const { selectedConfigId, onReset } = configurationsOptions;
 
   useEffect(() => {
-    if (host && selectedConfigId) {
+    if (selectedConfigId) {
       // load full config for selected configuration
       dispatch(
         getHostsConfiguration({
-          hostId: host.id,
+          hostId,
           configId: selectedConfigId,
         }),
       );
     }
-  }, [dispatch, host, selectedConfigId]);
+  }, [dispatch, hostId, selectedConfigId]);
 
   const selectedConfiguration = selectedConfigId === 0 ? configurationsOptions.draftConfiguration : loadedConfiguration;
 
   const onSave = useCallback(
     (description: string) => {
-      if (host?.id && selectedConfiguration) {
+      if (selectedConfiguration) {
         const { configurationData, attributes } = selectedConfiguration;
         dispatch(
           createWithUpdateHostsConfigurations({
             configurationData,
             attributes,
-            hostId: host.id,
+            hostId,
             description,
           }),
         )
@@ -64,7 +64,7 @@ export const useHostsPrimaryConfiguration = () => {
           });
       }
     },
-    [onReset, selectedConfiguration, host, dispatch],
+    [onReset, selectedConfiguration, hostId, dispatch],
   );
 
   return {
@@ -74,6 +74,5 @@ export const useHostsPrimaryConfiguration = () => {
     selectedConfiguration,
     isConfigurationLoading,
     isVersionsLoading,
-    host,
   };
 };
