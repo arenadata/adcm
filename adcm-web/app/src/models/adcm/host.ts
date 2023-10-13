@@ -50,3 +50,5 @@ export interface CreateAdcmHostPayload {
 export interface AdcmUpdatePayload {
   name: string;
 }
+
+export type AdcmHostCandidate = Pick<AdcmHost, 'id' | 'name'>;

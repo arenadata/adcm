@@ -24,6 +24,7 @@ export const allowIconsNames = [
   'g1-load',
   'g1-locked',
   'g1-maintenance',
+  'g1-map',
   'g1-power-on',
   'g1-preview',
   'g1-reinstall',

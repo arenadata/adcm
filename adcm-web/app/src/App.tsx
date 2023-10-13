@@ -53,8 +53,9 @@ import ClusterHostComponents from '@pages/cluster/host/HostComponents/HostCompon
 import HostProviderPage from '@pages/HostProviderPage/HostProviderPage';
 import HostProviderPrimaryConfiguration from '@pages/HostProviderPage/HostProviderPrimaryConfiguration/HostProviderPrimaryConfiguration';
 import HostProviderConfigurationGroups from '@pages/HostProviderPage/HostProviderConfigurationGroups/HostProviderConfigurationGroups';
-import ClusterConfigurationGroups from '@pages/cluster/ClusterConfiguration/ClusterConfigurationGroups/ClusterConfigurationGroups';
+import ClusterConfigGroups from '@pages/cluster/ClusterConfiguration/ClusterConfigGroups/ClusterConfigGroups';
 import ClusterPrimaryConfiguration from '@pages/cluster/ClusterConfiguration/ClusterPrimaryConfiguration/ClusterPrimaryConfiguration';
+import ClusterConfigGroupSingle from '@pages/cluster/ClusterConfiguration/ClusterConfigGroupSingle/ClusterConfigGroupSingle';
 import HostLayout from '@layouts/HostPageLayout/HostLayout';
 import HostPrimaryConfiguration from '@pages/host/HostPrimaryConfiguration/HostPrimaryConfiguration';
 
@@ -142,9 +143,10 @@ function App() {
                       path="/clusters/:clusterId/configuration/primary-configuration"
                       element={<ClusterPrimaryConfiguration />}
                     />
+                    <Route path="/clusters/:clusterId/configuration/config-groups" element={<ClusterConfigGroups />} />
                     <Route
-                      path="/clusters/:clusterId/configuration/configuration-groups"
-                      element={<ClusterConfigurationGroups />}
+                      path="/clusters/:clusterId/configuration/config-groups/:configGroupId/"
+                      element={<ClusterConfigGroupSingle />}
                     />
                   </Route>
                   <Route path="/clusters/:clusterId/import" element={<ClusterImport />}>

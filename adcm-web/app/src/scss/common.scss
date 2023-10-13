@@ -13,12 +13,14 @@ body {
 
     --text-green-color: var(--color-xgreen-saturated);
     --text-accent-color: var(--color-xwhite-off);
+    --text-accent-alt-color: var(--color-xdark);
   }
   &.theme-light {
     --body-background: var(--color-xwhite-off);
 
     --text-green-color: var(--color-xgreen);
     --text-accent-color: var(--color-xdark);
+    --text-accent-alt-color: var(--color-xwhite-off);
   }
 }
 
@@ -33,6 +35,19 @@ body {
 
 .green-text {
   color: var(--text-green-color);
+}
+
+strong {
+  color: var(--text-accent-color);
+}
+
+.flex {
+  &-inline {
+    display: inline-flex;
+  }
+  &-block {
+    display: flex;
+  }
 }
 
 @keyframes spin {

@@ -8,7 +8,7 @@ const ClusterConfigurationsNavigation: React.FC = () => {
       <SubNavigationWrapper>
         <TabsBlock variant="secondary">
           <Tab to="primary-configuration">Primary configuration</Tab>
-          <Tab to="configuration-groups">Configuration groups</Tab>
+          <Tab to="config-groups">Configuration groups</Tab>
         </TabsBlock>
       </SubNavigationWrapper>
     </>
