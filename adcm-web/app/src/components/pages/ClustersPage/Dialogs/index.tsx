@@ -2,7 +2,7 @@ import CreateClusterDialog from './CreateClusterDialog/CreateClusterDialog';
 import UpgradeClusterDialog from './UpgradeClusterDialog/UpgradeClusterDialog';
 import DeleteClusterDialog from './DeleteClusterDialog/DeleteClusterDialog';
 import ClusterDynamicActionDialog from './ClusterDynamicActionDialog/ClusterDynamicActionDialog';
-import RenameClusterDialog from './RenameClusterDialog/RenameClusterDialog';
+import UpdateClusterDialog from './UpdateClusterDialog/UpdateClusterDialog';
 
 const ClusterDialogs = () => {
   return (
@@ -11,7 +11,7 @@ const ClusterDialogs = () => {
       <UpgradeClusterDialog />
       <DeleteClusterDialog />
       <ClusterDynamicActionDialog />
-      <RenameClusterDialog />
+      <UpdateClusterDialog />
     </>
   );
 };
