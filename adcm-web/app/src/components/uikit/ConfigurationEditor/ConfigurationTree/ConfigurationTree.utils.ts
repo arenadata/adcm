@@ -89,7 +89,7 @@ const buildObjectNode = (
   fieldSchema: SingleSchemaDefinition,
   fieldValue: JSONValue,
 ) => {
-  const objectValue = fieldValue as JSONObject;
+  const objectValue = fieldValue as JSONObject | null;
   const isArrayItem = parentNode.data.fieldSchema.type === 'array';
 
   const node: ConfigurationNode = {
@@ -113,15 +113,18 @@ const buildObjectNode = (
     const addedFields = new Set();
     for (const key of Object.keys(fieldSchema.properties)) {
       const fieldPath = [...path, key];
-      children.push(buildNode(key, fieldPath, node, fieldSchema.properties[key], objectValue[key]));
+      const propertyValue = objectValue?.[key] ?? null;
+      children.push(buildNode(key, fieldPath, node, fieldSchema.properties[key], propertyValue));
       addedFields.add(key);
     }
 
-    for (const [key, value] of Object.entries(objectValue)) {
-      if (!addedFields.has(key)) {
-        const fieldPath = [...path, key];
-        children.push(buildNode(key, fieldPath, node, fieldSchema.properties[key] ?? getDefaultFieldSchema(), value));
-        addedFields.add(key);
+    if (objectValue) {
+      for (const [key, value] of Object.entries(objectValue)) {
+        if (!addedFields.has(key)) {
+          const fieldPath = [...path, key];
+          children.push(buildNode(key, fieldPath, node, fieldSchema.properties[key] ?? getDefaultFieldSchema(), value));
+          addedFields.add(key);
+        }
       }
     }
 
@@ -195,7 +198,7 @@ const buildArrayNode = (
   fieldSchema: SingleSchemaDefinition,
   fieldValue: JSONValue,
 ) => {
-  const array = fieldValue as Array<JSONValue>;
+  const array = fieldValue as Array<JSONValue> | null;
   const itemsSchema = fieldSchema.items as SingleSchemaDefinition;
 
   const node: ConfigurationNode = {
