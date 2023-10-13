@@ -32,6 +32,11 @@ from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.models import Cluster, GroupConfig, Host, HostProvider
 from django_filters.rest_framework.backends import DjangoFilterBackend
+from djangorestframework_camel_case.parser import (
+    CamelCaseJSONParser,
+    CamelCaseMultiPartParser,
+)
+from djangorestframework_camel_case.render import CamelCaseJSONRenderer
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -228,6 +233,9 @@ class HostGroupConfigViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet)
     permission_required = [VIEW_HOST_PERM]
     filterset_class = HostClusterFilter
     filter_backends = (DjangoFilterBackend,)
+    pagination_class = None
+    parser_classes = [CamelCaseJSONParser, CamelCaseMultiPartParser]
+    renderer_classes = [CamelCaseJSONRenderer]
 
     def get_queryset(self, *args, **kwargs):
         return self.queryset.filter(group_config__id=self.kwargs["group_config_pk"])
