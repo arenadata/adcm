@@ -49,13 +49,18 @@ const HostsTable: React.FC = () => {
 
         return (
           <TableRow key={host.id}>
-            <StatusableCell status={hostStatusesMap[host.status]}>
+            <StatusableCell
+              status={hostStatusesMap[host.status]}
+              endAdornment={
+                host.state === AdcmEntitySystemState.Created &&
+                !host.cluster?.id && (
+                  <IconButton icon="g1-edit" size={32} title="Edit" onClick={() => handleUpdateClick(host)} />
+                )
+              }
+            >
               <Link to={`/hosts/${host.id}`} className="text-link">
                 {host.name}
               </Link>
-              {host.state === AdcmEntitySystemState.Created && (
-                <IconButton icon="g1-edit" size={32} title="Edit" onClick={() => handleUpdateClick(host)} />
-              )}
             </StatusableCell>
             <MultiStateCell entity={host} />
             <TableCell>{host.hostprovider.name}</TableCell>

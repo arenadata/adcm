@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
 import { closeClusterRenameDialog, renameCluster } from '@store/adcm/clusters/clustersActionsSlice';
 import { isClusterNameValid, required } from '@utils/validationsUtils';
@@ -11,7 +11,7 @@ const initialFormData: RenameClusterFormData = {
   name: '',
 };
 
-export const useRenameClusterDialog = () => {
+export const useUpdateClusterDialog = () => {
   const dispatch = useDispatch();
 
   const { isValid, formData, setFormData, handleChangeFormData, errors, setErrors } =
@@ -20,11 +20,15 @@ export const useRenameClusterDialog = () => {
   const updatedCluster = useStore((s) => s.adcm.clustersActions.updateDialog.cluster);
   const clusters = useStore((s) => s.adcm.clusters.clusters);
 
+  const isNameChanged = useMemo(() => {
+    return formData.name !== updatedCluster?.name;
+  }, [formData, updatedCluster]);
+
   const isClusterNameUniq = useCallback(
     (name: string) => {
-      return !clusters.find((cluster) => cluster.name === name);
+      return !clusters.find((cluster) => cluster.name === name && cluster.id !== updatedCluster?.id);
     },
-    [clusters],
+    [clusters, updatedCluster],
   );
 
   useEffect(() => {
@@ -39,7 +43,7 @@ export const useRenameClusterDialog = () => {
       name:
         (required(formData.name) ? undefined : 'Cluster name field is required') ||
         (isClusterNameValid(formData.name) ? undefined : 'Cluster name field is incorrect') ||
-        (isClusterNameUniq(formData.name) ? undefined : 'Enter unique cluster name'),
+        (isClusterNameUniq(formData.name) ? undefined : 'Cluster with the same name already exists'),
     });
   }, [formData, setErrors, isClusterNameUniq]);
 
@@ -60,7 +64,7 @@ export const useRenameClusterDialog = () => {
 
   return {
     isOpen: !!updatedCluster,
-    isValid,
+    isValid: isValid && isNameChanged,
     formData,
     errors,
     onClose: handleClose,

@@ -42,11 +42,15 @@ const ClustersTable = () => {
       {clusters.map((cluster) => {
         return (
           <TableRow key={cluster.id}>
-            <StatusableCell status={clusterStatusesMap[cluster.status]}>
+            <StatusableCell
+              status={clusterStatusesMap[cluster.status]}
+              endAdornment={
+                cluster.state === AdcmEntitySystemState.Created && (
+                  <IconButton icon="g1-edit" size={32} title="Edit" onClick={() => handleRenameClick(cluster)} />
+                )
+              }
+            >
               <Link to={`/clusters/${cluster.id}`}>{cluster.name}</Link>
-              {cluster.state === AdcmEntitySystemState.Created && (
-                <IconButton icon="g1-edit" size={32} title="Edit" onClick={() => handleRenameClick(cluster)} />
-              )}
             </StatusableCell>
             <MultiStateCell entity={cluster} />
             <TableCell>{cluster.prototype.displayName}</TableCell>
