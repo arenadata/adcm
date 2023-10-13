@@ -53,18 +53,15 @@ func (se *StatusEvent) check_hc(h Hub, hostId int, compId int, hc ClusterService
 	cluster_key := fmt.Sprintf("cluster.%d", hc.Cluster)
 	old := se.read(key)
 	new := fill_hc_status(h, hostId, compId, hc)
-	if old.hostComp.Status != new.hostComp.Status {
-		h.EventWS.send2ws(newEventMsg4(new.hostComp.Status, "hostcomponent", hostId, compId))
-	}
 	if old.component.Status != new.component.Status {
-		h.EventWS.send2ws(newEventMsg(new.component.Status, "component", compId))
+		h.EventWS.send2ws(changeStatusMessage("component", compId, new.component.Status))
 	}
 	if old.service.Status != new.service.Status {
-		h.EventWS.send2ws(newEventMsg(new.service.Status, "service", hc.Service))
+		h.EventWS.send2ws(changeStatusMessage("service", hc.Service, new.service.Status))
 	}
 	old = se.read(cluster_key)
 	if old.cluster.Status != new.cluster.Status {
-		h.EventWS.send2ws(newEventMsg(new.cluster.Status, "cluster", hc.Cluster))
+		h.EventWS.send2ws(changeStatusMessage("cluster", hc.Cluster, new.cluster.Status))
 	}
 	se.write(key, new)
 	se.write(cluster_key, new)
@@ -76,11 +73,11 @@ func (se *StatusEvent) check_host(h Hub, hostId int, clusterId int) {
 	old := se.read(key)
 	new := fill_host_status(h, hostId, clusterId)
 	if old.host.Status != new.host.Status {
-		h.EventWS.send2ws(newEventMsg(new.host.Status, "host", hostId))
+		h.EventWS.send2ws(changeStatusMessage("host", hostId, new.host.Status))
 	}
 	old = se.read(cluster_key)
 	if old.cluster.Status != new.cluster.Status {
-		h.EventWS.send2ws(newEventMsg(new.cluster.Status, "cluster", clusterId))
+		h.EventWS.send2ws(changeStatusMessage("cluster", clusterId, new.cluster.Status))
 	}
 	se.write(key, new)
 	se.write(cluster_key, new)

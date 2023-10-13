@@ -401,13 +401,17 @@ def _create_concern_item(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernI
 def create_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
     """Create newly discovered issue and add it to linked objects concerns"""
     issue = obj.get_own_issue(cause=issue_cause)
+
     if issue is None:
         issue = _create_concern_item(obj=obj, issue_cause=issue_cause)
+
     if issue.name != _gen_issue_name(obj=obj, cause=issue_cause):
         issue.delete()
         issue = _create_concern_item(obj=obj, issue_cause=issue_cause)
+
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(node=tree.built_from)
+
     for node in affected_nodes:
         node.value.add_to_concerns(item=issue)
 

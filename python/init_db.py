@@ -32,7 +32,6 @@ from cm.models import (
     GroupCheckLog,
     HostProvider,
 )
-from cm.status_api import Event
 from rbac.models import User
 
 TOKEN_LENGTH = 20
@@ -95,10 +94,8 @@ def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.
     if not User.objects.filter(username="system").exists():
         User.objects.create_superuser("system", "", None, built_in=True)
         logger.info("Create system user")
-    event = Event()
-    abort_all(event)
+    abort_all()
     clear_temp_tables()
-    event.send_state()
     load_adcm(adcm_conf_file)
     drop_locks()
     recheck_issues()

@@ -48,7 +48,7 @@ from cm.models import (
     ServiceComponent,
     Upgrade,
 )
-from cm.status_api import post_event
+from cm.status_api import UpdateEventType, update_event
 from cm.utils import obj_ref
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
@@ -464,7 +464,9 @@ def do_upgrade(
     hostcomponent: list,
 ) -> dict:
     check_license(prototype=obj.prototype)
-    upgrade_prototype = Prototype.objects.filter(bundle=upgrade.bundle, name=upgrade.bundle.name).first()
+    upgrade_prototype = Prototype.objects.filter(
+        bundle=upgrade.bundle, name=upgrade.bundle.name, type__in=[ObjectType.CLUSTER, ObjectType.PROVIDER]
+    ).first()
     check_license(prototype=upgrade_prototype)
 
     success, msg = check_upgrade(obj=obj, upgrade=upgrade)
@@ -528,12 +530,5 @@ def bundle_switch(obj: Cluster | HostProvider, upgrade: Upgrade) -> None:
 
     obj.refresh_from_db()
     re_apply_policy_for_upgrade(obj=obj)
-
+    update_event(object_=obj, update=(UpdateEventType.VERSION, obj.prototype.version))
     logger.info("upgrade %s OK to version %s", obj_ref(obj=obj), obj.prototype.version)
-
-    post_event(
-        event="upgrade",
-        object_id=obj.pk,
-        object_type=obj.prototype.type,
-        details={"type": "version", "value": str(obj.prototype.version)},
-    )

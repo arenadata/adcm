@@ -21,6 +21,7 @@ import time
 from collections.abc import Iterable, Mapping
 from copy import deepcopy
 from enum import Enum
+from functools import partial
 from itertools import chain
 from typing import Optional
 from uuid import uuid4
@@ -413,7 +414,7 @@ class ADCMEntity(ADCMModel):
         """Check if actions could be run over entity"""
         return self.concerns.filter(blocking=True).exists()
 
-    def add_to_concerns(self, item: "ConcernItem") -> None:
+    def add_to_concerns(self, item: Optional["ConcernItem"]) -> None:
         """Attach entity to ConcernItem to keep up with it"""
         if not item or getattr(item, "id", None) is None:
             return
@@ -422,16 +423,28 @@ class ADCMEntity(ADCMModel):
             return
 
         self.concerns.add(item)
+        from cm.status_api import (  # pylint: disable=import-outside-toplevel, cyclic-import
+            create_concern_event,
+        )
 
-    def remove_from_concerns(self, item: "ConcernItem") -> None:
+        transaction.on_commit(func=partial(create_concern_event, object_=self))
+
+    def remove_from_concerns(self, item: Optional["ConcernItem"]) -> None:
         """Detach entity from ConcernItem when it outdated"""
         if not item or not hasattr(item, "id"):
             return
+
+        concern_id = item.id
 
         if item not in self.concerns.all():
             return
 
         self.concerns.remove(item)
+        from cm.status_api import (  # pylint: disable=import-outside-toplevel, cyclic-import
+            delete_concern_event,
+        )
+
+        transaction.on_commit(func=partial(delete_concern_event, object_=self, concern_id=concern_id))
 
     def get_own_issue(self, cause: "ConcernCause") -> Optional["ConcernItem"]:
         """Get object's issue of specified cause or None"""
@@ -455,11 +468,9 @@ class ADCMEntity(ADCMModel):
         name = own_name or fqdn or self.prototype.name
         return f'{self.prototype.type} #{self.id} "{name}"'
 
-    def set_state(self, state: str, event=None) -> None:
+    def set_state(self, state: str) -> None:
         self.state = state or self.state
         self.save()
-        if event:
-            event.set_object_state(obj=self, state=state)
         logger.info('set %s state to "%s"', self, state)
 
     def get_id_chain(self) -> dict:
@@ -481,7 +492,7 @@ class ADCMEntity(ADCMModel):
         """Easy to operate self._multi_state representation"""
         return sorted(self._multi_state.keys())
 
-    def set_multi_state(self, multi_state: str, event=None) -> None:
+    def set_multi_state(self, multi_state: str) -> None:
         """Append new unique multi_state to entity._multi_state"""
         if multi_state in self._multi_state:
             return
@@ -489,11 +500,9 @@ class ADCMEntity(ADCMModel):
         self._multi_state.update({multi_state: 1})
         self.save()
 
-        if event:
-            event.change_object_multi_state(obj=self, multi_state=multi_state)
         logger.info('add "%s" to "%s" multi_state', multi_state, self)
 
-    def unset_multi_state(self, multi_state: str, event=None) -> None:
+    def unset_multi_state(self, multi_state: str) -> None:
         """Remove specified multi_state from entity._multi_state"""
         if multi_state not in self._multi_state:
             return
@@ -501,8 +510,6 @@ class ADCMEntity(ADCMModel):
         del self._multi_state[multi_state]
         self.save()
 
-        if event:
-            event.change_object_multi_state(obj=self, multi_state=multi_state)
         logger.info('remove "%s" from "%s" multi_state', multi_state, self)
 
     def has_multi_state_intersection(self, multi_states: list[str]) -> bool:
@@ -1568,7 +1575,7 @@ class TaskLog(ADCMModel):
         self.save()
         lock.delete()
 
-    def cancel(self, event_queue: "cm.status_api.Event" = None, obj_deletion=False):
+    def cancel(self, obj_deletion=False):
         """
         Cancel running task process
         task status will be updated in separate process of task runner
@@ -1602,8 +1609,6 @@ class TaskLog(ADCMModel):
         self.finish_date = timezone.now()
         self.save(update_fields=["status", "finish_date"])
 
-        if event_queue:
-            event_queue.send_state()
         try:
             os.kill(self.pid, signal.SIGTERM)
         except OSError as e:
@@ -1637,13 +1642,11 @@ class JobLog(ADCMModel):
             target=self.task.task_object,
         )
 
-    def cancel(self, event_queue: "cm.status_api.Event" = None):
+    def cancel(self):
         if not self.sub_action.allowed_to_terminate:
-            event_queue.clear_state()
             raise AdcmEx("JOB_TERMINATION_ERROR", f"Job #{self.pk} can not be terminated")
 
         if self.status != JobStatus.RUNNING or self.pid == 0:
-            event_queue.clear_state()
             raise AdcmEx(
                 "JOB_TERMINATION_ERROR",
                 f"Can't terminate job #{self.pk}, pid: {self.pid} with status {self.status}",
@@ -1654,9 +1657,6 @@ class JobLog(ADCMModel):
             raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
         self.status = JobStatus.ABORTED
         self.save()
-
-        if event_queue:
-            event_queue.send_state()
 
     @property
     def duration(self) -> float:
