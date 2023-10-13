@@ -68,6 +68,7 @@ const Dialog: React.FC<DialogProps> = ({
         className={s.dialog__close}
         onClick={handleClose}
         title="Close"
+        tabIndex={-1}
       />
       {title && (
         <Text variant="h2" className={s.dialog__title}>
