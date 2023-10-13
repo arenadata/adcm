@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconButton, Tooltip } from '@uikit';
+import { IconButton } from '@uikit';
 import { useDispatch } from '@hooks';
 import { AdcmHost } from '@models/adcm';
 import { openUnlinkDialog } from '@store/adcm/cluster/hosts/hostsActionsSlice';
@@ -17,11 +17,7 @@ const UnlinkHostToggleButton: React.FC<LinkHostProps> = ({ host }) => {
     }
   };
 
-  return (
-    <Tooltip label="Unlink host">
-      <IconButton icon="g1-unlink" size={32} onClick={handleLinkClick} />
-    </Tooltip>
-  );
+  return <IconButton icon="g1-unlink" size={32} title="Unlink host" onClick={handleLinkClick} />;
 };
 
 export default UnlinkHostToggleButton;

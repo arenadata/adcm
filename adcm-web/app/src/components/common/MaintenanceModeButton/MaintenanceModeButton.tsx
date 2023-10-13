@@ -1,6 +1,5 @@
 import React from 'react';
 import { IconButton } from '@uikit';
-import Tooltip from '@uikit/Tooltip/Tooltip';
 import s from './MaintenanceModeButton.module.scss';
 import cn from 'classnames';
 import { AdcmMaintenanceMode } from '@models/adcm';
@@ -43,12 +42,14 @@ const MaintenanceModeButton: React.FC<MaintenanceModeButtonProps> = ({
 
   return (
     <>
-      <Tooltip
-        label={isMaintenanceModeAvailable ? getTooltipLabel(maintenanceModeStatus) : 'Maintenance mode: u/a'}
-        placement="bottom-start"
-      >
-        <IconButton icon="g1-maintenance" size={32} onClick={onClick} className={className} />
-      </Tooltip>
+      <IconButton
+        icon="g1-maintenance"
+        size={32}
+        title={isMaintenanceModeAvailable ? getTooltipLabel(maintenanceModeStatus) : 'Maintenance mode: u/a'}
+        onClick={onClick}
+        className={className}
+        tooltipProps={{ placement: 'bottom-start' }}
+      />
     </>
   );
 };

@@ -20,7 +20,7 @@ import { ChildWithRef } from '@uikit/types/element.types';
 import cn from 'classnames';
 import s from './Tooltip.module.scss';
 
-interface TooltipProps {
+export interface TooltipProps {
   label: React.ReactNode;
   placement?: Placement;
   offset?: OffsetOptions;
@@ -28,6 +28,7 @@ interface TooltipProps {
   className?: string;
   closeDelay?: number;
 }
+
 const Tooltip: React.FC<TooltipProps> = ({
   children,
   label,
