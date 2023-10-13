@@ -67,6 +67,7 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
             type="text"
             onChange={handleUsernameChange}
             placeholder="Enter unique name"
+            autoComplete="new-user"
           />
         ) : (
           <TextFormField>{formData.username}</TextFormField>
@@ -74,7 +75,12 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
       </FormField>
 
       <FormField label="Password" className={s.rbacUserForm__password} error={errors.password}>
-        <InputPassword value={formData.password} onChange={handlePasswordChange} placeholder="Enter password" />
+        <InputPassword
+          value={formData.password}
+          onChange={handlePasswordChange}
+          placeholder="Enter password"
+          autoComplete="new-password"
+        />
       </FormField>
       <FormField label="Confirm password" error={errors.confirmPassword} className={s.rbacUserForm__confirmPassword}>
         <InputPassword
