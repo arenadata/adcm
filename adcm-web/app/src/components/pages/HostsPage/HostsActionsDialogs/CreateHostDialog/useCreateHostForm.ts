@@ -1,6 +1,6 @@
 import { useMemo, useCallback, useEffect } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
-import { createHost, loadClusters, loadHostProviders } from '@store/adcm/hosts/hostsActionsSlice';
+import { createHostWithUpdate, loadClusters, loadHostProviders } from '@store/adcm/hosts/hostsActionsSlice';
 import { isHostNameValid, required } from '@utils/validationsUtils';
 
 interface CreateHostsFormData {
@@ -52,7 +52,7 @@ export const useCreateHostForm = () => {
     const { clusterId, hostproviderId, hostName: name } = formData;
     if (hostproviderId && name) {
       dispatch(
-        createHost({
+        createHostWithUpdate({
           name,
           hostproviderId,
           clusterId: clusterId ?? undefined,
