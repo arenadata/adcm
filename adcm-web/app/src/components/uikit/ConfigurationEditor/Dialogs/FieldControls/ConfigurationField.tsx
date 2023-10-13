@@ -1,7 +1,6 @@
 import { SingleSchemaDefinition } from '@models/adcm';
 import { JSONPrimitive } from '@models/json';
 import FormField from '@uikit/FormField/FormField';
-import Tooltip from '@uikit/Tooltip/Tooltip';
 import Button from '@uikit/Button/Button';
 import s from './ConfigurationField.module.scss';
 
@@ -25,9 +24,12 @@ const ConfigurationField = ({ label, error, fieldSchema, children, onChange }: C
       </FormField>
       <div className={s.configurationField__actions}>
         <Button variant="secondary" iconLeft="g1-return" onClick={handleRevertClick} />
-        <Tooltip label={fieldSchema.description} placement="bottom">
-          <Button variant="secondary" iconLeft="marker-info" />
-        </Tooltip>
+        <Button
+          variant="secondary"
+          iconLeft="marker-info"
+          title={fieldSchema.description}
+          tooltipProps={{ placement: 'bottom' }}
+        />
       </div>
     </div>
   );
