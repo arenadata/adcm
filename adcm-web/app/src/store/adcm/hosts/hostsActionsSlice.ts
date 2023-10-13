@@ -79,9 +79,15 @@ const createHost = createAsyncThunk(
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
-    } finally {
-      thunkAPI.dispatch(getHosts());
     }
+  },
+);
+
+const createHostWithUpdate = createAsyncThunk(
+  'adcm/hostsActions/createHostWithUpdate',
+  async (payload: CreateAdcmHostPayload, thunkAPI) => {
+    await thunkAPI.dispatch(createHost(payload)).unwrap();
+    await thunkAPI.dispatch(getHosts());
   },
 );
 
@@ -284,6 +290,7 @@ export {
   loadClusters,
   loadHostProviders,
   createHost,
+  createHostWithUpdate,
   deleteHosts,
   toggleMaintenanceModeWithUpdate,
   updateHost,
