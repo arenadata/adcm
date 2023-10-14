@@ -14,6 +14,8 @@ import clusterConfigGroupsSlice from '@store/adcm/cluster/configGroups/clusterCo
 import clusterConfigGroupsTableSlice from '@store/adcm/cluster/configGroups/clusterConfigGroupsTableSlice';
 import clusterConfigGroupActionsSlice from '@store/adcm/cluster/configGroups/clusterConfigGroupActionsSlice';
 import clusterConfigGroupSlice from '@store/adcm/cluster/configGroupSingle/clusterConfigGroup';
+import clusterConfigGroupConfigurationSlice from '@store/adcm/cluster/configGroupSingle/configuration/clusterConfigGroupConfigurationSlice';
+import clusterConfigGroupConfigurationsCompareSlice from '@store/adcm/cluster/configGroupSingle/configuration/clusterConfigGroupConfigurationsCompareSlice';
 import hostProviderConfigurationSlice from '@store/adcm/hostProvider/configuration/hostProviderConfigurationSlice';
 import hostProviderConfigurationsCompareSlice from '@store/adcm/hostProvider/configuration/hostProviderConfigurationsCompareSlice';
 import bundlesSlice from '@store/adcm/bundles/bundlesSlice';
@@ -106,6 +108,8 @@ const rootReducer = combineReducers({
     clusterConfigGroupsTable: clusterConfigGroupsTableSlice,
     clusterConfigGroupActions: clusterConfigGroupActionsSlice,
     clusterConfigGroup: clusterConfigGroupSlice,
+    clusterConfigGroupConfiguration: clusterConfigGroupConfigurationSlice,
+    clusterConfigGroupConfigurationsCompare: clusterConfigGroupConfigurationsCompareSlice,
     clusterServicesConfiguration: clusterServicesConfigurationSlice,
     clusterServicesConfigurationsCompare: clusterServicesConfigurationsCompareSlice,
     bundle: bundleSlice,

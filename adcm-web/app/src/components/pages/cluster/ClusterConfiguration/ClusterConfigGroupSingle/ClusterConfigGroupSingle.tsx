@@ -1,7 +1,8 @@
 import React from 'react';
-import ClusterConfigGroupSingleHeader from '@commonComponents/configGroups/ClusterConfigGroupSingleHeader/ClusterConfigGroupSingleHeader';
+import ConfigGroupSingleHeader from '@commonComponents/configGroups/ConfigGroupSingleHeader/ConfigGroupSingleHeader ';
 import { useClusterConfigGroupSingle } from '@pages/cluster/ClusterConfiguration/ClusterConfigGroupSingle/useClusterConfigGroupSingle';
 import { useStore } from '@hooks';
+import ClusterConfigGroupConfiguration from './ClusterConfigGroupConfiguration/ClusterConfigGroupConfiguration';
 
 const ClusterConfigGroupSingle: React.FC = () => {
   const cluster = useStore((s) => s.adcm.cluster.cluster);
@@ -11,10 +12,11 @@ const ClusterConfigGroupSingle: React.FC = () => {
 
   return (
     <>
-      <ClusterConfigGroupSingleHeader
+      <ConfigGroupSingleHeader
         configGroup={clusterConfigGroup}
         returnUrl={`/clusters/${cluster?.id}/configuration/config-groups`}
       />
+      <ClusterConfigGroupConfiguration />
     </>
   );
 };
