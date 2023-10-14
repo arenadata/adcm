@@ -23,6 +23,7 @@ const ConfigurationEditorDialog = ({ isOpen, children, onOpenChange }: Configura
           className={s.configurationEditorDialog__close}
           onClick={handleIconClick}
           title="Close"
+          tabIndex={-1}
         />
         <div className={s.configurationEditorDialog__body}>{children}</div>
       </div>
