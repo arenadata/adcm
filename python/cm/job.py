@@ -864,6 +864,7 @@ def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:
         )
         restore_hc(task=task, action=action, status=status)
         task.unlock_affected()
+        set_task_status(task=task, status=status)
         update_hierarchy_issues(obj=obj)
 
     upgrade = Upgrade.objects.filter(action=action).first()
@@ -947,6 +948,7 @@ def run_task(task: TaskLog, args: str = ""):
     affected_objs = (node.value for node in tree.get_all_affected(node=tree.built_from))
     task.lock_affected(objects=affected_objs)
     update_event(object_=task, update=(UpdateEventType.STATUS, JobStatus.RUNNING))
+    set_task_status(task=task, status=JobStatus.RUNNING)
 
 
 def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
