@@ -3,6 +3,7 @@ import authSlice from '@store/authSlice';
 import notificationsSlice from '@store/notificationsSlice';
 import clustersSlice from '@store/adcm/clusters/clustersSlice';
 import clustersDynamicActionsSlice from '@store/adcm/clusters/clustersDynamicActionsSlice';
+import clusterUpgradesSlice from '@store/adcm/clusters/clusterUpgradesSlice';
 import clusterHostsSlice from '@store/adcm/cluster/hosts/hostsSlice';
 import clusterHostsTableSlice from '@store/adcm/cluster/hosts/hostsTableSlice';
 import clusterHostsActionsSlice from '@store/adcm/cluster/hosts/hostsActionsSlice';
@@ -78,6 +79,7 @@ import hostsDynamicActionsSlice from './adcm/hosts/hostsDynamicActionsSlice';
 import hostProviderSlice from './adcm/hostProviders/hostProviderSlice';
 import hostProvidersActionsSlice from './adcm/hostProviders/hostProvidersActionsSlice';
 import hostProvidersDynamicActionsSlice from './adcm/hostProviders/hostProvidersDynamicActionsSlice';
+import hostProviderUpgradesSlice from './adcm/hostProviders/hostProviderUpgradesSlice';
 import serviceComponentsDynamicActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponentsDynamicActionsSlice';
 import serviceComponentConfigurationsCompareSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configuration/serviceComponentConfigurationsCompareSlice';
 import serviceComponentConfigurationSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configuration/serviceComponentConfigurationSlice';
@@ -96,6 +98,7 @@ const rootReducer = combineReducers({
     clusters: clustersSlice,
     clustersActions: clustersActionsSlice,
     clustersDynamicActions: clustersDynamicActionsSlice,
+    clusterUpgrades: clusterUpgradesSlice,
     clustersTable: clustersTableSlice,
     clusterHosts: clusterHostsSlice,
     clusterHost: clusterHostSlice,
@@ -125,6 +128,7 @@ const rootReducer = combineReducers({
     hostProvidersActions: hostProvidersActionsSlice,
     hostProvidersTable: hostProvidersTableSlice,
     hostProvidersDynamicActions: hostProvidersDynamicActionsSlice,
+    hostProviderUpgrades: hostProviderUpgradesSlice,
     hostsDynamicActions: hostsDynamicActionsSlice,
     createHostProviderDialog: createHostProviderDialogSlice,
     hosts: hostsSlice,

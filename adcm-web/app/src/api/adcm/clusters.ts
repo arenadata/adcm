@@ -6,9 +6,9 @@ import {
   AdcmCluster,
   CreateAdcmClusterPayload,
   RenameAdcmClusterPayload,
-  AdcmClusterUpgrade,
-  AdcmClusterActionDetails,
-  AdcmClusterActionPayload,
+  AdcmUpgradeRunConfig,
+  AdcmUpgradeShort,
+  AdcmUpgradeDetails,
 } from '@models/adcm';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
@@ -51,14 +51,12 @@ export class AdcmClustersApi {
   }
 
   public static async getClusterUpgrades(clusterId: number) {
-    const response = await httpClient.get<AdcmClusterUpgrade[]>(`/api/v2/clusters/${clusterId}/upgrades/`);
+    const response = await httpClient.get<AdcmUpgradeShort[]>(`/api/v2/clusters/${clusterId}/upgrades/`);
     return response.data;
   }
 
   public static async getClusterUpgrade(clusterId: number, upgradeId: number) {
-    const response = await httpClient.get<AdcmClusterActionDetails>(
-      `/api/v2/clusters/${clusterId}/upgrades/${upgradeId}/`,
-    );
+    const response = await httpClient.get<AdcmUpgradeDetails>(`/api/v2/clusters/${clusterId}/upgrades/${upgradeId}/`);
     return response.data;
   }
 
@@ -84,8 +82,13 @@ export class AdcmClustersApi {
     return response.data;
   }
 
-  public static async postClusterUpgradeRun(clusterId: number, upgradeId: number, action: AdcmClusterActionPayload) {
-    await httpClient.post(`/api/v2/clusters/${clusterId}/upgrades/${upgradeId}/run`, action);
+  public static async runClusterUpgrade(clusterId: number, upgradeId: number, upgradeRunConfig: AdcmUpgradeRunConfig) {
+    const response = await httpClient.post(
+      `/api/v2/clusters/${clusterId}/upgrades/${upgradeId}/run/`,
+      upgradeRunConfig,
+    );
+
+    return response.data;
   }
 
   public static async linkHost(clusterId: number, hostId: number) {

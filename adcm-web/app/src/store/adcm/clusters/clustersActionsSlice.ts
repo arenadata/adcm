@@ -6,8 +6,6 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { createSlice } from '@reduxjs/toolkit';
 import {
   AdcmCluster,
-  AdcmClusterActionDetails,
-  AdcmClusterUpgrade,
   AdcmPrototypeType,
   AdcmPrototypeVersions,
   CreateAdcmClusterPayload,
@@ -27,23 +25,8 @@ interface AdcmClusterActionsState {
   relatedData: {
     prototypeVersions: AdcmPrototypeVersions[];
     isLoaded: boolean;
-    upgrades: AdcmClusterUpgrade[];
-    upgradeActionDetails: AdcmClusterActionDetails | undefined;
   };
 }
-
-type OpenUpgradeClusterDialogArgs = {
-  cluster: AdcmCluster;
-};
-
-type LoadAdcmClusterUpgradesArgs = {
-  clusterId: number;
-};
-
-type LoadAdcmClusterUpgradeActionDetailsArgs = {
-  clusterId: number;
-  upgradeId: number;
-};
 
 type CreateAdcmClusterWithLicensePayload = CreateAdcmClusterPayload & {
   isNeedAcceptLicense: boolean;
@@ -94,58 +77,6 @@ const openClusterCreateDialog = createAsyncThunk(
   },
 );
 
-const loadClusterUpgrades = createAsyncThunk(
-  'adcm/clustersActions/loadClusterUpgrades',
-  async (arg: LoadAdcmClusterUpgradesArgs, thunkAPI) => {
-    try {
-      const upgrades = await AdcmClustersApi.getClusterUpgrades(arg.clusterId);
-      return upgrades;
-    } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
-const loadClusterUpgradeActionDetails = createAsyncThunk(
-  'adcm/clustersActions/loadClusterUpgradeActionDetails',
-  async (arg: LoadAdcmClusterUpgradeActionDetailsArgs, thunkAPI) => {
-    try {
-      const upgradeActionDetails = await AdcmClustersApi.getClusterUpgrade(arg.clusterId, arg.upgradeId);
-      return upgradeActionDetails;
-    } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
-const loadClusterUpgradesRelatedData = createAsyncThunk(
-  'adcm/clustersActions/loadClusterUpgradesRelatedData',
-  async (arg, thunkAPI) => {
-    const {
-      adcm: {
-        clustersActions: { cluster },
-      },
-    } = thunkAPI.getState();
-    if (cluster) {
-      await thunkAPI.dispatch(loadClusterUpgrades({ clusterId: cluster.id }));
-    }
-  },
-);
-
-const openClusterUpgradeDialog = createAsyncThunk(
-  'adcm/clustersActions/openClusterUpgradeDialog',
-  async (arg: OpenUpgradeClusterDialogArgs, thunkAPI) => {
-    try {
-      thunkAPI.dispatch(loadClusterUpgradesRelatedData());
-    } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
 const deleteClusterWithUpdate = createAsyncThunk(
   'adcm/clustersActions/deleteClusterWithUpdate',
   async (clusterId: number, thunkAPI) => {
@@ -180,8 +111,6 @@ const createInitialState = (): AdcmClusterActionsState => ({
   isUpgradeClusterDialogOpen: false,
   relatedData: {
     prototypeVersions: [],
-    upgrades: [],
-    upgradeActionDetails: undefined,
     isLoaded: false,
   },
   deletableId: {
@@ -228,21 +157,6 @@ const clustersActionsSlice = createSlice({
     builder.addCase(renameCluster.fulfilled, () => {
       return createInitialState();
     });
-    builder.addCase(openClusterUpgradeDialog.pending, (state, action) => {
-      state.cluster = action.meta.arg.cluster;
-    });
-    builder.addCase(openClusterUpgradeDialog.fulfilled, (state) => {
-      state.isUpgradeClusterDialogOpen = true;
-    });
-    builder.addCase(loadClusterUpgradesRelatedData.fulfilled, (state) => {
-      state.relatedData.isLoaded = true;
-    });
-    builder.addCase(loadClusterUpgrades.fulfilled, (state, action) => {
-      state.relatedData.upgrades = action.payload;
-    });
-    builder.addCase(loadClusterUpgradeActionDetails.fulfilled, (state, action) => {
-      state.relatedData.upgradeActionDetails = action.payload;
-    });
     builder.addCase(deleteClusterWithUpdate.pending, (state) => {
       clustersActionsSlice.caseReducers.closeClusterDeleteDialog(state);
     });
@@ -263,8 +177,6 @@ export {
   deleteClusterWithUpdate,
   openClusterDeleteDialog,
   closeClusterDeleteDialog,
-  openClusterUpgradeDialog,
-  loadClusterUpgradeActionDetails,
   cleanupClustersActions,
   openClusterRenameDialog,
   closeClusterRenameDialog,

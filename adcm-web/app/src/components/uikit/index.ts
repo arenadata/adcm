@@ -26,6 +26,7 @@ import FormField from '@uikit/FormField/FormField';
 import FormFieldsContainer from '@uikit/FormField/FormFieldsContainer';
 import Pagination from '@uikit/Pagination/Pagination';
 import type { PaginationData } from '@uikit/Pagination/Pagination.types';
+import Panel from './Panel/Panel';
 import Popover from './Popover/Popover';
 import PopoverPanelDefault from './Popover/PopoverPanelDefault/PopoverPanelDefault';
 import SearchInput from '@uikit/SearchInput/SearchInput';
@@ -85,6 +86,7 @@ export {
   InputWithAutoComplete,
   Pagination,
   PaginationData,
+  Panel,
   Popover,
   PopoverPanelDefault,
   SearchInput,

@@ -1,17 +1,35 @@
 :global {
   body.theme-dark {
-    --panel-background: var(--color-xdark-new-20);
+    --panel-background-primary: var(--color-xdark-new-20);
+    --panel-border-secondary: var(--color-xdark);
+    --panel-background-secondary: var(--color-xdark-new-50);
   }
 
   body.theme-light {
-    --body-background: var(--color-xgray-alt-30);
+    --panel-background-primary: var(--color-xgray-alt-30);
+    --panel-border-secondary: var(--color-stroke-light);
+    --panel-background-secondary: #EEF2F5;
   }
 }
 
 .panel {
-  background-color: var(--panel-background);
-  padding: 8px;
   box-sizing: border-box;
-  border-radius: 12px;
-  align-items: center;
+
+  &_primary {
+    background-color: var(--panel-background-primary);
+    border-radius: 12px;
+    padding: 8px;
+    padding-left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    justify-content: space-between;
+  }
+
+  &_secondary {
+    background-color: var(--panel-background-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--panel-border-secondary);
+    padding: 20px;
+  }
 }

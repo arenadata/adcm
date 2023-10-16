@@ -1,5 +1,5 @@
 import { AdcmConcerns } from './concern';
-import { AdcmEntityState, AdcmLicenseStatus } from '@models/adcm';
+import { AdcmEntityState } from '@models/adcm';
 
 export enum AdcmClusterStatus {
   Up = 'up',
@@ -41,35 +41,4 @@ export interface CreateAdcmClusterPayload {
 
 export interface RenameAdcmClusterPayload {
   name: string;
-}
-
-export interface AdcmClusterUpgrade {
-  id: number;
-  name: string;
-  displayName: string;
-  licenseStatus: AdcmLicenseStatus;
-}
-
-export interface AdcmClusterActionDetails extends AdcmClusterUpgrade {
-  bundle: {
-    id: number;
-  };
-  isAllowToTerminate: boolean;
-  hostComponentMapRules: object[];
-  disclaimer: string;
-  config: {
-    config: object[];
-    attr: object;
-  };
-}
-
-export interface AdcmClusterActionPayload {
-  hostComponentMap: {
-    id: number;
-    hostId: number;
-    componentId: number;
-    serviceId: number;
-  }[];
-  config: unknown;
-  isVerbose: boolean;
 }
