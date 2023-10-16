@@ -709,7 +709,7 @@ def represent_json_type_as_string(prototype: Prototype, value: dict, action_: Ac
     for name, sub_name in PrototypeConfig.objects.filter(prototype=prototype, type="json", action=action_).values_list(
         "name", "subname"
     ):
-        if name not in value or sub_name not in value[name]:
+        if name not in value or (sub_name and sub_name not in value[name]):
             continue
 
         if sub_name:
