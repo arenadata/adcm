@@ -16,6 +16,7 @@ interface ConfigurationHeaderProps {
 
 const ConfigurationHeader: React.FC<ConfigurationHeaderProps> = ({
   draftConfiguration,
+  configVersions,
   selectedConfigId,
   compareOptions,
   ...props
@@ -40,6 +41,7 @@ const ConfigurationHeader: React.FC<ConfigurationHeaderProps> = ({
         onClose={() => setComparedConfigId(null)}
       />
       <ConfigurationVersions
+        configVersions={configVersions}
         selectedConfigId={selectedConfigId}
         isShowDraft={isShowDraft}
         onSelectAction={onSelectAction}
