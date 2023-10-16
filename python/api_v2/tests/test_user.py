@@ -260,7 +260,7 @@ class TestUserAPI(BaseAPITestCase):
 
         self.client.login(username="test_user", password="test_user_password")
 
-        response = self.client.put(path=reverse(viewname="v2:adcm:profile"), data={"newPassword": "newtestpassword"})
+        response = self.client.put(path=reverse(viewname="v2:profile"), data={"newPassword": "newtestpassword"})
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
             response.json(),

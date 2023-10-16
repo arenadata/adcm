@@ -9,12 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from api_v2.adcm.views import ADCMConfigView
-from django.urls import path
-
-urlpatterns = [
-    path("configs/", ADCMConfigView.as_view({"get": "list", "post": "create"}), name="config-list"),
-    path("configs/<int:pk>/", ADCMConfigView.as_view({"get": "retrieve"}), name="config-detail"),
-    path("config-schema/", ADCMConfigView.as_view({"get": "config_schema"}), name="config-schema"),
-]
