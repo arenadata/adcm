@@ -2,9 +2,11 @@ import { AdcmClusterHostsApi, AdcmClustersApi, RequestError } from '@api';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmClusterHost, AdcmClusterHostComponentsStatus, AdcmServiceComponent } from '@models/adcm';
 import { createSlice } from '@reduxjs/toolkit';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { createAsyncThunk } from '@store/redux';
 import { getErrorMessage } from '@utils/httpResponseUtils';
+import { updateIfExists } from '@utils/objectUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 
 interface AdcmClusterHostState {
@@ -168,6 +170,39 @@ const clusterHostSlice = createSlice({
     builder.addCase(getClusterHostComponentsStates.rejected, (state) => {
       state.hostComponentsCounters.totalHostComponentsCount = 0;
       state.hostComponentsCounters.successfulHostComponentsCount = 0;
+    });
+    builder.addCase(wsActions.update_host, (state, action) => {
+      const { id, changes } = action.payload.object;
+      if (state.clusterHost?.id == id) {
+        state.clusterHost = { ...state.clusterHost, ...changes };
+      }
+    });
+    builder.addCase(wsActions.delete_host_concern, (state, action) => {
+      const { id, changes } = action.payload.object;
+      if (state.clusterHost?.id === id) {
+        state.clusterHost = {
+          ...state.clusterHost,
+          concerns: state.clusterHost.concerns.filter((concern) => concern.id !== changes.id),
+        };
+      }
+    });
+    builder.addCase(wsActions.update_component, (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.relatedData.hostComponents = updateIfExists<AdcmServiceComponent>(
+        state.relatedData.hostComponents,
+        (hostComponent) => hostComponent.id === id,
+        () => changes,
+      );
+    });
+    builder.addCase(wsActions.delete_component_concern, (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.relatedData.hostComponents = updateIfExists<AdcmServiceComponent>(
+        state.relatedData.hostComponents,
+        (hostComponent) => hostComponent.id === id,
+        (hostComponent) => ({
+          concerns: hostComponent.concerns.filter((concern) => concern.id !== changes.id),
+        }),
+      );
     });
   },
 });

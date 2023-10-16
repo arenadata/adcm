@@ -6,6 +6,8 @@ import { createSlice } from '@reduxjs/toolkit';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
+import { updateIfExists } from '@utils/objectUtils';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 
 interface AdcmServiceComponentsState {
   serviceComponents: AdcmServiceComponent[];
@@ -85,6 +87,24 @@ const serviceComponentsSlice = createSlice({
     });
     builder.addCase(loadClusterServiceComponentsFromBackend.rejected, (state) => {
       state.serviceComponents = [];
+    });
+    builder.addCase(wsActions.update_component, (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.serviceComponents = updateIfExists<AdcmServiceComponent>(
+        state.serviceComponents,
+        (serviceComponent) => serviceComponent.id === id,
+        () => changes,
+      );
+    });
+    builder.addCase(wsActions.delete_component_concern, (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.serviceComponents = updateIfExists<AdcmServiceComponent>(
+        state.serviceComponents,
+        (serviceComponent) => serviceComponent.id === id,
+        (serviceComponent) => ({
+          concerns: serviceComponent.concerns.filter((concern) => concern.id !== changes.id),
+        }),
+      );
     });
   },
 });

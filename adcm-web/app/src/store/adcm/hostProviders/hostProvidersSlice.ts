@@ -3,7 +3,9 @@ import { AdcmHostProvider } from '@models/adcm/hostProvider';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmHostProvidersApi } from '@api';
 import { executeWithMinDelay } from '@utils/requestUtils';
+import { updateIfExists } from '@utils/objectUtils';
 import { defaultSpinnerDelay } from '@constants';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 
 interface AdcmHostProvidersState {
   hostProviders: AdcmHostProvider[];
@@ -69,6 +71,24 @@ const hostProvidersSlice = createSlice({
     });
     builder.addCase(loadHostProviders.rejected, (state) => {
       state.hostProviders = [];
+    });
+    builder.addCase(wsActions.update_hostprovider, (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.hostProviders = updateIfExists<AdcmHostProvider>(
+        state.hostProviders,
+        (hostProvider) => hostProvider.id === id,
+        () => changes,
+      );
+    });
+    builder.addCase(wsActions.delete_hostprovider_concern, (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.hostProviders = updateIfExists<AdcmHostProvider>(
+        state.hostProviders,
+        (hostProvider) => hostProvider.id === id,
+        (hostProvider) => ({
+          concerns: hostProvider.concerns.filter((concern) => concern.id !== changes.id),
+        }),
+      );
     });
   },
 });

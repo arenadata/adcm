@@ -4,6 +4,8 @@ import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmClusterHost } from '@models/adcm/clusterHosts';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { updateIfExists } from '@utils/objectUtils';
 
 type AdcmClusterHostsState = {
   hosts: AdcmClusterHost[];
@@ -74,6 +76,24 @@ const clusterHostsSlice = createSlice({
     });
     builder.addCase(loadClusterHostsFromBackend.rejected, (state) => {
       state.hosts = [];
+    });
+    builder.addCase(wsActions.update_host, (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.hosts = updateIfExists<AdcmClusterHost>(
+        state.hosts,
+        (host) => host.id === id,
+        () => changes,
+      );
+    });
+    builder.addCase(wsActions.delete_host_concern, (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.hosts = updateIfExists<AdcmClusterHost>(
+        state.hosts,
+        (host) => host.id === id,
+        (host) => ({
+          concerns: host.concerns.filter((concern) => concern.id !== changes.id),
+        }),
+      );
     });
   },
 });

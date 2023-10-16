@@ -6,6 +6,7 @@ import { AdcmRelatedServiceComponentsState, AdcmService, AdcmServiceStatus } fro
 import { AdcmServicesApi, RequestError } from '@api';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 
 interface AdcmServiceState {
   service?: AdcmService;
@@ -110,6 +111,24 @@ const serviceSlice = createSlice({
     builder.addCase(getRelatedServiceComponentsStatuses.rejected, (state) => {
       state.relatedData.successfulComponentsCount = 0;
       state.relatedData.totalComponentsCount = 0;
+    });
+    builder.addCase(wsActions.update_service, (state, action) => {
+      const { id, changes } = action.payload.object;
+      if (state.service?.id == id) {
+        state.service = {
+          ...state.service,
+          ...changes,
+        };
+      }
+    });
+    builder.addCase(wsActions.delete_service_concern, (state, action) => {
+      const { id, changes } = action.payload.object;
+      if (state.service?.id === id) {
+        state.service = {
+          ...state.service,
+          concerns: state.service.concerns.filter((concern) => concern.id !== changes.id),
+        };
+      }
     });
   },
 });

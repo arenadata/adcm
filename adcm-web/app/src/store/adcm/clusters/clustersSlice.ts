@@ -3,7 +3,9 @@ import { AdcmClustersApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmCluster } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
+import { updateIfExists } from '@utils/objectUtils';
 import { defaultSpinnerDelay } from '@constants';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 
 type AdcmClustersState = {
   clusters: AdcmCluster[];
@@ -68,6 +70,24 @@ const clustersSlice = createSlice({
     });
     builder.addCase(loadClustersFromBackend.rejected, (state) => {
       state.clusters = [];
+    });
+    builder.addCase(wsActions.update_cluster, (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.clusters = updateIfExists<AdcmCluster>(
+        state.clusters,
+        (cluster) => cluster.id === id,
+        () => changes,
+      );
+    });
+    builder.addCase(wsActions.delete_cluster_concern, (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.clusters = updateIfExists<AdcmCluster>(
+        state.clusters,
+        (cluster) => cluster.id === id,
+        (cluster) => ({
+          concerns: cluster.concerns.filter((concern) => concern.id !== changes.id),
+        }),
+      );
     });
   },
 });

@@ -57,6 +57,7 @@
           "guid",
           "gz",
           "hljs",
+          "hostcomponentmap",
           "hostprovider",
           "hostproviders",
           "href",
@@ -121,6 +122,7 @@
           "yaml",
           "user’s",
           "vite",
+          "ws",
           "xsrf"
         ]
       }

@@ -4,6 +4,7 @@ import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmCluster } from '@models/adcm';
 import { createSlice } from '@reduxjs/toolkit';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 
 interface AdcmClusterState {
   cluster?: AdcmCluster;
@@ -59,6 +60,24 @@ const clusterSlice = createSlice({
     });
     builder.addCase(loadClusterFromBackend.rejected, (state) => {
       state.cluster = undefined;
+    });
+    builder.addCase(wsActions.update_cluster, (state, action) => {
+      const { id, changes } = action.payload.object;
+      if (state.cluster?.id == id) {
+        state.cluster = {
+          ...state.cluster,
+          ...changes,
+        };
+      }
+    });
+    builder.addCase(wsActions.delete_cluster_concern, (state, action) => {
+      const { id, changes } = action.payload.object;
+      if (state.cluster?.id === id) {
+        state.cluster = {
+          ...state.cluster,
+          concerns: state.cluster.concerns.filter((concern) => concern.id !== changes.id),
+        };
+      }
     });
   },
 });

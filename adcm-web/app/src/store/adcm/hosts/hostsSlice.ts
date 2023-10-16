@@ -4,6 +4,8 @@ import { defaultSpinnerDelay } from '@constants';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { createSlice } from '@reduxjs/toolkit';
 import { AdcmHostsApi } from '@api';
+import { updateIfExists } from '@utils/objectUtils';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 
 type AdcmHostsState = {
   hosts: AdcmHost[];
@@ -68,6 +70,24 @@ const hostsSlice = createSlice({
     });
     builder.addCase(loadHosts.rejected, (state) => {
       state.hosts = [];
+    });
+    builder.addCase(wsActions.update_host, (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.hosts = updateIfExists<AdcmHost>(
+        state.hosts,
+        (host) => host.id === id,
+        () => changes,
+      );
+    });
+    builder.addCase(wsActions.delete_host_concern, (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.hosts = updateIfExists<AdcmHost>(
+        state.hosts,
+        (host) => host.id === id,
+        (host) => ({
+          concerns: host.concerns.filter((concern) => concern.id !== changes.id),
+        }),
+      );
     });
   },
 });
