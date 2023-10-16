@@ -412,6 +412,7 @@ class Group(Field):
     ):
         super().__init__(prototype_config=prototype_config, object_=object_)
         self.group_fields = group_fields
+        self.root_object = object_
 
     @property
     def activation(self) -> dict | None:
@@ -433,7 +434,7 @@ class Group(Field):
         data = {"properties": OrderedDict(), "required": [], "default": {}}
 
         for field in self.group_fields:
-            data["properties"][field.subname] = get_field(prototype_config=field, object_=self.object_).to_dict()
+            data["properties"][field.subname] = get_field(prototype_config=field, object_=self.root_object).to_dict()
             data["required"].append(field.subname)
 
         return data
