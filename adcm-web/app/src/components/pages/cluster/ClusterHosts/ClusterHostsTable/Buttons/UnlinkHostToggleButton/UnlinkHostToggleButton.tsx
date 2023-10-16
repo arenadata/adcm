@@ -17,7 +17,7 @@ const UnlinkHostToggleButton: React.FC<LinkHostProps> = ({ host }) => {
     }
   };
 
-  return <IconButton icon="g1-unlink" size={32} title="Unlink host" onClick={handleLinkClick} />;
+  return <IconButton icon="g1-unlink" size={32} title="Unlink" onClick={handleLinkClick} />;
 };
 
 export default UnlinkHostToggleButton;

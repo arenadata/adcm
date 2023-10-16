@@ -27,12 +27,7 @@ const UnlinkHostToggleButton: React.FC<LinkHostProps> = ({ host }) => {
   };
 
   return (
-    <IconButton
-      icon={linkIcons[linkMode]}
-      size={32}
-      title={`${firstUpperCase(linkMode)} host`}
-      onClick={handleLinkClick}
-    />
+    <IconButton icon={linkIcons[linkMode]} size={32} title={`${firstUpperCase(linkMode)}`} onClick={handleLinkClick} />
   );
 };
 
