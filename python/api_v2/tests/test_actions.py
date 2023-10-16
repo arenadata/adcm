@@ -20,6 +20,7 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
+    JobLog,
     MaintenanceMode,
     ServiceComponent,
 )
@@ -241,6 +242,20 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
             ),
             data={"host_component_map": [], "config": {}, "adcm_meta": {}, "is_verbose": False},
         )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+    def test_adcm_4535_job_cant_be_terminated_success(self) -> None:
+        allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:cluster-action-run",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": allowed_action.pk},
+            ),
+            data={"host_component_map": [], "config": {}, "adcm_meta": {}, "is_verbose": False},
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        job = JobLog.objects.filter(action__name="cluster_host_action_allowed").first()
+        response = self.client.post(path=reverse(viewname="v2:joblog-terminate", kwargs={"pk": job.pk}), data={})
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     @staticmethod
