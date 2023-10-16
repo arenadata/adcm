@@ -16,6 +16,7 @@
   align-items: center;
   border-bottom: 1px solid var(--entity-header-border);
   padding: 18px var(--page-padding-h);
+  white-space: nowrap;
 
   &__title {
     font-size: 18px;
