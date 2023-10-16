@@ -147,19 +147,16 @@ class TestJob(BaseTestCase):
         task.lock_affected([cluster])
         status = JobStatus.RUNNING
         pid = 10
-        event = Mock()
 
-        set_job_status(job.id, status, event, pid)
+        set_job_status(job.id, status, pid)
 
         job = JobLog.objects.get(id=job.id)
 
         self.assertEqual(job.status, status)
         self.assertEqual(job.pid, pid)
         self.assertEqual(task.lock.reason["placeholder"]["job"]["name"], action.display_name)
-        event.set_job_status.assert_called_once_with(job=job, status=status)
 
     def test_set_task_status(self):
-        event = Mock()
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
         action = Action.objects.create(prototype=prototype)
@@ -170,10 +167,9 @@ class TestJob(BaseTestCase):
             finish_date=timezone.now(),
         )
 
-        set_task_status(task, JobStatus.RUNNING, event)
+        set_task_status(task, JobStatus.RUNNING)
 
         self.assertEqual(task.status, JobStatus.RUNNING)
-        event.set_task_status.assert_called_once_with(task=task, status=JobStatus.RUNNING)
 
     def test_get_state_single_job(self):
         bundle = gen_bundle()

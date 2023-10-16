@@ -16,10 +16,11 @@ import json
 import os
 import subprocess
 import sys
-from functools import partial
 from pathlib import Path
 
 import adcm.init_django  # pylint: disable=unused-import
+from django.conf import settings
+from django.db.transaction import atomic
 
 import cm.job
 from cm.ansible_plugin import finish_check
@@ -27,11 +28,8 @@ from cm.api import get_hc, save_hc
 from cm.errors import AdcmEx
 from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, Prototype, ServiceComponent
-from cm.status_api import Event, post_event
 from cm.upgrade import bundle_revert, bundle_switch
 from cm.utils import get_env_with_venv_path
-from django.conf import settings
-from django.db.transaction import atomic, on_commit
 from rbac.roles import re_apply_policy_for_jobs
 
 
@@ -53,15 +51,15 @@ def read_config(job_id):
     return conf
 
 
-def set_job_status(job_id, ret, pid, event):
+def set_job_status(job_id, ret, pid):
     if ret == 0:
-        cm.job.set_job_status(job_id, JobStatus.SUCCESS, event, pid)
+        cm.job.set_job_status(job_id, JobStatus.SUCCESS, pid)
         return 0
     elif ret == -15:
-        cm.job.set_job_status(job_id, JobStatus.ABORTED, event, pid)
+        cm.job.set_job_status(job_id, JobStatus.ABORTED, pid)
         return 15
     else:
-        cm.job.set_job_status(job_id, JobStatus.FAILED, event, pid)
+        cm.job.set_job_status(job_id, JobStatus.FAILED, pid)
         return ret
 
 
@@ -96,19 +94,7 @@ def get_configured_env(job_config: dict) -> dict:
 
 
 def post_log(job_id, log_type, log_name):
-    log_storage = LogStorage.objects.filter(job__id=job_id, type=log_type, name=log_name).first()
-    if log_storage:
-        post_event(
-            event="add_job_log",
-            object_id=log_storage.job.pk,
-            object_type="job",
-            details={
-                "id": log_storage.id,
-                "type": log_storage.type,
-                "name": log_storage.name,
-                "format": log_storage.format,
-            },
-        )
+    LogStorage.objects.filter(job__id=job_id, type=log_type, name=log_name).first()
 
 
 def get_venv(job_id: int) -> str:
@@ -124,7 +110,6 @@ def process_err_out_file(job_id, job_type):
 
 
 def start_subprocess(job_id, cmd, conf, out_file, err_file):
-    event = Event()
     logger.info("job run cmd: %s", " ".join(cmd))
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
         cmd,
@@ -132,13 +117,11 @@ def start_subprocess(job_id, cmd, conf, out_file, err_file):
         stdout=out_file,
         stderr=err_file,
     )
-    cm.job.set_job_status(job_id, JobStatus.RUNNING, event, proc.pid)
-    event.send_state()
+    cm.job.set_job_status(job_id, JobStatus.RUNNING, proc.pid)
     logger.info("run job #%s, pid %s", job_id, proc.pid)
     ret = proc.wait()
     finish_check(job_id)
-    ret = set_job_status(job_id, ret, proc.pid, event)
-    event.send_state()
+    ret = set_job_status(job_id, ret, proc.pid)
 
     out_file.close()
     err_file.close()
@@ -174,22 +157,12 @@ def run_ansible(job_id: int) -> None:
 
 
 def run_internal(job: JobLog) -> None:
-    event = Event()
-    cm.job.set_job_status(job.id, JobStatus.RUNNING, event)
+    cm.job.set_job_status(job.id, JobStatus.RUNNING)
     out_file, err_file = process_err_out_file(job_id=job.id, job_type="internal")
     script = job.sub_action.script if job.sub_action else job.action.script
 
     try:
         with atomic():
-            on_commit(
-                func=partial(
-                    post_event,
-                    event="change_hostcomponentmap",
-                    object_id=job.task.task_object.pk,
-                    object_type=job.task.task_object.prototype.type,
-                )
-            )
-
             if script == "bundle_switch":
                 bundle_switch(obj=job.task.task_object, upgrade=job.action.upgrade)
             elif script == "bundle_revert":
@@ -204,13 +177,12 @@ def run_internal(job: JobLog) -> None:
             re_apply_policy_for_jobs(action_object=job.task.task_object, task=job.task)
     except AdcmEx as e:
         err_file.write(e.msg)
-        cm.job.set_job_status(job_id=job.id, status=JobStatus.FAILED, event=event)
+        cm.job.set_job_status(job_id=job.id, status=JobStatus.FAILED)
         out_file.close()
         err_file.close()
         sys.exit(1)
 
-    cm.job.set_job_status(job.id, JobStatus.SUCCESS, event)
-    event.send_state()
+    cm.job.set_job_status(job.id, JobStatus.SUCCESS)
     out_file.close()
     err_file.close()
     sys.exit(0)

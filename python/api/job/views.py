@@ -26,8 +26,7 @@ from api.job.serializers import (
 )
 from audit.utils import audit
 from cm.job import cancel_task, restart_task
-from cm.models import ActionType, JobLog, JobStatus, LogStorage, TaskLog
-from cm.status_api import Event
+from cm.models import ActionType, JobLog, LogStorage, TaskLog
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
@@ -173,9 +172,7 @@ class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Generi
         job: JobLog = get_object_for_user(request.user, VIEW_JOBLOG_PERMISSION, JobLog, id=job_pk)
         check_custom_perm(request.user, "change", JobLog, job_pk)
 
-        event = Event()
-        event.set_job_status(job=job, status=JobStatus.ABORTED.value)
-        job.cancel(event)
+        job.cancel()
 
         return Response(status=HTTP_200_OK)
 

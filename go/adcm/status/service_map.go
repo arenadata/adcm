@@ -2,7 +2,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -139,20 +139,6 @@ func (s *ServiceServer) getMap() ServiceMaps {
 	s.in <- ssReq{command: "getmap"}
 	resp := <-s.out
 	return resp.smap
-}
-
-func (s *ServiceServer) getServiceIDByComponentID(compId int) (resultServiceID int, found bool) {
-	resultServiceID = 0
-	found = false
-	for hostIDCompIDKey, clusterService := range s.smap.HostService {
-		compIdKey, _ := strconv.Atoi(strings.Split(hostIDCompIDKey, ".")[1])
-		if compIdKey == compId {
-			resultServiceID = clusterService.Service
-			found = true
-			break
-		}
-	}
-	return
 }
 
 func (s *ServiceServer) getHosts(clusterId int) ([]int, bool) {

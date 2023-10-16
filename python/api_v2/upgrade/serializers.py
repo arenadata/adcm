@@ -12,21 +12,15 @@
 
 from typing import Any
 
-from api_v2.bundle.serializers import BundleRelatedSerializer
+from api_v2.bundle.serializers import UpgradeBundleSerializer
 from cm.models import Upgrade
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
 
 class UpgradeListSerializer(ModelSerializer):
-    license_status = SerializerMethodField()
-
     class Meta:
         model = Upgrade
-        fields = ["id", "name", "display_name", "license_status"]
-
-    @classmethod
-    def get_license_status(cls, upgrade: Upgrade) -> bool:
-        return upgrade.bundle.prototype_set.filter(type__in=("cluster", "provider")).first().license
+        fields = ["id", "name", "display_name"]
 
 
 class UpgradeRetrieveSerializer(UpgradeListSerializer):
@@ -34,7 +28,7 @@ class UpgradeRetrieveSerializer(UpgradeListSerializer):
     host_component_map_rules = SerializerMethodField()
     disclaimer = SerializerMethodField()
     configuration = SerializerMethodField()
-    bundle = BundleRelatedSerializer()
+    bundle = UpgradeBundleSerializer()
 
     class Meta:
         model = Upgrade
@@ -43,7 +37,6 @@ class UpgradeRetrieveSerializer(UpgradeListSerializer):
             "name",
             "display_name",
             "is_allow_to_terminate",
-            "license_status",
             "host_component_map_rules",
             "configuration",
             "disclaimer",

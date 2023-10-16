@@ -50,7 +50,11 @@ class UpgradeViewSet(  # pylint: disable=too-many-ancestors
     RetrieveModelMixin,
     CamelCaseGenericViewSet,
 ):
-    queryset = Upgrade.objects.select_related("action", "bundle", "action__prototype").order_by("pk")
+    queryset = (
+        Upgrade.objects.select_related("action", "bundle", "action__prototype")
+        .prefetch_related("bundle__prototype_set")
+        .order_by("pk")
+    )
     filter_backends = []
 
     def get_serializer_class(self) -> type[UpgradeListSerializer | ActionRunSerializer | UpgradeRetrieveSerializer]:

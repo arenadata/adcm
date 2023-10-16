@@ -9,15 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from django.apps import AppConfig
-
-
-class CmConfig(AppConfig):
-    name = "cm"
-
-    def ready(self):
-        from cm.signals import (  # pylint: disable=import-outside-toplevel,unused-import
-            rename_audit_object,
-            rename_audit_object_host,
-        )

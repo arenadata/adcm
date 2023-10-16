@@ -10,14 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.apps import AppConfig
+from rest_framework.fields import CharField
+
+from adcm.serializers import EmptySerializer
 
 
-class CmConfig(AppConfig):
-    name = "cm"
-
-    def ready(self):
-        from cm.signals import (  # pylint: disable=import-outside-toplevel,unused-import
-            rename_audit_object,
-            rename_audit_object_host,
-        )
+class LoginSerializer(EmptySerializer):
+    username = CharField(write_only=True)
+    password = CharField(style={"input_type": "password"}, trim_whitespace=False, write_only=True)
