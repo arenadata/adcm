@@ -107,19 +107,25 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
         self.assertIsNone(upgrade_data["configuration"])
         self.assertEqual(upgrade_data["disclaimer"], "")
         self.assertFalse(upgrade_data["isAllowToTerminate"])
+        service_prototype = Prototype.objects.get(
+            bundle=self.cluster_upgrade.bundle, type=ObjectType.SERVICE, name=self.service_1.prototype.name
+        )
         self.assertDictEqual(
             upgrade_data["bundle"],
             {
                 "id": self.cluster_upgrade.bundle.pk,
+                "prototypeId": self.cluster_upgrade.bundle.prototype_set.filter(type="cluster").first().pk,
                 "licenseStatus": "accepted",
                 "unacceptedServicesPrototypes": [
                     {
-                        "id": Prototype.objects.get(
-                            bundle=self.cluster_upgrade.bundle,
-                            type=ObjectType.SERVICE,
-                            name=self.service_1.prototype.name,
-                        ).pk,
-                        "licenseText": "License\n",
+                        "id": service_prototype.pk,
+                        "name": service_prototype.name,
+                        "displayName": service_prototype.display_name,
+                        "version": service_prototype.version,
+                        "license": {
+                            "status": "unaccepted",
+                            "text": "License\n",
+                        },
                     }
                 ],
             },

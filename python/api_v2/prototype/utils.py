@@ -24,11 +24,13 @@ def accept_license(prototype: Prototype) -> None:
     Prototype.objects.filter(license_hash=prototype.license_hash, license="unaccepted").update(license="accepted")
 
 
-def get_license_text(proto: Prototype) -> str | None:
-    if not proto.license_path:
+def get_license_text(prototype: Prototype) -> str | None:
+    if not prototype.license_path:
         return None
 
-    if not isinstance(proto, Prototype):
+    if not isinstance(prototype, Prototype):
         raise_adcm_ex("LICENSE_ERROR")
 
-    return read_bundle_file(proto=proto, fname=proto.license_path, bundle_hash=proto.bundle.hash, ref="license file")
+    return read_bundle_file(
+        proto=prototype, fname=prototype.license_path, bundle_hash=prototype.bundle.hash, ref="license file"
+    )
