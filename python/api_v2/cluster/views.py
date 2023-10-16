@@ -122,7 +122,9 @@ class ClusterViewSet(
         if not cluster:
             return Response(data=f'Cluster with pk "{kwargs["pk"]}" not found', status=HTTP_404_NOT_FOUND)
 
-        prototypes = Prototype.objects.filter(type=ObjectType.SERVICE, bundle=cluster.prototype.bundle)
+        prototypes = Prototype.objects.filter(type=ObjectType.SERVICE, bundle=cluster.prototype.bundle).order_by(
+            "display_name"
+        )
         serializer = self.get_serializer_class()(instance=prototypes, many=True)
 
         return Response(data=serializer.data)
