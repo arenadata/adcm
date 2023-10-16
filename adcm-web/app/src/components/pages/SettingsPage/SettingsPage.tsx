@@ -1,9 +1,12 @@
 import React from 'react';
+import SettingsHeader from './SettingsHeader/SettingsHeader';
+import SettingsConfiguration from './SettingsConfiguration/SettingsConfiguration';
 
 const SettingsPage: React.FC = () => {
   return (
     <div>
-      <h1>Settings page</h1>
+      <SettingsHeader />
+      <SettingsConfiguration />
     </div>
   );
 };

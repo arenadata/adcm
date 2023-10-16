@@ -26,3 +26,4 @@ export { AdcmClusterServiceComponentsConfigsApi } from './adcm/clusterServiceCom
 export { AdcmClusterServicesConfigsApi } from './adcm/clusterServicesConfigs';
 export { AdcmProfileApi } from './adcm/profile';
 export { AdcmClusterOverviewApi } from './adcm/clusterOverview';
+export { AdcmSettingsApi } from './adcm/settings';

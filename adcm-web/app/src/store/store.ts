@@ -89,6 +89,8 @@ import clusterServicesConfigurationSlice from './adcm/cluster/services/servicesP
 import clusterServicesConfigurationsCompareSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationsCompareSlice.ts';
 import hostsConfigurationSlice from './adcm/host/configuration/hostsConfigurationSlice.ts';
 import hostsConfigurationCompareSlice from './adcm/host/configuration/hostsConfigurationCompareSlice.ts';
+import SettingsConfigurationsSlice from './adcm/settings/configuration/settingsConfigurationSlice.ts';
+import settingsConfigurationsCompareSlice from './adcm/settings/configuration/settingsConfigurationsCompareSlice.ts';
 
 const rootReducer = combineReducers({
   auth: authSlice,
@@ -179,6 +181,8 @@ const rootReducer = combineReducers({
     roles: rolesSlice,
     rolesTable: rolesTableSlice,
     rolesActions: rolesActionsSlice,
+    settingsConfigurations: SettingsConfigurationsSlice,
+    settingsConfigurationsCompare: settingsConfigurationsCompareSlice,
   }),
 });
 
