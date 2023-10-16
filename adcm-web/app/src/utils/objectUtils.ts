@@ -31,3 +31,21 @@ export const structureTraversal = (
 
 export const objectTrim = (object: Structure) =>
   structureTraversal(object, (item) => (typeof item === 'string' ? item.trim() : item));
+
+export const updateIfExists = <T>(
+  items: T[],
+  comparator: (item: T) => boolean,
+  changes: (item: T) => Partial<T>,
+): T[] => {
+  let hasChanged = false;
+  const newItems = items.map((item) => {
+    if (comparator(item)) {
+      hasChanged = true;
+      return { ...item, ...changes(item) };
+    }
+
+    return item;
+  });
+
+  return hasChanged ? newItems : items;
+};

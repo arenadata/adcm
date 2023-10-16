@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { AdcmHostProvider } from '@models/adcm/hostProvider';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmHostProvidersApi, AdcmHostsApi } from '@api';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 
 interface AdcmHostProviderState {
   hostProvider: AdcmHostProvider | null;
@@ -51,6 +52,24 @@ const hostProviderSlice = createSlice({
     });
     builder.addCase(getHostsCount.fulfilled, (state, action) => {
       state.hostsCount = action.payload.count;
+    });
+    builder.addCase(wsActions.update_hostprovider, (state, action) => {
+      const { id, changes } = action.payload.object;
+      if (state.hostProvider?.id == id) {
+        state.hostProvider = {
+          ...state.hostProvider,
+          ...changes,
+        };
+      }
+    });
+    builder.addCase(wsActions.delete_hostprovider_concern, (state, action) => {
+      const { id, changes } = action.payload.object;
+      if (state.hostProvider?.id === id) {
+        state.hostProvider = {
+          ...state.hostProvider,
+          concerns: state.hostProvider.concerns.filter((concern) => concern.id !== changes.id),
+        };
+      }
     });
   },
 });

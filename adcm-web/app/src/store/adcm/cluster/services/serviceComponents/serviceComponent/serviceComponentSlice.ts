@@ -6,6 +6,7 @@ import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 
 interface AdcmServiceComponentState {
   serviceComponent?: AdcmServiceComponent;
@@ -89,6 +90,24 @@ const serviceComponentSlice = createSlice({
     });
     builder.addCase(loadClusterServiceComponentFromBackend.rejected, (state) => {
       state.serviceComponent = undefined;
+    });
+    builder.addCase(wsActions.update_component, (state, action) => {
+      const { id, changes } = action.payload.object;
+      if (state.serviceComponent?.id == id) {
+        state.serviceComponent = {
+          ...state.serviceComponent,
+          ...changes,
+        };
+      }
+    });
+    builder.addCase(wsActions.delete_component_concern, (state, action) => {
+      const { id, changes } = action.payload.object;
+      if (state.serviceComponent?.id === id) {
+        state.serviceComponent = {
+          ...state.serviceComponent,
+          concerns: state.serviceComponent.concerns.filter((concern) => concern.id !== changes.id),
+        };
+      }
     });
   },
 });

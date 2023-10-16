@@ -6,7 +6,9 @@ import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
+import { updateIfExists } from '@utils/objectUtils';
 import { AdcmPrototypesApi, RequestError } from '@api';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 
 type AdcmServicesState = {
   services: AdcmService[];
@@ -160,6 +162,24 @@ const servicesSlice = createSlice({
         const licenses = [...state.serviceLicense, service];
         state.serviceLicense = [...new Set(licenses)];
       }
+    });
+    builder.addCase(wsActions.update_service, (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.services = updateIfExists<AdcmService>(
+        state.services,
+        (service) => service.id === id,
+        () => changes,
+      );
+    });
+    builder.addCase(wsActions.delete_service_concern, (state, action) => {
+      const { id, changes } = action.payload.object;
+      state.services = updateIfExists<AdcmService>(
+        state.services,
+        (service) => service.id === id,
+        (service) => ({
+          concerns: service.concerns.filter((concern) => concern.id !== changes.id),
+        }),
+      );
     });
   },
 });
