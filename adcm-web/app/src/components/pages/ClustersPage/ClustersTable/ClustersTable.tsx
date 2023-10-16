@@ -5,15 +5,12 @@ import Concern from '@commonComponents/Concern/Concern';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { useDispatch, useStore } from '@hooks';
 import { columns, clusterStatusesMap } from './ClustersTable.constants';
-import {
-  openClusterUpgradeDialog,
-  openClusterDeleteDialog,
-  openClusterRenameDialog,
-} from '@store/adcm/clusters/clustersActionsSlice';
+import { openClusterDeleteDialog, openClusterRenameDialog } from '@store/adcm/clusters/clustersActionsSlice';
 import { setSortParams } from '@store/adcm/clusters/clustersTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import ClusterDynamicActionsIcon from '@pages/ClustersPage/ClustersTable/ClusterDynamicActionsIcon/ClusterDynamicActionsIcon';
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
+import { openClusterUpgradeDialog } from '@store/adcm/clusters/clusterUpgradesSlice';
 
 const ClustersTable = () => {
   const dispatch = useDispatch();
@@ -22,7 +19,7 @@ const ClustersTable = () => {
   const sortParams = useStore((s) => s.adcm.clustersTable.sortParams);
 
   const handleUpgradeClick = (cluster: AdcmCluster) => {
-    dispatch(openClusterUpgradeDialog({ cluster }));
+    dispatch(openClusterUpgradeDialog(cluster));
   };
 
   const getHandleDeleteClick = (clusterId: number) => () => {

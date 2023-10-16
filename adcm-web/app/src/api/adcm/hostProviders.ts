@@ -7,6 +7,9 @@ import type {
   AdcmDynamicActionRunConfig,
   AdcmHostProvider,
   AdcmHostProviderFilter,
+  AdcmUpgradeShort,
+  AdcmUpgradeDetails,
+  AdcmUpgradeRunConfig,
 } from '@models/adcm';
 import { httpClient } from '@api/httpClient';
 import { PaginationParams, SortParams } from '@models/table';
@@ -64,6 +67,31 @@ export class AdcmHostProvidersApi {
     const response = await httpClient.post(
       `/api/v2/hostproviders/${hostProviderId}/actions/${actionId}/run/`,
       actionRunConfig,
+    );
+
+    return response.data;
+  }
+
+  public static async getHostProviderUpgrades(hostProvidersId: number) {
+    const response = await httpClient.get<AdcmUpgradeShort[]>(`/api/v2/hostproviders/${hostProvidersId}/upgrades/`);
+    return response.data;
+  }
+
+  public static async getHostProviderUpgrade(hostProvidersId: number, upgradeId: number) {
+    const response = await httpClient.get<AdcmUpgradeDetails>(
+      `/api/v2/hostproviders/${hostProvidersId}/upgrades/${upgradeId}/`,
+    );
+    return response.data;
+  }
+
+  public static async runHostProviderUpgrade(
+    hostProvidersId: number,
+    upgradeId: number,
+    upgradeRunConfig: AdcmUpgradeRunConfig,
+  ) {
+    const response = await httpClient.post(
+      `/api/v2/hostproviders/${hostProvidersId}/upgrades/${upgradeId}/run/`,
+      upgradeRunConfig,
     );
 
     return response.data;

@@ -1,25 +1,34 @@
 import React from 'react';
-import { Checkbox, Dialog } from '@uikit';
+import { useHostProviderUpgradeDialog } from '@pages/HostProvidersPage/Dialogs/HostProviderUpgradeDialog/useHostProviderUpgradeDialog';
+import { UpgradeStepKey } from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/UpgradeClusterDialog.types';
+import DynamicActionDialog from '@commonComponents/DynamicActionDialog/DynamicActionDialog';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
 import { AdcmLicenseStatus } from '@models/adcm';
-import { useUpgradeClusterDialog } from './useUpgradeClusterDialog';
+import { Checkbox, Dialog } from '@uikit';
 import LinkToLicenseText from '@commonComponents/LinkToLicenseText/LinkToLicenseText';
-import SelectUpgradeStep from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/SelectUpgradeStep/SelectUpgradeStep';
-import { UpgradeStepKey } from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/UpgradeClusterDialog.types';
-import ServicesLicensesStep from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/ServicesLicensesStep/ServicesLicensesStep';
-import DynamicActionDialog from '@commonComponents/DynamicActionDialog/DynamicActionDialog';
+import SelectUpgradeStep from './SelectUpgradeStep/SelectUpgradeStep';
 
-const UpgradeClusterDialog = () => {
-  const { cluster, isValid, upgradeDetails, formData, handleChangeFormData, onSubmit, onNext, onClose, currentStep } =
-    useUpgradeClusterDialog();
+const HostProviderUpgradeDialog: React.FC = () => {
+  const {
+    hostProvider,
+    isValid,
+    upgradeDetails,
+    formData,
+    handleChangeFormData,
+    onSubmit,
+    onNext,
+    onClose,
+    currentStep,
+  } = useHostProviderUpgradeDialog();
 
-  if (!cluster) return null;
+  if (!hostProvider) return null;
 
   // for last step with set upgrade run config use DynamicActionDialog
   if (upgradeDetails && currentStep === UpgradeStepKey.UpgradeRunConfig) {
     return (
       <DynamicActionDialog
-        clusterId={cluster.id}
+        // host provider actions can't set host mapping
+        clusterId={0}
         actionDetails={upgradeDetails}
         onCancel={onClose}
         onSubmit={onSubmit}
@@ -57,19 +66,14 @@ const UpgradeClusterDialog = () => {
     <Dialog
       width="auto"
       minWidth="584px"
-      title="Upgrade Cluster"
+      title="Upgrade HostProvider"
       isOpen={true}
       onOpenChange={onClose}
       dialogControls={dialogControls}
     >
-      {currentStep === UpgradeStepKey.SelectUpgrade && (
-        <SelectUpgradeStep formData={formData} onChange={handleChangeFormData} />
-      )}
-      {currentStep === UpgradeStepKey.ServicesLicenses && (
-        <ServicesLicensesStep formData={formData} onChange={handleChangeFormData} />
-      )}
+      <SelectUpgradeStep formData={formData} onChange={handleChangeFormData} />
     </Dialog>
   );
 };
 
-export default UpgradeClusterDialog;
+export default HostProviderUpgradeDialog;

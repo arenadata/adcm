@@ -9,6 +9,8 @@ import Concern from '@commonComponents/Concern/Concern';
 import { Link } from 'react-router-dom';
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 import HostProvidersDynamicActionsIcon from '../HostProvidersDynamicActionsIcon/HostProvidersDynamicActionsIcon';
+import { AdcmHostProvider } from '@models/adcm';
+import { opeHostProviderUpgradeDialog } from '@store/adcm/hostProviders/hostProviderUpgradesSlice';
 
 const HostProviderTable = () => {
   const dispatch = useDispatch();
@@ -23,6 +25,10 @@ const HostProviderTable = () => {
 
   const handleSorting = (sortParams: SortParams) => {
     dispatch(setSortParams(sortParams));
+  };
+
+  const handleUpgradeClick = (hostProviders: AdcmHostProvider) => {
+    dispatch(opeHostProviderUpgradeDialog(hostProviders));
   };
 
   return (
@@ -45,7 +51,7 @@ const HostProviderTable = () => {
               disabled={!hostProvider.isUpgradable}
               icon="g1-upgrade"
               size={32}
-              onClick={() => null}
+              onClick={() => handleUpgradeClick(hostProvider)}
               title="Upgrade"
             />
             <IconButton icon="g1-delete" size={32} onClick={() => handleDeleteAction(hostProvider.id)} title="Delete" />

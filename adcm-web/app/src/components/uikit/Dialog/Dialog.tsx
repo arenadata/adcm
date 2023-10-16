@@ -5,6 +5,7 @@ import IconButton from '@uikit/IconButton/IconButton';
 import Text from '@uikit/Text/Text';
 import DialogDefaultControls, { DialogDefaultControlsProps } from '@uikit/Dialog/DialogDefaultControls';
 import s from './Dialog.module.scss';
+import cn from 'classnames';
 
 export interface DialogProps extends ModalOptions, DialogDefaultControlsProps {
   children: React.ReactNode;
@@ -13,6 +14,9 @@ export interface DialogProps extends ModalOptions, DialogDefaultControlsProps {
   isDialogControlsOnTop?: boolean;
   width?: string;
   height?: string;
+  maxWidth?: string;
+  minWidth?: string;
+  className?: string;
 }
 
 const Dialog: React.FC<DialogProps> = ({
@@ -30,6 +34,9 @@ const Dialog: React.FC<DialogProps> = ({
   onCancel,
   width = '584px',
   height = 'auto',
+  maxWidth = '100%',
+  minWidth,
+  className,
 }) => {
   const handleClose = () => {
     onOpenChange(false);
@@ -57,9 +64,9 @@ const Dialog: React.FC<DialogProps> = ({
     <Modal
       isOpen={isOpen}
       onOpenChange={handleOpenChange}
-      className={s.dialog}
+      className={cn(s.dialog, className)}
       isDismissDisabled={isDismissDisabled}
-      style={{ width, height }}
+      style={{ width, height, maxWidth, minWidth }}
     >
       <IconButton
         icon="g2-close"

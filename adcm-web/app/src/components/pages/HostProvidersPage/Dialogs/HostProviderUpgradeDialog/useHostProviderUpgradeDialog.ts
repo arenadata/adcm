@@ -1,43 +1,43 @@
 import { useStore, useDispatch, useForm } from '@hooks';
 import {
   acceptPrototypeLicense,
-  closeClusterUpgradeDialog,
-  loadClusterUpgradeDetails,
-  loadClusterUpgrades,
-  runClusterUpgrade,
-} from '@store/adcm/clusters/clusterUpgradesSlice';
+  closeHostProviderUpgradeDialog,
+  loadHostProviderUpgradeDetails,
+  loadHostProviderUpgrades,
+  runHostProviderUpgrade,
+} from '@store/adcm/hostProviders/hostProviderUpgradesSlice';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { UpgradeClusterFormData, UpgradeStepKey } from './UpgradeClusterDialog.types';
+import { UpgradeHostProviderFormData } from './HostProviderUpgradeDialog.types';
 import { AdcmUpgradeRunConfig, AdcmLicenseStatus } from '@models/adcm';
+import { UpgradeStepKey } from '@pages/ClustersPage/Dialogs/UpgradeClusterDialog/UpgradeClusterDialog.types';
 
-const getInitialFormData = (): UpgradeClusterFormData => ({
+const getInitialFormData = (): UpgradeHostProviderFormData => ({
   upgradeId: null,
   isClusterUpgradeAcceptedLicense: false,
-  servicesPrototypesAcceptedLicense: new Set(),
 });
 
-export const useUpgradeClusterDialog = () => {
+export const useHostProviderUpgradeDialog = () => {
   const dispatch = useDispatch();
 
-  const cluster = useStore(({ adcm }) => adcm.clusterUpgrades.dialog.cluster);
-  const upgradesDetails = useStore(({ adcm }) => adcm.clusterUpgrades.relatedData.upgradesDetails);
+  const hostProvider = useStore(({ adcm }) => adcm.hostProviderUpgrades.dialog.hostProvider);
+  const upgradesDetails = useStore(({ adcm }) => adcm.hostProviderUpgrades.relatedData.upgradesDetails);
 
   const [currentStep, setCurrentStep] = useState(UpgradeStepKey.SelectUpgrade);
 
-  const { formData, handleChangeFormData, setFormData } = useForm<UpgradeClusterFormData>(getInitialFormData());
+  const { formData, handleChangeFormData, setFormData } = useForm<UpgradeHostProviderFormData>(getInitialFormData());
 
   const handleClose = useCallback(() => {
     setCurrentStep(UpgradeStepKey.SelectUpgrade);
     setFormData(getInitialFormData());
-    dispatch(closeClusterUpgradeDialog());
+    dispatch(closeHostProviderUpgradeDialog());
   }, [dispatch, setCurrentStep, setFormData]);
 
-  // load cluster short upgrades list, when cluster was changed (use for select on first step)
+  // load hostProvider short upgrades list, when hostProvider was changed (use for select on first step)
   useEffect(() => {
-    if (cluster) {
-      dispatch(loadClusterUpgrades(cluster.id));
+    if (hostProvider) {
+      dispatch(loadHostProviderUpgrades(hostProvider.id));
     }
-  }, [dispatch, cluster]);
+  }, [dispatch, hostProvider]);
 
   // upgradesDetails load from backend to cache-object (upgradeId => upgradesDetail)
   // upgradesDetail load only one time (while upgrade dialog is open)
@@ -45,10 +45,10 @@ export const useUpgradeClusterDialog = () => {
 
   // load upgradesDetail after select upgrade
   useEffect(() => {
-    if (cluster && formData.upgradeId && !upgradeDetails) {
-      dispatch(loadClusterUpgradeDetails({ clusterId: cluster.id, upgradeId: formData.upgradeId }));
+    if (hostProvider && formData.upgradeId && !upgradeDetails) {
+      dispatch(loadHostProviderUpgradeDetails({ hostProviderId: hostProvider.id, upgradeId: formData.upgradeId }));
     }
-  }, [dispatch, cluster, upgradeDetails, formData.upgradeId]);
+  }, [dispatch, hostProvider, upgradeDetails, formData.upgradeId]);
 
   // after user select upgrade (first step), after accept licenses of all relative service prototypes (second step)
   // we send request for accept license for upgrade prototype
@@ -74,27 +74,17 @@ export const useUpgradeClusterDialog = () => {
   const handleNext = () => {
     if (currentStep === UpgradeStepKey.SelectUpgrade) {
       if (upgradeDetails) {
-        // if upgrade have some unaccepted relative service prototype then switch to step with form for accept service license
-        if (upgradeDetails.bundle.unacceptedServicesPrototypes.length > 0) {
-          setCurrentStep(UpgradeStepKey.ServicesLicenses);
-        } else {
-          // switch to last step with set configs
-          setCurrentStep(UpgradeStepKey.UpgradeRunConfig);
-        }
+        // switch to last step with set configs
+        setCurrentStep(UpgradeStepKey.UpgradeRunConfig);
       }
-    }
-
-    if (currentStep === UpgradeStepKey.ServicesLicenses) {
-      // switch to last step with set configs
-      setCurrentStep(UpgradeStepKey.UpgradeRunConfig);
     }
   };
 
   const handleSubmit = (upgradeRunConfig: AdcmUpgradeRunConfig) => {
-    if (cluster && upgradeDetails) {
+    if (hostProvider && upgradeDetails) {
       dispatch(
-        runClusterUpgrade({
-          cluster,
+        runHostProviderUpgrade({
+          hostProvider,
           upgradeId: upgradeDetails.id,
           upgradeRunConfig,
         }),
@@ -115,24 +105,13 @@ export const useUpgradeClusterDialog = () => {
       return false;
     }
 
-    if (currentStep === UpgradeStepKey.ServicesLicenses) {
-      // when user accept relative service license - we send request on server on success we append servicePrototypeId to formData.servicesPrototypesAcceptedLicense
-      // if count of element in formData.servicesPrototypesAcceptedLicense != unacceptedServicesPrototypes.length then user accept not all relative services
-      // and user should accept all services (disable Next button)
-      if (
-        upgradeDetails.bundle.unacceptedServicesPrototypes.length !== formData.servicesPrototypesAcceptedLicense.size
-      ) {
-        return false;
-      }
-    }
-
     return true;
-  }, [currentStep, formData, upgradeDetails]);
+  }, [formData, upgradeDetails]);
 
   return {
     currentStep,
     isValid,
-    cluster,
+    hostProvider,
     formData,
     handleChangeFormData,
     upgradeDetails,

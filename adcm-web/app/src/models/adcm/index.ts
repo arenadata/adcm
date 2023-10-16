@@ -21,6 +21,7 @@ export * from './clusterHosts';
 export * from './profile';
 export * from './license';
 export * from './dynamicAction';
+export * from './upgrades';
 export * from './backendEvents';
 
 export interface Batch<T> {

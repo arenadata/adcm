@@ -20,7 +20,7 @@ const DialogDefaultControls: React.FC<DialogDefaultControlsProps> = ({
 }) => {
   return (
     <ButtonGroup className={s.dialog__defaultControls}>
-      <Button variant="secondary" onClick={onCancel}>
+      <Button variant="secondary" onClick={onCancel} tabIndex={1}>
         {cancelButtonLabel}
       </Button>
       <Button disabled={isActionDisabled} onClick={onAction}>

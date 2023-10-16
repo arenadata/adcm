@@ -3,7 +3,6 @@ import HostProvidersTable from '@pages/HostProvidersPage/HostProvidersTable/Host
 import { useRequestHostProviders } from '@pages/HostProvidersPage/useRequestHostProviders';
 import HostProvidersTableToolbar from '@pages/HostProvidersPage/HostProviderTableToolbar/HostProviderTableToolbar';
 import HostProvidersTableFooter from '@pages/HostProvidersPage/HostProvidersTableFooter/HostProvidersTableFooter';
-import HostProvidersActionsDialogs from '@pages/HostProvidersPage/HostProvidersActionsDialogs/HostProvidersActionsDialogs';
 import Dialogs from '@pages/HostProvidersPage/Dialogs';
 import { useDispatch } from '@hooks';
 import { useEffect } from 'react';
@@ -23,7 +22,6 @@ const HostProvidersPage = () => {
       <HostProvidersTableToolbar />
       <HostProvidersTable />
       <HostProvidersTableFooter />
-      <HostProvidersActionsDialogs />
       <Dialogs />
     </TableContainer>
   );
