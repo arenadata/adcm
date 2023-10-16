@@ -1898,7 +1898,7 @@ class TestProviderConfig(BaseAPITestCase):
                         "string_key": "string",
                     }
                 },
-                "json": {"key": "value"},
+                "json": '{"key": "value"}',
             },
             "creationTime": self.provider_initial_config.date.isoformat().replace("+00:00", "Z"),
             "description": "init",
@@ -1948,7 +1948,7 @@ class TestProviderConfig(BaseAPITestCase):
                         "string_key": "new string",
                     }
                 },
-                "json": {"key": "value", "new key": "new value"},
+                "json": '{"key": "value", "new key": "new value"}',
             },
             "adcmMeta": {"/activatable_group": {"isActive": True}},
             "description": "new config",
