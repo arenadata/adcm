@@ -58,6 +58,7 @@ import ClusterPrimaryConfiguration from '@pages/cluster/ClusterConfiguration/Clu
 import ClusterConfigGroupSingle from '@pages/cluster/ClusterConfiguration/ClusterConfigGroupSingle/ClusterConfigGroupSingle';
 import HostLayout from '@layouts/HostPageLayout/HostLayout';
 import HostPrimaryConfiguration from '@pages/host/HostPrimaryConfiguration/HostPrimaryConfiguration';
+import ServiceConfigGroupSingle from '@pages/cluster/service/ServiceConfiguration/ServiceConfigGroupSingle/ServiceConfigGroupSingle';
 
 function App() {
   return (
@@ -98,6 +99,10 @@ function App() {
                       <Route
                         path="/clusters/:clusterId/services/:serviceId/configuration-groups"
                         element={<ServiceConfigurationGroups />}
+                      />
+                      <Route
+                        path="/clusters/:clusterId/services/:serviceId/configuration-groups/:configGroupId/"
+                        element={<ServiceConfigGroupSingle />}
                       />
                       <Route
                         path="/clusters/:clusterId/services/:serviceId/components"

@@ -1,13 +1,13 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmClusterConfigGroupsApi, RequestError } from '@api';
+import { AdcmClusterServiceConfigGroupsApi, RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmConfigGroup, AdcmHostCandidate } from '@models/adcm';
-import { AdcmClusterConfigGroupCreateData } from '@api/adcm/clusterGroupConfig';
-import { getClusterConfigGroups } from '@store/adcm/cluster/configGroups/clusterConfigGroupsSlice';
+import { AdcmClusterServiceConfigGroupCreateData } from '@api/adcm/clusterServiceGroupConfigs';
+import { getClusterServiceConfigGroups } from './serviceConfigGroupsSlice';
 
-interface AdcmClusterConfigGroupActionsState {
+interface AdcmClusterServiceConfigGroupActionsState {
   deleteDialog: {
     configGroup: AdcmConfigGroup | null;
   };
@@ -24,16 +24,17 @@ interface AdcmClusterConfigGroupActionsState {
   };
 }
 
-type ClusterConfigGroupPayload = {
+type ClusterServiceConfigGroupPayload = {
   clusterId: number;
+  serviceId: number;
   configGroupId: number;
 };
 
-const deleteClusterConfigGroup = createAsyncThunk(
-  'adcm/clusterConfigGroupActions/deleteConfigGroup',
-  async ({ clusterId, configGroupId }: ClusterConfigGroupPayload, thunkAPI) => {
+const deleteClusterServiceConfigGroup = createAsyncThunk(
+  'adcm/cluster/service/clusterServiceConfigGroupActions/deleteConfigGroup',
+  async ({ clusterId, serviceId, configGroupId }: ClusterServiceConfigGroupPayload, thunkAPI) => {
     try {
-      await AdcmClusterConfigGroupsApi.deleteConfigGroup(clusterId, configGroupId);
+      await AdcmClusterServiceConfigGroupsApi.deleteConfigGroup(clusterId, serviceId, configGroupId);
 
       thunkAPI.dispatch(showInfo({ message: 'Config Group was deleted' }));
     } catch (error) {
@@ -43,25 +44,26 @@ const deleteClusterConfigGroup = createAsyncThunk(
   },
 );
 
-const deleteClusterConfigGroupWithUpdate = createAsyncThunk(
-  'adcm/clusterConfigGroupActions/deleteConfigGroupWithUpdate',
-  async (arg: ClusterConfigGroupPayload, thunkAPI) => {
-    await thunkAPI.dispatch(deleteClusterConfigGroup(arg)).unwrap();
-    thunkAPI.dispatch(getClusterConfigGroups(arg.clusterId));
+const deleteClusterServiceConfigGroupWithUpdate = createAsyncThunk(
+  'adcm/cluster/service/clusterServiceConfigGroupActions/deleteConfigGroupWithUpdate',
+  async (arg: ClusterServiceConfigGroupPayload, thunkAPI) => {
+    await thunkAPI.dispatch(deleteClusterServiceConfigGroup(arg)).unwrap();
+    thunkAPI.dispatch(getClusterServiceConfigGroups(arg));
   },
 );
 
-type CreateClusterConfigGroupPayload = {
+type CreateClusterServiceConfigGroupPayload = {
   clusterId: number;
-  data: AdcmClusterConfigGroupCreateData;
+  serviceId: number;
+  data: AdcmClusterServiceConfigGroupCreateData;
 };
 
-const createClusterConfigGroup = createAsyncThunk(
-  'adcm/clusterConfigGroupActions/createConfigGroup',
-  async ({ clusterId, data }: CreateClusterConfigGroupPayload, thunkAPI) => {
+const createClusterServiceConfigGroup = createAsyncThunk(
+  'adcm/cluster/service/clusterServiceConfigGroupActions/createConfigGroup',
+  async ({ clusterId, serviceId, data }: CreateClusterServiceConfigGroupPayload, thunkAPI) => {
     try {
       thunkAPI.dispatch(setIsCreating(true));
-      return await AdcmClusterConfigGroupsApi.createConfigGroup(clusterId, data);
+      return await AdcmClusterServiceConfigGroupsApi.createConfigGroup(clusterId, serviceId, data);
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -71,11 +73,11 @@ const createClusterConfigGroup = createAsyncThunk(
   },
 );
 
-const getClusterConfigGroupHostsCandidates = createAsyncThunk(
-  'adcm/clusterConfigGroupActions/getConfigGroupHostsCandidates',
-  async ({ clusterId, configGroupId }: ClusterConfigGroupPayload, thunkAPI) => {
+const getClusterServiceConfigGroupHostsCandidates = createAsyncThunk(
+  'adcm/cluster/service/clusterServiceConfigGroupActions/getClusterServiceConfigGroupHostsCandidates',
+  async ({ clusterId, serviceId, configGroupId }: ClusterServiceConfigGroupPayload, thunkAPI) => {
     try {
-      return await AdcmClusterConfigGroupsApi.getConfigGroupHostsCandidates(clusterId, configGroupId);
+      return await AdcmClusterServiceConfigGroupsApi.getConfigGroupHostsCandidates(clusterId, serviceId, configGroupId);
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -83,27 +85,35 @@ const getClusterConfigGroupHostsCandidates = createAsyncThunk(
   },
 );
 
-type SaveClusterConfigGroupMappedHostsPayload = ClusterConfigGroupPayload & {
+type SaveClusterServiceConfigGroupMappedHostsPayload = ClusterServiceConfigGroupPayload & {
   mappedHostsIds: number[];
 };
 
-const saveClusterConfigGroupMappedHosts = createAsyncThunk(
+const saveClusterServiceConfigGroupMappedHosts = createAsyncThunk(
   'adcm/clusterConfigGroupActions/saveConfigGroupMappedHosts',
-  async ({ clusterId, configGroupId, mappedHostsIds }: SaveClusterConfigGroupMappedHostsPayload, thunkAPI) => {
+  async (
+    { clusterId, serviceId, configGroupId, mappedHostsIds }: SaveClusterServiceConfigGroupMappedHostsPayload,
+    thunkAPI,
+  ) => {
     try {
       thunkAPI.dispatch(setIsSaveMapping(true));
-      return await AdcmClusterConfigGroupsApi.saveConfigGroupMappedHosts(clusterId, configGroupId, mappedHostsIds);
+      return await AdcmClusterServiceConfigGroupsApi.saveConfigGroupMappedHosts(
+        clusterId,
+        serviceId,
+        configGroupId,
+        mappedHostsIds,
+      );
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
     } finally {
       thunkAPI.dispatch(closeMappingDialog());
-      thunkAPI.dispatch(getClusterConfigGroups(clusterId));
+      thunkAPI.dispatch(getClusterServiceConfigGroups({ clusterId, serviceId }));
     }
   },
 );
 
-const createInitialState = (): AdcmClusterConfigGroupActionsState => ({
+const createInitialState = (): AdcmClusterServiceConfigGroupActionsState => ({
   deleteDialog: {
     configGroup: null,
   },
@@ -120,8 +130,8 @@ const createInitialState = (): AdcmClusterConfigGroupActionsState => ({
   },
 });
 
-const clusterConfigGroupActionsSlice = createSlice({
-  name: 'adcm/clusterConfigGroupActions',
+const clusterServiceConfigGroupActionsSlice = createSlice({
+  name: 'adcm/cluster/service/clusterServiceConfigGroupActions',
   initialState: createInitialState(),
   reducers: {
     cleanupActions() {
@@ -157,16 +167,16 @@ const clusterConfigGroupActionsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(createClusterConfigGroup.fulfilled, (state) => {
-        clusterConfigGroupActionsSlice.caseReducers.closeCreateDialog(state);
+      .addCase(createClusterServiceConfigGroup.fulfilled, (state) => {
+        clusterServiceConfigGroupActionsSlice.caseReducers.closeCreateDialog(state);
       })
-      .addCase(deleteClusterConfigGroupWithUpdate.pending, (state) => {
-        clusterConfigGroupActionsSlice.caseReducers.closeDeleteDialog(state);
+      .addCase(deleteClusterServiceConfigGroupWithUpdate.pending, (state) => {
+        clusterServiceConfigGroupActionsSlice.caseReducers.closeDeleteDialog(state);
       })
-      .addCase(getClusterConfigGroupHostsCandidates.fulfilled, (state, action) => {
+      .addCase(getClusterServiceConfigGroupHostsCandidates.fulfilled, (state, action) => {
         state.relatedData.candidatesHosts = action.payload;
       })
-      .addCase(getClusterConfigGroupHostsCandidates.rejected, (state) => {
+      .addCase(getClusterServiceConfigGroupHostsCandidates.rejected, (state) => {
         state.relatedData.candidatesHosts = [];
       });
   },
@@ -182,7 +192,7 @@ const {
   openMappingDialog,
   closeMappingDialog,
   setIsSaveMapping,
-} = clusterConfigGroupActionsSlice.actions;
+} = clusterServiceConfigGroupActionsSlice.actions;
 
 export {
   cleanupActions,
@@ -193,11 +203,11 @@ export {
   openMappingDialog,
   closeMappingDialog,
 };
-export default clusterConfigGroupActionsSlice.reducer;
+export default clusterServiceConfigGroupActionsSlice.reducer;
 
 export {
-  createClusterConfigGroup,
-  deleteClusterConfigGroupWithUpdate,
-  getClusterConfigGroupHostsCandidates,
-  saveClusterConfigGroupMappedHosts,
+  createClusterServiceConfigGroup,
+  deleteClusterServiceConfigGroupWithUpdate,
+  getClusterServiceConfigGroupHostsCandidates,
+  saveClusterServiceConfigGroupMappedHosts,
 };

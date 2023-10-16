@@ -89,6 +89,10 @@ import clusterServicesConfigurationSlice from './adcm/cluster/services/servicesP
 import clusterServicesConfigurationsCompareSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationsCompareSlice.ts';
 import hostsConfigurationSlice from './adcm/host/configuration/hostsConfigurationSlice.ts';
 import hostsConfigurationCompareSlice from './adcm/host/configuration/hostsConfigurationCompareSlice.ts';
+import serviceConfigGroupsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsSlice.ts';
+import serviceConfigGroupsTableSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsTableSlice.ts';
+import serviceConfigGroupsActionsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsActionsSlice.ts';
+import serviceConfigGroupSlice from './adcm/cluster/services/configGroupSingle/configGroupSingle.ts';
 import SettingsConfigurationsSlice from './adcm/settings/configuration/settingsConfigurationSlice.ts';
 import settingsConfigurationsCompareSlice from './adcm/settings/configuration/settingsConfigurationsCompareSlice.ts';
 
@@ -145,6 +149,10 @@ const rootReducer = combineReducers({
     servicesTable: servicesTableSlice,
     servicesActions: servicesActionsSlice,
     servicesDynamicActions: servicesDynamicActionsSlice,
+    serviceConfigGroups: serviceConfigGroupsSlice,
+    serviceConfigGroupsTable: serviceConfigGroupsTableSlice,
+    serviceConfigGroupsActions: serviceConfigGroupsActionsSlice,
+    serviceConfigGroup: serviceConfigGroupSlice,
     serviceComponents: serviceComponentsSlice,
     serviceComponentsConfigurationsCompare: serviceComponentConfigurationsCompareSlice,
     serviceComponentConfiguration: serviceComponentConfigurationSlice,

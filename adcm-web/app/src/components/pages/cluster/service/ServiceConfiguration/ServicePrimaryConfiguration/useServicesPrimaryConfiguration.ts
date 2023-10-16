@@ -4,7 +4,7 @@ import {
   createWithUpdateClusterServicesConfigurations,
   getClusterServicesConfiguration,
   getClusterServicesConfigurationsVersions,
-} from '@store/adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationSlice.ts';
+} from '@store/adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationSlice';
 import { useCallback, useEffect } from 'react';
 import { useConfigurations } from '@commonComponents/configuration/useConfigurations.ts';
 

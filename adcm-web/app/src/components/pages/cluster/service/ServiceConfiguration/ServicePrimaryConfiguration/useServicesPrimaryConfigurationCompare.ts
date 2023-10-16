@@ -4,7 +4,7 @@ import {
   cleanupClusterServicesConfigurationsCompareSlice,
   getLeftConfiguration,
   getRightConfiguration,
-} from '@store/adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationsCompareSlice.ts';
+} from '@store/adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationsCompareSlice';
 
 export const useServicesPrimaryConfigurationsCompare = () => {
   const dispatch = useDispatch();
