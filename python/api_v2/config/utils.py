@@ -417,7 +417,7 @@ class Group(Field):
     @property
     def activation(self) -> dict | None:
         if "activatable" in self.limits:
-            return {"isAllowChange": self.is_read_only}
+            return {"isAllowChange": not self.is_read_only}
 
         return None
 
