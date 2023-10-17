@@ -1,18 +1,15 @@
 import { useDispatch, useStore } from '@hooks';
 import { useCallback, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import {
   cleanupServiceComponentConfigurationsCompareSlice,
   getLeftConfiguration,
   getRightConfiguration,
 } from '@store/adcm/cluster/services/serviceComponents/serviceComponent/configuration/serviceComponentConfigurationsCompareSlice';
+import { useServiceComponentParams } from '@pages/cluster/service/component/useServiceComponentParams';
 
 export const useComponentPrimaryConfigurationsCompare = () => {
   const dispatch = useDispatch();
-  const { clusterId: clusterIdFromUrl, serviceId: serviceIdFromUrl, componentId: componentIdFromUrl } = useParams();
-  const clusterId = Number(clusterIdFromUrl);
-  const serviceId = Number(serviceIdFromUrl);
-  const componentId = Number(componentIdFromUrl);
+  const { clusterId, serviceId, componentId } = useServiceComponentParams();
 
   const leftConfiguration = useStore(({ adcm }) => adcm.serviceComponentsConfigurationsCompare.leftConfiguration);
   const rightConfiguration = useStore(({ adcm }) => adcm.serviceComponentsConfigurationsCompare.rightConfiguration);

@@ -7,14 +7,11 @@ import {
   getServiceComponentConfiguration,
   getServiceComponentConfigurationsVersions,
 } from '@store/adcm/cluster/services/serviceComponents/serviceComponent/configuration/serviceComponentConfigurationSlice';
-import { useParams } from 'react-router-dom';
+import { useServiceComponentParams } from '@pages/cluster/service/component/useServiceComponentParams';
 
 export const useComponentPrimaryConfiguration = () => {
   const dispatch = useDispatch();
-  const { clusterId: clusterIdFromUrl, serviceId: serviceIdFromUrl, componentId: componentIdFromUrl } = useParams();
-  const clusterId = Number(clusterIdFromUrl);
-  const serviceId = Number(serviceIdFromUrl);
-  const componentId = Number(componentIdFromUrl);
+  const { clusterId, serviceId, componentId } = useServiceComponentParams();
 
   const component = useStore(({ adcm }) => adcm.serviceComponent.serviceComponent);
   const configVersions = useStore(({ adcm }) => adcm.serviceComponentConfiguration.configVersions);

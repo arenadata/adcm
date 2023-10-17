@@ -9,14 +9,11 @@ import {
   loadClusterServiceComponentsDynamicActions,
 } from '@store/adcm/cluster/services/serviceComponents/serviceComponentsDynamicActionsSlice';
 import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useServiceComponentParams } from '@pages/cluster/service/component/useServiceComponentParams';
 
 export const useRequestServiceComponent = () => {
   const dispatch = useDispatch();
-  const { clusterId: clusterIdFromUrl, serviceId: serviceIdFromUrl, componentId: componentIdFromUrl } = useParams();
-  const clusterId = Number(clusterIdFromUrl);
-  const serviceId = Number(serviceIdFromUrl);
-  const componentId = Number(componentIdFromUrl);
+  const { clusterId, serviceId, componentId } = useServiceComponentParams();
 
   useEffect(() => {
     return () => {

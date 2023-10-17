@@ -46,7 +46,6 @@ import BundleOverviewPage from '@pages/BundleOverviewPage/BundleOverviewPage';
 import JobPage from '@pages/JobsPage/JobPage/JobPage';
 import ServiceComponent from '@pages/cluster/service/component/ServiceComponent';
 import ComponentPrimaryConfiguration from '@pages/cluster/service/component/ComponentPrimaryConfiguration/ComponentPrimaryConfiguration';
-import ComponentConfigurationGroups from '@pages/cluster/service/component/ComponentConfigurationGroups/ComponentConfigurationGroups';
 import ClusterHostLayout from '@layouts/ClusterHostLayout/ClusterHostLayout';
 import ClusterHostPrimaryConfiguration from '@pages/cluster/host/HostPrimaryConfiguration/HostPrimaryConfiguration';
 import ClusterHostComponents from '@pages/cluster/host/HostComponents/HostComponents';
@@ -59,6 +58,8 @@ import ClusterConfigGroupSingle from '@pages/cluster/ClusterConfiguration/Cluste
 import HostLayout from '@layouts/HostPageLayout/HostLayout';
 import HostPrimaryConfiguration from '@pages/host/HostPrimaryConfiguration/HostPrimaryConfiguration';
 import ServiceConfigGroupSingle from '@pages/cluster/service/ServiceConfiguration/ServiceConfigGroupSingle/ServiceConfigGroupSingle';
+import ServiceComponentConfigurationGroups from '@pages/cluster/service/component/ServiceComponentConfiguration/ServiceComponentConfigGroups/ServiceComponentConfigurationGroups';
+import ServiceComponentConfigGroupSingle from '@pages/cluster/service/component/ServiceComponentConfiguration/ServiceComponentConfigGroupSingle/ServiceComponentConfigGroupSingle';
 
 function App() {
   return (
@@ -119,7 +120,11 @@ function App() {
                         />
                         <Route
                           path="/clusters/:clusterId/services/:serviceId/components/:componentId/configuration-groups"
-                          element={<ComponentConfigurationGroups />}
+                          element={<ServiceComponentConfigurationGroups />}
+                        />
+                        <Route
+                          path="/clusters/:clusterId/services/:serviceId/components/:componentId/configuration-groups/:configGroupId"
+                          element={<ServiceComponentConfigGroupSingle />}
                         />
                       </Route>
                       <Route path="/clusters/:clusterId/services/:serviceId/info" element={<ServiceInfo />} />
