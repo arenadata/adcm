@@ -58,16 +58,45 @@ from adcm.permissions import (
 class ActionViewSet(  # pylint: disable=too-many-ancestors
     PermissionListMixin, ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, CamelCaseGenericViewSet
 ):
-    queryset = (
-        Action.objects.select_related("prototype")
-        .filter(upgrade__isnull=True)
-        .exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET)
-        .order_by("pk")
-    )
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_ACTION_PERM]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ActionFilter
+
+    def get_queryset(self, *args, **kwargs):
+        self.parent_object = self.get_parent_object()  # pylint: disable=attribute-defined-outside-init
+
+        if self.parent_object is None:
+            raise NotFound("Can't find action's parent object")
+
+        if self.parent_object.concerns.filter(type=ConcernType.LOCK).exists():
+            return Action.objects.none()
+
+        self.prototype_objects = {}  # pylint: disable=attribute-defined-outside-init
+
+        if isinstance(self.parent_object, Host) and self.parent_object.cluster:
+            self.prototype_objects[self.parent_object.cluster.prototype] = self.parent_object.cluster
+
+            for hc_item in HostComponent.objects.filter(host=self.parent_object).select_related(
+                "service__prototype", "component__prototype"
+            ):
+                self.prototype_objects[hc_item.service.prototype] = hc_item.service
+                self.prototype_objects[hc_item.component.prototype] = hc_item.component
+
+        actions = (
+            Action.objects.select_related("prototype")
+            .exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET)
+            .filter(upgrade__isnull=True)
+            .filter(
+                Q(prototype=self.parent_object.prototype, host_action=False)
+                | Q(prototype__in=self.prototype_objects.keys(), host_action=True)
+            )
+            .order_by("pk")
+        )
+
+        self.prototype_objects[self.parent_object.prototype] = self.parent_object
+
+        return actions
 
     def get_serializer_class(
         self,
@@ -81,53 +110,23 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
         return ActionListSerializer
 
     def list(self, request: Request, *args, **kwargs) -> Response:
-        parent_object = self.get_parent_object()
-
-        if parent_object is None:
-            raise NotFound("Can't find action's parent object")
-
-        if parent_object.concerns.filter(type=ConcernType.LOCK).exists():
-            return Response(data=[])
-
-        prototype_object = {}
-
-        if isinstance(parent_object, Host) and parent_object.cluster:
-            prototype_object[parent_object.cluster.prototype] = parent_object.cluster
-
-            for hc_item in HostComponent.objects.filter(host=parent_object).select_related(
-                "service__prototype", "component__prototype"
-            ):
-                prototype_object[hc_item.service.prototype] = hc_item.service
-                prototype_object[hc_item.component.prototype] = hc_item.component
-
-        actions = self.filter_queryset(
-            self.get_queryset().filter(
-                Q(prototype=parent_object.prototype, host_action=False)
-                | Q(prototype__in=prototype_object.keys(), host_action=True)
-            )
-        )
-        prototype_object[parent_object.prototype] = parent_object
-
-        allowed_actions_mask = [act.allowed(prototype_object[act.prototype]) for act in actions]
+        actions = self.filter_queryset(self.get_queryset())
+        allowed_actions_mask = [act.allowed(self.prototype_objects[act.prototype]) for act in actions]
         actions = list(compress(actions, allowed_actions_mask))
-        actions = filter_actions_by_user_perm(user=request.user, obj=parent_object, actions=actions)
+        actions = filter_actions_by_user_perm(user=request.user, obj=self.parent_object, actions=actions)
 
-        serializer = self.get_serializer_class()(instance=actions, many=True, context={"obj": parent_object})
+        serializer = self.get_serializer_class()(instance=actions, many=True, context={"obj": self.parent_object})
 
         return Response(data=serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
-        parent_object = self.get_parent_object()
-        if parent_object is None:
-            raise NotFound("Can't find action's parent object")
-
-        # check permissions
-        get_object_for_user(user=request.user, perms=VIEW_ACTION_PERM, klass=Action, pk=kwargs["pk"])
-
         action_ = self.get_object()
 
+        # check permissions
+        get_object_for_user(user=request.user, perms=VIEW_ACTION_PERM, klass=Action, pk=action_.pk)
+
         if action_.config_jinja:
-            prototype_configs, attr = get_jinja_config(action=action_, obj=parent_object)
+            prototype_configs, attr = get_jinja_config(action=action_, obj=self.parent_object)
         else:
             prototype_configs = PrototypeConfig.objects.filter(prototype=action_.prototype, action=action_).order_by(
                 "pk"
@@ -135,14 +134,14 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
             _, _, _, attr = get_prototype_config(prototype=action_.prototype, action=action_)
 
         if prototype_configs:
-            schema = get_config_schema(object_=parent_object, prototype_configs=prototype_configs)
+            schema = get_config_schema(object_=self.parent_object, prototype_configs=prototype_configs)
             adcm_meta = convert_attr_to_adcm_meta(attr=attr)
         else:
             schema = None
             adcm_meta = None
 
         serializer = self.get_serializer_class()(
-            instance=action_, context={"obj": parent_object, "config_schema": schema, "adcm_meta": adcm_meta}
+            instance=action_, context={"obj": self.parent_object, "config_schema": schema, "adcm_meta": adcm_meta}
         )
 
         return Response(data=serializer.data)

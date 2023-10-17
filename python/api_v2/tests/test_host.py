@@ -360,3 +360,177 @@ class TestHostActions(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_filter_is_host_own_action_true_success(self):
+        HostComponent.objects.create(
+            cluster=self.cluster_1, service=self.service_1, component=self.component_1, host=self.host
+        )
+        host_action = Action.objects.filter(name="host_action", prototype=self.host.prototype).first()
+
+        response = self.client.get(
+            path=reverse(viewname="v2:host-action-list", kwargs={"host_pk": self.host.pk}),
+            data={"isHostOwnAction": True},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertListEqual(
+            response.json(),
+            [
+                {
+                    "displayName": "host_action",
+                    "id": host_action.pk,
+                    "name": "host_action",
+                    "startImpossibleReason": None,
+                }
+            ],
+        )
+
+    def test_filter_is_host_own_action_false_success(self):
+        HostComponent.objects.create(
+            cluster=self.cluster_1, service=self.service_1, component=self.component_1, host=self.host
+        )
+        cluster_on_host = Action.objects.filter(name="cluster_on_host", prototype=self.cluster_1.prototype).first()
+        service_on_host = Action.objects.filter(name="service_on_host", prototype=self.service_1.prototype).first()
+        component_on_host = Action.objects.filter(
+            name="component_on_host", prototype=self.component_1.prototype
+        ).first()
+
+        response = self.client.get(
+            path=reverse(viewname="v2:host-action-list", kwargs={"host_pk": self.host.pk}),
+            data={"isHostOwnAction": False},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertListEqual(
+            response.json(),
+            [
+                {
+                    "id": cluster_on_host.pk,
+                    "name": "cluster_on_host",
+                    "displayName": "cluster_on_host",
+                    "startImpossibleReason": None,
+                },
+                {
+                    "id": service_on_host.pk,
+                    "name": "service_on_host",
+                    "displayName": "service_on_host",
+                    "startImpossibleReason": None,
+                },
+                {
+                    "id": component_on_host.pk,
+                    "name": "component_on_host",
+                    "displayName": "component_on_host",
+                    "startImpossibleReason": None,
+                },
+            ],
+        )
+
+    def test_filter_is_host_own_action_false_component_success(self):
+        HostComponent.objects.create(
+            cluster=self.cluster_1, service=self.service_1, component=self.component_1, host=self.host
+        )
+        component_on_host = Action.objects.filter(
+            name="component_on_host", prototype=self.component_1.prototype
+        ).first()
+
+        response = self.client.get(
+            path=reverse(viewname="v2:host-action-list", kwargs={"host_pk": self.host.pk}),
+            data={"isHostOwnAction": False, "prototypeId": self.component_1.prototype.pk},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertListEqual(
+            response.json(),
+            [
+                {
+                    "id": component_on_host.pk,
+                    "name": "component_on_host",
+                    "displayName": "component_on_host",
+                    "startImpossibleReason": None,
+                },
+            ],
+        )
+
+
+class TestClusterHostComponent(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host1")
+        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host2")
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
+        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.component_1 = ServiceComponent.objects.get(
+            cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
+        )
+        self.component_2 = ServiceComponent.objects.get(
+            cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
+        )
+        self.add_hostcomponent_map(
+            cluster=self.cluster_1,
+            hc_map=[
+                {
+                    "host_id": self.host_1.pk,
+                    "service_id": self.service_1.pk,
+                    "component_id": self.component_1.pk,
+                },
+                {
+                    "host_id": self.host_1.pk,
+                    "service_id": self.service_1.pk,
+                    "component_id": self.component_2.pk,
+                },
+                {
+                    "host_id": self.host_2.pk,
+                    "service_id": self.service_1.pk,
+                    "component_id": self.component_1.pk,
+                },
+                {
+                    "host_id": self.host_2.pk,
+                    "service_id": self.service_1.pk,
+                    "component_id": self.component_2.pk,
+                },
+            ],
+        )
+
+    def test_components_success(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:host-cluster-component-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "host_pk": self.host_1.pk},
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 2)
+        self.assertSetEqual(
+            set(response.json()["results"][0].keys()),
+            {
+                "id",
+                "name",
+                "displayName",
+                "status",
+                "concerns",
+                "isMaintenanceModeAvailable",
+                "maintenanceMode",
+                "cluster",
+                "service",
+                "prototype",
+            },
+        )
+        self.assertListEqual(
+            [component["name"] for component in response.json()["results"]], ["component_1", "component_2"]
+        )
+
+    def test_ordering_by_display_name_reverse_success(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:host-cluster-component-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "host_pk": self.host_1.pk},
+            ),
+            data={"ordering": "-displayName"},
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 2)
+        self.assertListEqual(
+            [component["name"] for component in response.json()["results"]], ["component_2", "component_1"]
+        )
