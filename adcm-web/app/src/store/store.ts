@@ -19,6 +19,8 @@ import clusterConfigGroupConfigurationSlice from '@store/adcm/cluster/configGrou
 import clusterConfigGroupConfigurationsCompareSlice from '@store/adcm/cluster/configGroupSingle/configuration/clusterConfigGroupConfigurationsCompareSlice';
 import hostProviderConfigurationSlice from '@store/adcm/hostProvider/configuration/hostProviderConfigurationSlice';
 import hostProviderConfigurationsCompareSlice from '@store/adcm/hostProvider/configuration/hostProviderConfigurationsCompareSlice';
+import hostProviderConfigGroupsSlice from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupsSlice';
+import hostProviderConfigGroupsTableSlice from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupsTableSlice';
 import bundlesSlice from '@store/adcm/bundles/bundlesSlice';
 import bundleSlice from '@store/adcm/bundle/bundleSlice';
 import bundlesTableSlice from '@store/adcm/bundles/bundlesTableSlice';
@@ -85,16 +87,17 @@ import serviceComponentConfigurationsCompareSlice from './adcm/cluster/services/
 import serviceComponentConfigurationSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configuration/serviceComponentConfigurationSlice';
 import hostSlice from './adcm/host/hostSlice';
 import hostTableSlice from './adcm/host/hostTableSlice';
-import clusterServicesConfigurationSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationSlice.ts';
-import clusterServicesConfigurationsCompareSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationsCompareSlice.ts';
-import hostsConfigurationSlice from './adcm/host/configuration/hostsConfigurationSlice.ts';
-import hostsConfigurationCompareSlice from './adcm/host/configuration/hostsConfigurationCompareSlice.ts';
-import serviceConfigGroupsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsSlice.ts';
-import serviceConfigGroupsTableSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsTableSlice.ts';
-import serviceConfigGroupsActionsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsActionsSlice.ts';
-import serviceConfigGroupSlice from './adcm/cluster/services/configGroupSingle/configGroupSingle.ts';
-import SettingsConfigurationsSlice from './adcm/settings/configuration/settingsConfigurationSlice.ts';
-import settingsConfigurationsCompareSlice from './adcm/settings/configuration/settingsConfigurationsCompareSlice.ts';
+import clusterServicesConfigurationSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationSlice';
+import clusterServicesConfigurationsCompareSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationsCompareSlice';
+import hostsConfigurationSlice from './adcm/host/configuration/hostsConfigurationSlice';
+import hostsConfigurationCompareSlice from './adcm/host/configuration/hostsConfigurationCompareSlice';
+import hostProviderConfigGroupActionsSlice from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupActionsSlice';
+import serviceConfigGroupsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsSlice';
+import serviceConfigGroupsTableSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsTableSlice';
+import serviceConfigGroupsActionsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsActionsSlice';
+import serviceConfigGroupSlice from './adcm/cluster/services/configGroupSingle/configGroupSingle';
+import SettingsConfigurationsSlice from './adcm/settings/configuration/settingsConfigurationSlice';
+import settingsConfigurationsCompareSlice from './adcm/settings/configuration/settingsConfigurationsCompareSlice';
 
 const rootReducer = combineReducers({
   auth: authSlice,
@@ -130,6 +133,9 @@ const rootReducer = combineReducers({
     hostProvider: hostProviderSlice,
     hostProviderConfigurationsCompare: hostProviderConfigurationsCompareSlice,
     hostProviderConfiguration: hostProviderConfigurationSlice,
+    hostProviderConfigGroupActions: hostProviderConfigGroupActionsSlice,
+    hostProviderConfigGroups: hostProviderConfigGroupsSlice,
+    hostProviderConfigGroupsTable: hostProviderConfigGroupsTableSlice,
     hostProviders: hostProvidersSlice,
     hostProvidersActions: hostProvidersActionsSlice,
     hostProvidersTable: hostProvidersTableSlice,

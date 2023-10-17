@@ -6,7 +6,7 @@ import {
   getClusterServicesConfigurationsVersions,
 } from '@store/adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationSlice';
 import { useCallback, useEffect } from 'react';
-import { useConfigurations } from '@commonComponents/configuration/useConfigurations.ts';
+import { useConfigurations } from '@commonComponents/configuration/useConfigurations';
 
 export const useServicesPrimaryConfiguration = () => {
   const dispatch = useDispatch();
