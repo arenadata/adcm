@@ -3,8 +3,8 @@ import ConfigurationHeader from '@commonComponents/configuration/ConfigurationHe
 import ConfigurationFormContextProvider from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContextProvider';
 import ConfigurationSubHeader from '@commonComponents/configuration/ConfigurationSubHeader/ConfigurationSubHeader';
 import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
-import { useServicesPrimaryConfiguration } from './useServicesPrimaryConfiguration.ts';
-import { useServicesPrimaryConfigurationsCompare } from './useServicesPrimaryConfigurationCompare.ts';
+import { useServicesPrimaryConfiguration } from './useServicesPrimaryConfiguration';
+import { useServicesPrimaryConfigurationsCompare } from './useServicesPrimaryConfigurationCompare';
 
 const ServicesPrimaryConfiguration: React.FC = () => {
   const {

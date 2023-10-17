@@ -11,6 +11,8 @@ export { AdcmClusterConfigGroupsApi } from './adcm/clusterGroupConfig';
 export { AdcmClusterGroupConfigsConfigsApi } from './adcm/clusterGroupConfigConfigs';
 export { AdcmHostProvidersApi } from './adcm/hostProviders';
 export { AdcmHostProviderConfigsApi } from './adcm/hostProviderConfigs';
+export { AdcmHostProviderConfigGroupsApi } from './adcm/hostProviderGroupConfig';
+export { AdcmHostProviderGroupConfigsConfigsApi } from './adcm/hostProviderGroupConfigConfigs';
 export { AdcmHostsApi } from './adcm/hosts';
 export { AdcmHostConfigsApi } from './adcm/hostConfigs';
 export { AdcmServicesApi } from './adcm/services';

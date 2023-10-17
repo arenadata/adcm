@@ -3,8 +3,8 @@ import ConfigurationHeader from '@commonComponents/configuration/ConfigurationHe
 import ConfigurationFormContextProvider from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContextProvider';
 import ConfigurationSubHeader from '@commonComponents/configuration/ConfigurationSubHeader/ConfigurationSubHeader';
 import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
-import { useHostsPrimaryConfiguration } from './useHostPrimaryConfiguration.ts';
-import { useHostsPrimaryConfigurationsCompare } from './useHostPrimaryConfigurationCompare.ts';
+import { useHostsPrimaryConfiguration } from './useHostPrimaryConfiguration';
+import { useHostsPrimaryConfigurationsCompare } from './useHostPrimaryConfigurationCompare';
 
 const HostPrimaryConfiguration: React.FC = () => {
   const {

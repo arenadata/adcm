@@ -6,7 +6,7 @@ import {
   getHostsConfigurationsVersions,
 } from '@store/adcm/host/configuration/hostsConfigurationSlice';
 import { useCallback, useEffect } from 'react';
-import { useConfigurations } from '@commonComponents/configuration/useConfigurations.ts';
+import { useConfigurations } from '@commonComponents/configuration/useConfigurations';
 import { useParams } from 'react-router-dom';
 
 export const useHostsPrimaryConfiguration = () => {
