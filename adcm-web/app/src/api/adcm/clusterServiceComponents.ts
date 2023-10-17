@@ -11,7 +11,7 @@ export class AdcmClusterServiceComponentsApi {
 
     const query = qs.stringify(queryParams);
     const response = await httpClient.get<Batch<AdcmServiceComponent>>(
-      `/api/v2/clusters/${clusterId}/services/${serviceId}/components/?${query}/`,
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/components/?${query}`,
     );
 
     return response.data;

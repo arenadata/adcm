@@ -73,6 +73,13 @@ import rolesTableSlice from './adcm/roles/rolesTableSlice';
 import rolesActionsSlice from './adcm/roles/rolesActionsSlice';
 import serviceComponentsActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponentsActionsSlice';
 import serviceComponentSlice from './adcm/cluster/services/serviceComponents/serviceComponent/serviceComponentSlice';
+import serviceComponentConfigGroupsSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configGroups/serviceComponentConfigGroupsSlice';
+import serviceComponentConfigGroupsTableSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configGroups/serviceComponentConfigGroupsTableSlice';
+import serviceComponentConfigGroupsActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configGroups/serviceComponentConfigGroupsActionsSlice';
+import serviceComponentConfigGroupSingleSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configGroupSingle/serviceComponentConfigGroupSingleSlice';
+import serviceComponentConfigGroupConfigurationSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configGroupSingle/serviceComponentConfigGroupConfigurationSlice';
+import serviceComponentConfigGroupConfigurationsCompareSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configGroupSingle/serviceComponentConfigGroupConfigurationsCompareSlice';
+
 import clustersActionsSlice from './adcm/clusters/clustersActionsSlice';
 import clusterHostSlice from './adcm/cluster/hosts/host/clusterHostSlice';
 import clusterHostTableSlice from './adcm/cluster/hosts/host/clusterHostTableSlice';
@@ -87,17 +94,19 @@ import serviceComponentConfigurationsCompareSlice from './adcm/cluster/services/
 import serviceComponentConfigurationSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configuration/serviceComponentConfigurationSlice';
 import hostSlice from './adcm/host/hostSlice';
 import hostTableSlice from './adcm/host/hostTableSlice';
-import clusterServicesConfigurationSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationSlice';
-import clusterServicesConfigurationsCompareSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationsCompareSlice';
-import hostsConfigurationSlice from './adcm/host/configuration/hostsConfigurationSlice';
-import hostsConfigurationCompareSlice from './adcm/host/configuration/hostsConfigurationCompareSlice';
+import clusterServicesConfigurationSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationSlice.ts';
+import clusterServicesConfigurationsCompareSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationsCompareSlice.ts';
+import hostsConfigurationSlice from './adcm/host/configuration/hostsConfigurationSlice.ts';
+import hostsConfigurationCompareSlice from './adcm/host/configuration/hostsConfigurationCompareSlice.ts';
+import serviceConfigGroupsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsSlice.ts';
+import serviceConfigGroupsTableSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsTableSlice.ts';
+import serviceConfigGroupsActionsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsActionsSlice.ts';
+import serviceConfigGroupSlice from './adcm/cluster/services/configGroupSingle/configGroupSingle.ts';
+import serviceConfigGroupConfigurationSlice from './adcm/cluster/services/configGroupSingle/configuration/serviceConfigGroupConfigurationSlice';
+import serviceConfigGroupConfigurationsCompareSlice from './adcm/cluster/services/configGroupSingle/configuration/serviceConfigGroupConfigurationsCompareSlice';
+import settingsConfigurationsSlice from './adcm/settings/configuration/settingsConfigurationSlice.ts';
+import settingsConfigurationsCompareSlice from './adcm/settings/configuration/settingsConfigurationsCompareSlice.ts';
 import hostProviderConfigGroupActionsSlice from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupActionsSlice';
-import serviceConfigGroupsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsSlice';
-import serviceConfigGroupsTableSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsTableSlice';
-import serviceConfigGroupsActionsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsActionsSlice';
-import serviceConfigGroupSlice from './adcm/cluster/services/configGroupSingle/configGroupSingle';
-import SettingsConfigurationsSlice from './adcm/settings/configuration/settingsConfigurationSlice';
-import settingsConfigurationsCompareSlice from './adcm/settings/configuration/settingsConfigurationsCompareSlice';
 
 const rootReducer = combineReducers({
   auth: authSlice,
@@ -159,9 +168,17 @@ const rootReducer = combineReducers({
     serviceConfigGroupsTable: serviceConfigGroupsTableSlice,
     serviceConfigGroupsActions: serviceConfigGroupsActionsSlice,
     serviceConfigGroup: serviceConfigGroupSlice,
+    serviceConfigGroupConfiguration: serviceConfigGroupConfigurationSlice,
+    serviceConfigGroupConfigurationsCompare: serviceConfigGroupConfigurationsCompareSlice,
     serviceComponents: serviceComponentsSlice,
     serviceComponentsConfigurationsCompare: serviceComponentConfigurationsCompareSlice,
     serviceComponentConfiguration: serviceComponentConfigurationSlice,
+    serviceComponentConfigGroups: serviceComponentConfigGroupsSlice,
+    serviceComponentConfigGroupsTable: serviceComponentConfigGroupsTableSlice,
+    serviceComponentConfigGroupsActions: serviceComponentConfigGroupsActionsSlice,
+    serviceComponentConfigGroupSingle: serviceComponentConfigGroupSingleSlice,
+    serviceComponentConfigGroupConfiguration: serviceComponentConfigGroupConfigurationSlice,
+    serviceComponentConfigGroupConfigurationsCompare: serviceComponentConfigGroupConfigurationsCompareSlice,
     serviceComponentsTable: serviceComponentsTableSlice,
     serviceComponentsActions: serviceComponentsActionsSlice,
     serviceComponentsDynamicActions: serviceComponentsDynamicActionsSlice,
@@ -195,7 +212,7 @@ const rootReducer = combineReducers({
     roles: rolesSlice,
     rolesTable: rolesTableSlice,
     rolesActions: rolesActionsSlice,
-    settingsConfigurations: SettingsConfigurationsSlice,
+    settingsConfigurations: settingsConfigurationsSlice,
     settingsConfigurationsCompare: settingsConfigurationsCompareSlice,
   }),
 });
