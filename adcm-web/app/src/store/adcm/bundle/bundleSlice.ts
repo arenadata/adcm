@@ -1,12 +1,15 @@
 import { AdcmBundlesApi, AdcmPrototypesApi, RequestError } from '@api';
+import { defaultSpinnerDelay } from '@constants';
 import { AdcmPrototype, AdcmPrototypeType } from '@models/adcm';
 import { AdcmBundle } from '@models/adcm/bundle';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
+import { executeWithMinDelay } from '@utils/requestUtils';
 
 interface AdcmBundleState {
   bundle?: AdcmBundle;
+  isLicenseLoading: boolean;
   relatedData: {
     prototype?: AdcmPrototype;
   };
@@ -38,6 +41,21 @@ const loadRelatedPrototype = createAsyncThunk('adcm/bundle/loadPrototype', async
   }
 });
 
+const getRelatedPrototype = createAsyncThunk('adcm/bundle/getRelatedPrototype', async (arg: number, thunkAPI) => {
+  thunkAPI.dispatch(setIsLicenseLoading(true));
+  const startDate = new Date();
+
+  await thunkAPI.dispatch(loadRelatedPrototype(arg));
+
+  executeWithMinDelay({
+    startDate,
+    delay: defaultSpinnerDelay,
+    callback: () => {
+      thunkAPI.dispatch(setIsLicenseLoading(false));
+    },
+  });
+});
+
 const acceptBundleLicenseWithUpdate = createAsyncThunk(
   'adcm/bundle/acceptBundleLicense',
   async ({ bundleId, prototypeId }: AcceptBundleLicensePayload, thunkAPI) => {
@@ -65,12 +83,16 @@ const createInitialState = (): AdcmBundleState => ({
   relatedData: {
     prototype: undefined,
   },
+  isLicenseLoading: false,
 });
 
 const bundleSlice = createSlice({
   name: 'adcm/bundle',
   initialState: createInitialState(),
   reducers: {
+    setIsLicenseLoading(state, action) {
+      state.isLicenseLoading = action.payload;
+    },
     cleanupBundle() {
       return createInitialState();
     },
@@ -91,6 +113,13 @@ const bundleSlice = createSlice({
   },
 });
 
-const { cleanupBundle } = bundleSlice.actions;
-export { loadBundle, loadRelatedPrototype, acceptBundleLicenseWithUpdate, cleanupBundle, deleteBundle };
+const { cleanupBundle, setIsLicenseLoading } = bundleSlice.actions;
+export {
+  loadBundle,
+  loadRelatedPrototype,
+  acceptBundleLicenseWithUpdate,
+  cleanupBundle,
+  deleteBundle,
+  getRelatedPrototype,
+};
 export default bundleSlice.reducer;
