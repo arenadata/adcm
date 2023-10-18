@@ -2702,7 +2702,7 @@ class TestHostConfig(BaseAPITestCase):
                                 "synchronization": None,
                                 "nullValue": None,
                                 "isSecret": False,
-                                "stringExtra": {"isMultiline": True},
+                                "stringExtra": None,
                                 "enumExtra": {"labels": ["string1", "string2"]},
                             },
                             "enum": ["string1", "string2"],
