@@ -1,9 +1,10 @@
 import { SelectOption, SingleSelectOptions } from '@uikit/Select/Select.types';
-import React, { useContext } from 'react';
+import React, { ReactNode, useContext } from 'react';
 
 export type SingleSelectContextOptions<T> = SingleSelectOptions<T> & {
   setOptions: (list: SelectOption<T>[]) => void;
   originalOptions: SelectOption<T>[];
+  renderItem?: (model: SelectOption<T>) => ReactNode;
 };
 
 export const SingleSelectContext = React.createContext<SingleSelectContextOptions<unknown>>(

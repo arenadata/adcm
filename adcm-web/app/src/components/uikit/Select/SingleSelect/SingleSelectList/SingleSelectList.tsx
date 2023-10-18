@@ -13,6 +13,7 @@ const SingleSelectList = <T,>() => {
     onChange,
     noneLabel,
     maxHeight,
+    renderItem,
   } = useSingleSelectContext<T>();
 
   const options = useMemo(() => {
@@ -42,7 +43,7 @@ const SingleSelectList = <T,>() => {
           title={title}
           disabled={disabled}
         >
-          {label}
+          {renderItem ? renderItem({ value, label, disabled, title }) : label}
         </SingleSelectOptionsItem>
       ))}
     </ul>
