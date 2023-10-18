@@ -49,7 +49,7 @@ const HostProviderConfigurationGroups: React.FC = () => {
         sortParams={sortParams}
         onSorting={handleSorting}
         onMapping={handleMappingConfigGroup}
-        editUrlPattern={`/hostproviders/${hostProviderId}/configuration/config-groups/:configGroupId`}
+        editUrlPattern={`/hostproviders/${hostProviderId}/configuration-groups/:configGroupId`}
         onDelete={handleDeleteConfigGroup}
       />
       <HostProviderConfigurationGroupTableFooter />

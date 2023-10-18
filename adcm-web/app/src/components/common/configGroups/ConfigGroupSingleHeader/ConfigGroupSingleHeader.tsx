@@ -3,7 +3,7 @@ import Panel from '@uikit/Panel/Panel';
 import { AdcmConfigGroup } from '@models/adcm';
 import { Button } from '@uikit';
 import { Link } from 'react-router-dom';
-import s from './ConfigGroupSingleHeader .module.scss';
+import s from './ConfigGroupSingleHeader.module.scss';
 
 interface ClusterConfigGroupSingleHeaderProps {
   configGroup: AdcmConfigGroup | null;

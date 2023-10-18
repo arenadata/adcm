@@ -107,6 +107,9 @@ import serviceConfigGroupConfigurationsCompareSlice from './adcm/cluster/service
 import settingsConfigurationsSlice from './adcm/settings/configuration/settingsConfigurationSlice.ts';
 import settingsConfigurationsCompareSlice from './adcm/settings/configuration/settingsConfigurationsCompareSlice.ts';
 import hostProviderConfigGroupActionsSlice from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupActionsSlice';
+import hostProviderConfigGroupSlice from '@store/adcm/hostProvider/configurationGroupSingle/hostProviderConfigGroupSlice';
+import hostProviderConfigGroupConfigurationSlice from '@store/adcm/hostProvider/configurationGroupSingle/configuration/hostProviderConfigGroupConfigurationSlice';
+import hostProviderConfigGroupConfigurationsCompareSlice from '@store/adcm/hostProvider/configurationGroupSingle/configuration/hostProviderConfigGroupConfigurationsCompareSlice';
 
 const rootReducer = combineReducers({
   auth: authSlice,
@@ -145,6 +148,9 @@ const rootReducer = combineReducers({
     hostProviderConfigGroupActions: hostProviderConfigGroupActionsSlice,
     hostProviderConfigGroups: hostProviderConfigGroupsSlice,
     hostProviderConfigGroupsTable: hostProviderConfigGroupsTableSlice,
+    hostProviderConfigGroup: hostProviderConfigGroupSlice,
+    hostProviderConfigGroupConfiguration: hostProviderConfigGroupConfigurationSlice,
+    hostProviderConfigGroupConfigurationsCompare: hostProviderConfigGroupConfigurationsCompareSlice,
     hostProviders: hostProvidersSlice,
     hostProvidersActions: hostProvidersActionsSlice,
     hostProvidersTable: hostProvidersTableSlice,

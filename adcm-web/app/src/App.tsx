@@ -60,6 +60,7 @@ import HostPrimaryConfiguration from '@pages/host/HostPrimaryConfiguration/HostP
 import ServiceConfigGroupSingle from '@pages/cluster/service/ServiceConfiguration/ServiceConfigGroupSingle/ServiceConfigGroupSingle';
 import ServiceComponentConfigurationGroups from '@pages/cluster/service/component/ServiceComponentConfiguration/ServiceComponentConfigGroups/ServiceComponentConfigurationGroups';
 import ServiceComponentConfigGroupSingle from '@pages/cluster/service/component/ServiceComponentConfiguration/ServiceComponentConfigGroupSingle/ServiceComponentConfigGroupSingle';
+import HostProviderConfigurationGroupSingle from '@pages/HostProviderPage/HostProviderConfigurationGroupSingle/HostProviderConfigurationGroupSingle';
 
 function App() {
   return (
@@ -177,6 +178,10 @@ function App() {
                   <Route
                     path="/hostproviders/:hostproviderId/configuration-groups"
                     element={<HostProviderConfigurationGroups />}
+                  />
+                  <Route
+                    path="/hostproviders/:hostproviderId/configuration-groups/:configGroupId/"
+                    element={<HostProviderConfigurationGroupSingle />}
                   />
                 </Route>
               </Route>

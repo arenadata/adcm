@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { useServiceComponentConfigGroupSingle } from './useServiceComponentConfigGroupSingle';
-import ConfigGroupSingleHeader from '@commonComponents/configGroups/ConfigGroupSingleHeader/ConfigGroupSingleHeader ';
+import ConfigGroupSingleHeader from '@commonComponents/configGroups/ConfigGroupSingleHeader/ConfigGroupSingleHeader';
 import ServiceComponentConfigGroupConfiguration from '@pages/cluster/service/component/ServiceComponentConfiguration/ServiceComponentConfigGroupSingle/ServiceComponentConfigGroupConfiguration/ServiceComponentConfigGroupConfiguration';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 
