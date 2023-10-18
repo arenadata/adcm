@@ -1,0 +1,40 @@
+- name: boolean
+  type: boolean
+  required: false
+  default: true
+{% if services.first_service.first_component.state == 'created' %}
+- name: float
+  type: float
+  required: false
+  default: 2.0
+{% elif services.first_service.first_component.state == 'installed' %}
+- name: integer
+  type: integer
+  required: false
+  default: 20
+- name: list
+  type: list
+  required: false
+  default:
+    - /dev/rdisk0s9
+    - /dev/rdisk0s8
+{% else %}
+- name: map
+  type: map
+  required: false
+  default:
+    age: '30'
+    name: John
+    sex: m
+- name: option
+  type: option
+  required: false
+  option:
+    FIRST: FIRST
+    SECOND: SECOND
+  default: SECOND
+{% endif %}
+- name: boolean1
+  type: boolean
+  required: false
+  default: false

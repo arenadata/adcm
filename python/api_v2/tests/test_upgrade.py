@@ -390,6 +390,35 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
+    def test_adcm_4703_retrieve_upgrade_with_variant_without_cluster_config_500(self) -> None:
+        old_bundle = self.add_bundle(self.test_bundles_dir / "various_upgrades" / "no_config_upgrade_with_variant_old")
+        new_bundle = self.add_bundle(self.test_bundles_dir / "various_upgrades" / "no_config_upgrade_with_variant_new")
+
+        upgrade = Upgrade.objects.get(bundle=new_bundle, name="upgrade_via_action_complex")
+
+        cluster = self.add_cluster(bundle=old_bundle, name="Cluster For Upgrade")
+        self.assertIsNone(cluster.config)
+
+        self.add_host_to_cluster(
+            cluster=cluster, host=self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="first_host")
+        )
+        self.add_host_to_cluster(
+            cluster=cluster, host=self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second_host")
+        )
+
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:upgrade-detail",
+                kwargs={"cluster_pk": cluster.pk, "pk": upgrade.pk},
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        schema = response.json()["configuration"]["configSchema"]
+        self.assertEqual(schema["properties"]["pick_host"]["enum"], ["first_host", "second_host"])
+        self.assertEqual(
+            schema["properties"]["grouped"]["properties"]["pick_host"]["enum"], ["first_host", "second_host"]
+        )
+
 
 class TestAdcmUpgrade(APITestCase):
     @classmethod
