@@ -2,8 +2,6 @@ import { DynamicActionType } from '@commonComponents/DynamicActionDialog/Dynamic
 import { AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 
 export const getDynamicActionTypes = (actionDetails: AdcmDynamicActionDetails): DynamicActionType[] => {
-  if (actionDetails.disclaimer) return [DynamicActionType.Confirm];
-
   const res = [] as DynamicActionType[];
   if (actionDetails.configuration !== null) {
     res.push(DynamicActionType.ConfigSchema);

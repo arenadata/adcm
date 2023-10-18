@@ -1,6 +1,5 @@
-import React, { ChangeEvent, useState } from 'react';
+import React, { ChangeEvent, useState, useEffect } from 'react';
 import { Checkbox, Dialog } from '@uikit';
-import s from './DynamicActionDialog.module.scss';
 import DynamicActionSteps from '@commonComponents/DynamicActionDialog/DynamicActionSteps/DynamicActionSteps';
 import {
   getDefaultRunConfig,
@@ -21,6 +20,13 @@ const DynamicActionDialog: React.FC<DynamicActionDialogProps> = ({ clusterId, ac
     return getDefaultRunConfig();
   });
 
+  const dynamicActionTypes = getDynamicActionTypes(actionDetails);
+  const [isShowDisclaimer, setIsShowDisclaimer] = useState(false);
+
+  useEffect(() => {
+    setIsShowDisclaimer(dynamicActionTypes.includes(DynamicActionType.Confirm));
+  }, [dynamicActionTypes, setIsShowDisclaimer]);
+
   const handleCancel = () => {
     onCancel();
   };
@@ -28,15 +34,13 @@ const DynamicActionDialog: React.FC<DynamicActionDialogProps> = ({ clusterId, ac
   const handleSubmit = (data: Partial<AdcmDynamicActionRunConfig>) => {
     const newActionRunConfig = { ...localActionRunConfig, ...data };
     setLocalActionRunConfig(newActionRunConfig);
-    onSubmit(newActionRunConfig);
+    setIsShowDisclaimer(true);
   };
 
   const handleChangeVerbose = (event: ChangeEvent<HTMLInputElement>) => {
     const isVerbose = event.target.checked;
     setLocalActionRunConfig((prev) => ({ ...prev, isVerbose }));
   };
-
-  const dynamicActionTypes = getDynamicActionTypes(actionDetails);
 
   const commonDialogOptions = {
     isOpen: true,
@@ -45,7 +49,7 @@ const DynamicActionDialog: React.FC<DynamicActionDialogProps> = ({ clusterId, ac
     onCancel: handleCancel,
   };
 
-  if (dynamicActionTypes.includes(DynamicActionType.Confirm)) {
+  if (isShowDisclaimer) {
     const dialogControls = (
       <CustomDialogControls actionButtonLabel="Run" onCancel={onCancel} onAction={() => onSubmit(localActionRunConfig)}>
         <Checkbox checked={localActionRunConfig.isVerbose} label="Verbose" onChange={handleChangeVerbose} />
@@ -60,7 +64,7 @@ const DynamicActionDialog: React.FC<DynamicActionDialogProps> = ({ clusterId, ac
   }
 
   return (
-    <Dialog {...commonDialogOptions} dialogControls={false}>
+    <Dialog {...commonDialogOptions} dialogControls={false} width="100%" maxWidth="980px">
       <DynamicActionSteps
         actionSteps={dynamicActionTypes}
         clusterId={clusterId}
@@ -68,9 +72,6 @@ const DynamicActionDialog: React.FC<DynamicActionDialogProps> = ({ clusterId, ac
         onSubmit={handleSubmit}
         onCancel={onCancel}
       />
-      <div className={s.dynamicActionDialog__verbose}>
-        <Checkbox checked={localActionRunConfig.isVerbose} label="Verbose" onChange={handleChangeVerbose} />
-      </div>
     </Dialog>
   );
 };

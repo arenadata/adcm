@@ -50,6 +50,8 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
     isLoaded,
   } = useClusterMapping();
 
+  const isServicesMappingEmpty = servicesMapping.length === 0;
+
   const handleSubmit = () => {
     onSubmit({ hostComponentMap: hostComponentMapping });
   };
@@ -73,7 +75,11 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
           <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!mappingValidation.isAllMappingValid} hasError={hasSaveError}>
+          <Button
+            onClick={handleSubmit}
+            disabled={isServicesMappingEmpty || !mappingValidation.isAllMappingValid}
+            hasError={hasSaveError}
+          >
             {submitLabel}
           </Button>
         </ButtonGroup>
@@ -83,7 +89,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
 
       {isLoaded && (
         <div>
-          {servicesMapping.length === 0 && (
+          {isServicesMappingEmpty && (
             <div>
               Add services on the{' '}
               <Link className="text-link" to={`/clusters/${clusterId}/services/`} onClick={onCancel}>
