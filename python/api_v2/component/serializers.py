@@ -143,3 +143,30 @@ class ComponentStatusSerializer(ModelSerializer):
     class Meta:
         model = ServiceComponent
         fields = ["host_components"]
+
+
+class HostComponentSerializer(ModelSerializer):
+    concerns = ConcernSerializer(read_only=True, many=True)
+    status = SerializerMethodField()
+    cluster = ClusterRelatedSerializer(read_only=True)
+    service = ServiceRelatedSerializer(read_only=True)
+    prototype = PrototypeRelatedSerializer(read_only=True)
+
+    class Meta:
+        model = ServiceComponent
+        fields = [
+            "id",
+            "name",
+            "display_name",
+            "status",
+            "concerns",
+            "is_maintenance_mode_available",
+            "maintenance_mode",
+            "cluster",
+            "service",
+            "prototype",
+        ]
+
+    @staticmethod
+    def get_status(instance: ServiceComponent) -> str:
+        return get_obj_status(obj=instance)

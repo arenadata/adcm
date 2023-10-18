@@ -296,7 +296,7 @@ class TestClusterConfig(BaseAPITestCase):
                         "adcmMeta": {
                             "isAdvanced": False,
                             "isInvisible": False,
-                            "activation": {"isAllowChange": False},
+                            "activation": {"isAllowChange": True},
                             "synchronization": None,
                             "nullValue": None,
                             "isSecret": False,
@@ -708,7 +708,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
                         "adcmMeta": {
                             "isAdvanced": False,
                             "isInvisible": False,
-                            "activation": {"isAllowChange": False},
+                            "activation": {"isAllowChange": True},
                             "synchronization": {"isAllowChange": True},
                             "nullValue": None,
                             "isSecret": False,
@@ -923,7 +923,7 @@ class TestServiceConfig(BaseAPITestCase):
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
-                        "activation": {"isAllowChange": False},
+                        "activation": {"isAllowChange": True},
                         "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
@@ -1241,7 +1241,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
-                        "activation": {"isAllowChange": False},
+                        "activation": {"isAllowChange": True},
                         "synchronization": {"isAllowChange": True},
                         "nullValue": None,
                         "isSecret": False,
@@ -1479,7 +1479,7 @@ class TestComponentConfig(BaseAPITestCase):
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
-                        "activation": {"isAllowChange": False},
+                        "activation": {"isAllowChange": True},
                         "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
@@ -1811,7 +1811,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
-                        "activation": {"isAllowChange": False},
+                        "activation": {"isAllowChange": True},
                         "synchronization": {"isAllowChange": True},
                         "nullValue": None,
                         "isSecret": False,
@@ -2076,7 +2076,7 @@ class TestProviderConfig(BaseAPITestCase):
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
-                        "activation": {"isAllowChange": False},
+                        "activation": {"isAllowChange": True},
                         "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
@@ -2391,7 +2391,7 @@ class TestHostConfig(BaseAPITestCase):
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
-                        "activation": {"isAllowChange": False},
+                        "activation": {"isAllowChange": True},
                         "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
@@ -2611,7 +2611,7 @@ class TestADCMConfig(BaseAPITestCase):
                     "adcmMeta": {
                         "isAdvanced": True,
                         "isInvisible": False,
-                        "activation": {"isAllowChange": False},
+                        "activation": {"isAllowChange": True},
                         "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
@@ -2823,7 +2823,7 @@ class TestADCMConfig(BaseAPITestCase):
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": True,
-                        "activation": {"isAllowChange": False},
+                        "activation": {"isAllowChange": True},
                         "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
@@ -3046,7 +3046,7 @@ class TestADCMConfig(BaseAPITestCase):
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
-                        "activation": {"isAllowChange": False},
+                        "activation": {"isAllowChange": True},
                         "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
