@@ -1,7 +1,9 @@
 import { getEnv } from '@utils/envVarsUtils';
 
 export const apiHost = getEnv('ADCM_API_HOST') ?? '';
-export const wsHost = getEnv('ADCM_WS_HOST');
+
+const defaultSocketSchema = window.location.protocol === 'https:' ? 'wss' : 'ws';
+export const wsHost = getEnv('ADCM_WS_HOST') ?? `${defaultSocketSchema}://${window.location.host}`;
 
 export const defaultPerPagesList = [
   { value: 10, label: '10 per page' },
