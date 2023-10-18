@@ -27,6 +27,7 @@ from api_v2.host.utils import (
     map_list_of_hosts,
 )
 from api_v2.views import CamelCaseReadOnlyModelViewSet
+from audit.utils import audit
 from cm.api import add_host_to_cluster, delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
@@ -175,6 +176,7 @@ class HostClusterViewSet(  # pylint:disable=too-many-ancestors
 
         return Host.objects.filter(cluster=cluster).select_related("cluster").prefetch_related("hostcomponent_set")
 
+    @audit
     def create(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         serializer = self.get_serializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
@@ -198,6 +200,7 @@ class HostClusterViewSet(  # pylint:disable=too-many-ancestors
             status=HTTP_201_CREATED,
         )
 
+    @audit
     def destroy(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         host = self.get_object()
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
@@ -208,6 +211,7 @@ class HostClusterViewSet(  # pylint:disable=too-many-ancestors
         remove_host_from_cluster(host=host)
         return Response(status=HTTP_204_NO_CONTENT)
 
+    @audit
     @action(methods=["post"], detail=True, url_path="maintenance-mode")
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         return maintenance_mode(request=request, **kwargs)

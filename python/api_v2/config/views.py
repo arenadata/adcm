@@ -18,6 +18,7 @@ from api_v2.config.utils import (
     represent_string_as_json_type,
 )
 from api_v2.views import CamelCaseGenericViewSet
+from audit.utils import audit
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
 from cm.models import ConfigLog
@@ -66,6 +67,7 @@ class ConfigLogViewSet(
 
         return ConfigLogSerializer
 
+    @audit
     def create(self, request, *args, **kwargs) -> Response:
         parent_object = self.get_parent_object()
 

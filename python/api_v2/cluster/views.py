@@ -26,6 +26,7 @@ from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.config.utils import get_config_schema
 from api_v2.host.serializers import HostMappingSerializer
 from api_v2.views import CamelCaseGenericViewSet, CamelCaseModelViewSet
+from audit.utils import audit
 from cm.api import add_cluster, retrieve_host_component_objects, set_host_component
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues
@@ -85,6 +86,11 @@ class ClusterViewSet(  # pylint:disable=too-many-ancestors
 
         return self.serializer_class
 
+    @audit
+    def destroy(self, request, *args, **kwargs) -> Response:
+        return super().destroy(request=request, *args, **kwargs)
+
+    @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -93,11 +99,12 @@ class ClusterViewSet(  # pylint:disable=too-many-ancestors
         cluster = add_cluster(
             prototype=Prototype.objects.get(pk=valid["prototype_id"], type=ObjectType.CLUSTER),
             name=valid["name"],
-            description=valid["description"],
+            description=valid.get("description", ""),
         )
 
         return Response(data=ClusterSerializer(cluster).data, status=HTTP_201_CREATED)
 
+    @audit
     def update(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -200,6 +207,7 @@ class MappingViewSet(  # pylint:disable=too-many-ancestors
 
         return super().list(request, *args, **kwargs)
 
+    @audit
     def create(self, request: Request, *args, **kwargs) -> Response:
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["cluster_pk"]

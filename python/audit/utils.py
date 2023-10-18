@@ -10,12 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 from functools import wraps
 
 from api.cluster.serializers import ClusterAuditSerializer
 from api.component.serializers import ComponentAuditSerializer
 from api.host.serializers import HostAuditSerializer
 from api.service.serializers import ServiceAuditSerializer
+from api_v2.cluster.serializers import (
+    ClusterAuditSerializer as ClusterAuditSerializerV2,
+)
+from api_v2.cluster.serializers import ClusterUpdateSerializer
 from audit.cases.cases import get_audit_operation_and_object
 from audit.cef_logger import cef_logger
 from audit.models import (
@@ -46,7 +51,7 @@ from rbac.endpoints.policy.serializers import PolicyAuditSerializer
 from rbac.endpoints.role.serializers import RoleAuditSerializer
 from rbac.endpoints.user.serializers import UserAuditSerializer
 from rbac.models import Group, Policy, Role, User
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
 from rest_framework.status import (
@@ -56,6 +61,8 @@ from rest_framework.status import (
     is_success,
 )
 from rest_framework.viewsets import ModelViewSet
+
+URL_PATH_PATTERN = re.compile(r".*/api/v(?P<api_version>\d+)/(?P<target_path>.*?)/?$")
 
 
 def _get_view_and_request(args) -> tuple[GenericAPIView, Request]:
@@ -69,7 +76,7 @@ def _get_view_and_request(args) -> tuple[GenericAPIView, Request]:
     return view, request
 
 
-def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs) -> Model | None:
+def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs: dict) -> Model | None:
     # pylint: disable=too-many-branches
 
     try:
@@ -120,7 +127,8 @@ def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs) -> Model | 
     return deleted_obj
 
 
-def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
+# pylint: disable=too-many-branches
+def _get_object_changes(prev_data: dict, current_obj: Model, api_version: int) -> dict:
     serializer_class = None
     if isinstance(current_obj, Group):
         serializer_class = GroupAuditSerializer
@@ -131,7 +139,10 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
     elif isinstance(current_obj, Policy):
         serializer_class = PolicyAuditSerializer
     elif isinstance(current_obj, Cluster):
-        serializer_class = ClusterAuditSerializer
+        if api_version == 1:
+            serializer_class = ClusterAuditSerializer
+        elif api_version == 2:
+            serializer_class = ClusterAuditSerializerV2
     elif isinstance(current_obj, Host):
         serializer_class = HostAuditSerializer
     elif isinstance(current_obj, ClusterObject):
@@ -185,6 +196,9 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
         elif view.__class__.__name__ == "HostDetail":
             serializer_class = HostAuditSerializer
             pk = view.kwargs["host_id"]
+        elif view.__class__.__name__ == "ClusterViewSet":
+            serializer_class = ClusterUpdateSerializer
+            pk = view.kwargs["pk"]
     elif view.request.method == "POST":
         if view.__class__.__name__ == "ServiceMaintenanceModeView":
             serializer_class = ServiceAuditSerializer
@@ -211,6 +225,14 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
     return prev_data, current_obj
 
 
+def _parse_path(path: str) -> tuple[int, list[str]]:
+    match = URL_PATH_PATTERN.match(string=path)
+    if match is None:
+        return -1, []
+
+    return int(match.group("api_version")), match.group("target_path").split(sep="/")
+
+
 def audit(func):
     # pylint: disable=too-many-statements
     @wraps(func)
@@ -226,6 +248,9 @@ def audit(func):
 
         error = None
         view, request = _get_view_and_request(args=args)
+        api_version, path = _parse_path(path=view.request.path)
+        if api_version == -1:
+            return func(*args, **kwargs)
 
         if request.method == "DELETE":
             deleted_obj = _get_deleted_obj(view=view, request=request, kwargs=kwargs)
@@ -252,12 +277,30 @@ def audit(func):
                 status_code = res.status_code
             else:
                 status_code = HTTP_403_FORBIDDEN
-        except (AdcmEx, ValidationError) as exc:
+        except (AdcmEx, ValidationError, Http404, NotFound) as exc:
             error = exc
             res = None
 
-            if getattr(exc, "msg", None) and (
-                "doesn't exist" in exc.msg or "service is not installed in specified cluster" in exc.msg
+            if api_version == 2:
+                match (view.__class__.__name__, view.action, view.kwargs):
+                    case ("HostClusterViewSet", "destroy" | "maintenance_mode", {"cluster_pk": _, "pk": host_pk}):
+                        deleted_obj = Host.objects.filter(pk=host_pk).first()
+                    case ("ServiceViewSet", "destroy", {"cluster_pk": cluster_pk, "pk": servie_pk}):
+                        deleted_obj = ClusterObject.objects.filter(pk=servie_pk).first()
+                    case ("ClusterViewSet", _, {"pk": cluster_pk}) | (
+                        "MappingViewSet"
+                        | "ImportViewSet"
+                        | "ConfigLogViewSet"
+                        | "HostClusterViewSet"
+                        | "ServiceViewSet",
+                        _,
+                        {"cluster_pk": cluster_pk},
+                    ):
+                        deleted_obj = Cluster.objects.filter(pk=cluster_pk).first()
+
+            elif api_version == 1 and (
+                getattr(exc, "msg", None)
+                and ("doesn't exist" in exc.msg or "service is not installed in specified cluster" in exc.msg)
             ):
                 _kwargs = None
                 if "cluster_id" in kwargs:
@@ -279,7 +322,7 @@ def audit(func):
                 if "bind_id" in kwargs:
                     deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
 
-            if (
+            if api_version == 1 and (
                 getattr(exc, "msg", None)
                 and "django model doesn't has __error_code__ attribute" in exc.msg
                 and "task_id" in kwargs
@@ -287,7 +330,11 @@ def audit(func):
                 deleted_obj = TaskLog.objects.filter(pk=kwargs["task_id"]).first()
 
             if not deleted_obj:
-                status_code = exc.status_code
+                if isinstance(exc, Http404):
+                    status_code = HTTP_404_NOT_FOUND
+                else:
+                    status_code = exc.status_code
+
                 if status_code == HTTP_404_NOT_FOUND:
                     action_perm_denied = (
                         kwargs.get("action_id") and Action.objects.filter(pk=kwargs["action_id"]).exists()
@@ -307,24 +354,26 @@ def audit(func):
                     status_code = error.status_code
                 else:
                     status_code = HTTP_403_FORBIDDEN
+
         except PermissionDenied as exc:
             status_code = HTTP_403_FORBIDDEN
             error = exc
             res = None
+
         except KeyError as exc:
             status_code = HTTP_400_BAD_REQUEST
             error = exc
             res = None
 
         audit_operation, audit_object, operation_name = get_audit_operation_and_object(
-            view,
-            res,
-            deleted_obj,
+            view=view, response=res, deleted_obj=deleted_obj, path=path, api_version=api_version
         )
         if audit_operation:
             if is_success(status_code) and prev_data:
                 current_obj.refresh_from_db()
-                object_changes = _get_object_changes(prev_data=prev_data, current_obj=current_obj)
+                object_changes = _get_object_changes(
+                    prev_data=prev_data, current_obj=current_obj, api_version=api_version
+                )
             else:
                 object_changes = {}
 

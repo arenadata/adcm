@@ -141,7 +141,7 @@ def get_or_create_audit_obj(
         object_type=object_type,
     ).first()
 
-    if not audit_object:
+    if not audit_object and object_name is not None:
         audit_object = AuditObject.objects.create(
             object_id=object_id,
             object_name=object_name,
