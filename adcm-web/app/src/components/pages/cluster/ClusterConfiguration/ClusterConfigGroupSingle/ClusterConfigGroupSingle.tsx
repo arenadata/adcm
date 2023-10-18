@@ -1,5 +1,5 @@
 import React from 'react';
-import ConfigGroupSingleHeader from '@commonComponents/configGroups/ConfigGroupSingleHeader/ConfigGroupSingleHeader ';
+import ConfigGroupSingleHeader from '@commonComponents/configGroups/ConfigGroupSingleHeader/ConfigGroupSingleHeader';
 import { useClusterConfigGroupSingle } from '@pages/cluster/ClusterConfiguration/ClusterConfigGroupSingle/useClusterConfigGroupSingle';
 import { useStore } from '@hooks';
 import ClusterConfigGroupConfiguration from './ClusterConfigGroupConfiguration/ClusterConfigGroupConfiguration';
