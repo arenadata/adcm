@@ -123,6 +123,7 @@
           "user’s",
           "vite",
           "ws",
+          "wss",
           "xsrf"
         ]
       }
