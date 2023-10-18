@@ -5,6 +5,8 @@ import { useRequestBundle } from './useRequestBundle';
 import BundleOverviewHeader from './BundleOverviewHeader/BundleOverviewHeader';
 import BundleOverviewTable from './BundleOverviewTable/BundleOverviewTable';
 import BundleOverviewLicenseContent from './BundleOverviewLicenceContent/BundleOverviewLicenseContent';
+import { Spinner } from '@uikit';
+import s from './BundleOverviewPage.module.scss';
 
 const BundleOverviewPage: React.FC = () => {
   useRequestBundle();
@@ -12,6 +14,7 @@ const BundleOverviewPage: React.FC = () => {
   const bundle = useStore(({ adcm }) => adcm.bundle.bundle);
   const prototype = useStore(({ adcm }) => adcm.bundle.relatedData.prototype);
   const isBundleLicensePresent = prototype?.license?.text !== null;
+  const isLicenseLoading = useStore(({ adcm }) => adcm.bundle.isLicenseLoading);
 
   useEffect(() => {
     if (bundle) {
@@ -23,7 +26,13 @@ const BundleOverviewPage: React.FC = () => {
     <>
       <BundleOverviewHeader />
       <BundleOverviewTable />
-      {isBundleLicensePresent && <BundleOverviewLicenseContent />}
+      {isLicenseLoading ? (
+        <div className={s.spinner}>
+          <Spinner />
+        </div>
+      ) : (
+        <>{isBundleLicensePresent && <BundleOverviewLicenseContent />}</>
+      )}
     </>
   );
 };
