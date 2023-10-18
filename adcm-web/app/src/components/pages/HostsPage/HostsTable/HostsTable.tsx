@@ -43,7 +43,13 @@ const HostsTable: React.FC = () => {
   };
 
   return (
-    <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
+    <Table
+      isLoading={isLoading}
+      columns={columns}
+      sortParams={sortParams}
+      onSorting={handleSorting}
+      variant="secondary"
+    >
       {hosts.map((host: AdcmHost) => {
         const hostLinked = !!host.cluster?.id;
 
@@ -54,7 +60,13 @@ const HostsTable: React.FC = () => {
               endAdornment={
                 host.state === AdcmEntitySystemState.Created &&
                 !host.cluster?.id && (
-                  <IconButton icon="g1-edit" size={32} title="Edit" onClick={() => handleUpdateClick(host)} />
+                  <IconButton
+                    icon="g1-edit"
+                    size={32}
+                    title="Edit"
+                    className="rename-button"
+                    onClick={() => handleUpdateClick(host)}
+                  />
                 )
               }
             >
@@ -63,9 +75,19 @@ const HostsTable: React.FC = () => {
               </Link>
             </StatusableCell>
             <MultiStateCell entity={host} />
-            <TableCell>{host.hostprovider.name}</TableCell>
-            <TableCell>{orElseGet(host.cluster?.name)}</TableCell>
             <TableCell>
+              <Link to={`/hostproviders/${host.hostprovider.id}`} className="text-link">
+                {host.hostprovider.name}
+              </Link>
+            </TableCell>
+            <TableCell>
+              {orElseGet(host.cluster, (cluster) => (
+                <Link to={`/clusters/${cluster.id}`} className="text-link">
+                  {cluster.name}
+                </Link>
+              ))}
+            </TableCell>
+            <TableCell hasIconOnly>
               <Concern concerns={host.concerns} />
             </TableCell>
             <TableCell hasIconOnly align="center">

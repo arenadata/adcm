@@ -27,7 +27,7 @@ const getClusterConfigGroups = createAsyncThunk(
     thunkAPI.dispatch(setIsLoading(true));
     const startDate = new Date();
 
-    thunkAPI.dispatch(loadClusterConfigGroups(clusterId));
+    await thunkAPI.dispatch(loadClusterConfigGroups(clusterId));
 
     executeWithMinDelay({
       startDate,

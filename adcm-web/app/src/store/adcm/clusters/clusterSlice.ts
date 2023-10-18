@@ -27,7 +27,8 @@ const getCluster = createAsyncThunk('adcm/cluster/getCluster', async (arg: numbe
   thunkAPI.dispatch(setIsLoading(true));
   const startDate = new Date();
 
-  thunkAPI.dispatch(loadClusterFromBackend(arg));
+  await thunkAPI.dispatch(loadClusterFromBackend(arg));
+
   executeWithMinDelay({
     startDate,
     delay: defaultSpinnerDelay,

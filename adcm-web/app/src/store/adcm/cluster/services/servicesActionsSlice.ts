@@ -91,7 +91,8 @@ const getServicePrototypes = createAsyncThunk(
     thunkAPI.dispatch(setIsLoading(true));
     const startDate = new Date();
 
-    thunkAPI.dispatch(getServicePrototypesFromBackend(arg));
+    await thunkAPI.dispatch(getServicePrototypesFromBackend(arg));
+
     executeWithMinDelay({
       startDate,
       delay: defaultSpinnerDelay,

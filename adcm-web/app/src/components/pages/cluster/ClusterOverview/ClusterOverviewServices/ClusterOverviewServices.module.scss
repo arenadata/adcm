@@ -31,11 +31,10 @@
     flex-direction: column;
     justify-content: flex-start;
     margin-left: 12px;
+  }
 
-    & > div:last-of-type {
-      align-items: flex-end;
-      flex: 1;
-    }
+  &__footer {
+    margin-top: auto;
   }
 
   &__spinnerWrapper {
@@ -47,6 +46,10 @@
     justify-content: center;
     flex: 5;
     border-radius: 15px;
+  }
+
+  &__noData {
+    margin-left: 40px;
   }
 }
 

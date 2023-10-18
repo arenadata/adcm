@@ -32,17 +32,25 @@ const HostProviderTable = () => {
   };
 
   return (
-    <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
+    <Table
+      isLoading={isLoading}
+      columns={columns}
+      sortParams={sortParams}
+      onSorting={handleSorting}
+      variant="secondary"
+    >
       {hostProviders.map((hostProvider) => (
         <TableRow key={hostProvider.id}>
           <TableCell>
-            <Link to={`/hostproviders/${hostProvider.id}`}>{hostProvider.name}</Link>
+            <Link to={`/hostproviders/${hostProvider.id}`} className="text-link">
+              {hostProvider.name}
+            </Link>
           </TableCell>
           <TableCell>{hostProvider.prototype.displayName}</TableCell>
           <TableCell>{hostProvider.prototype.version}</TableCell>
           <MultiStateCell entity={hostProvider} />
           <TableCell>{orElseGet(hostProvider.description)}</TableCell>
-          <TableCell>
+          <TableCell hasIconOnly>
             <Concern concerns={hostProvider.concerns} />
           </TableCell>
           <TableCell hasIconOnly align="center">

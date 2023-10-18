@@ -32,7 +32,7 @@ const getHostProviderConfigGroups = createAsyncThunk(
     thunkAPI.dispatch(setIsLoading(true));
     const startDate = new Date();
 
-    thunkAPI.dispatch(loadHostProviderConfigGroups(hostProviderId));
+    await thunkAPI.dispatch(loadHostProviderConfigGroups(hostProviderId));
 
     executeWithMinDelay({
       startDate,

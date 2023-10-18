@@ -27,11 +27,6 @@
     flex-direction: column;
     justify-content: flex-start;
     min-height: 326px;
-
-    & > div:last-of-type {
-      align-items: flex-end;
-      flex: 1;
-    }
   }
 
   &__title {
@@ -61,6 +56,14 @@
     justify-content: center;
     flex: 5;
     border-radius: 15px;
+  }
+
+  &__footer {
+    margin-top: auto;
+  }
+
+  &__noData {
+    margin-left: 40px;
   }
 }
 

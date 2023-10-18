@@ -40,9 +40,14 @@ const ClusterOverviewHosts = () => {
             <div className={s.clusterOverviewHosts__hosts}>
               {firstHostsGroup.length > 0 && <ClusterOverviewHostsTable hosts={firstHostsGroup} />}
               {secondHostsGroup.length > 0 && <ClusterOverviewHostsTable hosts={secondHostsGroup} />}
+              {firstHostsGroup.length + secondHostsGroup.length === 0 && (
+                <span className={s.clusterOverviewHosts__noData}>No Data</span>
+              )}
             </div>
           )}
-          <Pagination pageData={paginationParams} totalItems={count} onChangeData={onPaginationParamsHandler} />
+          <div className={s.clusterOverviewHosts__footer}>
+            <Pagination pageData={paginationParams} totalItems={count} onChangeData={onPaginationParamsHandler} />
+          </div>
         </div>
       </div>
     </PageSection>

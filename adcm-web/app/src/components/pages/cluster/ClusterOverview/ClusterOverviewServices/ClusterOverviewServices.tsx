@@ -42,9 +42,12 @@ const ClusterOverviewServices = () => {
               {servicesStatuses.map((service) => (
                 <ClusterOverviewServiceItem clusterId={clusterId} key={service.id} service={service} />
               ))}
+              {servicesStatuses.length === 0 && <span className={s.clusterOverviewServices__noData}>No Data</span>}
             </div>
           )}
-          <Pagination pageData={paginationParams} totalItems={count} onChangeData={onPaginationParamsHandler} />
+          <div className={s.clusterOverviewServices__footer}>
+            <Pagination pageData={paginationParams} totalItems={count} onChangeData={onPaginationParamsHandler} />
+          </div>
         </div>
       </div>
     </PageSection>

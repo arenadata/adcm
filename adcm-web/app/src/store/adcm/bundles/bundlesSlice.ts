@@ -38,7 +38,8 @@ const getBundles = createAsyncThunk('adcm/bundles/getBundles', async (arg, thunk
   thunkAPI.dispatch(setIsLoading(true));
   const startDate = new Date();
 
-  thunkAPI.dispatch(loadBundles());
+  await thunkAPI.dispatch(loadBundles());
+
   executeWithMinDelay({
     startDate,
     delay: defaultSpinnerDelay,

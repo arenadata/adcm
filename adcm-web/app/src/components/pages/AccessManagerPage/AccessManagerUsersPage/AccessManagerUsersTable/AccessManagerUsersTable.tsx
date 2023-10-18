@@ -65,6 +65,7 @@ const AccessManagerUsersTable = () => {
       onSorting={handleSorting}
       isAllSelected={isAllItemsSelected}
       toggleSelectedAll={toggleSelectedAllItems}
+      variant="tertiary"
     >
       {users.map((user) => {
         const userGroupsNames = user.groups.map((group) => group.displayName).join(', ');

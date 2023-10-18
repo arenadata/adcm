@@ -120,6 +120,16 @@
     display: none !important;
   }
 
+  &__textNoData {
+    line-height: 32px;
+  }
+  &__spinnerWrapper {
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   td,th {
     padding: 0;
 
@@ -139,11 +149,18 @@
     font-weight: 400;
   }
 
-  tr :global(.text-link) {
-    color: var(--table-text-link-color);
+  &_primary {
+    tr :global(.text-link) {
+      color: var(--table-text-link-color);
+    }
+
+    tr:hover :global(.text-link) {
+      color: var(--color-xblue);
+    }
   }
-  tr:hover :global(.text-link) {
-    color: var(--color-xblue);
+
+  tr:not(:hover) :global(.rename-button) {
+    color: transparent;
   }
 
   tbody > tr {

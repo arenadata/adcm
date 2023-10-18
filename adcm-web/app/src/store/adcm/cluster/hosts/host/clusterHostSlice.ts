@@ -45,7 +45,8 @@ const getClusterHost = createAsyncThunk(
     thunkAPI.dispatch(setIsLoading(true));
     const startDate = new Date();
 
-    thunkAPI.dispatch(loadClusterHost(arg));
+    await thunkAPI.dispatch(loadClusterHost(arg));
+
     executeWithMinDelay({
       startDate,
       delay: defaultSpinnerDelay,
@@ -87,7 +88,8 @@ const getRelatedClusterHostComponents = createAsyncThunk(
     thunkAPI.dispatch(setIsLoading(true));
     const startDate = new Date();
 
-    thunkAPI.dispatch(loadRelatedClusterHostComponents(arg));
+    await thunkAPI.dispatch(loadRelatedClusterHostComponents(arg));
+
     executeWithMinDelay({
       startDate,
       delay: defaultSpinnerDelay,

@@ -33,7 +33,8 @@ const getJobs = createAsyncThunk('adcm/jobs/getJobs', async (arg, thunkAPI) => {
   thunkAPI.dispatch(setIsLoading(true));
   const startDate = new Date();
 
-  thunkAPI.dispatch(loadFromBackend());
+  await thunkAPI.dispatch(loadFromBackend());
+
   executeWithMinDelay({
     startDate,
     delay: defaultSpinnerDelay,

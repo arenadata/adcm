@@ -20,7 +20,7 @@ const HostProviderTableFilters = () => {
   );
 
   const handleBundleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setFilter({ hostproviderName: event.target.value }));
+    dispatch(setFilter({ name: event.target.value }));
   };
 
   const handleResetFiltersClick = () => {
@@ -33,8 +33,8 @@ const HostProviderTableFilters = () => {
   return (
     <TableFilters>
       <SearchInput
-        placeholder="Search bundle"
-        value={filter.hostproviderName || ''}
+        placeholder="Search provider"
+        value={filter.name || ''}
         variant="primary"
         onChange={handleBundleNameChange}
       />

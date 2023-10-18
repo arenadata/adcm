@@ -37,12 +37,20 @@ const ClusterServicesTable = () => {
   };
 
   return (
-    <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
+    <Table
+      isLoading={isLoading}
+      columns={columns}
+      sortParams={sortParams}
+      onSorting={handleSorting}
+      variant="secondary"
+    >
       {services.map((service) => {
         return (
           <TableRow key={service.id}>
             <StatusableCell status={servicesStatusesMap[service.status]}>
-              <Link to={`/clusters/${clusterId}/services/${service.id}`}>{service.displayName}</Link>
+              <Link to={`/clusters/${clusterId}/services/${service.id}`} className="text-link">
+                {service.displayName}
+              </Link>
             </StatusableCell>
             <TableCell>{service.prototype.version}</TableCell>
             <MultiStateCell entity={service} />

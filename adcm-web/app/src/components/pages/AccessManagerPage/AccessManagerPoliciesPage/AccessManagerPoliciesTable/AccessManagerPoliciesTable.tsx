@@ -28,7 +28,13 @@ const AccessManagerPoliciesTable: React.FC = () => {
   };
 
   return (
-    <Table variant="primary" columns={columns} isLoading={isLoading} sortParams={sortParams} onSorting={handleSorting}>
+    <Table
+      variant="secondary"
+      columns={columns}
+      isLoading={isLoading}
+      sortParams={sortParams}
+      onSorting={handleSorting}
+    >
       {policies.map((policy) => {
         return (
           <TableRow key={policy.id}>

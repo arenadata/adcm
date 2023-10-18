@@ -26,7 +26,7 @@ export interface AdcmHostProviderPrototype {
 }
 
 export interface AdcmHostProviderFilter {
-  hostproviderName?: string;
+  name?: string;
   prototype?: string;
 }
 
