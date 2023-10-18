@@ -11,7 +11,7 @@ type AdcmHostProviderTableState = ListState<AdcmHostProviderFilter> & {
 
 const createInitialState = (): AdcmHostProviderTableState => ({
   filter: {
-    hostproviderName: undefined,
+    name: undefined,
     prototype: undefined,
   },
   paginationParams: {

@@ -43,11 +43,19 @@ const ClustersTable = () => {
               status={clusterStatusesMap[cluster.status]}
               endAdornment={
                 cluster.state === AdcmEntitySystemState.Created && (
-                  <IconButton icon="g1-edit" size={32} title="Edit" onClick={() => handleRenameClick(cluster)} />
+                  <IconButton
+                    icon="g1-edit"
+                    size={32}
+                    title="Edit"
+                    className="rename-button"
+                    onClick={() => handleRenameClick(cluster)}
+                  />
                 )
               }
             >
-              <Link to={`/clusters/${cluster.id}`}>{cluster.name}</Link>
+              <Link to={`/clusters/${cluster.id}`} className="text-link">
+                {cluster.name}
+              </Link>
             </StatusableCell>
             <MultiStateCell entity={cluster} />
             <TableCell>{cluster.prototype.displayName}</TableCell>

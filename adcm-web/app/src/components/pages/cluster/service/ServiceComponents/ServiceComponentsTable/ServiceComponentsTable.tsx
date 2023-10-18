@@ -30,7 +30,13 @@ const ServiceComponentsTable = () => {
   };
 
   return (
-    <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
+    <Table
+      isLoading={isLoading}
+      columns={columns}
+      sortParams={sortParams}
+      onSorting={handleSorting}
+      variant="secondary"
+    >
       {components.map((component) => {
         return (
           <TableRow key={component.id}>

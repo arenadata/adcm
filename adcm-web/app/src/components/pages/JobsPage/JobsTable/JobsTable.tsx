@@ -30,7 +30,13 @@ const JobsTable = () => {
   };
 
   return (
-    <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
+    <Table
+      isLoading={isLoading}
+      columns={columns}
+      sortParams={sortParams}
+      onSorting={handleSorting}
+      variant="secondary"
+    >
       {jobs.map((job) => {
         return (
           <TableRow key={job.id}>

@@ -14,10 +14,6 @@ export const columns: TableColumn[] = [
     name: 'hosts',
   },
   {
-    label: 'Concerns',
-    name: 'concerns',
-  },
-  {
     label: 'Actions',
     name: 'actions',
     headerAlign: 'center',

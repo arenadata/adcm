@@ -30,7 +30,7 @@
     // common colors:
 
     --button-background-disabled: var(--color-xdark-plate20);
-    --button-border-disabled: var(--color-xdark-plate20);
+    --button-border-disabled: transparent;
     --button-color-disabled: var(--color-xgray-reading);
 
     --button-background-error: var(--color-dark-red);
@@ -68,7 +68,7 @@
     // common colors:
 
     --button-background-disabled: var(--color-xdark-plate20);
-    --button-border-disabled: var(--color-xdark-plate20);
+    --button-border-disabled: transparent;
     --button-color-disabled: var(--color-xgray-lighter);
 
     --button-background-error: var(--color-red-30);

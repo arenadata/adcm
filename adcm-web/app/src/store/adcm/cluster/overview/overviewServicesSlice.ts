@@ -58,8 +58,10 @@ const getClusterServicesStatuses = createAsyncThunk(
     thunkAPI.dispatch(setIsLoading(true));
     const startDate = new Date();
 
-    await thunkAPI.dispatch(loadClusterServicesStatuses(clusterId));
-    await thunkAPI.dispatch(getClusterAllServicesCount(clusterId));
+    await Promise.all([
+      thunkAPI.dispatch(loadClusterServicesStatuses(clusterId)),
+      thunkAPI.dispatch(getClusterAllServicesCount(clusterId)),
+    ]);
 
     executeWithMinDelay({
       startDate,
@@ -74,8 +76,10 @@ const getClusterServicesStatuses = createAsyncThunk(
 const refreshClusterServicesStatuses = createAsyncThunk(
   'adcm/cluster/overview/services/refreshStatuses',
   async (clusterId: number, thunkAPI) => {
-    thunkAPI.dispatch(loadClusterServicesStatuses(clusterId));
-    thunkAPI.dispatch(getClusterAllServicesCount(clusterId));
+    await Promise.all([
+      thunkAPI.dispatch(loadClusterServicesStatuses(clusterId)),
+      thunkAPI.dispatch(getClusterAllServicesCount(clusterId)),
+    ]);
   },
 );
 

@@ -7,6 +7,7 @@ import ClusterOverviewServices from './ClusterOverviewServices/ClusterOverviewSe
 import ClusterOverviewHosts from './ClusterOverviewHosts/ClusterOverviewHosts';
 import { useRequestClusterHostsOverview } from '@pages/cluster/ClusterOverview/useRequestClusterHostsOverview';
 import { useRequestClusterServicesOverview } from '@pages/cluster/ClusterOverview/useRequestClusterServicesOverview';
+import { orElseGet } from '@utils/checkUtils';
 
 const ClusterOverview: React.FC = () => {
   const dispatch = useDispatch();
@@ -29,7 +30,7 @@ const ClusterOverview: React.FC = () => {
 
   return (
     <div>
-      <p>Cluster description</p>
+      <p>{orElseGet(cluster?.description, null, '')}</p>
       <ClusterOverviewInfo />
       <ClusterOverviewServices />
       <ClusterOverviewHosts />

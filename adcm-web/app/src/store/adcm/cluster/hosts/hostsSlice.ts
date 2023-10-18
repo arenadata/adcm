@@ -35,7 +35,8 @@ const getClusterHosts = createAsyncThunk('adcm/clusters/getClusterHosts', async 
   thunkAPI.dispatch(setIsLoading(true));
   const startDate = new Date();
 
-  thunkAPI.dispatch(loadClusterHostsFromBackend(clusterId));
+  await thunkAPI.dispatch(loadClusterHostsFromBackend(clusterId));
+
   executeWithMinDelay({
     startDate,
     delay: defaultSpinnerDelay,

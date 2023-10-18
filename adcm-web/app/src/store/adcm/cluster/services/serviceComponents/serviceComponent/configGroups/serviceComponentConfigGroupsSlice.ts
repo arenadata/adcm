@@ -40,7 +40,7 @@ const getServiceComponentConfigGroups = createAsyncThunk(
     thunkAPI.dispatch(setIsLoading(true));
     const startDate = new Date();
 
-    thunkAPI.dispatch(loadServiceComponentConfigGroups(arg));
+    await thunkAPI.dispatch(loadServiceComponentConfigGroups(arg));
 
     executeWithMinDelay({
       startDate,

@@ -43,7 +43,8 @@ const getPolicies = createAsyncThunk('adcm/policies/getPolicies', async (arg, th
   thunkAPI.dispatch(setIsLoading(true));
   const startDate = new Date();
 
-  thunkAPI.dispatch(loadPoliciesFromBackend());
+  await thunkAPI.dispatch(loadPoliciesFromBackend());
+
   executeWithMinDelay({
     startDate,
     delay: defaultSpinnerDelay,
@@ -61,7 +62,8 @@ const getObjectCandidates = createAsyncThunk('adcm/policies/getObjectCandidates'
   thunkAPI.dispatch(setIsLoading(true));
   const startDate = new Date();
 
-  thunkAPI.dispatch(loadObjectCandidates(roleId));
+  await thunkAPI.dispatch(loadObjectCandidates(roleId));
+
   executeWithMinDelay({
     startDate,
     delay: defaultSpinnerDelay,

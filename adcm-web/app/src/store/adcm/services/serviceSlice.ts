@@ -38,7 +38,8 @@ const getService = createAsyncThunk('adcm/service/getService', async (arg: LoadS
   thunkAPI.dispatch(setIsLoading(true));
   const startDate = new Date();
 
-  thunkAPI.dispatch(loadService(arg));
+  await thunkAPI.dispatch(loadService(arg));
+
   executeWithMinDelay({
     startDate,
     delay: defaultSpinnerDelay,

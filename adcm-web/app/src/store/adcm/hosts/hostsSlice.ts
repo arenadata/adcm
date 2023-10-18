@@ -32,7 +32,8 @@ const getHosts = createAsyncThunk('adcm/hosts/getHosts', async (arg, thunkAPI) =
   thunkAPI.dispatch(setIsLoading(true));
   const startDate = new Date();
 
-  thunkAPI.dispatch(loadHosts());
+  await thunkAPI.dispatch(loadHosts());
+
   executeWithMinDelay({
     startDate,
     delay: defaultSpinnerDelay,

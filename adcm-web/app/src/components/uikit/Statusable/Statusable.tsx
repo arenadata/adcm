@@ -9,13 +9,17 @@ interface StatusableProps extends React.HTMLAttributes<HTMLDivElement> {
   size?: Size;
 }
 
-const Statusable: React.FC<StatusableProps> = ({ children, className, status, size = 'small', ...props }) => {
-  const classes = cn(className, s.statusable, s[`statusable_${size}`], s[`statusable_${status.toLowerCase()}`]);
-  return (
-    <div className={classes} {...props}>
-      {children}
-    </div>
-  );
-};
+const Statusable = React.forwardRef<HTMLDivElement, StatusableProps>(
+  ({ children, className, status, size = 'small', ...props }, ref) => {
+    const classes = cn(className, s.statusable, s[`statusable_${size}`], s[`statusable_${status.toLowerCase()}`]);
+    return (
+      <div className={classes} {...props} ref={ref}>
+        {children}
+      </div>
+    );
+  },
+);
+
+Statusable.displayName = 'Statusable';
 
 export default Statusable;

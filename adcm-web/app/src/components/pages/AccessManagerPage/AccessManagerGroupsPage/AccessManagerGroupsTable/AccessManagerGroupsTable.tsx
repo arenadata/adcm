@@ -45,6 +45,7 @@ const AccessManagerGroupsTable = () => {
       onSorting={handleSorting}
       isAllSelected={isAllItemsSelected}
       toggleSelectedAll={toggleSelectedAllItems}
+      variant="tertiary"
     >
       {groups.map((group) => {
         return (

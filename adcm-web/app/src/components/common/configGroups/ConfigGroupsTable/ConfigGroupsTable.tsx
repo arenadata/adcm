@@ -4,7 +4,6 @@ import { columns } from './ConfigGroupsTable.constants';
 import { AdcmConfigGroup } from '@models/adcm';
 import { TableProps } from '@uikit/Table/Table';
 import { generatePath, Link } from 'react-router-dom';
-import Concern from '@commonComponents/Concern/Concern';
 
 interface ConfigGroupsTableProps extends Pick<TableProps, 'isLoading' | 'sortParams' | 'onSorting'> {
   configGroups: AdcmConfigGroup[];
@@ -27,7 +26,7 @@ const ConfigGroupsTable: React.FC<ConfigGroupsTableProps> = ({
   };
 
   return (
-    <Table columns={columns} isLoading={isLoading} sortParams={sortParams} onSorting={onSorting}>
+    <Table columns={columns} isLoading={isLoading} sortParams={sortParams} onSorting={onSorting} variant="secondary">
       {configGroups.map((configGroup) => {
         const configGroupUrl = generatePath(editUrlPattern, { configGroupId: configGroup.id });
         return (
@@ -42,9 +41,6 @@ const ConfigGroupsTable: React.FC<ConfigGroupsTableProps> = ({
               <span className="text-link" onClick={getHandlerOpenMapping(configGroup)}>
                 {configGroup.hosts.length} host{configGroup.hosts.length > 1 ? 's' : ''}
               </span>
-            </TableCell>
-            <TableCell hasIconOnly>
-              <Concern concerns={[]} />
             </TableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-map" size={32} title="Mapping" onClick={getHandlerOpenMapping(configGroup)} />

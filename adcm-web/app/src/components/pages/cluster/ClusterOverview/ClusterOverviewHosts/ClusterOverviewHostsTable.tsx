@@ -18,11 +18,9 @@ const ClusterOverviewHostsTable = ({ hosts }: clusterOverviewHostsTableProps) =>
           <TableRow key={host.id}>
             <TableCell>
               <Tooltip label={host.name} placement="top-start">
-                <Link to={`/hosts/${host.id}/`}>
-                  <Statusable className={s.clusterOverviewHosts__title} status={hostStatus} size="medium">
-                    {host.name}
-                  </Statusable>
-                </Link>
+                <Statusable className={s.clusterOverviewHosts__title} status={hostStatus} size="medium">
+                  <Link to={`/hosts/${host.id}/`}>{host.name}</Link>
+                </Statusable>
               </Tooltip>
             </TableCell>
           </TableRow>

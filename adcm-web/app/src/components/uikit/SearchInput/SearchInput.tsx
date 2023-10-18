@@ -1,10 +1,11 @@
 import React, { useRef } from 'react';
+import cn from 'classnames';
 import Input, { InputProps } from '@uikit/Input/Input';
 import { useForwardRef } from '@uikit/hooks/useForwardRef';
 import { createChangeEvent } from '@uikit/utils/handlerUtils';
 import IconButton from '@uikit/IconButton/IconButton';
 
-const SearchInput = React.forwardRef<HTMLInputElement, InputProps>((props, ref) => {
+const SearchInput = React.forwardRef<HTMLInputElement, InputProps>(({ className, ...props }, ref) => {
   const localRef = useRef<HTMLInputElement>(null);
   const reference = useForwardRef(ref, localRef);
 
@@ -19,6 +20,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, InputProps>((props, ref) 
   return (
     <Input
       {...props}
+      className={cn(className, 'search-input')}
       ref={reference}
       endAdornment={
         <IconButton icon={props.value ? 'g2-close' : 'g2-magnifying-glass'} onClick={handleIconClick} size={20} />

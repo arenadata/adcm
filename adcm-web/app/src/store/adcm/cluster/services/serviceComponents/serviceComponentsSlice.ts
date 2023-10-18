@@ -45,7 +45,8 @@ const getServiceComponents = createAsyncThunk(
     thunkAPI.dispatch(setIsLoading(true));
     const startDate = new Date();
 
-    thunkAPI.dispatch(loadClusterServiceComponentsFromBackend(arg));
+    await thunkAPI.dispatch(loadClusterServiceComponentsFromBackend(arg));
+
     executeWithMinDelay({
       startDate,
       delay: defaultSpinnerDelay,

@@ -1,7 +1,6 @@
 :global {
   body.theme-dark {
     --cluster-overview-service-item-bg-color: var(--color-xdark-new-20);
-    --cluster-overview-service-item-title-color: var(--color-xwhite-off);
     --cluster-overview-service-item-border-color: var(--color-xdark);
 
     --cluster-overview-service-item-bg-hover-color: var(--color-xdark-new-50);
@@ -10,7 +9,6 @@
 
   body.theme-light {
     --cluster-overview-service-item-bg-color: var(--color-xgray-alt-30);
-    --cluster-overview-service-item-title-color: var(--color-xdark);
     --cluster-overview-service-item-border-color: var(--color-xgray-lighter);
 
     --cluster-overview-service-item-bg-hover-color: var(--color-xgray-alt-50);
@@ -30,14 +28,9 @@
 
   &:hover {
     background: var(--cluster-overview-service-item-bg-hover-color);
-
-    .clusterOverviewServiceItem__title {
-      color: var(--color-xblue);
-    }
   }
 
   &__title {
-    color: var(--cluster-overview-service-item-title-color);
     font-weight: 500;
     font-size: 18px;
     margin-bottom: 12px;
