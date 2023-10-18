@@ -8,10 +8,11 @@ export interface EnumControlProps {
   fieldName: string;
   value: JSONPrimitive;
   fieldSchema: SingleSchemaDefinition;
+  isReadonly: boolean;
   onChange: (value: JSONPrimitive) => void;
 }
 
-const EnumControl = ({ fieldName, value, fieldSchema, onChange }: EnumControlProps) => {
+const EnumControl = ({ fieldName, value, fieldSchema, isReadonly, onChange }: EnumControlProps) => {
   const options = getEnumOptions(fieldSchema);
 
   const handleSelectChange = (newValue: unknown) => {
@@ -19,13 +20,14 @@ const EnumControl = ({ fieldName, value, fieldSchema, onChange }: EnumControlPro
   };
 
   return (
-    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} onChange={onChange}>
+    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} isReadonly={isReadonly} onChange={onChange}>
       <Select
         value={value}
         onChange={handleSelectChange}
         options={options}
         isSearchable={false}
         noneLabel="Please select value"
+        disabled={isReadonly}
       />
     </ConfigurationField>
   );

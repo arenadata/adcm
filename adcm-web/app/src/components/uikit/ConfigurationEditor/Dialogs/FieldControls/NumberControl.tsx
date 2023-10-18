@@ -7,10 +7,11 @@ export interface NumberControlProps {
   fieldName: string;
   value: JSONPrimitive;
   fieldSchema: SingleSchemaDefinition;
+  isReadonly: boolean;
   onChange: (value: JSONPrimitive) => void;
 }
 
-const NumberControl = ({ fieldName, fieldSchema, value, onChange }: NumberControlProps) => {
+const NumberControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: NumberControlProps) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.value === '') {
       onChange('');
@@ -20,8 +21,8 @@ const NumberControl = ({ fieldName, fieldSchema, value, onChange }: NumberContro
   };
 
   return (
-    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} onChange={onChange}>
-      <InputNumber value={value as number} onChange={handleChange} />
+    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} isReadonly={isReadonly} onChange={onChange}>
+      <InputNumber value={value as number} readOnly={isReadonly} onChange={handleChange} />
     </ConfigurationField>
   );
 };

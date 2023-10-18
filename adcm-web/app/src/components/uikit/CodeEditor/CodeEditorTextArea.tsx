@@ -6,10 +6,11 @@ import cn from 'classnames';
 interface CodeEditorTextAreaProps {
   code: string;
   rowCount: number;
+  isReadonly?: boolean;
   onChange: (code: string) => void;
 }
 
-const CodeEditorTextArea = ({ code, rowCount, onChange }: CodeEditorTextAreaProps) => {
+const CodeEditorTextArea = ({ code, rowCount, isReadonly, onChange }: CodeEditorTextAreaProps) => {
   const longestRow = code.split('\n').reduce((longest, row) => {
     return longest < row.length ? row.length : longest;
   }, 0);
@@ -29,6 +30,7 @@ const CodeEditorTextArea = ({ code, rowCount, onChange }: CodeEditorTextAreaProp
         onChange(event.target.value);
       }}
       className={cn(s['codeEditor__textArea'], highlighterStyles['highlighter_font-params'])}
+      readOnly={isReadonly}
       value={code}
     />
   );

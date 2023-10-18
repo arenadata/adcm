@@ -34,6 +34,7 @@ export interface SingleSchemaDefinition extends Omit<JSONSchema7, RedefinedField
   };
   additionalProperties?: boolean;
   adcmMeta: AdcmFieldMetaData;
+  readOnly: boolean;
 }
 
 export interface NullSchemaDefinition {

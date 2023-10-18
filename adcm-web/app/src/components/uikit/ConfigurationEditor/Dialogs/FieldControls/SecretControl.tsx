@@ -10,17 +10,20 @@ export interface StringControlProps {
   fieldName: string;
   value: JSONPrimitive;
   fieldSchema: SingleSchemaDefinition;
+  isReadonly: boolean;
   onChange: (value: JSONPrimitive) => void;
 }
 
-const SecretControl = memo(({ fieldName, fieldSchema, value, onChange }: StringControlProps) => {
+const SecretControl = memo(({ fieldName, fieldSchema, value, isReadonly, onChange }: StringControlProps) => {
   const [secret, setSecret] = useState(value as string);
   const [confirm, setConfirm] = useState(value as string);
   const [error, setError] = useState<string | undefined>(undefined);
 
   const handleFocus = () => {
-    setSecret('');
-    setConfirm('');
+    if (!isReadonly) {
+      setSecret('');
+      setConfirm('');
+    }
   };
 
   const handleSecretChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -43,12 +46,32 @@ const SecretControl = memo(({ fieldName, fieldSchema, value, onChange }: StringC
 
   return (
     <>
-      <ConfigurationField label={fieldName} fieldSchema={fieldSchema} error={error} onChange={onChange}>
-        <InputPassword value={secret} onChange={handleSecretChange} onFocus={handleFocus} onBlur={handleConfirmBlur} />
+      <ConfigurationField
+        label={fieldName}
+        fieldSchema={fieldSchema}
+        error={error}
+        isReadonly={isReadonly}
+        onChange={onChange}
+      >
+        <InputPassword
+          value={secret}
+          readOnly={isReadonly}
+          onChange={handleSecretChange}
+          onFocus={handleFocus}
+          onBlur={handleConfirmBlur}
+        />
       </ConfigurationField>
-      <ConfigurationField label="Confirm" fieldSchema={fieldSchema} error={error} onChange={onChange}>
-        <InputPassword value={confirm} onChange={handleConfirmChange} onBlur={handleConfirmBlur} />
-      </ConfigurationField>
+      {!isReadonly && (
+        <ConfigurationField
+          label="Confirm"
+          fieldSchema={fieldSchema}
+          error={error}
+          isReadonly={isReadonly}
+          onChange={onChange}
+        >
+          <InputPassword value={confirm} onChange={handleConfirmChange} onBlur={handleConfirmBlur} />
+        </ConfigurationField>
+      )}
     </>
   );
 });

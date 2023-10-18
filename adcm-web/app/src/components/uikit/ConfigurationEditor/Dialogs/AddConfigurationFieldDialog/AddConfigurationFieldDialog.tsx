@@ -52,6 +52,7 @@ const AddConfigurationFieldDialog = ({
             fieldName="Enter secret"
             value={value}
             fieldSchema={node.data.fieldSchema}
+            isReadonly={false}
             onChange={handleChange}
           />
         ) : (
@@ -59,6 +60,7 @@ const AddConfigurationFieldDialog = ({
             fieldName="Enter field value"
             value={value}
             fieldSchema={node.data.fieldSchema}
+            isReadonly={false}
             onChange={handleChange}
           />
         )}

@@ -14,10 +14,17 @@ interface MultilineStringControlProps {
   fieldName: string;
   value: JSONPrimitive;
   fieldSchema: SingleSchemaDefinition;
+  isReadonly: boolean;
   onChange: (newValue: JSONPrimitive) => void;
 }
 
-const MultilineStringControl = ({ fieldName, value, fieldSchema, onChange }: MultilineStringControlProps) => {
+const MultilineStringControl = ({
+  fieldName,
+  value,
+  fieldSchema,
+  isReadonly,
+  onChange,
+}: MultilineStringControlProps) => {
   const stringValue = value as string;
   const format = fieldSchema.format ?? 'text';
   const [isFormatted, setIsFormatted] = useState(false);
@@ -40,12 +47,13 @@ const MultilineStringControl = ({ fieldName, value, fieldSchema, onChange }: Mul
   };
 
   return (
-    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} onChange={onChange}>
+    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} isReadonly={isReadonly} onChange={onChange}>
       <CodeEditor
         className={s.configurationField__codeEditor}
         isSecret={fieldSchema.adcmMeta.isSecret}
         language={format}
         code={code}
+        isReadonly={isReadonly}
         onChange={handleChange}
       />
     </ConfigurationField>

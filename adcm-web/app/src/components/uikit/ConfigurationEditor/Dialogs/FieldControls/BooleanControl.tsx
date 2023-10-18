@@ -8,21 +8,23 @@ export interface BooleanControlProps {
   fieldName: string;
   value: JSONPrimitive;
   fieldSchema: SingleSchemaDefinition;
+  isReadonly: boolean;
   onChange: (value: JSONPrimitive) => void;
 }
 
-const BooleanControl = ({ fieldName, fieldSchema, value, onChange }: BooleanControlProps) => {
+const BooleanControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: BooleanControlProps) => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.checked);
   };
 
   return (
-    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} onChange={onChange}>
+    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} isReadonly={isReadonly} onChange={onChange}>
       <Checkbox
         className={s.configurationField__checkbox}
         checked={Boolean(value)}
         label={fieldName}
         onChange={handleChange}
+        readOnly={isReadonly}
       />
     </ConfigurationField>
   );
