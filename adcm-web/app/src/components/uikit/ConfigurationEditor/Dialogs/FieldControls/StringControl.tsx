@@ -8,10 +8,11 @@ export interface StringControlProps {
   fieldName: string;
   value: JSONPrimitive;
   fieldSchema: SingleSchemaDefinition;
+  isReadonly: boolean;
   onChange: (value: JSONPrimitive) => void;
 }
 
-const StringControl = ({ fieldName, value, fieldSchema, onChange }: StringControlProps) => {
+const StringControl = ({ fieldName, value, fieldSchema, isReadonly, onChange }: StringControlProps) => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.value);
   };
@@ -19,15 +20,16 @@ const StringControl = ({ fieldName, value, fieldSchema, onChange }: StringContro
   const stringValue = value as string;
 
   return (
-    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} onChange={onChange}>
+    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} isReadonly={isReadonly} onChange={onChange}>
       {fieldSchema.adcmMeta.stringExtra?.suggestions ? (
         <InputWithAutocomplete
           value={stringValue}
-          onChange={handleChange}
+          readOnly={isReadonly}
           suggestions={fieldSchema.adcmMeta.stringExtra.suggestions}
+          onChange={handleChange}
         />
       ) : (
-        <Input value={stringValue} onChange={handleChange} />
+        <Input value={stringValue} readOnly={isReadonly} onChange={handleChange} />
       )}
     </ConfigurationField>
   );

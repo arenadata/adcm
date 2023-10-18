@@ -25,6 +25,43 @@ const initialConfiguration = {
       },
     ],
   },
+  readonly_props: {
+    someBoolean: true,
+    someString: 'user defined value',
+    someNumber: 111,
+    someStringWithSuggestions: 'user defined value',
+    someEnum: 2,
+    someSecretField: '***secret***',
+    someMultilineField:
+      'lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum',
+    someJsonField: `{
+  "user": {
+    "first_name": "john",
+    "last_name": "doe",
+    "age": 42,
+    "driver_license": null,
+    "is_fake": true
+  }
+}`,
+    someYamlField: `- name: my_boolean
+  type: boolean
+  required: false
+  default: true
+  read_only: any`,
+    someAnyOfField: null,
+    someInvisibleField: 'must be invisible',
+    someAdvancedField: 'advanced',
+    someMap: {
+      key1: 'value1',
+    },
+    someSecretMap: {
+      key1: 'value1',
+    },
+    someSyncString: 'sync string',
+    someSyncMap: {
+      key1: 'value',
+    },
+  },
   test_config: {
     someBoolean: false,
     someStringWithDefaultValue: 'user defined value',
@@ -47,16 +84,17 @@ const initialConfiguration = {
   required: false
   default: true
   read_only: any`,
-    someReadOnlyField: 'read only field',
     someAnyOfField: null,
     someInvisibleField: 'must be invisible',
     someAdvancedField: 'advanced',
     someMap: {
       key1: 'value1',
     },
-    someSecretMap: {},
-    someReadOnlyMap: {
+    someSecretMap: {
       key1: 'value1',
+    },
+    someMapWithAttributes: {
+      key1: 'value',
     },
   },
 };
@@ -69,6 +107,22 @@ const initialAttributes: ConfigurationAttributes = {
   '/test_config': {
     isActive: false,
     isSynchronized: false,
+  },
+  '/test_config/someMapWithAttributes': {
+    isActive: false,
+    isSynchronized: false,
+  },
+  '/test_config/someMapWithAttributes/key1': {
+    isActive: false,
+    isSynchronized: false,
+  },
+  '/readonly_props/someSyncString': {
+    isActive: false,
+    isSynchronized: true,
+  },
+  '/readonly_props/someSyncMap': {
+    isActive: false,
+    isSynchronized: true,
   },
 };
 

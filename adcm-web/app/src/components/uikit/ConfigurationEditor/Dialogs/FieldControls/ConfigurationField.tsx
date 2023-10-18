@@ -9,10 +9,11 @@ export interface ConfigurationFieldProps extends React.PropsWithChildren {
   error?: string;
   children: React.ReactElement<{ hasError?: boolean }>;
   fieldSchema: SingleSchemaDefinition;
+  isReadonly: boolean;
   onChange: (value: JSONPrimitive) => void;
 }
 
-const ConfigurationField = ({ label, error, fieldSchema, children, onChange }: ConfigurationFieldProps) => {
+const ConfigurationField = ({ label, error, fieldSchema, children, isReadonly, onChange }: ConfigurationFieldProps) => {
   const handleRevertClick = () => {
     onChange((fieldSchema.default ?? '') as JSONPrimitive);
   };
@@ -23,7 +24,14 @@ const ConfigurationField = ({ label, error, fieldSchema, children, onChange }: C
         {children}
       </FormField>
       <div className={s.configurationField__actions}>
-        <Button variant="secondary" iconLeft="g1-return" onClick={handleRevertClick} />
+        <Button
+          variant="secondary"
+          iconLeft="g1-return"
+          disabled={isReadonly}
+          title="Reset to default"
+          tooltipProps={{ placement: 'bottom' }}
+          onClick={handleRevertClick}
+        />
         <Button
           variant="secondary"
           iconLeft="marker-info"

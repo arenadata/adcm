@@ -10,7 +10,7 @@ import s from './InputNumber.module.scss';
 type InputNumberV2Props = Omit<InputProps, 'type' | 'endAdornment' | 'startAdornment'>;
 
 const InputNumber = React.forwardRef<HTMLInputElement, InputNumberV2Props>(
-  ({ className, onChange, disabled, ...props }, ref) => {
+  ({ className, onChange, disabled, readOnly, ...props }, ref) => {
     const localRef = useRef<HTMLInputElement>(null);
     const reference = useForwardRef(ref, localRef);
 
@@ -34,7 +34,10 @@ const InputNumber = React.forwardRef<HTMLInputElement, InputNumberV2Props>(
         ref={reference}
         onChange={onChange}
         disabled={disabled}
-        endAdornment={<InputNumberArrows onStepUp={handleStepUp} onStepDown={handleStepDown} disabled={disabled} />}
+        readOnly={readOnly}
+        endAdornment={
+          <InputNumberArrows onStepUp={handleStepUp} onStepDown={handleStepDown} disabled={disabled || readOnly} />
+        }
         {...props}
       />
     );

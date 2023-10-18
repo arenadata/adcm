@@ -6,6 +6,7 @@ export const schema: ConfigurationSchema = {
   type: 'object',
   title: 'Primary configuration',
   required: ['cluster_config'],
+  readOnly: false,
   adcmMeta: {
     nullValue: null,
     isAdvanced: false,
@@ -21,6 +22,7 @@ export const schema: ConfigurationSchema = {
       title: 'Cluster Configuration',
       description: '',
       additionalProperties: false,
+      readOnly: false,
       adcmMeta: {
         nullValue: null,
         isAdvanced: false,
@@ -42,6 +44,7 @@ export const schema: ConfigurationSchema = {
       properties: {
         cluster: {
           type: 'array',
+          readOnly: false,
           adcmMeta: {
             nullValue: null,
             isAdvanced: false,
@@ -58,6 +61,7 @@ export const schema: ConfigurationSchema = {
           items: {
             type: 'object',
             additionalProperties: false,
+            readOnly: false,
             adcmMeta: {
               nullValue: null,
               isAdvanced: false,
@@ -72,6 +76,7 @@ export const schema: ConfigurationSchema = {
               cluster_name: {
                 type: 'string',
                 default: 'default cluster name',
+                readOnly: false,
                 adcmMeta: {
                   nullValue: null,
                   isAdvanced: false,
@@ -85,6 +90,7 @@ export const schema: ConfigurationSchema = {
               shard: {
                 type: 'array',
                 default: [],
+                readOnly: false,
                 adcmMeta: {
                   nullValue: null,
                   isAdvanced: false,
@@ -97,6 +103,7 @@ export const schema: ConfigurationSchema = {
                 items: {
                   type: 'object',
                   additionalProperties: false,
+                  readOnly: false,
                   adcmMeta: {
                     nullValue: null,
                     isAdvanced: false,
@@ -111,6 +118,7 @@ export const schema: ConfigurationSchema = {
                     weight: {
                       type: 'integer',
                       default: 10,
+                      readOnly: false,
                       adcmMeta: {
                         nullValue: null,
                         isAdvanced: false,
@@ -124,6 +132,7 @@ export const schema: ConfigurationSchema = {
                     internal_replica: {
                       type: 'integer',
                       default: 11,
+                      readOnly: false,
                       adcmMeta: {
                         nullValue: null,
                         isAdvanced: false,
@@ -137,6 +146,7 @@ export const schema: ConfigurationSchema = {
                     replicas: {
                       type: 'array',
                       default: [{ host: 'test_test' }],
+                      readOnly: false,
                       adcmMeta: {
                         nullValue: null,
                         isAdvanced: false,
@@ -149,6 +159,7 @@ export const schema: ConfigurationSchema = {
                       items: {
                         type: 'object',
                         additionalProperties: false,
+                        readOnly: false,
                         adcmMeta: {
                           nullValue: null,
                           isAdvanced: false,
@@ -163,6 +174,7 @@ export const schema: ConfigurationSchema = {
                           host: {
                             type: 'string',
                             default: 'default-host',
+                            readOnly: false,
                             adcmMeta: {
                               nullValue: null,
                               isAdvanced: false,
@@ -184,10 +196,11 @@ export const schema: ConfigurationSchema = {
         },
       },
     },
-    test_config: {
+    readonly_props: {
       type: 'object',
       required: [],
       default: {},
+      readOnly: false,
       adcmMeta: {
         nullValue: null,
         isAdvanced: false,
@@ -201,6 +214,7 @@ export const schema: ConfigurationSchema = {
         someBoolean: {
           type: 'boolean',
           description: 'someBoolean description',
+          readOnly: true,
           adcmMeta: {
             nullValue: null,
             isAdvanced: false,
@@ -211,9 +225,22 @@ export const schema: ConfigurationSchema = {
             stringExtra: null,
           },
         },
-        someStringWithDefaultValue: {
+        someString: {
           type: 'string',
-          default: 'default value',
+          readOnly: true,
+          adcmMeta: {
+            nullValue: null,
+            isAdvanced: false,
+            isInvisible: false,
+            activation: null,
+            synchronization: null,
+            isSecret: false,
+            stringExtra: null,
+          },
+        },
+        someNumber: {
+          type: 'number',
+          readOnly: true,
           adcmMeta: {
             nullValue: null,
             isAdvanced: false,
@@ -227,6 +254,7 @@ export const schema: ConfigurationSchema = {
         someStringWithSuggestions: {
           type: 'string',
           default: 'custom value',
+          readOnly: true,
           adcmMeta: {
             nullValue: null,
             isAdvanced: false,
@@ -242,6 +270,7 @@ export const schema: ConfigurationSchema = {
         someEnum: {
           default: 2,
           enum: ['__one__', 2, '!!!three!!!'],
+          readOnly: true,
           adcmMeta: {
             nullValue: null,
             isAdvanced: false,
@@ -256,6 +285,7 @@ export const schema: ConfigurationSchema = {
         },
         someSecretField: {
           type: 'string',
+          readOnly: true,
           adcmMeta: {
             nullValue: null,
             isAdvanced: false,
@@ -268,6 +298,7 @@ export const schema: ConfigurationSchema = {
         },
         someMultilineField: {
           type: 'string',
+          readOnly: true,
           adcmMeta: {
             nullValue: null,
             isAdvanced: false,
@@ -284,6 +315,7 @@ export const schema: ConfigurationSchema = {
           type: 'string',
           format: 'json',
           default: '{ "default": null, "test": "ddd" }',
+          readOnly: true,
           adcmMeta: {
             nullValue: null,
             isAdvanced: false,
@@ -299,29 +331,13 @@ export const schema: ConfigurationSchema = {
         someYamlField: {
           type: 'string',
           format: 'yaml',
-          adcmMeta: {
-            nullValue: null,
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: true,
-            stringExtra: {
-              isMultiline: true,
-            },
-          },
-        },
-        someReadOnlyField: {
-          type: 'string',
           readOnly: true,
-          format: 'yaml',
           adcmMeta: {
             nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
             synchronization: null,
-            isSecret: false,
             stringExtra: {
               isMultiline: true,
             },
@@ -331,6 +347,7 @@ export const schema: ConfigurationSchema = {
           oneOf: [
             {
               type: 'string',
+              readOnly: true,
               adcmMeta: {
                 nullValue: null,
                 isAdvanced: false,
@@ -348,6 +365,7 @@ export const schema: ConfigurationSchema = {
         },
         someInvisibleField: {
           type: 'string',
+          readOnly: true,
           adcmMeta: {
             nullValue: null,
             isAdvanced: false,
@@ -360,6 +378,7 @@ export const schema: ConfigurationSchema = {
         },
         someAdvancedField: {
           type: 'string',
+          readOnly: true,
           adcmMeta: {
             nullValue: null,
             isAdvanced: true,
@@ -374,6 +393,7 @@ export const schema: ConfigurationSchema = {
           type: 'object',
           required: ['key1'],
           default: {},
+          readOnly: true,
           adcmMeta: {
             nullValue: null,
             isAdvanced: false,
@@ -388,6 +408,7 @@ export const schema: ConfigurationSchema = {
             key1: {
               type: 'string',
               default: 'some default',
+              readOnly: true,
               adcmMeta: {
                 nullValue: null,
                 isAdvanced: false,
@@ -404,6 +425,7 @@ export const schema: ConfigurationSchema = {
           type: 'object',
           required: [],
           default: {},
+          readOnly: true,
           adcmMeta: {
             nullValue: null,
             isAdvanced: false,
@@ -416,11 +438,249 @@ export const schema: ConfigurationSchema = {
           additionalProperties: true,
           properties: {},
         },
-        someReadOnlyMap: {
+        someSyncString: {
+          type: 'string',
+          default: 'some default',
+          readOnly: false,
+          adcmMeta: {
+            nullValue: null,
+            isAdvanced: false,
+            isInvisible: false,
+            activation: {
+              isAllowChange: true,
+            },
+            synchronization: {
+              isAllowChange: true,
+            },
+            isSecret: false,
+            stringExtra: null,
+          },
+        },
+        someSyncMap: {
           type: 'object',
-          readOnly: true,
           required: ['key1'],
           default: {},
+          readOnly: false,
+          adcmMeta: {
+            nullValue: null,
+            isAdvanced: false,
+            isInvisible: false,
+            activation: {
+              isAllowChange: true,
+            },
+            synchronization: {
+              isAllowChange: true,
+            },
+            isSecret: false,
+            stringExtra: null,
+          },
+          additionalProperties: true,
+          properties: {
+            key1: {
+              type: 'string',
+              default: 'some default',
+              readOnly: false,
+              adcmMeta: {
+                nullValue: null,
+                isAdvanced: false,
+                isInvisible: false,
+                activation: null,
+                synchronization: null,
+                isSecret: false,
+                stringExtra: null,
+              },
+            },
+          },
+        },
+      },
+    },
+    test_config: {
+      type: 'object',
+      required: [],
+      default: {},
+      readOnly: false,
+      adcmMeta: {
+        nullValue: null,
+        isAdvanced: false,
+        isInvisible: false,
+        activation: null,
+        synchronization: null,
+        isSecret: false,
+        stringExtra: null,
+      },
+      properties: {
+        someBoolean: {
+          type: 'boolean',
+          description: 'someBoolean description',
+          readOnly: false,
+          adcmMeta: {
+            nullValue: null,
+            isAdvanced: false,
+            isInvisible: false,
+            activation: null,
+            synchronization: null,
+            isSecret: false,
+            stringExtra: null,
+          },
+        },
+        someStringWithDefaultValue: {
+          type: 'string',
+          default: 'default value',
+          readOnly: false,
+          adcmMeta: {
+            nullValue: null,
+            isAdvanced: false,
+            isInvisible: false,
+            activation: null,
+            synchronization: null,
+            isSecret: false,
+            stringExtra: null,
+          },
+        },
+        someStringWithSuggestions: {
+          type: 'string',
+          default: 'custom value',
+          readOnly: false,
+          adcmMeta: {
+            nullValue: null,
+            isAdvanced: false,
+            isInvisible: false,
+            activation: null,
+            synchronization: null,
+            isSecret: false,
+            stringExtra: {
+              suggestions: ['One', 'Two', 'Three'],
+            },
+          },
+        },
+        someEnum: {
+          default: 2,
+          enum: ['__one__', 2, '!!!three!!!'],
+          readOnly: false,
+          adcmMeta: {
+            nullValue: null,
+            isAdvanced: false,
+            isInvisible: false,
+            activation: null,
+            synchronization: null,
+            isSecret: false,
+            enumExtra: {
+              labels: ['One', 'Two', 'Three'],
+            },
+          },
+        },
+        someSecretField: {
+          type: 'string',
+          readOnly: false,
+          adcmMeta: {
+            nullValue: null,
+            isAdvanced: false,
+            isInvisible: false,
+            activation: null,
+            synchronization: null,
+            isSecret: true,
+            stringExtra: null,
+          },
+        },
+        someMultilineField: {
+          type: 'string',
+          readOnly: false,
+          adcmMeta: {
+            nullValue: null,
+            isAdvanced: false,
+            isInvisible: false,
+            activation: null,
+            synchronization: null,
+            isSecret: false,
+            stringExtra: {
+              isMultiline: true,
+            },
+          },
+        },
+        someJsonField: {
+          type: 'string',
+          format: 'json',
+          default: '{ "default": null, "test": "ddd" }',
+          readOnly: false,
+          adcmMeta: {
+            nullValue: null,
+            isAdvanced: false,
+            isInvisible: false,
+            activation: null,
+            synchronization: null,
+            isSecret: false,
+            stringExtra: {
+              isMultiline: true,
+            },
+          },
+        },
+        someYamlField: {
+          type: 'string',
+          format: 'yaml',
+          readOnly: false,
+          adcmMeta: {
+            nullValue: null,
+            isAdvanced: false,
+            isInvisible: false,
+            activation: null,
+            synchronization: null,
+            isSecret: true,
+            stringExtra: {
+              isMultiline: true,
+            },
+          },
+        },
+        someAnyOfField: {
+          oneOf: [
+            {
+              type: 'string',
+              readOnly: false,
+              adcmMeta: {
+                nullValue: null,
+                isAdvanced: false,
+                isInvisible: false,
+                activation: null,
+                synchronization: null,
+                isSecret: false,
+                stringExtra: null,
+              },
+            },
+            {
+              type: 'null',
+            },
+          ],
+        },
+        someInvisibleField: {
+          type: 'string',
+          readOnly: false,
+          adcmMeta: {
+            nullValue: null,
+            isAdvanced: false,
+            isInvisible: true,
+            activation: null,
+            synchronization: null,
+            isSecret: false,
+            stringExtra: null,
+          },
+        },
+        someAdvancedField: {
+          type: 'string',
+          readOnly: false,
+          adcmMeta: {
+            nullValue: null,
+            isAdvanced: true,
+            isInvisible: false,
+            activation: null,
+            synchronization: null,
+            isSecret: false,
+            stringExtra: null,
+          },
+        },
+        someMap: {
+          type: 'object',
+          required: ['key1'],
+          default: {},
+          readOnly: false,
           adcmMeta: {
             nullValue: null,
             isAdvanced: false,
@@ -434,14 +694,70 @@ export const schema: ConfigurationSchema = {
           properties: {
             key1: {
               type: 'string',
-              readOnly: true,
               default: 'some default',
+              readOnly: false,
               adcmMeta: {
                 nullValue: null,
                 isAdvanced: false,
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
+                isSecret: false,
+                stringExtra: null,
+              },
+            },
+          },
+        },
+        someSecretMap: {
+          type: 'object',
+          required: [],
+          default: {},
+          readOnly: false,
+          adcmMeta: {
+            nullValue: null,
+            isAdvanced: false,
+            isInvisible: false,
+            activation: null,
+            synchronization: null,
+            isSecret: true,
+            stringExtra: null,
+          },
+          additionalProperties: true,
+          properties: {},
+        },
+        someMapWithAttributes: {
+          type: 'object',
+          required: [],
+          default: {},
+          readOnly: false,
+          adcmMeta: {
+            nullValue: null,
+            isAdvanced: false,
+            isInvisible: false,
+            activation: {
+              isAllowChange: true,
+            },
+            synchronization: {
+              isAllowChange: true,
+            },
+            stringExtra: null,
+          },
+          additionalProperties: true,
+          properties: {
+            key1: {
+              type: 'string',
+              default: 'some default',
+              readOnly: false,
+              adcmMeta: {
+                nullValue: null,
+                isAdvanced: false,
+                isInvisible: false,
+                activation: {
+                  isAllowChange: true,
+                },
+                synchronization: {
+                  isAllowChange: true,
+                },
                 isSecret: false,
                 stringExtra: null,
               },
