@@ -1,3 +1,10 @@
+interface RbacUserFormDataAuthSettings {
+  blockTime: number;
+  loginAttemptLimit: number;
+  maxPasswordLength: number;
+  minPasswordLength: number;
+}
+
 export interface RbacUserFormData {
   username: string;
   firstName: string;
@@ -7,4 +14,5 @@ export interface RbacUserFormData {
   password: string;
   confirmPassword: string;
   isSuperUser: boolean;
+  authSettings?: RbacUserFormDataAuthSettings;
 }
