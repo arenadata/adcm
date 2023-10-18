@@ -1,21 +1,17 @@
 import React, { useMemo } from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { AdcmCluster, AdcmService, AdcmServiceComponent } from '@models/adcm';
+import { AdcmServiceComponent } from '@models/adcm';
 import { DynamicActionsButton, DynamicActionsIcon } from '@commonComponents/DynamicActionsButton/DynamicActionsButton';
 import { IconProps } from '@uikit/Icon/Icon';
 import { openClusterServiceComponentDynamicActionDialog } from '@store/adcm/cluster/services/serviceComponents/serviceComponentsDynamicActionsSlice';
 
 interface ClusterServiceComponentsDynamicActionsIconProps {
-  cluster: AdcmCluster;
-  service: AdcmService;
   component: AdcmServiceComponent;
   size?: IconProps['size'];
   type?: 'button' | 'icon';
 }
 
 const ServiceComponentsDynamicActionsIcon: React.FC<ClusterServiceComponentsDynamicActionsIconProps> = ({
-  cluster,
-  service,
   component,
   type = 'icon',
   size,
@@ -28,7 +24,7 @@ const ServiceComponentsDynamicActionsIcon: React.FC<ClusterServiceComponentsDyna
   const isDisabled = useMemo(() => component.concerns.some(({ isBlocking }) => isBlocking), [component]);
 
   const handleSelectAction = (actionId: number) => {
-    dispatch(openClusterServiceComponentDynamicActionDialog({ cluster, service, component, actionId }));
+    dispatch(openClusterServiceComponentDynamicActionDialog({ component, actionId }));
   };
 
   const DynamicActionsTrigger = type === 'icon' ? DynamicActionsIcon : DynamicActionsButton;

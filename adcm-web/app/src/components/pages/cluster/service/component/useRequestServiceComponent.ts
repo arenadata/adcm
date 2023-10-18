@@ -1,5 +1,5 @@
 import { defaultDebounceDelay } from '@constants';
-import { useDebounce, useDispatch, useRequestTimer } from '@hooks';
+import { useDebounce, useDispatch, useRequestTimer, useStore } from '@hooks';
 import {
   cleanupServiceComponent,
   getServiceComponent,
@@ -13,6 +13,7 @@ import { useServiceComponentParams } from '@pages/cluster/service/component/useS
 
 export const useRequestServiceComponent = () => {
   const dispatch = useDispatch();
+  const component = useStore(({ adcm }) => adcm.serviceComponent.serviceComponent);
   const { clusterId, serviceId, componentId } = useServiceComponentParams();
 
   useEffect(() => {
@@ -23,16 +24,10 @@ export const useRequestServiceComponent = () => {
   }, [dispatch, clusterId, serviceId, componentId]);
 
   useEffect(() => {
-    if (!Number.isNaN(clusterId) && !Number.isNaN(serviceId) && !Number.isNaN(componentId)) {
-      dispatch(
-        loadClusterServiceComponentsDynamicActions({
-          clusterId,
-          serviceId,
-          componentsIds: [componentId],
-        }),
-      );
+    if (component) {
+      dispatch(loadClusterServiceComponentsDynamicActions({ components: [component], isHostOwnAction: false }));
     }
-  }, [dispatch, clusterId, serviceId, componentId]);
+  }, [dispatch, component]);
 
   const debounceGetServiceComponent = useDebounce(() => {
     dispatch(getServiceComponent({ clusterId, serviceId, componentId }));

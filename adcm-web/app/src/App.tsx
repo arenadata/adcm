@@ -58,6 +58,7 @@ import ClusterConfigGroupSingle from '@pages/cluster/ClusterConfiguration/Cluste
 import HostLayout from '@layouts/HostPageLayout/HostLayout';
 import HostPrimaryConfiguration from '@pages/host/HostPrimaryConfiguration/HostPrimaryConfiguration';
 import ServiceConfigGroupSingle from '@pages/cluster/service/ServiceConfiguration/ServiceConfigGroupSingle/ServiceConfigGroupSingle';
+import HostComponents from '@pages/host/HostComponents/HostComponents';
 import ServiceComponentConfigurationGroups from '@pages/cluster/service/component/ServiceComponentConfiguration/ServiceComponentConfigGroups/ServiceComponentConfigurationGroups';
 import ServiceComponentConfigGroupSingle from '@pages/cluster/service/component/ServiceComponentConfiguration/ServiceComponentConfigGroupSingle/ServiceComponentConfigGroupSingle';
 import HostProviderConfigurationGroupSingle from '@pages/HostProviderPage/HostProviderConfigurationGroupSingle/HostProviderConfigurationGroupSingle';
@@ -187,10 +188,8 @@ function App() {
               </Route>
               <Route path="/hosts" element={<HostsPage />} />
               <Route path="/hosts/:hostId" element={<HostLayout />}>
-                {/* TODO: ADCM-4693 uncomment the next two lines once the host components EP will be ready */}
-                {/* <Route index element={<Navigate to="host-components" replace />} />
-                <Route path="/hosts/:hostId/host-components" element={<HostComponents />} /> */}
-                <Route index element={<Navigate to="primary-configuration" replace />} />
+                <Route index element={<Navigate to="host-components" replace />} />
+                <Route path="/hosts/:hostId/host-components" element={<HostComponents />} />
                 <Route path="/hosts/:hostId/primary-configuration" element={<HostPrimaryConfiguration />} />
               </Route>
               <Route path="/jobs">

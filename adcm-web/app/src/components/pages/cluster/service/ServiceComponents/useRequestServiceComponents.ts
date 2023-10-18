@@ -12,7 +12,7 @@ import { useParams } from 'react-router-dom';
 export const useRequestServiceComponents = () => {
   const dispatch = useDispatch();
   const { clusterId: clusterIdFromUrl, serviceId: serviceIdFromUrl } = useParams();
-  const serviceComponents = useStore(({ adcm }) => adcm.serviceComponents.serviceComponents);
+  const components = useStore(({ adcm }) => adcm.serviceComponents.serviceComponents);
   const clusterId = Number(clusterIdFromUrl);
   const serviceId = Number(serviceIdFromUrl);
 
@@ -25,11 +25,10 @@ export const useRequestServiceComponents = () => {
   }, [dispatch, clusterId, serviceId]);
 
   useEffect(() => {
-    if (serviceComponents.length > 0) {
-      const componentsIds = serviceComponents.map(({ id }) => id);
-      dispatch(loadClusterServiceComponentsDynamicActions({ clusterId, serviceId, componentsIds }));
+    if (components.length > 0) {
+      dispatch(loadClusterServiceComponentsDynamicActions({ components, isHostOwnAction: false }));
     }
-  }, [dispatch, clusterId, serviceId, serviceComponents]);
+  }, [dispatch, clusterId, serviceId, components]);
 
   const debounceGetServiceComponents = useDebounce(() => {
     dispatch(getServiceComponents({ clusterId, serviceId }));
