@@ -1114,7 +1114,7 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
 def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
     if host.cluster:
         if host.cluster.pk != cluster.pk:
-            raise_adcm_ex("FOREIGN_HOST", f"Host #{host.pk} belong to cluster #{host.cluster.pk}")
+            raise_adcm_ex("FOREIGN_HOST", f"Host `{host.name}` belong to cluster `{host.cluster.name}`")
         else:
             raise_adcm_ex("HOST_CONFLICT")
 

@@ -230,18 +230,40 @@ class TestClusterHost(BaseAPITestCase):
         self.assertEqual(response.json()["id"], self.host.pk)
 
     def test_create_success(self):
-        host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_second")
         response = self.client.post(
             path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data=[{"host_id": self.host.pk}, {"host_id": host_2.pk}],
+            data={"hostId": self.host.pk},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-
         self.host.refresh_from_db()
-        host_2.refresh_from_db()
         self.assertEqual(self.host.cluster, self.cluster_1)
-        self.assertEqual(host_2.cluster, self.cluster_1)
+
+    def test_create_belonging_to_another_cluster_fail(self):
+        self.add_host_to_cluster(cluster=self.cluster_2, host=self.host)
+
+        response = self.client.post(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"hostId": self.host.pk},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {"code": "FOREIGN_HOST", "desc": "Host `test_host` belong to cluster `cluster_2`", "level": "error"},
+        )
+
+    def test_create_not_found_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"hostId": self.get_non_existent_pk(model=Host)},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(),
+            {"code": "BAD_REQUEST", "desc": 'host_id - Invalid pk "2" - object does not exist.;', "level": "error"},
+        )
 
     def test_maintenance_mode(self):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
