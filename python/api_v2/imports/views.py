@@ -13,6 +13,7 @@
 from api_v2.imports.serializers import ImportPostSerializer
 from api_v2.imports.utils import cook_data_for_multibind, get_imports
 from api_v2.views import CamelCaseReadOnlyModelViewSet
+from audit.utils import audit
 from cm.api import multi_bind
 from cm.models import Cluster, ClusterObject, PrototypeImport
 from rest_framework.permissions import IsAuthenticated
@@ -69,6 +70,7 @@ class ImportViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-
         obj = self.get_object_and_check_perm(request=request)
         return self.get_paginated_response(data=self.paginate_queryset(queryset=get_imports(obj=obj)))
 
+    @audit
     def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         obj = self.get_object_and_check_perm(request=request)
         serializer = self.get_serializer(data=request.data, many=True, context={"request": request, "cluster": obj})

@@ -118,6 +118,14 @@ class ClusterUpdateSerializer(ModelSerializer):
         fields = ["name"]
 
 
+class ClusterAuditSerializer(ModelSerializer):
+    name = CharField(max_length=80, required=False)
+
+    class Meta:
+        model = Cluster
+        fields = ("name",)
+
+
 class ServicePrototypeSerializer(ModelSerializer):
     is_required = BooleanField(source="required")
     depend_on = SerializerMethodField()

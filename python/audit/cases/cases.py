@@ -29,9 +29,10 @@ def get_audit_operation_and_object(
     view: View,
     response: Response,
     deleted_obj: Model,
+    path: list[str],
+    api_version: int = 1,
 ) -> tuple[AuditOperation | None, AuditObject | None, str | None]:
     operation_name = None
-    path = view.request.path.replace("/api/v1/", "")[:-1].split("/")
 
     # Order of if elif is important, do not change it please
     if "action" in path:
@@ -46,16 +47,14 @@ def get_audit_operation_and_object(
         )
     elif (
         "cluster" in path  # pylint: disable=too-many-boolean-expressions
+        or "clusters" in path
         or "component" in path
         or ("host" in path and "config" in path)
         or ("service" in path and "import" in path)
         or ("service" in path and "config" in path)
     ):
         audit_operation, audit_object = cluster_case(
-            path=path,
-            view=view,
-            response=response,
-            deleted_obj=deleted_obj,
+            path=path, view=view, response=response, deleted_obj=deleted_obj, api_version=api_version
         )
     elif "rbac" in path:
         audit_operation, audit_object = rbac_case(
