@@ -1,4 +1,4 @@
 include:
   - project: "arenadata/infrastructure/code/ci/gitlab_ci_files"
     ref: master
-    file: "/development/adcm.yml"
+    file: "/development/adcm_v2.yml"
