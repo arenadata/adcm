@@ -2128,6 +2128,297 @@ class TestProviderConfig(BaseAPITestCase):
         self.assertDictEqual(actual_data, expected_data)
 
 
+class TestProviderGroupConfig(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.provider_group_config = GroupConfig.objects.create(
+            name="group_config",
+            object_type=ContentType.objects.get_for_model(self.provider),
+            object_id=self.provider.pk,
+        )
+        self.provider_group_config_config = ConfigLog.objects.get(pk=self.provider_group_config.config.current)
+
+    def test_list_success(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:hostprovider-group-config-config-list",
+                kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": self.provider_group_config.pk},
+            )
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertListEqual(
+            sorted(response.json()["results"][0].keys()),
+            sorted(["id", "isCurrent", "creationTime", "description"]),
+        )
+
+    def test_retrieve_success(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:hostprovider-group-config-config-detail",
+                kwargs={
+                    "hostprovider_pk": self.provider.pk,
+                    "group_config_pk": self.provider_group_config.pk,
+                    "pk": self.provider_group_config_config.pk,
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        expected_data = {
+            "adcmMeta": {
+                "/activatable_group": {"isActive": True, "isSynchronized": False},
+                "/json": {"isSynchronized": False},
+                "/group/map": {"isSynchronized": False},
+                "/activatable_group/secretmap": {"isSynchronized": False},
+            },
+            "config": {
+                "group": {"map": {"integer_key": "10", "string_key": "string"}},
+                "activatable_group": {
+                    "secretmap": {
+                        "integer_key": "10",
+                        "string_key": "string",
+                    }
+                },
+                "json": '{"key": "value"}',
+            },
+            "creationTime": self.provider_group_config_config.date.isoformat().replace("+00:00", "Z"),
+            "description": "init",
+            "id": self.provider_group_config_config.pk,
+            "isCurrent": True,
+        }
+        actual_data = response.json()
+        actual_data["config"]["activatable_group"]["secretmap"]["integer_key"] = ansible_decrypt(
+            msg=actual_data["config"]["activatable_group"]["secretmap"]["integer_key"]
+        )
+        actual_data["config"]["activatable_group"]["secretmap"]["string_key"] = ansible_decrypt(
+            msg=actual_data["config"]["activatable_group"]["secretmap"]["string_key"]
+        )
+        self.assertDictEqual(actual_data, expected_data)
+
+    def test_retrieve_wrong_pk_fail(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:hostprovider-group-config-config-detail",
+                kwargs={
+                    "hostprovider_pk": self.provider.pk,
+                    "group_config_pk": self.provider_group_config.pk,
+                    "pk": self.get_non_existent_pk(model=ConfigLog),
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_retrieve_wrong_provider_pk_fail(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:provider-config-detail",
+                kwargs={
+                    "hostprovider_pk": self.get_non_existent_pk(model=HostProvider),
+                    "pk": self.provider_group_config.pk,
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_create_success(self):
+        data = {
+            "config": {
+                "group": {"map": {"integer_key": "100", "string_key": "new string"}},
+                "activatable_group": {
+                    "secretmap": {
+                        "integer_key": "100",
+                        "string_key": "new string",
+                    }
+                },
+                "json": '{"key": "value", "new key": "new value"}',
+            },
+            "adcmMeta": {
+                "/activatable_group": {"isActive": True, "isSynchronized": True},
+                "/json": {"isSynchronized": True},
+                "/group/map": {"isSynchronized": True},
+                "/activatable_group/secretmap": {"isSynchronized": True},
+            },
+            "description": "new config",
+        }
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:hostprovider-group-config-config-list",
+                kwargs={
+                    "hostprovider_pk": self.provider.pk,
+                    "group_config_pk": self.provider_group_config.pk,
+                },
+            ),
+            data=data,
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response_data = response.json()
+        response_data["config"]["activatable_group"]["secretmap"]["integer_key"] = ansible_decrypt(
+            msg=response_data["config"]["activatable_group"]["secretmap"]["integer_key"]
+        )
+        response_data["config"]["activatable_group"]["secretmap"]["string_key"] = ansible_decrypt(
+            msg=response_data["config"]["activatable_group"]["secretmap"]["string_key"]
+        )
+        self.assertDictEqual(response_data["config"], data["config"])
+        self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
+        self.assertEqual(response_data["description"], data["description"])
+        self.assertEqual(response_data["isCurrent"], True)
+
+    def test_schema(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:hostprovider-group-config-config-schema",
+                kwargs={"hostprovider_pk": self.provider.pk, "pk": self.provider_group_config.pk},
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        expected_data = {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Configuration",
+            "description": "",
+            "readOnly": False,
+            "adcmMeta": {
+                "isAdvanced": False,
+                "isInvisible": False,
+                "activation": None,
+                "synchronization": None,
+                "nullValue": None,
+                "isSecret": False,
+                "stringExtra": None,
+                "enumExtra": None,
+            },
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "json": {
+                    "oneOf": [
+                        {
+                            "title": "json",
+                            "type": "string",
+                            "description": "",
+                            "default": '{"key": "value"}',
+                            "readOnly": False,
+                            "adcmMeta": {
+                                "isAdvanced": False,
+                                "isInvisible": False,
+                                "activation": None,
+                                "synchronization": {"isAllowChange": True},
+                                "nullValue": None,
+                                "isSecret": False,
+                                "stringExtra": {"isMultiline": True},
+                                "enumExtra": None,
+                            },
+                            "format": "json",
+                        },
+                        {"type": "null"},
+                    ]
+                },
+                "group": {
+                    "title": "group",
+                    "type": "object",
+                    "additionalProperties": False,
+                    "description": "",
+                    "default": {},
+                    "readOnly": False,
+                    "adcmMeta": {
+                        "isAdvanced": False,
+                        "isInvisible": False,
+                        "activation": None,
+                        "synchronization": None,
+                        "nullValue": None,
+                        "isSecret": False,
+                        "stringExtra": None,
+                        "enumExtra": None,
+                    },
+                    "properties": {
+                        "map": {
+                            "title": "map",
+                            "type": "object",
+                            "description": "",
+                            "default": {"integer_key": "10", "string_key": "string"},
+                            "readOnly": False,
+                            "adcmMeta": {
+                                "isAdvanced": False,
+                                "isInvisible": False,
+                                "activation": None,
+                                "synchronization": {"isAllowChange": True},
+                                "nullValue": {},
+                                "isSecret": False,
+                                "stringExtra": None,
+                                "enumExtra": None,
+                            },
+                            "additionalProperties": True,
+                            "properties": {},
+                        }
+                    },
+                    "required": ["map"],
+                },
+                "activatable_group": {
+                    "title": "activatable_group",
+                    "type": "object",
+                    "additionalProperties": False,
+                    "description": "",
+                    "default": {},
+                    "readOnly": False,
+                    "adcmMeta": {
+                        "isAdvanced": False,
+                        "isInvisible": False,
+                        "activation": {"isAllowChange": True},
+                        "synchronization": {"isAllowChange": True},
+                        "nullValue": None,
+                        "isSecret": False,
+                        "stringExtra": None,
+                        "enumExtra": None,
+                    },
+                    "properties": {
+                        "secretmap": {
+                            "title": "secretmap",
+                            "type": "object",
+                            "description": "",
+                            "default": {
+                                "integer_key": "10",
+                                "string_key": "string",
+                            },
+                            "readOnly": False,
+                            "adcmMeta": {
+                                "isAdvanced": False,
+                                "isInvisible": False,
+                                "activation": None,
+                                "synchronization": {"isAllowChange": True},
+                                "nullValue": None,
+                                "isSecret": True,
+                                "stringExtra": None,
+                                "enumExtra": None,
+                            },
+                            "additionalProperties": True,
+                            "properties": {},
+                        }
+                    },
+                    "required": ["secretmap"],
+                },
+            },
+            "required": ["json", "group", "activatable_group"],
+        }
+        actual_data = response.json()
+
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"][
+            "integer_key"
+        ] = ansible_decrypt(
+            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"]["integer_key"]
+        )
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"][
+            "string_key"
+        ] = ansible_decrypt(
+            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"]["string_key"]
+        )
+
+        self.assertDictEqual(actual_data, expected_data)
+
+
 class TestHostConfig(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
