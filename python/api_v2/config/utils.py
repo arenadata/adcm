@@ -14,7 +14,6 @@ import json
 from abc import ABC, abstractmethod
 from collections import OrderedDict, defaultdict
 from copy import deepcopy
-from operator import attrgetter
 from typing import Any
 
 from cm.adcm_config.config import get_default
@@ -521,7 +520,9 @@ class Variant(Field):
     type = "string"
 
     def _get_variant(self) -> list | None:
-        config = ConfigLog.objects.get(id=self.object_.config.current).config
+        config: ConfigLog | None = (
+            ConfigLog.objects.get(id=self.object_.config.current).config if self.object_.config else None
+        )
         return get_variant(obj=self.object_, conf=config, limits=self.limits)
 
     @property
@@ -595,6 +596,11 @@ def get_field(
 def get_config_schema(
     object_: ADCMEntity | GroupConfig, prototype_configs: QuerySet[PrototypeConfig] | list[PrototypeConfig]
 ) -> dict:
+    """
+    Prepare config schema based on provided `prototype_configs`
+
+    Note that `prototype_configs` entries should be ordered the way you want them to appear in schema's `properties`
+    """
     schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "Configuration",
@@ -618,8 +624,6 @@ def get_config_schema(
 
     if not prototype_configs:
         return schema
-
-    prototype_configs = sorted(prototype_configs, key=attrgetter("pk"))
 
     top_fields = [pc for pc in prototype_configs if pc.subname == ""]
 
