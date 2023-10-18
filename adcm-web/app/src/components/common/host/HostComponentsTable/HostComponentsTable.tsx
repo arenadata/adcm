@@ -1,12 +1,14 @@
-import { Table, TableRow, TableCell, IconButton } from '@uikit';
+import React from 'react';
 import Concern from '@commonComponents/Concern/Concern';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
-import { useDispatch, useStore } from '@hooks';
+import { serviceComponentsStatusMap } from '@pages/cluster/service/ServiceComponents/ServiceComponentsTable/ServiceComponentsTable.constants';
+import { Table, TableCell, TableRow } from '@uikit';
+import { Link, generatePath } from 'react-router-dom';
 import { columns } from './HostComponentsTable.constants';
 import { SortParams } from '@uikit/types/list.types';
-import { serviceComponentsStatusMap } from '@pages/cluster/service/ServiceComponents/ServiceComponentsTable/ServiceComponentsTable.constants';
+import { useDispatch, useStore } from '@hooks';
 import { setSortParams } from '@store/adcm/cluster/hosts/host/clusterHostTableSlice';
-import { Link, generatePath } from 'react-router-dom';
+import ServiceComponentsDynamicActionsIcon from '@pages/cluster/service/ServiceComponents/ServiceComponentsDynamicActionsIcon/ServiceComponentsDynamicActionsIcon';
 
 const HostComponentsTable: React.FC = () => {
   const dispatch = useDispatch();
@@ -16,10 +18,6 @@ const HostComponentsTable: React.FC = () => {
 
   const handleSorting = (sortParams: SortParams) => {
     dispatch(setSortParams(sortParams));
-  };
-
-  const dummyHandler = () => {
-    console.info('implement actions please!');
   };
 
   return (
@@ -42,7 +40,7 @@ const HostComponentsTable: React.FC = () => {
               <Concern concerns={hostComponent.concerns} />
             </TableCell>
             <TableCell hasIconOnly align="center">
-              <IconButton icon="g1-actions" size={32} onClick={() => dummyHandler()} title="Actions" />
+              {hostComponent && <ServiceComponentsDynamicActionsIcon component={hostComponent} />}
             </TableCell>
           </TableRow>
         );

@@ -93,7 +93,6 @@ import serviceComponentsDynamicActionsSlice from './adcm/cluster/services/servic
 import serviceComponentConfigurationsCompareSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configuration/serviceComponentConfigurationsCompareSlice';
 import serviceComponentConfigurationSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configuration/serviceComponentConfigurationSlice';
 import hostSlice from './adcm/host/hostSlice';
-import hostTableSlice from './adcm/host/hostTableSlice';
 import clusterServicesConfigurationSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationSlice.ts';
 import clusterServicesConfigurationsCompareSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationsCompareSlice.ts';
 import hostsConfigurationSlice from './adcm/host/configuration/hostsConfigurationSlice.ts';
@@ -160,7 +159,6 @@ const rootReducer = combineReducers({
     createHostProviderDialog: createHostProviderDialogSlice,
     hosts: hostsSlice,
     host: hostSlice,
-    hostTable: hostTableSlice,
     hostsTable: hostsTableSlice,
     hostsActions: hostsActionsSlice,
     hostsConfiguration: hostsConfigurationSlice,

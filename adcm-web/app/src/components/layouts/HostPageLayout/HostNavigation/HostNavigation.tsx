@@ -32,8 +32,7 @@ const ClusterHostNavigation: React.FC = () => {
   return (
     <SubNavigationWrapper>
       <TabsBlock variant="secondary">
-        {/* TODO: ADCM-4639 - uncomment the line below once the host components EP is ready */}
-        {/* <Tab to="host-components">Host-Components</Tab> */}
+        <Tab to="host-components">Host-Components</Tab>
         <Tab to="primary-configuration">Primary Configuration</Tab>
       </TabsBlock>
     </SubNavigationWrapper>

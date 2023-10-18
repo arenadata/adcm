@@ -7,32 +7,39 @@ import { showError, showInfo } from '@store/notificationsSlice';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 
-type LoadServiceComponentDynamicActionsPayload = {
-  clusterId: number;
-  serviceId: number;
-  componentsIds: number[];
-};
+interface LoadClusterServiceComponentsDynamicActions {
+  components: AdcmServiceComponent[];
+  isHostOwnAction: boolean;
+}
 
 const loadClusterServiceComponentsDynamicActions = createAsyncThunk(
   'adcm/services/serviceComponents/serviceComponentDynamicActions/loadClusterServiceComponentsDynamicActions',
-  async ({ clusterId, serviceId, componentsIds }: LoadServiceComponentDynamicActionsPayload, thunkAPI) => {
+  async ({ components, isHostOwnAction }: LoadClusterServiceComponentsDynamicActions, thunkAPI) => {
     try {
       const actionsPromises = await Promise.allSettled(
-        componentsIds.map(async (componentId) => ({
-          componentId,
-          dynamicActions: await AdcmClusterServiceComponentsApi.getClusterServiceComponentsActions(
-            clusterId,
-            serviceId,
+        components.map(async (component) => {
+          const {
+            id: componentId,
+            cluster: { id: clusterId },
+            service: { id: serviceId },
+          } = component;
+          return {
             componentId,
-          ),
-        })),
+            dynamicActions: await AdcmClusterServiceComponentsApi.getClusterServiceComponentsActions(
+              clusterId,
+              serviceId,
+              componentId,
+              isHostOwnAction,
+            ),
+          };
+        }),
       );
       const serviceComponentsActions = fulfilledFilter(actionsPromises);
-      if (serviceComponentsActions.length === 0 && componentsIds.length > 0) {
+      if (serviceComponentsActions.length === 0 && components.length > 0) {
         throw new Error('All service components cannot get those actions');
       }
 
-      if (serviceComponentsActions.length < componentsIds.length) {
+      if (serviceComponentsActions.length < components.length) {
         throw new Error('Some service components cannot get those actions');
       }
 
@@ -51,19 +58,17 @@ const loadClusterServiceComponentsDynamicActions = createAsyncThunk(
 );
 
 interface OpenClusterServiceComponentDynamicActionPayload {
-  cluster: AdcmCluster;
-  service: AdcmService;
   component: AdcmServiceComponent;
   actionId: number;
 }
 
 const openClusterServiceComponentDynamicActionDialog = createAsyncThunk(
   'adcm/services/serviceComponents/serviceComponentDynamicActions/openClusterServiceComponentDynamicActionDialog',
-  async ({ cluster, service, component, actionId }: OpenClusterServiceComponentDynamicActionPayload, thunkAPI) => {
+  async ({ component, actionId }: OpenClusterServiceComponentDynamicActionPayload, thunkAPI) => {
     try {
       const actionDetails = await AdcmClusterServiceComponentsApi.getClusterServiceComponentActionDetails(
-        cluster.id,
-        service.id,
+        component.cluster.id,
+        component.service.id,
         component.id,
         actionId,
       );
@@ -77,8 +82,6 @@ const openClusterServiceComponentDynamicActionDialog = createAsyncThunk(
 );
 
 interface RunClusterServiceComponentDynamicActionPayload {
-  cluster: AdcmCluster;
-  service: AdcmService;
   component: AdcmServiceComponent;
   actionId: number;
   actionRunConfig: AdcmDynamicActionRunConfig;
@@ -86,15 +89,12 @@ interface RunClusterServiceComponentDynamicActionPayload {
 
 const runClusterServiceComponentDynamicAction = createAsyncThunk(
   'adcm/services/serviceComponents/serviceComponentDynamicActions/runClusterServiceComponentDynamicAction',
-  async (
-    { cluster, service, component, actionId, actionRunConfig }: RunClusterServiceComponentDynamicActionPayload,
-    thunkAPI,
-  ) => {
+  async ({ component, actionId, actionRunConfig }: RunClusterServiceComponentDynamicActionPayload, thunkAPI) => {
     try {
       // TODO: run***Action get big response with information about action, but wiki say that this should empty response
       await AdcmClusterServiceComponentsApi.runClusterServiceComponentAction(
-        cluster.id,
-        service.id,
+        component.cluster.id,
+        component.service.id,
         component.id,
         actionId,
         actionRunConfig,
@@ -150,8 +150,6 @@ const serviceComponentsDynamicActionsSlice = createSlice({
     });
     builder.addCase(openClusterServiceComponentDynamicActionDialog.fulfilled, (state, action) => {
       state.dialog.actionDetails = action.payload;
-      state.dialog.cluster = action.meta.arg.cluster;
-      state.dialog.service = action.meta.arg.service;
       state.dialog.component = action.meta.arg.component;
     });
     builder.addCase(openClusterServiceComponentDynamicActionDialog.rejected, (state) => {

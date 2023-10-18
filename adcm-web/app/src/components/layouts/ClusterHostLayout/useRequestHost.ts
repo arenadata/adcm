@@ -9,6 +9,7 @@ import {
 } from '@store/adcm/cluster/hosts/host/clusterHostSlice';
 import { getClusterHost } from '@store/adcm/cluster/hosts/host/clusterHostSlice';
 import { loadClusterHostsDynamicActions } from '@store/adcm/cluster/hosts/hostsDynamicActionsSlice';
+import { loadClusterServiceComponentsDynamicActions } from '@store/adcm/cluster/services/serviceComponents/serviceComponentsDynamicActionsSlice';
 
 export const useRequestClusterHost = () => {
   const dispatch = useDispatch();
@@ -16,6 +17,7 @@ export const useRequestClusterHost = () => {
   const clusterId = Number(clusterIdFromUrl);
   const hostId = Number(hostIdFromUrl);
   const clusterHost = useStore(({ adcm }) => adcm.clusterHost.clusterHost);
+  const hostComponents = useStore(({ adcm }) => adcm.clusterHost.relatedData.hostComponents);
 
   useEffect(() => {
     return () => {
@@ -27,7 +29,11 @@ export const useRequestClusterHost = () => {
     if (clusterHost) {
       dispatch(loadClusterHostsDynamicActions({ clusterId, hosts: [clusterHost] }));
     }
-  }, [dispatch, clusterId, clusterHost]);
+
+    if (hostComponents.length > 0) {
+      dispatch(loadClusterServiceComponentsDynamicActions({ components: hostComponents, isHostOwnAction: true }));
+    }
+  }, [dispatch, clusterId, clusterHost, hostComponents]);
 
   const debounceGetClusterHostData = useDebounce(() => {
     if (clusterId && hostId) {

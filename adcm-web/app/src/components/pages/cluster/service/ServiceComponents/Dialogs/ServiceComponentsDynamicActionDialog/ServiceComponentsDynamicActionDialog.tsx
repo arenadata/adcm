@@ -9,9 +9,9 @@ import {
 
 const ServiceComponentsDynamicActionDialog: React.FC = () => {
   const dispatch = useDispatch();
-  const { cluster, service, component, actionDetails } = useStore((s) => s.adcm.serviceComponentsDynamicActions.dialog);
+  const { component, actionDetails } = useStore((s) => s.adcm.serviceComponentsDynamicActions.dialog);
 
-  if (!actionDetails || !cluster || !service || !component) return null;
+  if (!actionDetails || !component) return null;
 
   const handleCancel = () => {
     dispatch(closeClusterServiceComponentsDynamicActionDialog());
@@ -20,8 +20,6 @@ const ServiceComponentsDynamicActionDialog: React.FC = () => {
   const handleSubmit = (actionRunConfig: AdcmDynamicActionRunConfig) => {
     dispatch(
       runClusterServiceComponentDynamicAction({
-        cluster,
-        service,
         component,
         actionId: actionDetails.id,
         actionRunConfig,
@@ -31,7 +29,7 @@ const ServiceComponentsDynamicActionDialog: React.FC = () => {
 
   return (
     <DynamicActionDialog
-      clusterId={cluster.id}
+      clusterId={component.cluster.id}
       actionDetails={actionDetails}
       onCancel={handleCancel}
       onSubmit={handleSubmit}

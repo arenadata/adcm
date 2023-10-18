@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmServiceComponent, AdcmHost, AdcmClusterHostComponentsStatus } from '@models/adcm';
+import { AdcmHost, AdcmClusterHostComponentsStatus } from '@models/adcm';
 import { AdcmClusterHostsApi, AdcmClustersApi, AdcmHostsApi, RequestError } from '@api';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
@@ -10,9 +10,6 @@ import { defaultSpinnerDelay } from '@constants';
 interface AdcmHostState {
   host?: AdcmHost;
   isLoading: boolean;
-  relatedData: {
-    hostComponents: AdcmServiceComponent[];
-  };
   hostComponentsCounters: {
     successfulHostComponentsCount: number;
     totalHostComponentsCount: number;
@@ -44,49 +41,6 @@ const getHost = createAsyncThunk('adcm/host/getHost', async (arg: number, thunkA
     },
   });
 });
-
-const loadRelatedHostComponents = createAsyncThunk(
-  'adcm/host/loadRelatedHostComponents',
-  async (hostId: number, thunkAPI) => {
-    const {
-      adcm: {
-        hostTable: { filter, paginationParams, sortParams },
-      },
-    } = thunkAPI.getState();
-
-    try {
-      const relatedHostComponents = await AdcmHostsApi.getRelatedHostComponents(
-        hostId,
-        sortParams,
-        paginationParams,
-        filter,
-      );
-      return relatedHostComponents;
-    } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
-const getRelatedHostComponents = createAsyncThunk(
-  'adcm/host/getRelatedHostComponents',
-  async (arg: number, thunkAPI) => {
-    thunkAPI.dispatch(setIsLoading(true));
-    const startDate = new Date();
-
-    await thunkAPI.dispatch(loadRelatedHostComponents(arg));
-
-    executeWithMinDelay({
-      startDate,
-      delay: defaultSpinnerDelay,
-
-      callback: () => {
-        thunkAPI.dispatch(setIsLoading(false));
-      },
-    });
-  },
-);
 
 interface HostPayload {
   clusterId: number;
@@ -123,9 +77,6 @@ const unlinkHostWithUpdate = createAsyncThunk(
 const createInitialState = (): AdcmHostState => ({
   host: undefined,
   isLoading: false,
-  relatedData: {
-    hostComponents: [],
-  },
   hostComponentsCounters: {
     successfulHostComponentsCount: 0,
     totalHostComponentsCount: 0,
@@ -150,12 +101,6 @@ const hostSlice = createSlice({
     builder.addCase(loadHost.rejected, (state) => {
       state.host = undefined;
     });
-    builder.addCase(loadRelatedHostComponents.fulfilled, (state, action) => {
-      state.relatedData.hostComponents = action.payload.results;
-    });
-    builder.addCase(loadRelatedHostComponents.rejected, (state) => {
-      state.relatedData.hostComponents = [];
-    });
     builder.addCase(getHostComponentStates.fulfilled, (state, action) => {
       state.hostComponentsCounters.successfulHostComponentsCount = action.payload.hostComponents.filter(
         (component) => component.status === AdcmClusterHostComponentsStatus.Up,
@@ -170,5 +115,5 @@ const hostSlice = createSlice({
 });
 
 const { setIsLoading, cleanupHost } = hostSlice.actions;
-export { getHost, cleanupHost, unlinkHostWithUpdate, getRelatedHostComponents, setIsLoading, getHostComponentStates };
+export { getHost, cleanupHost, unlinkHostWithUpdate, setIsLoading, getHostComponentStates };
 export default hostSlice.reducer;

@@ -13,8 +13,6 @@ import ClusterServiceComponentsDynamicActionsIcon from '../ServiceComponentsDyna
 
 const ServiceComponentsTable = () => {
   const dispatch = useDispatch();
-  const cluster = useStore((s) => s.adcm.cluster.cluster);
-  const service = useStore((s) => s.adcm.service.service);
   const components = useStore((s) => s.adcm.serviceComponents.serviceComponents);
   const isLoading = useStore((s) => s.adcm.serviceComponents.isLoading);
   const sortParams = useStore((s) => s.adcm.serviceComponentsTable.sortParams);
@@ -57,9 +55,7 @@ const ServiceComponentsTable = () => {
               <Concern concerns={component.concerns} />
             </TableCell>
             <TableCell hasIconOnly align="center">
-              {cluster && service && component && (
-                <ClusterServiceComponentsDynamicActionsIcon cluster={cluster} service={service} component={component} />
-              )}
+              {component && <ClusterServiceComponentsDynamicActionsIcon component={component} />}
               <MaintenanceModeButton
                 isMaintenanceModeAvailable={component.isMaintenanceModeAvailable}
                 maintenanceModeStatus={component.maintenanceMode}

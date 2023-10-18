@@ -37,7 +37,7 @@ const ServiceComponentTable: React.FC<ServiceComponentTableProps> = ({ onClick }
           </TableCell>
           <TableCell hasIconOnly align="center">
             {cluster && service && serviceComponent && (
-              <ServiceComponentsDynamicActionsIcon cluster={cluster} service={service} component={serviceComponent} />
+              <ServiceComponentsDynamicActionsIcon component={serviceComponent} />
             )}
             <ServiceComponentMaintenanceModeButton />
           </TableCell>
