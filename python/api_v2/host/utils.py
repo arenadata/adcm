@@ -53,19 +53,6 @@ def add_new_host_and_map_it(provider: HostProvider, fqdn: str, cluster: Cluster 
     return host
 
 
-def map_list_of_hosts(hosts, cluster):
-    for host in hosts:
-        host.cluster = cluster
-        host.save(update_fields=["cluster"])
-        host.add_to_concerns(CTX.lock)
-        update_hierarchy_issues(host)
-        logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
-
-    re_apply_object_policy(cluster)
-    load_service_map()
-    return hosts
-
-
 def maintenance_mode(request, **kwargs):
     host = Host.obj.filter(pk=kwargs["pk"]).first()
     check_custom_perm(user=request.user, action_type="change_maintenance_mode", model="host", obj=host)

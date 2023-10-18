@@ -20,7 +20,6 @@ from rest_framework.serializers import (
     CharField,
     ChoiceField,
     IntegerField,
-    ListSerializer,
     ModelSerializer,
     PrimaryKeyRelatedField,
     SerializerMethodField,
@@ -144,12 +143,8 @@ class HostCreateSerializer(EmptySerializer):
     cluster_id = IntegerField(required=False)
 
 
-class ClusterHostCreateSerializer(EmptySerializer):
-    host_id = IntegerField()
-
-
-class HostListIdCreateSerializer(ListSerializer):  # pylint: disable=abstract-method
-    child = IntegerField()
+class HostCreateRelatedSerializer(EmptySerializer):
+    host_id = PrimaryKeyRelatedField(queryset=Host.objects.all())
 
 
 class HostMappingSerializer(ModelSerializer):

@@ -122,18 +122,45 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 1)
 
-    def test_add_hosts_success(self):
+    def test_add_host_success(self):
         response = self.client.post(
             path=reverse(
                 viewname="v2:cluster-group-config-hosts-list",
                 kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
             ),
-            data=[self.new_host.pk],
+            data={"hostId": self.new_host.pk},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertEqual(len(response.json()), 1)
-        self.assertEqual(response.json()[0]["name"], self.new_host.name)
+        self.assertDictEqual(response.json(), {"id": 2, "name": "new_host"})
+
+    def test_add_host_from_another_group_config_fail(self):
+        new_group_config = GroupConfig.objects.create(
+            name="new_group_config",
+            object_type=ContentType.objects.get_for_model(self.cluster_1),
+            object_id=self.cluster_1.pk,
+        )
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:cluster-group-config-hosts-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": new_group_config.pk},
+            ),
+            data={"hostId": self.host.pk},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "GROUP_CONFIG_HOST_ERROR",
+                "desc": (
+                    "host is not available for this object,"
+                    " or host already is a member of another group of this object"
+                ),
+                "level": "error",
+            },
+        )
 
     def test_host_candidates(self):
         response = self.client.get(
@@ -245,7 +272,7 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
         self.assertEqual(len(response.json()), 1)
         self.assertEqual(response.json()[0]["name"], self.host.name)
 
-    def test_add_hosts_success(self):
+    def test_add_host_success(self):
         response = self.client.post(
             path=reverse(
                 viewname="v2:service-group-config-hosts-list",
@@ -255,12 +282,11 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
                     "group_config_pk": self.service_1_group_config.pk,
                 },
             ),
-            data=[self.host_for_service.pk],
+            data={"hostId": self.host_for_service.pk},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertEqual(len(response.json()), 1)
-        self.assertEqual(response.json()[0]["name"], self.host_for_service.name)
+        self.assertDictEqual(response.json(), {"id": 3, "name": "host_for_service"})
 
     def test_delete_host_success(self):
         response = self.client.delete(
@@ -415,7 +441,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
         self.assertEqual(len(response.json()), 1)
         self.assertEqual(response.json()[0]["name"], self.host.name)
 
-    def test_add_hosts_group_config_not_found_fail(self):
+    def test_add_host_group_config_not_found_fail(self):
         response = self.client.post(
             path=reverse(
                 viewname="v2:component-group-config-hosts-list",
@@ -426,12 +452,12 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
                     "group_config_pk": self.component_1_group_config.pk + 1000,
                 },
             ),
-            data=[self.host_for_component.pk],
+            data={"hostId": self.host_for_component.pk},
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-    def test_add_hosts_success(self):
+    def test_add_host_success(self):
         response = self.client.post(
             path=reverse(
                 viewname="v2:component-group-config-hosts-list",
@@ -442,12 +468,11 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
                     "group_config_pk": self.component_1_group_config.pk,
                 },
             ),
-            data=[self.host_for_component.pk],
+            data={"hostId": self.host_for_component.pk},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertEqual(len(response.json()), 1)
-        self.assertEqual(response.json()[0]["name"], self.host_for_component.name)
+        self.assertDictEqual(response.json(), {"id": 4, "name": "host_for_component"})
 
     def test_list_host_candidates_success(self):
         response = self.client.get(
@@ -556,25 +581,25 @@ class TestHostProviderGroupConfig(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertListEqual(response.json(), [{"id": 1, "name": "host"}])
 
-    def test_add_hosts_success(self):
+    def test_add_host_success(self):
         response = self.client.post(
             path=reverse(
                 viewname="v2:hostprovider-group-config-hosts-list",
                 kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": self.group_config.pk},
             ),
-            data=[self.new_host.pk],
+            data={"hostId": self.new_host.pk},
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertListEqual(response.json(), [{"id": 2, "name": "new-host"}])
+        self.assertDictEqual(response.json(), {"id": 2, "name": "new-host"})
 
-    def test_add_hosts_fail(self):
+    def test_add_self_host_fail(self):
         response = self.client.post(
             path=reverse(
                 viewname="v2:hostprovider-group-config-hosts-list",
                 kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": self.group_config.pk},
             ),
-            data=[self.host.pk],
+            data={"hostId": self.host.pk},
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
