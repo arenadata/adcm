@@ -21,6 +21,7 @@ export const useRbacUserCreateDialog = () => {
   const isOpen = useStore((s) => s.adcm.usersActions.createDialog.isOpen);
   const isCreating = useStore((s) => s.adcm.usersActions.createDialog.isCreating);
   const groups = useStore((s) => s.adcm.usersActions.relatedData.groups);
+  const authSettings = useStore((s) => s.auth.profile.authSettings);
 
   const { formData, handleChangeFormData, setFormData, errors, setErrors, isValid } =
     useForm<RbacUserFormData>(initialFormData);
@@ -28,14 +29,20 @@ export const useRbacUserCreateDialog = () => {
   useEffect(() => {
     setErrors({
       username: required(formData.username) ? undefined : 'Username field is required',
-      password: required(formData.password) ? undefined : 'Password field is required',
+      password:
+        (required(formData.password) ? undefined : 'Password field is required') ||
+        (formData.password.length >= authSettings.minPasswordLength &&
+        formData.password.length <= authSettings.maxPasswordLength
+          ? undefined
+          : `Password should be greater than ${authSettings.minPasswordLength - 1} 
+          and less than ${authSettings.maxPasswordLength + 1}`),
       firstName: required(formData.firstName) ? undefined : 'First Name field is required',
       lastName: required(formData.lastName) ? undefined : 'Last Name field is required',
       confirmPassword:
         formData.confirmPassword === formData.password ? undefined : 'Confirm password must match password',
       email: isEmailValid(formData.email) ? undefined : 'Email is not correct',
     });
-  }, [formData, setErrors]);
+  }, [formData, authSettings, setErrors]);
 
   useEffect(() => {
     setFormData(initialFormData);

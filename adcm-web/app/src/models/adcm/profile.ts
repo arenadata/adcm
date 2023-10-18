@@ -1,3 +1,10 @@
+interface AdcmProfileUserAuthSettings {
+  blockTime: number;
+  loginAttemptLimit: number;
+  maxPasswordLength: number;
+  minPasswordLength: number;
+}
+
 export interface AdcmProfileUser {
   id: number;
   username: string;
@@ -5,6 +12,7 @@ export interface AdcmProfileUser {
   firstName: string;
   lastName: string;
   isSuperuser: boolean;
+  authSettings: AdcmProfileUserAuthSettings;
 }
 
 export interface AdcmProfileChangePassword {
