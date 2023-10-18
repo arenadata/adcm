@@ -11,26 +11,50 @@
 # limitations under the License.
 from api_v2.action.views import ActionViewSet
 from api_v2.config.views import ConfigLogViewSet
+from api_v2.group_config.views import GroupConfigViewSet
+from api_v2.host.views import HostGroupConfigViewSet
 from api_v2.hostprovider.views import HostProviderViewSet
 from api_v2.upgrade.views import UpgradeViewSet
 from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
+CONFIG_GROUPS_PREFIX = "config-groups"
+
 router = SimpleRouter()
 router.register("", HostProviderViewSet)
 
-hostprovider_action_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
-hostprovider_action_router.register(prefix="actions", viewset=ActionViewSet, basename="provider-action")
+action_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
+action_router.register(prefix="actions", viewset=ActionViewSet, basename="provider-action")
 
-hostprovider_config_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
-hostprovider_config_router.register(prefix="configs", viewset=ConfigLogViewSet, basename="provider-config")
+config_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
+config_router.register(prefix="configs", viewset=ConfigLogViewSet, basename="provider-config")
 
-hostprovider_upgrade_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
-hostprovider_upgrade_router.register(prefix="upgrades", viewset=UpgradeViewSet)
+upgrade_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
+upgrade_router.register(prefix="upgrades", viewset=UpgradeViewSet)
+
+group_config_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
+group_config_router.register(
+    prefix=CONFIG_GROUPS_PREFIX, viewset=GroupConfigViewSet, basename="hostprovider-group-config"
+)
+
+group_config_hosts_router = NestedSimpleRouter(group_config_router, CONFIG_GROUPS_PREFIX, lookup="group_config")
+group_config_hosts_router.register(
+    prefix=r"hosts", viewset=HostGroupConfigViewSet, basename="hostprovider-group-config-hosts"
+)
+
+group_config_config_router = NestedSimpleRouter(
+    parent_router=group_config_router, parent_prefix=CONFIG_GROUPS_PREFIX, lookup="group_config"
+)
+group_config_config_router.register(
+    prefix="configs", viewset=ConfigLogViewSet, basename="hostprovider-group-config-config"
+)
 
 urlpatterns = [
     *router.urls,
-    *hostprovider_action_router.urls,
-    *hostprovider_config_router.urls,
-    *hostprovider_upgrade_router.urls,
+    *action_router.urls,
+    *config_router.urls,
+    *upgrade_router.urls,
+    *group_config_router.urls,
+    *group_config_hosts_router.urls,
+    *group_config_config_router.urls,
 ]
