@@ -4,7 +4,7 @@ import ConfigurationEditor from './ConfigurationEditor';
 import { schema, complexSchema } from './ConfigurationEditor.stories.constants';
 import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 import { ConfigurationNodeFilter } from './ConfigurationEditor.types';
-import { Checkbox, Input } from '@uikit';
+import { Checkbox, Input, Switch } from '@uikit';
 import { generateFromSchema } from '@utils/jsonSchemaUtils';
 
 type Story = StoryObj<typeof ConfigurationEditor>;
@@ -171,8 +171,7 @@ const ConfigurationEditorStoryWithHooks = ({
 
   return (
     <>
-      Show advanced:
-      <Checkbox checked={filter.showAdvanced} onChange={handleAdvancedChange} />
+      <Switch isToggled={filter.showAdvanced} variant="blue" onChange={handleAdvancedChange} label="Show advanced" />
       <br />
       Show invisible:
       <Checkbox checked={filter.showInvisible} onChange={handleInvisibleChange} />

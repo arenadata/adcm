@@ -1,10 +1,14 @@
 :global {
   body.theme-dark {
-    --switch-on-background: var(--color-xgreen-saturated);
     --switch-on-button-background: var(--color-xdark);
     --switch-on-button-shadow: 0px 1px 5px 0px rgba(5, 5, 5, 0.7);
-    --switch-on-background-hover: var(--color-xgreen-saturated);
     --switch-on-button-background-hover: var(--color-dark-card-hover);
+    
+    --switch-green-on-background: var(--color-xgreen-saturated);
+    --switch-green-on-background-hover: var(--color-xgreen-saturated);
+
+    --switch-blue-on-background: var(--color-xblue);
+    --switch-blue-on-background-hover: var(--color-xblue);
     
     --switch-off-background: var(--color-xdark);
     --switch-off-button-background: var(--color-xgray-light);
@@ -17,11 +21,15 @@
   }
 
   body.theme-light {
-    --switch-on-background: var(--color-xgreen-saturated);
     --switch-on-button-background: var(--color-xwhite);
     --switch-on-button-shadow: 0px 20px 20px 0px rgba(2, 1, 17, 0.2);
-    --switch-on-background-hover: var(--color-xgreen);
     --switch-on-button-background-hover: var(--color-xwhite);
+
+    --switch-green-on-background-hover: var(--color-xgreen);
+    --switch-green-on-background: var(--color-xgreen-saturated);
+
+    --switch-blue-on-background: var(--color-xblue);
+    --switch-blue-on-background-hover: var(--color-teal);
 
     --switch-off-background: rgba(127, 130, 133, 0.2);
     --switch-off-button-background: var(--color-xgray-light);
@@ -48,6 +56,16 @@
   --switch-button-width: 10px;
   --switch-button-height: 10px;
   --switch-button-padding: 1px;
+}
+
+.switch_green {
+  --switch-on-background: var(--switch-green-on-background);
+  --switch-on-background-hover: var(--switch-green-on-background-hover);
+}
+
+.switch_blue {
+  --switch-on-background: var(--switch-blue-on-background);
+  --switch-on-background-hover: var(--switch-blue-on-background-hover);
 }
 
 .switch {

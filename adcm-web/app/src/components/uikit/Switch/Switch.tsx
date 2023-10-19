@@ -4,6 +4,8 @@ import cn from 'classnames';
 
 type SwitchSize = 'medium' | 'small';
 
+type SwitchVariant = 'green' | 'blue';
+
 export interface SwitchProps {
   isToggled: boolean;
   id?: string;
@@ -12,6 +14,7 @@ export interface SwitchProps {
   disabled?: boolean;
   label?: string;
   size?: SwitchSize;
+  variant?: SwitchVariant;
 }
 
 const Switch = ({
@@ -20,11 +23,12 @@ const Switch = ({
   className,
   id,
   size = 'medium',
+  variant = 'green',
   onChange,
   label,
   ...rest
 }: SwitchProps) => {
-  const switchClassName = cn(className, s.switch, s[`switch_${size}`]);
+  const switchClassName = cn(className, s.switch, s[`switch_${size}`], s[`switch_${variant}`]);
 
   return (
     <label className={switchClassName}>

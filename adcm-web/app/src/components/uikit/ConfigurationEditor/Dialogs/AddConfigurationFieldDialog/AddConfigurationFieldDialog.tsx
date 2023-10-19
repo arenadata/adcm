@@ -34,14 +34,28 @@ const AddConfigurationFieldDialog = ({
   };
 
   const handleOpenChange = (isOpen: boolean) => {
-    onAddField(node, fieldName, value);
     onOpenChange(isOpen);
+  };
+
+  const handleCancel = () => {
+    onOpenChange(false);
+  };
+
+  const handleApply = () => {
+    onAddField(node, fieldName, value);
+    onOpenChange(false);
   };
 
   const inputClassName = s.addConfigurationFieldDialog__input;
 
   return (
-    <ConfigurationEditorDialog isOpen={isOpen} onOpenChange={handleOpenChange} triggerRef={triggerRef}>
+    <ConfigurationEditorDialog
+      triggerRef={triggerRef}
+      isOpen={isOpen}
+      onOpenChange={handleOpenChange}
+      onCancel={handleCancel}
+      onApply={handleApply}
+    >
       <div className={s.addConfigurationFieldDialog__content}>
         <FormField label="Enter field name">
           <Input className={inputClassName} value={fieldName} onChange={handleFieldNameChange} />

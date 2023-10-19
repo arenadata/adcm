@@ -20,4 +20,14 @@
   &__body {
     padding: 12px 12px
   }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px 12px;
+
+    :not(:last-child) {
+      margin-right: 12px;
+    }
+  }
 }
