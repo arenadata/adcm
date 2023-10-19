@@ -61,7 +61,7 @@ const AccessManagerRoleDialogForm: React.FC<AccessManagerRoleDialogFormProps> = 
 
   return (
     <FormFieldsContainer className={s.roleDialogForm}>
-      <div className={s.roleDialogForm__column}>
+      <div className={s.roleDialogForm__column} data-test="transfer-toolbar">
         <FormField label="Role name" className={s.roleDialogForm__name} error={errors.displayName}>
           <Input
             value={formData.displayName}

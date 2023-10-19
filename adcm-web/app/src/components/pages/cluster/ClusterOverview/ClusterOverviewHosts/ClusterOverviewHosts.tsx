@@ -31,7 +31,11 @@ const ClusterOverviewHosts = () => {
       <div className={s.clusterOverviewHosts__wrapper}>
         <ClusterOverviewDiagram totalCount={allHostsCount} currentCount={count} status={filter.hostsStatus} />
         <div className={s.clusterOverviewHosts__hostsContainer}>
-          <ClusterOverviewFilter status={filter.hostsStatus} onStatusChange={onHostsStatusHandler} />
+          <ClusterOverviewFilter
+            status={filter.hostsStatus}
+            onStatusChange={onHostsStatusHandler}
+            dataTest="hosts-toolbar"
+          />
           {isLoading ? (
             <div className={s.clusterOverviewHosts__spinnerWrapper}>
               <Spinner />

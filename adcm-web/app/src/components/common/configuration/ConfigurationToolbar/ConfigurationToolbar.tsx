@@ -23,7 +23,7 @@ const ConfigurationToolbar: React.FC<ConfigurationToolbarProps> = ({ onSave, onR
   };
 
   return (
-    <Panel className={s.configurationToolbar}>
+    <Panel className={s.configurationToolbar} data-test="configuration-toolbar">
       <SearchInput
         placeholder="Search input"
         value={filter.title}

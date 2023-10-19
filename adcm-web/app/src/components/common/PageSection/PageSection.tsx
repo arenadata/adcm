@@ -5,11 +5,13 @@ import { BaseComponentProps } from '@utils/types';
 import s from './PageSection.module.scss';
 import cn from 'classnames';
 import Icon from '@uikit/Icon/Icon';
+import { textToDataTestValue } from '@utils/dataTestUtils.ts';
 
 interface PageSectionProps extends BaseComponentProps {
   title: React.ReactNode;
   isExpandDefault?: boolean;
   hasError?: boolean;
+  dataTest?: string;
 }
 
 const PageSection: React.FC<PageSectionProps> = ({
@@ -18,8 +20,12 @@ const PageSection: React.FC<PageSectionProps> = ({
   children,
   isExpandDefault = true,
   hasError = false,
+  dataTest,
 }) => {
   const [isExpand, setIsExpand] = useState<boolean>(isExpandDefault);
+  const dataTestValue = dataTest
+    ? dataTest
+    : (typeof title === 'string' && textToDataTestValue(title)) || 'page-section';
   const toggle = () => {
     setIsExpand((prev) => !prev);
   };
@@ -28,13 +34,13 @@ const PageSection: React.FC<PageSectionProps> = ({
     [s.pageSection_hasErrors]: hasError,
   });
   return (
-    <section className={sectionClassName}>
-      <Text variant="h2">
+    <section className={sectionClassName} data-test={dataTestValue}>
+      <Text variant="h2" data-test="page-section-title">
         <div onClick={toggle} className={s.pageSection__title}>
           {title} <Icon name="chevron" size={12} className={s.pageSection__arrow} />
         </div>
       </Text>
-      <Collapse isExpanded={isExpand}>
+      <Collapse isExpanded={isExpand} data-test="page-section-content">
         <div className={s.pageSection__collapseBody}>{children}</div>
       </Collapse>
     </section>

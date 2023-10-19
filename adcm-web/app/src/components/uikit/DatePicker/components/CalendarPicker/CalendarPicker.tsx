@@ -35,10 +35,10 @@ const CalendarPicker = ({ value, minDate, maxDate, hasError, onSet, onCancel }: 
 
   return (
     <div className={s.CalendarPicker}>
-      <div className={s.CalendarPicker__section}>
+      <div className={s.CalendarPicker__section} data-test="data-picker-header">
         <DatePickerHeader onMonthChange={handleMonthChange} month={selectedMonth} />
       </div>
-      <div className={s.CalendarPicker__section}>
+      <div className={s.CalendarPicker__section} data-test="data-picker-days">
         <CalendarGrid
           calendarMap={calendarMap}
           onDateClick={setSelectedDate}
@@ -49,10 +49,10 @@ const CalendarPicker = ({ value, minDate, maxDate, hasError, onSet, onCancel }: 
           selectedMonth={selectedMonth}
         />
       </div>
-      <div className={s.CalendarPicker__section}>
+      <div className={s.CalendarPicker__section} data-test="data-picker-time">
         <InputTime date={selectedDate} onChange={setSelectedDate} />
       </div>
-      <div className={s.CalendarPicker__section}>
+      <div className={s.CalendarPicker__section} data-test="data-picker-footer">
         <DatePickerFooter hasError={hasError} onSet={handleSet} onCancel={onCancel} />
       </div>
     </div>

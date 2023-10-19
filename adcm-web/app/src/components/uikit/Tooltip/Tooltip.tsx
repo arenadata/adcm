@@ -19,6 +19,7 @@ import { useForwardRef } from '@uikit/hooks/useForwardRef';
 import { ChildWithRef } from '@uikit/types/element.types';
 import cn from 'classnames';
 import s from './Tooltip.module.scss';
+import { textToDataTestValue } from '@utils/dataTestUtils.ts';
 
 export interface TooltipProps {
   label: React.ReactNode;
@@ -27,6 +28,7 @@ export interface TooltipProps {
   children: ChildWithRef;
   className?: string;
   closeDelay?: number;
+  dataTest?: string;
 }
 
 const Tooltip: React.FC<TooltipProps> = ({
@@ -36,6 +38,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   placement = 'top' as Placement,
   offset: offsetValue = 10,
   closeDelay = 0,
+  dataTest,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -73,6 +76,10 @@ const Tooltip: React.FC<TooltipProps> = ({
 
   const targetElement = React.Children.only(children);
 
+  const dataTestValue = dataTest
+    ? dataTest
+    : (typeof label === 'string' && textToDataTestValue(label)) || 'tooltip-container';
+
   return (
     <>
       {React.cloneElement(targetElement, getReferenceProps({ ref, ...children.props }))}
@@ -83,6 +90,7 @@ const Tooltip: React.FC<TooltipProps> = ({
             className={cn(s.tooltip, className)}
             style={floatingStyles}
             {...getFloatingProps()}
+            data-test={dataTestValue}
           >
             {label}
           </div>

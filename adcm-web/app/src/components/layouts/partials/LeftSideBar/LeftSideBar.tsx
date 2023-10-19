@@ -16,9 +16,9 @@ const LeftSideBar: React.FC<HTMLAttributes<HTMLDivElement>> = ({ className }) =>
 
   return (
     <div className={cn(s.leftSideBar, className)}>
-      <MainLogo className={s.leftSideBar__logo} isSmall={isSlim} />
+      <MainLogo className={s.leftSideBar__logo} isSmall={isSlim} data-test="nav-menu-logo" />
 
-      <LeftBarMenu className={cn(s.leftSideBar__menu, s.leftSideBar__menu_main)}>
+      <LeftBarMenu className={cn(s.leftSideBar__menu, s.leftSideBar__menu_main)} data-test="nav-menu-pages">
         <LeftBarMenuItem icon="g2-cluster3" to="/clusters" isSmall={isSlim}>
           Clusters
         </LeftBarMenuItem>
@@ -42,7 +42,7 @@ const LeftSideBar: React.FC<HTMLAttributes<HTMLDivElement>> = ({ className }) =>
         </LeftBarMenuItem>
       </LeftBarMenu>
 
-      <LeftBarMenu className={s.leftSideBar__menu}>
+      <LeftBarMenu className={s.leftSideBar__menu} data-test="nav-menu-settings">
         <LeftBarMenuItem icon="g2-user" to="/profile" isSmall={isSlim}>
           Admin
         </LeftBarMenuItem>
