@@ -242,7 +242,8 @@ class Json(Field):
     def to_dict(self) -> dict:
         data = super().to_dict()
 
-        data.update({"format": "json", "default": json.dumps(data["default"])})
+        default = json.dumps(data["default"]) if data["default"] is not None else None
+        data.update({"format": "json", "default": default})
 
         if self.required:
             data.update({"minLength": 1})
@@ -500,10 +501,6 @@ class Option(Field):
     type = "enum"
 
     @property
-    def string_extra(self) -> dict | None:
-        return {"isMultiline": True}
-
-    @property
     def enum_extra(self) -> dict | None:
         return {"labels": list(self.limits["option"].keys())}
 
@@ -717,9 +714,11 @@ def represent_json_type_as_string(prototype: Prototype, value: dict, action_: Ac
             continue
 
         if sub_name:
-            value[name][sub_name] = json.dumps(value[name][sub_name])
+            new_value = json.dumps(value[name][sub_name]) if value[name][sub_name] is not None else None
+            value[name][sub_name] = new_value
         else:
-            value[name] = json.dumps(value[name])
+            new_value = json.dumps(value[name]) if value[name] is not None else None
+            value[name] = new_value
 
     return value
 
@@ -738,9 +737,11 @@ def represent_string_as_json_type(
 
         try:
             if sub_name:
-                value[name][sub_name] = json.loads(value[name][sub_name])
+                new_value = json.loads(value[name][sub_name]) if value[name][sub_name] is not None else None
+                value[name][sub_name] = new_value
             else:
-                value[name] = json.loads(value[name])
+                new_value = json.loads(value[name]) if value[name] is not None else None
+                value[name] = new_value
         except json.JSONDecodeError:
             raise AdcmEx(
                 code="CONFIG_KEY_ERROR",
