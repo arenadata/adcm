@@ -17,6 +17,7 @@ from unittest.mock import Mock, patch
 from urllib.parse import urljoin
 
 from cm.api import add_cluster, add_service_to_cluster
+from cm.issue import lock_affected_objects
 from cm.job import (
     check_cluster,
     check_service_task,
@@ -144,7 +145,7 @@ class TestJob(BaseTestCase):
             finish_date=timezone.now(),
         )
         job = JobLog.objects.create(task=task, action=action, start_date=timezone.now(), finish_date=timezone.now())
-        task.lock_affected([cluster])
+        lock_affected_objects(task=task, objects=[cluster])
         status = JobStatus.RUNNING
         pid = 10
 

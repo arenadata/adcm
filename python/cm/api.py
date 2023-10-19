@@ -26,10 +26,12 @@ from cm.api_context import CTX
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.flag import update_object_flag
 from cm.issue import (
+    add_concern_to_object,
     check_bound_components,
     check_component_constraint,
     check_hc_requires,
     check_service_requires,
+    remove_concern_from_object,
     update_hierarchy_issues,
     update_issue_after_deleting,
 )
@@ -212,7 +214,7 @@ def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, descriptio
         obj_conf = init_object_config(prototype, host)
         host.config = obj_conf
         host.save()
-        host.add_to_concerns(CTX.lock)
+        add_concern_to_object(object_=host, concern=CTX.lock)
         update_hierarchy_issues(host.provider)
         re_apply_object_policy(provider)
 
@@ -232,7 +234,7 @@ def add_host_provider(prototype: Prototype, name: str, description: str = ""):
         obj_conf = init_object_config(prototype, provider)
         provider.config = obj_conf
         provider.save()
-        provider.add_to_concerns(CTX.lock)
+        add_concern_to_object(object_=provider, concern=CTX.lock)
         update_hierarchy_issues(provider)
 
     logger.info("host provider #%s %s is added", provider.pk, provider.name)
@@ -419,7 +421,7 @@ def remove_host_from_cluster(host: Host) -> Host:
             group.hosts.remove(host)
             update_hierarchy_issues(obj=host)
 
-        host.remove_from_concerns(CTX.lock)
+        remove_concern_from_object(object_=host, concern=CTX.lock)
         update_hierarchy_issues(obj=cluster)
         re_apply_object_policy(apply_object=cluster)
 
@@ -701,10 +703,10 @@ def save_hc(
     new_hosts = {i[1] for i in host_comp_list}
 
     for removed_host in old_hosts.difference(new_hosts):
-        removed_host.remove_from_concerns(CTX.lock)
+        remove_concern_from_object(object_=removed_host, concern=CTX.lock)
 
     for added_host in new_hosts.difference(old_hosts):
-        added_host.add_to_concerns(CTX.lock)
+        add_concern_to_object(object_=added_host, concern=CTX.lock)
 
     still_hc = still_existed_hc(cluster, host_comp_list)
     host_service_of_still_hc = {(hc.host, hc.service) for hc in still_hc}
@@ -1121,7 +1123,7 @@ def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
     with atomic():
         host.cluster = cluster
         host.save()
-        host.add_to_concerns(CTX.lock)
+        add_concern_to_object(object_=host, concern=CTX.lock)
         update_hierarchy_issues(host)
         re_apply_object_policy(cluster)
 

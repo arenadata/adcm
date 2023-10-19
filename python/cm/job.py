@@ -58,6 +58,8 @@ from cm.issue import (
     check_component_constraint,
     check_hc_requires,
     check_service_requires,
+    lock_affected_objects,
+    unlock_affected_objects,
     update_hierarchy_issues,
 )
 from cm.logger import logger
@@ -863,7 +865,7 @@ def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:
             multi_state_unset=multi_state_unset,
         )
         restore_hc(task=task, action=action, status=status)
-        task.unlock_affected()
+        unlock_affected_objects(task=task)
         set_task_status(task=task, status=status)
         update_hierarchy_issues(obj=obj)
 
@@ -946,7 +948,7 @@ def run_task(task: TaskLog, args: str = ""):
 
     tree = Tree(obj=task.task_object)
     affected_objs = (node.value for node in tree.get_all_affected(node=tree.built_from))
-    task.lock_affected(objects=affected_objs)
+    lock_affected_objects(task=task, objects=affected_objs)
     update_event(object_=task, update=(UpdateEventType.STATUS, JobStatus.RUNNING))
     set_task_status(task=task, status=JobStatus.RUNNING)
 
@@ -983,7 +985,6 @@ def set_task_status(task: TaskLog, status: str):
     task.status = status
     task.finish_date = timezone.now()
     task.save()
-    update_event(object_=task, update=(UpdateEventType.STATUS, status))
 
 
 def set_job_status(job_id: int, status: str, pid: int = 0):
@@ -1000,8 +1001,8 @@ def set_job_status(job_id: int, status: str, pid: int = 0):
 def abort_all():
     for task in TaskLog.objects.filter(status=JobStatus.RUNNING):
         set_task_status(task, JobStatus.ABORTED)
-        task.unlock_affected()
-        update_event(object_=task, update=(UpdateEventType.STATUS, JobStatus.ABORTED))
+        unlock_affected_objects(task=task)
+
     for job in JobLog.objects.filter(status=JobStatus.RUNNING):
         set_job_status(job.pk, JobStatus.ABORTED)
 

@@ -16,6 +16,7 @@ from uuid import uuid4
 
 from cm.api import save_hc
 from cm.hierarchy import Tree
+from cm.issue import lock_affected_objects
 from cm.models import (
     Bundle,
     Cluster,
@@ -940,7 +941,7 @@ class TestAPI2(BaseTestCase):
         gen_job_log(task)
         tree = Tree(self.cluster)
         affected = (node.value for node in tree.get_all_affected(tree.built_from))
-        task.lock_affected(affected)
+        lock_affected_objects(task=task, objects=affected)
         ctx.lock = task.lock
 
         # refresh due to new instances were updated in task.lock_affected()
