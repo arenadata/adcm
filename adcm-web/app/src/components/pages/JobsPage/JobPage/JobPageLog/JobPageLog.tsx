@@ -48,9 +48,11 @@ const JobPageLog: React.FC<JobPageLogProps> = ({ id, isLinkEmpty = false }) => {
         </Tab>
       </TabsBlock>
       <CodeHighlighter code={log?.content.trim() || ''} language="javascript" className={s.codeHighlighter} />
-      <Link to={downloadLink} download="download" target="_blank">
-        <Button variant="secondary" className={s.jobLogDownloadButton} children="Download" />
-      </Link>
+      {log?.content && (
+        <Link to={downloadLink} download="download" target="_blank">
+          <Button variant="secondary" className={s.jobLogDownloadButton} children="Download" />
+        </Link>
+      )}
     </>
   );
 };
