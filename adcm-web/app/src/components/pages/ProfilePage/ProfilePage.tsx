@@ -15,7 +15,7 @@ const ProfilePage = () => {
     dispatch(getProfile());
   }, [dispatch]);
 
-  const { formData, submitForm, onChangeFormData, isValid } = useChangePasswordForm();
+  const { formData, submitForm, onChangeFormData, isValid, errors } = useChangePasswordForm();
 
   const handleCurrentPasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChangeFormData({ currentPassword: event.target.value });
@@ -45,21 +45,25 @@ const ProfilePage = () => {
 
       <PageSection title={'Password'} isExpandDefault={true}>
         <FormFieldsContainer className={s.profilePagePassword}>
-          <FormField label="Current password">
+          <FormField label="Current password" error={errors.currentPassword}>
             <InputPassword
               value={formData.currentPassword}
               onChange={handleCurrentPasswordChange}
               placeholder="Password"
             />
           </FormField>
-          <FormField label="New password">
+          <FormField label="New password" error={errors.newPassword}>
             <InputPassword
               value={formData.newPassword}
               onChange={handleNewPasswordChange}
               placeholder="Type new password"
             />
           </FormField>
-          <FormField className={s.profilePageConfirmPassword} label="Confirm password">
+          <FormField
+            className={s.profilePageConfirmPassword}
+            label="Confirm password"
+            error={errors.confirmNewPassword}
+          >
             <InputPassword
               value={formData.confirmNewPassword}
               onChange={handleConfirmNewPasswordChange}
