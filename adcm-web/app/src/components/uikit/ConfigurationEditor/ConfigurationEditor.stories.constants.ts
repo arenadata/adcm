@@ -555,7 +555,7 @@ export const schema: ConfigurationSchema = {
         },
         someEnum: {
           default: 2,
-          enum: ['__one__', 2, '!!!three!!!'],
+          enum: ['__one__', 2, '!!!three!!!', null],
           readOnly: false,
           adcmMeta: {
             nullValue: null,
@@ -565,7 +565,7 @@ export const schema: ConfigurationSchema = {
             synchronization: null,
             isSecret: false,
             enumExtra: {
-              labels: ['One', 'Two', 'Three'],
+              labels: ['One', 'Two', 'Three', '---null---'],
             },
           },
         },

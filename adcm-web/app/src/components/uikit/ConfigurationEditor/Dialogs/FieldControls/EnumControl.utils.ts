@@ -1,5 +1,6 @@
 import { SingleSchemaDefinition } from '@models/adcm';
 import { getOptionsFromArray } from '@uikit/Select/Select.utils';
+import { nullStub } from '../../ConfigurationEditor.constants';
 
 export const getEnumOptions = (fieldSchema: SingleSchemaDefinition) => {
   if (fieldSchema.enum === undefined) {
@@ -18,7 +19,7 @@ export const getEnumOptions = (fieldSchema: SingleSchemaDefinition) => {
         )
       : getOptionsFromArray(
           enumValues,
-          (v) => v?.toString() ?? '',
+          (v) => v?.toString() ?? nullStub,
           (v) => v,
         );
 

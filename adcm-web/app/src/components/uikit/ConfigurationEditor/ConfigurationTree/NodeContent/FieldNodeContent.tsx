@@ -1,7 +1,8 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useMemo } from 'react';
 import { Icon } from '@uikit';
 import { Node } from '@uikit/CollapseTree2/CollapseNode.types';
 import { ConfigurationField, ConfigurationNode } from '../../ConfigurationEditor.types';
+import { nullStub, secretStub } from '../../ConfigurationEditor.constants';
 import s from '../ConfigurationTree.module.scss';
 import cn from 'classnames';
 import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
@@ -59,7 +60,31 @@ const FieldNodeContent = ({
     'is-failed': hasError,
   });
 
-  const value = fieldNode.data.value ?? 'NULL';
+  const value: string | number | boolean = useMemo(() => {
+    if (fieldNode.data.fieldSchema.enum) {
+      if (fieldNode.data.fieldSchema.adcmMeta.enumExtra?.labels) {
+        const valueIndex = fieldNode.data.fieldSchema.enum?.indexOf(fieldNode.data.value);
+        if (valueIndex !== undefined) {
+          return fieldNode.data.fieldSchema.adcmMeta.enumExtra.labels[valueIndex];
+        }
+      }
+    }
+
+    if (adcmMeta.isSecret) {
+      return secretStub;
+    }
+
+    if (fieldNode.data.value === null) {
+      return nullStub;
+    }
+
+    return fieldNode.data.value;
+  }, [
+    adcmMeta.isSecret,
+    fieldNode.data.fieldSchema.adcmMeta.enumExtra,
+    fieldNode.data.fieldSchema.enum,
+    fieldNode.data.value,
+  ]);
 
   return (
     <div ref={ref} className={className}>
@@ -81,7 +106,7 @@ const FieldNodeContent = ({
         />
       )}
       <span className={s.nodeContent__value} onClick={handleClick}>
-        {adcmMeta.isSecret ? '***' : value.toString()}
+        {value}
       </span>
     </div>
   );
