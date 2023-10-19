@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from functools import partial
+from typing import Iterable
 
 from cm.adcm_config.config import get_prototype_config
 from cm.adcm_config.utils import proto_ref
@@ -27,14 +29,18 @@ from cm.models import (
     ConfigLog,
     Host,
     HostComponent,
+    JobLog,
     KnownNames,
     MessageTemplate,
     ObjectType,
     Prototype,
     PrototypeImport,
     ServiceComponent,
+    TaskLog,
 )
+from cm.status_api import create_concern_event, delete_concern_event
 from cm.utils import obj_ref
+from django.db.transaction import on_commit
 
 
 def check_config(obj: ADCMEntity) -> bool:  # pylint: disable=too-many-branches
@@ -413,7 +419,7 @@ def create_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
     affected_nodes = tree.get_directly_affected(node=tree.built_from)
 
     for node in affected_nodes:
-        node.value.add_to_concerns(item=issue)
+        add_concern_to_object(object_=node.value, concern=issue)
 
 
 def remove_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
@@ -454,4 +460,60 @@ def update_issue_after_deleting() -> None:
             logger.info("Deleted %s", concern_str)
         elif related != affected:
             for object_moved_out_hierarchy in related.difference(affected):
-                object_moved_out_hierarchy.remove_from_concerns(item=concern)
+                remove_concern_from_object(object_=object_moved_out_hierarchy, concern=concern)
+
+
+def add_concern_to_object(object_: ADCMEntity, concern: ConcernItem | None) -> None:
+    if not concern or getattr(concern, "id", None) is None:
+        return
+
+    if object_.concerns.filter(id=concern.id).exists():
+        return
+
+    object_.concerns.add(concern)
+
+    on_commit(func=partial(create_concern_event, object_=object_))
+
+
+def remove_concern_from_object(object_: ADCMEntity, concern: ConcernItem | None) -> None:
+    if not concern or not hasattr(concern, "id"):
+        return
+
+    concern_id = concern.id
+
+    if not object_.concerns.filter(id=concern_id).exists():
+        return
+
+    object_.concerns.remove(concern)
+    on_commit(func=partial(delete_concern_event, object_=object_, concern_id=concern_id))
+
+
+def lock_affected_objects(task: TaskLog, objects: Iterable[ADCMEntity]) -> None:
+    if task.lock:
+        return
+
+    first_job = JobLog.obj.filter(task=task).order_by("id").first()
+    task.lock = ConcernItem.objects.create(
+        type=ConcernType.LOCK.value,
+        name=None,
+        reason=first_job.cook_reason(),
+        blocking=True,
+        owner=task.task_object,
+        cause=ConcernCause.JOB.value,
+    )
+    task.save()
+
+    for obj in objects:
+        add_concern_to_object(object_=obj, concern=task.lock)
+
+
+def unlock_affected_objects(task: TaskLog) -> None:
+    task.refresh_from_db()
+
+    if not task.lock:
+        return
+
+    lock = task.lock
+    task.lock = None
+    task.save(update_fields=["lock"])
+    lock.delete()

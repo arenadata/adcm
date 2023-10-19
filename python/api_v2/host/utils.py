@@ -14,7 +14,7 @@ from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
 from cm.adcm_config.config import init_object_config
 from cm.api import check_license, load_service_map
 from cm.api_context import CTX
-from cm.issue import update_hierarchy_issues
+from cm.issue import add_concern_to_object, update_hierarchy_issues
 from cm.logger import logger
 from cm.models import Cluster, Host, HostProvider, Prototype
 from django.db.transaction import atomic
@@ -37,8 +37,7 @@ def add_new_host_and_map_it(provider: HostProvider, fqdn: str, cluster: Cluster 
             host.cluster = cluster
 
         host.save()
-
-        host.add_to_concerns(CTX.lock)
+        add_concern_to_object(object_=host, concern=CTX.lock)
 
         update_hierarchy_issues(obj=host.provider)
         re_apply_object_policy(apply_object=provider)
