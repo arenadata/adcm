@@ -27,7 +27,7 @@ const MultiSelectList = <T,>() => {
   };
 
   return (
-    <ul className={cn(s.multiSelectList, 'scroll')} style={{ maxHeight }}>
+    <ul className={cn(s.multiSelectList, 'scroll')} style={{ maxHeight }} data-test="options">
       {options.map(({ value, label, disabled }) => (
         <li key={label?.toString()} className={s.multiSelectList__item}>
           <Checkbox

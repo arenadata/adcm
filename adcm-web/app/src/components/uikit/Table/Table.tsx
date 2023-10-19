@@ -23,6 +23,7 @@ export interface TableProps
   spinner?: React.ReactNode;
   noData?: React.ReactNode;
   width?: string;
+  dataTest?: string;
 }
 
 const defaultEmptyRowLength = 100;
@@ -40,6 +41,7 @@ const Table: React.FC<TableProps> = ({
   spinner = <TableSpinner />,
   noData = <TableNoData />,
   width,
+  dataTest = 'table',
   ...props
 }) => {
   const tableClasses = cn(s.table, s[`table_${variant}`]);
@@ -48,7 +50,7 @@ const Table: React.FC<TableProps> = ({
     [isAllSelected, toggleSelectedAll, sortParams, onSorting],
   );
   return (
-    <div className={cn(className, s.tableWrapper, 'scroll')} {...props}>
+    <div className={cn(className, s.tableWrapper, 'scroll')} {...props} data-test={dataTest}>
       <TableContext.Provider value={contextData}>
         <table className={tableClasses} style={{ width: width }}>
           {columns?.length && <TableHead columns={columns} />}

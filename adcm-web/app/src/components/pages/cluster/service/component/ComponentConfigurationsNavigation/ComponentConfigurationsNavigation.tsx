@@ -7,7 +7,7 @@ const ComponentConfigurationsNavigation: React.FC = () => {
   return (
     <>
       <SubNavigationWrapper>
-        <TabsBlock variant="secondary">
+        <TabsBlock variant="secondary" dataTest="tab-container-components">
           <Tab to="primary-configuration">Primary configuration</Tab>
           <Tab to="configuration-groups">Configuration groups</Tab>
         </TabsBlock>

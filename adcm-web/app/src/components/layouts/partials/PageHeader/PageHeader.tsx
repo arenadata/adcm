@@ -13,7 +13,7 @@ const PageHeader: React.FC = () => {
 
   return (
     <>
-      <div className={s.pageHeader}>
+      <div className={s.pageHeader} data-test="page-header">
         <Text variant="h1" className="green-text">
           {pageTitle}
         </Text>

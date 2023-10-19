@@ -37,7 +37,7 @@ const ConfigVersionPanel: React.FC<ConfigVersionPanelProps> = ({
   draftDescription = '',
 }) => {
   return (
-    <div className={s.configVersionPanel}>
+    <div className={s.configVersionPanel} data-test="configuration-version-container">
       <Pagination
         className={s.configVersionPanel__pagination}
         hidePerPage={true}
@@ -45,7 +45,7 @@ const ConfigVersionPanel: React.FC<ConfigVersionPanelProps> = ({
         totalItems={totalItems}
         onChangeData={onChangePage}
       />
-      <div className={s.configVersionPanel__content}>
+      <div className={s.configVersionPanel__content} data-test="configuration-version-content">
         {isShowDraft && (
           <ConfigVersionCell
             configVersion={getDraftVersionConfig(draftDescription)}

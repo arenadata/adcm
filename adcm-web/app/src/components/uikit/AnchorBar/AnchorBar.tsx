@@ -8,12 +8,16 @@ export type AnchorBarItem = {
   activeColorClass?: string;
 };
 
-export interface AnchorBarProps {
+export interface AnchorListProps {
   items: AnchorBarItem[];
   className?: string;
 }
 
-export const AnchorList = ({ items, className = '' }: AnchorBarProps) => {
+export interface AnchorBarProps extends HTMLAttributes<HTMLDivElement> {
+  dataTest?: string;
+}
+
+export const AnchorList = ({ items, className = '' }: AnchorListProps) => {
   const [activeItems, setActiveItems] = useState(new Set<string>());
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -71,9 +75,9 @@ export const AnchorList = ({ items, className = '' }: AnchorBarProps) => {
   );
 };
 
-const AnchorBar = ({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) => {
+const AnchorBar = ({ className, children, dataTest = 'anchor-bar', ...props }: AnchorBarProps) => {
   return (
-    <aside className={cn(className, s.anchorBar)} {...props}>
+    <aside className={cn(className, s.anchorBar)} data-test={dataTest} {...props}>
       {children}
     </aside>
   );

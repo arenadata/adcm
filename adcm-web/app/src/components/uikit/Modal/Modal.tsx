@@ -16,6 +16,7 @@ interface ModalProps extends ModalOptions {
   children: React.ReactNode;
   className?: string;
   style?: CSSProperties;
+  dataTest?: string;
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -25,6 +26,7 @@ const Modal: React.FC<ModalProps> = ({
   className,
   style,
   children,
+  dataTest = 'modal-container',
 }) => {
   const { refs, context } = useFloating({
     open: isOpen,
@@ -41,7 +43,13 @@ const Modal: React.FC<ModalProps> = ({
       {isOpen && (
         <FloatingOverlay className={s.modalOverlay} lockScroll>
           <FloatingFocusManager context={context}>
-            <div ref={refs.setFloating} {...getFloatingProps()} className={cn(s.modal, className)} style={style}>
+            <div
+              ref={refs.setFloating}
+              {...getFloatingProps()}
+              className={cn(s.modal, className)}
+              style={style}
+              data-test={dataTest}
+            >
               {children}
             </div>
           </FloatingFocusManager>

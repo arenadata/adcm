@@ -7,7 +7,11 @@ export interface ClusterMappingToolbarProps extends React.PropsWithChildren {
 }
 
 const ClusterMappingToolbar = ({ className = '', children }: ClusterMappingToolbarProps) => {
-  return <div className={cn(s.clusterMappingToolbar, className)}>{children}</div>;
+  return (
+    <div className={cn(s.clusterMappingToolbar, className)} data-test="toolbar-container">
+      {children}
+    </div>
+  );
 };
 
 export default ClusterMappingToolbar;

@@ -8,9 +8,15 @@ interface CollapseNodeProps<T> {
   node: Node<T>;
   getNodeClassName: (node: Node<T>) => string;
   renderNodeContent: (node: Node<T>, isExpanded: boolean, onExpand: () => void) => ReactNode;
+  dataSet?: string;
 }
 
-const CollapseNode = <T,>({ node, getNodeClassName, renderNodeContent }: CollapseNodeProps<T>) => {
+const CollapseNode = <T,>({
+  node,
+  getNodeClassName,
+  renderNodeContent,
+  dataSet = 'collapse-node-container',
+}: CollapseNodeProps<T>) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = Boolean(node.children?.length);
   const children = (node.children ?? []) as Node<T>[];
@@ -22,7 +28,7 @@ const CollapseNode = <T,>({ node, getNodeClassName, renderNodeContent }: Collaps
   };
 
   return (
-    <div className={cn(s.collapseNode, getNodeClassName(node))}>
+    <div className={cn(s.collapseNode, getNodeClassName(node))} data-test={dataSet}>
       <div className={s.collapseNode__trigger}>{renderNodeContent(node, isExpanded, toggleCollapseNode)}</div>
       {hasChildren && (
         <div className={s.collapseNode__children}>

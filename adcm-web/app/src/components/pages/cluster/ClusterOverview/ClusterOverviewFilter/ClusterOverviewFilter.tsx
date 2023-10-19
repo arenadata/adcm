@@ -7,11 +7,12 @@ import { AdcmClusterStatus } from '@models/adcm';
 interface ClusterOverviewFilter {
   status: AdcmClusterStatus;
   onStatusChange: (status: AdcmClusterStatus) => void;
+  dataTest?: string;
 }
 
-const ClusterOverviewFilter = ({ status, onStatusChange }: ClusterOverviewFilter) => {
+const ClusterOverviewFilter = ({ status, onStatusChange, dataTest }: ClusterOverviewFilter) => {
   return (
-    <TabsBlock variant="secondary" className={s.clusterOverviewFilter}>
+    <TabsBlock variant="secondary" className={s.clusterOverviewFilter} dataTest={dataTest}>
       <TabButton isActive={status === AdcmClusterStatus.Up} onClick={() => onStatusChange(AdcmClusterStatus.Up)}>
         Up
       </TabButton>

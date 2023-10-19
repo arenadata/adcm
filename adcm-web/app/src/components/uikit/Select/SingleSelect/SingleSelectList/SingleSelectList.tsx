@@ -32,7 +32,7 @@ const SingleSelectList = <T,>() => {
   }, [noneLabel, outerOptions]);
 
   return (
-    <ul className={cn(s.singleSelectList, 'scroll')} style={{ maxHeight }}>
+    <ul className={cn(s.singleSelectList, 'scroll')} style={{ maxHeight }} data-test="options">
       {options.map(({ value, label, disabled, title }) => (
         <SingleSelectOptionsItem
           key={label.toString()}

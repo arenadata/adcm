@@ -16,6 +16,7 @@ export interface PaginationProps {
   frequencyComponent?: React.ReactNode;
   isNextBtn?: false | true | null;
   className?: string;
+  dataTest?: string;
 }
 
 export interface PaginationDataItem {

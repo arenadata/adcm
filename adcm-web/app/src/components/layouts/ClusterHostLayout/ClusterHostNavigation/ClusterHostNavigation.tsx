@@ -34,7 +34,7 @@ const ClusterHostNavigation: React.FC = () => {
 
   return (
     <SubNavigationWrapper>
-      <TabsBlock variant="secondary">
+      <TabsBlock variant="secondary" dataTest="tab-sub-container">
         <Tab to="host-components">Host-Components</Tab>
         <Tab to="primary-configuration">Primary Configuration</Tab>
       </TabsBlock>

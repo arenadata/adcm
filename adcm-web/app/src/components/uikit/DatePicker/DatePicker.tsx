@@ -71,7 +71,7 @@ const DatePicker = ({
         offset={8}
         dependencyWidth="parent"
       >
-        <PopoverPanelDefault className={s.datePicker__panel}>
+        <PopoverPanelDefault className={s.datePicker__panel} data-test="data-picker-popover">
           <CalendarPicker
             onSet={handleSet}
             onCancel={handleToggle}

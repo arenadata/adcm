@@ -26,7 +26,11 @@ const SingleSelectContent = <T,>() => {
   const isShowOptions = options.length > 0;
   return (
     <>
-      {isSearchable && <SingleSelectSearchFilter />}
+      {isSearchable && (
+        <div data-test="search-filter">
+          <SingleSelectSearchFilter />
+        </div>
+      )}
       {isShowOptions ? <SingleSelectList /> : <CommonSelectNoResult />}
     </>
   );
