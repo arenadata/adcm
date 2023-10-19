@@ -27,6 +27,12 @@ export const useRbacUserUpdateDialog = () => {
     useForm<RbacUserFormData>(initialFormData);
 
   useEffect(() => {
+    if (!isOpen) {
+      setFormData(initialFormData);
+    }
+  }, [isOpen, setFormData]);
+
+  useEffect(() => {
     if (user) {
       setFormData({
         ...initialFormData,
@@ -56,12 +62,6 @@ export const useRbacUserUpdateDialog = () => {
       email: isEmailValid(formData.email) ? undefined : 'Email is not correct',
     });
   }, [formData, authSettings, setErrors]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setFormData(initialFormData);
-    }
-  }, [isOpen, setFormData]);
 
   const handleClose = () => {
     setFormData(initialFormData);

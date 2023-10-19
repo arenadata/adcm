@@ -2,7 +2,7 @@ import { useMemo, useEffect } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
 import { AdcmPrototypeVersions, AdcmPrototypeVersion, AdcmLicenseStatus } from '@models/adcm';
 import { cleanupClustersActions, createCluster } from '@store/adcm/clusters/clustersActionsSlice';
-import { isClusterNameValid, required } from '@utils/validationsUtils';
+import { isClusterNameValid, isNameUniq, required } from '@utils/validationsUtils';
 
 interface CreateClusterFormData {
   product: AdcmPrototypeVersions | null;
@@ -26,6 +26,7 @@ export const useCreateClusterDialog = () => {
   const { formData, setFormData, handleChangeFormData, errors, setErrors } =
     useForm<CreateClusterFormData>(initialFormData);
 
+  const clusters = useStore((s) => s.adcm.clusters.clusters);
   const {
     isCreateClusterDialogOpen: isOpen,
     relatedData,
@@ -40,9 +41,10 @@ export const useCreateClusterDialog = () => {
     setErrors({
       name:
         (required(formData.name) ? undefined : 'Cluster name field is required') ||
-        (isClusterNameValid(formData.name) ? undefined : 'Cluster name field is incorrect'),
+        (isClusterNameValid(formData.name) ? undefined : 'Cluster name field is incorrect') ||
+        (isNameUniq(formData.name, clusters) ? undefined : 'Cluster with the same name already exists'),
     });
-  }, [formData, setErrors]);
+  }, [formData, clusters, setErrors]);
 
   const isValid = useMemo(() => {
     return (

@@ -7,7 +7,8 @@ import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/
 import LinkToLicenseText from '@commonComponents/LinkToLicenseText/LinkToLicenseText';
 
 const CreateHostProviderDialog = () => {
-  const { isOpen, relatedData, formData, isValid, onCreate, onClose, onChangeFormData } = useCreateHostProviderDialog();
+  const { isOpen, relatedData, formData, isValid, errors, onCreate, onClose, onChangeFormData } =
+    useCreateHostProviderDialog();
 
   const prototypeOptions = useMemo(
     () => getOptionsFromArray(relatedData.prototypeVersions, (x) => x.name),
@@ -81,12 +82,12 @@ const CreateHostProviderDialog = () => {
             options={prototypeVersionsOptions}
           />
         </FormField>
-        <FormField label="Name">
+        <FormField label="Name" error={errors.name}>
           <Input
             value={formData.name}
             type="text"
             onChange={handleHostProviderNameChange}
-            placeholder="Enter unique cluster name"
+            placeholder="Enter unique hostprovider name"
           />
         </FormField>
         <FormField label="Description">
