@@ -4,18 +4,9 @@ import { useRequestHostProviders } from '@pages/HostProvidersPage/useRequestHost
 import HostProvidersTableToolbar from '@pages/HostProvidersPage/HostProviderTableToolbar/HostProviderTableToolbar';
 import HostProvidersTableFooter from '@pages/HostProvidersPage/HostProvidersTableFooter/HostProvidersTableFooter';
 import Dialogs from '@pages/HostProvidersPage/Dialogs';
-import { useDispatch } from '@hooks';
-import { useEffect } from 'react';
-import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 
 const HostProvidersPage = () => {
   useRequestHostProviders();
-
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    dispatch(setBreadcrumbs([]));
-  }, [dispatch]);
 
   return (
     <TableContainer variant="easy">

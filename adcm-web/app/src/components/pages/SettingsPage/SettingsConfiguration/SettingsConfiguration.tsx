@@ -1,6 +1,4 @@
-import React, { useEffect } from 'react';
-import { useDispatch } from '@hooks';
-import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
+import React from 'react';
 import ConfigurationHeader from '@commonComponents/configuration/ConfigurationHeader/ConfigurationHeader';
 import ConfigurationFormContextProvider from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContextProvider';
 import ConfigurationSubHeader from '@commonComponents/configuration/ConfigurationSubHeader/ConfigurationSubHeader';
@@ -10,7 +8,6 @@ import { useSettingsConfiguration } from './useSettingsConfiguration';
 import s from './SettingsConfiguration.module.scss';
 
 const SettingsConfiguration: React.FC = () => {
-  const dispatch = useDispatch();
   const {
     configVersions,
     selectedConfigId,
@@ -24,10 +21,6 @@ const SettingsConfiguration: React.FC = () => {
   } = useSettingsConfiguration();
 
   const compareOptions = useSettingsConfigurationsCompare();
-
-  useEffect(() => {
-    dispatch(setBreadcrumbs([]));
-  }, [dispatch]);
 
   return (
     <div className={s.settingsConfiguration}>

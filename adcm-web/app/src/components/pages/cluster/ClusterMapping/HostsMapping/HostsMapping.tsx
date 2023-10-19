@@ -3,8 +3,13 @@ import HostContainer from './HostContainer/HostContainer';
 import ClusterMappingToolbar from '../ClusterMappingToolbar/ClusterMappingToolbar';
 import s from './HostsMapping.module.scss';
 import { SearchInput, Switch } from '@uikit';
+import { useDispatch, useStore } from '@hooks';
+import { useEffect } from 'react';
+import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 
 const HostsMapping = () => {
+  const dispatch = useDispatch();
+
   const { hostsMapping, hostsMappingFilter, handleHostsMappingFilterChange, mappingValidation } = useClusterMapping();
 
   const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -14,6 +19,20 @@ const HostsMapping = () => {
   const handleHideEmptyHostsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     handleHostsMappingFilterChange({ isHideEmptyHosts: event.target.checked });
   };
+
+  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
+  useEffect(() => {
+    if (cluster) {
+      dispatch(
+        setBreadcrumbs([
+          { href: '/clusters', label: 'Clusters' },
+          { href: `/clusters/${cluster.id}`, label: cluster.name },
+          { label: 'Mapping' },
+          { label: 'Hosts view' },
+        ]),
+      );
+    }
+  }, [cluster, dispatch]);
 
   return (
     <div className={s.hostsMapping}>

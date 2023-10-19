@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { AnchorBar, AnchorBarItem, AnchorList, Button, MarkerIcon, SearchInput, Switch, Text } from '@uikit';
 import { useClusterMapping } from '../useClusterMapping';
 import ComponentContainer from './ComponentContainer/ComponentContainer';
@@ -7,7 +7,8 @@ import s from './ComponentsMapping.module.scss';
 import cn from 'classnames';
 import { Link, useParams } from 'react-router-dom';
 import { saveMapping } from '@store/adcm/cluster/mapping/mappingSlice';
-import { useDispatch } from '@hooks';
+import { useDispatch, useStore } from '@hooks';
+import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 
 const buildServiceAnchorId = (id: number) => `anchor_${id}`;
 
@@ -16,6 +17,20 @@ const ComponentsMapping = () => {
 
   const { clusterId: clusterIdFromUrl } = useParams();
   const clusterId = Number(clusterIdFromUrl);
+
+  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
+  useEffect(() => {
+    if (cluster) {
+      dispatch(
+        setBreadcrumbs([
+          { href: '/clusters', label: 'Clusters' },
+          { href: `/clusters/${cluster.id}`, label: cluster.name },
+          { label: 'Mapping' },
+          { label: 'Components' },
+        ]),
+      );
+    }
+  }, [cluster, dispatch]);
 
   const {
     hostComponentMapping,
