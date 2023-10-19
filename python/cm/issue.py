@@ -12,6 +12,7 @@
 from functools import partial
 from typing import Iterable
 
+from api_v2.concern.serializers import ConcernSerializer
 from cm.adcm_config.config import get_prototype_config
 from cm.adcm_config.utils import proto_ref
 from cm.errors import AdcmEx
@@ -41,6 +42,7 @@ from cm.models import (
 from cm.status_api import create_concern_event, delete_concern_event
 from cm.utils import obj_ref
 from django.db.transaction import on_commit
+from djangorestframework_camel_case.util import camelize
 
 
 def check_config(obj: ADCMEntity) -> bool:  # pylint: disable=too-many-branches
@@ -472,7 +474,8 @@ def add_concern_to_object(object_: ADCMEntity, concern: ConcernItem | None) -> N
 
     object_.concerns.add(concern)
 
-    on_commit(func=partial(create_concern_event, object_=object_))
+    concern_data = camelize(data=ConcernSerializer(instance=concern).data)
+    on_commit(func=partial(create_concern_event, object_=object_, concern=concern_data))
 
 
 def remove_concern_from_object(object_: ADCMEntity, concern: ConcernItem | None) -> None:
