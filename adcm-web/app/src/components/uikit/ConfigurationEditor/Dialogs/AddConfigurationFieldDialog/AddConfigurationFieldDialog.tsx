@@ -24,13 +24,15 @@ const AddConfigurationFieldDialog = ({
 }: AddConfigurationFieldDialogProps) => {
   const [fieldName, setFieldName] = useState('');
   const [value, setValue] = useState('');
+  const [isValueValid, setIsValueValid] = useState(false);
 
   const handleFieldNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFieldName(e.target.value);
   };
 
-  const handleChange = (value: JSONPrimitive) => {
+  const handleChange = (value: JSONPrimitive, isValid = true) => {
     setValue(value as string);
+    setIsValueValid(isValid);
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -52,6 +54,7 @@ const AddConfigurationFieldDialog = ({
     <ConfigurationEditorDialog
       triggerRef={triggerRef}
       isOpen={isOpen}
+      isApplyDisabled={!isValueValid || fieldName === ''}
       onOpenChange={handleOpenChange}
       onCancel={handleCancel}
       onApply={handleApply}

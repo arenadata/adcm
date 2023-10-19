@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect } from 'react';
 import InputPassword from '@uikit/InputPassword/InputPassword';
 import ConfigurationField from './ConfigurationField';
 import { SingleSchemaDefinition } from '@models/adcm';
@@ -11,38 +11,27 @@ export interface StringControlProps {
   value: JSONPrimitive;
   fieldSchema: SingleSchemaDefinition;
   isReadonly: boolean;
-  onChange: (value: JSONPrimitive) => void;
+  onChange: (value: JSONPrimitive, isValid?: boolean) => void;
 }
 
-const SecretControl = memo(({ fieldName, fieldSchema, value, isReadonly, onChange }: StringControlProps) => {
+const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: StringControlProps) => {
   const [secret, setSecret] = useState(value as string);
   const [confirm, setConfirm] = useState(value as string);
   const [error, setError] = useState<string | undefined>(undefined);
 
-  const handleFocus = () => {
-    if (!isReadonly) {
-      setSecret('');
-      setConfirm('');
-    }
-  };
-
-  const handleSecretChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleSecretChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSecret(event.target.value);
   };
 
-  const handleConfirmChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleConfirmChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setConfirm(event.target.value);
   };
 
   useEffect(() => {
-    if (secret === confirm) {
-      onChange(secret);
-    }
+    const areEqual = secret === confirm;
+    onChange(secret, areEqual && secret !== '');
+    setError(!areEqual ? mismatchErrorText : undefined);
   }, [confirm, onChange, secret]);
-
-  const handleConfirmBlur = () => {
-    setError(secret !== confirm ? mismatchErrorText : undefined);
-  };
 
   return (
     <>
@@ -53,13 +42,7 @@ const SecretControl = memo(({ fieldName, fieldSchema, value, isReadonly, onChang
         isReadonly={isReadonly}
         onChange={onChange}
       >
-        <InputPassword
-          value={secret}
-          readOnly={isReadonly}
-          onChange={handleSecretChange}
-          onFocus={handleFocus}
-          onBlur={handleConfirmBlur}
-        />
+        <InputPassword value={secret} readOnly={isReadonly} onChange={handleSecretChange} />
       </ConfigurationField>
       {!isReadonly && (
         <ConfigurationField
@@ -69,11 +52,11 @@ const SecretControl = memo(({ fieldName, fieldSchema, value, isReadonly, onChang
           isReadonly={isReadonly}
           onChange={onChange}
         >
-          <InputPassword value={confirm} onChange={handleConfirmChange} onBlur={handleConfirmBlur} />
+          <InputPassword value={confirm} onChange={handleConfirmChange} />
         </ConfigurationField>
       )}
     </>
   );
-});
+};
 
 export default SecretControl;

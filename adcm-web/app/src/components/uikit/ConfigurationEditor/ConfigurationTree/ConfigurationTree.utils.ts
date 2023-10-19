@@ -12,15 +12,24 @@ import { ConfigurationNode, ConfigurationNodeFilter, ConfigurationNodePath } fro
 const getTitle = (keyName: string, fieldSchema: SingleSchemaDefinition) =>
   fieldSchema.title?.length ? fieldSchema.title : keyName;
 
-const getDefaultFieldSchema = (): SingleSchemaDefinition => ({
-  type: 'string',
-  readOnly: false,
-  adcmMeta: {
-    activation: null,
-    nullValue: null,
-    synchronization: null,
-  },
-});
+const getDefaultFieldSchema = (parentFieldSchema: SingleSchemaDefinition | null): SingleSchemaDefinition => {
+  const fieldSchema: SingleSchemaDefinition = {
+    type: 'string',
+    readOnly: false,
+    adcmMeta: {
+      activation: null,
+      nullValue: null,
+      isSecret: false,
+      synchronization: null,
+    },
+  };
+
+  if (parentFieldSchema?.adcmMeta.isSecret) {
+    fieldSchema.adcmMeta.isSecret = true;
+  }
+
+  return fieldSchema;
+};
 
 export const buildTreeNodes = (
   schema: ConfigurationSchema,
@@ -122,7 +131,9 @@ const buildObjectNode = (
       for (const [key, value] of Object.entries(objectValue)) {
         if (!addedFields.has(key)) {
           const fieldPath = [...path, key];
-          children.push(buildNode(key, fieldPath, node, fieldSchema.properties[key] ?? getDefaultFieldSchema(), value));
+          const childrenFieldSchema = fieldSchema.properties[key] ?? getDefaultFieldSchema(node.data.fieldSchema);
+
+          children.push(buildNode(key, fieldPath, node, childrenFieldSchema, value));
           addedFields.add(key);
         }
       }
@@ -171,11 +182,7 @@ const buildFieldNode = (
 };
 
 const buildAddFieldNode = (path: ConfigurationNodePath, parentNode: ConfigurationNode) => {
-  const fieldSchema: SingleSchemaDefinition = getDefaultFieldSchema();
-
-  if (parentNode.data.fieldSchema.adcmMeta.isSecret) {
-    fieldSchema.adcmMeta.isSecret = true;
-  }
+  const fieldSchema: SingleSchemaDefinition = getDefaultFieldSchema(parentNode.data.fieldSchema);
 
   const node: ConfigurationNode = {
     key: buildKey(path),
@@ -339,5 +346,5 @@ const determineFieldSchema = (fieldSchema: SchemaDefinition): SingleSchemaDefini
     }
   }
 
-  return getDefaultFieldSchema();
+  return getDefaultFieldSchema(null);
 };
