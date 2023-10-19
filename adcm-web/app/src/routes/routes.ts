@@ -199,7 +199,7 @@ const routes: RoutesConfigs = {
       },
     ],
   },
-  '/clusters/:clusterId/configuration': {
+  '/clusters/:clusterId/configuration/primary-configuration': {
     pageTitle: 'Clusters',
     breadcrumbs: [
       {
@@ -212,6 +212,28 @@ const routes: RoutesConfigs = {
       },
       {
         label: 'Configuration',
+      },
+      {
+        label: 'Primary configuration',
+      },
+    ],
+  },
+  '/clusters/:clusterId/configuration/config-groups': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        label: 'Configuration',
+      },
+      {
+        label: 'Configuration Groups',
       },
     ],
   },

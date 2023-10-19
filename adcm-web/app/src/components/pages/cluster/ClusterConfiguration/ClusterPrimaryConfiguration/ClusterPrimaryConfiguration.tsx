@@ -32,6 +32,7 @@ const ClusterPrimaryConfiguration: React.FC = () => {
           { href: '/clusters', label: 'Clusters' },
           { href: `/clusters/${cluster.id}`, label: cluster.name },
           { label: 'Configuration' },
+          { label: 'Primary configuration' },
         ]),
       );
     }

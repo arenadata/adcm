@@ -1,8 +1,10 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import s from './Breadcrumbs.module.scss';
 import cn from 'classnames';
 import { BreadcrumbsItemConfig } from '@routes/routes.types';
+import { useDispatch } from '@hooks';
+import { cleanupBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 
 interface BreadcrumbsProps {
   list: BreadcrumbsItemConfig[];
@@ -14,6 +16,13 @@ const BreadcrumbItem: React.FC<BreadcrumbsItemConfig> = ({ label, href }) => {
 };
 
 const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ list, className = '' }) => {
+  const location = useLocation();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(cleanupBreadcrumbs());
+  }, [location, dispatch]);
+
   return (
     <nav className={cn(s.breadcrumbs, className)}>
       <ul>

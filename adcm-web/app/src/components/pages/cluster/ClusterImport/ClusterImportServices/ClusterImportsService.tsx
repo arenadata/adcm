@@ -4,6 +4,9 @@ import ClusterImportCard, {
 import { useClusterImportsService } from './useClusterImportsService';
 import ClusterImportToolbar from '@pages/cluster/ClusterImport/ClusterImportToolbar/ClusterImportToolbar';
 import { LabeledField, Pagination, Select } from '@uikit';
+import { useDispatch, useStore } from '@hooks';
+import { useEffect } from 'react';
+import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 
 const ClusterImportsService = () => {
   const {
@@ -22,6 +25,23 @@ const ClusterImportsService = () => {
     handleServiceChange,
     totalCount,
   } = useClusterImportsService();
+
+  const dispatch = useDispatch();
+
+  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
+
+  useEffect(() => {
+    if (cluster) {
+      dispatch(
+        setBreadcrumbs([
+          { href: '/clusters', label: 'Clusters' },
+          { href: `/clusters/${cluster.id}`, label: cluster.name },
+          { label: 'Import' },
+          { label: 'Services' },
+        ]),
+      );
+    }
+  }, [cluster, dispatch]);
 
   return (
     <>

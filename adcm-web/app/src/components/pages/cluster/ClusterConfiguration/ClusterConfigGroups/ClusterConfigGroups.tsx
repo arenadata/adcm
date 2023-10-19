@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useStore } from '@hooks';
 import ConfigGroupsHeader from '@commonComponents/configGroups/ConfigGroupsHeader/ConfigGroupsHeader';
 import ConfigGroupsTable from '@commonComponents/configGroups/ConfigGroupsTable/ConfigGroupsTable';
@@ -14,12 +14,15 @@ import {
 } from '@store/adcm/cluster/configGroups/clusterConfigGroupActionsSlice';
 import { useParams } from 'react-router-dom';
 import { AdcmConfigGroup } from '@models/adcm';
+import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 
 const ClusterConfigGroups: React.FC = () => {
   const dispatch = useDispatch();
 
   const { clusterId: clusterIdFromUrl } = useParams();
   const clusterId = Number(clusterIdFromUrl);
+
+  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
 
   const { clusterConfigGroups, isLoading } = useStore((s) => s.adcm.clusterConfigGroups);
   const sortParams = useStore((s) => s.adcm.clusterConfigGroupsTable.sortParams);
@@ -39,6 +42,19 @@ const ClusterConfigGroups: React.FC = () => {
   const handleMappingConfigGroup = (configGroup: AdcmConfigGroup) => {
     dispatch(openMappingDialog(configGroup));
   };
+
+  useEffect(() => {
+    if (cluster) {
+      dispatch(
+        setBreadcrumbs([
+          { href: '/clusters', label: 'Clusters' },
+          { href: `/clusters/${cluster.id}`, label: cluster.name },
+          { label: 'Configuration' },
+          { label: 'Configuration groups' },
+        ]),
+      );
+    }
+  }, [cluster, dispatch]);
 
   return (
     <div>

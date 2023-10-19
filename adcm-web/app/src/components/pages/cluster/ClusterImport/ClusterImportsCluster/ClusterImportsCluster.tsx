@@ -4,6 +4,9 @@ import ClusterImportCard, {
 import { useClusterImports } from './useClusterImports';
 import ClusterImportToolbar from '@pages/cluster/ClusterImport/ClusterImportToolbar/ClusterImportToolbar';
 import { Pagination } from '@uikit';
+import { useDispatch, useStore } from '@hooks';
+import { useEffect } from 'react';
+import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 
 const ClusterImportsCluster = () => {
   const {
@@ -19,6 +22,23 @@ const ClusterImportsCluster = () => {
     paginationHandler,
     totalCount,
   } = useClusterImports();
+
+  const dispatch = useDispatch();
+
+  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
+
+  useEffect(() => {
+    if (cluster) {
+      dispatch(
+        setBreadcrumbs([
+          { href: '/clusters', label: 'Clusters' },
+          { href: `/clusters/${cluster.id}`, label: cluster.name },
+          { label: 'Import' },
+          { label: 'Cluster' },
+        ]),
+      );
+    }
+  }, [cluster, dispatch]);
 
   return (
     <>

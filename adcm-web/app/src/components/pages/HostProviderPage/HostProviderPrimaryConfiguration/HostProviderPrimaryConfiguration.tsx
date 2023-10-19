@@ -31,7 +31,7 @@ const HostProviderPrimaryConfiguration: React.FC = () => {
         setBreadcrumbs([
           { href: '/hostProviders', label: 'HostProviders' },
           { href: `/hostProviders/${hostProvider.id}`, label: hostProvider.name },
-          { label: 'Configuration' },
+          { label: 'Primary configuration' },
         ]),
       );
     }
