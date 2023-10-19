@@ -8,6 +8,26 @@ import {
 } from '@models/adcm';
 import { JSONValue, JSONObject, JSONPrimitive } from '@models/json';
 import { ConfigurationNode, ConfigurationNodeFilter, ConfigurationNodePath } from '../ConfigurationEditor.types';
+import { validate as validateJsonSchema } from '@utils/jsonSchemaUtils';
+
+export const validate = (schema: SchemaDefinition, configuration: JSONObject, attributes: ConfigurationAttributes) => {
+  const { errorsPaths } = validateJsonSchema(schema, configuration);
+
+  // ignore errors for not active groups
+  for (const [path, value] of Object.entries(attributes)) {
+    if (!value.isActive) {
+      for (const [errorPath] of Object.entries(errorsPaths)) {
+        if (errorPath.startsWith(path)) {
+          delete errorsPaths[errorPath];
+        }
+      }
+    }
+  }
+
+  const isValid = Object.keys(errorsPaths).length > 0;
+
+  return { isValid, errorsPaths };
+};
 
 const getTitle = (keyName: string, fieldSchema: SingleSchemaDefinition) =>
   fieldSchema.title?.length ? fieldSchema.title : keyName;

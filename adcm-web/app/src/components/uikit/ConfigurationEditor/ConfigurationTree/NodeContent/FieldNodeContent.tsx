@@ -1,5 +1,5 @@
 import { useCallback, useRef, useMemo } from 'react';
-import { Icon } from '@uikit';
+import { Icon, Tooltip } from '@uikit';
 import { Node } from '@uikit/CollapseTree2/CollapseNode.types';
 import { ConfigurationField, ConfigurationNode } from '../../ConfigurationEditor.types';
 import { nullStub, secretStub } from '../../ConfigurationEditor.constants';
@@ -11,19 +11,13 @@ import { ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
 
 interface FieldNodeContentProps {
   node: ConfigurationNode;
-  hasError: boolean;
+  error?: string;
   onClick: (node: ConfigurationNode, nodeRef: React.RefObject<HTMLElement>) => void;
   onDeleteClick: (node: ConfigurationNode, nodeRef: React.RefObject<HTMLElement>) => void;
   onFieldAttributeChange: ChangeFieldAttributesHandler;
 }
 
-const FieldNodeContent = ({
-  node,
-  hasError,
-  onClick,
-  onDeleteClick,
-  onFieldAttributeChange,
-}: FieldNodeContentProps) => {
+const FieldNodeContent = ({ node, error, onClick, onDeleteClick, onFieldAttributeChange }: FieldNodeContentProps) => {
   const ref = useRef(null);
   const fieldNode = node as Node<ConfigurationField>;
   const adcmMeta = fieldNode.data.fieldSchema.adcmMeta;
@@ -56,8 +50,7 @@ const FieldNodeContent = ({
   };
 
   const className = cn(s.nodeContent, {
-    // 'is-selected': isSelected,
-    'is-failed': hasError,
+    'is-failed': error !== undefined,
   });
 
   const value: string | number | boolean = useMemo(() => {
@@ -96,7 +89,11 @@ const FieldNodeContent = ({
         />
       )}
       {fieldNode.data.isDeletable && <Icon size={16} name="g1-delete" onClick={handleDeleteClick} />}
-      {hasError && <Icon size={14} name="alert-circle" />}
+      {error && (
+        <Tooltip label={error}>
+          <Icon size={14} name="alert-circle" />
+        </Tooltip>
+      )}
       <span className={s.nodeContent__title}>{fieldNode.data.title}: </span>
       {adcmMeta.synchronization && fieldAttributes && (
         <SynchronizedAttribute

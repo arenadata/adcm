@@ -4,9 +4,8 @@ import FieldNodeContent from './NodeContent/FieldNodeContent';
 import AddItemNodeContent from './NodeContent/AddItemNodeContent';
 import DefaultNodeContent from './NodeContent/DefaultNodeContent';
 import { ConfigurationNode, ConfigurationNodeFilter } from '../ConfigurationEditor.types';
-import { buildTreeNodes, filterTreeNodes } from './ConfigurationTree.utils';
+import { buildTreeNodes, filterTreeNodes, validate } from './ConfigurationTree.utils';
 import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
-import { validate } from '@utils/jsonSchemaUtils';
 import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from './ConfigurationTree.types';
 import s from './ConfigurationTree.module.scss';
 import cn from 'classnames';
@@ -47,8 +46,8 @@ const ConfigurationTree = memo(
   }: ConfigurationTreeProps) => {
     const tree: ConfigurationNode = buildTreeNodes(schema, configuration, attributes);
     const filteredTree = filterTreeNodes(tree, filter);
-    const { isValid, errors, errorsPaths } = validate(schema, configuration);
-    !isValid && console.error(errors);
+    const { isValid, errorsPaths } = validate(schema, configuration, attributes);
+    !isValid && console.error(errorsPaths);
 
     useEffect(() => {
       onChangeIsValid?.(isValid);
@@ -60,7 +59,7 @@ const ConfigurationTree = memo(
     };
 
     const handleRenderNodeContent = (node: ConfigurationNode, isExpanded: boolean, onExpand: () => void) => {
-      const hasError = typeof errorsPaths[node.key] === 'string';
+      const error = typeof errorsPaths[node.key] === 'string' ? (errorsPaths[node.key] as string) : undefined;
       switch (node.data.type) {
         case 'field': {
           const deleteHandler =
@@ -68,7 +67,7 @@ const ConfigurationTree = memo(
           return (
             <FieldNodeContent
               node={node}
-              hasError={hasError}
+              error={error}
               onClick={onEditField}
               onDeleteClick={deleteHandler}
               onFieldAttributeChange={onFieldAttributesChange}
@@ -86,7 +85,7 @@ const ConfigurationTree = memo(
             <DefaultNodeContent
               node={node}
               isExpanded={isExpanded}
-              hasError={hasError}
+              error={error}
               onDelete={onDeleteArrayItem}
               onExpand={onExpand}
               onFieldAttributeChange={onFieldAttributesChange}

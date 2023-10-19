@@ -10,7 +10,7 @@ import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
 
 interface DefaultNodeContentProps {
   node: ConfigurationNode;
-  hasError: boolean;
+  error?: string;
   isExpanded: boolean;
   onDelete: (node: ConfigurationNode, nodeRef: React.RefObject<HTMLElement>) => void;
   onExpand: () => void;
@@ -20,7 +20,7 @@ interface DefaultNodeContentProps {
 const DefaultNodeContent = ({
   node,
   isExpanded,
-  hasError,
+  error,
   onDelete,
   onExpand,
   onFieldAttributeChange,
@@ -54,8 +54,7 @@ const DefaultNodeContent = ({
 
   const className = cn(s.nodeContent, {
     'is-open': isExpanded,
-    // 'is-selected': isSelected,
-    'is-failed': hasError,
+    'is-failed': error !== undefined,
   });
 
   const hasChildren = Boolean(node.children?.length);
