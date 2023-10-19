@@ -35,13 +35,15 @@ const EditConfigurationFieldDialog = ({
   const isSynchronized = attributes?.isSynchronized === true;
 
   const [value, setValue] = useState<JSONPrimitive>(fieldNode.data.value);
+  const [isApplyDisabled, setIsApplyDisabled] = useState(true);
 
   const handleOpenChange = (isOpen: boolean) => {
     onOpenChange(isOpen);
   };
 
-  const handleValueChange = useCallback((value: JSONPrimitive) => {
+  const handleValueChange = useCallback((value: JSONPrimitive, isValid = true) => {
     setValue(value as JSONPrimitive);
+    setIsApplyDisabled(!isValid);
   }, []);
 
   const handleCancel = () => {
@@ -104,6 +106,7 @@ const EditConfigurationFieldDialog = ({
       isOpen={isOpen}
       onCancel={handleCancel}
       onApply={handleApply}
+      isApplyDisabled={isApplyDisabled}
       onOpenChange={handleOpenChange}
     >
       {Control && (
