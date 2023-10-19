@@ -18,6 +18,8 @@ export interface ConfigurationEditInputFieldDialogProps {
   onChange: (node: ConfigurationNode, value: JSONPrimitive) => void;
 }
 
+const multilineWidthProps = { width: '100%', maxWidth: '1280px' };
+
 const EditConfigurationFieldDialog = ({
   node,
   triggerRef,
@@ -35,6 +37,18 @@ const EditConfigurationFieldDialog = ({
   const [value, setValue] = useState<JSONPrimitive>(fieldNode.data.value);
 
   const handleOpenChange = (isOpen: boolean) => {
+    onOpenChange(isOpen);
+  };
+
+  const handleValueChange = useCallback((value: JSONPrimitive) => {
+    setValue(value as JSONPrimitive);
+  }, []);
+
+  const handleCancel = () => {
+    onOpenChange(false);
+  };
+
+  const handleApply = () => {
     if (value !== fieldNode.data.value) {
       if (value === '' && adcmMeta.nullValue !== undefined) {
         onChange(fieldNode, adcmMeta.nullValue as JSONPrimitive);
@@ -42,13 +56,8 @@ const EditConfigurationFieldDialog = ({
         onChange(fieldNode, value);
       }
     }
-
-    onOpenChange(isOpen);
+    onOpenChange(false);
   };
-
-  const handleValueChange = useCallback((value: JSONPrimitive) => {
-    setValue(value as JSONPrimitive);
-  }, []);
 
   const Control = useMemo(() => {
     if (fieldNode.data.fieldSchema.enum) {
@@ -86,8 +95,17 @@ const EditConfigurationFieldDialog = ({
     adcmMeta.isSecret,
   ]);
 
+  const widthProps = adcmMeta.stringExtra?.isMultiline ? multilineWidthProps : undefined;
+
   return (
-    <ConfigurationEditorDialog isOpen={isOpen} onOpenChange={handleOpenChange} triggerRef={triggerRef}>
+    <ConfigurationEditorDialog
+      {...widthProps}
+      triggerRef={triggerRef}
+      isOpen={isOpen}
+      onCancel={handleCancel}
+      onApply={handleApply}
+      onOpenChange={handleOpenChange}
+    >
       {Control && (
         <Control
           fieldName={fieldNode.data.title}

@@ -17,6 +17,11 @@ export default {
       options: ['medium', 'small'],
       control: { type: 'radio' },
     },
+    variant: {
+      defaultValue: 'green',
+      options: ['green', 'blue'],
+      control: { type: 'radio' },
+    },
   },
 } as Meta<typeof Switch>;
 
@@ -27,12 +32,21 @@ const SwitchWithHooks = ({ ...args }: Partial<SwitchProps>) => {
     setChecked(event.target.checked);
   };
 
-  return <Switch isToggled={checked} onChange={handleChangeCheckedBox} size={args.size} disabled={args.disabled} />;
+  return (
+    <Switch
+      isToggled={checked}
+      onChange={handleChangeCheckedBox}
+      size={args.size}
+      disabled={args.disabled}
+      variant={args.variant}
+    />
+  );
 };
 
 export const SwitchStory: Story = {
   args: {
     size: 'medium',
+    variant: 'green',
     disabled: false,
   },
   render: ({ ...args }) => {

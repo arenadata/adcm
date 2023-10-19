@@ -31,7 +31,7 @@ const ConfigurationToolbar: React.FC<ConfigurationToolbarProps> = ({ onSave, onR
         className={s.configurationToolbar__search}
       />
 
-      <Switch isToggled={filter.showAdvanced} onChange={handleShowAdvanced} label="Show advanced" />
+      <Switch isToggled={filter.showAdvanced} variant="blue" onChange={handleShowAdvanced} label="Show advanced" />
 
       <ButtonGroup className={s.configurationToolbar__buttons}>
         <Button variant="secondary" onClick={onRevert} disabled={!isViewDraft}>

@@ -20,7 +20,12 @@ const ConfigurationField = ({ label, error, fieldSchema, children, isReadonly, o
 
   return (
     <div className={s.configurationField}>
-      <FormField className={s.configurationField__control} label={label} error={error}>
+      <FormField
+        className={s.configurationField__control}
+        label={label}
+        error={error}
+        hint={fieldSchema.description ?? 'No description'}
+      >
         {children}
       </FormField>
       <div className={s.configurationField__actions}>
@@ -31,12 +36,6 @@ const ConfigurationField = ({ label, error, fieldSchema, children, isReadonly, o
           title="Reset to default"
           tooltipProps={{ placement: 'bottom' }}
           onClick={handleRevertClick}
-        />
-        <Button
-          variant="secondary"
-          iconLeft="marker-info"
-          title={fieldSchema.description}
-          tooltipProps={{ placement: 'bottom' }}
         />
       </div>
     </div>

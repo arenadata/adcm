@@ -27,6 +27,7 @@ export interface ConfigurationTreeProps {
 
 const getNodeClassName = (node: ConfigurationNode, hasError: boolean) =>
   cn(s.collapseNode, {
+    [s.collapseNode_advanced]: !hasError && node.data.fieldSchema.adcmMeta.isAdvanced,
     [s.collapseNode_failed]: hasError,
   });
 

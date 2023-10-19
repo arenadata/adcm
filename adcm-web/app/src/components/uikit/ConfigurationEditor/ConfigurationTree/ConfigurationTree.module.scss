@@ -22,6 +22,9 @@
     --node-content-background-failed: transparent;
     --node-content-color-failed: var(--color-xred);
 
+    // advanced
+    --node-content-border-advanced: var(--color-xblue);
+
     // selected
     --node-content-background-failed-selected: var(--red10);
 
@@ -50,6 +53,9 @@
     --node-content-background-failed: transparent;
     --node-content-color-failed: var(--color-red);
     --node-content-background-failed-selected: var(--red10);
+
+    // advanced
+    --node-content-border-advanced: var(--color-xblue);
 
     --node-content-arrow-color: var(--grayxLight);
 
@@ -126,6 +132,14 @@
       --collapse-node-parent-border-color: var(--node-content-border-failed);
     }
   }
+
+  &_advanced {
+    --collapse-node-child-border-color: var(--node-content-border-advanced);
+
+    & > div > div > .collapseNode {
+      --collapse-node-parent-border-color: var(--node-content-border-advanced);
+    }
+  }
 }
 
 .collapseNode_failed > div > .nodeContent {
@@ -133,21 +147,10 @@
   --node-content-background: var(--node-content-background-failed);
   --node-content-color: var(--node-content-color-failed);
 
-  &:hover {
-    --node-content-color: var(--node-content-color-failed);
-    --node-content-background: var(--node-content-background-default-hover);
-  }
+}
 
-  &:global(.is-selected) {
-    --node-content-border: var(--node-content-border-failed);
-    --node-content-color: var(--node-content-color-failed);
-    --node-content-background: var(--node-content-background-failed-selected);
-  }
-
-  &:global(.is-open) {
-    --node-content-border: var(--node-content-border-failed);
-  }
-
+.collapseNode_advanced > div > .nodeContent {
+  --node-content-border: var(--node-content-border-advanced);
 }
 
 .addArrayItemNodeContent {
