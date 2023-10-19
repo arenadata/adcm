@@ -18,6 +18,7 @@ const AccessManagerGroupsCreateDialog = () => {
     loadRelatedData,
     relatedData: { usersOptions },
     isValid,
+    errors,
   } = useCreateGroupForm();
 
   useEffect(() => {
@@ -52,13 +53,14 @@ const AccessManagerGroupsCreateDialog = () => {
       isActionDisabled={!isValid}
     >
       <FormFieldsContainer>
-        <FormField label="Group name">
+        <FormField label="Group name" error={errors.name}>
           <Input
             //
             value={formData.name}
             type="text"
             onChange={handleGroupNameChange}
             placeholder="Enter unique name"
+            autoFocus
           />
         </FormField>
         <FormField label="Description">

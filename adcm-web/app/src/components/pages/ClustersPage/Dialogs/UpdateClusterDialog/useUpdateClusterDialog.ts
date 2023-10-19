@@ -1,7 +1,7 @@
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
 import { closeClusterRenameDialog, renameCluster } from '@store/adcm/clusters/clustersActionsSlice';
-import { isClusterNameValid, required } from '@utils/validationsUtils';
+import { isClusterNameValid, isNameUniq, required } from '@utils/validationsUtils';
 
 interface RenameClusterFormData {
   name: string;
@@ -24,13 +24,6 @@ export const useUpdateClusterDialog = () => {
     return formData.name !== updatedCluster?.name;
   }, [formData, updatedCluster]);
 
-  const isClusterNameUniq = useCallback(
-    (name: string) => {
-      return !clusters.find((cluster) => cluster.name === name && cluster.id !== updatedCluster?.id);
-    },
-    [clusters, updatedCluster],
-  );
-
   useEffect(() => {
     if (updatedCluster) {
       const { name } = updatedCluster;
@@ -43,9 +36,14 @@ export const useUpdateClusterDialog = () => {
       name:
         (required(formData.name) ? undefined : 'Cluster name field is required') ||
         (isClusterNameValid(formData.name) ? undefined : 'Cluster name field is incorrect') ||
-        (isClusterNameUniq(formData.name) ? undefined : 'Cluster with the same name already exists'),
+        (isNameUniq(
+          formData.name,
+          clusters.filter(({ id }) => id !== updatedCluster?.id),
+        )
+          ? undefined
+          : 'Cluster with the same name already exists'),
     });
-  }, [formData, setErrors, isClusterNameUniq]);
+  }, [formData, clusters, updatedCluster, setErrors]);
 
   const handleClose = () => {
     dispatch(closeClusterRenameDialog());
