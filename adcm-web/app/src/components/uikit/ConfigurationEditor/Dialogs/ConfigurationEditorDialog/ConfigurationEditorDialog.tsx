@@ -7,6 +7,7 @@ export interface ConfigurationEditorDialogProps extends React.PropsWithChildren 
   isOpen: boolean;
   width?: string;
   maxWidth?: string;
+  isApplyDisabled: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onCancel: () => void;
   onApply: () => void;
@@ -17,6 +18,7 @@ const ConfigurationEditorDialog = ({
   children,
   width = '640px',
   maxWidth = '100%',
+  isApplyDisabled,
   onOpenChange,
   onCancel,
   onApply,
@@ -29,7 +31,9 @@ const ConfigurationEditorDialog = ({
           <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
-          <Button onClick={onApply}>Apply</Button>
+          <Button onClick={onApply} disabled={isApplyDisabled}>
+            Apply
+          </Button>
         </div>
       </div>
     </Modal>
