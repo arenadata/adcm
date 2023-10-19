@@ -74,7 +74,7 @@ def api_request(method: str, url: str, data: dict = None) -> Response | None:
 
 
 def post_event(
-    event: str, object_id: int | None, update: tuple[UpdateEventType, str] | None = None, concern_id: int | None = None
+    event: str, object_id: int | None, update: tuple[UpdateEventType, str] | None = None, concern: dict | None = None
 ) -> Response | None:
     if object_id is None:
         return None
@@ -85,8 +85,8 @@ def post_event(
         event_type, value = update
         changes[event_type.value.lower()] = value
 
-    if concern_id:
-        changes["id"] = concern_id
+    if concern:
+        changes.update(concern)
 
     data = {
         "event": event,
@@ -103,9 +103,11 @@ def fix_object_type(type_: str) -> str:
     return type_
 
 
-def create_concern_event(object_: ADCMEntity):
+def create_concern_event(object_: ADCMEntity, concern: dict):
     return post_event(
-        event=EventTypes.CREATE_CONCERN.format(fix_object_type(type_=object_.prototype.type)), object_id=object_.pk
+        event=EventTypes.CREATE_CONCERN.format(fix_object_type(type_=object_.prototype.type)),
+        object_id=object_.pk,
+        concern=concern,
     )
 
 
@@ -113,7 +115,7 @@ def delete_concern_event(object_: ADCMEntity, concern_id: int) -> Response | Non
     return post_event(
         event=EventTypes.DELETE_CONCERN.format(fix_object_type(type_=object_.prototype.type)),
         object_id=object_.pk,
-        concern_id=concern_id,
+        concern={"id": concern_id},
     )
 
 
