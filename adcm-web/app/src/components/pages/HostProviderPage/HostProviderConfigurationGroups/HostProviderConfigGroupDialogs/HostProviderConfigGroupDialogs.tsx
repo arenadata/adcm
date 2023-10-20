@@ -10,6 +10,7 @@ import {
   deleteHostProviderConfigGroupWithUpdate,
 } from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupActionsSlice';
 import { AdcmHostProviderConfigGroupCreateData } from '@api/adcm/hostProviderGroupConfig';
+import HostProviderConfigGroupMappingDialog from './HostProviderConfigGroupMappingDialog/HostProviderConfigGroupMappingDialog';
 
 const HostProviderConfigGroupDialogs: React.FC = () => {
   const navigate = useNavigate();
@@ -59,6 +60,8 @@ const HostProviderConfigGroupDialogs: React.FC = () => {
         onSubmit={handleDeleteConfigGroup}
         onClose={handleCloseDeleteDialog}
       />
+
+      <HostProviderConfigGroupMappingDialog />
     </>
   );
 };

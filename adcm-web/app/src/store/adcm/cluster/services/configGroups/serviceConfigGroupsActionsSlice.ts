@@ -6,6 +6,7 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmConfigGroup, AdcmHostCandidate } from '@models/adcm';
 import { AdcmClusterServiceConfigGroupCreateData } from '@api/adcm/clusterServiceGroupConfigs';
 import { getClusterServiceConfigGroups } from './serviceConfigGroupsSlice';
+import { mappedHostsToConfigGroup } from '@utils/configGroupUtils';
 
 interface AdcmClusterServiceConfigGroupActionsState {
   deleteDialog: {
@@ -91,18 +92,29 @@ type SaveClusterServiceConfigGroupMappedHostsPayload = ClusterServiceConfigGroup
 
 const saveClusterServiceConfigGroupMappedHosts = createAsyncThunk(
   'adcm/clusterConfigGroupActions/saveConfigGroupMappedHosts',
-  async (
-    { clusterId, serviceId, configGroupId, mappedHostsIds }: SaveClusterServiceConfigGroupMappedHostsPayload,
-    thunkAPI,
-  ) => {
+  async ({ clusterId, serviceId, mappedHostsIds }: SaveClusterServiceConfigGroupMappedHostsPayload, thunkAPI) => {
     try {
       thunkAPI.dispatch(setIsSaveMapping(true));
-      return await AdcmClusterServiceConfigGroupsApi.saveConfigGroupMappedHosts(
-        clusterId,
-        serviceId,
-        configGroupId,
+
+      const {
+        adcm: {
+          serviceConfigGroupsActions: {
+            mappingDialog: { configGroup },
+          },
+        },
+      } = thunkAPI.getState();
+
+      const isMappingFullSuccess = await mappedHostsToConfigGroup({
+        configGroup,
         mappedHostsIds,
-      );
+        appendHost: (configGroupId, hostId) =>
+          AdcmClusterServiceConfigGroupsApi.mappedHostToConfigGroup(clusterId, serviceId, configGroupId, hostId),
+        removeHost: (configGroupId, hostId) =>
+          AdcmClusterServiceConfigGroupsApi.unmappedHostToConfigGroup(clusterId, serviceId, configGroupId, hostId),
+        dispatch: thunkAPI.dispatch,
+      });
+
+      return thunkAPI.fulfillWithValue(isMappingFullSuccess);
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);

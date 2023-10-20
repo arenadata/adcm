@@ -6,6 +6,7 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmConfigGroup, AdcmHostCandidate } from '@models/adcm';
 import { AdcmServiceComponentConfigGroupCreateData } from '@api/adcm/serviceComponentGroupConfigs';
 import { getServiceComponentConfigGroups } from './serviceComponentConfigGroupsSlice';
+import { mappedHostsToConfigGroup } from '@utils/configGroupUtils';
 
 interface AdcmServiceComponentConfigGroupActionsState {
   deleteDialog: {
@@ -109,24 +110,43 @@ type SaveServiceComponentConfigGroupMappedHostsPayload = ServiceComponentConfigG
 const saveServiceComponentConfigGroupMappedHosts = createAsyncThunk(
   'adcm/serviceComponentConfigGroupActions/saveConfigGroupMappedHosts',
   async (
-    {
-      clusterId,
-      serviceId,
-      componentId,
-      configGroupId,
-      mappedHostsIds,
-    }: SaveServiceComponentConfigGroupMappedHostsPayload,
+    { clusterId, serviceId, componentId, mappedHostsIds }: SaveServiceComponentConfigGroupMappedHostsPayload,
     thunkAPI,
   ) => {
     try {
       thunkAPI.dispatch(setIsSaveMapping(true));
-      return await AdcmClusterServiceComponentConfigGroupsApi.saveConfigGroupMappedHosts(
-        clusterId,
-        serviceId,
-        componentId,
-        configGroupId,
+
+      const {
+        adcm: {
+          serviceComponentConfigGroupsActions: {
+            mappingDialog: { configGroup },
+          },
+        },
+      } = thunkAPI.getState();
+
+      const isMappingFullSuccess = await mappedHostsToConfigGroup({
+        configGroup,
         mappedHostsIds,
-      );
+        appendHost: (configGroupId, hostId) =>
+          AdcmClusterServiceComponentConfigGroupsApi.mappedHostToConfigGroup(
+            clusterId,
+            serviceId,
+            componentId,
+            configGroupId,
+            hostId,
+          ),
+        removeHost: (configGroupId, hostId) =>
+          AdcmClusterServiceComponentConfigGroupsApi.unmappedHostToConfigGroup(
+            clusterId,
+            serviceId,
+            componentId,
+            configGroupId,
+            hostId,
+          ),
+        dispatch: thunkAPI.dispatch,
+      });
+
+      return thunkAPI.fulfillWithValue(isMappingFullSuccess);
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);

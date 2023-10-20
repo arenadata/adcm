@@ -46,12 +46,27 @@ export class AdcmClusterConfigGroupsApi {
     return response.data;
   }
 
+  /**
+   * @deprecated
+   */
   public static async saveConfigGroupMappedHosts(clusterId: number, configGroupId: number, mappedHostsIds: number[]) {
     const response = await httpClient.post<AdcmConfigGroup>(
       `/api/v2/clusters/${clusterId}/config-groups/${configGroupId}/hosts/`,
       mappedHostsIds,
     );
     return response.data;
+  }
+
+  public static async mappedHostToConfigGroup(clusterId: number, configGroupId: number, hostId: number) {
+    await httpClient.post(`/api/v2/clusters/${clusterId}/config-groups/${configGroupId}/hosts/`, {
+      hostId,
+    });
+  }
+
+  public static async unmappedHostToConfigGroup(clusterId: number, configGroupId: number, hostId: number) {
+    await httpClient.delete<AdcmConfigGroup>(
+      `/api/v2/clusters/${clusterId}/config-groups/${configGroupId}/hosts/${hostId}/`,
+    );
   }
 
   public static async getConfigGroup(clusterId: number, configGroupId: number) {

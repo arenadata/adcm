@@ -49,6 +49,9 @@ export class AdcmHostProviderConfigGroupsApi {
     return response.data;
   }
 
+  /**
+   * @deprecated
+   */
   public static async saveConfigGroupMappedHosts(
     hostProviderId: number,
     configGroupId: number,
@@ -59,6 +62,18 @@ export class AdcmHostProviderConfigGroupsApi {
       mappedHostsIds,
     );
     return response.data;
+  }
+
+  public static async mappedHostToConfigGroup(hostProviderId: number, configGroupId: number, hostId: number) {
+    await httpClient.post(`/api/v2/hostproviders/${hostProviderId}/config-groups/${configGroupId}/hosts/`, {
+      hostId,
+    });
+  }
+
+  public static async unmappedHostToConfigGroup(hostProviderId: number, configGroupId: number, hostId: number) {
+    await httpClient.delete<AdcmConfigGroup>(
+      `/api/v2/hostproviders/${hostProviderId}/config-groups/${configGroupId}/hosts/${hostId}/`,
+    );
   }
 
   public static async getConfigGroup(hostProviderId: number, configGroupId: number) {
