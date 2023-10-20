@@ -62,6 +62,7 @@ import HostComponents from '@pages/host/HostComponents/HostComponents';
 import ServiceComponentConfigurationGroups from '@pages/cluster/service/component/ServiceComponentConfiguration/ServiceComponentConfigGroups/ServiceComponentConfigurationGroups';
 import ServiceComponentConfigGroupSingle from '@pages/cluster/service/component/ServiceComponentConfiguration/ServiceComponentConfigGroupSingle/ServiceComponentConfigGroupSingle';
 import HostProviderConfigurationGroupSingle from '@pages/HostProviderPage/HostProviderConfigurationGroupSingle/HostProviderConfigurationGroupSingle';
+import NotFoundPage from '@pages/NotFoundPage/NotFoundPage';
 
 function App() {
   return (
@@ -215,6 +216,7 @@ function App() {
               <Route path="/bundles/:bundleId" element={<BundleOverviewPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
         </UserSession>

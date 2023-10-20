@@ -471,6 +471,19 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+
+  // Error
+  '*': {
+    pageTitle: 'Error',
+    breadcrumbs: [
+      {
+        label: 'Error',
+      },
+      {
+        label: '404',
+      },
+    ],
+  },
 };
 
 export default routes;
