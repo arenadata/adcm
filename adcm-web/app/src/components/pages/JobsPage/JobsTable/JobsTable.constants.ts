@@ -45,5 +45,5 @@ export const linkByObjectTypeMap: { [key in AdcmJobObjectType]: string } = {
   [AdcmJobObjectType.Service]: 'services',
   [AdcmJobObjectType.Provider]: 'hostproviders',
   [AdcmJobObjectType.Host]: 'hosts',
-  [AdcmJobObjectType.Component]: 'clusters',
+  [AdcmJobObjectType.Component]: 'components',
 };
