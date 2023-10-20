@@ -9,18 +9,21 @@ interface AdcmHostProviderState {
   hostsCount: number;
 }
 
-const getHostsCount = createAsyncThunk('adcm/hostProvider/getHostsCount', async (hostProvider: string, thunkAPI) => {
-  try {
-    const batch = await AdcmHostsApi.getHosts(
-      { hostProvider },
-      { sortBy: '', sortDirection: 'asc' },
-      { perPage: 1, pageNumber: 1 },
-    );
-    return batch;
-  } catch (error) {
-    return thunkAPI.rejectWithValue(error);
-  }
-});
+const getHostsCount = createAsyncThunk(
+  'adcm/hostProvider/getHostsCount',
+  async (hostproviderName: string, thunkAPI) => {
+    try {
+      const batch = await AdcmHostsApi.getHosts(
+        { hostproviderName },
+        { sortBy: '', sortDirection: 'asc' },
+        { perPage: 1, pageNumber: 1 },
+      );
+      return batch;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
 
 const getHostProvider = createAsyncThunk('adcm/hostProvider/getHostProvider', async (id: number, thunkAPI) => {
   try {
