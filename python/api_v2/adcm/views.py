@@ -9,13 +9,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from api_v2.adcm.serializers import AdcmSerializer
 from api_v2.config.utils import get_config_schema
 from api_v2.config.views import ConfigLogViewSet
+from api_v2.views import CamelCaseGenericViewSet
 from cm.models import ADCM, ConfigLog, PrototypeConfig
 from rest_framework.decorators import action
+from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
+
+
+class ADCMViewSet(RetrieveModelMixin, CamelCaseGenericViewSet):
+    queryset = ADCM.objects.prefetch_related("concerns").all()
+    serializer_class = AdcmSerializer
+
+    def get_object(self, *args, **kwargs):  # pylint: disable=unused-argument
+        return super().get_queryset().first()
 
 
 class ADCMConfigView(ConfigLogViewSet):  # pylint: disable=too-many-ancestors
