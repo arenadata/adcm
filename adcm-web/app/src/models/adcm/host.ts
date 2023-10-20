@@ -7,7 +7,7 @@ export enum AdcmHostStatus {
 }
 
 export interface AdcmHostsFilter {
-  hostName?: string;
+  name?: string;
   hostProvider?: string;
   clusterName?: string;
 }

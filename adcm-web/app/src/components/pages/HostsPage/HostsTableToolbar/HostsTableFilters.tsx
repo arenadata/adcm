@@ -32,7 +32,7 @@ const HostsTableFilters = () => {
   };
 
   const handleHostNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setFilter({ hostName: event.target.value }));
+    dispatch(setFilter({ name: event.target.value }));
   };
 
   const handleHostProviderChange = (value: string | null) => {
@@ -47,7 +47,7 @@ const HostsTableFilters = () => {
     <TableFilters>
       <SearchInput
         placeholder="Search hostname"
-        value={filter.hostName || ''}
+        value={filter.name || ''}
         variant="primary"
         onChange={handleHostNameChange}
       />
