@@ -104,7 +104,7 @@ const buildNode = (
     return buildArrayNode(fieldName, path, parentNode, singleFieldSchema, fieldValue);
   } else if (fieldTypes.has(singleFieldSchema.type as string)) {
     return buildFieldNode(fieldName, path, parentNode, singleFieldSchema, fieldValue);
-  } else if (singleFieldSchema.type === undefined && singleFieldSchema.adcmMeta.enumExtra) {
+  } else if (singleFieldSchema.type === undefined && singleFieldSchema.enum) {
     return buildFieldNode(fieldName, path, parentNode, singleFieldSchema, fieldValue);
   } else {
     return buildUnknownNode(fieldName, path, parentNode, singleFieldSchema);
