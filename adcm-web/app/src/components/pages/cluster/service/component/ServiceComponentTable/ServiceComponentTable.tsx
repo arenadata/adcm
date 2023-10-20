@@ -8,11 +8,7 @@ import { columns, serviceComponentStatusMap } from './ServiceComponentTable.cons
 import ServiceComponentMaintenanceModeButton from './ServiceComponentMaintenanceModeButton/ServiceComponentMaintenanceModeButton';
 import ServiceComponentsDynamicActionsIcon from '../../ServiceComponents/ServiceComponentsDynamicActionsIcon/ServiceComponentsDynamicActionsIcon';
 
-interface ServiceComponentTableProps {
-  onClick: () => void;
-}
-
-const ServiceComponentTable: React.FC<ServiceComponentTableProps> = ({ onClick }) => {
+const ServiceComponentTable: React.FC = () => {
   const cluster = useStore((s) => s.adcm.cluster.cluster);
   const service = useStore((s) => s.adcm.service.service);
   const serviceComponent = useStore(({ adcm }) => adcm.serviceComponent.serviceComponent);
@@ -41,8 +37,10 @@ const ServiceComponentTable: React.FC<ServiceComponentTableProps> = ({ onClick }
             )}
             <ServiceComponentMaintenanceModeButton />
           </TableCell>
-          <TableCell>
-            <Button iconRight="g2-back" onClick={onClick} variant="secondary" />
+          <TableCell hasIconOnly>
+            <Link to={`/clusters/${cluster?.id}/services/${service?.id}/components/`} className="flex-inline">
+              <Button iconRight="g2-back" variant="secondary" />
+            </Link>
           </TableCell>
         </TableRow>
       )}

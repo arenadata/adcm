@@ -6,6 +6,7 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmConfigGroup, AdcmHostCandidate } from '@models/adcm';
 import { AdcmHostProviderConfigGroupCreateData } from '@api/adcm/hostProviderGroupConfig';
 import { getHostProviderConfigGroups } from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupsSlice';
+import { mappedHostsToConfigGroup } from '@utils/configGroupUtils';
 
 interface AdcmHostProviderConfigGroupActionsState {
   deleteDialog: {
@@ -89,22 +90,35 @@ type SaveHostProviderConfigGroupMappedHostsPayload = HostProviderConfigGroupPayl
 
 const saveHostProviderConfigGroupMappedHosts = createAsyncThunk(
   'adcm/hostproviderConfigGroupActions/saveConfigGroupMappedHosts',
-  async (
-    { hostProviderId, configGroupId, mappedHostsIds }: SaveHostProviderConfigGroupMappedHostsPayload,
-    thunkAPI,
-  ) => {
+  async ({ hostProviderId, mappedHostsIds }: SaveHostProviderConfigGroupMappedHostsPayload, thunkAPI) => {
     try {
       thunkAPI.dispatch(setIsSaveMapping(true));
-      return await AdcmHostProviderConfigGroupsApi.saveConfigGroupMappedHosts(
-        hostProviderId,
-        configGroupId,
+
+      const {
+        adcm: {
+          hostProviderConfigGroupActions: {
+            mappingDialog: { configGroup },
+          },
+        },
+      } = thunkAPI.getState();
+
+      const isMappingFullSuccess = await mappedHostsToConfigGroup({
+        configGroup,
         mappedHostsIds,
-      );
+        appendHost: (configGroupId, hostId) =>
+          AdcmHostProviderConfigGroupsApi.mappedHostToConfigGroup(hostProviderId, configGroupId, hostId),
+        removeHost: (configGroupId, hostId) =>
+          AdcmHostProviderConfigGroupsApi.unmappedHostToConfigGroup(hostProviderId, configGroupId, hostId),
+        dispatch: thunkAPI.dispatch,
+      });
+
+      return thunkAPI.fulfillWithValue(isMappingFullSuccess);
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
     } finally {
       thunkAPI.dispatch(closeMappingDialog());
+      thunkAPI.dispatch(getHostProviderConfigGroups(hostProviderId));
     }
   },
 );
@@ -127,7 +141,7 @@ const createInitialState = (): AdcmHostProviderConfigGroupActionsState => ({
 });
 
 const hostProviderConfigGroupActionsSlice = createSlice({
-  name: 'adcm/hostproviderConfigGroupActions',
+  name: 'adcm/hostProviderConfigGroupActions',
   initialState: createInitialState(),
   reducers: {
     cleanupActions() {

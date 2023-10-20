@@ -6,6 +6,7 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmConfigGroup, AdcmHostCandidate } from '@models/adcm';
 import { AdcmClusterConfigGroupCreateData } from '@api/adcm/clusterGroupConfig';
 import { getClusterConfigGroups } from '@store/adcm/cluster/configGroups/clusterConfigGroupsSlice';
+import { mappedHostsToConfigGroup } from '@utils/configGroupUtils';
 
 interface AdcmClusterConfigGroupActionsState {
   deleteDialog: {
@@ -89,10 +90,29 @@ type SaveClusterConfigGroupMappedHostsPayload = ClusterConfigGroupPayload & {
 
 const saveClusterConfigGroupMappedHosts = createAsyncThunk(
   'adcm/clusterConfigGroupActions/saveConfigGroupMappedHosts',
-  async ({ clusterId, configGroupId, mappedHostsIds }: SaveClusterConfigGroupMappedHostsPayload, thunkAPI) => {
+  async ({ clusterId, mappedHostsIds }: SaveClusterConfigGroupMappedHostsPayload, thunkAPI) => {
     try {
       thunkAPI.dispatch(setIsSaveMapping(true));
-      return await AdcmClusterConfigGroupsApi.saveConfigGroupMappedHosts(clusterId, configGroupId, mappedHostsIds);
+
+      const {
+        adcm: {
+          clusterConfigGroupActions: {
+            mappingDialog: { configGroup },
+          },
+        },
+      } = thunkAPI.getState();
+
+      const isMappingFullSuccess = await mappedHostsToConfigGroup({
+        configGroup,
+        mappedHostsIds,
+        appendHost: (configGroupId, hostId) =>
+          AdcmClusterConfigGroupsApi.mappedHostToConfigGroup(clusterId, configGroupId, hostId),
+        removeHost: (configGroupId, hostId) =>
+          AdcmClusterConfigGroupsApi.unmappedHostToConfigGroup(clusterId, configGroupId, hostId),
+        dispatch: thunkAPI.dispatch,
+      });
+
+      return thunkAPI.fulfillWithValue(isMappingFullSuccess);
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
