@@ -1,6 +1,6 @@
 import { httpClient } from '@api/httpClient';
 import { PaginationParams, SortParams } from '@models/table';
-import { Batch, AdcmGroup, CreateAdcmGroupPayload, UpdateAdcmGroupPayload, AdcmGroupFilter } from '@models/adcm';
+import { Batch, AdcmGroup, AdcmCreateGroupPayload, AdcmUpdateGroupPayload, AdcmGroupFilter } from '@models/adcm';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
 
@@ -17,7 +17,7 @@ export class AdcmGroupsApi {
     return response.data;
   }
 
-  public static async createGroup(payload: CreateAdcmGroupPayload) {
+  public static async createGroup(payload: AdcmCreateGroupPayload) {
     await httpClient.post('/api/v2/rbac/groups/', payload);
   }
 
@@ -26,7 +26,7 @@ export class AdcmGroupsApi {
     return response.data;
   }
 
-  public static async updateGroup(id: number, payload: UpdateAdcmGroupPayload) {
+  public static async updateGroup(id: number, payload: AdcmUpdateGroupPayload) {
     await httpClient.patch(`/api/v2/rbac/groups/${id}/`, payload);
   }
 

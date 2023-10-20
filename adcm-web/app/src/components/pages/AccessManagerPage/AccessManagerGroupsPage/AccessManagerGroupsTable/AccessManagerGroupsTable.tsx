@@ -7,6 +7,7 @@ import { setSortParams } from '@store/adcm/groups/groupsTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { AdcmGroup } from '@models/adcm';
 import { useSelectedItems } from '@uikit/hooks/useSelectedItems';
+import { openUpdateDialog } from '@store/adcm/groups/groupActionsSlice';
 
 const AccessManagerGroupsTable = () => {
   const dispatch = useDispatch();
@@ -37,6 +38,10 @@ const AccessManagerGroupsTable = () => {
     dispatch(setSortParams(sortParams));
   };
 
+  const handleOpenUpdateDialog = (group: AdcmGroup) => () => {
+    dispatch(openUpdateDialog(group));
+  };
+
   return (
     <Table
       isLoading={isLoading}
@@ -58,7 +63,7 @@ const AccessManagerGroupsTable = () => {
             <TableCell>{group.users.map((user) => user.username).join(', ')}</TableCell>
             <TableCell>{group.type}</TableCell>
             <TableCell hasIconOnly align="center">
-              <IconButton icon="g1-edit" size={32} title="Edit" />
+              <IconButton icon="g1-edit" size={32} title="Edit" onClick={handleOpenUpdateDialog(group)} />
               <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(group.id)} title="Delete" />
             </TableCell>
           </TableRow>

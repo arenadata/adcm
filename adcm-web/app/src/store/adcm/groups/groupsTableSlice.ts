@@ -4,7 +4,7 @@ import { AdcmGroupFilter } from '@models/adcm';
 
 const createInitialState = (): ListState<AdcmGroupFilter> => ({
   filter: {
-    name: undefined,
+    displayName: undefined,
     type: undefined,
   },
   paginationParams: {

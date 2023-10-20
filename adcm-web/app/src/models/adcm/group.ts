@@ -18,7 +18,7 @@ export interface AdcmGroup {
 }
 
 export interface AdcmGroupFilter {
-  name?: string;
+  displayName?: string;
   type?: string;
 }
 
@@ -26,15 +26,16 @@ export interface AdcmGroupUserPayload {
   id: number;
 }
 
-export interface CreateAdcmGroupPayload {
+export interface AdcmCreateGroupPayload {
   name: string;
   description: string;
   displayName: string;
   users: number[];
 }
 
-export interface UpdateAdcmGroupPayload {
+export interface AdcmUpdateGroupPayload {
   name: string;
+  displayName: string;
   description: string;
-  users: AdcmGroupUserPayload[];
+  users: number[];
 }
