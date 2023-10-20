@@ -1,7 +1,7 @@
 import { useDispatch, useStore } from '@hooks';
 import { Dialog } from '@uikit';
 import React from 'react';
-import { deleteHosts, closeDeleteDialog } from '@store/adcm/hosts/hostsActionsSlice';
+import { deleteHostWithUpdate, closeDeleteDialog } from '@store/adcm/hosts/hostsActionsSlice';
 
 const HostDeleteDialog: React.FC = () => {
   const dispatch = useDispatch();
@@ -29,7 +29,7 @@ const HostDeleteDialog: React.FC = () => {
   const handleConfirmDialog = () => {
     const { id } = deletableHost ?? {};
     if (id) {
-      dispatch(deleteHosts([id]));
+      dispatch(deleteHostWithUpdate(id));
     }
   };
 

@@ -6,7 +6,6 @@ import {
   AdcmClusterHost,
   AdcmClusterHostComponentsStates,
   AdcmClusterHostsFilter,
-  AddClusterHostsPayload,
 } from '@models/adcm';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { PaginationParams, SortParams } from '@models/table';
@@ -29,15 +28,6 @@ export class AdcmClusterHostsApi {
 
   public static async getHost(clusterId: number, hostId: number) {
     const response = await httpClient.get<AdcmClusterHost>(`/api/v2/clusters/${clusterId}/hosts/${hostId}/`);
-    return response.data;
-  }
-
-  public static async addClusterHosts(payload: AddClusterHostsPayload) {
-    const hostIds = payload.hostIds.map((id) => ({ hostId: id }));
-    const response = await httpClient.post<AddClusterHostsPayload>(
-      `/api/v2/clusters/${payload.clusterId}/hosts/`,
-      hostIds,
-    );
     return response.data;
   }
 

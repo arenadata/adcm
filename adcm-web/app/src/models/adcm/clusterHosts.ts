@@ -11,8 +11,8 @@ export interface AdcmClusterHostsFilter {
 }
 
 export interface AddClusterHostsPayload {
-  clusterId?: number | null;
-  hostIds: number[];
+  clusterId: number;
+  selectedHostIds: number[];
 }
 
 export enum AdcmClusterHostComponentsStatus {

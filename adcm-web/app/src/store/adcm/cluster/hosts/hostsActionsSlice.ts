@@ -2,9 +2,10 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { AdcmClusterHostsApi, AdcmClustersApi, AdcmHostsApi, RequestError } from '@api';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { getHosts } from '@store/adcm/hosts/hostsSlice';
 import { AdcmHost, AdcmMaintenanceMode } from '@models/adcm';
 import { AddClusterHostsPayload } from '@models/adcm';
+import { getClusterHosts } from './hostsSlice';
+import { rejectedFilter } from '@utils/promiseUtils';
 
 const loadHosts = createAsyncThunk('adcm/clusterHostsActions/loadHosts', async (arg, thunkAPI) => {
   try {
@@ -31,28 +32,49 @@ const unlinkHost = createAsyncThunk(
   async ({ hostId, clusterId }: UnlinkHostTogglePayload, thunkAPI) => {
     try {
       await AdcmClustersApi.unlinkHost(clusterId, hostId);
-      return thunkAPI.fulfillWithValue(null);
+      thunkAPI.dispatch(showInfo({ message: 'The host has been unlinked' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
-    } finally {
-      thunkAPI.dispatch(getHosts());
     }
+  },
+);
+
+const unlinkHostWithUpdate = createAsyncThunk(
+  'adcm/clusterHostsActions/unlinkHostWithUpdate',
+  async (arg: UnlinkHostTogglePayload, thunkAPI) => {
+    await thunkAPI.dispatch(unlinkHost(arg)).unwrap();
+    thunkAPI.dispatch(getClusterHosts(arg.clusterId));
   },
 );
 
 const addClusterHosts = createAsyncThunk(
   'adcm/clusterHostsActions/addClusterHosts',
-  async ({ clusterId, hostIds }: AddClusterHostsPayload, thunkAPI) => {
+  async ({ clusterId, selectedHostIds }: AddClusterHostsPayload, thunkAPI) => {
     try {
-      const host = await AdcmClusterHostsApi.addClusterHosts({ clusterId, hostIds });
-      return host;
+      const linkHostsPromises = await Promise.allSettled(
+        selectedHostIds.map((id) => AdcmClustersApi.linkHost(clusterId, id)),
+      );
+      const responsesList = rejectedFilter(linkHostsPromises);
+
+      if (responsesList.length > 0) {
+        throw responsesList[0];
+      }
+      const message = selectedHostIds.length > 1 ? 'All selected hosts have been added' : 'The host has been added';
+      thunkAPI.dispatch(showInfo({ message }));
+      return [];
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
-    } finally {
-      thunkAPI.dispatch(getHosts());
     }
+  },
+);
+
+const addClusterHostsWithUpdate = createAsyncThunk(
+  'adcm/clusterHostsActions/addClusterHosts',
+  async (arg: AddClusterHostsPayload, thunkAPI) => {
+    await thunkAPI.dispatch(addClusterHosts(arg)).unwrap();
+    thunkAPI.dispatch(getClusterHosts(arg.clusterId));
   },
 );
 
@@ -138,7 +160,7 @@ const clusterHostsActionsSlice = createSlice({
     builder.addCase(addClusterHosts.fulfilled, (state) => {
       clusterHostsActionsSlice.caseReducers.closeAddDialog(state);
     });
-    builder.addCase(getHosts.pending, () => {
+    builder.addCase(getClusterHosts.pending, () => {
       // hide actions dialogs, when load new hosts list (not silent refresh)
       clusterHostsActionsSlice.caseReducers.cleanupActions();
     });
@@ -163,6 +185,6 @@ export const {
   closeMaintenanceModeDialog,
 } = clusterHostsActionsSlice.actions;
 
-export { unlinkHost, loadHosts, addClusterHosts, toggleMaintenanceModeWithUpdate };
+export { unlinkHostWithUpdate, loadHosts, addClusterHostsWithUpdate, toggleMaintenanceModeWithUpdate };
 
 export default clusterHostsActionsSlice.reducer;
