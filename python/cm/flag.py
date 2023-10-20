@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from cm.hierarchy import Tree
+from cm.issue import add_concern_to_object, remove_concern_from_object
 from cm.models import (
     ADCMEntity,
     ConcernCause,
@@ -69,10 +70,10 @@ def update_hierarchy(concern: ConcernItem) -> None:
         return
 
     for object_moved_out_hierarchy in related.difference(affected):
-        object_moved_out_hierarchy.remove_from_concerns(item=concern)
+        remove_concern_from_object(object_=object_moved_out_hierarchy, concern=concern)
 
     for new_object in affected.difference(related):
-        new_object.add_to_concerns(item=concern)
+        add_concern_to_object(object_=new_object, concern=concern)
 
 
 def update_flags() -> None:

@@ -34,7 +34,7 @@ from api_v2.views import CamelCaseGenericViewSet
 from cm.adcm_config.config import get_prototype_config
 from cm.errors import AdcmEx
 from cm.job import start_task
-from cm.models import Action, ConcernType, Host, HostComponent, PrototypeConfig
+from cm.models import ADCM, Action, ConcernType, Host, HostComponent, PrototypeConfig
 from django.conf import settings
 from django.db.models import Q
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -195,3 +195,8 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
         )
 
         return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)
+
+
+class AdcmActionViewSet(ActionViewSet):  # pylint: disable=too-many-ancestors
+    def get_parent_object(self):
+        return ADCM.objects.first()

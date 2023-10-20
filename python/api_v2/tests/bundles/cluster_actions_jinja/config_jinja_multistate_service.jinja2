@@ -1,0 +1,13 @@
+{% if services.first_service.multi_state == [] %}
+- name: string
+  type: string
+  required: true
+{% elif services.first_service.multi_state == ['multi_ok'] %}
+- name: float
+  type: float
+  required: true
+{% else %}
+- name: integer
+  type: integer
+  required: true
+{% endif %}

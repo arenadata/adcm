@@ -748,16 +748,20 @@ def get_default(  # pylint: disable=too-many-branches
 
 
 def get_main_info(obj: ADCMEntity | None) -> str | None:
-    if obj.config is None:
+    if obj is None or obj.config is None:
         return None
 
     config_log = ConfigLog.objects.filter(id=obj.config.current).first()
-    if config_log:
-        _, spec, _, _ = get_prototype_config(obj.prototype)
+    if not config_log:
+        return None
 
-        if "__main_info" in config_log.config:
-            return config_log.config["__main_info"]
-        elif "__main_info/" in spec:
-            return get_default(spec["__main_info/"], obj.prototype)
+    if "__main_info" in config_log.config:
+        return config_log.config["__main_info"]
 
-    return None
+    main_info = PrototypeConfig.objects.filter(
+        prototype=obj.prototype, action=None, name="__main_info", subname=""
+    ).first()
+    if not main_info:
+        return None
+
+    return get_default(main_info, obj.prototype)

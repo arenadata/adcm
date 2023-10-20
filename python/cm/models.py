@@ -21,7 +21,6 @@ import time
 from collections.abc import Iterable, Mapping
 from copy import deepcopy
 from enum import Enum
-from functools import partial
 from itertools import chain
 from typing import Optional
 from uuid import uuid4
@@ -413,38 +412,6 @@ class ADCMEntity(ADCMModel):
     def locked(self) -> bool:
         """Check if actions could be run over entity"""
         return self.concerns.filter(blocking=True).exists()
-
-    def add_to_concerns(self, item: Optional["ConcernItem"]) -> None:
-        """Attach entity to ConcernItem to keep up with it"""
-        if not item or getattr(item, "id", None) is None:
-            return
-
-        if item in self.concerns.all():
-            return
-
-        self.concerns.add(item)
-        from cm.status_api import (  # pylint: disable=import-outside-toplevel, cyclic-import
-            create_concern_event,
-        )
-
-        transaction.on_commit(func=partial(create_concern_event, object_=self))
-
-    def remove_from_concerns(self, item: Optional["ConcernItem"]) -> None:
-        """Detach entity from ConcernItem when it outdated"""
-        if not item or not hasattr(item, "id"):
-            return
-
-        concern_id = item.id
-
-        if item not in self.concerns.all():
-            return
-
-        self.concerns.remove(item)
-        from cm.status_api import (  # pylint: disable=import-outside-toplevel, cyclic-import
-            delete_concern_event,
-        )
-
-        transaction.on_commit(func=partial(delete_concern_event, object_=self, concern_id=concern_id))
 
     def get_own_issue(self, cause: "ConcernCause") -> Optional["ConcernItem"]:
         """Get object's issue of specified cause or None"""
@@ -1546,35 +1513,6 @@ class TaskLog(ADCMModel):
 
     __error_code__ = "TASK_NOT_FOUND"
 
-    def lock_affected(self, objects: Iterable[ADCMEntity]) -> None:
-        if self.lock:
-            return
-
-        first_job = JobLog.obj.filter(task=self).order_by("id").first()
-        self.lock = ConcernItem.objects.create(
-            type=ConcernType.LOCK.value,
-            name=None,
-            reason=first_job.cook_reason(),
-            blocking=True,
-            owner=self.task_object,
-            cause=ConcernCause.JOB.value,
-        )
-        self.save()
-
-        for obj in objects:
-            obj.add_to_concerns(item=self.lock)
-
-    def unlock_affected(self) -> None:
-        self.refresh_from_db()
-
-        if not self.lock:
-            return
-
-        lock = self.lock
-        self.lock = None
-        self.save()
-        lock.delete()
-
     def cancel(self, obj_deletion=False):
         """
         Cancel running task process
@@ -2000,12 +1938,6 @@ class ConcernItem(ADCMModel):
             self.hostprovider_entities.order_by("id"),
             self.host_entities.order_by("id"),
         )
-
-    def delete(self, using=None, keep_parents=False):
-        """Explicit remove many-to-many references before deletion in order to emit signals"""
-        for entity in self.related_objects:
-            entity.remove_from_concerns(self)
-        return super().delete(using, keep_parents)
 
 
 class ADCMEntityStatus(models.TextChoices):

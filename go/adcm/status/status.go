@@ -39,10 +39,42 @@ type eventMessage struct {
 }
 
 type statusChangePayload struct {
-	Id      int    `json:"id,omitempty"`
-	Status  string `json:"status,omitempty"`
-	State   string `json:"state,omitempty"`
-	Version string `json:"version,omitempty"`
+	Id         int                        `json:"id,omitempty"`
+	Reason     *statusChangeReasonPayload `json:"reason,omitempty"`
+	IsBlocking bool                       `json:"isBlocking,omitempty"`
+	Cause      string                     `json:"cause,omitempty"`
+	Status     string                     `json:"status,omitempty"`
+	State      string                     `json:"state,omitempty"`
+	Version    string                     `json:"version,omitempty"`
+}
+
+type statusChangeReasonPayload struct {
+	Message     string                          `json:"message"`
+	Placeholder *statusChangePlaceholderPayload `json:"placeholder"`
+}
+
+type statusChangePlaceholderPayload struct {
+	Source *statusChangeSourceTargetJobPayload `json:"source,omitempty"`
+	Target *statusChangeSourceTargetJobPayload `json:"target,omitempty"`
+	Job    *statusChangeSourceTargetJobPayload `json:"job,omitempty"`
+}
+
+type statusChangeSourceTargetJobPayload struct {
+	Type   string                     `json:"type"`
+	Name   string                     `json:"name"`
+	Params *statusChangeParamsPayload `json:"params"`
+}
+
+type statusChangeParamsPayload struct {
+	AdcmId      int `json:"adcmId,omitempty"`
+	ClusterId   int `json:"clusterId,omitempty"`
+	ServiceId   int `json:"serviceId,omitempty"`
+	ComponentId int `json:"componentId,omitempty"`
+	ProviderId  int `json:"ProviderId,omitempty"`
+	HostId      int `json:"hostId,omitempty"`
+	ActionId    int `json:"actionId,omitempty"`
+	JobId       int `json:"jobId,omitempty"`
+	PrototypeId int `json:"prototypeId,omitempty"`
 }
 
 func (e eventMessage) encode() ([]byte, error) {
