@@ -10,7 +10,7 @@ const AccessManagerGroupsDeleteDialog: React.FC = () => {
   const groups = useStore(({ adcm }) => adcm.groups.groups);
 
   const isOpen = deletableId !== null;
-  const name = groups.find(({ id }) => id === deletableId)?.name;
+  const name = groups.find(({ id }) => id === deletableId)?.displayName;
 
   const handleCloseConfirm = () => {
     dispatch(setDeletableId(null));

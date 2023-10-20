@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import { Dialog, FormFieldsContainer, FormField, Input } from '@uikit';
-import { useCreateGroupForm } from './useCreateGroupForm';
+import { useUpdateGroupForm } from './useUpdateGroupForm';
 import { useDispatch, useStore } from '@hooks';
-import { closeCreateDialog } from '@store/adcm/groups/groupActionsSlice';
+import { closeUpdateDialog } from '@store/adcm/groups/groupActionsSlice';
 import MultiSelect from '@uikit/Select/MultiSelect/MultiSelect';
 
-const AccessManagerGroupsCreateDialog = () => {
+const AccessManagerGroupsUpdateGroupDialog = () => {
   const dispatch = useDispatch();
 
-  const isOpenDialog = useStore(({ adcm }) => adcm.groupsActions.createDialog.isOpen);
+  const isOpenDialog = useStore(({ adcm }) => !!adcm.groupsActions.updateDialog.group);
 
   const {
     formData,
@@ -19,7 +19,7 @@ const AccessManagerGroupsCreateDialog = () => {
     relatedData: { usersOptions },
     isValid,
     errors,
-  } = useCreateGroupForm();
+  } = useUpdateGroupForm();
 
   useEffect(() => {
     resetForm();
@@ -41,17 +41,17 @@ const AccessManagerGroupsCreateDialog = () => {
   };
 
   const handleCloseDialog = () => {
-    dispatch(closeCreateDialog());
+    dispatch(closeUpdateDialog());
   };
 
   return (
     <Dialog
-      title="Create new users' group"
+      title="Edit users' group"
       isOpen={isOpenDialog}
       onOpenChange={handleCloseDialog}
       onAction={submitForm}
       isActionDisabled={!isValid}
-      actionButtonLabel="Create"
+      actionButtonLabel="Save"
     >
       <FormFieldsContainer>
         <FormField label="Group name" error={errors.name}>
@@ -61,7 +61,6 @@ const AccessManagerGroupsCreateDialog = () => {
             type="text"
             onChange={handleGroupNameChange}
             placeholder="Enter unique name"
-            autoFocus
           />
         </FormField>
         <FormField label="Description">
@@ -85,4 +84,4 @@ const AccessManagerGroupsCreateDialog = () => {
   );
 };
 
-export default AccessManagerGroupsCreateDialog;
+export default AccessManagerGroupsUpdateGroupDialog;
