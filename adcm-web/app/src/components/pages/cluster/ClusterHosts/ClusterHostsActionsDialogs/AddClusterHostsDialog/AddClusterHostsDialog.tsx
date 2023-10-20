@@ -28,7 +28,7 @@ const AddClusterHostsDialog = () => {
   }, [isOpenDialog, resetForm, loadRelatedData]);
 
   const handleClusterHostsChange = (value: number[]) => {
-    onChangeFormData({ hostIds: value });
+    onChangeFormData({ selectedHostIds: value });
   };
 
   const handleCloseDialog = () => {
@@ -48,7 +48,7 @@ const AddClusterHostsDialog = () => {
         {hostsOptions.length > 0 && (
           <MultiSelectPanel
             options={hostsOptions}
-            value={formData.hostIds}
+            value={formData.selectedHostIds}
             onChange={handleClusterHostsChange}
             checkAllLabel="All hosts"
             searchPlaceholder="Search hosts"

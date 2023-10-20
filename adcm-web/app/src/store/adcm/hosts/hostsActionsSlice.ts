@@ -13,7 +13,6 @@ import {
   CreateAdcmHostPayload,
 } from '@models/adcm';
 import { SortParams } from '@models/table';
-import { rejectedFilter } from '@utils/promiseUtils';
 
 const loadClusters = createAsyncThunk('adcm/hostsActions/loadClusters', async (arg, thunkAPI) => {
   try {
@@ -46,7 +45,28 @@ const unlinkHost = createAsyncThunk(
   async ({ hostId, clusterId }: UnlinkHostTogglePayload, thunkAPI) => {
     try {
       await AdcmClustersApi.unlinkHost(clusterId, hostId);
-      return thunkAPI.fulfillWithValue(null);
+      thunkAPI.dispatch(showInfo({ message: 'The host has been unlinked' }));
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
+const unlinkHostWithUpdate = createAsyncThunk(
+  'adcm/hostsActions/unlinkHostWithUpdate',
+  async (arg: UnlinkHostTogglePayload, thunkAPI) => {
+    await thunkAPI.dispatch(unlinkHost(arg)).unwrap();
+    thunkAPI.dispatch(getHosts());
+  },
+);
+
+const linkHost = createAsyncThunk(
+  'adcm/hostsActions/linkHost',
+  async ({ hostId, clusterId }: UnlinkHostTogglePayload, thunkAPI) => {
+    try {
+      await AdcmClustersApi.linkHost(clusterId, hostId);
+      thunkAPI.dispatch(showInfo({ message: 'The host has been linked' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -56,17 +76,11 @@ const unlinkHost = createAsyncThunk(
   },
 );
 
-const linkHost = createAsyncThunk(
-  'adcm/hostsActions/linkHost',
-  async ({ hostId, clusterId }: UnlinkHostTogglePayload, thunkAPI) => {
-    try {
-      await AdcmClustersApi.linkHost(clusterId, hostId);
-    } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-      return thunkAPI.rejectWithValue(error);
-    } finally {
-      thunkAPI.dispatch(getHosts());
-    }
+const linkHostWithUpdate = createAsyncThunk(
+  'adcm/hostsActions/linkHostWithUpdate',
+  async (arg: UnlinkHostTogglePayload, thunkAPI) => {
+    await thunkAPI.dispatch(linkHost(arg)).unwrap();
+    thunkAPI.dispatch(getHosts());
   },
 );
 
@@ -111,23 +125,23 @@ const toggleMaintenanceModeWithUpdate = createAsyncThunk(
   },
 );
 
-const deleteHosts = createAsyncThunk('adcm/hostsActions/deleteHosts', async (ids: number[], thunkAPI) => {
+const deleteHost = createAsyncThunk('adcm/hostsActions/deleteHost', async (hostId: number, thunkAPI) => {
   try {
-    const deletePromises = await Promise.allSettled(ids.map((id) => AdcmHostsApi.deleteHost(id)));
-    const responsesList = rejectedFilter(deletePromises);
-
-    if (responsesList.length > 0) {
-      throw responsesList[0];
-    }
-    thunkAPI.dispatch(showInfo({ message: 'All selected hosts were deleted' }));
-    return [];
+    await AdcmHostsApi.deleteHost(hostId);
+    thunkAPI.dispatch(showInfo({ message: 'The host has been deleted' }));
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-    return thunkAPI.rejectWithValue([]);
-  } finally {
-    thunkAPI.dispatch(getHosts());
+    return thunkAPI.rejectWithValue(error);
   }
 });
+
+const deleteHostWithUpdate = createAsyncThunk(
+  'adcm/hostsActions/deleteHostWithUpdate',
+  async (arg: number, thunkAPI) => {
+    await thunkAPI.dispatch(deleteHost(arg)).unwrap();
+    thunkAPI.dispatch(getHosts());
+  },
+);
 
 const updateHost = createAsyncThunk('adcm/hostsActions/updateHost', async ({ id, name }: AdcmRenameArgs, thunkAPI) => {
   try {
@@ -285,13 +299,14 @@ export const {
 } = hostsActionsSlice.actions;
 
 export {
-  unlinkHost,
-  linkHost,
+  unlinkHostWithUpdate,
+  linkHostWithUpdate,
   loadClusters,
   loadHostProviders,
   createHost,
   createHostWithUpdate,
-  deleteHosts,
+  deleteHost,
+  deleteHostWithUpdate,
   toggleMaintenanceModeWithUpdate,
   updateHost,
 };
