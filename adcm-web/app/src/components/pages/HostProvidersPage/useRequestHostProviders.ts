@@ -4,13 +4,14 @@ import {
   getHostProviders,
   refreshHostProviders,
 } from '@store/adcm/hostProviders/hostProvidersSlice';
-import { loadRelatedData, cleanupRelatedData } from '@store/adcm/hostProviders/hostProvidersTableSlice';
+import { loadRelatedData, cleanupList } from '@store/adcm/hostProviders/hostProvidersTableSlice';
 import { defaultDebounceDelay } from '@constants';
 import { useEffect } from 'react';
 import {
   cleanupHostProviderDynamicActions,
   loadHostProvidersDynamicActions,
 } from '@store/adcm/hostProviders/hostProvidersDynamicActionsSlice';
+import { usePersistHostProvidersTableSettings } from './usePersistHostProvidersTableSettings';
 
 export const useRequestHostProviders = () => {
   const dispatch = useDispatch();
@@ -20,12 +21,16 @@ export const useRequestHostProviders = () => {
   const requestFrequency = useStore(({ adcm }) => adcm.hostProvidersTable.requestFrequency);
   const hostProviders = useStore(({ adcm }) => adcm.hostProviders.hostProviders);
 
+  usePersistHostProvidersTableSettings();
+
+  // load related data for  first load page
   useEffect(() => {
     dispatch(loadRelatedData());
 
     return () => {
+      // clear entitiesList data and clear table slice
       dispatch(cleanupHostProviders());
-      dispatch(cleanupRelatedData());
+      dispatch(cleanupList());
     };
   }, [dispatch]);
 

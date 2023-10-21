@@ -13,8 +13,8 @@ const HostProviderTableFilters = () => {
   const typeOptions = useMemo(
     () =>
       prototypes.map((prototype) => ({
-        value: prototype.name,
-        label: prototype.displayName || prototype.name,
+        value: prototype.displayName,
+        label: prototype.displayName,
       })),
     [prototypes],
   );
@@ -27,7 +27,7 @@ const HostProviderTableFilters = () => {
     dispatch(resetFilter());
   };
   const handlePrototypeChange = (value: string | null) => {
-    dispatch(setFilter({ prototype: value ?? undefined }));
+    dispatch(setFilter({ prototypeDisplayName: value ?? undefined }));
   };
 
   return (
@@ -42,7 +42,7 @@ const HostProviderTableFilters = () => {
         <Select
           maxHeight={200}
           placeholder="All"
-          value={filter.prototype ?? null}
+          value={filter.prototypeDisplayName ?? null}
           onChange={handlePrototypeChange}
           options={typeOptions}
           noneLabel="All"

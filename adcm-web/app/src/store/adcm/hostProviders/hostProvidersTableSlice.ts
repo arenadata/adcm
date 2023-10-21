@@ -5,14 +5,15 @@ import { AdcmPrototypesApi } from '@api';
 
 type AdcmHostProviderTableState = ListState<AdcmHostProviderFilter> & {
   relatedData: {
-    prototypes: Pick<AdcmPrototypeVersions, 'name' | 'displayName'>[];
+    prototypes: AdcmPrototypeVersions[];
   };
+  isAllDataLoaded: boolean;
 };
 
 const createInitialState = (): AdcmHostProviderTableState => ({
   filter: {
     name: undefined,
-    prototype: undefined,
+    prototypeDisplayName: undefined,
   },
   paginationParams: {
     perPage: 10,
@@ -26,6 +27,7 @@ const createInitialState = (): AdcmHostProviderTableState => ({
   relatedData: {
     prototypes: [],
   },
+  isAllDataLoaded: false,
 });
 
 const loadPrototypes = createAsyncThunk('adcm/hostProvidersTable/loadPrototype', async (arg, thunkAPI) => {
@@ -51,12 +53,24 @@ const hostProviderTableSlice = createListSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(loadPrototypes.fulfilled, (state, action) => {
-      state.relatedData.prototypes = action.payload.map(({ name, displayName }) => ({ name, displayName }));
+      state.relatedData.prototypes = action.payload;
+      state.isAllDataLoaded = true;
+    });
+    builder.addCase(loadPrototypes.rejected, (state) => {
+      state.relatedData.prototypes = [];
+      state.isAllDataLoaded = true;
     });
   },
 });
 
-export const { setPaginationParams, setSortParams, setRequestFrequency, cleanupRelatedData, setFilter, resetFilter } =
-  hostProviderTableSlice.actions;
+export const {
+  setPaginationParams,
+  setSortParams,
+  setRequestFrequency,
+  cleanupRelatedData,
+  cleanupList,
+  setFilter,
+  resetFilter,
+} = hostProviderTableSlice.actions;
 export { loadRelatedData };
 export default hostProviderTableSlice.reducer;

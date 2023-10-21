@@ -13,15 +13,15 @@ export interface AdcmHostProvider {
 }
 
 export interface AdcmHostProviderPrototype {
+  id: number;
   name: string;
   displayName: string;
   version: string;
-  type: string;
 }
 
 export interface AdcmHostProviderFilter {
   name?: string;
-  prototype?: string;
+  prototypeDisplayName?: string;
 }
 
 export interface AdcmHostProviderPayload {
