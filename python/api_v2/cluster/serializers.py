@@ -93,7 +93,7 @@ class ClusterCreateSerializer(EmptySerializer):
             ),
         ],
     )
-    description = CharField(required=False, allow_blank=True)
+    description = CharField(required=False, allow_blank=True, default="")
 
 
 class ClusterUpdateSerializer(ModelSerializer):
