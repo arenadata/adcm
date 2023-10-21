@@ -4,7 +4,7 @@ import { setFilter, resetFilter, resetSortParams } from '@store/adcm/clusters/cl
 import { Button, LabeledField, SearchInput, Select } from '@uikit';
 import TableFilters from '@commonComponents/Table/TableFilters/TableFilters';
 import { AdcmClusterStatus } from '@models/adcm';
-import { getOptionsFromEnum, getOptionsFromArray } from '@uikit/Select/Select.utils';
+import { getOptionsFromEnum } from '@uikit/Select/Select.utils';
 
 const statusOptions = getOptionsFromEnum(AdcmClusterStatus);
 
@@ -13,12 +13,15 @@ const ClustersTableFilters = () => {
 
   const {
     filter,
-    relatedData: { prototypeNames },
+    relatedData: { prototypes },
   } = useStore((s) => s.adcm.clustersTable);
 
-  const prototypeNamesOptions = useMemo(() => {
-    return getOptionsFromArray(prototypeNames, (x) => x);
-  }, [prototypeNames]);
+  const productsOptions = useMemo(() => {
+    return prototypes.map(({ name, displayName }) => ({
+      value: name,
+      label: displayName,
+    }));
+  }, [prototypes]);
 
   const handleClusterNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     dispatch(setFilter({ name: event.target.value }));
@@ -61,7 +64,7 @@ const ClustersTableFilters = () => {
           placeholder="All"
           value={filter.prototypeName ?? null}
           onChange={handleProductChange}
-          options={prototypeNamesOptions}
+          options={productsOptions}
           noneLabel="All"
         />
       </LabeledField>

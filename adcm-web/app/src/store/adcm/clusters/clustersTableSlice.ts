@@ -1,12 +1,13 @@
 import { createListSlice, createAsyncThunk } from '@store/redux';
 import { ListState } from '@models/table';
 import { AdcmPrototypesApi } from '@api';
-import { AdcmClustersFilter, AdcmPrototypeType } from '@models/adcm';
+import { AdcmClustersFilter, AdcmPrototypeType, AdcmPrototypeVersions } from '@models/adcm';
 
 type AdcmClustersTableState = ListState<AdcmClustersFilter> & {
   relatedData: {
-    prototypeNames: string[];
+    prototypes: AdcmPrototypeVersions[];
   };
+  isAllDataLoaded: boolean;
 };
 
 const createInitialState = (): AdcmClustersTableState => ({
@@ -25,8 +26,9 @@ const createInitialState = (): AdcmClustersTableState => ({
     sortDirection: 'asc',
   },
   relatedData: {
-    prototypeNames: [],
+    prototypes: [],
   },
+  isAllDataLoaded: false,
 });
 
 const loadPrototypeVersions = createAsyncThunk('adcm/clusters/loadPrototypeVersions', async (arg, thunkAPI) => {
@@ -47,13 +49,16 @@ const clustersTableSlice = createListSlice({
   createInitialState,
   reducers: {
     cleanupRelatedData(state) {
-      state.relatedData.prototypeNames = [];
+      state.relatedData.prototypes = [];
     },
   },
   extraReducers: (builder) => {
     builder.addCase(loadPrototypeVersions.fulfilled, (state, action) => {
-      const prototypeNames = action.payload.map((x) => x.name);
-      state.relatedData.prototypeNames = [...new Set(prototypeNames)];
+      state.relatedData.prototypes = action.payload;
+      state.isAllDataLoaded = true;
+    });
+    builder.addCase(loadPrototypeVersions.rejected, (state) => {
+      state.relatedData.prototypes = [];
     });
   },
 });
