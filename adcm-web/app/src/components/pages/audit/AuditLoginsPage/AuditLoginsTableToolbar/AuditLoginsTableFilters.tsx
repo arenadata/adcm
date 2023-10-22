@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useStore, useDispatch } from '@hooks';
 import { setFilter, resetFilter } from '@store/adcm/audit/auditLogins/auditLoginsTableSlice';
-import { Button, LabeledField, Select, DatePicker, SearchInput } from '@uikit';
+import { Button, LabeledField, Select, DatePicker, SearchInput, ButtonGroup } from '@uikit';
 import TableFilters from '@commonComponents/Table/TableFilters/TableFilters';
 import { loginsResultOptions } from '@pages/audit/AuditLoginsPage/AuditLoginsTable/AuditLoginsTable.constants';
 import { AdcmAuditLoginResultType } from '@models/adcm';
@@ -15,7 +15,7 @@ const AuditLoginsTableFilters = () => {
   const endDate = useMemo(() => new Date(filter.timeTo), [filter.timeTo]);
 
   const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setFilter({ username: event.target.value }));
+    dispatch(setFilter({ login: event.target.value }));
   };
 
   const handleLoginResultChange = (value: AdcmAuditLoginResultType | null) => {
@@ -40,7 +40,7 @@ const AuditLoginsTableFilters = () => {
     <TableFilters>
       <SearchInput
         placeholder="Search login"
-        value={filter.username || ''}
+        value={filter.login || ''}
         variant="primary"
         onChange={handleUsernameChange}
       />
@@ -60,7 +60,9 @@ const AuditLoginsTableFilters = () => {
       <LabeledField label="to" direction="row">
         <DatePicker value={endDate} onSubmit={handleTimeTo} minDate={startDate} />
       </LabeledField>
-      <Button variant="secondary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
+      <ButtonGroup>
+        <Button variant="secondary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
+      </ButtonGroup>
     </TableFilters>
   );
 };
