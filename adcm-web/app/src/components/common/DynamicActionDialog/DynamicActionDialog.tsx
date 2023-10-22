@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useState, useEffect } from 'react';
+import React, { ChangeEvent, useState, useEffect, useMemo } from 'react';
 import { Checkbox, Dialog } from '@uikit';
 import DynamicActionSteps from '@commonComponents/DynamicActionDialog/DynamicActionSteps/DynamicActionSteps';
 import {
@@ -19,17 +19,15 @@ const DynamicActionDialog: React.FC<DynamicActionDialogProps> = ({ clusterId, ac
   const [localActionRunConfig, setLocalActionRunConfig] = useState<AdcmDynamicActionRunConfig>(() => {
     return getDefaultRunConfig();
   });
-
-  const dynamicActionTypes = getDynamicActionTypes(actionDetails);
   const [isShowDisclaimer, setIsShowDisclaimer] = useState(false);
+
+  const dynamicActionTypes = useMemo(() => {
+    return getDynamicActionTypes(actionDetails);
+  }, [actionDetails]);
 
   useEffect(() => {
     setIsShowDisclaimer(dynamicActionTypes.includes(DynamicActionType.Confirm));
   }, [dynamicActionTypes, setIsShowDisclaimer]);
-
-  const handleCancel = () => {
-    onCancel();
-  };
 
   const handleSubmit = (data: Partial<AdcmDynamicActionRunConfig>) => {
     const newActionRunConfig = { ...localActionRunConfig, ...data };
@@ -45,8 +43,8 @@ const DynamicActionDialog: React.FC<DynamicActionDialogProps> = ({ clusterId, ac
   const commonDialogOptions = {
     isOpen: true,
     title: `Run an action: ${actionDetails.displayName}`,
-    onOpenChange: handleCancel,
-    onCancel: handleCancel,
+    onOpenChange: onCancel,
+    onCancel: onCancel,
   };
 
   if (isShowDisclaimer) {
