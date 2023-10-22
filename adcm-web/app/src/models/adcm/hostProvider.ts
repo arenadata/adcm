@@ -10,12 +10,6 @@ export interface AdcmHostProvider {
   concerns: AdcmConcerns[];
   isUpgradable: boolean;
   mainInfo: string;
-  cluster: AdcmHostProviderCluster;
-}
-
-export interface AdcmHostProviderCluster {
-  id: number;
-  name: string;
 }
 
 export interface AdcmHostProviderPrototype {
