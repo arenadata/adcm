@@ -18,7 +18,7 @@ export interface AdcmRole {
 
 export interface AdcmRolesFilter {
   type: string;
-  name?: string;
+  displayName?: string;
 }
 
 export interface AdcmRoleProduct {

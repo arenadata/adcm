@@ -10,7 +10,7 @@ const AccessManagerRolesTableFilters = () => {
   const { filter } = useStore((s) => s.adcm.rolesTable);
 
   const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setFilter({ name: event.target.value }));
+    dispatch(setFilter({ displayName: event.target.value }));
   };
 
   const handleResetFiltersClick = () => {
@@ -20,7 +20,12 @@ const AccessManagerRolesTableFilters = () => {
 
   return (
     <TableFilters>
-      <SearchInput placeholder="Search role" value={filter.name || ''} variant="primary" onChange={handleNameChange} />
+      <SearchInput
+        placeholder="Search role"
+        value={filter.displayName || ''}
+        variant="primary"
+        onChange={handleNameChange}
+      />
       <Button variant="secondary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
     </TableFilters>
   );
