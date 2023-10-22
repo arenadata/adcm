@@ -1,22 +1,25 @@
 import { useDispatch, usePersistSettings, useStore } from '@hooks';
-import { AdcmAuditLoginFilter } from '@models/adcm';
+import { AdcmAuditOperationFilter } from '@models/adcm';
 import {
   setFilter,
   setPaginationParams,
   setRequestFrequency,
   setSortParams,
-} from '@store/adcm/audit/auditLogins/auditLoginsTableSlice';
+} from '@store/adcm/audit/auditOperations/auditOperationsTableSlice';
 import { mergePaginationParams } from '@hooks/usePersistSettings';
 
 const mergeFilters = (
-  filterFromStorage: AdcmAuditLoginFilter,
-  actualFilter: AdcmAuditLoginFilter,
-): AdcmAuditLoginFilter => {
-  const result: AdcmAuditLoginFilter = {
+  filterFromStorage: AdcmAuditOperationFilter,
+  actualFilter: AdcmAuditOperationFilter,
+): AdcmAuditOperationFilter => {
+  const result: AdcmAuditOperationFilter = {
     ...actualFilter,
     ...filterFromStorage,
-    login: filterFromStorage.login || undefined,
-    loginResult: filterFromStorage.loginResult || undefined,
+    objectName: filterFromStorage.objectName || undefined,
+    username: filterFromStorage.username || undefined,
+    objectType: filterFromStorage.objectType || undefined,
+    operationType: filterFromStorage.operationType || undefined,
+    operationResult: filterFromStorage.operationResult || undefined,
     timeFrom: filterFromStorage.timeFrom || actualFilter.timeFrom,
     timeTo: filterFromStorage.timeTo || actualFilter.timeTo,
   };
@@ -24,19 +27,19 @@ const mergeFilters = (
   return result;
 };
 
-export const usePersistAuditLoginsTableSettings = () => {
+export const usePersistAuditOperationsTableSettings = () => {
   const dispatch = useDispatch();
 
-  const filter = useStore(({ adcm }) => adcm.auditLoginsTable.filter);
-  const sortParams = useStore(({ adcm }) => adcm.auditLoginsTable.sortParams);
-  const paginationParams = useStore(({ adcm }) => adcm.auditLoginsTable.paginationParams);
-  const requestFrequency = useStore(({ adcm }) => adcm.auditLoginsTable.requestFrequency);
+  const filter = useStore(({ adcm }) => adcm.auditOperationsTable.filter);
+  const sortParams = useStore(({ adcm }) => adcm.auditOperationsTable.sortParams);
+  const paginationParams = useStore(({ adcm }) => adcm.auditOperationsTable.paginationParams);
+  const requestFrequency = useStore(({ adcm }) => adcm.auditOperationsTable.requestFrequency);
 
   const { perPage } = paginationParams;
 
   usePersistSettings(
     {
-      localStorageKey: 'adcm/auditLoginsTable',
+      localStorageKey: 'adcm/auditOperationsTable',
       settings: {
         filter,
         sortParams,

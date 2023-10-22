@@ -36,6 +36,6 @@ const auditOperationsTableStateSlice = createListSlice({
   reducers: {},
 });
 
-export const { setPaginationParams, setSortParams, setRequestFrequency, setFilter, resetFilter } =
+export const { setPaginationParams, setSortParams, setRequestFrequency, setFilter, resetFilter, cleanupList } =
   auditOperationsTableStateSlice.actions;
 export default auditOperationsTableStateSlice.reducer;
