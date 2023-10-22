@@ -2,19 +2,18 @@ import React, { useMemo } from 'react';
 import { useDispatch, useStore } from '@hooks';
 import TableFilters from '@commonComponents/Table/TableFilters/TableFilters';
 import { Button, LabeledField, SearchInput, Select } from '@uikit';
-import { getStatusLabel } from '@utils/humanizationUtils';
 import { resetFilter, resetSortParams, setFilter } from '@store/adcm/cluster/hosts/hostsTableSlice';
 
 const ClusterHostsTableFilters = () => {
   const dispatch = useDispatch();
 
   const filter = useStore(({ adcm }) => adcm.clusterHostsTable.filter);
-  const hostProviders = useStore(({ adcm }) => adcm.hostsTable.relatedData.hostProviders);
+  const hostProviders = useStore(({ adcm }) => adcm.clusterHostsTable.relatedData.hostProviders);
 
   const hostProviderOptions = useMemo(() => {
     return hostProviders.map(({ name }) => ({
       value: name,
-      label: getStatusLabel(name),
+      label: name,
     }));
   }, [hostProviders]);
 
