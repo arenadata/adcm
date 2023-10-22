@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { useStore, useDispatch, useRequestTimer, useDebounce } from '@hooks';
 import { defaultDebounceDelay } from '@constants';
 import { cleanupJobs, getJobs, refreshJobs } from '@store/adcm/jobs/jobsSlice';
+import { cleanupList } from '@store/adcm/jobs/jobsTableSlice';
+import { usePersistJobsTableSettings } from './usePersistJobsTableSettings';
 
 export const useRequestJobs = () => {
   const dispatch = useDispatch();
@@ -10,9 +12,12 @@ export const useRequestJobs = () => {
   const paginationParams = useStore((s) => s.adcm.jobsTable.paginationParams);
   const { requestFrequency } = useStore(({ adcm }) => adcm.jobsTable);
 
+  usePersistJobsTableSettings();
+
   useEffect(() => {
     return () => {
       dispatch(cleanupJobs());
+      dispatch(cleanupList());
     };
   }, [dispatch]);
 
