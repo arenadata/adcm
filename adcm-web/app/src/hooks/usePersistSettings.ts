@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocalStorage } from '@hooks/useLocalStorage';
 import { PaginationParams } from '@models/table';
+import { useStore } from '@hooks/useStore';
 
 type UsePersistSettingsProps<T> = {
   localStorageKey: string;
@@ -8,6 +9,8 @@ type UsePersistSettingsProps<T> = {
   isReadyToLoad: boolean;
   onSettingsLoaded: (settings: T) => void;
 };
+
+const getTableSettingKey = (userName: string, tableKey: string) => `${userName}_${tableKey}`;
 
 const mergePaginationParams = (perPage: number | undefined, paginationParams: PaginationParams): PaginationParams => {
   return perPage === undefined
@@ -19,10 +22,12 @@ const mergePaginationParams = (perPage: number | undefined, paginationParams: Pa
 };
 
 export const usePersistSettings = <T>(props: UsePersistSettingsProps<T>, deps: unknown[]) => {
+  const username = useStore(({ auth }) => auth.username);
+
   const [isLoaded, setIsLoaded] = useState(false);
 
   const [dataFromLocalStorage, storeDataToLocalStorage] = useLocalStorage({
-    key: props.localStorageKey,
+    key: getTableSettingKey(username, props.localStorageKey),
     initData: props.settings,
   });
 
