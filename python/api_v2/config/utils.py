@@ -520,7 +520,12 @@ class Variant(Field):
         config: ConfigLog | None = (
             ConfigLog.objects.get(id=self.object_.config.current).config if self.object_.config else None
         )
-        return get_variant(obj=self.object_, conf=config, limits=self.limits)
+        values = get_variant(obj=self.object_, conf=config, limits=self.limits)
+
+        if not values:
+            return [None]
+
+        return values
 
     @property
     def string_extra(self) -> dict | None:

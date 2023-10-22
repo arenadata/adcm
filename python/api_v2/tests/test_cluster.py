@@ -220,10 +220,16 @@ class TestCluster(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 4)
+        self.assertEqual(len(response.json()), 5)
         self.assertListEqual(
             [prototype["displayName"] for prototype in response.json()],
-            ["service_1", "service_2", "service_3_manual_add", "service_4_save_config_without_required_field"],
+            [
+                "service_1",
+                "service_2",
+                "service_3_manual_add",
+                "service_4_save_config_without_required_field",
+                "service_5_variant_type_without_values",
+            ],
         )
 
     def test_service_create_success(self):
