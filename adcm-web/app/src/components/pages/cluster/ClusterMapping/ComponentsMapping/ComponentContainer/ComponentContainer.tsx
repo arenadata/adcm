@@ -94,6 +94,9 @@ const ComponentContainer = ({
           {!componentMappingValidation.isValid && !componentMappingValidation.constraintsValidationResult.isValid && (
             <MappingError message={componentMappingValidation.constraintsValidationResult.error} />
           )}
+          {!componentMappingValidation.isValid && !componentMappingValidation.requireValidationResults.isValid && (
+            <MappingError message={componentMappingValidation.requireValidationResults.error} />
+          )}
           <AddMappingButton
             className={s.componentContainerHeader__add}
             ref={addIconRef}
