@@ -7,6 +7,8 @@ variable:
   items:
     string: string
     integer: integer
+  required_items:
+    - string
 string:
   match: string
 integer:

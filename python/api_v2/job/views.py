@@ -13,8 +13,7 @@ from api.job.views import VIEW_JOBLOG_PERMISSION
 from api_v2.job.serializers import JobRetrieveSerializer
 from api_v2.task.serializers import JobListSerializer
 from api_v2.views import CamelCaseGenericViewSet
-from cm.models import JobLog, JobStatus
-from cm.status_api import Event
+from cm.models import JobLog
 from rest_framework.decorators import action
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
@@ -42,8 +41,6 @@ class JobViewSet(
         job: JobLog = get_object_for_user(request.user, VIEW_JOBLOG_PERMISSION, JobLog, id=pk)
         check_custom_perm(request.user, "change", JobLog, pk)
 
-        event = Event()
-        event.set_job_status(job=job, status=JobStatus.ABORTED.value)
-        job.cancel(event)
+        job.cancel()
 
         return Response(status=HTTP_200_OK)

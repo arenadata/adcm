@@ -21,7 +21,7 @@ from api_v2.views import CamelCaseGenericViewSet
 from audit.utils import audit
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
-from cm.models import ConfigLog
+from cm.models import ConfigLog, PrototypeConfig
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
 from rest_framework.exceptions import NotFound
@@ -90,10 +90,12 @@ class ConfigLogViewSet(
         serializer = self.get_serializer(data=request.data, context={"object_": parent_object})
         serializer.is_valid(raise_exception=True)
 
+        prototype_configs = PrototypeConfig.objects.filter(prototype=parent_object.prototype, type="json", action=None)
+
         config_log = update_obj_config(
             obj_conf=parent_object.config,
             config=represent_string_as_json_type(
-                prototype=parent_object.prototype, value=serializer.validated_data["config"]
+                prototype_configs=prototype_configs, value=serializer.validated_data["config"]
             ),
             attr=convert_adcm_meta_to_attr(adcm_meta=serializer.validated_data["attr"]),
             description=serializer.validated_data.get("description", ""),

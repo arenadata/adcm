@@ -14,7 +14,6 @@ from api.job.views import VIEW_TASKLOG_PERMISSION
 from api_v2.task.filters import TaskFilter
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
-from cm.job import cancel_task
 from cm.models import TaskLog
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from rest_framework.decorators import action
@@ -38,6 +37,6 @@ class TaskViewSet(
     def terminate(self, request: Request, pk: int) -> Response:
         task = get_object_for_user(request.user, VIEW_TASKLOG_PERMISSION, TaskLog, id=pk)
         check_custom_perm(request.user, "change", TaskLog, task)
-        cancel_task(task)
+        task.cancel()
 
         return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)

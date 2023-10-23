@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.config.utils import get_config_schema
+from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.group_config.serializers import GroupConfigSerializer
 from api_v2.host.serializers import HostGroupConfigSerializer
 from api_v2.views import CamelCaseModelViewSet
@@ -27,7 +27,7 @@ from adcm.permissions import VIEW_GROUP_CONFIG_PERM, check_config_perm
 
 
 class GroupConfigViewSet(
-    PermissionListMixin, GetParentObjectMixin, CamelCaseModelViewSet
+    PermissionListMixin, GetParentObjectMixin, ConfigSchemaMixin, CamelCaseModelViewSet
 ):  # pylint: disable=too-many-ancestors
     queryset = GroupConfig.objects.order_by("name")
     serializer_class = GroupConfigSerializer
@@ -68,12 +68,6 @@ class GroupConfigViewSet(
     def host_candidates(self, request: Request, *args, **kwargs):  # pylint: disable=unused-argument
         group_config: GroupConfig = self.get_object()
         hosts = group_config.host_candidate()
-        serializer = HostGroupConfigSerializer(self.paginate_queryset(queryset=hosts), many=True)
+        serializer = HostGroupConfigSerializer(instance=hosts, many=True)
 
-        return self.get_paginated_response(data=serializer.data)
-
-    @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
-    def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        schema = get_config_schema(object_=self.get_object())
-
-        return Response(data=schema, status=HTTP_200_OK)
+        return Response(data=serializer.data, status=HTTP_200_OK)

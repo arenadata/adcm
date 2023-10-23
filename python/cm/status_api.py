@@ -13,6 +13,7 @@
 import json
 from collections import defaultdict
 from collections.abc import Iterable
+from enum import Enum
 from urllib.parse import urljoin
 
 import requests
@@ -24,7 +25,6 @@ from cm.models import (
     ClusterObject,
     Host,
     HostComponent,
-    JobLog,
     ServiceComponent,
     TaskLog,
 )
@@ -33,35 +33,18 @@ from requests import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 
-class Event:
-    def __init__(self):
-        self.events = []
+class EventTypes:
+    CREATE_CONCERN = "create_{}_concern"
+    DELETE_CONCERN = "delete_{}_concern"
+    UPDATE_HOSTCOMPONENTMAP = "update_hostcomponentmap"
+    CREATE_CONFIG = "create_{}_config"
+    UPDATE = "update_{}"
 
-    def __del__(self):
-        self.send_state()
 
-    def clear_state(self):
-        self.events = []
-
-    def send_state(self):
-        while self.events:
-            try:
-                func, args = self.events.pop(0)
-                func(*args)
-            except IndexError:
-                pass
-
-    def set_object_state(self, obj, state):
-        self.events.append((set_obj_state, (obj, state)))
-
-    def change_object_multi_state(self, obj, multi_state):
-        self.events.append((change_obj_multi_state, (obj, multi_state)))
-
-    def set_job_status(self, job, status):
-        self.events.append((set_job_status, (job, status)))
-
-    def set_task_status(self, task, status):
-        self.events.append((set_task_status, (task, status)))
+class UpdateEventType(Enum):
+    STATE = "state"
+    STATUS = "status"
+    VERSION = "version"
 
 
 def api_request(method: str, url: str, data: dict = None) -> Response | None:
@@ -90,72 +73,69 @@ def api_request(method: str, url: str, data: dict = None) -> Response | None:
         return None
 
 
-def post_event(event: str, object_id: int | None, object_type: str, details: dict = None) -> Response | None:
+def post_event(
+    event: str, object_id: int | None, update: tuple[UpdateEventType, str] | None = None, concern: dict | None = None
+) -> Response | None:
     if object_id is None:
         return None
 
-    if details is None:
-        details = {"type": None, "value": None}
+    changes = {}
+
+    if update:
+        event_type, value = update
+        changes[event_type.value.lower()] = value
+
+    if concern:
+        changes.update(concern)
 
     data = {
         "event": event,
-        "object": {
-            "type": object_type,
-            "id": object_id,
-            "details": details,
-        },
+        "object": {"id": object_id, **({"changes": changes} if changes else {})},
     }
 
     return api_request(method="post", url="event/", data=data)
 
 
-def set_job_status(job: JobLog, status: str) -> Response | None:
+def fix_object_type(type_: str) -> str:
+    if type_ == "provider":
+        return "hostprovider"
+
+    return type_
+
+
+def create_concern_event(object_: ADCMEntity, concern: dict):
     return post_event(
-        event="change_job_status", object_id=job.pk, object_type="job", details={"type": "status", "value": status}
+        event=EventTypes.CREATE_CONCERN.format(fix_object_type(type_=object_.prototype.type)),
+        object_id=object_.pk,
+        concern=concern,
     )
 
 
-def set_task_status(task: TaskLog, status: str) -> Response | None:
+def delete_concern_event(object_: ADCMEntity, concern_id: int) -> Response | None:
     return post_event(
-        event="change_job_status", object_id=task.pk, object_type="task", details={"type": "status", "value": status}
+        event=EventTypes.DELETE_CONCERN.format(fix_object_type(type_=object_.prototype.type)),
+        object_id=object_.pk,
+        concern={"id": concern_id},
     )
 
 
-def set_obj_state(obj: ADCMEntity, state: str) -> Response | None:
-    if not hasattr(obj, "prototype"):
-        return None
+def update_hostcomponent_event(cluster: Cluster):
+    return post_event(event=EventTypes.UPDATE_HOSTCOMPONENTMAP, object_id=cluster.pk)
 
-    object_type = obj.prototype.type
-    if object_type == "adcm":
-        return None
 
-    if object_type not in {"cluster", "service", "host", "provider", "component"}:
-        logger.error("Unknown object type: '%s'", object_type)
-        return None
-
+def create_config_event(object_: ADCMEntity):
     return post_event(
-        event="change_state", object_id=obj.pk, object_type=object_type, details={"type": "state", "value": state}
+        event=EventTypes.CREATE_CONFIG.format(fix_object_type(type_=object_.prototype.type)), object_id=object_.pk
     )
 
 
-def change_obj_multi_state(obj: ADCMEntity, multi_state: str) -> Response | None:
-    if not hasattr(obj, "prototype"):
-        return None
+def update_event(object_: ADCMEntity | TaskLog, update: tuple[UpdateEventType, str]):
+    if isinstance(object_, ADCMEntity):
+        object_id, object_type = object_.pk, object_.prototype.type
+    else:
+        object_id, object_type = object_.pk, "task"
 
-    object_type = obj.prototype.type
-    if object_type == "adcm":
-        return None
-
-    if object_type not in {"cluster", "service", "host", "provider", "component"}:
-        logger.error("Unknown object type: '%s'", object_type)
-        return None
-
-    return post_event(
-        event="change_state",
-        object_id=obj.pk,
-        object_type=object_type,
-        details={"type": "multi_state", "value": multi_state},
-    )
+    return post_event(event=EventTypes.UPDATE.format(object_type), object_id=object_id, update=update)
 
 
 def get_raw_status(url: str) -> int:
@@ -284,7 +264,7 @@ def make_ui_service_status(service: ClusterObject, host_components: Iterable[Hos
     return {
         "id": service.id,
         "name": service.display_name,
-        "status": 32 if service_map is None else service_map.get("status", 0),
+        "status": 32 if service_map is None else service_map.get("STATUS", 0),
         "hc": comp_list,
     }
 
@@ -306,7 +286,7 @@ def make_ui_cluster_status(cluster: Cluster, host_components: Iterable[HostCompo
 
     return {
         "name": cluster.name,
-        "status": 32 if cluster_map is None else cluster_map.get("status", 0),
+        "status": 32 if cluster_map is None else cluster_map.get("STATUS", 0),
         "chilren": {  # backward compatibility typo
             "hosts": host_list,
             "services": service_list,
@@ -332,6 +312,6 @@ def make_ui_host_status(host: Host, host_components: Iterable[HostComponent]) ->
     return {
         "id": host.id,
         "name": host.fqdn,
-        "status": 32 if host_map is None else host_map.get("status", 0),
+        "status": 32 if host_map is None else host_map.get("STATUS", 0),
         "hc": comp_list,
     }

@@ -217,12 +217,9 @@ def check_adcm_config(conf_file: Path) -> Any:
 
                 error_msgs.append(f"line {error.line}: {error}")
 
-        raise_adcm_ex(
-            code="INVALID_OBJECT_DEFINITION",
-            msg=f'"{conf_file}" line {e.line} error: {e}',
-            args=os.linesep.join(error_msgs),
-        )
-        return {}
+        msg = f"'{conf_file}' line {e.line} error: {e}\n{os.linesep.join(error_msgs)}"
+        logger.error(msg=msg)
+        raise AdcmEx(code="INVALID_OBJECT_DEFINITION", msg=msg) from e
 
 
 def read_definition(conf_file: Path) -> dict:

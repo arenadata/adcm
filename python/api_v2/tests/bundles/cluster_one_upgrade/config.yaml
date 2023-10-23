@@ -95,7 +95,7 @@
   type: service
   version: *version
   config: *config
-  license: EULA.txt
+  license: license.txt
   actions:
     action: *action
   components:

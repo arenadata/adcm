@@ -15,6 +15,7 @@ from api.job.views import (
     get_task_download_archive_file_handler,
     get_task_download_archive_name,
 )
+from cm.issue import lock_affected_objects, unlock_affected_objects
 from cm.models import (
     Action,
     Bundle,
@@ -55,7 +56,7 @@ class TaskLogLockTest(BaseTestCase):
         gen_job_log(task)
         task.lock = gen_concern_item(ConcernType.LOCK)
         task.save()
-        task.lock_affected([cluster])
+        lock_affected_objects(task=task, objects=[cluster])
 
         self.assertFalse(cluster.locked)
 
@@ -63,7 +64,7 @@ class TaskLogLockTest(BaseTestCase):
         cluster = gen_cluster()
         task = gen_task_log(cluster)
         gen_job_log(task)
-        task.lock_affected([cluster])
+        lock_affected_objects(task=task, objects=[cluster])
 
         self.assertTrue(cluster.locked)
 
@@ -75,8 +76,8 @@ class TaskLogLockTest(BaseTestCase):
         cluster = gen_cluster()
         task = gen_task_log(cluster)
         gen_job_log(task)
-        task.lock_affected([cluster])
-        task.unlock_affected()
+        lock_affected_objects(task=task, objects=[cluster])
+        unlock_affected_objects(task=task)
 
         self.assertFalse(cluster.locked)
         self.assertIsNone(task.lock)

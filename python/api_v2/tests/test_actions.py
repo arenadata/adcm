@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from functools import partial
+from operator import itemgetter
 from typing import TypeAlias
 
 from api_v2.tests.base import BaseAPITestCase
@@ -20,6 +21,7 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
+    JobLog,
     MaintenanceMode,
     ServiceComponent,
 )
@@ -28,6 +30,22 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 
 ObjectWithActions: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+
+
+def get_viewname_and_kwargs_for_object(object_: ObjectWithActions) -> tuple[str, dict[str, int]]:
+    if isinstance(object_, ClusterObject):
+        return "v2:service-action-list", {"service_pk": object_.pk, "cluster_pk": object_.cluster.pk}
+
+    if isinstance(object_, ServiceComponent):
+        return "v2:component-action-list", {
+            "component_pk": object_.pk,
+            "service_pk": object_.service.pk,
+            "cluster_pk": object_.cluster.pk,
+        }
+
+    classname: str = object_.__class__.__name__.lower()
+    # change hostp->p is for hostprovider->provider mutation for viewname
+    return f"v2:{classname.replace('hostp', 'p')}-action-list", {f"{classname}_pk": object_.pk}
 
 
 class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instance-attributes
@@ -93,7 +111,7 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
 
     def test_filter_object_own_actions_success(self) -> None:
         for object_ in (self.cluster, self.service_1, self.component_1, self.hostprovider, self.host_1):
-            viewname, object_kwargs = self.get_viewname_and_kwargs_for_object(object_=object_)
+            viewname, object_kwargs = get_viewname_and_kwargs_for_object(object_=object_)
             with self.subTest(msg=f"{object_.__class__.__name__} at different states"):
                 self.check_object_action_list(
                     viewname=viewname, object_kwargs=object_kwargs, expected_actions=self.available_at_created_no_multi
@@ -136,10 +154,10 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
 
     def test_filter_host_actions_success(self) -> None:
         check_host_1_actions = partial(
-            self.check_object_action_list, *self.get_viewname_and_kwargs_for_object(object_=self.host_1)
+            self.check_object_action_list, *get_viewname_and_kwargs_for_object(object_=self.host_1)
         )
         check_host_2_actions = partial(
-            self.check_object_action_list, *self.get_viewname_and_kwargs_for_object(object_=self.host_2)
+            self.check_object_action_list, *get_viewname_and_kwargs_for_object(object_=self.host_2)
         )
         any_cluster = "from cluster any"
         any_all = (any_cluster, "from service any", "from component any")
@@ -212,7 +230,7 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
         disallowed_action = Action.objects.filter(display_name="cluster_host_action_disallowed").first()
         check_host_1_actions = partial(
-            self.check_object_action_list, *self.get_viewname_and_kwargs_for_object(object_=self.host_1)
+            self.check_object_action_list, *get_viewname_and_kwargs_for_object(object_=self.host_1)
         )
         check_host_1_actions(
             expected_actions=[
@@ -230,7 +248,7 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
                 viewname="v2:cluster-action-run",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": allowed_action.pk},
             ),
-            data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
+            data={"host_component_map": [], "config": {}, "adcm_meta": {}, "is_verbose": False},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
@@ -239,25 +257,23 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
                 viewname="v2:cluster-action-run",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": disallowed_action.pk},
             ),
-            data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
+            data={"host_component_map": [], "config": {}, "adcm_meta": {}, "is_verbose": False},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-    @staticmethod
-    def get_viewname_and_kwargs_for_object(object_: ObjectWithActions) -> tuple[str, dict[str, int]]:
-        if isinstance(object_, ClusterObject):
-            return "v2:service-action-list", {"service_pk": object_.pk, "cluster_pk": object_.cluster.pk}
-
-        if isinstance(object_, ServiceComponent):
-            return "v2:component-action-list", {
-                "component_pk": object_.pk,
-                "service_pk": object_.service.pk,
-                "cluster_pk": object_.cluster.pk,
-            }
-
-        classname: str = object_.__class__.__name__.lower()
-        # change hostp->p is for hostprovider->provider mutation for viewname
-        return f"v2:{classname.replace('hostp', 'p')}-action-list", {f"{classname}_pk": object_.pk}
+    def test_adcm_4535_job_cant_be_terminated_success(self) -> None:
+        allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:cluster-action-run",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": allowed_action.pk},
+            ),
+            data={"host_component_map": [], "config": {}, "adcm_meta": {}, "is_verbose": False},
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        job = JobLog.objects.filter(action__name="cluster_host_action_allowed").first()
+        response = self.client.post(path=reverse(viewname="v2:joblog-terminate", kwargs={"pk": job.pk}), data={})
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     def check_object_action_list(self, viewname: str, object_kwargs: dict, expected_actions: list[str]) -> None:
         response: Response = self.client.get(path=reverse(viewname=viewname, kwargs=object_kwargs))
@@ -269,3 +285,28 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
         self.assertTrue(all("displayName" in entry for entry in data))
         actual_actions = sorted(entry["displayName"] for entry in data)
         self.assertListEqual(actual_actions, sorted(expected_actions))
+
+
+class TestActionWithJinjaConfig(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions_jinja")
+        self.cluster = self.add_cluster(cluster_bundle, "Cluster with Jinja Actions")
+        self.service_1 = self.add_service_to_cluster("first_service", self.cluster)
+        self.component_1: ServiceComponent = ServiceComponent.objects.get(
+            service=self.service_1, prototype__name="first_component"
+        )
+
+    def test_adcm_4703_action_retrieve_returns_500(self) -> None:
+        for object_ in (self.cluster, self.service_1, self.component_1):
+            with self.subTest(object_.__class__.__name__):
+                viewname, kwargs = get_viewname_and_kwargs_for_object(object_)
+                response = self.client.get(path=reverse(viewname=viewname, kwargs=kwargs))
+                self.assertEqual(response.status_code, HTTP_200_OK)
+
+                for action_id in map(itemgetter("id"), response.json()):
+                    response = self.client.get(
+                        path=reverse(viewname=viewname.replace("-list", "-detail"), kwargs={**kwargs, "pk": action_id})
+                    )
+                    self.assertEqual(response.status_code, HTTP_200_OK)

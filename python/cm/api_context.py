@@ -24,14 +24,12 @@ from pathlib import Path
 
 from cm import models
 from cm.logger import logger
-from cm.status_api import Event
 
 
 class _Context:
     """Common context for API methods calls"""
 
     def __init__(self):
-        self.event = Event()
         self.task: models.TaskLog | None = None
         self.job: models.JobLog | None = None
         self.lock: models.ConcernItem | None = None

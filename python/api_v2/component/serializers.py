@@ -12,6 +12,7 @@
 
 
 from api_v2.cluster.serializers import ClusterRelatedSerializer
+from api_v2.cluster.utils import get_depend_on
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.host.serializers import HostShortSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
@@ -28,13 +29,12 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
-from adcm.utils import get_requires
-
 
 class ComponentMappingSerializer(ModelSerializer):
     service = ServiceNameSerializer(read_only=True)
     depend_on = SerializerMethodField()
     constraints = JSONField(source="constraint")
+    prototype = PrototypeRelatedSerializer(read_only=True)
 
     class Meta:
         model = ServiceComponent
@@ -45,30 +45,17 @@ class ComponentMappingSerializer(ModelSerializer):
             "is_maintenance_mode_available",
             "maintenance_mode",
             "constraints",
+            "prototype",
             "depend_on",
             "service",
         ]
 
     @staticmethod
     def get_depend_on(instance: ServiceComponent) -> list[dict] | None:
-        requires_data = get_requires(prototype=instance.prototype)
-        if requires_data is None:
-            return None
+        if instance.prototype.requires:
+            return get_depend_on(prototype=instance.prototype)
 
-        out = []
-        for req_dict in requires_data:
-            for req_component in req_dict.get("components", []):
-                out.append(
-                    {
-                        "prototype": {
-                            "id": req_component["prototype_id"],
-                            "name": req_component["name"],
-                            "display_name": req_component["display_name"],
-                        }
-                    }
-                )
-
-        return out
+        return None
 
 
 class ComponentSerializer(ModelSerializer):
@@ -141,3 +128,30 @@ class ComponentStatusSerializer(ModelSerializer):
     class Meta:
         model = ServiceComponent
         fields = ["host_components"]
+
+
+class HostComponentSerializer(ModelSerializer):
+    concerns = ConcernSerializer(read_only=True, many=True)
+    status = SerializerMethodField()
+    cluster = ClusterRelatedSerializer(read_only=True)
+    service = ServiceRelatedSerializer(read_only=True)
+    prototype = PrototypeRelatedSerializer(read_only=True)
+
+    class Meta:
+        model = ServiceComponent
+        fields = [
+            "id",
+            "name",
+            "display_name",
+            "status",
+            "concerns",
+            "is_maintenance_mode_available",
+            "maintenance_mode",
+            "cluster",
+            "service",
+            "prototype",
+        ]
+
+    @staticmethod
+    def get_status(instance: ServiceComponent) -> str:
+        return get_obj_status(obj=instance)

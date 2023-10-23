@@ -17,19 +17,19 @@ import signal
 import subprocess
 import sys
 import time
+from logging import getLogger
 
 import adcm.init_django  # pylint: disable=unused-import
 
-from logging import getLogger
 from cm.errors import AdcmEx
 from cm.job import finish_task, re_prepare_job
 from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
+from cm.status_api import UpdateEventType, update_event
 from cm.utils import get_env_with_venv_path
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
-
 
 error_logger = getLogger("task_runner_err")
 TASK_ID = 0
@@ -115,7 +115,11 @@ def run_task(task_id: int, args: str | None = None) -> None:  # pylint: disable=
 
     task.pid = os.getpid()
     task.restore_hc_on_fail = True
-    task.save(update_fields=["pid", "restore_hc_on_fail"])
+    task.start_date = timezone.now()
+    task.status = JobStatus.RUNNING
+    task.save(update_fields=["pid", "restore_hc_on_fail", "start_date", "status"])
+
+    update_event(object_=task, update=(UpdateEventType.STATUS, JobStatus.RUNNING))
 
     jobs = JobLog.objects.filter(task_id=task.id).order_by("id")
     if not jobs:
@@ -144,8 +148,6 @@ def run_task(task_id: int, args: str | None = None) -> None:  # pylint: disable=
 
             task.refresh_from_db()
             re_prepare_job(task, job)
-            job.start_date = timezone.now()
-            job.save()
             res = run_job(task.id, job.id, err_file)
             set_log_body(job)
 

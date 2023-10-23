@@ -12,20 +12,20 @@
 
 
 from api_v2.cluster.filters import ClusterFilter
+from api_v2.cluster.permissions import ClusterPermissions
 from api_v2.cluster.serializers import (
     ClusterCreateSerializer,
     ClusterSerializer,
     ClusterUpdateSerializer,
-    HostComponentListSerializer,
-    HostComponentPostSerializer,
+    MappingSerializer,
     RelatedHostsStatusesSerializer,
     RelatedServicesStatusesSerializer,
     ServicePrototypeSerializer,
 )
 from api_v2.component.serializers import ComponentMappingSerializer
-from api_v2.config.utils import get_config_schema
+from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.host.serializers import HostMappingSerializer
-from api_v2.views import CamelCaseGenericViewSet, CamelCaseModelViewSet
+from api_v2.views import CamelCaseModelViewSet
 from audit.utils import audit
 from cm.api import add_cluster, retrieve_host_component_objects, set_host_component
 from cm.errors import AdcmEx
@@ -47,44 +47,51 @@ from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-from rest_framework.mixins import CreateModelMixin, ListModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+)
 
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HC_PERM,
     VIEW_HOST_PERM,
     VIEW_SERVICE_PERM,
-    DjangoModelPermissionsAudit,
-    ModelObjectPermissionsByActionMixin,
-    check_custom_perm,
     get_object_for_user,
 )
 
 
-class ClusterViewSet(  # pylint:disable=too-many-ancestors
-    ModelObjectPermissionsByActionMixin, PermissionListMixin, CamelCaseModelViewSet
-):
+class ClusterViewSet(
+    PermissionListMixin,
+    ConfigSchemaMixin,
+    CamelCaseModelViewSet,
+):  # pylint:disable=too-many-ancestors
     queryset = Cluster.objects.prefetch_related("prototype", "concerns").order_by("name")
-    serializer_class = ClusterSerializer
     permission_required = [VIEW_CLUSTER_PERM]
     filterset_class = ClusterFilter
     filter_backends = (DjangoFilterBackend,)
-    http_method_names = ["get", "post", "patch", "delete"]
+    permission_classes = [ClusterPermissions]
 
-    def get_serializer_class(self):
-        if self.action == "create":
-            return ClusterCreateSerializer
-
-        if self.action in ("update", "partial_update"):
-            return ClusterUpdateSerializer
-
-        if self.action == "service_prototypes":
-            return ServicePrototypeSerializer
-
-        return self.serializer_class
+    def get_serializer_class(self):  # pylint: disable=too-many-return-statements
+        match self.action:
+            case "create":
+                return ClusterCreateSerializer
+            case "update" | "partial_update":
+                return ClusterUpdateSerializer
+            case "service_prototypes":
+                return ServicePrototypeSerializer
+            case "mapping":
+                return MappingSerializer
+            case "mapping_hosts":
+                return HostMappingSerializer
+            case "mapping_components":
+                return ComponentMappingSerializer
+            case _:
+                return ClusterSerializer
 
     @audit
     def destroy(self, request, *args, **kwargs) -> Response:
@@ -126,7 +133,9 @@ class ClusterViewSet(  # pylint:disable=too-many-ancestors
         if not cluster:
             return Response(data=f'Cluster with pk "{kwargs["pk"]}" not found', status=HTTP_404_NOT_FOUND)
 
-        prototypes = Prototype.objects.filter(type=ObjectType.SERVICE, bundle=cluster.prototype.bundle)
+        prototypes = Prototype.objects.filter(type=ObjectType.SERVICE, bundle=cluster.prototype.bundle).order_by(
+            "display_name"
+        )
         serializer = self.get_serializer_class()(instance=prototypes, many=True)
 
         return Response(data=serializer.data)
@@ -172,49 +181,28 @@ class ClusterViewSet(  # pylint:disable=too-many-ancestors
 
         return [obj for obj in queryset if get_obj_status(obj=obj) == status_value]
 
-    @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
-    def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        schema = get_config_schema(object_=self.get_object())
-
-        return Response(data=schema, status=HTTP_200_OK)
-
-
-class MappingViewSet(  # pylint:disable=too-many-ancestors
-    ModelObjectPermissionsByActionMixin, PermissionListMixin, ListModelMixin, CreateModelMixin, CamelCaseGenericViewSet
-):
-    object_actions = ["create"]
-    queryset = HostComponent.objects.select_related("service", "host", "component", "cluster").order_by(
-        "component__prototype__display_name"
-    )
-    serializer_class = HostComponentListSerializer
-    permission_classes = [DjangoModelPermissionsAudit]
-    permission_required = [VIEW_HC_PERM]
-    pagination_class = None
-    filter_backends = []
-
-    def get_serializer_class(self):
-        if self.action == "create":
-            return HostComponentPostSerializer
-
-        return self.serializer_class
-
-    def list(self, request: Request, *args, **kwargs) -> Response:
-        cluster = Cluster.objects.filter(pk=kwargs["cluster_pk"]).first()
-        if not cluster:
-            return Response(data=f'Cluster with pk "{kwargs["cluster_pk"]}" not found', status=HTTP_404_NOT_FOUND)
-
-        self.queryset = self.queryset.filter(cluster_id=cluster.pk)
-
-        return super().list(request, *args, **kwargs)
-
     @audit
-    def create(self, request: Request, *args, **kwargs) -> Response:
-        cluster = get_object_for_user(
-            user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["cluster_pk"]
-        )
-        check_custom_perm(
-            user=request.user, action_type="edit_host_components_of", model=Cluster.__name__.lower(), obj=cluster
-        )
+    @action(
+        methods=["get", "post"],
+        detail=True,
+        pagination_class=None,
+        filter_backends=[],
+    )
+    def mapping(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        cluster = self.get_object()
+
+        if request.method == "GET":
+            queryset = get_objects_for_user(user=request.user, perms=VIEW_HC_PERM, klass=HostComponent).filter(
+                cluster=cluster
+            )
+
+            if not queryset.exists() and request.user.has_perm("cm.view_host_components_of_cluster", cluster):
+                queryset = HostComponent.objects.filter(cluster=cluster)
+
+            return Response(status=HTTP_200_OK, data=self.get_serializer(instance=queryset, many=True).data)
+
+        if not request.user.has_perm("cm.edit_host_components_of_cluster", cluster):
+            return Response(status=HTTP_403_FORBIDDEN)
 
         serializer = self.get_serializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
@@ -222,26 +210,18 @@ class MappingViewSet(  # pylint:disable=too-many-ancestors
         host_component_objects = retrieve_host_component_objects(cluster=cluster, plain_hc=serializer.validated_data)
         new_host_component = set_host_component(cluster=cluster, host_component_objects=host_component_objects)
 
-        return Response(
-            data=self.serializer_class(instance=new_host_component, many=True).data, status=HTTP_201_CREATED
-        )
+        return Response(data=self.get_serializer(instance=new_host_component, many=True).data, status=HTTP_201_CREATED)
 
-    @action(methods=["get"], detail=False)
-    def hosts(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        cluster = Cluster.objects.filter(pk=kwargs["cluster_pk"]).first()
-        if not cluster:
-            return Response(data=f'Cluster with pk "{kwargs["cluster_pk"]}" not found', status=HTTP_404_NOT_FOUND)
+    @action(methods=["get"], detail=True, url_path="mapping/hosts", url_name="mapping-hosts")
+    def mapping_hosts(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        cluster = self.get_object()
+        serializer = self.get_serializer(instance=Host.objects.filter(cluster=cluster), many=True)
 
-        serializer = HostMappingSerializer(instance=Host.objects.filter(cluster=cluster), many=True)
+        return Response(status=HTTP_200_OK, data=serializer.data)
 
-        return Response(data=serializer.data)
+    @action(methods=["get"], detail=True, url_path="mapping/components", url_name="mapping-components")
+    def mapping_components(self, request: Request, *args, **kwargs):  # pylint: disable=unused-argument
+        cluster = self.get_object()
+        serializer = self.get_serializer(instance=ServiceComponent.objects.filter(cluster=cluster), many=True)
 
-    @action(methods=["get"], detail=False)
-    def components(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        cluster = Cluster.objects.filter(pk=kwargs["cluster_pk"]).first()
-        if not cluster:
-            return Response(data=f'Cluster with pk "{kwargs["cluster_pk"]}" not found', status=HTTP_404_NOT_FOUND)
-
-        serializer = ComponentMappingSerializer(instance=ServiceComponent.objects.filter(cluster=cluster), many=True)
-
-        return Response(data=serializer.data)
+        return Response(status=HTTP_200_OK, data=serializer.data)

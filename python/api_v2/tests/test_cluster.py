@@ -35,7 +35,7 @@ from rest_framework.status import (
 )
 
 
-class TestCluster(BaseAPITestCase):
+class TestCluster(BaseAPITestCase):  # pylint:disable=too-many-public-methods
     def get_cluster_status_mock(self) -> Callable:
         def inner(cluster: Cluster) -> int:
             if cluster.pk == self.cluster_1.pk:
@@ -161,6 +161,29 @@ class TestCluster(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
+    def test_crete_without_required_field_fail(self):
+        response = self.client.post(path=reverse(viewname="v2:cluster-list"), data={})
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "BAD_REQUEST",
+                "desc": "prototype_id - This field is required.;name - This field is required.;",
+                "level": "error",
+            },
+        )
+
+    def test_create_without_not_required_field_success(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-list"),
+            data={"prototype_id": self.cluster_1.prototype.pk, "name": "new_test_cluster"},
+        )
+
+        cluster = Cluster.objects.get(name="new_test_cluster")
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(cluster.description, "")
+
     def test_create_same_name_fail(self):
         response = self.client.post(
             path=reverse(viewname="v2:cluster-list"),
@@ -220,7 +243,17 @@ class TestCluster(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 4)
+        self.assertEqual(len(response.json()), 5)
+        self.assertListEqual(
+            [prototype["displayName"] for prototype in response.json()],
+            [
+                "service_1",
+                "service_2",
+                "service_3_manual_add",
+                "service_4_save_config_without_required_field",
+                "service_5_variant_type_without_values",
+            ],
+        )
 
     def test_service_create_success(self):
         service_prototype = Prototype.objects.filter(type="service").first()
@@ -291,7 +324,7 @@ class TestClusterActions(BaseAPITestCase):
                     viewname="v2:cluster-action-run",
                     kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action.pk},
                 ),
-                data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
+                data={"configuration": None, "isVerbose": True, "hostComponentMap": []},
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -313,10 +346,86 @@ class TestClusterActions(BaseAPITestCase):
                     viewname="v2:cluster-action-run",
                     kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action_with_config.pk},
                 ),
-                data={"host_component_map": [], "config": config, "attr": {}, "is_verbose": False},
+                data={"configuration": {"config": config, "adcm_meta": {}}},
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_run_action_with_config_wrong_configuration_fail(self):
+        tasklog = TaskLog.objects.create(
+            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+            action=self.cluster_action_with_config,
+        )
+
+        with patch("cm.job.start_task", return_value=tasklog):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:cluster-action-run",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action_with_config.pk},
+                ),
+                data={"configuration": []},
+            )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "BAD_REQUEST",
+                "desc": "non_field_errors - Invalid data. Expected a dictionary, but got list.;",
+                "level": "error",
+            },
+        )
+
+    def test_run_action_with_config_required_adcm_meta_fail(self):
+        tasklog = TaskLog.objects.create(
+            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+            action=self.cluster_action_with_config,
+        )
+
+        config = {"simple": "kuku", "grouped": {"simple": 5, "second": 4.3}, "after": ["something"]}
+
+        with patch("cm.job.start_task", return_value=tasklog):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:cluster-action-run",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action_with_config.pk},
+                ),
+                data={"configuration": {"config": config}},
+            )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(), {"code": "BAD_REQUEST", "desc": "adcm_meta - This field is required.;", "level": "error"}
+        )
+
+    def test_run_action_with_config_required_config_fail(self):
+        tasklog = TaskLog.objects.create(
+            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+            action=self.cluster_action_with_config,
+        )
+
+        with patch("cm.job.start_task", return_value=tasklog):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:cluster-action-run",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action_with_config.pk},
+                ),
+                data={"configuration": {"adcm_meta": {}}},
+            )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(), {"code": "BAD_REQUEST", "desc": "config - This field is required.;", "level": "error"}
+        )
 
     def test_retrieve_action_with_hc_success(self):
         response = self.client.get(

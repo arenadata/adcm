@@ -156,7 +156,6 @@ class TestClusterConfig(BaseAPITestCase):
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "title": "Configuration",
                 "description": "",
-                "default": None,
                 "readOnly": False,
                 "adcmMeta": {
                     "isAdvanced": False,
@@ -169,6 +168,7 @@ class TestClusterConfig(BaseAPITestCase):
                     "enumExtra": None,
                 },
                 "type": "object",
+                "additionalProperties": False,
                 "properties": {
                     "boolean": {
                         "title": "boolean",
@@ -190,8 +190,9 @@ class TestClusterConfig(BaseAPITestCase):
                     "group": {
                         "title": "group",
                         "type": "object",
+                        "additionalProperties": False,
                         "description": "",
-                        "default": None,
+                        "default": {},
                         "readOnly": False,
                         "adcmMeta": {
                             "isAdvanced": False,
@@ -234,7 +235,7 @@ class TestClusterConfig(BaseAPITestCase):
                         "type": "string",
                         "description": "",
                         "default": "value1",
-                        "readOnly": True,
+                        "readOnly": False,
                         "adcmMeta": {
                             "isAdvanced": False,
                             "isInvisible": False,
@@ -288,13 +289,14 @@ class TestClusterConfig(BaseAPITestCase):
                     "activatable_group": {
                         "title": "activatable_group",
                         "type": "object",
+                        "additionalProperties": False,
                         "description": "",
-                        "default": None,
-                        "readOnly": True,
+                        "default": {},
+                        "readOnly": False,
                         "adcmMeta": {
                             "isAdvanced": False,
                             "isInvisible": False,
-                            "activation": {"isShown": True, "isAllowChange": True},
+                            "activation": {"isAllowChange": True},
                             "synchronization": None,
                             "nullValue": None,
                             "isSecret": False,
@@ -566,7 +568,6 @@ class TestClusterGroupConfig(BaseAPITestCase):
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "title": "Configuration",
                 "description": "",
-                "default": None,
                 "readOnly": False,
                 "adcmMeta": {
                     "isAdvanced": False,
@@ -579,6 +580,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
                     "enumExtra": None,
                 },
                 "type": "object",
+                "additionalProperties": False,
                 "properties": {
                     "boolean": {
                         "title": "boolean",
@@ -590,7 +592,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
                             "isAdvanced": False,
                             "isInvisible": False,
                             "activation": None,
-                            "synchronization": {"isShown": True, "isAllowChange": True},
+                            "synchronization": {"isAllowChange": True},
                             "nullValue": None,
                             "isSecret": False,
                             "stringExtra": None,
@@ -600,14 +602,15 @@ class TestClusterGroupConfig(BaseAPITestCase):
                     "group": {
                         "title": "group",
                         "type": "object",
+                        "additionalProperties": False,
                         "description": "",
-                        "default": None,
+                        "default": {},
                         "readOnly": False,
                         "adcmMeta": {
                             "isAdvanced": False,
                             "isInvisible": False,
                             "activation": None,
-                            "synchronization": {"isShown": False, "isAllowChange": True},
+                            "synchronization": None,
                             "nullValue": None,
                             "isSecret": False,
                             "stringExtra": None,
@@ -626,7 +629,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
                                             "isAdvanced": False,
                                             "isInvisible": False,
                                             "activation": None,
-                                            "synchronization": None,
+                                            "synchronization": {"isAllowChange": True},
                                             "nullValue": None,
                                             "isSecret": False,
                                             "stringExtra": None,
@@ -644,12 +647,12 @@ class TestClusterGroupConfig(BaseAPITestCase):
                         "type": "string",
                         "description": "",
                         "default": "value1",
-                        "readOnly": True,
+                        "readOnly": False,
                         "adcmMeta": {
                             "isAdvanced": False,
                             "isInvisible": False,
                             "activation": None,
-                            "synchronization": {"isShown": True, "isAllowChange": True},
+                            "synchronization": {"isAllowChange": True},
                             "nullValue": None,
                             "isSecret": False,
                             "stringExtra": {"isMultiline": False, "suggestions": ["value1", "value2", "value3"]},
@@ -668,7 +671,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
                                     "isAdvanced": False,
                                     "isInvisible": False,
                                     "activation": None,
-                                    "synchronization": {"isShown": True, "isAllowChange": True},
+                                    "synchronization": {"isAllowChange": True},
                                     "nullValue": [],
                                     "isSecret": False,
                                     "stringExtra": None,
@@ -698,14 +701,15 @@ class TestClusterGroupConfig(BaseAPITestCase):
                     "activatable_group": {
                         "title": "activatable_group",
                         "type": "object",
+                        "additionalProperties": False,
                         "description": "",
-                        "default": None,
-                        "readOnly": True,
+                        "default": {},
+                        "readOnly": False,
                         "adcmMeta": {
                             "isAdvanced": False,
                             "isInvisible": False,
-                            "activation": {"isShown": True, "isAllowChange": True},
-                            "synchronization": {"isShown": True, "isAllowChange": True},
+                            "activation": {"isAllowChange": True},
+                            "synchronization": {"isAllowChange": True},
                             "nullValue": None,
                             "isSecret": False,
                             "stringExtra": None,
@@ -724,7 +728,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
                                             "isAdvanced": False,
                                             "isInvisible": False,
                                             "activation": None,
-                                            "synchronization": None,
+                                            "synchronization": {"isAllowChange": True},
                                             "nullValue": None,
                                             "isSecret": False,
                                             "stringExtra": None,
@@ -834,7 +838,6 @@ class TestServiceConfig(BaseAPITestCase):
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "title": "Configuration",
             "description": "",
-            "default": None,
             "readOnly": False,
             "adcmMeta": {
                 "isAdvanced": False,
@@ -847,6 +850,7 @@ class TestServiceConfig(BaseAPITestCase):
                 "enumExtra": None,
             },
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "string": {
                     "oneOf": [
@@ -873,8 +877,9 @@ class TestServiceConfig(BaseAPITestCase):
                 "group": {
                     "title": "group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
+                    "default": {},
                     "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
@@ -911,13 +916,14 @@ class TestServiceConfig(BaseAPITestCase):
                 "activatable_group": {
                     "title": "activatable_group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
-                    "readOnly": True,
+                    "default": {},
+                    "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
-                        "activation": {"isShown": True, "isAllowChange": True},
+                        "activation": {"isAllowChange": True},
                         "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
@@ -1150,7 +1156,6 @@ class TestServiceGroupConfig(BaseAPITestCase):
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "title": "Configuration",
             "description": "",
-            "default": None,
             "readOnly": False,
             "adcmMeta": {
                 "isAdvanced": False,
@@ -1163,6 +1168,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
                 "enumExtra": None,
             },
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "string": {
                     "oneOf": [
@@ -1176,7 +1182,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
                                 "isAdvanced": False,
                                 "isInvisible": False,
                                 "activation": None,
-                                "synchronization": {"isShown": True, "isAllowChange": True},
+                                "synchronization": {"isAllowChange": True},
                                 "nullValue": None,
                                 "isSecret": False,
                                 "stringExtra": {"isMultiline": False},
@@ -1189,14 +1195,15 @@ class TestServiceGroupConfig(BaseAPITestCase):
                 "group": {
                     "title": "group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
+                    "default": {},
                     "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
                         "activation": None,
-                        "synchronization": {"isShown": False, "isAllowChange": True},
+                        "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
                         "stringExtra": None,
@@ -1213,7 +1220,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
                                 "isAdvanced": False,
                                 "isInvisible": False,
                                 "activation": None,
-                                "synchronization": None,
+                                "synchronization": {"isAllowChange": True},
                                 "nullValue": None,
                                 "isSecret": True,
                                 "stringExtra": {"isMultiline": False},
@@ -1227,14 +1234,15 @@ class TestServiceGroupConfig(BaseAPITestCase):
                 "activatable_group": {
                     "title": "activatable_group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
-                    "readOnly": True,
+                    "default": {},
+                    "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
-                        "activation": {"isShown": True, "isAllowChange": True},
-                        "synchronization": {"isShown": True, "isAllowChange": True},
+                        "activation": {"isAllowChange": True},
+                        "synchronization": {"isAllowChange": True},
                         "nullValue": None,
                         "isSecret": False,
                         "stringExtra": None,
@@ -1253,7 +1261,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
                                         "isAdvanced": False,
                                         "isInvisible": False,
                                         "activation": None,
-                                        "synchronization": None,
+                                        "synchronization": {"isAllowChange": True},
                                         "nullValue": None,
                                         "isSecret": False,
                                         "stringExtra": {"isMultiline": True},
@@ -1386,7 +1394,6 @@ class TestComponentConfig(BaseAPITestCase):
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "title": "Configuration",
             "description": "",
-            "default": None,
             "readOnly": False,
             "adcmMeta": {
                 "isAdvanced": False,
@@ -1399,6 +1406,7 @@ class TestComponentConfig(BaseAPITestCase):
                 "enumExtra": None,
             },
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "secrettext": {
                     "title": "secrettext",
@@ -1421,8 +1429,9 @@ class TestComponentConfig(BaseAPITestCase):
                 "group": {
                     "title": "group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
+                    "default": {},
                     "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
@@ -1463,13 +1472,14 @@ class TestComponentConfig(BaseAPITestCase):
                 "activatable_group": {
                     "title": "activatable_group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
-                    "readOnly": True,
+                    "default": {},
+                    "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
-                        "activation": {"isShown": True, "isAllowChange": True},
+                        "activation": {"isAllowChange": True},
                         "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
@@ -1716,7 +1726,6 @@ class TestComponentGroupConfig(BaseAPITestCase):
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "title": "Configuration",
             "description": "",
-            "default": None,
             "readOnly": False,
             "adcmMeta": {
                 "isAdvanced": False,
@@ -1729,6 +1738,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
                 "enumExtra": None,
             },
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "secrettext": {
                     "title": "secrettext",
@@ -1740,7 +1750,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
                         "isAdvanced": False,
                         "isInvisible": False,
                         "activation": None,
-                        "synchronization": {"isShown": True, "isAllowChange": True},
+                        "synchronization": {"isAllowChange": True},
                         "nullValue": None,
                         "isSecret": True,
                         "stringExtra": {"isMultiline": True},
@@ -1751,14 +1761,15 @@ class TestComponentGroupConfig(BaseAPITestCase):
                 "group": {
                     "title": "group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
+                    "default": {},
                     "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
                         "activation": None,
-                        "synchronization": {"isShown": False, "isAllowChange": True},
+                        "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
                         "stringExtra": None,
@@ -1777,7 +1788,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
                                         "isAdvanced": False,
                                         "isInvisible": False,
                                         "activation": None,
-                                        "synchronization": None,
+                                        "synchronization": {"isAllowChange": True},
                                         "nullValue": None,
                                         "isSecret": False,
                                         "stringExtra": {"isMultiline": True},
@@ -1793,14 +1804,15 @@ class TestComponentGroupConfig(BaseAPITestCase):
                 "activatable_group": {
                     "title": "activatable_group",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
-                    "readOnly": True,
+                    "default": {},
+                    "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
-                        "activation": {"isShown": True, "isAllowChange": True},
-                        "synchronization": {"isShown": True, "isAllowChange": True},
+                        "activation": {"isAllowChange": True},
+                        "synchronization": {"isAllowChange": True},
                         "nullValue": None,
                         "isSecret": False,
                         "stringExtra": None,
@@ -1817,7 +1829,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
                                 "isAdvanced": False,
                                 "isInvisible": False,
                                 "activation": None,
-                                "synchronization": None,
+                                "synchronization": {"isAllowChange": True},
                                 "nullValue": None,
                                 "isSecret": True,
                                 "stringExtra": {"isMultiline": True},
@@ -1886,7 +1898,7 @@ class TestProviderConfig(BaseAPITestCase):
                         "string_key": "string",
                     }
                 },
-                "json": {"key": "value"},
+                "json": '{"key": "value"}',
             },
             "creationTime": self.provider_initial_config.date.isoformat().replace("+00:00", "Z"),
             "description": "init",
@@ -1936,7 +1948,7 @@ class TestProviderConfig(BaseAPITestCase):
                         "string_key": "new string",
                     }
                 },
-                "json": {"key": "value", "new key": "new value"},
+                "json": '{"key": "value", "new key": "new value"}',
             },
             "adcmMeta": {"/activatable_group": {"isActive": True}},
             "description": "new config",
@@ -1977,7 +1989,6 @@ class TestProviderConfig(BaseAPITestCase):
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "title": "Configuration",
             "description": "",
-            "default": None,
             "readOnly": False,
             "adcmMeta": {
                 "isAdvanced": False,
@@ -2018,7 +2029,7 @@ class TestProviderConfig(BaseAPITestCase):
                     "title": "group",
                     "type": "object",
                     "description": "",
-                    "default": None,
+                    "default": {},
                     "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
@@ -2030,6 +2041,7 @@ class TestProviderConfig(BaseAPITestCase):
                         "stringExtra": None,
                         "enumExtra": None,
                     },
+                    "additionalProperties": False,
                     "properties": {
                         "map": {
                             "title": "map",
@@ -2057,35 +2069,295 @@ class TestProviderConfig(BaseAPITestCase):
                     "title": "activatable_group",
                     "type": "object",
                     "description": "",
-                    "default": None,
-                    "readOnly": True,
+                    "default": {},
+                    "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
-                        "activation": {"isShown": True, "isAllowChange": True},
+                        "activation": {"isAllowChange": True},
                         "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
                         "stringExtra": None,
                         "enumExtra": None,
                     },
+                    "additionalProperties": False,
                     "properties": {
                         "secretmap": {
-                            "title": "secretmap",
-                            "type": "object",
+                            "oneOf": [
+                                {
+                                    "title": "secretmap",
+                                    "type": "object",
+                                    "description": "",
+                                    "default": {
+                                        "integer_key": "10",
+                                        "string_key": "string",
+                                    },
+                                    "readOnly": False,
+                                    "adcmMeta": {
+                                        "isAdvanced": False,
+                                        "isInvisible": False,
+                                        "activation": None,
+                                        "synchronization": None,
+                                        "nullValue": None,
+                                        "isSecret": True,
+                                        "stringExtra": None,
+                                        "enumExtra": None,
+                                    },
+                                    "additionalProperties": True,
+                                    "properties": {},
+                                },
+                                {"type": "null"},
+                            ]
+                        }
+                    },
+                    "required": ["secretmap"],
+                },
+            },
+            "additionalProperties": False,
+            "required": ["json", "group", "activatable_group"],
+        }
+        actual_data = response.json()
+
+        integer_key = ansible_decrypt(
+            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
+                "integer_key"
+            ]
+        )
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
+            "integer_key"
+        ] = integer_key
+        string_key = ansible_decrypt(
+            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
+                "string_key"
+            ]
+        )
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
+            "string_key"
+        ] = string_key
+
+        self.assertDictEqual(actual_data, expected_data)
+
+
+class TestProviderGroupConfig(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.provider_group_config = GroupConfig.objects.create(
+            name="group_config",
+            object_type=ContentType.objects.get_for_model(self.provider),
+            object_id=self.provider.pk,
+        )
+        self.provider_group_config_config = ConfigLog.objects.get(pk=self.provider_group_config.config.current)
+
+    def test_list_success(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:hostprovider-group-config-config-list",
+                kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": self.provider_group_config.pk},
+            )
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertListEqual(
+            sorted(response.json()["results"][0].keys()),
+            sorted(["id", "isCurrent", "creationTime", "description"]),
+        )
+
+    def test_retrieve_success(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:hostprovider-group-config-config-detail",
+                kwargs={
+                    "hostprovider_pk": self.provider.pk,
+                    "group_config_pk": self.provider_group_config.pk,
+                    "pk": self.provider_group_config_config.pk,
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        expected_data = {
+            "adcmMeta": {
+                "/activatable_group": {"isActive": True, "isSynchronized": False},
+                "/json": {"isSynchronized": False},
+                "/group/map": {"isSynchronized": False},
+                "/activatable_group/secretmap": {"isSynchronized": False},
+            },
+            "config": {
+                "group": {"map": {"integer_key": "10", "string_key": "string"}},
+                "activatable_group": {
+                    "secretmap": {
+                        "integer_key": "10",
+                        "string_key": "string",
+                    }
+                },
+                "json": '{"key": "value"}',
+            },
+            "creationTime": self.provider_group_config_config.date.isoformat().replace("+00:00", "Z"),
+            "description": "init",
+            "id": self.provider_group_config_config.pk,
+            "isCurrent": True,
+        }
+        actual_data = response.json()
+        actual_data["config"]["activatable_group"]["secretmap"]["integer_key"] = ansible_decrypt(
+            msg=actual_data["config"]["activatable_group"]["secretmap"]["integer_key"]
+        )
+        actual_data["config"]["activatable_group"]["secretmap"]["string_key"] = ansible_decrypt(
+            msg=actual_data["config"]["activatable_group"]["secretmap"]["string_key"]
+        )
+        self.assertDictEqual(actual_data, expected_data)
+
+    def test_retrieve_wrong_pk_fail(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:hostprovider-group-config-config-detail",
+                kwargs={
+                    "hostprovider_pk": self.provider.pk,
+                    "group_config_pk": self.provider_group_config.pk,
+                    "pk": self.get_non_existent_pk(model=ConfigLog),
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_retrieve_wrong_provider_pk_fail(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:provider-config-detail",
+                kwargs={
+                    "hostprovider_pk": self.get_non_existent_pk(model=HostProvider),
+                    "pk": self.provider_group_config.pk,
+                },
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_create_success(self):
+        data = {
+            "config": {
+                "group": {"map": {"integer_key": "100", "string_key": "new string"}},
+                "activatable_group": {
+                    "secretmap": {
+                        "integer_key": "100",
+                        "string_key": "new string",
+                    }
+                },
+                "json": '{"key": "value", "new key": "new value"}',
+            },
+            "adcmMeta": {
+                "/activatable_group": {"isActive": True, "isSynchronized": True},
+                "/json": {"isSynchronized": True},
+                "/group/map": {"isSynchronized": True},
+                "/activatable_group/secretmap": {"isSynchronized": True},
+            },
+            "description": "new config",
+        }
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:hostprovider-group-config-config-list",
+                kwargs={
+                    "hostprovider_pk": self.provider.pk,
+                    "group_config_pk": self.provider_group_config.pk,
+                },
+            ),
+            data=data,
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response_data = response.json()
+        response_data["config"]["activatable_group"]["secretmap"]["integer_key"] = ansible_decrypt(
+            msg=response_data["config"]["activatable_group"]["secretmap"]["integer_key"]
+        )
+        response_data["config"]["activatable_group"]["secretmap"]["string_key"] = ansible_decrypt(
+            msg=response_data["config"]["activatable_group"]["secretmap"]["string_key"]
+        )
+        self.assertDictEqual(response_data["config"], data["config"])
+        self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
+        self.assertEqual(response_data["description"], data["description"])
+        self.assertEqual(response_data["isCurrent"], True)
+
+    def test_schema(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:hostprovider-group-config-config-schema",
+                kwargs={"hostprovider_pk": self.provider.pk, "pk": self.provider_group_config.pk},
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        expected_data = {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Configuration",
+            "description": "",
+            "readOnly": False,
+            "adcmMeta": {
+                "isAdvanced": False,
+                "isInvisible": False,
+                "activation": None,
+                "synchronization": None,
+                "nullValue": None,
+                "isSecret": False,
+                "stringExtra": None,
+                "enumExtra": None,
+            },
+            "type": "object",
+            "properties": {
+                "json": {
+                    "oneOf": [
+                        {
+                            "title": "json",
+                            "type": "string",
                             "description": "",
-                            "default": {
-                                "integer_key": "10",
-                                "string_key": "string",
-                            },
+                            "default": '{"key": "value"}',
                             "readOnly": False,
                             "adcmMeta": {
                                 "isAdvanced": False,
                                 "isInvisible": False,
                                 "activation": None,
-                                "synchronization": None,
+                                "synchronization": {"isAllowChange": True},
                                 "nullValue": None,
-                                "isSecret": True,
+                                "isSecret": False,
+                                "stringExtra": {"isMultiline": True},
+                                "enumExtra": None,
+                            },
+                            "format": "json",
+                        },
+                        {"type": "null"},
+                    ]
+                },
+                "group": {
+                    "title": "group",
+                    "type": "object",
+                    "description": "",
+                    "default": {},
+                    "readOnly": False,
+                    "adcmMeta": {
+                        "isAdvanced": False,
+                        "isInvisible": False,
+                        "activation": None,
+                        "synchronization": None,
+                        "nullValue": None,
+                        "isSecret": False,
+                        "stringExtra": None,
+                        "enumExtra": None,
+                    },
+                    "additionalProperties": False,
+                    "properties": {
+                        "map": {
+                            "title": "map",
+                            "type": "object",
+                            "description": "",
+                            "default": {"integer_key": "10", "string_key": "string"},
+                            "readOnly": False,
+                            "adcmMeta": {
+                                "isAdvanced": False,
+                                "isInvisible": False,
+                                "activation": None,
+                                "synchronization": {"isAllowChange": True},
+                                "nullValue": {},
+                                "isSecret": False,
                                 "stringExtra": None,
                                 "enumExtra": None,
                             },
@@ -2093,23 +2365,78 @@ class TestProviderConfig(BaseAPITestCase):
                             "properties": {},
                         }
                     },
+                    "required": ["map"],
+                },
+                "activatable_group": {
+                    "title": "activatable_group",
+                    "type": "object",
+                    "description": "",
+                    "default": {},
+                    "readOnly": False,
+                    "adcmMeta": {
+                        "isAdvanced": False,
+                        "isInvisible": False,
+                        "activation": {"isAllowChange": True},
+                        "synchronization": {"isAllowChange": True},
+                        "nullValue": None,
+                        "isSecret": False,
+                        "stringExtra": None,
+                        "enumExtra": None,
+                    },
+                    "additionalProperties": False,
+                    "properties": {
+                        "secretmap": {
+                            "oneOf": [
+                                {
+                                    "title": "secretmap",
+                                    "type": "object",
+                                    "description": "",
+                                    "default": {
+                                        "integer_key": "10",
+                                        "string_key": "string",
+                                    },
+                                    "readOnly": False,
+                                    "adcmMeta": {
+                                        "isAdvanced": False,
+                                        "isInvisible": False,
+                                        "activation": None,
+                                        "synchronization": {"isAllowChange": True},
+                                        "nullValue": None,
+                                        "isSecret": True,
+                                        "stringExtra": None,
+                                        "enumExtra": None,
+                                    },
+                                    "additionalProperties": True,
+                                    "properties": {},
+                                },
+                                {"type": "null"},
+                            ]
+                        }
+                    },
                     "required": ["secretmap"],
                 },
             },
+            "additionalProperties": False,
             "required": ["json", "group", "activatable_group"],
         }
         actual_data = response.json()
 
-        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"][
+        integer_key = ansible_decrypt(
+            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
+                "integer_key"
+            ]
+        )
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
             "integer_key"
-        ] = ansible_decrypt(
-            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"]["integer_key"]
+        ] = integer_key
+        string_key = ansible_decrypt(
+            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
+                "string_key"
+            ]
         )
-        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"][
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
             "string_key"
-        ] = ansible_decrypt(
-            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"]["string_key"]
-        )
+        ] = string_key
 
         self.assertDictEqual(actual_data, expected_data)
 
@@ -2203,7 +2530,6 @@ class TestHostConfig(BaseAPITestCase):
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "title": "Configuration",
             "description": "",
-            "default": None,
             "readOnly": False,
             "adcmMeta": {
                 "isAdvanced": False,
@@ -2222,7 +2548,7 @@ class TestHostConfig(BaseAPITestCase):
                     "type": "array",
                     "description": "",
                     "default": [{"integer": 1, "string": "string1"}, {"integer": 2, "string": "string2"}],
-                    "readOnly": True,
+                    "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
@@ -2237,8 +2563,8 @@ class TestHostConfig(BaseAPITestCase):
                         "type": "object",
                         "title": "",
                         "description": "",
-                        "default": None,
-                        "readOnly": True,
+                        "default": {},
+                        "readOnly": False,
                         "adcmMeta": {
                             "isAdvanced": False,
                             "isInvisible": False,
@@ -2249,13 +2575,14 @@ class TestHostConfig(BaseAPITestCase):
                             "stringExtra": None,
                             "enumExtra": None,
                         },
+                        "additionalProperties": False,
                         "properties": {
                             "string": {
                                 "type": "string",
-                                "title": "",
+                                "title": "string",
                                 "description": "",
                                 "default": None,
-                                "readOnly": True,
+                                "readOnly": False,
                                 "adcmMeta": {
                                     "isAdvanced": False,
                                     "isInvisible": False,
@@ -2268,31 +2595,36 @@ class TestHostConfig(BaseAPITestCase):
                                 },
                             },
                             "integer": {
-                                "type": "integer",
-                                "title": "",
-                                "description": "",
-                                "default": None,
-                                "readOnly": True,
-                                "adcmMeta": {
-                                    "isAdvanced": False,
-                                    "isInvisible": False,
-                                    "activation": None,
-                                    "synchronization": None,
-                                    "nullValue": None,
-                                    "isSecret": False,
-                                    "stringExtra": None,
-                                    "enumExtra": None,
-                                },
+                                "oneOf": [
+                                    {
+                                        "type": "integer",
+                                        "title": "integer",
+                                        "description": "",
+                                        "default": None,
+                                        "readOnly": False,
+                                        "adcmMeta": {
+                                            "isAdvanced": False,
+                                            "isInvisible": False,
+                                            "activation": None,
+                                            "synchronization": None,
+                                            "nullValue": None,
+                                            "isSecret": False,
+                                            "stringExtra": None,
+                                            "enumExtra": None,
+                                        },
+                                    },
+                                    {"type": "null"},
+                                ]
                             },
                         },
-                        "required": [],
+                        "required": ["string"],
                     },
                 },
                 "variant": {
                     "title": "variant",
                     "description": "",
                     "default": "value1",
-                    "readOnly": True,
+                    "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
@@ -2310,7 +2642,7 @@ class TestHostConfig(BaseAPITestCase):
                     "title": "group",
                     "type": "object",
                     "description": "",
-                    "default": None,
+                    "default": {},
                     "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
@@ -2322,6 +2654,7 @@ class TestHostConfig(BaseAPITestCase):
                         "stringExtra": None,
                         "enumExtra": None,
                     },
+                    "additionalProperties": False,
                     "properties": {
                         "list": {
                             "oneOf": [
@@ -2369,24 +2702,25 @@ class TestHostConfig(BaseAPITestCase):
                     "title": "activatable_group",
                     "type": "object",
                     "description": "",
-                    "default": None,
-                    "readOnly": True,
+                    "default": {},
+                    "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
-                        "activation": {"isShown": True, "isAllowChange": True},
+                        "activation": {"isAllowChange": True},
                         "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
                         "stringExtra": None,
                         "enumExtra": None,
                     },
+                    "additionalProperties": False,
                     "properties": {
                         "option": {
                             "title": "option",
                             "description": "",
                             "default": "string1",
-                            "readOnly": True,
+                            "readOnly": False,
                             "adcmMeta": {
                                 "isAdvanced": False,
                                 "isInvisible": False,
@@ -2394,7 +2728,7 @@ class TestHostConfig(BaseAPITestCase):
                                 "synchronization": None,
                                 "nullValue": None,
                                 "isSecret": False,
-                                "stringExtra": {"isMultiline": True},
+                                "stringExtra": None,
                                 "enumExtra": {"labels": ["string1", "string2"]},
                             },
                             "enum": ["string1", "string2"],
@@ -2403,6 +2737,7 @@ class TestHostConfig(BaseAPITestCase):
                     "required": ["option"],
                 },
             },
+            "additionalProperties": False,
             "required": ["structure", "variant", "group", "activatable_group"],
         }
         actual_data = response.json()
@@ -2506,7 +2841,6 @@ class TestADCMConfig(BaseAPITestCase):
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "title": "Configuration",
             "description": "",
-            "default": None,
             "readOnly": False,
             "adcmMeta": {
                 "isAdvanced": False,
@@ -2519,12 +2853,14 @@ class TestADCMConfig(BaseAPITestCase):
                 "enumExtra": None,
             },
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "global": {
                     "title": "Global Options",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
+                    "default": {},
                     "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
@@ -2586,13 +2922,14 @@ class TestADCMConfig(BaseAPITestCase):
                 "statistics_collection": {
                     "title": "Statistics Collection",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
-                    "readOnly": True,
+                    "default": {},
+                    "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": True,
                         "isInvisible": False,
-                        "activation": {"isShown": True, "isAllowChange": True},
+                        "activation": {"isAllowChange": True},
                         "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
@@ -2624,8 +2961,9 @@ class TestADCMConfig(BaseAPITestCase):
                 "google_oauth": {
                     "title": "Google Auth",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
+                    "default": {},
                     "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
@@ -2688,8 +3026,9 @@ class TestADCMConfig(BaseAPITestCase):
                 "yandex_oauth": {
                     "title": "Yandex Auth",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
+                    "default": {},
                     "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
@@ -2752,8 +3091,9 @@ class TestADCMConfig(BaseAPITestCase):
                 "ansible_settings": {
                     "title": "Ansible Settings",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
+                    "default": {},
                     "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
@@ -2774,7 +3114,7 @@ class TestADCMConfig(BaseAPITestCase):
                                 "to spawn when communicating with remote hosts.\n"
                             ),
                             "default": 5,
-                            "readOnly": True,
+                            "readOnly": False,
                             "adcmMeta": {
                                 "isAdvanced": False,
                                 "isInvisible": False,
@@ -2794,13 +3134,14 @@ class TestADCMConfig(BaseAPITestCase):
                 "logrotate": {
                     "title": "Nginx Server Logrotate",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
-                    "readOnly": True,
+                    "default": {},
+                    "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": True,
-                        "activation": {"isShown": True, "isAllowChange": True},
+                        "activation": {"isAllowChange": True},
                         "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
@@ -2831,7 +3172,7 @@ class TestADCMConfig(BaseAPITestCase):
                             "type": "integer",
                             "description": "Controls the maximum number of archive files to keep\n",
                             "default": 10,
-                            "readOnly": True,
+                            "readOnly": False,
                             "adcmMeta": {
                                 "isAdvanced": False,
                                 "isInvisible": False,
@@ -2867,8 +3208,9 @@ class TestADCMConfig(BaseAPITestCase):
                 "audit_data_retention": {
                     "title": "Data retention policy",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
+                    "default": {},
                     "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
@@ -2891,7 +3233,7 @@ class TestADCMConfig(BaseAPITestCase):
                                         "the logs will be deleted from the file system.\n"
                                     ),
                                     "default": 365,
-                                    "readOnly": True,
+                                    "readOnly": False,
                                     "adcmMeta": {
                                         "isAdvanced": False,
                                         "isInvisible": False,
@@ -2917,7 +3259,7 @@ class TestADCMConfig(BaseAPITestCase):
                                         "the logs will be deleted from the database.\n"
                                     ),
                                     "default": 365,
-                                    "readOnly": True,
+                                    "readOnly": False,
                                     "adcmMeta": {
                                         "isAdvanced": False,
                                         "isInvisible": False,
@@ -2944,7 +3286,7 @@ class TestADCMConfig(BaseAPITestCase):
                                         "database. 0 is infinite storing.\n"
                                     ),
                                     "default": 0,
-                                    "readOnly": True,
+                                    "readOnly": False,
                                     "adcmMeta": {
                                         "isAdvanced": False,
                                         "isInvisible": False,
@@ -3015,13 +3357,14 @@ class TestADCMConfig(BaseAPITestCase):
                 "ldap_integration": {
                     "title": "LDAP integration",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
-                    "readOnly": True,
+                    "default": {},
+                    "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
                         "isInvisible": False,
-                        "activation": {"isShown": True, "isAllowChange": True},
+                        "activation": {"isAllowChange": True},
                         "synchronization": None,
                         "nullValue": None,
                         "isSecret": False,
@@ -3333,8 +3676,9 @@ class TestADCMConfig(BaseAPITestCase):
                 "auth_policy": {
                     "title": "Authentication policy",
                     "type": "object",
+                    "additionalProperties": False,
                     "description": "",
-                    "default": None,
+                    "default": {},
                     "readOnly": False,
                     "adcmMeta": {
                         "isAdvanced": False,
@@ -3352,7 +3696,7 @@ class TestADCMConfig(BaseAPITestCase):
                             "type": "integer",
                             "description": "",
                             "default": 12,
-                            "readOnly": True,
+                            "readOnly": False,
                             "adcmMeta": {
                                 "isAdvanced": False,
                                 "isInvisible": False,
@@ -3371,7 +3715,7 @@ class TestADCMConfig(BaseAPITestCase):
                             "type": "integer",
                             "description": "",
                             "default": 128,
-                            "readOnly": True,
+                            "readOnly": False,
                             "adcmMeta": {
                                 "isAdvanced": False,
                                 "isInvisible": False,
@@ -3390,7 +3734,7 @@ class TestADCMConfig(BaseAPITestCase):
                             "type": "integer",
                             "description": "The number of login attempts allowed before user account is locked out",
                             "default": 5,
-                            "readOnly": True,
+                            "readOnly": False,
                             "adcmMeta": {
                                 "isAdvanced": False,
                                 "isInvisible": False,
@@ -3411,7 +3755,7 @@ class TestADCMConfig(BaseAPITestCase):
                                 "old failed login attempts will be cleared"
                             ),
                             "default": 5,
-                            "readOnly": True,
+                            "readOnly": False,
                             "adcmMeta": {
                                 "isAdvanced": False,
                                 "isInvisible": False,
@@ -3495,3 +3839,61 @@ class TestAttrTransformation(BaseAPITestCase):
 
         new_attr = convert_adcm_meta_to_attr(adcm_meta=adcm_meta)
         self.assertDictEqual(new_attr, adcm_meta)
+
+
+class TestConfigSchemaEnumWithoutValues(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.service = self.add_service_to_cluster(
+            service_name="service_5_variant_type_without_values", cluster=self.cluster_1
+        )
+
+    def test_schema(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:service-config-schema", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service.pk}
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "title": "Configuration",
+                "description": "",
+                "readOnly": False,
+                "adcmMeta": {
+                    "isAdvanced": False,
+                    "isInvisible": False,
+                    "activation": None,
+                    "synchronization": None,
+                    "nullValue": None,
+                    "isSecret": False,
+                    "stringExtra": None,
+                    "enumExtra": None,
+                },
+                "type": "object",
+                "properties": {
+                    "variant": {
+                        "title": "variant",
+                        "description": "",
+                        "default": None,
+                        "readOnly": False,
+                        "adcmMeta": {
+                            "isAdvanced": False,
+                            "isInvisible": False,
+                            "activation": None,
+                            "synchronization": None,
+                            "nullValue": None,
+                            "isSecret": False,
+                            "stringExtra": {"isMultiline": False},
+                            "enumExtra": None,
+                        },
+                        "enum": [None],
+                    }
+                },
+                "additionalProperties": False,
+                "required": ["variant"],
+            },
+        )

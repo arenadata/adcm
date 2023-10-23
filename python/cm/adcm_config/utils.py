@@ -80,7 +80,7 @@ def to_flat_dict(config: dict, spec: dict) -> dict:
 
 
 def cook_file_type_name(obj: Union["ADCMEntity", "GroupConfig"], key: str, sub_key: str) -> str:
-    if hasattr(obj, "prototype"):
+    if isinstance(obj, ADCMEntity):
         filename = [obj.prototype.type, str(obj.id), key, sub_key]
     elif isinstance(obj, GroupConfig):
         filename = [

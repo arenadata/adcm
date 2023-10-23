@@ -15,14 +15,15 @@ from api_v2.component.serializers import (
     ComponentMaintenanceModeSerializer,
     ComponentSerializer,
     ComponentStatusSerializer,
+    HostComponentSerializer,
 )
-from api_v2.config.utils import get_config_schema
-from api_v2.views import CamelCaseReadOnlyModelViewSet
+from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.views import CamelCaseGenericViewSet, CamelCaseReadOnlyModelViewSet
 from cm.api import update_mm_objects
-from cm.models import Cluster, ClusterObject, ServiceComponent
-from django_filters.rest_framework.backends import DjangoFilterBackend
+from cm.models import Cluster, ClusterObject, Host, ServiceComponent
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
+from rest_framework.mixins import ListModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
@@ -31,6 +32,7 @@ from adcm.permissions import (
     CHANGE_MM_PERM,
     VIEW_CLUSTER_PERM,
     VIEW_COMPONENT_PERM,
+    VIEW_HOST_PERM,
     VIEW_SERVICE_PERM,
     DjangoModelPermissionsAudit,
     check_custom_perm,
@@ -39,13 +41,14 @@ from adcm.permissions import (
 from adcm.utils import get_maintenance_mode_response
 
 
-class ComponentViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+class ComponentViewSet(
+    PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet
+):  # pylint: disable=too-many-ancestors
     queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("pk")
     serializer_class = ComponentSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_COMPONENT_PERM]
     filterset_class = ComponentFilter
-    filter_backends = [DjangoFilterBackend]
 
     def get_queryset(self, *args, **kwargs):
         cluster = get_object_for_user(
@@ -91,8 +94,24 @@ class ComponentViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # p
 
         return Response(data=ComponentStatusSerializer(instance=component).data)
 
-    @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
-    def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        schema = get_config_schema(object_=self.get_object())
 
-        return Response(data=schema, status=HTTP_200_OK)
+class HostComponentViewSet(
+    PermissionListMixin, ListModelMixin, CamelCaseGenericViewSet
+):  # pylint: disable=too-many-ancestors
+    queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("prototype__name")
+    serializer_class = HostComponentSerializer
+    permission_classes = [DjangoModelPermissionsAudit]
+    permission_required = [VIEW_COMPONENT_PERM]
+    filterset_class = ComponentFilter
+
+    def get_queryset(self, *args, **kwargs):
+        cluster = get_object_for_user(
+            user=self.request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, pk=self.kwargs["cluster_pk"]
+        )
+        host = get_object_for_user(user=self.request.user, perms=VIEW_HOST_PERM, klass=Host, pk=self.kwargs["host_pk"])
+
+        return (
+            super()
+            .get_queryset(*args, **kwargs)
+            .filter(cluster=cluster, id__in=host.hostcomponent_set.all().values_list("component_id", flat=True))
+        )

@@ -2,7 +2,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,51 +30,71 @@ type serviceStatus struct {
 	Details []hostCompStatus `json:"details"`
 }
 
-type eventMsg struct {
+type eventMessage struct {
 	Event  string `json:"event"`
 	Object struct {
-		Type    string      `json:"type"`
-		Id      int         `json:"id"`
-		Details interface{} `json:"details"`
+		Id      int                  `json:"id"`
+		Changes *statusChangePayload `json:"changes,omitempty"`
 	} `json:"object"`
 }
 
-type eventDetail struct {
-	Id          string      `json:"id,omitempty"`
-	HostId      string      `json:"host_id,omitempty"`
-	ComponentId string      `json:"component_id,omitempty"`
-	Type        string      `json:"type"`
-	Value       interface{} `json:"value"`
+type statusChangePayload struct {
+	Id         int                        `json:"id,omitempty"`
+	Reason     *statusChangeReasonPayload `json:"reason,omitempty"`
+	IsBlocking bool                       `json:"isBlocking,omitempty"`
+	Cause      string                     `json:"cause,omitempty"`
+	Status     string                     `json:"status,omitempty"`
+	State      string                     `json:"state,omitempty"`
+	Version    string                     `json:"version,omitempty"`
 }
 
-func (e eventMsg) encode() ([]byte, error) {
+type statusChangeReasonPayload struct {
+	Message     string                          `json:"message"`
+	Placeholder *statusChangePlaceholderPayload `json:"placeholder"`
+}
+
+type statusChangePlaceholderPayload struct {
+	Source *statusChangeSourceTargetJobPayload `json:"source,omitempty"`
+	Target *statusChangeSourceTargetJobPayload `json:"target,omitempty"`
+	Job    *statusChangeSourceTargetJobPayload `json:"job,omitempty"`
+}
+
+type statusChangeSourceTargetJobPayload struct {
+	Type   string                     `json:"type"`
+	Name   string                     `json:"name"`
+	Params *statusChangeParamsPayload `json:"params"`
+}
+
+type statusChangeParamsPayload struct {
+	AdcmId      int `json:"adcmId,omitempty"`
+	ClusterId   int `json:"clusterId,omitempty"`
+	ServiceId   int `json:"serviceId,omitempty"`
+	ComponentId int `json:"componentId,omitempty"`
+	ProviderId  int `json:"ProviderId,omitempty"`
+	HostId      int `json:"hostId,omitempty"`
+	ActionId    int `json:"actionId,omitempty"`
+	JobId       int `json:"jobId,omitempty"`
+	PrototypeId int `json:"prototypeId,omitempty"`
+}
+
+func (e eventMessage) encode() ([]byte, error) {
 	js, err := json.Marshal(e)
 	return js, err
 }
 
-func newEventMsg4(status int, objType string, objId int, id2 int) eventMsg {
-	em := eventMsg{Event: "change_status"}
-	em.Object.Type = objType
-	em.Object.Id = objId
-	em.Object.Details = eventDetail{
-		Type:        "status",
-		Value:       strconv.Itoa(status),
-		Id:          strconv.Itoa(id2),
-		HostId:      strconv.Itoa(objId),
-		ComponentId: strconv.Itoa(id2),
-	}
-	return em
+func changeStatusMessage(objectType string, objectId int, status int) eventMessage {
+	message := eventMessage{Event: "update_" + objectType}
+	message.Object.Id = objectId
+	message.Object.Changes = buildStatusPayload(status)
+	return message
 }
 
-func newEventMsg(status int, objType string, objId int) eventMsg {
-	em := eventMsg{Event: "change_status"}
-	em.Object.Type = objType
-	em.Object.Id = objId
-	em.Object.Details = eventDetail{
-		Type:  "status",
-		Value: strconv.Itoa(status),
+func buildStatusPayload(status int) *statusChangePayload {
+	if status == 0 {
+		return &statusChangePayload{Status: "UP"}
 	}
-	return em
+
+	return &statusChangePayload{Status: "DOWN"}
 }
 
 func getServiceStatus(h Hub, cluster int, service int) (Status, []hostCompStatus) {

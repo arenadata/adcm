@@ -9,15 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from cm.models import Bundle, ObjectType
+from api_v2.prototype.utils import get_license_text
+from cm.models import Bundle, HostProvider, ObjectType, Prototype
 from rest_framework.fields import DateTimeField, FileField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
 from adcm.serializers import EmptySerializer
 
 
-class BundleIdSerializer(ModelSerializer):
+class BundleRelatedSerializer(ModelSerializer):
     class Meta:
         model = Bundle
         fields = ["id"]
@@ -41,7 +41,40 @@ class UploadBundleSerializer(EmptySerializer):
     file = FileField(help_text="bundle file for upload")
 
 
-class BundleRelatedSerializer(ModelSerializer):
+class UpgradeServicePrototypeSerializer(ModelSerializer):
+    license = SerializerMethodField()
+
+    class Meta:
+        model = Prototype
+        fields = ("id", "name", "display_name", "version", "license")
+
+    @staticmethod
+    def get_license(prototype: Prototype) -> dict:
+        return {"status": prototype.license, "text": get_license_text(prototype=prototype)}
+
+
+class UpgradeBundleSerializer(ModelSerializer):
+    prototype_id = SerializerMethodField()
+    license_status = SerializerMethodField()
+    unaccepted_services_prototypes = SerializerMethodField()
+
     class Meta:
         model = Bundle
-        fields = ["id"]
+        fields = ["id", "prototype_id", "license_status", "unaccepted_services_prototypes"]
+
+    def get_prototype_id(self, bundle: Bundle) -> int:
+        return bundle.prototype_set.filter(type__in=(ObjectType.CLUSTER, ObjectType.PROVIDER)).first().pk
+
+    def get_license_status(self, bundle: Bundle) -> str:
+        return bundle.prototype_set.filter(type__in=(ObjectType.CLUSTER, ObjectType.PROVIDER)).first().license
+
+    def get_unaccepted_services_prototypes(self, bundle: Bundle) -> list:
+        if isinstance(self.context["parent"], HostProvider):
+            return []
+
+        added_services = self.context["parent"].clusterobject_set.all().values_list("prototype__name", flat=True)
+        prototypes = bundle.prototype_set.filter(
+            type=ObjectType.SERVICE, license="unaccepted", name__in=added_services
+        ).order_by("pk")
+
+        return UpgradeServicePrototypeSerializer(instance=prototypes, many=True).data

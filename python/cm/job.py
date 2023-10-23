@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 # pylint: disable=too-many-lines
 
 import copy
@@ -44,7 +45,6 @@ from cm.api import (
     make_host_comp_list,
     save_hc,
 )
-from cm.api_context import CTX
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.hierarchy import Tree
 from cm.inventory import (
@@ -58,6 +58,8 @@ from cm.issue import (
     check_component_constraint,
     check_hc_requires,
     check_service_requires,
+    lock_affected_objects,
+    unlock_affected_objects,
     update_hierarchy_issues,
 )
 from cm.logger import logger
@@ -85,7 +87,7 @@ from cm.models import (
     Upgrade,
     get_object_cluster,
 )
-from cm.status_api import post_event
+from cm.status_api import UpdateEventType, update_event
 from cm.utils import get_env_with_venv_path
 from cm.variant import process_variant
 from django.conf import settings
@@ -109,9 +111,7 @@ def start_task(
         raise_adcm_ex("WRONG_ACTION_TYPE", msg)
 
     task = prepare_task(action, obj, conf, attr, hostcomponent, hosts, verbose)
-    CTX.event.send_state()
-    run_task(task, CTX.event)
-    CTX.event.send_state()
+    run_task(task)
 
     return task
 
@@ -170,11 +170,6 @@ def prepare_task(
         attr = {}
 
     with atomic():
-        if cluster:
-            on_commit(
-                func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")
-            )
-
         task = create_task(
             action=action,
             obj=obj,
@@ -194,6 +189,8 @@ def prepare_task(
             task.config = new_conf
             task.save()
 
+        on_commit(func=partial(update_event, object_=task, update=(UpdateEventType.STATE, JobStatus.CREATED)))
+
     re_apply_policy_for_jobs(action_object=obj, task=task)
 
     return task
@@ -203,17 +200,11 @@ def restart_task(task: TaskLog):
     if task.status in (JobStatus.CREATED, JobStatus.RUNNING):
         raise_adcm_ex("TASK_ERROR", f"task #{task.pk} is running")
     elif task.status == JobStatus.SUCCESS:
-        run_task(task, CTX.event)
-        CTX.event.send_state()
+        run_task(task)
     elif task.status in (JobStatus.FAILED, JobStatus.ABORTED):
-        run_task(task, CTX.event, "restart")
-        CTX.event.send_state()
+        run_task(task, "restart")
     else:
         raise_adcm_ex("TASK_ERROR", f"task #{task.pk} has unexpected status: {task.status}")
-
-
-def cancel_task(task: TaskLog):
-    task.cancel(CTX.event)
 
 
 def get_host_object(action: Action, cluster: Cluster | None) -> ADCMEntity | None:
@@ -259,7 +250,12 @@ def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict)
         raise_adcm_ex("TASK_ERROR", "action config is required")
 
     check_attr(proto, action, attr, flat_spec)
-    process_variant(obj=obj, spec=spec, conf=conf)
+
+    object_config = {}
+    if obj.config is not None:
+        object_config = ConfigLog.objects.get(id=obj.config.current).config
+
+    process_variant(obj=obj, spec=spec, conf=object_config)
     check_config_spec(proto=proto, obj=action, spec=spec, flat_spec=flat_spec, conf=conf, attr=attr)
 
     new_config = process_config_spec(obj=obj, spec=spec, new_config=conf)
@@ -737,7 +733,6 @@ def create_task(
         status=JobStatus.CREATED,
         selector=get_selector(obj, action),
     )
-    set_task_status(task, JobStatus.CREATED, CTX.event)
 
     if action.type == ActionType.JOB.value:
         sub_actions = [None]
@@ -758,7 +753,7 @@ def create_task(
         log_type = sub_action.script_type if sub_action else action.script_type
         LogStorage.objects.create(job=job, name=log_type, type="stdout", format="txt")
         LogStorage.objects.create(job=job, name=log_type, type="stderr", format="txt")
-        set_job_status(job.pk, JobStatus.CREATED, CTX.event)
+        set_job_status(job.pk, JobStatus.CREATED)
         Path(settings.RUN_DIR, f"{job.pk}", "tmp").mkdir(parents=True, exist_ok=True)
 
     return task
@@ -816,13 +811,14 @@ def set_action_state(
     )
 
     if state:
-        obj.set_state(state, CTX.event)
+        obj.set_state(state)
+        update_event(object_=obj, update=(UpdateEventType.STATE, state))
 
     for m_state in multi_state_set or []:
-        obj.set_multi_state(m_state, CTX.event)
+        obj.set_multi_state(m_state)
 
     for m_state in multi_state_unset or []:
-        obj.unset_multi_state(m_state, CTX.event)
+        obj.unset_multi_state(m_state)
 
 
 def restore_hc(task: TaskLog, action: Action, status: str):
@@ -848,17 +844,12 @@ def restore_hc(task: TaskLog, action: Action, status: str):
     save_hc(cluster, host_comp_list)
 
 
-def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:  # pylint: disable=too-many-locals
+def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:
     action = task.action
     obj = task.task_object
     state, multi_state_set, multi_state_unset = get_state(action=action, job=job, status=status)
 
     with atomic():
-        if cluster := get_object_cluster(obj=obj):
-            on_commit(
-                func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")
-            )
-
         set_action_state(
             action=action,
             task=task,
@@ -868,9 +859,9 @@ def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:  # pyli
             multi_state_unset=multi_state_unset,
         )
         restore_hc(task=task, action=action, status=status)
-        task.unlock_affected()
-        set_task_status(task=task, status=status, event=CTX.event)
+        unlock_affected_objects(task=task)
         update_hierarchy_issues(obj=obj)
+        set_task_final_status(task=task, status=status)
 
     upgrade = Upgrade.objects.filter(action=action).first()
     if upgrade:
@@ -914,8 +905,8 @@ def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:  # pyli
         object_changes={},
     )
     cef_logger(audit_instance=audit_log, signature_id="Action completion")
+    update_event(object_=task, update=(UpdateEventType.STATUS, status))
 
-    CTX.event.send_state()
     try:
         load_mm_objects()
     except Exception as e:  # pylint: disable=broad-except
@@ -929,21 +920,10 @@ def cook_log_name(tag, level, ext="txt"):
 
 def log_custom(job_id, name, log_format, body):
     job = JobLog.obj.get(id=job_id)
-    log_storage = LogStorage.objects.create(job=job, name=name, type="custom", format=log_format, body=body)
-    post_event(
-        event="add_job_log",
-        object_id=job.pk,
-        object_type="job",
-        details={
-            "id": log_storage.pk,
-            "type": log_storage.type,
-            "name": log_storage.name,
-            "format": log_storage.format,
-        },
-    )
+    LogStorage.objects.create(job=job, name=name, type="custom", format=log_format, body=body)
 
 
-def run_task(task: TaskLog, event, args: str = ""):
+def run_task(task: TaskLog, args: str = ""):
     err_file = open(  # pylint: disable=consider-using-with
         Path(settings.LOG_DIR, "task_runner.err"),
         "a+",
@@ -962,9 +942,7 @@ def run_task(task: TaskLog, event, args: str = ""):
 
     tree = Tree(obj=task.task_object)
     affected_objs = (node.value for node in tree.get_all_affected(node=tree.built_from))
-    task.lock_affected(objects=affected_objs)
-
-    set_task_status(task=task, status=JobStatus.RUNNING, event=event)
+    lock_affected_objects(task=task, objects=affected_objs)
 
 
 def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
@@ -995,14 +973,13 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
         config_parser.write(config_file)
 
 
-def set_task_status(task: TaskLog, status: str, event):
+def set_task_final_status(task: TaskLog, status: str):
     task.status = status
     task.finish_date = timezone.now()
-    task.save()
-    event.set_task_status(task=task, status=status)
+    task.save(update_fields=["status", "finish_date"])
 
 
-def set_job_status(job_id: int, status: str, event, pid: int = 0):
+def set_job_status(job_id: int, status: str, pid: int = 0):
     job_query = JobLog.objects.filter(id=job_id)
     job_query.update(status=status, pid=pid, finish_date=timezone.now())
     job = job_query.first()
@@ -1012,16 +989,14 @@ def set_job_status(job_id: int, status: str, event, pid: int = 0):
             job.task.lock.reason = job.cook_reason()
             job.task.lock.save(update_fields=["reason"])
 
-    event.set_job_status(job=job, status=status)
 
-
-def abort_all(event):
+def abort_all():
     for task in TaskLog.objects.filter(status=JobStatus.RUNNING):
-        set_task_status(task, JobStatus.ABORTED, event)
-        task.unlock_affected()
+        set_task_final_status(task, JobStatus.ABORTED)
+        unlock_affected_objects(task=task)
+
     for job in JobLog.objects.filter(status=JobStatus.RUNNING):
-        set_job_status(job.pk, JobStatus.ABORTED, event)
-    CTX.event.send_state()
+        set_job_status(job.pk, JobStatus.ABORTED)
 
 
 def getattr_first(attr: str, *objects: Any, default: Any = None) -> Any:

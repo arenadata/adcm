@@ -2,6 +2,7 @@
 - type: provider
   name: provider
   version: &version '1.0'
+  config_group_customization: true
 
   config:
     - name: json

@@ -11,8 +11,8 @@
 # limitations under the License.
 
 from api_v2.action.views import ActionViewSet
-from api_v2.cluster.views import ClusterViewSet, MappingViewSet
-from api_v2.component.views import ComponentViewSet
+from api_v2.cluster.views import ClusterViewSet
+from api_v2.component.views import ComponentViewSet, HostComponentViewSet
 from api_v2.config.views import ConfigLogViewSet
 from api_v2.group_config.views import GroupConfigViewSet
 from api_v2.host.views import HostClusterViewSet, HostGroupConfigViewSet
@@ -136,12 +136,12 @@ host_router.register(prefix=HOST_PREFIX, viewset=HostClusterViewSet, basename="h
 host_action_router = NestedSimpleRouter(parent_router=host_router, parent_prefix=HOST_PREFIX, lookup="host")
 host_action_router.register(prefix=ACTION_PREFIX, viewset=ActionViewSet, basename="host-cluster-action")
 
+host_component_router = NestedSimpleRouter(parent_router=host_router, parent_prefix=HOST_PREFIX, lookup="host")
+host_component_router.register(prefix=COMPONENT_PREFIX, viewset=HostComponentViewSet, basename="host-cluster-component")
+
 # other
 upgrade_router = NestedSimpleRouter(parent_router=cluster_router, parent_prefix=CLUSTER_PREFIX, lookup="cluster")
 upgrade_router.register(prefix="upgrades", viewset=UpgradeViewSet)
-
-mapping_router = NestedSimpleRouter(parent_router=cluster_router, parent_prefix=CLUSTER_PREFIX, lookup="cluster")
-mapping_router.register(prefix="mapping", viewset=MappingViewSet, basename="mapping")
 
 
 urlpatterns = [
@@ -171,7 +171,7 @@ urlpatterns = [
     # host
     *host_router.urls,
     *host_action_router.urls,
+    *host_component_router.urls,
     # other
     *upgrade_router.urls,
-    *mapping_router.urls,
 ]

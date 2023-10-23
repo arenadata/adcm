@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=wrong-import-order,wrong-import-position
-
 DOCUMENTATION = """
 ---
 module: adcm_change_flag
@@ -68,9 +67,18 @@ sys.path.append("/adcm/python")
 import adcm.init_django  # pylint: disable=unused-import
 
 from cm.ansible_plugin import get_context_object, check_context_type
+from cm.status_api import update_event, UpdateEventType
 from cm.logger import logger
 from cm.flag import update_object_flag, remove_flag
-from cm.models import ClusterObject, ServiceComponent, get_object_cluster, HostProvider, Host, ADCMEntity
+from cm.models import (
+    ClusterObject,
+    ServiceComponent,
+    get_object_cluster,
+    HostProvider,
+    Host,
+    ADCMEntity,
+    ADCMEntityStatus,
+)
 
 cluster_context_type = ("cluster", "service", "component")
 
@@ -184,7 +192,9 @@ class ActionModule(ActionBase):
         for obj in objects:
             if self._task.args["operation"] == "up":
                 update_object_flag(obj=obj, msg=msg)
+                update_event(object_=obj, update=(UpdateEventType.STATUS, ADCMEntityStatus.UP))
             elif self._task.args["operation"] == "down":
                 remove_flag(obj=obj, msg=msg)
+                update_event(object_=obj, update=(UpdateEventType.STATUS, ADCMEntityStatus.DOWN))
 
         return {"failed": False, "changed": True}

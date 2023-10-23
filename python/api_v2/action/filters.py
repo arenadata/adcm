@@ -10,9 +10,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
+from django_filters.rest_framework import (
+    BooleanFilter,
+    CharFilter,
+    FilterSet,
+    NumberFilter,
+    OrderingFilter,
+)
 
 
 class ActionFilter(FilterSet):
-    name = CharFilter(label="Action name", field_name="name", lookup_expr="icontains")
+    name = CharFilter(label="Action Name", field_name="name", lookup_expr="icontains")
+    dispaly_name = CharFilter(label="Action Display Name", field_name="display_name", lookup_expr="icontains")
+    is_host_own_action = BooleanFilter(
+        label="Is Host Own Action", field_name="host_action", method="filter_is_host_own_action"
+    )
+    prototype_id = NumberFilter(field_name="prototype", label="Prototype ID")
     ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "ID"}, label="ordering")
+
+    def filter_is_host_own_action(self, queryset, name, value):
+        return queryset.filter(**{name: not value})

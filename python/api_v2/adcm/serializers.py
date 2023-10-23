@@ -10,32 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rbac.models import User
-from rest_framework.serializers import BooleanField, CharField, ModelSerializer
-
-from adcm.serializers import EmptySerializer
-
-
-class LoginSerializer(EmptySerializer):
-    username = CharField(write_only=True)
-    password = CharField(style={"input_type": "password"}, trim_whitespace=False, write_only=True)
+from api_v2.concern.serializers import ConcernSerializer
+from api_v2.prototype.serializers import PrototypeRelatedSerializer
+from cm.models import ADCM
+from rest_framework.serializers import ModelSerializer
 
 
-class ProfileSerializer(ModelSerializer):
-    new_password = CharField(trim_whitespace=False, required=False, write_only=True, source="password")
-    current_password = CharField(trim_whitespace=False, required=False, write_only=True)
-    is_super_user = BooleanField(source="is_superuser", read_only=True)
+class AdcmSerializer(ModelSerializer):
+    prototype = PrototypeRelatedSerializer(read_only=True)
+    concerns = ConcernSerializer(read_only=True, many=True)
 
     class Meta:
-        model = User
-        fields = [
-            "id",
-            "username",
-            "email",
-            "first_name",
-            "last_name",
-            "is_super_user",
-            "new_password",
-            "current_password",
-        ]
-        read_only_fields = ["username", "email", "first_name", "last_name", "is_super_user"]
+        model = ADCM
+        fields = ["id", "name", "state", "multi_state", "prototype", "concerns"]

@@ -190,3 +190,15 @@
             type: config
             strict: false
             name: list
+
+- name: service_5_variant_type_without_values
+  type: service
+  version: *version
+  config:
+    - name: variant
+      type: variant
+      required: false
+      source:
+        type: builtin
+        strict: true
+        name: host_in_cluster
