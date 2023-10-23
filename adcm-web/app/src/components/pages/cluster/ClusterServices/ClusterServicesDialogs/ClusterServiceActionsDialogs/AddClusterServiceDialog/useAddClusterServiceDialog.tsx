@@ -74,9 +74,7 @@ export const useAddClusterServiceForm = () => {
           dependableService: service.name,
         })),
       )
-      .filter(
-        (service) => !servicesInTableIds.includes(service.prototypeId) && !serviceIds.includes(service.prototypeId),
-      );
+      .filter((service) => !servicesInTableIds.includes(service.id) && !serviceIds.includes(service.id));
   }, [formData, nonAppendedServicesWithDeps, servicesInTableIds]);
 
   const servicesWithDependenciesList = useMemo(() => {
@@ -94,9 +92,8 @@ export const useAddClusterServiceForm = () => {
 
     if (servicesWithDependencies.length > 0 && serviceIds.length > 0) {
       return (
-        [...new Set([...servicesWithDependencies.map((service) => service?.prototypeId), ...serviceIds])]
-          .sort()
-          .join() === serviceIds.join()
+        [...new Set([...servicesWithDependencies.map((service) => service?.id), ...serviceIds])].sort().join() ===
+        serviceIds.join()
       );
     }
 
