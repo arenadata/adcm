@@ -25,7 +25,7 @@ from api.job.serializers import (
     TaskSerializer,
 )
 from audit.utils import audit
-from cm.job import cancel_task, restart_task
+from cm.job import restart_task
 from cm.models import ActionType, JobLog, LogStorage, TaskLog
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -214,7 +214,7 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Gener
     def cancel(self, request: Request, task_pk: int) -> Response:
         task = get_object_for_user(request.user, VIEW_TASKLOG_PERMISSION, TaskLog, id=task_pk)
         check_custom_perm(request.user, "change", TaskLog, task)
-        cancel_task(task)
+        task.cancel()
 
         return Response(status=HTTP_200_OK)
 

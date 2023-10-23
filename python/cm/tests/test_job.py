@@ -32,7 +32,6 @@ from cm.job import (
     restore_hc,
     set_action_state,
     set_job_status,
-    set_task_status,
 )
 from cm.models import (
     ADCM,
@@ -156,21 +155,6 @@ class TestJob(BaseTestCase):
         self.assertEqual(job.status, status)
         self.assertEqual(job.pid, pid)
         self.assertEqual(task.lock.reason["placeholder"]["job"]["name"], action.display_name)
-
-    def test_set_task_status(self):
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
-        action = Action.objects.create(prototype=prototype)
-        task = TaskLog.objects.create(
-            action=action,
-            object_id=1,
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-        )
-
-        set_task_status(task, JobStatus.RUNNING)
-
-        self.assertEqual(task.status, JobStatus.RUNNING)
 
     def test_get_state_single_job(self):
         bundle = gen_bundle()

@@ -19,8 +19,6 @@ import sys
 from pathlib import Path
 
 import adcm.init_django  # pylint: disable=unused-import
-from django.conf import settings
-from django.db.transaction import atomic
 
 import cm.job
 from cm.ansible_plugin import finish_check
@@ -30,6 +28,8 @@ from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, Prototype, ServiceComponent
 from cm.upgrade import bundle_revert, bundle_switch
 from cm.utils import get_env_with_venv_path
+from django.conf import settings
+from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
 
