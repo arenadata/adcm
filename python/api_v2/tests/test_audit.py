@@ -630,7 +630,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint: disable=too-many-instance-at
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
         self.check_last_audit_log(
-            operation_name="[] host(s) added",
+            operation_name="host added",
             operation_type="update",
             operation_result="fail",
             audit_object__object_id=self.cluster_1.pk,
