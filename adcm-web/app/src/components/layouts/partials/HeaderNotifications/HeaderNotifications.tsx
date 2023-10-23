@@ -15,7 +15,7 @@ const HeaderNotifications: React.FC = () => {
 
   return (
     <>
-      <button className={className}>
+      <button className={className} data-test="bell">
         <Bell width={28} />
       </button>
     </>

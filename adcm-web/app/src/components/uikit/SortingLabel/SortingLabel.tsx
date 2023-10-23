@@ -27,7 +27,7 @@ const SortingLabel: React.FC<SortingLabelProps> = ({ children, onSorting, name, 
     onSorting?.({ sortBy: name, sortDirection: newSortDirection });
   };
   return (
-    <div className={wrapClasses} onClick={handleClick}>
+    <div className={wrapClasses} onClick={handleClick} data-test="sorting">
       <div className={s.sortingLabel__label}>{children}</div>
       <Icon name="arrow-sorting" size={20} className={arrowClasses} />
     </div>

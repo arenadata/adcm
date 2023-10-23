@@ -46,19 +46,28 @@ const Table: React.FC<TableProps> = ({
 }) => {
   const tableClasses = cn(s.table, s[`table_${variant}`]);
   const contextData = useMemo(
-    () => ({ isAllSelected, toggleSelectedAll, sortParams, onSorting }),
-    [isAllSelected, toggleSelectedAll, sortParams, onSorting],
+    () => ({ isAllSelected, toggleSelectedAll, sortParams, onSorting, columns }),
+    [isAllSelected, toggleSelectedAll, sortParams, onSorting, columns],
   );
+
   return (
     <div className={cn(className, s.tableWrapper, 'scroll')} {...props} data-test={dataTest}>
       <TableContext.Provider value={contextData}>
         <table className={tableClasses} style={{ width: width }}>
           {columns?.length && <TableHead columns={columns} />}
           <TableBody>
-            {isLoading && <EmptyRow columnCount={columns?.length || defaultEmptyRowLength}>{spinner}</EmptyRow>}
+            {isLoading && (
+              <EmptyRow data-test="loading" columnCount={columns?.length || defaultEmptyRowLength}>
+                {spinner}
+              </EmptyRow>
+            )}
             {!isLoading && children}
             {!isLoading && (
-              <EmptyRow columnCount={columns?.length || defaultEmptyRowLength} className={s.table__row_noData}>
+              <EmptyRow
+                columnCount={columns?.length || defaultEmptyRowLength}
+                className={s.table__row_noData}
+                data-test="no-data"
+              >
                 {noData}
               </EmptyRow>
             )}
