@@ -1877,7 +1877,7 @@ class MessageTemplate(ADCMModel):
         return {
             "type": PlaceHolderType.JOB.value,
             "name": action.display_name or action.name,
-            "params": {"job_id": job.id},
+            "params": {"job_id": job.task.id},
         }
 
 
