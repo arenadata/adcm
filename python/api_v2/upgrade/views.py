@@ -20,6 +20,7 @@ from api_v2.config.utils import (
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
 from api_v2.views import CamelCaseGenericViewSet
+from audit.utils import audit
 from cm.adcm_config.config import get_prototype_config
 from cm.errors import AdcmEx
 from cm.models import Cluster, HostProvider, TaskLog, Upgrade
@@ -144,6 +145,7 @@ class UpgradeViewSet(  # pylint: disable=too-many-ancestors
 
         return Response(serializer.data)
 
+    @audit
     @action(methods=["post"], detail=True)
     def run(self, request: Request, *_, **__) -> Response:
         serializer = self.get_serializer_class()(data=request.data)

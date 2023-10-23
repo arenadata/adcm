@@ -35,9 +35,9 @@ def get_audit_operation_and_object(
     operation_name = None
 
     # Order of if elif is important, do not change it please
-    if "action" in path:
+    if "action" in path or "actions" in path:
         audit_operation, audit_object = action_case(path=path)
-    elif "upgrade" in path:
+    elif "upgrade" in path or "upgrades" in path:
         audit_operation, audit_object = upgrade_case(path=path)
     elif "stack" in path:
         audit_operation, audit_object = stack_case(

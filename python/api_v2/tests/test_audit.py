@@ -10,17 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-lines
+
 from datetime import timedelta
 
 from api_v2.tests.base import BaseAPITestCase
-from audit.models import AuditLog, AuditObject, AuditSession
+from audit.models import AuditObject, AuditSession
 from cm.models import (
+    Action,
     Cluster,
     ClusterObject,
     Host,
     ObjectType,
     Prototype,
     ServiceComponent,
+    Upgrade,
 )
 from rbac.models import User
 from rbac.services.user import create_user
@@ -108,12 +112,12 @@ class TestAudit(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
 
-class TestClusterAudit(BaseAPITestCase):
+class TestClusterAudit(BaseAPITestCase):  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     def setUp(self) -> None:
         super().setUp()
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        create_user(**self.test_user_credentials)
+        self.test_user = create_user(**self.test_user_credentials)
 
         self.prototype = Prototype.objects.get(bundle=self.bundle_1, type=ObjectType.CLUSTER)
 
@@ -150,13 +154,13 @@ class TestClusterAudit(BaseAPITestCase):
             name__in=["service_3_manual_add", "service_2"],
         ).order_by("pk")
 
-    def _check_last_audit_log(self, **kwargs) -> None:
-        audit_log = AuditLog.objects.order_by("-pk").first()
-        self.assertIsNotNone(audit_log)
+        self.cluster_action = Action.objects.get(name="action", prototype=self.cluster_1.prototype)
+        self.service_action = Action.objects.get(name="action", prototype=self.service_1.prototype)
+        self.component_action = Action.objects.get(name="action_1_comp_1", prototype=self.component_1.prototype)
+        self.host_action = Action.objects.get(name="cluster_on_host", prototype=self.cluster_1.prototype)
 
-        expected_log = AuditLog.objects.filter(**kwargs)
-        self.assertEqual(expected_log.count(), 1)
-        self.assertEqual(audit_log.pk, expected_log.get().pk)
+        upgrade_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_one_upgrade")
+        self.cluster_upgrade = Upgrade.objects.get(bundle=upgrade_bundle, name="upgrade_via_action_simple")
 
     def test_create_success(self):
         response: Response = self.client.post(
@@ -165,7 +169,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Cluster created",
             operation_type="create",
             operation_result="success",
@@ -185,12 +189,12 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Cluster created",
             operation_type="create",
             operation_result="denied",
             audit_object__isnull=True,
-            user__username=self.test_user_credentials["username"],
+            user__username=self.test_user.username,
         )
 
     def test_create_fail(self):
@@ -200,7 +204,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Cluster created",
             operation_type="create",
             operation_result="fail",
@@ -216,7 +220,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Cluster updated",
             operation_type="update",
             operation_result="success",
@@ -237,7 +241,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Cluster updated",
             operation_type="update",
             operation_result="denied",
@@ -246,7 +250,7 @@ class TestClusterAudit(BaseAPITestCase):
             audit_object__object_type="cluster",
             audit_object__is_deleted=False,
             object_changes={},
-            user__username=self.test_user_credentials["username"],
+            user__username=self.test_user.username,
         )
 
     def test_edit_fail(self):
@@ -256,7 +260,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Cluster updated",
             operation_type="update",
             operation_result="fail",
@@ -278,7 +282,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Cluster deleted",
             operation_type="delete",
             operation_result="success",
@@ -298,7 +302,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Cluster deleted",
             operation_type="delete",
             operation_result="denied",
@@ -307,7 +311,7 @@ class TestClusterAudit(BaseAPITestCase):
             audit_object__object_type="cluster",
             audit_object__is_deleted=False,
             object_changes={},
-            user__username=self.test_user_credentials["username"],
+            user__username=self.test_user.username,
         )
 
     def test_delete_fail(self):
@@ -316,7 +320,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Cluster deleted",
             operation_type="delete",
             operation_result="fail",
@@ -332,7 +336,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Host-Component map updated",
             operation_type="update",
             operation_result="success",
@@ -353,7 +357,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Host-Component map updated",
             operation_type="update",
             operation_result="denied",
@@ -362,7 +366,7 @@ class TestClusterAudit(BaseAPITestCase):
             audit_object__object_type="cluster",
             audit_object__is_deleted=False,
             object_changes={},
-            user__username=self.test_user_credentials["username"],
+            user__username=self.test_user.username,
         )
 
     def test_create_mapping_fail(self):
@@ -372,7 +376,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Host-Component map updated",
             operation_type="update",
             operation_result="fail",
@@ -388,7 +392,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Cluster import updated",
             operation_type="update",
             operation_result="success",
@@ -409,7 +413,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Cluster import updated",
             operation_type="update",
             operation_result="denied",
@@ -418,7 +422,7 @@ class TestClusterAudit(BaseAPITestCase):
             audit_object__object_type="cluster",
             audit_object__is_deleted=False,
             object_changes={},
-            user__username=self.test_user_credentials["username"],
+            user__username=self.test_user.username,
         )
 
     def test_create_import_fail(self):
@@ -430,7 +434,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Cluster import updated",
             operation_type="update",
             operation_result="fail",
@@ -446,7 +450,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Cluster configuration updated",
             operation_type="update",
             operation_result="success",
@@ -467,7 +471,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Cluster configuration updated",
             operation_type="update",
             operation_result="denied",
@@ -476,7 +480,7 @@ class TestClusterAudit(BaseAPITestCase):
             audit_object__object_type="cluster",
             audit_object__is_deleted=False,
             object_changes={},
-            user__username=self.test_user_credentials["username"],
+            user__username=self.test_user.username,
         )
 
     def test_update_config_fail(self):
@@ -488,7 +492,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Cluster configuration updated",
             operation_type="update",
             operation_result="fail",
@@ -505,7 +509,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name=f"{self.host_1.name} host removed",
             operation_type="update",
             operation_result="success",
@@ -527,7 +531,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name=f"{self.host_1.name} host removed",
             operation_type="update",
             operation_result="denied",
@@ -536,7 +540,7 @@ class TestClusterAudit(BaseAPITestCase):
             audit_object__object_type="cluster",
             audit_object__is_deleted=False,
             object_changes={},
-            user__username=self.test_user_credentials["username"],
+            user__username=self.test_user.username,
         )
 
     def test_delete_host_fail(self):
@@ -548,7 +552,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="host removed",
             operation_type="update",
             operation_result="fail",
@@ -567,7 +571,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name=f"[{self.host_2.name}, {self.host_3.name}] host(s) added",
             operation_type="update",
             operation_result="success",
@@ -588,7 +592,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name=f"[{self.host_2.name}, {self.host_3.name}] host(s) added",
             operation_type="update",
             operation_result="denied",
@@ -597,7 +601,7 @@ class TestClusterAudit(BaseAPITestCase):
             audit_object__object_type="cluster",
             audit_object__is_deleted=False,
             object_changes={},
-            user__username=self.test_user_credentials["username"],
+            user__username=self.test_user.username,
         )
 
     def test_add_host_fail(self):
@@ -609,7 +613,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name=f"[{self.host_2.name}, {self.host_3.name}] host(s) added",
             operation_type="update",
             operation_result="fail",
@@ -625,8 +629,8 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self._check_last_audit_log(
-            operation_name=f"[] host(s) added",
+        self.check_last_audit_log(
+            operation_name="[] host(s) added",
             operation_type="update",
             operation_result="fail",
             audit_object__object_id=self.cluster_1.pk,
@@ -647,7 +651,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Host updated",
             operation_type="update",
             operation_result="success",
@@ -671,8 +675,8 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
-            operation_name=f"Host updated",
+        self.check_last_audit_log(
+            operation_name="Host updated",
             operation_type="update",
             operation_result="denied",
             audit_object__object_id=self.host_1.pk,
@@ -680,7 +684,7 @@ class TestClusterAudit(BaseAPITestCase):
             audit_object__object_type="host",
             audit_object__is_deleted=False,
             object_changes={},
-            user__username=self.test_user_credentials["username"],
+            user__username=self.test_user.username,
         )
 
     def test_change_host_mm_fail(self):
@@ -697,7 +701,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="Host updated",
             operation_type="update",
             operation_result="fail",
@@ -719,8 +723,10 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self._check_last_audit_log(
-            operation_name=f"[{', '.join(proto.display_name for proto in self.service_add_prototypes)}] service(s) added",
+        self.check_last_audit_log(
+            operation_name=(
+                f"[{', '.join(proto.display_name for proto in self.service_add_prototypes)}] service(s) added"
+            ),
             operation_type="update",
             operation_result="success",
             audit_object__object_id=self.cluster_1.pk,
@@ -741,8 +747,8 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self._check_last_audit_log(
-            operation_name=f"[] service(s) added",
+        self.check_last_audit_log(
+            operation_name="[] service(s) added",
             operation_type="update",
             operation_result="fail",
             audit_object__object_id=self.cluster_1.pk,
@@ -765,8 +771,10 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
-            operation_name=f"[{', '.join(proto.display_name for proto in self.service_add_prototypes)}] service(s) added",
+        self.check_last_audit_log(
+            operation_name=(
+                f"[{', '.join(proto.display_name for proto in self.service_add_prototypes)}] service(s) added"
+            ),
             operation_type="update",
             operation_result="denied",
             audit_object__object_id=self.cluster_1.pk,
@@ -774,7 +782,7 @@ class TestClusterAudit(BaseAPITestCase):
             audit_object__object_type="cluster",
             audit_object__is_deleted=False,
             object_changes={},
-            user__username=self.test_user_credentials["username"],
+            user__username=self.test_user.username,
         )
 
     def test_add_service_fail(self):
@@ -787,8 +795,10 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
-            operation_name=f"[{', '.join(proto.display_name for proto in self.service_add_prototypes)}] service(s) added",
+        self.check_last_audit_log(
+            operation_name=(
+                f"[{', '.join(proto.display_name for proto in self.service_add_prototypes)}] service(s) added"
+            ),
             operation_type="update",
             operation_result="fail",
             audit_object__isnull=True,
@@ -804,7 +814,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name=f"{self.service_1.display_name} service removed",
             operation_type="update",
             operation_result="success",
@@ -826,7 +836,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name=f"{self.service_1.display_name} service removed",
             operation_type="update",
             operation_result="denied",
@@ -835,7 +845,7 @@ class TestClusterAudit(BaseAPITestCase):
             audit_object__object_type="cluster",
             audit_object__is_deleted=False,
             object_changes={},
-            user__username=self.test_user_credentials["username"],
+            user__username=self.test_user.username,
         )
 
     def test_delete_non_existent_service_fail(self):
@@ -847,7 +857,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name="service removed",
             operation_type="update",
             operation_result="fail",
@@ -868,11 +878,387 @@ class TestClusterAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self._check_last_audit_log(
+        self.check_last_audit_log(
             operation_name=f"{self.service_1.display_name} service removed",
             operation_type="update",
             operation_result="denied",
             audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_run_cluster_action_success(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:cluster-action-run", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action.pk}
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.cluster_action.display_name} action launched",
+            operation_type="update",
+            operation_result="success",
+            audit_object__object_id=self.cluster_1.pk,
+            audit_object__object_name=self.cluster_1.name,
+            audit_object__object_type="cluster",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_run_cluster_action_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="v2:cluster-action-run",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action.pk},
+                ),
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.cluster_action.display_name} action launched",
+            operation_type="update",
+            operation_result="denied",
+            audit_object__object_id=self.cluster_1.pk,
+            audit_object__object_name=self.cluster_1.name,
+            audit_object__object_type="cluster",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_run_non_existent_cluster_action_fail(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:cluster-action-run",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.get_non_existent_pk(model=Action)},
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="{action_display_name} action launched",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__object_id=self.cluster_1.pk,
+            audit_object__object_name=self.cluster_1.name,
+            audit_object__object_type="cluster",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_run_service_action_success(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:service-action-run",
+                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk, "pk": self.service_action.pk},
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.service_action.display_name} action launched",
+            operation_type="update",
+            operation_result="success",
+            audit_object__object_id=self.service_1.pk,
+            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
+            audit_object__object_type="service",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_run_service_action_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="View service configurations"):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="v2:service-action-run",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "pk": self.service_action.pk,
+                    },
+                ),
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.service_action.display_name} action launched",
+            operation_type="update",
+            operation_result="denied",
+            audit_object__object_id=self.service_1.pk,
+            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
+            audit_object__object_type="service",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_run_service_action_fail(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:service-action-run",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "pk": self.get_non_existent_pk(model=Action),
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="{action_display_name} action launched",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__object_id=self.service_1.pk,
+            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
+            audit_object__object_type="service",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_run_component_action_success(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:component-action-run",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                    "pk": self.component_action.pk,
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.component_action.display_name} action launched",
+            operation_type="update",
+            operation_result="success",
+            audit_object__object_id=self.component_1.pk,
+            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
+            audit_object__object_type="component",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_run_component_action_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=self.component_1, role_name="View component configurations"):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="v2:component-action-run",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                        "pk": self.component_action.pk,
+                    },
+                ),
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.component_action.display_name} action launched",
+            operation_type="update",
+            operation_result="denied",
+            audit_object__object_id=self.component_1.pk,
+            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
+            audit_object__object_type="component",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_run_component_action_fail(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:component-action-run",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                    "pk": self.get_non_existent_pk(model=Action),
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="{action_display_name} action launched",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__object_id=self.component_1.pk,
+            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
+            audit_object__object_type="component",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_run_host_action_success(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:host-cluster-action-run",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "host_pk": self.host_1.pk,
+                    "pk": self.host_action.pk,
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.host_action.display_name} action launched",
+            operation_type="update",
+            operation_result="success",
+            audit_object__object_id=self.host_1.pk,
+            audit_object__object_name=self.host_1.name,
+            audit_object__object_type="host",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_run_host_action_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(
+            to=self.test_user, on=self.host_1, role_name="View host configurations"
+        ), self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="v2:host-cluster-action-run",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "host_pk": self.host_1.pk,
+                        "pk": self.host_action.pk,
+                    },
+                ),
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.host_action.display_name} action launched",
+            operation_type="update",
+            operation_result="denied",
+            audit_object__object_id=self.host_1.pk,
+            audit_object__object_name=self.host_1.name,
+            audit_object__object_type="host",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_run_host_action_fail(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:host-cluster-action-run",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "host_pk": self.host_1.pk,
+                    "pk": self.get_non_existent_pk(model=Action),
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="{action_display_name} action launched",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__object_id=self.host_1.pk,
+            audit_object__object_name=self.host_1.name,
+            audit_object__object_type="host",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_upgrade_cluster_success(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:upgrade-run",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "pk": self.cluster_upgrade.pk,
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.cluster_upgrade.action.display_name} upgrade launched",
+            operation_type="update",
+            operation_result="success",
+            audit_object__object_id=self.cluster_1.pk,
+            audit_object__object_name=self.cluster_1.name,
+            audit_object__object_type="cluster",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_upgrade_cluster_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="v2:upgrade-run",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "pk": self.cluster_upgrade.pk,
+                    },
+                ),
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.cluster_upgrade.action.display_name} upgrade launched",
+            operation_type="update",
+            operation_result="denied",
+            audit_object__object_id=self.cluster_1.pk,
+            audit_object__object_name=self.cluster_1.name,
+            audit_object__object_type="cluster",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_upgrade_cluster_fail(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:upgrade-run",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "pk": self.get_non_existent_pk(model=Upgrade),
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="Upgraded to",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__object_id=self.cluster_1.pk,
+            audit_object__object_name=self.cluster_1.name,
+            audit_object__object_type="cluster",
+            audit_object__is_deleted=False,
             object_changes={},
             user__username="admin",
         )

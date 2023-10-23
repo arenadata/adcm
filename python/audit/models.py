@@ -128,8 +128,12 @@ AUDIT_OBJECT_TYPE_TO_MODEL_MAP = {v: k for k, v in MODEL_TO_AUDIT_OBJECT_TYPE_MA
 PATH_STR_TO_OBJ_CLASS_MAP = {
     "adcm": ADCM,
     "service": ClusterObject,
+    "services": ClusterObject,
     "component": ServiceComponent,
+    "components": ServiceComponent,
     "provider": HostProvider,
     "host": Host,
+    "hosts": Host,
     "cluster": Cluster,
+    "clusters": Cluster,
 }
