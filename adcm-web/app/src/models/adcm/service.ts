@@ -12,10 +12,10 @@ export interface AdcmServiceDependOnServiceComponent {
 }
 
 export interface AdcmServiceDependOnService {
-  prototypeId: number;
+  id: number;
   name: string;
   displayName: string;
-  components: AdcmServiceDependOnServiceComponent[];
+  componentPrototypes: AdcmServiceDependOnServiceComponent[];
 }
 
 export interface AdcmService {
