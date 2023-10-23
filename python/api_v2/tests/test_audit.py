@@ -331,7 +331,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint: disable=too-many-instance-at
 
     def test_create_mapping_success(self):
         response: Response = self.client.post(
-            path=reverse(viewname="v2:mapping-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
             data=[{"hostId": self.host_1.pk, "componentId": self.component_1.pk}],
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -352,7 +352,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint: disable=too-many-instance-at
         self.client.login(**self.test_user_credentials)
 
         response: Response = self.client.post(
-            path=reverse(viewname="v2:mapping-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
             data=[{"hostId": self.host_1.pk, "componentId": self.component_1.pk}],
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -371,7 +371,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint: disable=too-many-instance-at
 
     def test_create_mapping_fail(self):
         response: Response = self.client.post(
-            path=reverse(viewname="v2:mapping-list", kwargs={"cluster_pk": self.get_non_existent_pk(model=Cluster)}),
+            path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.get_non_existent_pk(model=Cluster)}),
             data=[{"hostId": self.host_1.pk, "componentId": self.component_1.pk}],
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)

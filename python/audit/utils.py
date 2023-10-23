@@ -288,11 +288,7 @@ def audit(func):
                     case ("ServiceViewSet", "destroy", {"cluster_pk": cluster_pk, "pk": servie_pk}):
                         deleted_obj = ClusterObject.objects.filter(pk=servie_pk).first()
                     case ("ClusterViewSet", _, {"pk": cluster_pk}) | (
-                        "MappingViewSet"
-                        | "ImportViewSet"
-                        | "ConfigLogViewSet"
-                        | "HostClusterViewSet"
-                        | "ServiceViewSet",
+                        "ImportViewSet" | "ConfigLogViewSet" | "HostClusterViewSet" | "ServiceViewSet",
                         _,
                         {"cluster_pk": cluster_pk},
                     ):
