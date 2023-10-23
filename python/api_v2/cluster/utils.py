@@ -34,7 +34,7 @@ def get_depend_on(
             "name": required_service.name,
             "display_name": required_service.display_name,
             "version": required_service.version,
-            "licence": {"status": required_service.license, "text": get_license_text(prototype=required_service)},
+            "license": {"status": required_service.license, "text": get_license_text(prototype=required_service)},
             "component_prototypes": [],
         }
 
