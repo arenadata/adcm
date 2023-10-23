@@ -35,7 +35,6 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
-from django.utils import timezone
 
 
 def validate_line_break_character(value: str) -> None:
@@ -1543,10 +1542,6 @@ class TaskLog(ADCMModel):
         if i == 10:
             raise AdcmEx("NO_JOBS_RUNNING", "no jobs running")
 
-        self.status = JobStatus.ABORTED
-        self.finish_date = timezone.now()
-        self.save(update_fields=["status", "finish_date"])
-
         try:
             os.kill(self.pid, signal.SIGTERM)
         except OSError as e:
@@ -1882,7 +1877,7 @@ class MessageTemplate(ADCMModel):
         return {
             "type": PlaceHolderType.JOB.value,
             "name": action.display_name or action.name,
-            "params": {"job_id": job.id},
+            "params": {"job_id": job.task.id},
         }
 
 

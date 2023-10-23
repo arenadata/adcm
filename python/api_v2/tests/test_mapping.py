@@ -42,11 +42,12 @@ class TestMapping(BaseAPITestCase):
 
     def test_list_mapping_success(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v2:mapping-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 1)
+        self.assertDictEqual(response.json()[0], {"componentId": 1, "hostId": 1, "id": 1})
 
     def test_create_mapping_success(self):
         host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3")
@@ -54,19 +55,20 @@ class TestMapping(BaseAPITestCase):
         component_2 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
         )
+        data = [
+            {"hostId": host_3.pk, "componentId": component_2.pk},
+            {"hostId": self.host_1.pk, "componentId": self.component_1.pk},
+        ]
 
         response: Response = self.client.post(
-            path=reverse(viewname="v2:mapping-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data=[
-                {"host_id": host_3.pk, "component_id": component_2.pk},
-                {"host_id": self.host_1.pk, "component_id": self.component_1.pk},
-            ],
+            path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}), data=data
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(HostComponent.objects.count(), 2)
 
+    def test_create_empty_mapping_success(self):
         response: Response = self.client.post(
-            path=reverse(viewname="v2:mapping-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
             data=[],
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -74,7 +76,7 @@ class TestMapping(BaseAPITestCase):
 
     def test_mapping_hosts_success(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v2:mapping-hosts", kwargs={"cluster_pk": self.cluster_1.pk}),
+            path=reverse(viewname="v2:cluster-mapping-hosts", kwargs={"pk": self.cluster_1.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -83,7 +85,7 @@ class TestMapping(BaseAPITestCase):
 
     def test_mapping_components_success(self):
         response: Response = self.client.get(
-            path=reverse(viewname="v2:mapping-components", kwargs={"cluster_pk": self.cluster_1.pk}),
+            path=reverse(viewname="v2:cluster-mapping-components", kwargs={"pk": self.cluster_1.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

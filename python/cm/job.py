@@ -207,11 +207,6 @@ def restart_task(task: TaskLog):
         raise_adcm_ex("TASK_ERROR", f"task #{task.pk} has unexpected status: {task.status}")
 
 
-def cancel_task(task: TaskLog):
-    task.cancel()
-    update_event(object_=task, update=(UpdateEventType.STATE, JobStatus.ABORTED))
-
-
 def get_host_object(action: Action, cluster: Cluster | None) -> ADCMEntity | None:
     obj = None
     if action.prototype.type == "service":
@@ -738,7 +733,6 @@ def create_task(
         status=JobStatus.CREATED,
         selector=get_selector(obj, action),
     )
-    set_task_status(task, JobStatus.CREATED)
 
     if action.type == ActionType.JOB.value:
         sub_actions = [None]
@@ -866,8 +860,8 @@ def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:
         )
         restore_hc(task=task, action=action, status=status)
         unlock_affected_objects(task=task)
-        set_task_status(task=task, status=status)
         update_hierarchy_issues(obj=obj)
+        set_task_final_status(task=task, status=status)
 
     upgrade = Upgrade.objects.filter(action=action).first()
     if upgrade:
@@ -949,8 +943,6 @@ def run_task(task: TaskLog, args: str = ""):
     tree = Tree(obj=task.task_object)
     affected_objs = (node.value for node in tree.get_all_affected(node=tree.built_from))
     lock_affected_objects(task=task, objects=affected_objs)
-    update_event(object_=task, update=(UpdateEventType.STATUS, JobStatus.RUNNING))
-    set_task_status(task=task, status=JobStatus.RUNNING)
 
 
 def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
@@ -981,10 +973,10 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
         config_parser.write(config_file)
 
 
-def set_task_status(task: TaskLog, status: str):
+def set_task_final_status(task: TaskLog, status: str):
     task.status = status
     task.finish_date = timezone.now()
-    task.save()
+    task.save(update_fields=["status", "finish_date"])
 
 
 def set_job_status(job_id: int, status: str, pid: int = 0):
@@ -1000,7 +992,7 @@ def set_job_status(job_id: int, status: str, pid: int = 0):
 
 def abort_all():
     for task in TaskLog.objects.filter(status=JobStatus.RUNNING):
-        set_task_status(task, JobStatus.ABORTED)
+        set_task_final_status(task, JobStatus.ABORTED)
         unlock_affected_objects(task=task)
 
     for job in JobLog.objects.filter(status=JobStatus.RUNNING):

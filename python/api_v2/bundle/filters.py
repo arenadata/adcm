@@ -10,13 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Bundle
+from cm.models import Bundle, ObjectType
+from django.db.models.query import QuerySet
 from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
 
 
 class BundleFilter(FilterSet):
-    display_name = CharFilter(label="Display name", field_name="prototype__display_name", lookup_expr="icontains")
-    product = CharFilter(label="Product name", field_name="prototype__display_name", lookup_expr="iexact")
+    display_name = CharFilter(label="Display name", field_name="prototype__display_name", method="filter_display_name")
+    product = CharFilter(label="Product name", field_name="prototype__display_name", method="filter_product")
     ordering = OrderingFilter(
         fields={"prototype__display_name": "displayName", "date": "uploadTime"},
         field_labels={"prototype__display_name": "Display name", "date": "Upload time"},
@@ -26,3 +27,13 @@ class BundleFilter(FilterSet):
     class Meta:
         model = Bundle
         fields = ["id"]
+
+    def filter_display_name(self, queryset: QuerySet[Bundle], name: str, value: str) -> QuerySet[Bundle]:
+        return queryset.filter(
+            **{f"{name}__icontains": value, "prototype__type__in": [ObjectType.CLUSTER, ObjectType.PROVIDER]}
+        )
+
+    def filter_product(self, queryset: QuerySet[Bundle], name: str, value: str) -> QuerySet[Bundle]:
+        return queryset.filter(
+            **{f"{name}__iexact": value, "prototype__type__in": [ObjectType.CLUSTER, ObjectType.PROVIDER]}
+        )

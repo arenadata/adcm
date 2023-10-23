@@ -12,6 +12,7 @@
 
 
 from api_v2.cluster.serializers import ClusterRelatedSerializer
+from api_v2.cluster.utils import get_depend_on
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.host.serializers import HostShortSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
@@ -27,8 +28,6 @@ from rest_framework.serializers import (
     ModelSerializer,
     SerializerMethodField,
 )
-
-from adcm.utils import get_requires
 
 
 class ComponentMappingSerializer(ModelSerializer):
@@ -53,24 +52,10 @@ class ComponentMappingSerializer(ModelSerializer):
 
     @staticmethod
     def get_depend_on(instance: ServiceComponent) -> list[dict] | None:
-        requires_data = get_requires(prototype=instance.prototype)
-        if requires_data is None:
-            return None
+        if instance.prototype.requires:
+            return get_depend_on(prototype=instance.prototype)
 
-        out = []
-        for req_dict in requires_data:
-            for req_component in req_dict.get("components", []):
-                out.append(
-                    {
-                        "prototype": {
-                            "id": req_component["prototype_id"],
-                            "name": req_component["name"],
-                            "display_name": req_component["display_name"],
-                        }
-                    }
-                )
-
-        return out
+        return None
 
 
 class ComponentSerializer(ModelSerializer):

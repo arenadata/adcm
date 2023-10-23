@@ -84,9 +84,11 @@ class ServiceMaintenanceModeSerializer(ModelSerializer):
 
 
 class ServiceNameSerializer(ModelSerializer):
+    prototype = PrototypeRelatedSerializer(read_only=True)
+
     class Meta:
         model = ClusterObject
-        fields = ["id", "name", "display_name"]
+        fields = ["id", "name", "display_name", "state", "prototype"]
 
 
 class RelatedComponentsStatusesSerializer(ModelSerializer):

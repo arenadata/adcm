@@ -2001,7 +2001,6 @@ class TestProviderConfig(BaseAPITestCase):
                 "enumExtra": None,
             },
             "type": "object",
-            "additionalProperties": False,
             "properties": {
                 "json": {
                     "oneOf": [
@@ -2029,7 +2028,6 @@ class TestProviderConfig(BaseAPITestCase):
                 "group": {
                     "title": "group",
                     "type": "object",
-                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2043,6 +2041,7 @@ class TestProviderConfig(BaseAPITestCase):
                         "stringExtra": None,
                         "enumExtra": None,
                     },
+                    "additionalProperties": False,
                     "properties": {
                         "map": {
                             "title": "map",
@@ -2069,7 +2068,6 @@ class TestProviderConfig(BaseAPITestCase):
                 "activatable_group": {
                     "title": "activatable_group",
                     "type": "object",
-                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2083,47 +2081,60 @@ class TestProviderConfig(BaseAPITestCase):
                         "stringExtra": None,
                         "enumExtra": None,
                     },
+                    "additionalProperties": False,
                     "properties": {
                         "secretmap": {
-                            "title": "secretmap",
-                            "type": "object",
-                            "description": "",
-                            "default": {
-                                "integer_key": "10",
-                                "string_key": "string",
-                            },
-                            "readOnly": False,
-                            "adcmMeta": {
-                                "isAdvanced": False,
-                                "isInvisible": False,
-                                "activation": None,
-                                "synchronization": None,
-                                "nullValue": None,
-                                "isSecret": True,
-                                "stringExtra": None,
-                                "enumExtra": None,
-                            },
-                            "additionalProperties": True,
-                            "properties": {},
+                            "oneOf": [
+                                {
+                                    "title": "secretmap",
+                                    "type": "object",
+                                    "description": "",
+                                    "default": {
+                                        "integer_key": "10",
+                                        "string_key": "string",
+                                    },
+                                    "readOnly": False,
+                                    "adcmMeta": {
+                                        "isAdvanced": False,
+                                        "isInvisible": False,
+                                        "activation": None,
+                                        "synchronization": None,
+                                        "nullValue": None,
+                                        "isSecret": True,
+                                        "stringExtra": None,
+                                        "enumExtra": None,
+                                    },
+                                    "additionalProperties": True,
+                                    "properties": {},
+                                },
+                                {"type": "null"},
+                            ]
                         }
                     },
                     "required": ["secretmap"],
                 },
             },
+            "additionalProperties": False,
             "required": ["json", "group", "activatable_group"],
         }
         actual_data = response.json()
 
-        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"][
+        integer_key = ansible_decrypt(
+            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
+                "integer_key"
+            ]
+        )
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
             "integer_key"
-        ] = ansible_decrypt(
-            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"]["integer_key"]
+        ] = integer_key
+        string_key = ansible_decrypt(
+            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
+                "string_key"
+            ]
         )
-        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"][
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
             "string_key"
-        ] = ansible_decrypt(
-            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"]["string_key"]
-        )
+        ] = string_key
 
         self.assertDictEqual(actual_data, expected_data)
 
@@ -2292,7 +2303,6 @@ class TestProviderGroupConfig(BaseAPITestCase):
                 "enumExtra": None,
             },
             "type": "object",
-            "additionalProperties": False,
             "properties": {
                 "json": {
                     "oneOf": [
@@ -2320,7 +2330,6 @@ class TestProviderGroupConfig(BaseAPITestCase):
                 "group": {
                     "title": "group",
                     "type": "object",
-                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2334,6 +2343,7 @@ class TestProviderGroupConfig(BaseAPITestCase):
                         "stringExtra": None,
                         "enumExtra": None,
                     },
+                    "additionalProperties": False,
                     "properties": {
                         "map": {
                             "title": "map",
@@ -2360,7 +2370,6 @@ class TestProviderGroupConfig(BaseAPITestCase):
                 "activatable_group": {
                     "title": "activatable_group",
                     "type": "object",
-                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2374,47 +2383,60 @@ class TestProviderGroupConfig(BaseAPITestCase):
                         "stringExtra": None,
                         "enumExtra": None,
                     },
+                    "additionalProperties": False,
                     "properties": {
                         "secretmap": {
-                            "title": "secretmap",
-                            "type": "object",
-                            "description": "",
-                            "default": {
-                                "integer_key": "10",
-                                "string_key": "string",
-                            },
-                            "readOnly": False,
-                            "adcmMeta": {
-                                "isAdvanced": False,
-                                "isInvisible": False,
-                                "activation": None,
-                                "synchronization": {"isAllowChange": True},
-                                "nullValue": None,
-                                "isSecret": True,
-                                "stringExtra": None,
-                                "enumExtra": None,
-                            },
-                            "additionalProperties": True,
-                            "properties": {},
+                            "oneOf": [
+                                {
+                                    "title": "secretmap",
+                                    "type": "object",
+                                    "description": "",
+                                    "default": {
+                                        "integer_key": "10",
+                                        "string_key": "string",
+                                    },
+                                    "readOnly": False,
+                                    "adcmMeta": {
+                                        "isAdvanced": False,
+                                        "isInvisible": False,
+                                        "activation": None,
+                                        "synchronization": {"isAllowChange": True},
+                                        "nullValue": None,
+                                        "isSecret": True,
+                                        "stringExtra": None,
+                                        "enumExtra": None,
+                                    },
+                                    "additionalProperties": True,
+                                    "properties": {},
+                                },
+                                {"type": "null"},
+                            ]
                         }
                     },
                     "required": ["secretmap"],
                 },
             },
+            "additionalProperties": False,
             "required": ["json", "group", "activatable_group"],
         }
         actual_data = response.json()
 
-        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"][
+        integer_key = ansible_decrypt(
+            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
+                "integer_key"
+            ]
+        )
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
             "integer_key"
-        ] = ansible_decrypt(
-            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"]["integer_key"]
+        ] = integer_key
+        string_key = ansible_decrypt(
+            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
+                "string_key"
+            ]
         )
-        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"][
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
             "string_key"
-        ] = ansible_decrypt(
-            msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"]["string_key"]
-        )
+        ] = string_key
 
         self.assertDictEqual(actual_data, expected_data)
 
@@ -2520,7 +2542,6 @@ class TestHostConfig(BaseAPITestCase):
                 "enumExtra": None,
             },
             "type": "object",
-            "additionalProperties": False,
             "properties": {
                 "structure": {
                     "title": "structure",
@@ -2540,7 +2561,6 @@ class TestHostConfig(BaseAPITestCase):
                     },
                     "items": {
                         "type": "object",
-                        "additionalProperties": False,
                         "title": "",
                         "description": "",
                         "default": {},
@@ -2555,6 +2575,7 @@ class TestHostConfig(BaseAPITestCase):
                             "stringExtra": None,
                             "enumExtra": None,
                         },
+                        "additionalProperties": False,
                         "properties": {
                             "string": {
                                 "type": "string",
@@ -2574,24 +2595,29 @@ class TestHostConfig(BaseAPITestCase):
                                 },
                             },
                             "integer": {
-                                "type": "integer",
-                                "title": "integer",
-                                "description": "",
-                                "default": None,
-                                "readOnly": False,
-                                "adcmMeta": {
-                                    "isAdvanced": False,
-                                    "isInvisible": False,
-                                    "activation": None,
-                                    "synchronization": None,
-                                    "nullValue": None,
-                                    "isSecret": False,
-                                    "stringExtra": None,
-                                    "enumExtra": None,
-                                },
+                                "oneOf": [
+                                    {
+                                        "type": "integer",
+                                        "title": "integer",
+                                        "description": "",
+                                        "default": None,
+                                        "readOnly": False,
+                                        "adcmMeta": {
+                                            "isAdvanced": False,
+                                            "isInvisible": False,
+                                            "activation": None,
+                                            "synchronization": None,
+                                            "nullValue": None,
+                                            "isSecret": False,
+                                            "stringExtra": None,
+                                            "enumExtra": None,
+                                        },
+                                    },
+                                    {"type": "null"},
+                                ]
                             },
                         },
-                        "required": [],
+                        "required": ["string"],
                     },
                 },
                 "variant": {
@@ -2615,7 +2641,6 @@ class TestHostConfig(BaseAPITestCase):
                 "group": {
                     "title": "group",
                     "type": "object",
-                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2629,6 +2654,7 @@ class TestHostConfig(BaseAPITestCase):
                         "stringExtra": None,
                         "enumExtra": None,
                     },
+                    "additionalProperties": False,
                     "properties": {
                         "list": {
                             "oneOf": [
@@ -2675,7 +2701,6 @@ class TestHostConfig(BaseAPITestCase):
                 "activatable_group": {
                     "title": "activatable_group",
                     "type": "object",
-                    "additionalProperties": False,
                     "description": "",
                     "default": {},
                     "readOnly": False,
@@ -2689,6 +2714,7 @@ class TestHostConfig(BaseAPITestCase):
                         "stringExtra": None,
                         "enumExtra": None,
                     },
+                    "additionalProperties": False,
                     "properties": {
                         "option": {
                             "title": "option",
@@ -2711,6 +2737,7 @@ class TestHostConfig(BaseAPITestCase):
                     "required": ["option"],
                 },
             },
+            "additionalProperties": False,
             "required": ["structure", "variant", "group", "activatable_group"],
         }
         actual_data = response.json()
@@ -3812,3 +3839,61 @@ class TestAttrTransformation(BaseAPITestCase):
 
         new_attr = convert_adcm_meta_to_attr(adcm_meta=adcm_meta)
         self.assertDictEqual(new_attr, adcm_meta)
+
+
+class TestConfigSchemaEnumWithoutValues(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.service = self.add_service_to_cluster(
+            service_name="service_5_variant_type_without_values", cluster=self.cluster_1
+        )
+
+    def test_schema(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:service-config-schema", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service.pk}
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "title": "Configuration",
+                "description": "",
+                "readOnly": False,
+                "adcmMeta": {
+                    "isAdvanced": False,
+                    "isInvisible": False,
+                    "activation": None,
+                    "synchronization": None,
+                    "nullValue": None,
+                    "isSecret": False,
+                    "stringExtra": None,
+                    "enumExtra": None,
+                },
+                "type": "object",
+                "properties": {
+                    "variant": {
+                        "title": "variant",
+                        "description": "",
+                        "default": None,
+                        "readOnly": False,
+                        "adcmMeta": {
+                            "isAdvanced": False,
+                            "isInvisible": False,
+                            "activation": None,
+                            "synchronization": None,
+                            "nullValue": None,
+                            "isSecret": False,
+                            "stringExtra": {"isMultiline": False},
+                            "enumExtra": None,
+                        },
+                        "enum": [None],
+                    }
+                },
+                "additionalProperties": False,
+                "required": ["variant"],
+            },
+        )
