@@ -3839,3 +3839,61 @@ class TestAttrTransformation(BaseAPITestCase):
 
         new_attr = convert_adcm_meta_to_attr(adcm_meta=adcm_meta)
         self.assertDictEqual(new_attr, adcm_meta)
+
+
+class TestConfigSchemaEnumWithoutValues(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.service = self.add_service_to_cluster(
+            service_name="service_5_variant_type_without_values", cluster=self.cluster_1
+        )
+
+    def test_schema(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:service-config-schema", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service.pk}
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "title": "Configuration",
+                "description": "",
+                "readOnly": False,
+                "adcmMeta": {
+                    "isAdvanced": False,
+                    "isInvisible": False,
+                    "activation": None,
+                    "synchronization": None,
+                    "nullValue": None,
+                    "isSecret": False,
+                    "stringExtra": None,
+                    "enumExtra": None,
+                },
+                "type": "object",
+                "properties": {
+                    "variant": {
+                        "title": "variant",
+                        "description": "",
+                        "default": None,
+                        "readOnly": False,
+                        "adcmMeta": {
+                            "isAdvanced": False,
+                            "isInvisible": False,
+                            "activation": None,
+                            "synchronization": None,
+                            "nullValue": None,
+                            "isSecret": False,
+                            "stringExtra": {"isMultiline": False},
+                            "enumExtra": None,
+                        },
+                        "enum": [None],
+                    }
+                },
+                "additionalProperties": False,
+                "required": ["variant"],
+            },
+        )
