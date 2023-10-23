@@ -50,6 +50,7 @@ const ThemeSwitcher: React.FC = () => {
         className={cn(s.themeSwitcher__btn, { 'is-active': theme === THEME.Light })}
         onClick={lightOn}
         title={theme === THEME.Dark ? 'Switch to light theme' : undefined}
+        data-test="light-theme"
       >
         <Icon name="g2-sun" size={24} />
       </button>
@@ -57,6 +58,7 @@ const ThemeSwitcher: React.FC = () => {
         className={cn(s.themeSwitcher__btn, { 'is-active': theme === THEME.Dark })}
         onClick={darkOn}
         title={theme === THEME.Light ? 'Switch to dark theme' : undefined}
+        data-test="dark-theme"
       >
         <Icon name="g2-moon" size={24} />
       </button>
