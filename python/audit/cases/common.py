@@ -223,9 +223,9 @@ def action_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | Non
 
     match path:
         case (
-            [obj_type, obj_pk, "action", action_pk, "run"]
-            | [_, _, obj_type, obj_pk, "action", action_pk, "run"]
-            | [_, _, _, _, obj_type, obj_pk, "action", action_pk, "run"]
+            [obj_type, obj_pk, "action" | "actions", action_pk, "run"]
+            | [_, _, obj_type, obj_pk, "action" | "actions", action_pk, "run"]
+            | [_, _, _, _, obj_type, obj_pk, "action" | "actions", action_pk, "run"]
         ):
             audit_operation = AuditOperation(
                 name="{action_display_name} action launched",
@@ -255,7 +255,7 @@ def upgrade_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | No
     audit_object = None
 
     match path:
-        case [obj_type, obj_pk, "upgrade", upgrade_pk, "do"]:
+        case [obj_type, obj_pk, "upgrade" | "upgrades", upgrade_pk, "do" | "run"]:
             upgrade = Upgrade.objects.filter(pk=upgrade_pk).first()
             if upgrade and upgrade.action:
                 audit_operation_name = f"{upgrade.action.display_name} upgrade launched"

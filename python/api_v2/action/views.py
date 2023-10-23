@@ -31,6 +31,7 @@ from api_v2.config.utils import (
 )
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
+from audit.utils import audit
 from cm.adcm_config.config import get_prototype_config
 from cm.errors import AdcmEx
 from cm.job import start_task
@@ -140,6 +141,7 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
 
         return Response(data=serializer.data)
 
+    @audit
     @action(methods=["post"], detail=True, url_path="run")
     def run(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         parent_object = self.get_parent_object()

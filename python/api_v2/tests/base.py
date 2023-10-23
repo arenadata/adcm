@@ -10,11 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import tarfile
+from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
 from typing import TypedDict
 
 from api_v2.prototype.utils import accept_license
+from audit.models import AuditLog
 from cm.api import (
     add_cluster,
     add_hc,
@@ -40,7 +42,10 @@ from cm.models import (
 )
 from django.conf import settings
 from init_db import init
-from rbac.models import User
+from rbac.models import Role, User
+from rbac.services.group import create as create_group
+from rbac.services.policy import policy_create
+from rbac.services.role import role_create
 from rbac.services.user import create_user
 from rbac.upgrade.role import init_roles
 from rest_framework.test import APITestCase
@@ -167,3 +172,25 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
             }
 
         return create_user(**user_data)
+
+    def check_last_audit_log(self, **kwargs) -> None:
+        audit_log = AuditLog.objects.order_by("-pk").first()
+        self.assertIsNotNone(audit_log)
+
+        expected_log = AuditLog.objects.filter(**kwargs)
+        self.assertEqual(expected_log.count(), 1)
+        self.assertEqual(audit_log.pk, expected_log.get().pk)
+
+    @contextmanager
+    def grant_permissions(self, to: User, on: list[ADCMEntity] | ADCMEntity, role_name: str):
+        if not isinstance(on, list):
+            on = [on]
+        group = create_group(name_to_display=f"Group for role `{role_name}`", user_set=[{"id": to.pk}])
+        custom_role = role_create(display_name=f"Custom `{role_name}` role", child=[Role.objects.get(name=role_name)])
+        policy = policy_create(name=f"Policy for role `{role_name}`", role=custom_role, group=[group], object=on)
+
+        yield
+
+        policy.delete()
+        custom_role.delete()
+        group.delete()
