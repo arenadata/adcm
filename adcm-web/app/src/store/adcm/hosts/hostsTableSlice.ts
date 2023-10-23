@@ -7,13 +7,16 @@ type AdcmHostsTableState = ListState<AdcmHostsFilter> & {
   relatedData: {
     clusters: AdcmCluster[];
     hostProviders: AdcmHostProvider[];
+    isClustersLoaded: boolean;
+    isHostProvidersLoaded: boolean;
   };
+  isAllDataLoaded: boolean;
 };
 
 const createInitialState = (): AdcmHostsTableState => ({
   filter: {
     name: undefined,
-    hostProvider: undefined,
+    hostproviderName: undefined,
     clusterName: undefined,
   },
   paginationParams: {
@@ -27,8 +30,11 @@ const createInitialState = (): AdcmHostsTableState => ({
   },
   relatedData: {
     clusters: [],
+    isClustersLoaded: false,
     hostProviders: [],
+    isHostProvidersLoaded: false,
   },
+  isAllDataLoaded: false,
 });
 
 const loadClusters = createAsyncThunk('adcm/hostsTable/loadClusters', async (arg, thunkAPI) => {
@@ -54,8 +60,7 @@ const loadHostProviders = createAsyncThunk('adcm/hostsTable/hostProviders', asyn
 });
 
 const loadRelatedData = createAsyncThunk('adcm/hostsTable/loadRelatedData', async (arg, thunkAPI) => {
-  thunkAPI.dispatch(loadClusters());
-  thunkAPI.dispatch(loadHostProviders());
+  await Promise.all([thunkAPI.dispatch(loadClusters()), thunkAPI.dispatch(loadHostProviders())]);
 });
 
 const hostsTableSlice = createListSlice({
@@ -69,9 +74,20 @@ const hostsTableSlice = createListSlice({
   extraReducers: (builder) => {
     builder.addCase(loadClusters.fulfilled, (state, action) => {
       state.relatedData.clusters = action.payload;
+      state.relatedData.isClustersLoaded = true;
+    });
+    builder.addCase(loadClusters.rejected, (state) => {
+      state.relatedData.clusters = [];
     });
     builder.addCase(loadHostProviders.fulfilled, (state, action) => {
       state.relatedData.hostProviders = action.payload;
+      state.relatedData.isHostProvidersLoaded = true;
+    });
+    builder.addCase(loadHostProviders.rejected, (state) => {
+      state.relatedData.hostProviders = [];
+    });
+    builder.addCase(loadRelatedData.fulfilled, (state) => {
+      state.isAllDataLoaded = state.relatedData.isClustersLoaded && state.relatedData.isHostProvidersLoaded;
     });
   },
 });

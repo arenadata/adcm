@@ -2,11 +2,12 @@ import { createAsyncThunk, createListSlice } from '@store/redux';
 import { ListState } from '@models/table';
 import { AdcmBundlesFilter } from '@models/adcm/bundle';
 import { AdcmPrototypesApi } from '@api';
-import { AdcmProduct, AdcmPrototypeType } from '@models/adcm';
+import { AdcmPrototypeType, AdcmPrototypeVersions } from '@models/adcm';
 
 type AdcmBundlesTableState = ListState<AdcmBundlesFilter> & {
   relatedData: {
-    products: AdcmProduct[];
+    products: AdcmPrototypeVersions[];
+    isProductsLoaded: boolean;
   };
 };
 
@@ -26,13 +27,17 @@ const createInitialState = (): AdcmBundlesTableState => ({
   },
   relatedData: {
     products: [],
+    isProductsLoaded: false,
   },
 });
 
 const loadPrototypeVersions = createAsyncThunk('adcm/bundlesTable/loadPrototype', async (arg, thunkAPI) => {
   try {
-    const prototypesWithVersions = await AdcmPrototypesApi.getPrototypeVersions({ type: AdcmPrototypeType.Cluster });
-    return prototypesWithVersions;
+    const prototypesWithVersions = await Promise.all([
+      AdcmPrototypesApi.getPrototypeVersions({ type: AdcmPrototypeType.Cluster }),
+      AdcmPrototypesApi.getPrototypeVersions({ type: AdcmPrototypeType.Provider }),
+    ]);
+    return prototypesWithVersions.flat();
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
@@ -52,7 +57,11 @@ const bundlesTableSlice = createListSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(loadPrototypeVersions.fulfilled, (state, action) => {
-      state.relatedData.products = action.payload.map(({ name, displayName }) => ({ name, displayName }));
+      state.relatedData.products = action.payload;
+      state.relatedData.isProductsLoaded = true;
+    });
+    builder.addCase(loadPrototypeVersions.rejected, (state) => {
+      state.relatedData.products = [];
     });
   },
 });

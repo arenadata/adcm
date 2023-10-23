@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { useStore, useDispatch, useRequestTimer, useDebounce } from '@hooks';
 import { getBundles, refreshBundles, cleanupBundles } from '@store/adcm/bundles/bundlesSlice';
-import { loadRelatedData, cleanupRelatedData } from '@store/adcm/bundles/bundlesTableSlice';
+import { loadRelatedData, cleanupList } from '@store/adcm/bundles/bundlesTableSlice';
 import { defaultDebounceDelay } from '@constants';
+import { usePersistBundlesTableSettings } from './usePersistBundlesTableSettings';
 
 export const useRequestBundles = () => {
   const dispatch = useDispatch();
@@ -11,12 +12,14 @@ export const useRequestBundles = () => {
   const requestFrequency = useStore(({ adcm }) => adcm.bundlesTable.requestFrequency);
   const sortParams = useStore(({ adcm }) => adcm.bundlesTable.sortParams);
 
+  usePersistBundlesTableSettings();
+
   useEffect(() => {
     dispatch(loadRelatedData());
 
     return () => {
       dispatch(cleanupBundles());
-      dispatch(cleanupRelatedData());
+      dispatch(cleanupList());
     };
   }, [dispatch]);
 

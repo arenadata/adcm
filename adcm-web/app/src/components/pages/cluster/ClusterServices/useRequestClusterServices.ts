@@ -1,10 +1,11 @@
 import { defaultDebounceDelay } from '@constants';
 import { useDebounce, useDispatch, useRequestTimer, useStore } from '@hooks';
 import { cleanupServices, getServices, refreshServices } from '@store/adcm/cluster/services/servicesSlice';
-import { cleanupRelatedData, loadRelatedData } from '@store/adcm/cluster/services/servicesTableSlice';
+import { cleanupList, loadRelatedData } from '@store/adcm/cluster/services/servicesTableSlice';
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { loadClusterServicesDynamicActions } from '@store/adcm/cluster/services/servicesDynamicActionsSlice';
+import { usePersistClusterServicesTableSettings } from '@pages/cluster/ClusterServices/usePersistClusterServicesTableSettings';
 
 export const useRequestClusterServices = () => {
   const dispatch = useDispatch();
@@ -17,11 +18,13 @@ export const useRequestClusterServices = () => {
 
   const services = useStore((s) => s.adcm.services.services);
 
+  usePersistClusterServicesTableSettings();
+
   useEffect(() => {
     dispatch(loadRelatedData(clusterId));
 
     return () => {
-      dispatch(cleanupRelatedData());
+      dispatch(cleanupList());
       dispatch(cleanupServices());
     };
   }, [dispatch, clusterId]);

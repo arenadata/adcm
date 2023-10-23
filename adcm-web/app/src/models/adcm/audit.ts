@@ -88,7 +88,7 @@ export interface AdcmAuditLoginUser {
 }
 
 export interface AdcmAuditLoginFilter {
-  username?: string;
+  login?: string;
   loginResult?: AdcmAuditLoginResultType;
   timeFrom: number;
   timeTo: number;

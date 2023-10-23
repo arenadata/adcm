@@ -11,7 +11,7 @@ const createInitialState = (): AdcmAuditLoginsTableState => {
   return {
     filter: {
       loginResult: undefined,
-      username: undefined,
+      login: undefined,
       timeFrom,
       timeTo,
     },
@@ -33,6 +33,6 @@ const auditLoginsTableStateSlice = createListSlice({
   reducers: {},
 });
 
-export const { setPaginationParams, setSortParams, setRequestFrequency, setFilter, resetFilter } =
+export const { setPaginationParams, setSortParams, setRequestFrequency, setFilter, resetFilter, cleanupList } =
   auditLoginsTableStateSlice.actions;
 export default auditLoginsTableStateSlice.reducer;

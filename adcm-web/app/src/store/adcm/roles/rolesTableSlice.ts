@@ -4,7 +4,7 @@ import { AdcmRoleType, AdcmRolesFilter } from '@models/adcm';
 
 const createInitialState = (): ListState<AdcmRolesFilter> => ({
   filter: {
-    name: undefined,
+    displayName: undefined,
     type: AdcmRoleType.Role,
   },
   paginationParams: {

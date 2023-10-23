@@ -2,9 +2,10 @@ import { useParams } from 'react-router-dom';
 import { defaultDebounceDelay } from '@constants';
 import { useDebounce, useDispatch, useRequestTimer, useStore } from '@hooks';
 import { cleanupClusterHosts, getClusterHosts, refreshClusterHosts } from '@store/adcm/cluster/hosts/hostsSlice';
-import { cleanupRelatedData, loadRelatedData } from '@store/adcm/hosts/hostsTableSlice';
+import { cleanupList, loadHostProviders } from '@store/adcm/cluster/hosts/hostsTableSlice';
 import { useEffect } from 'react';
 import { loadClusterHostsDynamicActions } from '@store/adcm/cluster/hosts/hostsDynamicActionsSlice';
+import { usePersistClusterHostsTableSettings } from './usePersistClusterHostsTableSettings';
 
 export const useRequestClusterHosts = () => {
   const dispatch = useDispatch();
@@ -15,11 +16,14 @@ export const useRequestClusterHosts = () => {
   const { sortParams, paginationParams, requestFrequency } = useStore((s) => s.adcm.clusterHostsTable);
   const hosts = useStore(({ adcm }) => adcm.clusterHosts.hosts);
 
+  usePersistClusterHostsTableSettings();
+
   useEffect(() => {
-    dispatch(loadRelatedData());
+    dispatch(loadHostProviders());
 
     return () => {
-      dispatch(cleanupRelatedData());
+      dispatch(cleanupList());
+      dispatch(cleanupClusterHosts());
     };
   }, [dispatch]);
 
@@ -28,13 +32,6 @@ export const useRequestClusterHosts = () => {
       dispatch(loadClusterHostsDynamicActions({ clusterId, hosts }));
     }
   }, [dispatch, clusterId, hosts]);
-
-  useEffect(
-    () => () => {
-      dispatch(cleanupClusterHosts());
-    },
-    [dispatch],
-  );
 
   const debounceGetClusterHosts = useDebounce(() => {
     dispatch(getClusterHosts(clusterId));

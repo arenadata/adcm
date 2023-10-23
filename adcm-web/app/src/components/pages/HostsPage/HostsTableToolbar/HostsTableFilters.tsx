@@ -3,7 +3,6 @@ import { useStore, useDispatch } from '@hooks';
 import { Button, LabeledField, SearchInput, Select } from '@uikit';
 import TableFilters from '@commonComponents/Table/TableFilters/TableFilters';
 import { resetFilter, resetSortParams, setFilter } from '@store/adcm/hosts/hostsTableSlice';
-import { getStatusLabel } from '@utils/humanizationUtils';
 
 const HostsTableFilters = () => {
   const dispatch = useDispatch();
@@ -15,14 +14,14 @@ const HostsTableFilters = () => {
   const clusterOptions = useMemo(() => {
     return clusters.map(({ name }) => ({
       value: name,
-      label: getStatusLabel(name),
+      label: name,
     }));
   }, [clusters]);
 
   const hostProviderOptions = useMemo(() => {
     return hostProviders.map(({ name }) => ({
       value: name,
-      label: getStatusLabel(name),
+      label: name,
     }));
   }, [hostProviders]);
 
@@ -36,7 +35,7 @@ const HostsTableFilters = () => {
   };
 
   const handleHostProviderChange = (value: string | null) => {
-    dispatch(setFilter({ hostProvider: value ?? undefined }));
+    dispatch(setFilter({ hostproviderName: value ?? undefined }));
   };
 
   const handleClusterChange = (value: string | null) => {
@@ -55,7 +54,7 @@ const HostsTableFilters = () => {
         <Select
           maxHeight={200}
           placeholder="All"
-          value={filter.hostProvider ?? null}
+          value={filter.hostproviderName ?? null}
           onChange={handleHostProviderChange}
           options={hostProviderOptions}
           noneLabel="All"

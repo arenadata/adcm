@@ -1,13 +1,9 @@
 import { ListState } from '@models/table';
 import { createAsyncThunk, createListSlice } from '@store/redux';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
-import { AdcmServicesFilter, AdcmService } from '@models/adcm';
+import { AdcmServicesFilter } from '@models/adcm';
 
-type AdcmServicesTableState = ListState<AdcmServicesFilter> & {
-  relatedData: {
-    services: AdcmService[];
-  };
-};
+type AdcmServicesTableState = ListState<AdcmServicesFilter>;
 
 const createInitialState = (): AdcmServicesTableState => ({
   filter: {
@@ -22,44 +18,32 @@ const createInitialState = (): AdcmServicesTableState => ({
     sortBy: 'displayName',
     sortDirection: 'asc',
   },
-  relatedData: {
-    services: [],
-  },
 });
 
-const loadServices = createAsyncThunk('adcm/servicesTable/loadServices', async (arg: number, thunkAPI) => {
+const loadServices = createAsyncThunk('adcm/servicesTable/loadServices', async (clusterId: number, thunkAPI) => {
   try {
     const emptyFilter = {};
-    const clusters = await AdcmClusterServicesApi.getClusterServices(arg, emptyFilter);
+    const clusters = await AdcmClusterServicesApi.getClusterServices(clusterId, emptyFilter);
     return clusters.results;
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
 });
 
-const loadRelatedData = createAsyncThunk('adcm/servicesTable/loadRelatedData', async (arg: number, thunkAPI) => {
-  thunkAPI.dispatch(loadServices(arg));
+const loadRelatedData = createAsyncThunk('adcm/servicesTable/loadRelatedData', async (clusterId: number, thunkAPI) => {
+  thunkAPI.dispatch(loadServices(clusterId));
 });
 
 const servicesTableSlice = createListSlice({
   name: 'adcm/servicesTable',
   createInitialState,
-  reducers: {
-    cleanupRelatedData(state) {
-      state.relatedData = createInitialState().relatedData;
-    },
-  },
-  extraReducers: (builder) => {
-    builder.addCase(loadServices.fulfilled, (state, action) => {
-      state.relatedData.services = action.payload;
-    });
-  },
+  reducers: {},
 });
 
 export const {
   setPaginationParams,
   setRequestFrequency,
-  cleanupRelatedData,
+  cleanupList,
   setFilter,
   resetFilter,
   setSortParams,

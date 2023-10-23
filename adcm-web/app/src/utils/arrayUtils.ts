@@ -9,3 +9,7 @@ export function arrayToHash<T>(items: T[], getKey: GetKeyCallback<T>): Record<Pr
 
   return hash;
 }
+
+export const findBy = <T>(list: T[], field: keyof T, value: unknown) => {
+  return list.find((item) => item[field] === value);
+};
