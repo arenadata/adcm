@@ -290,6 +290,14 @@ class SecretMap(Map):
     def null_value(self) -> list | dict | None:
         return None
 
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+
+        if not self.required:
+            return {"oneOf": [data, {"type": "null"}]}
+
+        return data
+
 
 class Structure(Field):
     def __init__(self, prototype_config: PrototypeConfig, object_: ADCMEntity | GroupConfig):
@@ -366,7 +374,12 @@ class Structure(Field):
             )
 
             for item_key, item_value in kwargs["items"].items():
-                data["properties"][item_key] = self._get_inner(title=item_key, **self.yspec[item_value])
+                inner_data = self._get_inner(title=item_key, **self.yspec[item_value])
+
+                if item_key in data["required"]:
+                    data["properties"][item_key] = inner_data
+                else:
+                    data["properties"][item_key] = {"oneOf": [inner_data, {"type": "null"}]}
 
         return data
 
@@ -393,10 +406,15 @@ class Structure(Field):
             items = self.yspec["root"]["items"]
 
             for item_key, item_value in items.items():
-                data["properties"][item_key] = self._get_inner(**self.yspec[item_value])
+                inner_data = self._get_inner(**self.yspec[item_value])
 
-            if self.required:
-                data.update({"minProperties": 1})
+                if item_key in data["required"]:
+                    data["properties"][item_key] = inner_data
+                else:
+                    data["properties"][item_key] = {"oneOf": [inner_data, {"type": "null"}]}
+
+            if not self.required:
+                data = {"oneOf": [data, {"type": "null"}]}
 
         return data
 
