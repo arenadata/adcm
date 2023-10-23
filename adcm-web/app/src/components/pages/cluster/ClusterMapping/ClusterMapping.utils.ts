@@ -4,6 +4,8 @@ import {
   AdcmComponent,
   AdcmMapping,
   AdcmComponentService,
+  AdcmComponentDependency,
+  AdcmServiceComponentPrototype,
 } from '@models/adcm';
 import {
   HostMapping,
@@ -94,7 +96,7 @@ export const validate = (componentMapping: ComponentMapping[], allHostsCount: nu
 
   for (const cm of componentMapping) {
     const constraintsValidationResult = validateConstraints(cm.component.constraints, allHostsCount, cm.hosts.length);
-    const requireValidationResults = validateRequire();
+    const requireValidationResults = validateRequire(cm.component.dependOn, cm.component.prototype);
     const isValid = constraintsValidationResult.isValid && requireValidationResults.isValid;
 
     isAllMappingValid = isAllMappingValid && isValid;
@@ -192,7 +194,17 @@ export const getConstraintsLimit = (constraints: AdcmComponentConstraint[]) => {
   return limit;
 };
 
-// TODO: implement
-export const validateRequire = (): ValidationResult => {
+export const validateRequire = (
+  dependencies: AdcmComponentDependency[] | null,
+  prototype: AdcmServiceComponentPrototype | undefined,
+): ValidationResult => {
+  const isPrototypeExists = !!dependencies?.find((dependency) => dependency.id === prototype?.id);
+
+  if (dependencies && !isPrototypeExists) {
+    return {
+      isValid: false,
+      error: `requires mapping of ${dependencies.map((d) => d.displayName).join(',')}`,
+    };
+  }
   return { isValid: true };
 };
