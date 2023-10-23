@@ -4,7 +4,7 @@ import { ConfigurationNodePath } from './ConfigurationEditor.types';
 import { generateFromSchema } from '@utils/jsonSchemaUtils';
 import { isObject } from '@utils/objectUtils';
 
-export const editField = (configuration: ConfigurationData, path: ConfigurationNodePath, value: JSONPrimitive) => {
+export const editField = (configuration: ConfigurationData, path: ConfigurationNodePath, value: JSONValue) => {
   if (path.length) {
     const newConfiguration = JSON.parse(JSON.stringify(configuration));
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

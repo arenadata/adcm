@@ -198,7 +198,6 @@ export const schema: ConfigurationSchema = {
     },
     readonly_props: {
       type: 'object',
-      required: [],
       default: {},
       readOnly: false,
       adcmMeta: {
@@ -210,6 +209,24 @@ export const schema: ConfigurationSchema = {
         isSecret: false,
         stringExtra: null,
       },
+      required: [
+        'someBoolean',
+        'someString',
+        'someNumber',
+        'someStringWithSuggestions',
+        'someEnum',
+        'someSecretField',
+        'someMultilineField',
+        'someJsonField',
+        'someYamlField',
+        'someAnyOfField',
+        'someInvisibleField',
+        'someAdvancedField',
+        'someMap',
+        'someSecretMap',
+        'someSyncString',
+        'someSyncMap',
+      ],
       properties: {
         someBoolean: {
           type: 'boolean',
@@ -496,7 +513,6 @@ export const schema: ConfigurationSchema = {
     },
     test_config: {
       type: 'object',
-      required: [],
       default: {},
       readOnly: false,
       adcmMeta: {
@@ -508,6 +524,22 @@ export const schema: ConfigurationSchema = {
         isSecret: false,
         stringExtra: null,
       },
+      required: [
+        'someBoolean',
+        'someStringWithDefaultValue',
+        'someStringWithSuggestions',
+        'someEnum',
+        'someSecretField',
+        'someMultilineField',
+        'someJsonField',
+        'someYamlField',
+        'someAnyOfField',
+        'someInvisibleField',
+        'someAdvancedField',
+        'someMap',
+        'someSecretMap',
+        'someMapWithAttributes',
+      ],
       properties: {
         someBoolean: {
           type: 'boolean',
@@ -4197,4 +4229,84 @@ export const complexSchema: ConfigurationSchema = {
     'map_required',
     'group_required',
   ],
+};
+
+export const nullableSchema: ConfigurationSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  title: 'Configuration',
+  description: '',
+  readOnly: false,
+  adcmMeta: {
+    isAdvanced: false,
+    isInvisible: false,
+    activation: null,
+    synchronization: null,
+    nullValue: null,
+    isSecret: false,
+    stringExtra: null,
+    enumExtra: null,
+  },
+  type: 'object',
+  properties: {
+    my_group_with_not_required_parameters: {
+      oneOf: [
+        { type: 'null' },
+        {
+          title: 'my_group_with_not_required_parameters',
+          type: 'object',
+          description: 'My group description',
+          default: {},
+          readOnly: false,
+          adcmMeta: {
+            isAdvanced: false,
+            isInvisible: false,
+            activation: null,
+            synchronization: null,
+            nullValue: null,
+            isSecret: false,
+            stringExtra: null,
+            enumExtra: null,
+          },
+          additionalProperties: false,
+          properties: {
+            my_map: {
+              oneOf: [
+                {
+                  title: 'my_map',
+                  type: 'object',
+                  description: '',
+                  default: {},
+                  readOnly: false,
+                  adcmMeta: {
+                    isAdvanced: false,
+                    isInvisible: false,
+                    activation: null,
+                    synchronization: null,
+                    nullValue: {},
+                    isSecret: false,
+                    stringExtra: null,
+                    enumExtra: null,
+                  },
+                  additionalProperties: true,
+                  properties: {},
+                },
+                {
+                  type: 'null',
+                },
+              ],
+            },
+          },
+          required: ['my_map'],
+        },
+      ],
+    },
+  },
+  additionalProperties: false,
+  required: ['my_group_with_not_required_parameters'],
+};
+
+export const nullableConfig = {
+  my_group_with_not_required_parameters: {
+    my_map: null,
+  },
 };

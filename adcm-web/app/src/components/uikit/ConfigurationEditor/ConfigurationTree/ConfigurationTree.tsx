@@ -2,7 +2,7 @@ import { memo, useEffect } from 'react';
 import CollapseNode from '@uikit/CollapseTree2/CollapseNode';
 import FieldNodeContent from './NodeContent/FieldNodeContent';
 import AddItemNodeContent from './NodeContent/AddItemNodeContent';
-import DefaultNodeContent from './NodeContent/DefaultNodeContent';
+import NodeWithChildrenContent from './NodeContent/NodeWithChildrenContent';
 import { ConfigurationNode, ConfigurationNodeFilter } from '../ConfigurationEditor.types';
 import { buildTreeNodes, filterTreeNodes, validate } from './ConfigurationTree.utils';
 import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
@@ -16,10 +16,10 @@ export interface ConfigurationTreeProps {
   attributes: ConfigurationAttributes;
   filter: ConfigurationNodeFilter;
   onEditField: ChangeConfigurationNodeHandler;
+  onAddEmptyObject: ChangeConfigurationNodeHandler;
   onAddField: ChangeConfigurationNodeHandler;
-  onDeleteField: ChangeConfigurationNodeHandler;
+  onDelete: ChangeConfigurationNodeHandler;
   onAddArrayItem: ChangeConfigurationNodeHandler;
-  onDeleteArrayItem: ChangeConfigurationNodeHandler;
   onFieldAttributesChange: ChangeFieldAttributesHandler;
   onChangeIsValid?: (isValid: boolean) => void;
 }
@@ -37,10 +37,10 @@ const ConfigurationTree = memo(
     attributes,
     filter,
     onEditField,
+    onAddEmptyObject,
     onAddField,
-    onDeleteField,
+    onDelete,
     onAddArrayItem,
-    onDeleteArrayItem,
     onFieldAttributesChange,
     onChangeIsValid,
   }: ConfigurationTreeProps) => {
@@ -62,31 +62,32 @@ const ConfigurationTree = memo(
       const error = typeof errorsPaths[node.key] === 'string' ? (errorsPaths[node.key] as string) : undefined;
       switch (node.data.type) {
         case 'field': {
-          const deleteHandler =
-            node.data.parentNode.data.fieldSchema.type === 'array' ? onDeleteArrayItem : onDeleteField;
           return (
             <FieldNodeContent
               node={node}
               error={error}
               onClick={onEditField}
-              onDeleteClick={deleteHandler}
+              onDeleteClick={onDelete}
               onFieldAttributeChange={onFieldAttributesChange}
             />
           );
         }
         case 'addArrayItem': {
-          return <AddItemNodeContent node={node} title="1" onClick={onAddArrayItem} />;
+          return <AddItemNodeContent node={node} onClick={onAddArrayItem} />;
         }
         case 'addField': {
-          return <AddItemNodeContent node={node} title="Add property" onClick={onAddField} />;
+          return <AddItemNodeContent node={node} onClick={onAddField} />;
+        }
+        case 'addEmptyObject': {
+          return <AddItemNodeContent node={node} onClick={onAddEmptyObject} />;
         }
         default: {
           return (
-            <DefaultNodeContent
+            <NodeWithChildrenContent
               node={node}
               isExpanded={isExpanded}
               error={error}
-              onDelete={onDeleteArrayItem}
+              onDelete={onDelete}
               onExpand={onExpand}
               onFieldAttributeChange={onFieldAttributesChange}
             />

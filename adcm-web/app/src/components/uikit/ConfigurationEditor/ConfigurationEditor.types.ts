@@ -1,5 +1,5 @@
 import { FieldAttributes, SingleSchemaDefinition } from '@models/adcm';
-import { JSONPrimitive } from '@models/json';
+import { JSONPrimitive, JSONValue } from '@models/json';
 import { Node } from '@uikit/CollapseTree2/CollapseNode.types';
 
 export type ConfigurationNodeType = 'object' | 'field' | 'addField' | 'array' | 'addArrayItem';
@@ -35,6 +35,17 @@ export type ConfigurationObject = {
   path: ConfigurationNodePath;
   isDeletable: boolean;
   isReadonly: boolean;
+  objectType: 'map' | 'structure';
+  value: JSONValue;
+};
+
+export type ConfigurationNewEmptyObject = {
+  type: 'addEmptyObject';
+  title: string;
+  fieldSchema: SingleSchemaDefinition; // items schema
+  parentNode: ConfigurationNode;
+  fieldAttributes?: FieldAttributes;
+  path: ConfigurationNodePath;
 };
 
 export type ConfigurationArray = {
@@ -45,6 +56,8 @@ export type ConfigurationArray = {
   fieldAttributes?: FieldAttributes;
   path: ConfigurationNodePath;
   isReadonly: boolean;
+  isDeletable: boolean;
+  value: JSONValue;
 };
 
 export type ConfigurationNewArrayItem = {
@@ -57,7 +70,12 @@ export type ConfigurationNewArrayItem = {
 };
 
 export type ConfigurationNode = Node<
-  ConfigurationField | ConfigurationNewField | ConfigurationObject | ConfigurationArray | ConfigurationNewArrayItem
+  | ConfigurationField
+  | ConfigurationNewField
+  | ConfigurationNewEmptyObject
+  | ConfigurationObject
+  | ConfigurationArray
+  | ConfigurationNewArrayItem
 >;
 
 export type ConfigurationNodeFilter = {

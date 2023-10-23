@@ -71,7 +71,7 @@ const FieldNodeContent = ({ node, error, onClick, onDeleteClick, onFieldAttribut
       return nullStub;
     }
 
-    return fieldNode.data.value;
+    return fieldNode.data.value.toString();
   }, [
     adcmMeta.isSecret,
     fieldNode.data.fieldSchema.adcmMeta.enumExtra,

@@ -42,7 +42,7 @@ export interface NullSchemaDefinition {
 }
 
 export type MultipleSchemaDefinitions = {
-  oneOf?: (SingleSchemaDefinition | NullSchemaDefinition)[];
+  oneOf: (SingleSchemaDefinition | NullSchemaDefinition)[];
 };
 
 export type SchemaDefinition = SingleSchemaDefinition | MultipleSchemaDefinitions;

@@ -1,14 +1,15 @@
 import { useCallback, useRef } from 'react';
 import { Icon } from '@uikit';
 
-import { ConfigurationNode } from '../../ConfigurationEditor.types';
+import { ConfigurationArray, ConfigurationObject, ConfigurationNode } from '../../ConfigurationEditor.types';
 import { ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
 import s from '../ConfigurationTree.module.scss';
 import cn from 'classnames';
 import SynchronizedAttribute from './SyncronizedAttribute/SynchronizedAttribute';
 import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
+import { nullStub } from '@uikit/ConfigurationEditor/ConfigurationEditor.constants';
 
-interface DefaultNodeContentProps {
+interface NodeWithChildrenContentProps {
   node: ConfigurationNode;
   error?: string;
   isExpanded: boolean;
@@ -17,18 +18,20 @@ interface DefaultNodeContentProps {
   onFieldAttributeChange: ChangeFieldAttributesHandler;
 }
 
-const DefaultNodeContent = ({
+const NodeWithChildrenContent = ({
   node,
   isExpanded,
   error,
   onDelete,
   onExpand,
   onFieldAttributeChange,
-}: DefaultNodeContentProps) => {
+}: NodeWithChildrenContentProps) => {
   const ref = useRef(null);
+  const fieldNodeData = node.data as ConfigurationObject | ConfigurationArray;
   const adcmMeta = node.data.fieldSchema.adcmMeta;
   const fieldAttributes = node.data.fieldAttributes;
-  const isDeletable = node.data.type === 'object' && node.data.isDeletable;
+  // const isDeletable = node.data.type === 'object' && node.data.isDeletable;
+  const isDeletable = (node.data.type === 'object' || node.data.type === 'array') && node.data.isDeletable;
 
   const handleIsActiveChange = useCallback(
     (isActive: boolean) => {
@@ -78,9 +81,11 @@ const DefaultNodeContent = ({
           onToggle={handleIsSynchronizedChange}
         />
       )}
+      {fieldNodeData.value === null && <span className={s.nodeContent__value}>{nullStub}</span>}
+
       {hasChildren && <Icon name="chevron" size={12} className={s.nodeContent__arrow} onClick={onExpand} />}
     </div>
   );
 };
 
-export default DefaultNodeContent;
+export default NodeWithChildrenContent;

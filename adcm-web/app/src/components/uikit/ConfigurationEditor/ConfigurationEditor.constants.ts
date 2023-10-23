@@ -1,2 +1,2 @@
-export const nullStub = 'NULL';
+export const nullStub = 'null';
 export const secretStub = '********';
