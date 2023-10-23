@@ -128,8 +128,7 @@ const buildObjectNode = (
 ) => {
   const objectValue = fieldValue as JSONObject | null;
   const isArrayItem = parentNode.data.fieldSchema.type === 'array';
-  const objectTitle = getTitle(fieldName, fieldSchema);
-  const title = isArrayItem ? `${parentNode.data.title}: ${objectTitle}` : objectTitle;
+  const title = isArrayItem ? `${parentNode.data.title} [${fieldName}]` : getTitle(fieldName, fieldSchema);
 
   const node: ConfigurationNode = {
     key: buildKey(path),
@@ -139,7 +138,7 @@ const buildObjectNode = (
       path,
       fieldSchema,
       parentNode,
-      isDeletable: isNullable,
+      isDeletable: isArrayItem || isNullable,
       isReadonly: Boolean(fieldSchema.readOnly),
       objectType: 'map',
       value: fieldValue,
@@ -214,10 +213,13 @@ const buildFieldNode = (
 
   const isReadonly = Boolean(fieldSchema.readOnly);
 
+  const isArrayItem = parentNode.data.fieldSchema.type === 'array';
+  const title = isArrayItem ? `${parentNode.data.title} [${fieldName}]` : getTitle(fieldName, fieldSchema);
+
   const node: ConfigurationNode = {
     key: buildKey(path),
     data: {
-      title: getTitle(fieldName, fieldSchema),
+      title,
       type: 'field',
       path,
       parentNode,
