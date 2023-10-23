@@ -138,7 +138,7 @@ const buildObjectNode = (
       path,
       fieldSchema,
       parentNode,
-      isDeletable: isNullable,
+      isDeletable: isArrayItem || isNullable,
       isReadonly: Boolean(fieldSchema.readOnly),
       objectType: 'map',
       value: fieldValue,
