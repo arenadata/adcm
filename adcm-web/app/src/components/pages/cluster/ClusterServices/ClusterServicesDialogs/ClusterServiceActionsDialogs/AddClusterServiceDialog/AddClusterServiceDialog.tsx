@@ -48,7 +48,7 @@ const AddClusterServiceDialog: React.FC = () => {
         isActionDisabled={!isValid}
       >
         <FormFieldsContainer>
-          {servicePrototypesOptions?.length > 0 && (
+          {servicePrototypesOptions?.length > 0 ? (
             <MultiSelectPanel
               options={servicePrototypesOptions}
               value={formData.serviceIds}
@@ -58,6 +58,8 @@ const AddClusterServiceDialog: React.FC = () => {
               isSearchable={true}
               compactMode={true}
             />
+          ) : (
+            <div>There are no new services. Your cluster already has all of them.</div>
           )}
         </FormFieldsContainer>
         {servicesWithDependenciesList?.length > 0 && (
