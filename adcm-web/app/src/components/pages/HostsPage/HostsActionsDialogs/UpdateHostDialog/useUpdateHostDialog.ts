@@ -1,6 +1,6 @@
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
-import { isHostNameValid, required } from '@utils/validationsUtils';
+import { isHostNameValid, isNameUniq, required } from '@utils/validationsUtils';
 import { closeUpdateDialog, updateHost } from '@store/adcm/hosts/hostsActionsSlice';
 
 interface UpdateHostFormData {
@@ -24,13 +24,6 @@ export const useUpdateHostDialog = () => {
     return formData.name !== updatedHost?.name;
   }, [formData, updatedHost]);
 
-  const isNameUniq = useCallback(
-    (name: string) => {
-      return !hosts.find((host) => host.name === name && host.id !== updatedHost?.id);
-    },
-    [hosts, updatedHost],
-  );
-
   useEffect(() => {
     if (updatedHost) {
       const { name } = updatedHost;
@@ -43,9 +36,14 @@ export const useUpdateHostDialog = () => {
       name:
         (required(formData.name) ? undefined : 'Host name field is required') ||
         (isHostNameValid(formData.name) ? undefined : 'Host name field is incorrect') ||
-        (isNameUniq(formData.name) ? undefined : 'Host with the same name already exists'),
+        (isNameUniq(
+          formData.name,
+          hosts.filter(({ id }) => updatedHost?.id !== id),
+        )
+          ? undefined
+          : 'Host with the same name already exists'),
     });
-  }, [formData, updatedHost, setErrors, isNameUniq]);
+  }, [formData, updatedHost, hosts, setErrors]);
 
   const handleClose = () => {
     dispatch(closeUpdateDialog());

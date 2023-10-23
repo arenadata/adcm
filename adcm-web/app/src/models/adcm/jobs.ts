@@ -23,6 +23,10 @@ export interface AdcmJobObject {
   displayName?: string;
 }
 
+export interface AdcmJobObjectAdvanced extends AdcmJobObject {
+  link: string;
+}
+
 export interface AdcmJob {
   id: number;
   name: string;

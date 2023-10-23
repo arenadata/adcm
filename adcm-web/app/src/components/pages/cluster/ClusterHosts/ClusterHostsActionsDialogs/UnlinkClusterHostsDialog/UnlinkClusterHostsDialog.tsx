@@ -1,7 +1,7 @@
 import React from 'react';
 import { Dialog } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
-import { closeUnlinkDialog, unlinkHost } from '@store/adcm/cluster/hosts/hostsActionsSlice';
+import { closeUnlinkDialog, unlinkHostWithUpdate } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 
 const UnlinkClusterHostsDialog: React.FC = () => {
   const dispatch = useDispatch();
@@ -29,7 +29,7 @@ const UnlinkClusterHostsDialog: React.FC = () => {
   const handleConfirmDialog = () => {
     const { id: hostId, cluster } = unlinkableHost ?? {};
     if (hostId && cluster?.id) {
-      dispatch(unlinkHost({ hostId, clusterId: cluster.id }));
+      dispatch(unlinkHostWithUpdate({ hostId, clusterId: cluster.id }));
     }
   };
 

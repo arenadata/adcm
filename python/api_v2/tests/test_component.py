@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from api_v2.tests.base import BaseAPITestCase
+from cm.issue import add_concern_to_object
 from cm.models import Action, ConcernType, MaintenanceMode, ServiceComponent
 from cm.tests.utils import gen_concern_item
 from django.urls import reverse
@@ -61,9 +62,9 @@ class TestComponentAPI(BaseAPITestCase):
         concern_1 = gen_concern_item(ConcernType.LOCK, owner=self.cluster_1)
         concern_2 = gen_concern_item(ConcernType.ISSUE, owner=self.service_1)
         concern_3 = gen_concern_item(ConcernType.FLAG, owner=self.component_1)
-        self.component_1.add_to_concerns(concern_1)
-        self.component_1.add_to_concerns(concern_2)
-        self.component_1.add_to_concerns(concern_3)
+        add_concern_to_object(object_=self.component_1, concern=concern_1)
+        add_concern_to_object(object_=self.component_1, concern=concern_2)
+        add_concern_to_object(object_=self.component_1, concern=concern_3)
 
         response: Response = self.client.get(
             path=reverse(

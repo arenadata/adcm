@@ -1,0 +1,27 @@
+- name: string
+  type: string
+  required: false
+  default: string1
+{% if cluster.config.string == 'string' %}
+- name: string1
+  type: string
+  required: false
+  default: string action
+{% elif cluster.config.string == 'changed' %}
+- name: structure
+  type: structure
+  required: false
+  yspec: ./schema.yaml
+  default:
+    - code: 20
+      country: China
+    - code: 21
+      country: Spain
+    - code: 22
+      country: Cuba
+{% else %}
+- name: text
+  type: text
+  required: false
+  default: text action
+{% endif %}

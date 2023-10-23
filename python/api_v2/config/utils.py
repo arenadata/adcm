@@ -14,7 +14,6 @@ import json
 from abc import ABC, abstractmethod
 from collections import OrderedDict, defaultdict
 from copy import deepcopy
-from operator import attrgetter
 from typing import Any
 
 from cm.adcm_config.config import get_default
@@ -243,7 +242,8 @@ class Json(Field):
     def to_dict(self) -> dict:
         data = super().to_dict()
 
-        data.update({"format": "json", "default": json.dumps(data["default"])})
+        default = json.dumps(data["default"]) if data["default"] is not None else None
+        data.update({"format": "json", "default": default})
 
         if self.required:
             data.update({"minLength": 1})
@@ -501,10 +501,6 @@ class Option(Field):
     type = "enum"
 
     @property
-    def string_extra(self) -> dict | None:
-        return {"isMultiline": True}
-
-    @property
     def enum_extra(self) -> dict | None:
         return {"labels": list(self.limits["option"].keys())}
 
@@ -521,7 +517,9 @@ class Variant(Field):
     type = "string"
 
     def _get_variant(self) -> list | None:
-        config = ConfigLog.objects.get(id=self.object_.config.current).config
+        config: ConfigLog | None = (
+            ConfigLog.objects.get(id=self.object_.config.current).config if self.object_.config else None
+        )
         return get_variant(obj=self.object_, conf=config, limits=self.limits)
 
     @property
@@ -595,6 +593,11 @@ def get_field(
 def get_config_schema(
     object_: ADCMEntity | GroupConfig, prototype_configs: QuerySet[PrototypeConfig] | list[PrototypeConfig]
 ) -> dict:
+    """
+    Prepare config schema based on provided `prototype_configs`
+
+    Note that `prototype_configs` entries should be ordered the way you want them to appear in schema's `properties`
+    """
     schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "Configuration",
@@ -618,8 +621,6 @@ def get_config_schema(
 
     if not prototype_configs:
         return schema
-
-    prototype_configs = sorted(prototype_configs, key=attrgetter("pk"))
 
     top_fields = [pc for pc in prototype_configs if pc.subname == ""]
 
@@ -713,9 +714,11 @@ def represent_json_type_as_string(prototype: Prototype, value: dict, action_: Ac
             continue
 
         if sub_name:
-            value[name][sub_name] = json.dumps(value[name][sub_name])
+            new_value = json.dumps(value[name][sub_name]) if value[name][sub_name] is not None else None
+            value[name][sub_name] = new_value
         else:
-            value[name] = json.dumps(value[name])
+            new_value = json.dumps(value[name]) if value[name] is not None else None
+            value[name] = new_value
 
     return value
 
@@ -734,9 +737,11 @@ def represent_string_as_json_type(
 
         try:
             if sub_name:
-                value[name][sub_name] = json.loads(value[name][sub_name])
+                new_value = json.loads(value[name][sub_name]) if value[name][sub_name] is not None else None
+                value[name][sub_name] = new_value
             else:
-                value[name] = json.loads(value[name])
+                new_value = json.loads(value[name]) if value[name] is not None else None
+                value[name] = new_value
         except json.JSONDecodeError:
             raise AdcmEx(
                 code="CONFIG_KEY_ERROR",

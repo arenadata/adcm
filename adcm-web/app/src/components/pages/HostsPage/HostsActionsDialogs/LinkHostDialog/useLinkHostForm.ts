@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { linkHost, loadClusters } from '@store/adcm/hosts/hostsActionsSlice';
+import { linkHostWithUpdate, loadClusters } from '@store/adcm/hosts/hostsActionsSlice';
 
 interface LinkHostFormData {
   hostId: number | null;
@@ -40,7 +40,7 @@ export const useLinkHostForm = () => {
   const submit = useCallback(() => {
     const { clusterId, hostId } = formData;
     if (clusterId && hostId) {
-      dispatch(linkHost({ clusterId, hostId }));
+      dispatch(linkHostWithUpdate({ clusterId, hostId }));
     }
   }, [formData, dispatch]);
 

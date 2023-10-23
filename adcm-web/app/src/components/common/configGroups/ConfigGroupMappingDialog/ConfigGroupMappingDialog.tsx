@@ -59,11 +59,18 @@ const ConfigGroupMappingDialog: React.FC<ConfigGroupMappingDialogProps> = ({
   }, [configGroup, setFormData]);
 
   useEffect(() => {
-    setErrors({
-      srcErrorMessage: srcOptions.length > 0 ? undefined : 'The cluster should have some hosts linked',
-      destErrorMessage: formData.mappedHostsKeys.size > 0 ? undefined : 'Can not set mapping without selected hosts',
-    });
-  }, [formData.mappedHostsKeys, srcOptions, setErrors]);
+    if (configGroup) {
+      setErrors({
+        srcErrorMessage: srcOptions.length > 0 ? undefined : 'The cluster should have some hosts linked',
+        destErrorMessage:
+          // if configGroup.hosts.length > 0 then user can add hosts or full clear, it will be acceptable
+          // if configGroup.hosts.length === 0 then user can only add few hosts
+          configGroup.hosts.length > 0 || formData.mappedHostsKeys.size > 0
+            ? undefined
+            : 'Can not set mapping without selected hosts',
+      });
+    }
+  }, [formData.mappedHostsKeys, configGroup, srcOptions, setErrors]);
 
   const handleChangeMapping = (hostKeys: MappedHostsKeys) => {
     setFormData({

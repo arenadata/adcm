@@ -17,6 +17,7 @@ export interface DialogProps extends ModalOptions, DialogDefaultControlsProps {
   maxWidth?: string;
   minWidth?: string;
   className?: string;
+  dataTest?: string;
 }
 
 const Dialog: React.FC<DialogProps> = ({
@@ -37,6 +38,7 @@ const Dialog: React.FC<DialogProps> = ({
   maxWidth = '100%',
   minWidth,
   className,
+  dataTest = 'dialog-container',
 }) => {
   const handleClose = () => {
     onOpenChange(false);
@@ -67,6 +69,7 @@ const Dialog: React.FC<DialogProps> = ({
       className={cn(s.dialog, className)}
       isDismissDisabled={isDismissDisabled}
       style={{ width, height, maxWidth, minWidth }}
+      dataTest={dataTest}
     >
       <IconButton
         icon="g2-close"

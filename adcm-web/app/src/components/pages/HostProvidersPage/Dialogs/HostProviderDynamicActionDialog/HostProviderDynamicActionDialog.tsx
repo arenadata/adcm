@@ -29,7 +29,7 @@ const HostProviderDynamicActionDialog: React.FC = () => {
 
   return (
     <DynamicActionDialog
-      clusterId={hostProvider.cluster ? hostProvider.cluster.id : null}
+      clusterId={null}
       actionDetails={actionDetails}
       onCancel={handleCancel}
       onSubmit={handleSubmit}

@@ -1,0 +1,87 @@
+---
+- type: cluster
+  name: config_jinja_full
+  version: &version '1.0'
+  config:
+    - name: boolean
+      type: boolean
+      required: false
+      default: true
+    - name: string
+      type: string
+      required: false
+      default: string
+    - name: password
+      type: password
+      required: false
+      default: password
+    - name: text
+      type: text
+      required: false
+      default: text
+  actions: &actions
+    check_state: &job
+      type: job
+      script: ./actions.yaml
+      script_type: ansible
+      params:
+        ansible_tags: ok
+      config_jinja: config_jinja_state.jinja2
+      states:
+        on_success: created
+        available: any
+
+    check_param:
+      type: job
+      script: ./actions.yaml
+      script_type: ansible
+      params:
+        ansible_tags: sleep
+      states:
+        on_success: created
+        available: any
+      config_jinja: ./config_jinja_param.jinja2
+
+    check_multistate:
+      type: job
+      script: ./actions.yaml
+      script_type: ansible
+      params:
+        ansible_tags: sleep
+      states:
+        on_success: created
+        available: any
+      config_jinja: ./config_jinja_multistate.jinja2
+
+- type: service
+  name: first_service
+  version: *version
+  config: &config
+    - name: string
+      type: string
+      required: false
+      default: string
+  actions:
+    check_state:
+      <<: *job
+      config_jinja: ./config_jinja_state_service.jinja2
+    check_param:
+      <<: *job
+      config_jinja: ./config_jinja_param_service.jinja2
+    check_multistate:
+      <<: *job
+      config_jinja: ./config_jinja_multistate_service.jinja2
+
+  components:
+    first_component:
+      actions:
+        <<: *actions
+        check_state:
+          <<: *job
+          config_jinja: ./config_jinja_state_component.jinja2
+        check_param:
+          <<: *job
+          config_jinja: ./config_jinja_param_component.jinja2
+        check_multistate:
+          <<: *job
+          config_jinja: ./config_jinja_multistate_component.jinja2

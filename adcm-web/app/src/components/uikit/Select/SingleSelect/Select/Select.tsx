@@ -10,7 +10,7 @@ import { PopoverOptions } from '@uikit/Popover/Popover.types';
 
 export type SelectProps<T> = SingleSelectOptions<T> &
   PopoverOptions &
-  Omit<InputProps, 'endAdornment' | 'startAdornment' | 'readOnly' | 'onChange' | 'value'>;
+  Omit<InputProps, 'endAdornment' | 'startAdornment' | 'readOnly' | 'onChange' | 'value'> & { dataTest?: string };
 
 function SelectComponent<T>(
   {
@@ -25,6 +25,7 @@ function SelectComponent<T>(
     placement,
     offset,
     dependencyWidth = 'min-parent',
+    dataTest = 'select-popover',
     ...props
   }: SelectProps<T>,
   ref: React.ForwardedRef<HTMLInputElement>,
@@ -61,7 +62,7 @@ function SelectComponent<T>(
         placement={placement}
         offset={offset}
       >
-        <PopoverPanelDefault>
+        <PopoverPanelDefault data-test={dataTest}>
           <SingleSelectPanel
             options={options}
             value={value}

@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { defaultDebounceDelay } from '@constants';
 import { useDebounce, useDispatch, useRequestTimer, useStore } from '@hooks';
-import { getClusterHosts, refreshClusterHosts } from '@store/adcm/cluster/hosts/hostsSlice';
+import { cleanupClusterHosts, getClusterHosts, refreshClusterHosts } from '@store/adcm/cluster/hosts/hostsSlice';
 import { cleanupRelatedData, loadRelatedData } from '@store/adcm/hosts/hostsTableSlice';
 import { useEffect } from 'react';
 import { loadClusterHostsDynamicActions } from '@store/adcm/cluster/hosts/hostsDynamicActionsSlice';
@@ -28,6 +28,13 @@ export const useRequestClusterHosts = () => {
       dispatch(loadClusterHostsDynamicActions({ clusterId, hosts }));
     }
   }, [dispatch, clusterId, hosts]);
+
+  useEffect(
+    () => () => {
+      dispatch(cleanupClusterHosts());
+    },
+    [dispatch],
+  );
 
   const debounceGetClusterHosts = useDebounce(() => {
     dispatch(getClusterHosts(clusterId));

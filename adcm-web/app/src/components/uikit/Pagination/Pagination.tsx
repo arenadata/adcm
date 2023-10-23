@@ -52,6 +52,7 @@ const Pagination = ({
   frequencyComponent,
   isNextBtn = null,
   className = '',
+  dataTest = 'pagination',
 }: PaginationProps) => {
   const { pageNumber, perPage } = pageData;
   const { hasNext, hasPrev, pageItems, totalPages } = usePagination({
@@ -78,7 +79,7 @@ const Pagination = ({
   };
 
   return (
-    <div className={paginationWrapperClasses}>
+    <div className={paginationWrapperClasses} data-test={dataTest}>
       {!hidePerPage && (
         <>
           <span className={s.pagination__selectLabel}>Show</span>
@@ -87,6 +88,7 @@ const Pagination = ({
             onChange={setPerPage}
             value={pageData.perPage}
             options={perPageItems}
+            dataTest="pagination-per-page-popover"
           />
         </>
       )}
@@ -96,7 +98,7 @@ const Pagination = ({
           {frequencyComponent}
         </>
       )}
-      <div className={s.pagination__buttonWrapper}>
+      <div className={s.pagination__buttonWrapper} data-test="pagination-button-container">
         <RenderNumberButtons setPageNumber={setPageNumber} items={pageItems} currentPageNumber={pageNumber} />
         {totalPages === 0 && (
           <PaginationStepButton arrowVariant={'arrowDouble'} onClick={() => setPageNumber(0)} disabled={!hasPrev} />
@@ -105,12 +107,14 @@ const Pagination = ({
           arrowVariant={'arrowSingle'}
           onClick={() => setPageNumber(pageNumber - 1)}
           disabled={!hasPrev}
+          dataTest="pagination-prev-page"
         />
         <PaginationStepButton
           arrowVariant={'arrowSingle'}
           onClick={() => setPageNumber(pageNumber + 1)}
           variant={'next'}
           disabled={!hasNext}
+          dataTest="pagination-next-page"
         />
       </div>
     </div>

@@ -11,13 +11,20 @@ interface PaginationButtonProps {
   onClick: () => void;
   disabled?: boolean;
   variant?: PaginationBtnVariant;
+  dataTest?: string;
 }
 
 const getArrowIconName = (arrowVariant: PaginationBtnArrowVariant) =>
   arrowVariant === 'arrowSingle' ? 'chevron' : 'chevron-double';
 const getArrowSize = (arrowVariant: PaginationBtnArrowVariant) => (arrowVariant === 'arrowSingle' ? 11 : 20);
 
-const PaginationStepButton = ({ arrowVariant, onClick, disabled = false, variant = 'prev' }: PaginationButtonProps) => {
+const PaginationStepButton = ({
+  arrowVariant,
+  onClick,
+  disabled = false,
+  variant = 'prev',
+  dataTest = 'pagination-step-button',
+}: PaginationButtonProps) => {
   const btnClasses = useMemo(
     () =>
       cn(s.paginationButton, {
@@ -28,7 +35,7 @@ const PaginationStepButton = ({ arrowVariant, onClick, disabled = false, variant
   );
 
   return (
-    <button onClick={onClick} className={btnClasses} disabled={disabled}>
+    <button onClick={onClick} className={btnClasses} disabled={disabled} data-test={dataTest}>
       <Icon size={getArrowSize(arrowVariant)} name={getArrowIconName(arrowVariant)} />
     </button>
   );

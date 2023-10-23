@@ -3,7 +3,7 @@ import { useDispatch, useStore } from '@hooks';
 import ConfigGroupsHeader from '@commonComponents/configGroups/ConfigGroupsHeader/ConfigGroupsHeader';
 import ConfigGroupsTable from '@commonComponents/configGroups/ConfigGroupsTable/ConfigGroupsTable';
 import { useRequestServiceComponentConfigGroups } from './useRequestServiceComponentConfigGroups';
-import ServiceConfigGroupTableFooter from './ServiceComponentConfigGroupTableFooter/ServiceComponentConfigGroupTableFooter';
+import ServiceComponentConfigGroupTableFooter from './ServiceComponentConfigGroupTableFooter/ServiceComponentConfigGroupTableFooter';
 import { SortParams } from '@uikit/types/list.types';
 import { setSortParams } from '@store/adcm/cluster/services/serviceComponents/serviceComponent/configGroups/serviceComponentConfigGroupsTableSlice';
 import {
@@ -75,7 +75,7 @@ const ServiceComponentConfigurationGroups: React.FC = () => {
         editUrlPattern={`/clusters/${clusterId}/services/${serviceId}/components/${componentId}/configuration-groups/:configGroupId`}
         onDelete={handleDeleteConfigGroup}
       />
-      <ServiceConfigGroupTableFooter />
+      <ServiceComponentConfigGroupTableFooter />
 
       <ServiceComponentConfigGroupDialogs />
     </div>

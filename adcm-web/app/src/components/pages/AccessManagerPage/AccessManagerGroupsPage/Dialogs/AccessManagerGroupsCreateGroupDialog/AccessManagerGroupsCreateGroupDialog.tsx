@@ -18,6 +18,7 @@ const AccessManagerGroupsCreateDialog = () => {
     loadRelatedData,
     relatedData: { usersOptions },
     isValid,
+    errors,
   } = useCreateGroupForm();
 
   useEffect(() => {
@@ -45,20 +46,22 @@ const AccessManagerGroupsCreateDialog = () => {
 
   return (
     <Dialog
-      title="Create new users group"
+      title="Create new users' group"
       isOpen={isOpenDialog}
       onOpenChange={handleCloseDialog}
       onAction={submitForm}
       isActionDisabled={!isValid}
+      actionButtonLabel="Create"
     >
       <FormFieldsContainer>
-        <FormField label="Group name">
+        <FormField label="Group name" error={errors.name}>
           <Input
             //
             value={formData.name}
             type="text"
             onChange={handleGroupNameChange}
             placeholder="Enter unique name"
+            autoFocus
           />
         </FormField>
         <FormField label="Description">

@@ -1,7 +1,7 @@
 import { useMemo, useCallback, useEffect } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
 import { createHostWithUpdate, loadClusters, loadHostProviders } from '@store/adcm/hosts/hostsActionsSlice';
-import { isHostNameValid, required } from '@utils/validationsUtils';
+import { isHostNameValid, isNameUniq, required } from '@utils/validationsUtils';
 
 interface CreateHostsFormData {
   hostName: string;
@@ -28,21 +28,19 @@ export const useCreateHostForm = () => {
     return clusters.map(({ name, id }) => ({ value: id, label: name }));
   }, [clusters]);
 
-  const { formData, setFormData, errors, setErrors, handleChangeFormData } =
+  const { formData, setFormData, errors, setErrors, handleChangeFormData, isValid } =
     useForm<CreateHostsFormData>(initialFormData);
+
+  const hosts = useStore((s) => s.adcm.hosts.hosts);
 
   useEffect(() => {
     setErrors({
       hostName:
         (required(formData.hostName) ? undefined : 'The host name field is required') ||
-        (isHostNameValid(formData.hostName) ? undefined : 'The host name field is incorrect'),
+        (isHostNameValid(formData.hostName) ? undefined : 'The host name field is incorrect') ||
+        (isNameUniq(formData.hostName, hosts) ? undefined : 'Host with the same name already exists'),
     });
-  }, [formData, setErrors]);
-
-  const isValid = useMemo(() => {
-    const { hostproviderId, hostName } = formData;
-    return !!(hostproviderId && isHostNameValid(hostName));
-  }, [formData]);
+  }, [formData, hosts, setErrors]);
 
   const reset = useCallback(() => {
     setFormData(initialFormData);

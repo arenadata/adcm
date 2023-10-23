@@ -1,7 +1,8 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useStore, useDispatch } from '@hooks';
+import { useMemo, useEffect } from 'react';
+import { useStore, useDispatch, useForm } from '@hooks';
 import { AdcmPrototypeVersions, AdcmPrototypeVersion, AdcmLicenseStatus } from '@models/adcm';
 import { close, createHostProvider } from '@store/adcm/hostProviders/dialogs/createHostProviderDialogSlice';
+import { isHostProviderNameValid, isNameUniq, required } from '@utils/validationsUtils';
 
 interface CreateHostProviderFormData {
   prototype: AdcmPrototypeVersions | null;
@@ -22,8 +23,10 @@ const initialFormData: CreateHostProviderFormData = {
 export const useCreateHostProviderDialog = () => {
   const dispatch = useDispatch();
 
-  const [formData, setFormData] = useState<CreateHostProviderFormData>(initialFormData);
+  const { formData, setFormData, handleChangeFormData, errors, setErrors } =
+    useForm<CreateHostProviderFormData>(initialFormData);
 
+  const hostProviders = useStore((s) => s.adcm.hostProviders.hostProviders);
   const {
     isOpen,
     relatedData,
@@ -32,7 +35,16 @@ export const useCreateHostProviderDialog = () => {
 
   useEffect(() => {
     setFormData(initialFormData);
-  }, [isOpen]);
+  }, [isOpen, setFormData]);
+
+  useEffect(() => {
+    setErrors({
+      name:
+        (required(formData.name) ? undefined : 'Hostprovider name field is required') ||
+        (isHostProviderNameValid(formData.name) ? undefined : 'Hostprovider name field is incorrect') ||
+        (isNameUniq(formData.name, hostProviders) ? undefined : 'Hostprovider with the same name already exists'),
+    });
+  }, [formData, hostProviders, setErrors]);
 
   const isValid = useMemo(() => {
     return (
@@ -59,17 +71,11 @@ export const useCreateHostProviderDialog = () => {
     }
   };
 
-  const handleChangeFormData = (changes: Partial<CreateHostProviderFormData>) => {
-    setFormData({
-      ...formData,
-      ...changes,
-    });
-  };
-
   return {
     isOpen,
     isValid,
     formData,
+    errors,
     relatedData,
     isRelatedDataLoaded,
     onClose: handleClose,

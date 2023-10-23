@@ -119,7 +119,9 @@ const jobsSlice = createSlice({
         state.job = null;
       })
       .addCase(getTask.fulfilled, (state, action) => {
+        const logs = state.task.childJobs[0]?.logs || [];
         state.task = action.payload;
+        state.task.childJobs[0].logs = logs;
       })
       .addCase(getTask.rejected, (state) => {
         state.task.childJobs = [];

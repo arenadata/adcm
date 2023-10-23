@@ -29,7 +29,7 @@ const MappingItemSelect = <T,>({
       dependencyWidth="min-parent"
       offset={12}
     >
-      <PopoverPanelDefault>
+      <PopoverPanelDefault data-test="add-mapping-popover">
         <MultiSelectPanel
           options={options}
           value={value}

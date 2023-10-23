@@ -92,7 +92,7 @@ const ListTransferPanel: React.FC<ListTransferPanelProps> = ({
   const isAllFilteredDisabled = filteredSelectedState === AllCheckboxState.UncheckDisabled;
 
   return (
-    <div className={cn(s.listTransferPanel, className)}>
+    <div className={cn(s.listTransferPanel, className)} data-test="transfer-list-container">
       <div className={s.listTransferPanel__title}>
         <span>{title}</span>
         {!!error && (

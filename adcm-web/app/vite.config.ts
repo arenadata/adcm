@@ -4,11 +4,11 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 import createSvgSpritePlugin from 'vite-plugin-svg-sprite';
 import eslintPlugin from 'vite-plugin-eslint';
 import svgr from 'vite-plugin-svgr';
-import VitePluginReactRemoveAttributes from 'vite-plugin-react-remove-attributes';
+//import VitePluginReactRemoveAttributes from 'vite-plugin-react-remove-attributes';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
-  const env = {...process.env, ...loadEnv(mode, process.cwd(), '')};
+  const env = { ...process.env, ...loadEnv(mode, process.cwd(), '') };
   const withQaAttributes = env.WITH_QA_ATTRIBUTES === 'true';
 
   return {
@@ -26,10 +26,7 @@ export default defineConfig(({ command, mode }) => {
       eslintPlugin({
         exclude: [/virtual:/, /node_modules/],
       }),
-      ...(withQaAttributes
-          ? [] 
-          : [VitePluginReactRemoveAttributes.default({ attributes: ['data-test'] })]
-        ),
+      //...(withQaAttributes ? [] : [VitePluginReactRemoveAttributes.default({ attributes: ['data-test'] })]),
     ],
   };
 });

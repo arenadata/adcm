@@ -30,3 +30,15 @@ export const isClusterNameValid = (clusterName: string) => {
 export const isHostNameValid = (hostName: string) => {
   return /^[A-Za-z0-9]{1}[A-Za-z0-9.-]*$/.test(hostName);
 };
+
+export const isHostProviderNameValid = (hostName: string) => {
+  return /^[A-Za-z0-9]{1}[A-Za-z0-9.-\s]*$/.test(hostName);
+};
+
+interface Named {
+  name: string;
+}
+
+export const isNameUniq = <T extends Named>(name: string, items: T[]): boolean => {
+  return !items.some((item) => item.name === name);
+};

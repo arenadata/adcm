@@ -28,9 +28,15 @@ const CurrentDate: React.FC = () => {
 
   return (
     <div className={s.currentDate}>
-      <div className={s.currentDate__item}>{formattedDate.date}</div>
-      <div className={cn(s.currentDate__item, s.currentDate__item_time)}>{formattedDate.time}</div>
-      <div className={s.currentDate__item}>UTC</div>
+      <div data-test="current-date" className={s.currentDate__item}>
+        {formattedDate.date}
+      </div>
+      <div data-test="current-time" className={cn(s.currentDate__item, s.currentDate__item_time)}>
+        {formattedDate.time}
+      </div>
+      <div data-test="current-time-zone" className={s.currentDate__item}>
+        UTC
+      </div>
     </div>
   );
 };

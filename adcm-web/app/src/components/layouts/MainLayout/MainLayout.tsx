@@ -10,7 +10,7 @@ import NotificationsSideBar from '@layouts/partials/NotificationsSideBar/Notific
 const MainLayout: React.FC<React.PropsWithChildren> = ({ children }) => {
   return (
     <div className={s.mainLayout}>
-      <aside className={s.mainLayout__leftSidebarWrap}>
+      <aside className={s.mainLayout__leftSidebarWrap} data-test="nav-menu">
         <LeftSideBar className={s.mainLayout__leftSidebar} />
       </aside>
       <div className={s.mainLayout__mainContent}>

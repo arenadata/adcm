@@ -94,7 +94,7 @@ const ComponentsMapping = () => {
         </div>
       </ClusterMappingToolbar>
       <div className={s.componentsMapping__content}>
-        <div>
+        <div data-test="mapping-container">
           {servicesMapping.map(({ service, componentsMapping }) => {
             const isServiceValid = componentsMapping.every(
               (cm) => mappingValidation.byComponents[cm.component.id].isValid,

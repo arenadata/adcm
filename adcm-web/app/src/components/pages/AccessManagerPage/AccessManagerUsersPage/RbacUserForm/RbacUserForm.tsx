@@ -68,6 +68,7 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
             onChange={handleUsernameChange}
             placeholder="Enter unique name"
             autoComplete="new-user"
+            autoFocus
           />
         ) : (
           <TextFormField>{formData.username}</TextFormField>

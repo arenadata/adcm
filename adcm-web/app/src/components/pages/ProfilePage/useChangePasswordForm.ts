@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
-import { useDispatch } from '@hooks';
+import { useCallback, useEffect } from 'react';
+import { useDispatch, useForm, useStore } from '@hooks';
 import { changePassword } from '@store/adcm/profile/profileSlice';
 
 interface ChangePasswordFormData {
@@ -14,21 +14,37 @@ const initialFormData: ChangePasswordFormData = {
   confirmNewPassword: '',
 };
 
+const passwordMinMaxValidator = (passwordFieldLabel: string, password: string, minValue: number, maxValue: number) => {
+  if (password.length === 0) return;
+
+  return password.length >= minValue && password.length <= maxValue
+    ? undefined
+    : `The ${passwordFieldLabel} should be greater than ${minValue - 1} 
+  and less than ${maxValue + 1}`;
+};
+
 export const useChangePasswordForm = () => {
   const dispatch = useDispatch();
+  const minPasswordLength = useStore((s) => s.auth.profile.authSettings.minPasswordLength);
+  const maxPasswordLength = useStore((s) => s.auth.profile.authSettings.maxPasswordLength);
 
-  const [formData, setFormData] = useState<ChangePasswordFormData>(initialFormData);
+  const { formData, setFormData, errors, setErrors, isValid } = useForm<ChangePasswordFormData>(initialFormData);
 
-  const isValid = useMemo(() => {
-    const { currentPassword, newPassword, confirmNewPassword } = formData;
-
-    if (currentPassword !== '') {
-      if (newPassword !== '' && confirmNewPassword !== '') {
-        return newPassword === confirmNewPassword;
-      }
-    }
-    return false;
-  }, [formData]);
+  useEffect(() => {
+    setErrors({
+      currentPassword: passwordMinMaxValidator(
+        'current password',
+        formData.currentPassword,
+        minPasswordLength,
+        maxPasswordLength,
+      ),
+      newPassword: passwordMinMaxValidator('new password', formData.newPassword, minPasswordLength, maxPasswordLength),
+      confirmNewPassword:
+        formData.newPassword === formData.confirmNewPassword
+          ? undefined
+          : 'The new and the confirm passwords should match',
+    });
+  }, [formData, minPasswordLength, maxPasswordLength, setErrors]);
 
   const submitForm = useCallback(() => {
     const { currentPassword, newPassword } = formData;
@@ -49,6 +65,7 @@ export const useChangePasswordForm = () => {
 
   return {
     isValid,
+    errors,
     formData,
     submitForm,
     onChangeFormData: handleChangeFormData,

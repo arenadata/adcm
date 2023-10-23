@@ -12,7 +12,7 @@ type AdcmHostsTableState = ListState<AdcmHostsFilter> & {
 
 const createInitialState = (): AdcmHostsTableState => ({
   filter: {
-    hostName: undefined,
+    name: undefined,
     hostProvider: undefined,
     clusterName: undefined,
   },

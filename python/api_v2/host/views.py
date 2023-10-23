@@ -12,30 +12,20 @@
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.host.filters import HostClusterFilter, HostFilter
 from api_v2.host.serializers import (
-    ClusterHostCreateSerializer,
     ClusterHostStatusSerializer,
     HostChangeMaintenanceModeSerializer,
+    HostCreateRelatedSerializer,
     HostCreateSerializer,
     HostGroupConfigSerializer,
-    HostListIdCreateSerializer,
     HostSerializer,
     HostUpdateSerializer,
 )
-from api_v2.host.utils import (
-    add_new_host_and_map_it,
-    maintenance_mode,
-    map_list_of_hosts,
-)
+from api_v2.host.utils import add_new_host_and_map_it, maintenance_mode
 from api_v2.views import CamelCaseModelViewSet, CamelCaseReadOnlyModelViewSet
-from cm.api import delete_host, remove_host_from_cluster
+from cm.api import add_host_to_cluster, delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.models import Cluster, GroupConfig, Host, HostProvider
 from django_filters.rest_framework.backends import DjangoFilterBackend
-from djangorestframework_camel_case.parser import (
-    CamelCaseJSONParser,
-    CamelCaseMultiPartParser,
-)
-from djangorestframework_camel_case.render import CamelCaseJSONRenderer
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -137,7 +127,6 @@ class HostClusterViewSet(  # pylint:disable=too-many-ancestors
     ModelObjectPermissionsByActionMixin, PermissionListMixin, CamelCaseReadOnlyModelViewSet
 ):
     object_actions = ["destroy"]
-    serializer_class = HostSerializer
     permission_required = [VIEW_HOST_PERM]
     filterset_class = HostClusterFilter
 
@@ -145,9 +134,9 @@ class HostClusterViewSet(  # pylint:disable=too-many-ancestors
         if self.action == "maintenance_mode":
             return HostChangeMaintenanceModeSerializer
         elif self.action == "create":
-            return ClusterHostCreateSerializer
+            return HostCreateRelatedSerializer
 
-        return self.serializer_class
+        return HostSerializer
 
     def get_queryset(self, *args, **kwargs):
         cluster = get_object_for_user(
@@ -157,27 +146,20 @@ class HostClusterViewSet(  # pylint:disable=too-many-ancestors
         return Host.objects.filter(cluster=cluster).select_related("cluster").prefetch_related("hostcomponent_set")
 
     def create(self, request, *args, **kwargs):  # pylint:disable=unused-argument
-        serializer = self.get_serializer(data=request.data, many=True)
-        serializer.is_valid(raise_exception=True)
-
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["cluster_pk"]
         )
+
         if not cluster:
             return Response(data=f'Cluster with pk "{kwargs["cluster_pk"]}" not found', status=HTTP_404_NOT_FOUND)
 
         check_custom_perm(request.user, "map_host_to", "cluster", cluster)
 
-        target_hosts = Host.objects.filter(pk__in=[host_data["host_id"] for host_data in serializer.validated_data])
-        map_list_of_hosts(hosts=target_hosts, cluster=cluster)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        host = add_host_to_cluster(cluster=cluster, host=serializer.validated_data["host_id"])
 
-        return Response(
-            data=HostSerializer(
-                instance=Host.objects.prefetch_related("hostcomponent_set").filter(cluster=cluster),
-                many=True,
-            ).data,
-            status=HTTP_201_CREATED,
-        )
+        return Response(status=HTTP_201_CREATED, data=HostSerializer(instance=host).data)
 
     def destroy(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         host = self.get_object()
@@ -214,28 +196,29 @@ class HostGroupConfigViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet)
     filterset_class = HostClusterFilter
     filter_backends = (DjangoFilterBackend,)
     pagination_class = None
-    parser_classes = [CamelCaseJSONParser, CamelCaseMultiPartParser]
-    renderer_classes = [CamelCaseJSONRenderer]
+
+    def get_serializer_class(self) -> type[HostGroupConfigSerializer | HostCreateRelatedSerializer]:
+        if self.action == "create":
+            return HostCreateRelatedSerializer
+
+        return HostGroupConfigSerializer
 
     def get_queryset(self, *args, **kwargs):
         return self.queryset.filter(group_config__id=self.kwargs["group_config_pk"])
 
     def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
-        serializer = self.get_serializer_class()(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        host_ids = serializer.validated_data
         group_config = GroupConfig.objects.filter(id=self.kwargs["group_config_pk"]).first()
 
         if not group_config:
             raise AdcmEx(code="HOST_GROUP_CONFIG_NOT_FOUND")
 
-        group_config.check_host_candidate(host_ids)
-        group_config.hosts.add(*host_ids)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        host = serializer.validated_data["host_id"]
+        group_config.check_host_candidate(host_ids=[host.pk])
+        group_config.hosts.add(host)
 
-        return Response(
-            data=HostGroupConfigSerializer(group_config.hosts.filter(id__in=host_ids), many=True).data,
-            status=HTTP_201_CREATED,
-        )
+        return Response(status=HTTP_201_CREATED, data=HostGroupConfigSerializer(instance=host).data)
 
     def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         group_config = GroupConfig.objects.filter(id=self.kwargs["group_config_pk"]).first()
@@ -243,12 +226,6 @@ class HostGroupConfigViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet)
         if not group_config:
             raise AdcmEx(code="HOST_GROUP_CONFIG_NOT_FOUND")
 
-        host: Host = self.get_object()
+        host = self.get_object()
         group_config.hosts.remove(host)
         return Response(status=HTTP_204_NO_CONTENT)
-
-    def get_serializer_class(self) -> type[HostGroupConfigSerializer | HostListIdCreateSerializer]:
-        if self.action == "create":
-            return HostListIdCreateSerializer
-
-        return HostGroupConfigSerializer

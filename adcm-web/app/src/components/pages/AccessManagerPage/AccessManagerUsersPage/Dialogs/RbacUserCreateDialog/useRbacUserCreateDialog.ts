@@ -3,7 +3,7 @@ import { closeUserCreateDialog, createUser } from '@store/adcm/users/usersAction
 import { RbacUserFormData } from '@pages/AccessManagerPage/AccessManagerUsersPage/RbacUserForm/RbacUserForm.types';
 import { useEffect } from 'react';
 import { useForm } from '@hooks/useForm';
-import { isEmailValid, required } from '@utils/validationsUtils';
+import { isEmailValid, isNameUniq, required } from '@utils/validationsUtils';
 
 const initialFormData: RbacUserFormData = {
   username: '',
@@ -18,6 +18,7 @@ const initialFormData: RbacUserFormData = {
 
 export const useRbacUserCreateDialog = () => {
   const dispatch = useDispatch();
+  const users = useStore((s) => s.adcm.users.users);
   const isOpen = useStore((s) => s.adcm.usersActions.createDialog.isOpen);
   const isCreating = useStore((s) => s.adcm.usersActions.createDialog.isCreating);
   const groups = useStore((s) => s.adcm.usersActions.relatedData.groups);
@@ -28,7 +29,14 @@ export const useRbacUserCreateDialog = () => {
 
   useEffect(() => {
     setErrors({
-      username: required(formData.username) ? undefined : 'Username field is required',
+      username:
+        (required(formData.username) ? undefined : 'Username field is required') ||
+        (isNameUniq(
+          formData.username,
+          users.map((user) => ({ ...user, name: user.username })),
+        )
+          ? undefined
+          : 'User with the same username already exists'),
       password:
         (required(formData.password) ? undefined : 'Password field is required') ||
         (formData.password.length >= authSettings.minPasswordLength &&
@@ -42,7 +50,7 @@ export const useRbacUserCreateDialog = () => {
         formData.confirmPassword === formData.password ? undefined : 'Confirm password must match password',
       email: isEmailValid(formData.email) ? undefined : 'Email is not correct',
     });
-  }, [formData, authSettings, setErrors]);
+  }, [formData, users, authSettings, setErrors]);
 
   useEffect(() => {
     setFormData(initialFormData);
