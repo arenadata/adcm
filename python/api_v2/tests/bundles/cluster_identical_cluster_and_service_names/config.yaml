@@ -1,0 +1,11 @@
+---
+- type: cluster
+  name: product
+  version: &version '1.0'
+
+- name: product
+  type: service
+  version: *version
+  components:
+    product:
+      constraint: [ 0, + ]
