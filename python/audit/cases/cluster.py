@@ -112,27 +112,19 @@ def cluster_case(
 
         case ["cluster", cluster_pk, "host"] | ["clusters", cluster_pk, "hosts"]:
             host_fqdn = ""
-            if api_version == 1:
-                if response and response.data:
+
+            if response and response.data:
+                if api_version == 1:
                     host_fqdn = response.data["fqdn"]
+                else:
+                    host_fqdn = response.data["name"]
 
-                if "host_id" in view.request.data:
-                    host = Host.objects.filter(pk=view.request.data["host_id"]).first()
-                    if host:
-                        host_fqdn = host.fqdn
+            if "host_id" in view.request.data:
+                host = Host.objects.filter(pk=view.request.data["host_id"]).first()
+                if host:
+                    host_fqdn = host.fqdn
 
-                operation_name = f"{host_fqdn} host added".strip()
-
-            elif api_version == 2:
-                target_host_fqdns = ", ".join(
-                    Host.objects.filter(pk__in=[data["host_id"] for data in view.request.data if "host_id" in data])
-                    .order_by("pk")
-                    .values_list("fqdn", flat=True)
-                )
-                operation_name = f"[{target_host_fqdns}] host(s) added"
-
-            else:
-                raise ValueError("Unexpected api version")
+            operation_name = f"{host_fqdn} host added".strip()
 
             audit_operation = AuditOperation(
                 name=operation_name,

@@ -567,12 +567,12 @@ class TestClusterAudit(BaseAPITestCase):  # pylint: disable=too-many-instance-at
     def test_add_host_success(self):
         response: Response = self.client.post(
             path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data=[{"hostId": self.host_2.pk}, {"hostId": self.host_3.pk}],
+            data={"hostId": self.host_2.pk},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         self.check_last_audit_log(
-            operation_name=f"[{self.host_2.name}, {self.host_3.name}] host(s) added",
+            operation_name=f"{self.host_2.name} host added",
             operation_type="update",
             operation_result="success",
             audit_object__object_id=self.cluster_1.pk,
@@ -588,12 +588,12 @@ class TestClusterAudit(BaseAPITestCase):  # pylint: disable=too-many-instance-at
 
         response: Response = self.client.post(
             path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data=[{"hostId": self.host_2.pk}, {"hostId": self.host_3.pk}],
+            data={"hostId": self.host_2.pk},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name=f"[{self.host_2.name}, {self.host_3.name}] host(s) added",
+            operation_name=f"{self.host_2.name} host added",
             operation_type="update",
             operation_result="denied",
             audit_object__object_id=self.cluster_1.pk,
@@ -609,12 +609,12 @@ class TestClusterAudit(BaseAPITestCase):  # pylint: disable=too-many-instance-at
             path=reverse(
                 viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.get_non_existent_pk(model=Cluster)}
             ),
-            data=[{"hostId": self.host_2.pk}, {"hostId": self.host_3.pk}],
+            data={"hostId": self.host_2.pk},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name=f"[{self.host_2.name}, {self.host_3.name}] host(s) added",
+            operation_name=f"{self.host_2.name} host added",
             operation_type="update",
             operation_result="fail",
             audit_object__isnull=True,

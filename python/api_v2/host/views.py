@@ -22,12 +22,6 @@ from api_v2.host.serializers import (
 )
 from api_v2.host.utils import add_new_host_and_map_it, maintenance_mode
 from api_v2.views import CamelCaseModelViewSet, CamelCaseReadOnlyModelViewSet
-from api_v2.host.utils import (
-    add_new_host_and_map_it,
-    maintenance_mode,
-    map_list_of_hosts,
-)
-from api_v2.views import CamelCaseReadOnlyModelViewSet
 from audit.utils import audit
 from cm.api import add_host_to_cluster, delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
