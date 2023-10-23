@@ -6,11 +6,10 @@ import cn from 'classnames';
 
 export interface AddItemNodeContentProps {
   node: ConfigurationNode;
-  title: string;
   onClick: (node: ConfigurationNode, nodeRef: React.RefObject<HTMLElement>) => void;
 }
 
-const AddItemNodeContent = ({ node, title, onClick }: AddItemNodeContentProps) => {
+const AddItemNodeContent = ({ node, onClick }: AddItemNodeContentProps) => {
   const ref = useRef(null);
 
   const handleClick = () => {
@@ -19,7 +18,7 @@ const AddItemNodeContent = ({ node, title, onClick }: AddItemNodeContentProps) =
 
   return (
     <div ref={ref} className={cn(s.nodeContent, s.addArrayItemNodeContent)} onClick={handleClick}>
-      <Icon name="g1-add" size={16} /> {title}
+      <Icon name="g1-add" size={16} /> {node.data.title}
     </div>
   );
 };

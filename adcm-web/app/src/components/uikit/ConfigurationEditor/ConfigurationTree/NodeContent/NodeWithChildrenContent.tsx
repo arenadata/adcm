@@ -1,34 +1,37 @@
 import { useCallback, useRef } from 'react';
 import { Icon } from '@uikit';
 
-import { ConfigurationNode } from '../../ConfigurationEditor.types';
+import { ConfigurationArray, ConfigurationObject, ConfigurationNode } from '../../ConfigurationEditor.types';
 import { ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
 import s from '../ConfigurationTree.module.scss';
 import cn from 'classnames';
 import SynchronizedAttribute from './SyncronizedAttribute/SynchronizedAttribute';
 import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
+import { nullStub } from '@uikit/ConfigurationEditor/ConfigurationEditor.constants';
 
-interface DefaultNodeContentProps {
+interface NodeWithChildrenContentProps {
   node: ConfigurationNode;
-  hasError: boolean;
+  error?: string;
   isExpanded: boolean;
   onDelete: (node: ConfigurationNode, nodeRef: React.RefObject<HTMLElement>) => void;
   onExpand: () => void;
   onFieldAttributeChange: ChangeFieldAttributesHandler;
 }
 
-const DefaultNodeContent = ({
+const NodeWithChildrenContent = ({
   node,
   isExpanded,
-  hasError,
+  error,
   onDelete,
   onExpand,
   onFieldAttributeChange,
-}: DefaultNodeContentProps) => {
+}: NodeWithChildrenContentProps) => {
   const ref = useRef(null);
+  const fieldNodeData = node.data as ConfigurationObject | ConfigurationArray;
   const adcmMeta = node.data.fieldSchema.adcmMeta;
   const fieldAttributes = node.data.fieldAttributes;
-  const isDeletable = node.data.type === 'object' && node.data.isDeletable;
+  // const isDeletable = node.data.type === 'object' && node.data.isDeletable;
+  const isDeletable = (node.data.type === 'object' || node.data.type === 'array') && node.data.isDeletable;
 
   const handleIsActiveChange = useCallback(
     (isActive: boolean) => {
@@ -54,8 +57,7 @@ const DefaultNodeContent = ({
 
   const className = cn(s.nodeContent, {
     'is-open': isExpanded,
-    // 'is-selected': isSelected,
-    'is-failed': hasError,
+    'is-failed': error !== undefined,
   });
 
   const hasChildren = Boolean(node.children?.length);
@@ -79,9 +81,11 @@ const DefaultNodeContent = ({
           onToggle={handleIsSynchronizedChange}
         />
       )}
+      {fieldNodeData.value === null && <span className={s.nodeContent__value}>{nullStub}</span>}
+
       {hasChildren && <Icon name="chevron" size={12} className={s.nodeContent__arrow} onClick={onExpand} />}
     </div>
   );
 };
 
-export default DefaultNodeContent;
+export default NodeWithChildrenContent;

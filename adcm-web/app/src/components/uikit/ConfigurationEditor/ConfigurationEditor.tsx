@@ -5,7 +5,7 @@ import EditConfigurationFieldDialog from './Dialogs/EditConfigurationFieldDialog
 import { ConfigurationNode, ConfigurationNodeFilter } from './ConfigurationEditor.types';
 import { editField, addField, deleteField, addArrayItem, deleteArrayItem } from './ConfigurationEditor.utils';
 import { ConfigurationData, ConfigurationSchema, ConfigurationAttributes, FieldAttributes } from '@models/adcm';
-import { JSONPrimitive } from '@models/json';
+import { JSONPrimitive, JSONValue } from '@models/json';
 
 type SelectedNode = {
   node: ConfigurationNode;
@@ -53,14 +53,6 @@ const ConfigurationEditor = ({
     [configuration, onConfigurationChange],
   );
 
-  const handleDeleteArrayItem = useCallback(
-    (node: ConfigurationNode) => {
-      const newConfiguration = deleteArrayItem(configuration, node.data.path);
-      onConfigurationChange(newConfiguration);
-    },
-    [configuration, onConfigurationChange],
-  );
-
   const handleFieldEditorOpenChange = () => {
     setSelectedNode(null);
     setIsEditFieldDialogOpen(false);
@@ -70,6 +62,14 @@ const ConfigurationEditor = ({
   const handleValueChange = useCallback(
     (node: ConfigurationNode, value: JSONPrimitive) => {
       const newConfiguration = editField(configuration, node.data.path, value);
+      onConfigurationChange(newConfiguration);
+    },
+    [configuration, onConfigurationChange],
+  );
+
+  const handleAddEmptyObject = useCallback(
+    (node: ConfigurationNode) => {
+      const newConfiguration = editField(configuration, node.data.path, node.data.fieldSchema.default as JSONValue);
       onConfigurationChange(newConfiguration);
     },
     [configuration, onConfigurationChange],
@@ -86,8 +86,26 @@ const ConfigurationEditor = ({
 
   const handleDeleteField = useCallback(
     (node: ConfigurationNode) => {
-      const newConfiguration = deleteField(configuration, node.data.path);
-      onConfigurationChange(newConfiguration);
+      const parentNodeData = node.data.parentNode.data;
+
+      const isParentArray = parentNodeData.type === 'array';
+      const isParentMap = parentNodeData.type === 'object' && parentNodeData.objectType === 'map';
+      const isParentStructure = parentNodeData.type === 'object' && parentNodeData.objectType === 'structure';
+
+      if (isParentArray) {
+        const newConfiguration = deleteArrayItem(configuration, node.data.path);
+        onConfigurationChange(newConfiguration);
+      }
+
+      if (isParentMap) {
+        const newConfiguration = deleteField(configuration, node.data.path);
+        onConfigurationChange(newConfiguration);
+      }
+
+      if (isParentStructure) {
+        const newConfiguration = editField(configuration, node.data.path, null);
+        onConfigurationChange(newConfiguration);
+      }
     },
     [configuration, onConfigurationChange],
   );
@@ -109,11 +127,11 @@ const ConfigurationEditor = ({
         configuration={configuration}
         attributes={attributes}
         filter={filter}
+        onAddEmptyObject={handleAddEmptyObject}
         onEditField={handleOpenEditFieldDialog}
         onAddField={handleOpenAddFieldDialog}
-        onDeleteField={handleDeleteField}
+        onDelete={handleDeleteField}
         onAddArrayItem={handleAddArrayItem}
-        onDeleteArrayItem={handleDeleteArrayItem}
         onFieldAttributesChange={handleFieldAttributesChange}
         onChangeIsValid={onChangeIsValid}
       />

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Meta, StoryObj } from '@storybook/react';
 import ConfigurationEditor from './ConfigurationEditor';
-import { schema, complexSchema } from './ConfigurationEditor.stories.constants';
+import { schema, complexSchema, nullableConfig, nullableSchema } from './ConfigurationEditor.stories.constants';
 import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 import { ConfigurationNodeFilter } from './ConfigurationEditor.types';
 import { Checkbox, Input, Switch } from '@uikit';
@@ -212,6 +212,16 @@ export const ConfigurationEditorWithComplexConfigurationStory: Story = {
     <ConfigurationEditorStoryWithHooks
       schema={complexSchema}
       initialConfigurationData={null}
+      initialAttributes={null}
+    />
+  ),
+};
+
+export const ConfigurationEditorWithNullableMapStory: Story = {
+  render: () => (
+    <ConfigurationEditorStoryWithHooks
+      schema={nullableSchema}
+      initialConfigurationData={nullableConfig}
       initialAttributes={null}
     />
   ),

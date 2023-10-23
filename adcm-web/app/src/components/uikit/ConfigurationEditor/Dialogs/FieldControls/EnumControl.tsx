@@ -26,7 +26,7 @@ const EnumControl = ({ fieldName, value, fieldSchema, isReadonly, onChange }: En
         onChange={handleSelectChange}
         options={options}
         isSearchable={false}
-        noneLabel="Please select value"
+        placeholder="Please select value"
         disabled={isReadonly}
       />
     </ConfigurationField>
