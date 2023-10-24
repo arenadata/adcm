@@ -33,6 +33,12 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
     setError(!areEqual ? mismatchErrorText : undefined);
   }, [confirm, onChange, secret]);
 
+  const handleResetToDefault = (defaultValue: JSONPrimitive) => {
+    onChange(defaultValue, true);
+    setSecret(defaultValue as string);
+    setConfirm(defaultValue as string);
+  };
+
   return (
     <form>
       <ConfigurationField
@@ -40,7 +46,7 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
         fieldSchema={fieldSchema}
         error={error}
         isReadonly={isReadonly}
-        onChange={onChange}
+        onResetToDefault={handleResetToDefault}
       >
         <InputPassword value={secret} readOnly={isReadonly} onChange={handleSecretChange} />
       </ConfigurationField>
@@ -50,7 +56,7 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
           fieldSchema={fieldSchema}
           error={error}
           isReadonly={isReadonly}
-          onChange={onChange}
+          onResetToDefault={handleResetToDefault}
         >
           <InputPassword value={confirm} onChange={handleConfirmChange} />
         </ConfigurationField>

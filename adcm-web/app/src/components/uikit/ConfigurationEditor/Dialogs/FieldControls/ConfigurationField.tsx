@@ -10,12 +10,19 @@ export interface ConfigurationFieldProps extends React.PropsWithChildren {
   children: React.ReactElement<{ hasError?: boolean }>;
   fieldSchema: SingleSchemaDefinition;
   isReadonly: boolean;
-  onChange: (value: JSONPrimitive) => void;
+  onResetToDefault: (value: JSONPrimitive) => void;
 }
 
-const ConfigurationField = ({ label, error, fieldSchema, children, isReadonly, onChange }: ConfigurationFieldProps) => {
-  const handleRevertClick = () => {
-    onChange((fieldSchema.default ?? '') as JSONPrimitive);
+const ConfigurationField = ({
+  label,
+  error,
+  fieldSchema,
+  children,
+  isReadonly,
+  onResetToDefault,
+}: ConfigurationFieldProps) => {
+  const handleResetToDefaultClick = () => {
+    onResetToDefault((fieldSchema.default ?? '') as JSONPrimitive);
   };
 
   return (
@@ -35,7 +42,7 @@ const ConfigurationField = ({ label, error, fieldSchema, children, isReadonly, o
           disabled={isReadonly}
           title="Reset to default"
           tooltipProps={{ placement: 'bottom' }}
-          onClick={handleRevertClick}
+          onClick={handleResetToDefaultClick}
         />
       </div>
     </div>
