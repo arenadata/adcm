@@ -56,8 +56,10 @@ export const useAccessManagerPolicyAddDialog = () => {
   }, []);
 
   useEffect(() => {
-    resetForm();
-  }, [resetForm]);
+    if (!isOpen) {
+      resetForm();
+    }
+  }, [isOpen, resetForm]);
 
   const submit = useCallback(() => {
     const { policyName, description, roleId, groupIds } = formData;
@@ -77,12 +79,9 @@ export const useAccessManagerPolicyAddDialog = () => {
     } else {
       dispatch(createPolicy(data));
     }
-
-    setCurrentStep(Steps.MainInfo);
   }, [formData, dispatch, policy]);
 
   const handleClose = () => {
-    setCurrentStep(Steps.MainInfo);
     dispatch(cleanupActions());
   };
 
