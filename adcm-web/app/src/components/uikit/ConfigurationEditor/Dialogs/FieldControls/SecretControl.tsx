@@ -34,7 +34,7 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
   }, [confirm, onChange, secret]);
 
   return (
-    <>
+    <form>
       <ConfigurationField
         label={fieldName}
         fieldSchema={fieldSchema}
@@ -55,7 +55,7 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
           <InputPassword value={confirm} onChange={handleConfirmChange} />
         </ConfigurationField>
       )}
-    </>
+    </form>
   );
 };
 
