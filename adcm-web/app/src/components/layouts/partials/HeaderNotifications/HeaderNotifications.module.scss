@@ -1,9 +1,30 @@
+:global {
+  body.theme-dark {
+    --bell-popover-panel-background-color: #212121;
+    --bell-popover-panel-border-color: var(--color-xdark);
+    --bell-popover-panel-content-background-color: var(--color-xdark-new-50);
+  }
+
+  body.theme-light {
+    --bell-popover-panel-background-color: var(--color-popup-light);
+    --bell-popover-panel-border-color: var(--color-stroke-light);
+    --bell-popover-panel-content-background-color: var(--color-xwhite-50);
+  }
+}
 
 .headerNotifications {
   border: none;
   outline: none;
   background: transparent;
   padding: 0;
+
+  &:hover {
+    color: var(--color-xgreen-saturated);
+  }
+
+  &:active {
+    color: #FFFFFF !important;
+  }
 
   :global(.bell__marker) {
     color: var(--bell-marker-color, transparent);
@@ -13,13 +34,51 @@
     color: var(--bell-hole-patch, currentColor);
   }
 
-  &_error {
-    --bell-hole-patch: transparent;
+  &_done {
+    --bell-marker-color: transparent;
+  }
+
+  &_failed {
     --bell-marker-color: var(--color-xred);
+
+    &:hover {
+      color: var(--color-xred);
+    }
   }
 
   &_success {
-    --bell-hole-patch: transparent;
     --bell-marker-color: var(--icon-button-color-active-primary);
   }
+
+  &_locked {
+    --bell-marker-color: var(--color-xgray-light);
+  }
+
+  &_running {
+    --bell-marker-color: var(--color-xblue);
+  }
+}
+
+.bellPopoverPanel {
+  width: 314px;
+  height: 244px;
+  border-radius: 6px;
+  border: 1px solid var(--bell-popover-panel-border-color);
+  background-color: var(--bell-popover-panel-background-color);
+
+  &_content {
+    background-color: var(--bell-popover-panel-content-background-color);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 16px;
+  }
+
+  &_footer {
+    margin-right: 16px;
+    float: right;
+  }
+}
+
+.acknowledgeButton {
+  color: var(--color-xblue);
 }

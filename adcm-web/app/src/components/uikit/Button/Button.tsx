@@ -4,7 +4,7 @@ import s from './Button.module.scss';
 import { IconsNames } from '@uikit/Icon/sprite';
 import Icon from '@uikit/Icon/Icon';
 import { ConditionalWrapper, Tooltip } from '@uikit';
-import { TooltipProps } from '@uikit/Tooltip/Tooltip.tsx';
+import { TooltipProps } from '@uikit/Tooltip/Tooltip';
 
 type ButtonVariant = 'primary' | 'secondary' | 'clear';
 export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'title'> {
