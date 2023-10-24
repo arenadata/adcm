@@ -109,6 +109,7 @@ import hostProviderConfigGroupActionsSlice from '@store/adcm/hostProvider/config
 import hostProviderConfigGroupSlice from '@store/adcm/hostProvider/configurationGroupSingle/hostProviderConfigGroupSlice';
 import hostProviderConfigGroupConfigurationSlice from '@store/adcm/hostProvider/configurationGroupSingle/configuration/hostProviderConfigGroupConfigurationSlice';
 import hostProviderConfigGroupConfigurationsCompareSlice from '@store/adcm/hostProvider/configurationGroupSingle/configuration/hostProviderConfigGroupConfigurationsCompareSlice';
+import bellSlice from '@store/adcm/bell/bellSlice';
 
 const rootReducer = combineReducers({
   auth: authSlice,
@@ -204,6 +205,7 @@ const rootReducer = combineReducers({
     usersTable: usersTableSlice,
     usersActions: usersActionsSlice,
     jobs: jobsSlice,
+    bell: bellSlice,
     jobsTable: jobsTableSlice,
     jobsActions: jobsActionsSlice,
     groups: groupsSlice,

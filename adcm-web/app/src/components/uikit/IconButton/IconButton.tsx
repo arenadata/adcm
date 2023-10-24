@@ -4,8 +4,8 @@ import { IconsNames } from '@uikit/Icon/sprite';
 import Icon, { IconProps } from '@uikit/Icon/Icon';
 import s from './IconButton.module.scss';
 import { ConditionalWrapper, Tooltip } from '@uikit';
-import { TooltipProps } from '@uikit/Tooltip/Tooltip.tsx';
-import { textToDataTestValue } from '@utils/dataTestUtils.ts';
+import { textToDataTestValue } from '@utils/dataTestUtils';
+import { TooltipProps } from '@uikit/Tooltip/Tooltip';
 
 type IconButtonVariant = 'primary' | 'secondary';
 export interface IconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'title'> {
