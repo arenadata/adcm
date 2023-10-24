@@ -16,13 +16,15 @@ const RbacUserCreateDialog: React.FC = () => {
       actionButtonLabel="Create"
       isActionDisabled={!isValid}
     >
-      <RbacUserForm
-        onChangeFormData={onChangeFormData}
-        formData={formData}
-        groups={groups}
-        errors={errors}
-        isCreate={true}
-      />
+      <form>
+        <RbacUserForm
+          onChangeFormData={onChangeFormData}
+          formData={formData}
+          groups={groups}
+          errors={errors}
+          isCreate={true}
+        />
+      </form>
     </Dialog>
   );
 };
