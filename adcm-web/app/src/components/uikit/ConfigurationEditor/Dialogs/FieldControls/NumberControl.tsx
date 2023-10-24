@@ -21,7 +21,7 @@ const NumberControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
   };
 
   return (
-    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} isReadonly={isReadonly} onChange={onChange}>
+    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} isReadonly={isReadonly} onResetToDefault={onChange}>
       <InputNumber value={value as number} readOnly={isReadonly} onChange={handleChange} />
     </ConfigurationField>
   );
