@@ -25,7 +25,7 @@ const MultilineStringControl = ({
   isReadonly,
   onChange,
 }: MultilineStringControlProps) => {
-  const stringValue = value as string;
+  const stringValue = value?.toString() ?? '';
   const format = fieldSchema.format ?? 'text';
   const [isFormatted, setIsFormatted] = useState(false);
 
