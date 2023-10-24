@@ -4,7 +4,8 @@ import { getDefaultConfigurationRunConfig } from '@commonComponents/DynamicActio
 import DynamicActionConfigSchemaToolbar from '@commonComponents/DynamicActionDialog/DynamicActionConfigSchema/DynamicActionConfigSchemaToolbar/DynamicActionConfigSchemaToolbar';
 import ConfigurationFormContextProvider from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContextProvider';
 import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
-import { AdcmConfiguration } from '@models/adcm';
+import { AdcmConfiguration, ConfigurationData } from '@models/adcm';
+import { generateFromSchema } from '@utils/jsonSchemaUtils';
 
 interface DynamicActionConfigSchemaProps extends DynamicActionCommonOptions {
   submitLabel?: string;
@@ -24,9 +25,9 @@ const DynamicActionConfigSchema: React.FC<DynamicActionConfigSchemaProps> = ({
       return;
     }
 
-    const { config, adcmMeta } = getDefaultConfigurationRunConfig().configuration ?? {};
+    const { adcmMeta } = getDefaultConfigurationRunConfig().configuration ?? {};
     const configuration = {
-      configurationData: config ?? {},
+      configurationData: generateFromSchema<ConfigurationData>(actionDetails.configuration.configSchema) ?? {},
       attributes: actionDetails.configuration.adcmMeta ?? adcmMeta ?? {},
       schema: actionDetails.configuration.configSchema,
     };
