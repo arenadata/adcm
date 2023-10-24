@@ -350,7 +350,7 @@ class TestHostAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "HOST_CONFLICT")
-        self.assertEqual(response.json()["desc"], "duplicate host")
+        self.assertEqual(response.json()["desc"], "Host with the same name already exists.")
 
     def test_host_update_duplicated_fqdn_fail(self):
         fqdn = "another"
@@ -373,7 +373,7 @@ class TestHostAPI(BaseTestCase):
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "HOST_CONFLICT")
-        self.assertEqual(response.json()["desc"], "duplicate host")
+        self.assertEqual(response.json()["desc"], "Host with the same name already exists.")
 
         response = self.client.patch(
             path=reverse(viewname="v1:host-details", kwargs={"host_id": self.host.pk}),
@@ -387,7 +387,7 @@ class TestHostAPI(BaseTestCase):
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "HOST_CONFLICT")
-        self.assertEqual(response.json()["desc"], "duplicate host")
+        self.assertEqual(response.json()["desc"], "Host with the same name already exists.")
 
     def test_host_create_fqdn_validation(self):
         url = reverse(viewname="v1:host")
