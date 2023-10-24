@@ -1,0 +1,26 @@
+body.theme-dark .scroll {
+  --scrollbar-thumb-color: var(--color-xdark);
+  --scrollbar-track-color: var(--color-xdark-new);
+}
+body.theme-light .scroll {
+  --scrollbar-thumb-color: var(--color-xgray-lighter);
+  --scrollbar-track-color: var(--color-xgray-alt-60);
+
+}
+.scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+  top: 20px;
+}
+
+.scroll::-webkit-scrollbar-corner {
+  display: none;
+}
+
+.scroll::-webkit-scrollbar-track {
+  background: none;
+}
+
+.scroll::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-color);
+}

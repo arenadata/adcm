@@ -1,0 +1,66 @@
+:global {
+  body.theme-dark {
+    --statusable-circle-background-done: var(--color-xgreen-saturated);
+    --statusable-circle-background-unknown: var(--color-yellow-light);
+    --statusable-circle-background-failed: var(--color-xred);
+    --statusable-circle-background-aborted: var(--color-xgray-light);
+    --statusable-circle-background-running: var(--color-xblue);
+    --statusable-circle-background-created: var(--color-xwhite-off);
+    --statusable-color-name: var(--color-xwhite-off);
+  }
+  body.theme-light {
+    --statusable-circle-background-done: var(--color-xgreen);
+    --statusable-circle-background-unknown: var(--color-yellow-light);
+    --statusable-circle-background-failed: var(--color-xred-light);
+    --statusable-circle-background-aborted: var(--color-xgray-light);
+    --statusable-circle-background-running: var(--color-xblue);
+    --statusable-circle-background-created: var(--color-xdark);
+    --statusable-color-name: var(--color-xdark);
+  }
+}
+
+.statusable {
+  &_small {
+    --statusable-circle-size: 4px;
+  }
+  &_medium {
+    --statusable-circle-size: 6px;
+  }
+  &_large {
+    --statusable-circle-size: 10px;
+  }
+
+  &_done, &_success {
+    color: var(--statusable-color-name);
+    font-weight: 500;
+    --statusable-circle-background: var(--statusable-circle-background-done)
+  }
+  &_unknown {
+    --statusable-circle-background: var(--statusable-circle-background-unknown)
+  }
+  &_failed {
+    --statusable-circle-background: var(--statusable-circle-background-failed)
+  }
+  &_aborted, &_locked {
+    --statusable-circle-background: var(--statusable-circle-background-aborted)
+  }
+  &_running {
+    --statusable-circle-background: var(--statusable-circle-background-running)
+  }
+  &_created {
+    --statusable-circle-background: var(--statusable-circle-background-created)
+  }
+
+  display: inline-flex;
+  align-items: center;
+  &::after {
+    flex-shrink: 0;
+    margin-inline-start: 8px;
+    content: '';
+    display: block;
+    width: var(--statusable-circle-size);
+    height: var(--statusable-circle-size);
+    border-radius: 50%;
+    background: var(--statusable-circle-background);
+  }
+}

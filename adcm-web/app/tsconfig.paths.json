@@ -1,0 +1,55 @@
+{
+  "compilerOptions": {
+    "baseUrl": "src",
+    "paths": {
+      "@api": [
+        "./api/index"
+      ],
+      "@api/*": [
+        "./api/*"
+      ],
+      "@pages/*": [
+        "./components/pages/*"
+      ],
+      "@utils/*": [
+        "./utils/*"
+      ],
+      "@constants": [
+        "./constants"
+      ],
+      "@uikit": [
+        "./components/uikit/index"
+      ],
+      "@uikit/*": [
+        "./components/uikit/*"
+      ],
+      "@layouts/*": [
+        "./components/layouts/*"
+      ],
+      "@commonComponents/*": [
+        "./components/common/*"
+      ],
+      "@models/*": [
+        "./models/*"
+      ],
+      "@models/adcm": [
+        "./models/adcm/index",
+      ],
+      "@hooks": [
+        "./hooks/index"
+      ],
+      "@hooks/*": [
+        "./hooks/*"
+      ],
+      "@routes/*": [
+        "./routes/*"
+      ],
+      "@store": [
+        "./store/index"
+      ],
+      "@store/*": [
+        "./store/*"
+      ]
+    }
+  }
+}

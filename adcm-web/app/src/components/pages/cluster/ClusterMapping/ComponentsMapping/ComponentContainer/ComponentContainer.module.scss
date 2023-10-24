@@ -1,0 +1,77 @@
+:global {
+  body.theme-dark {
+    --component-container-title-color: var(--color-xwhite-off);
+    --component-container-background: var(--color-xdark-new-20);
+    --component-container-default-border-color: var(--color-xdark);
+
+    --component-container-notRequired-title-color: var(--color-xwhite-off);
+    --component-container-notRequired-border-color: var(--color-xdark);
+  }
+
+  body.theme-light {
+    --component-container-title-color: var(--color-xdark);
+    --component-container-background: var(--color-xgray-alt-30);
+    --component-container-default-border-color: var(--color-stroke-light);
+
+    --component-container-notRequired-border-color: var(--color-xdark);
+    --component-container-notRequired-border-color: var(--color-stroke-light);
+  }
+}
+
+.componentContainer {
+  padding: 10px;
+  border-radius: 10px;
+  border: 2px solid var(--component-container-default-border-color);
+  background: var(--component-container-background);
+  border-color: var(--component-container-valid-color);
+
+  &:not(:last-child) {
+    margin-bottom: 8px;
+  }
+
+  &_error {
+    border-color: var(--component-container-error-color);
+  }
+
+  &_notRequired {
+    border-color: var(--component-container-notRequired-border-color);
+  }
+
+  &__hosts {
+    margin-top: 8px;
+  }
+
+  &_disabled {
+    border-color: var(--component-container-disabled-color);
+  }
+}
+
+.componentContainerHeader {
+  display: flex;
+  gap: 12px;
+  line-height: 28px;
+
+  &__title {
+    flex-shrink: 0;
+    color: var(--component-container-title-color);
+    font-size: 15px;
+    color: var(--component-container-valid-color);
+
+    &_error {
+      color: var(--component-container-error-color);
+    }
+
+    &_notRequired {
+      color: var(--component-container-notRequired-title-color);
+    }
+  }
+
+  &__count {
+    flex-shrink: 0;
+  }
+
+  &__add {
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+}

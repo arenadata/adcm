@@ -1,0 +1,16 @@
+:global {
+  body.theme-dark {
+    --logo-color: var(--color-xwhite-off);
+  }
+  body.theme-light {
+    --logo-color: var(--color-xdark);
+  }
+}
+
+.mainLogo {
+  display: inline-flex;
+  svg {
+    height: 34px;
+  }
+  color: var(--logo-color);
+}

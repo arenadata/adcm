@@ -1,0 +1,45 @@
+:global {
+  body.theme-dark {
+    --host-container-background: var(--color-xdark-new-20);
+    --host-container-border-color: var(--color-xdark);
+    --host-container-title-color: var(--color-xwhite-off);
+  }
+
+  body.theme-light {
+    --host-container-background: var(--color-xgray-alt-30);
+    --host-container-border-color: var(--color-stroke-light);
+    --host-container-title-color: var(--color-xdark);
+  }
+}
+
+.hostContainer {
+  padding: 10px;
+  border-radius: 10px;
+  border: 2px solid var(--host-container-border-color);
+  background: var(--host-container-background);
+
+  &:not(:last-child) {
+    margin-bottom: 8px;
+  }
+
+  &__components {
+    margin-top: 8px;
+  }
+}
+
+.hostContainerHeader {
+  display: flex;
+  gap: 12px;
+  line-height: 28px;
+
+  &__title {
+    flex-shrink: 0;
+    color: var(--host-container-title-color);
+    font-size: 15px;
+  }
+
+  &__add {
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+}

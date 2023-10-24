@@ -1,0 +1,23 @@
+:global {
+  body.theme-dark {
+    --cluster-name-color: var(--color-xwhite-off);
+  }
+
+  body.theme-light {
+    --cluster-name-color: var(--color-xdark);
+  }
+}
+
+.clusterName {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+
+  &__name {
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 24px;
+    color: var(--cluster-name-color);
+  }
+}

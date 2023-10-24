@@ -1,0 +1,33 @@
+{
+  "extends": "./tsconfig.paths.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "allowImportingTsExtensions": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "isolatedModules": false,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+
+    /* Linting */
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "strictNullChecks": true
+  },
+  "include": ["src"],
+  "exclude": [
+    "node_modules",
+    "./src/__tests__/**",
+    "./src/__mocks__/**"
+  ],
+  "types": ["node", "jest", "@testing-library/jest-dom"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

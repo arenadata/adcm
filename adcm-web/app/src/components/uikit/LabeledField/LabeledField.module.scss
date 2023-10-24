@@ -1,0 +1,42 @@
+:global {
+  body.theme-dark {
+    --labeled-field-label-color-hover: var(--color-xwhite-off);
+  }
+  body.theme-light {
+    --labeled-field-label-color-hover: var(--color-xdark);
+  }
+}
+
+.labeledField {
+  &__labelWrap {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  &__label {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--labeled-field-label-color, var(--text-default-color));
+    transition: color 250ms;
+    margin-inline-end: 8px;
+  }
+
+  &_asRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .labeledField__labelWrap {
+      margin-bottom: 0;
+    }
+    .labeledField__label {
+      margin-inline-end: 0;
+    }
+  }
+
+  &:hover,
+  &:focus-within {
+    --labeled-field-label-color: var(--labeled-field-label-color-hover);
+  }
+}

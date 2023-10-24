@@ -1,0 +1,21 @@
+.rbacUserForm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 12px;
+  grid-template-areas:
+    "username username"
+    "password confirmPassword"
+    "firstName lastName"
+    "isSuperUser ."
+    "email email"
+    "groups groups";
+
+  &__username { grid-area: username; }
+  &__password { grid-area: password; }
+  &__confirmPassword { grid-area: confirmPassword; }
+  &__firstName { grid-area: firstName; }
+  &__lastName { grid-area: lastName; }
+  &__isSuperUser { grid-area: isSuperUser; }
+  &__email { grid-area: email; }
+  &__groups { grid-area: groups; }
+}

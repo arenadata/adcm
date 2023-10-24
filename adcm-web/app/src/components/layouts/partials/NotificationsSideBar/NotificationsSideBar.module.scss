@@ -1,0 +1,10 @@
+.notificationsSideBar {
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  z-index: var(--z-index-notifications);
+
+  display: flex;
+  flex-direction: column-reverse;
+  row-gap: 12px;
+}

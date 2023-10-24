@@ -1,0 +1,10 @@
+.tableFilters {
+  display: flex;
+  column-gap: 16px;
+  flex: 1;
+
+  :global(.search-input) {
+    max-width: 200px;
+    width: 100%;
+  }
+}

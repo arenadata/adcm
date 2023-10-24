@@ -1,0 +1,17 @@
+.overviewHeader {
+  margin-bottom: 40px;
+  justify-content: start;
+
+  --statusable-circle-size: 8px;
+
+  &::before {
+    flex-shrink: 0;
+    margin-inline-start: 8px;
+    content: '';
+    display: block;
+    width: var(--statusable-circle-size);
+    height: var(--statusable-circle-size);
+    border-radius: 50%;
+    background: var(--color-xgreen-saturated);
+  }
+}

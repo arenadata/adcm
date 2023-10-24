@@ -1,0 +1,27 @@
+:global {
+  body.theme-dark {
+    --multiselect-section-border: var(--color-xdark);
+  }
+
+  body.theme-light {
+    --multiselect-section-border: var(--color-xgray-lighter);
+  }
+}
+
+.multiSelectPanel {
+  &__section {
+    padding: 12px;
+
+    &:not(:last-child) {
+      border-bottom: 1px solid var(--multiselect-section-border);
+    }
+
+    &_compactMode {
+      padding: 0 0 12px 0;
+
+      &:not(:last-child) {
+        border-bottom: none;
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+version: "3"
+services:
+  adcm-web-2.0-test:
+    build:
+      context: .
+      dockerfile: ./docker/test/Dockerfile
+    environment:
+      CHOKIDAR_USEPOLLING: 'true'
+    stdin_open: true
+    ports:
+      - 4173:4173

@@ -1,0 +1,26 @@
+:global {
+  body.theme-dark {
+    --mainInfoPanel-background-color: var(--color-xdark-new-20);
+  }
+
+  body.theme-light {
+    --mainInfoPanel-background-color: var(--color-xgray-alt-30);
+  }
+}
+
+.mainInfoPanel {
+  padding: 20px;
+  border-radius: 15px;
+  background: var(--mainInfoPanel-background-color);
+
+  p {
+    margin: 0;
+
+    &:not(:first-child) {
+      margin-top: 1em;
+    }
+    &:not(:last-child) {
+      margin-bottom: 1em;
+    }
+  }
+}

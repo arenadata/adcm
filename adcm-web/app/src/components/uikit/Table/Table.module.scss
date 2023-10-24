@@ -1,0 +1,332 @@
+:global {
+  body.theme-dark {
+    --table-text-link-color: var(--color-xwhite-off);
+
+    // primary
+    --table-thead-color-primary: var(--color-xgray-light);
+
+    --table-tr-background-primary: var(--color-navy);
+    --table-tr-color-primary: var(--color-xgray-light);
+
+    --table-tr-background-hover-primary: var(--color-xdark-new);
+    --table-tr-color-hover-primary: var(--color-xwhite);
+
+    --table-tr-background-selected-primary: var(--color-xgreen-saturated15);
+    --table-tr-color-selected-primary: var(--color-xwhite);
+    --table-tr-border-selected-primary: var(--color-xgreen);
+
+
+    // secondary
+    --table-thead-color-secondary: var(--color-xgray-light);
+
+    --table-tr-border-secondary: var(--color-xdark);
+    --table-tr-background-secondary: var(--color-xdark-new-20);
+    --table-tr-color-secondary: var(--color-xgray-lighter);
+
+    --table-tr-background-hover-secondary: var(--color-xdark-new-50);
+    --table-tr-color-hover-secondary: var(--color-xwhite);
+    --table-tr-border-hover-secondary: var(--color-xdark);
+
+    --table-tr-background-selected-secondary: var(--color-xdark-new-full);
+    --table-tr-color-selected-secondary: var(--color-xwhite);
+    --table-tr-border-selected-secondary: var(--color-xdark);
+
+    // tertiary
+    --table-thead-color-tertiary: var(--color-xgray-light);
+
+    --table-tr-border-tertiary: var(--color-xdark);
+    --table-tr-background-tertiary: transition;
+    --table-tr-color-tertiary: var(--color-xgray-lighter);
+
+    --table-tr-border-hover-tertiary: var(--color-xdark);
+    --table-tr-background-hover-tertiary: var(--color-xdark-new-20);
+    --table-tr-color-hover-tertiary: var(--color-xwhite);
+
+    --table-tr-border-selected-tertiary: var(--color-xdark);
+    --table-tr-background-selected-tertiary: var(--color-xdark-new-full);
+    --table-tr-color-selected-tertiary: var(--color-xwhite);
+
+    // quaternary
+    --table-tr-border-quaternary: var(--color-xdark);
+    --table-tr-background-quaternary: var(--color-xdark-new);
+    --table-td-color-quaternary: var(--color-xgray-lighter);
+  }
+
+  body.theme-light {
+    --table-text-link-color: var(--color-xdark);
+
+    // primary
+    --table-thead-color-primary: var(--color-xgray-light);
+
+    --table-tr-background-primary: var(--color-xgray-alt-50);
+    --table-tr-color-primary: var(--color-xgray-light);
+
+    --table-tr-background-hover-primary: var(--color-xgray-alt);
+    --table-tr-color-hover-primary: var(--color-xdark);
+
+    --table-tr-background-selected-primary: var(--color-xgreen-saturated15);
+    --table-tr-color-selected-primary: var(--color-xdark);
+    --table-tr-border-selected-primary: var(--color-xgreen-saturated);
+
+    // secondary
+    --table-thead-color-secondary: var(--color-xgray-light);
+
+    --table-tr-border-secondary: var(--color-stroke-light);
+    --table-tr-background-secondary: var(--color-xgray-alt-20);
+    --table-tr-color-secondary: var(--color-xgray-light);
+
+    --table-tr-background-hover-secondary: var(--color-xdark-new-60);
+    --table-tr-color-hover-secondary: var(--color-xdark);
+    --table-tr-border-hover-secondary: var(--color-stroke-light);
+
+    --table-tr-background-selected-secondary: var(--color-xgray-alt);
+    --table-tr-color-selected-secondary: var(--color-xdark);
+    --table-tr-border-selected-secondary: var(--color-xgray-alt);
+
+    // tertiary
+    --table-thead-color-tertiary: var(--color-xgray-light);
+
+    --table-tr-border-tertiary: var(--color-stroke-light);
+    --table-tr-background-tertiary: transition;
+    --table-tr-color-tertiary: var(--color-xgray-darker);
+
+    --table-tr-border-hover-tertiary: var(--color-stroke-light);
+    --table-tr-background-hover-tertiary: var(--color-xgray-alt-20);
+    --table-tr-color-hover-tertiary: var(--color-xdark);
+
+    --table-tr-border-selected-tertiary: var(--color-stroke-light);
+    --table-tr-background-selected-tertiary: var(--color-xgray-alt);
+    --table-tr-color-selected-tertiary: var(--color-xdark);
+
+    // quaternary
+    --table-tr-border-quaternary: var(--color-stroke-light);
+    --table-tr-background-quaternary: var(--color-xwhite-50);
+    --table-td-color-quaternary: var(--color-xgray-darker);
+  }
+}
+
+.tableWrapper {
+  overflow: auto;
+  position: relative;
+}
+
+.table {
+  overflow: hidden;
+  width: 100%;
+  text-align: left;
+  box-sizing: border-box;
+
+  &__row_noData:not(:only-child) {
+    display: none !important;
+  }
+
+  &__textNoData {
+    line-height: 32px;
+  }
+  &__spinnerWrapper {
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  td,th {
+    padding: 0;
+
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  th {
+    color: var(--table-th-color);
+    --table-cell-padding: 12px 20px;
+    font-weight: 500;
+  }
+  td {
+    color: var(--table-tr-color);
+    background: var(--table-tr-background);
+    transition: background-color 250ms, color 250ms;
+    font-weight: 400;
+  }
+
+  &_primary {
+    tr :global(.text-link) {
+      color: var(--table-text-link-color);
+    }
+
+    tr:hover :global(.text-link) {
+      color: var(--color-xblue);
+    }
+  }
+
+  tr:not(:hover) :global(.rename-button) {
+    color: transparent;
+  }
+
+  tbody > tr {
+    &:hover {
+      --table-tr-border: var(--table-tr-border-hover);
+      --table-tr-color: var(--table-tr-color-hover);
+      --table-tr-background: var(--table-tr-background-hover);
+    }
+    &:global(.is-selected) {
+      --table-tr-border: var(--table-tr-border-selected);
+      --table-tr-color: var(--table-tr-color-selected);
+      --table-tr-background: var(--table-tr-background-selected);
+    }
+  }
+
+
+  &_primary,
+  &_secondary {
+    border: none;
+    border-spacing: 0 var(--table-border-spacing);
+    border-collapse: separate;
+
+    th {
+      & > div {
+        margin-bottom: calc(-1 * var(--table-border-spacing));
+        margin-top: calc(-1 * var(--table-border-spacing));
+      }
+    }
+
+    tbody > tr {
+      border-radius: var(--table-border-radius);
+      box-shadow: inset 0 0 0 2px var(--table-tr-border, transparent);
+
+      & > td {
+        &:first-child {
+          border-top-left-radius: var(--table-border-radius);
+          border-bottom-left-radius: var(--table-border-radius);
+        }
+        &:last-child {
+          border-top-right-radius: var(--table-border-radius);
+          border-bottom-right-radius: var(--table-border-radius);
+        }
+
+        // safari hack:
+        @media not all and (min-resolution:.001dpcm) {
+          @supports (-webkit-appearance:none) {
+            /**
+              Safari can't render box-shadow for <TR> (Chrome anf Mozilla can!)
+              Alter way: render borders for TD
+              Bat Chrome bad rendered border styles for last TD, (wrapper for table is overflow, and last border is hide)
+              Use normal one-line styles for BRO-wsers,
+              And use ugly hack for this piece of shit
+             */
+            & {
+              box-sizing: border-box;
+              border-top: 1px solid var(--table-tr-border, transparent);
+              border-bottom: 1px solid var(--table-tr-border, transparent);
+              &:first-child {
+                border-left: 1px solid var(--table-tr-border, transparent);
+              }
+              &:last-child {
+                border-right: 1px solid var(--table-tr-border, transparent);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+
+
+  &_primary {
+    --table-cell-padding: 12px 20px;
+    --table-border-radius: 8px;
+    --table-border-spacing: 10px;
+
+    --table-th-color: var(--table-thead-color-primary);
+
+    --table-tr-background: var(--table-tr-background-primary);
+    --table-tr-color: var(--table-tr-color-primary);
+
+    --table-tr-background-hover: var(--table-tr-background-hover-primary);
+    --table-tr-color-hover: var(--table-tr-color-hover-primary);
+
+    --table-tr-background-selected: var(--table-tr-background-selected-primary);
+    --table-tr-color-selected: var(--table-tr-color-selected-primary);
+    --table-tr-border-selected: var(--table-tr-border-selected-primary);
+  }
+
+  &_secondary {
+    --table-cell-padding: 8px 20px;
+    --table-border-radius: 8px;
+    --table-border-spacing: 10px;
+
+    --table-th-color: var(--table-thead-color-secondary);
+
+    --table-tr-border: var( --table-tr-border-secondary);
+    --table-tr-background: var(--table-tr-background-secondary);
+    --table-tr-color: var(--table-tr-color-secondary);
+
+    --table-tr-border-hover: var( --table-tr-border-hover-secondary);
+    --table-tr-background-hover: var(--table-tr-background-hover-secondary);
+    --table-tr-color-hover: var(--table-tr-color-hover-secondary);
+
+    --table-tr-background-selected: var(--table-tr-background-selected-secondary);
+    --table-tr-color-selected: var(--table-tr-color-selected-secondary);
+    --table-tr-border-selected: var(--table-tr-border-selected-secondary);
+  }
+
+  &_tertiary {
+    --table-cell-padding: 6px 20px;
+    --table-tr-background: var(--table-tr-background-tertiary);
+    --table-tr-color: var(--table-tr-color-tertiary);
+
+
+    --table-th-color: var(--table-thead-color-tertiary);
+
+    --table-tr-border-hover: var(--table-tr-border-hover-tertiary);
+    --table-tr-background-hover: var(--table-tr-background-hover-tertiary);
+    --table-tr-color-hover: var(--table-tr-color-hover-tertiary);
+
+    --table-tr-border-selected: var(--table-tr-border-selected-tertiary);
+    --table-tr-background-selected: var(--table-tr-background-selected-tertiary);
+    --table-tr-color-selected: var(--table-tr-color-selected-tertiary);
+
+    border-collapse: collapse;
+
+    tr {
+      border-bottom: 1px solid var(--table-tr-border-tertiary);
+    }
+    td {
+      // work as min-height for table cell
+      height: 44px;
+    }
+  }
+
+  &_quaternary {
+    border-collapse: collapse;
+    --table-border-radius: 8px;
+    font-size: 14px;
+    border-radius: 8px;
+    border-bottom: 0;
+
+    th, td {
+      --table-cell-padding: 6px 20px;
+      height: 36px;
+      font-weight: 400;
+    }
+
+    th:not(:first-of-type),
+    td:not(:first-of-type) {
+      border-left: 1px solid var(--table-tr-border-quaternary);
+    }
+
+    td {
+      color: var(--table-td-color-quaternary);
+
+      a {
+        color: var(--color-xblue);
+      }
+    }
+
+    tr {
+      background: var(--table-tr-background-quaternary);
+      border-top: 1px solid var(--table-tr-border-quaternary);
+    }
+  }
+}

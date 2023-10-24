@@ -1,0 +1,64 @@
+:global {
+  body.theme-dark {
+    --left-menu-item-color-default: var(--text-default-color);
+    --left-menu-item-color-active: var(--color-xgreen-saturated);
+    --left-menu-item-color-hover: var(--color-xwhite-off);
+  }
+
+  body.theme-light {
+    --left-menu-item-color-default: var(--text-default-color);
+    --left-menu-item-color-active: var(--color-xgreen);
+    --left-menu-item-color-hover: var(--color-xblack);
+  }
+}
+
+.leftBarMenuItem {
+  --left-menu-item-color: var(--left-menu-item-color-default);
+
+  position: relative;
+  cursor: pointer;
+
+  &:not(:last-child) {
+    margin-bottom: 4px;
+  }
+
+  &:hover {
+    --left-menu-item-color: var(--left-menu-item-color-hover);
+  }
+
+  &:global(.is-active) {
+    --left-menu-item-color: var(--left-menu-item-color-active);
+
+    &:after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 100%;
+      width: 2px;
+      background: var(--left-menu-item-color);
+    }
+  }
+
+  &__button {
+    cursor: inherit;
+    display: flex;
+    gap: 12px;
+    padding: 12px 32px;
+    box-sizing: border-box;
+    width: 100%;
+    align-items: center;
+
+    font-family: inherit;
+    font-weight: 400;
+    font-size: 15px;
+    line-height: 24px;
+
+    background: transparent;
+    outline: none;
+    border: none;
+
+    color: var(--left-menu-item-color);
+    transition: color 250ms;
+  }
+}

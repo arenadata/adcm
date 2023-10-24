@@ -1,0 +1,10 @@
+.multiSelectList {
+  overflow: auto;
+
+  &__item:not(:last-child) {
+    margin-bottom: 12px;
+  }
+  &__checkbox {
+    display: flex;
+  }
+}

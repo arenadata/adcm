@@ -1,0 +1,23 @@
+@import 'vars.scss';
+@import 'normalize';
+@import 'common.scss';
+
+body.theme-dark {
+  --body-background: var(--color-xblack);
+}
+
+body.theme-light {
+  --body-background: var(--color-xwhite);
+}
+
+body {
+  min-height: 100vh;
+  box-sizing: border-box;
+  background-color: var(--body-background);
+  color: var(--text-default-color);
+}
+
+h1 {
+  margin: 0;
+  padding: 0;
+}
