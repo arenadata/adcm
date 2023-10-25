@@ -69,8 +69,9 @@
   line-height: 20px;
   border: 2px solid var(--node-content-border, var(--node-content-border-default));
   border-radius: 8px;
-  padding: 8px 12px 8px 8px;
+  padding: 6px 12px 6px 6px;
   display: flex;
+  gap: 8px;
   align-items: center;
 
   transition: background-color 250ms, color 250ms, border-color 250ms;
@@ -93,25 +94,21 @@
     --node-content-border: var(--node-content-border-default-open);
   }
 
-  &__title {
-    margin-left: 8px;
-  }
-
   &__value {
-    margin-left: 8px;
     cursor: pointer;
     color: var(--node-content-value-color);
-    max-width: 100px;
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
+    flex: 1;
+    min-width: 0;
   }
 
   &:not(:global(.is-open)) &__arrow {
     transform: rotate(-90deg);
   }
   &__arrow {
-    margin-left: 20px;
+    margin-left: 4px;
     color: var(--node-content-arrow-color);
     cursor: pointer;
   }

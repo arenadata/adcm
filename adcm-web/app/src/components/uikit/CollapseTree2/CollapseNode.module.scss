@@ -1,7 +1,7 @@
 .collapseNode {
   --collapse-node-child-padding-top: 20px;
   --collapse-node-child-padding-left: 16px;
-  --collapse-node-margin-bottom: 8px;
+  --collapse-node-margin-bottom: 12px;
   --collapse-node-border-width: 1px;
 
   &:not(:last-child) {
@@ -11,6 +11,7 @@
   &__trigger {
     position: relative;
     width: fit-content;
+    max-width: 100%;
   }
 
   &__children {
