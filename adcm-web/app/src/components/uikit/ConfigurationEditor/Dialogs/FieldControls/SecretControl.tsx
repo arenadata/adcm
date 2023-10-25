@@ -45,20 +45,20 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
         label={fieldName}
         fieldSchema={fieldSchema}
         error={error}
-        isReadonly={isReadonly}
+        disabled={isReadonly}
         onResetToDefault={handleResetToDefault}
       >
-        <InputPassword value={secret} readOnly={isReadonly} onChange={handleSecretChange} />
+        <InputPassword value={secret} disabled={isReadonly} onChange={handleSecretChange} />
       </ConfigurationField>
       {!isReadonly && (
         <ConfigurationField
           label="Confirm"
           fieldSchema={fieldSchema}
           error={error}
-          isReadonly={isReadonly}
+          disabled={isReadonly}
           onResetToDefault={handleResetToDefault}
         >
-          <InputPassword value={confirm} onChange={handleConfirmChange} />
+          <InputPassword value={confirm} disabled={isReadonly} onChange={handleConfirmChange} />
         </ConfigurationField>
       )}
     </form>

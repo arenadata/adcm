@@ -100,7 +100,6 @@ describe('modify configuration', () => {
       readOnly: false,
       additionalProperties: false,
       adcmMeta: {
-        nullValue: null,
         activation: null,
         synchronization: null,
         stringExtra: null,
@@ -112,7 +111,6 @@ describe('modify configuration', () => {
           default: 10,
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             activation: null,
             synchronization: null,
             stringExtra: null,
@@ -124,7 +122,6 @@ describe('modify configuration', () => {
           default: 10,
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             activation: null,
             synchronization: null,
             stringExtra: null,
@@ -159,7 +156,6 @@ describe('modify configuration', () => {
       default: 10,
       readOnly: false,
       adcmMeta: {
-        nullValue: null,
         activation: null,
         synchronization: null,
         stringExtra: null,

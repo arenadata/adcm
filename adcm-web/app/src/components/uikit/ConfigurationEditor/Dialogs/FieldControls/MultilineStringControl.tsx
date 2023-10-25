@@ -47,7 +47,7 @@ const MultilineStringControl = ({
   };
 
   return (
-    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} isReadonly={isReadonly} onResetToDefault={onChange}>
+    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} disabled={isReadonly} onResetToDefault={onChange}>
       <CodeEditor
         className={s.configurationField__codeEditor}
         isSecret={fieldSchema.adcmMeta.isSecret}

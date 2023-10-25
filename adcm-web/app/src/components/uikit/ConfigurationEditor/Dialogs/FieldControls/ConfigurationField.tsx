@@ -9,7 +9,7 @@ export interface ConfigurationFieldProps extends React.PropsWithChildren {
   error?: string;
   children: React.ReactElement<{ hasError?: boolean }>;
   fieldSchema: SingleSchemaDefinition;
-  isReadonly: boolean;
+  disabled: boolean;
   onResetToDefault: (value: JSONPrimitive) => void;
 }
 
@@ -18,7 +18,7 @@ const ConfigurationField = ({
   error,
   fieldSchema,
   children,
-  isReadonly,
+  disabled,
   onResetToDefault,
 }: ConfigurationFieldProps) => {
   const handleResetToDefaultClick = () => {
@@ -39,7 +39,7 @@ const ConfigurationField = ({
         <Button
           variant="secondary"
           iconLeft="g1-return"
-          disabled={isReadonly}
+          disabled={disabled}
           title="Reset to default"
           tooltipProps={{ placement: 'bottom' }}
           onClick={handleResetToDefaultClick}

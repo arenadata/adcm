@@ -29,10 +29,6 @@ const EditConfigurationFieldDialog = ({
 }: ConfigurationEditInputFieldDialogProps) => {
   const fieldNode = node as Node<ConfigurationField>;
   const adcmMeta = fieldNode.data.fieldSchema.adcmMeta;
-  const attributes = fieldNode.data.fieldAttributes;
-
-  const isParentSynchronized = fieldNode.data.parentNode.data.fieldAttributes?.isSynchronized === true;
-  const isSynchronized = attributes?.isSynchronized === true;
 
   const [value, setValue] = useState<JSONPrimitive>(fieldNode.data.value);
   const [isApplyDisabled, setIsApplyDisabled] = useState(true);
@@ -52,11 +48,7 @@ const EditConfigurationFieldDialog = ({
 
   const handleApply = () => {
     if (value !== fieldNode.data.value) {
-      if (value === '' && adcmMeta.nullValue !== undefined) {
-        onChange(fieldNode, adcmMeta.nullValue as JSONPrimitive);
-      } else {
-        onChange(fieldNode, value);
-      }
+      onChange(fieldNode, value);
     }
     onOpenChange(false);
   };
@@ -114,7 +106,7 @@ const EditConfigurationFieldDialog = ({
           fieldName={fieldNode.data.title}
           fieldSchema={fieldNode.data.fieldSchema}
           value={value}
-          isReadonly={fieldNode.data.isReadonly || isSynchronized || isParentSynchronized}
+          isReadonly={fieldNode.data.isReadonly}
           onChange={handleValueChange}
         />
       )}

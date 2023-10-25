@@ -10,7 +10,7 @@ export const schema: ConfigurationSchema = {
     isAdvanced: false,
     activation: null,
     synchronization: null,
-    nullValue: null,
+
     stringExtra: null,
   },
   properties: {
@@ -21,7 +21,7 @@ export const schema: ConfigurationSchema = {
         isAdvanced: false,
         activation: null,
         synchronization: null,
-        nullValue: null,
+
         stringExtra: null,
       },
       required: ['cluster'],
@@ -35,7 +35,7 @@ export const schema: ConfigurationSchema = {
             isAdvanced: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             stringExtra: null,
           },
           required: ['cluster_name'],
@@ -49,7 +49,7 @@ export const schema: ConfigurationSchema = {
                 isAdvanced: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 stringExtra: null,
               },
             },
@@ -61,7 +61,7 @@ export const schema: ConfigurationSchema = {
                 isAdvanced: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 stringExtra: null,
               },
               items: {
@@ -74,7 +74,7 @@ export const schema: ConfigurationSchema = {
                   isAdvanced: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   stringExtra: null,
                 },
                 properties: {
@@ -87,7 +87,7 @@ export const schema: ConfigurationSchema = {
                       isAdvanced: false,
                       activation: null,
                       synchronization: null,
-                      nullValue: null,
+
                       stringExtra: null,
                     },
                   },
@@ -100,7 +100,7 @@ export const schema: ConfigurationSchema = {
                       isAdvanced: false,
                       activation: null,
                       synchronization: null,
-                      nullValue: null,
+
                       stringExtra: null,
                     },
                   },
@@ -118,7 +118,7 @@ export const schema: ConfigurationSchema = {
             isAdvanced: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             stringExtra: null,
           },
         },
@@ -128,7 +128,7 @@ export const schema: ConfigurationSchema = {
             isAdvanced: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             stringExtra: null,
           },
           type: 'object',
@@ -142,7 +142,7 @@ export const schema: ConfigurationSchema = {
                 isAdvanced: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 stringExtra: null,
               },
             },
@@ -153,7 +153,7 @@ export const schema: ConfigurationSchema = {
                 isAdvanced: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 stringExtra: null,
               },
             },

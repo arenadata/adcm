@@ -18,7 +18,7 @@ const BooleanControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }:
   };
 
   return (
-    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} isReadonly={isReadonly} onResetToDefault={onChange}>
+    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} disabled={isReadonly} onResetToDefault={onChange}>
       <Checkbox
         className={s.configurationField__checkbox}
         checked={Boolean(value)}

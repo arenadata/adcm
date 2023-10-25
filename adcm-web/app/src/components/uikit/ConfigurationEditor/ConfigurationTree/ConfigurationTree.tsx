@@ -3,7 +3,13 @@ import CollapseNode from '@uikit/CollapseTree2/CollapseNode';
 import FieldNodeContent from './NodeContent/FieldNodeContent';
 import AddItemNodeContent from './NodeContent/AddItemNodeContent';
 import NodeWithChildrenContent from './NodeContent/NodeWithChildrenContent';
-import { ConfigurationNode, ConfigurationNodeFilter } from '../ConfigurationEditor.types';
+import {
+  ConfigurationArray,
+  ConfigurationField,
+  ConfigurationNode,
+  ConfigurationNodeFilter,
+  ConfigurationObject,
+} from '../ConfigurationEditor.types';
 import { buildTreeNodes, filterTreeNodes, validate } from './ConfigurationTree.utils';
 import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from './ConfigurationTree.types';
@@ -24,11 +30,15 @@ export interface ConfigurationTreeProps {
   onChangeIsValid?: (isValid: boolean) => void;
 }
 
-const getNodeClassName = (node: ConfigurationNode, hasError: boolean) =>
-  cn(s.collapseNode, {
+const getNodeClassName = (node: ConfigurationNode, hasError: boolean) => {
+  const isReadonly = (node.data as ConfigurationArray | ConfigurationObject | ConfigurationField).isReadonly;
+
+  return cn(s.collapseNode, {
     [s.collapseNode_advanced]: !hasError && node.data.fieldSchema.adcmMeta.isAdvanced,
     [s.collapseNode_failed]: hasError,
+    [s.collapseNode_disabled]: !hasError && isReadonly,
   });
+};
 
 const ConfigurationTree = memo(
   ({
