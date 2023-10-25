@@ -14,8 +14,10 @@ const SynchronizedAttribute = ({ isAllowChange, isSynchronized, onToggle }: Sync
   };
 
   const iconName: IconsNames = isSynchronized ? 'g1-link' : 'g1-unlink';
+  const dataTest = isSynchronized ? 'sync-linked' : 'sync-unlinked';
+  const dataTestProps = `clickable=${isAllowChange ? 'true' : 'false'}`;
 
-  return <Icon name={iconName} onClick={handleClick} />;
+  return <Icon name={iconName} onClick={handleClick} data-test={dataTest} data-test-props={dataTestProps} />;
 };
 
 export default SynchronizedAttribute;
