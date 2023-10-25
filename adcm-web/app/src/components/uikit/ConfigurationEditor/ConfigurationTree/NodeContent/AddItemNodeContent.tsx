@@ -25,7 +25,9 @@ const AddItemNodeContent = ({ node, onClick, dataTest }: AddItemNodeContentProps
       data-test={dataTest || textToDataTestValue(node.data.title)}
       onClick={handleClick}
     >
-      <Icon name="g1-add" size={16} /> {node.data.title}
+      <div className={cn(s.nodeContent__title, s.addArrayItemNodeContent__content)}>
+        <Icon name="g3-add" size={14} /> {node.data.title}
+      </div>
     </div>
   );
 };
