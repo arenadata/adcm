@@ -12,13 +12,14 @@
 
 from api_v2.imports.serializers import ImportPostSerializer
 from api_v2.imports.utils import cook_data_for_multibind, get_imports
-from api_v2.views import CamelCaseReadOnlyModelViewSet
+from api_v2.views import CamelCaseGenericViewSet
 from cm.api import multi_bind
 from cm.models import Cluster, ClusterObject, PrototypeImport
+from rest_framework.mixins import CreateModelMixin, ListModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_201_CREATED
 
 from adcm.permissions import (
     CHANGE_IMPORT_PERM,
@@ -31,7 +32,7 @@ from adcm.permissions import (
 )
 
 
-class ImportViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+class ImportViewSet(ListModelMixin, CreateModelMixin, CamelCaseGenericViewSet):  # pylint: disable=too-many-ancestors
     queryset = PrototypeImport.objects.all()
     permission_classes = [IsAuthenticated]
     ordering = ["id"]
@@ -69,18 +70,16 @@ class ImportViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-
         obj = self.get_object_and_check_perm(request=request)
         return self.get_paginated_response(data=self.paginate_queryset(queryset=get_imports(obj=obj)))
 
-    def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def create(self, request, *args, **kwargs):
         obj = self.get_object_and_check_perm(request=request)
         serializer = self.get_serializer(data=request.data, many=True, context={"request": request, "cluster": obj})
+        serializer.is_valid(raise_exception=True)
 
-        if serializer.is_valid():
-            bind_data = cook_data_for_multibind(validated_data=serializer.validated_data, obj=obj)
+        bind_data = cook_data_for_multibind(validated_data=serializer.validated_data, obj=obj)
 
-            if isinstance(obj, ClusterObject):
-                multi_bind(cluster=obj.cluster, service=obj, bind_list=bind_data)
-                return Response(get_imports(obj=obj), status=HTTP_200_OK)
+        if isinstance(obj, ClusterObject):
+            multi_bind(cluster=obj.cluster, service=obj, bind_list=bind_data)
+            return Response(get_imports(obj=obj), status=HTTP_201_CREATED)
 
-            multi_bind(cluster=obj, service=None, bind_list=bind_data)
-            return Response(get_imports(obj=obj), status=HTTP_200_OK)
-
-        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+        multi_bind(cluster=obj, service=None, bind_list=bind_data)
+        return Response(get_imports(obj=obj), status=HTTP_201_CREATED)

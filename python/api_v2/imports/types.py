@@ -38,10 +38,18 @@ class UICluster(TypedDict):
     state: str
 
 
+class UIPrototype(TypedDict):
+    id: int
+    name: str
+    display_name: str
+    version: str
+
+
 class UIImportCluster(TypedDict):
     id: int
     is_multi_bind: bool
     is_required: bool
+    prototype: UIPrototype
 
 
 class UIImportServices(TypedDict):
@@ -51,6 +59,7 @@ class UIImportServices(TypedDict):
     version: str
     is_required: bool
     is_multi_bind: bool
+    prototype: UIPrototype
 
 
 class UIBindSource(TypedDict):
