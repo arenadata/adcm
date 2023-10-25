@@ -345,7 +345,7 @@ def revert_object(obj: ADCMEntity, old_proto: Prototype) -> None:
 
     obj.state = obj.before_upgrade["state"]
     obj.before_upgrade = {"state": None}
-    obj.save()
+    obj.save(update_fields=["prototype", "config", "state", "before_upgrade"])
 
 
 def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-many-locals
@@ -353,56 +353,57 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-m
     old_bundle = Bundle.objects.get(pk=obj.before_upgrade["bundle_id"])
     old_proto = Prototype.objects.filter(bundle=old_bundle, name=old_bundle.name).first()
     before_upgrade_hc = obj.before_upgrade.get("hc")
-    services = obj.before_upgrade.get("services")
+    service_names = obj.before_upgrade.get("services")
 
     revert_object(obj=obj, old_proto=old_proto)
 
     if isinstance(obj, Cluster):
-        for service_proto in Prototype.objects.filter(bundle=old_bundle, type="service"):
-            service = ClusterObject.objects.filter(cluster=obj, prototype__name=service_proto.name).first()
+        for service_prototype in Prototype.objects.filter(bundle=old_bundle, type="service"):
+            service = ClusterObject.objects.filter(cluster=obj, prototype__name=service_prototype.name).first()
             if not service:
                 continue
 
-            revert_object(obj=service, old_proto=service_proto)
-            for component_proto in Prototype.objects.filter(bundle=old_bundle, parent=service_proto, type="component"):
-                comp = ServiceComponent.objects.filter(
+            revert_object(obj=service, old_proto=service_prototype)
+            for component_prototype in Prototype.objects.filter(
+                bundle=old_bundle, parent=service_prototype, type="component"
+            ):
+                component = ServiceComponent.objects.filter(
                     cluster=obj,
                     service=service,
-                    prototype__name=component_proto.name,
+                    prototype__name=component_prototype.name,
                 ).first()
 
-                if comp:
-                    revert_object(obj=comp, old_proto=component_proto)
+                if component:
+                    revert_object(obj=component, old_proto=component_prototype)
                 else:
                     component = ServiceComponent.objects.create(
                         cluster=obj,
                         service=service,
-                        prototype=component_proto,
+                        prototype=component_prototype,
                     )
-                    obj_conf = init_object_config(proto=component_proto, obj=component)
+                    obj_conf = init_object_config(proto=component_prototype, obj=component)
                     component.config = obj_conf
                     component.save(update_fields=["config"])
 
         ClusterObject.objects.filter(cluster=obj, prototype__bundle=upgraded_bundle).delete()
         ServiceComponent.objects.filter(cluster=obj, prototype__bundle=upgraded_bundle).delete()
 
-        for service in services:
-            proto = Prototype.objects.get(bundle=old_bundle, name=service, type="service")
-            try:
-                ClusterObject.objects.get(prototype=proto)
-            except ClusterObject.DoesNotExist:
-                add_service_to_cluster(cluster=obj, proto=proto)
+        for service_name in service_names:
+            prototype = Prototype.objects.get(bundle=old_bundle, name=service_name, type="service")
+
+            if not ClusterObject.objects.filter(prototype=prototype, cluster=obj).exists():
+                add_service_to_cluster(cluster=obj, proto=prototype)
 
         host_comp_list = []
         for hostcomponent in before_upgrade_hc:
             host = Host.objects.get(fqdn=hostcomponent["host"], cluster=obj)
             service = ClusterObject.objects.get(prototype__name=hostcomponent["service"], cluster=obj)
-            comp = ServiceComponent.objects.get(
+            component = ServiceComponent.objects.get(
                 prototype__name=hostcomponent["component"],
                 cluster=obj,
                 service=service,
             )
-            host_comp_list.append((service, host, comp))
+            host_comp_list.append((service, host, component))
 
         save_hc(cluster=obj, host_comp_list=host_comp_list)
 
@@ -410,6 +411,9 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-m
         for host in Host.objects.filter(provider=obj):
             old_host_proto = Prototype.objects.get(bundle=old_bundle, type="host", name=host.prototype.name)
             revert_object(obj=host, old_proto=old_host_proto)
+
+    update_event(object_=obj, update=(UpdateEventType.STATE, obj.state))
+    update_event(object_=obj, update=(UpdateEventType.VERSION, obj.prototype.version))
 
 
 def set_before_upgrade(obj: ADCMEntity) -> None:
@@ -484,7 +488,8 @@ def do_upgrade(
         bundle_switch(obj=obj, upgrade=upgrade)
         if upgrade.state_on_success:
             obj.state = upgrade.state_on_success
-            obj.save()
+            obj.save(update_fields=["state"])
+            update_event(object_=obj, update=(UpdateEventType.STATE, upgrade.state_on_success))
     else:
         task = start_task(
             action=upgrade.action,
