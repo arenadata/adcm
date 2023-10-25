@@ -53,7 +53,7 @@ def get_depend_on(
                 }
             )
 
-        depend_on.append(service_prototype)
+        depend_on.append({"service_prototype": service_prototype})
 
         if required_service.requires and required_service not in checked_objects:
             get_depend_on(prototype=required_service, depend_on=depend_on, checked_objects=checked_objects)
