@@ -72,8 +72,10 @@ const NodeWithChildrenContent = ({
         />
       )}
 
-      {isDeletable && <Icon size={16} name="g1-delete" onClick={handleDeleteClick} />}
-      <span className={s.nodeContent__title}>{node.data.title}</span>
+      {isDeletable && <Icon size={16} name="g1-delete" onClick={handleDeleteClick} data-test="delete-btn" />}
+      <span className={s.nodeContent__title} data-test="node-name">
+        {node.data.title}
+      </span>
       {adcmMeta.synchronization && fieldAttributes && (
         <SynchronizedAttribute
           isSynchronized={fieldAttributes.isSynchronized}
@@ -81,9 +83,15 @@ const NodeWithChildrenContent = ({
           onToggle={handleIsSynchronizedChange}
         />
       )}
-      {fieldNodeData.value === null && <span className={s.nodeContent__value}>{nullStub}</span>}
+      {fieldNodeData.value === null && (
+        <span className={s.nodeContent__value} data-test="null-stub">
+          {nullStub}
+        </span>
+      )}
 
-      {hasChildren && <Icon name="chevron" size={12} className={s.nodeContent__arrow} onClick={onExpand} />}
+      {hasChildren && (
+        <Icon name="chevron" size={12} className={s.nodeContent__arrow} onClick={onExpand} data-test="expand-btn" />
+      )}
     </div>
   );
 };

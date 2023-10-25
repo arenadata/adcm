@@ -73,13 +73,13 @@ const ConfigurationTree = memo(
           );
         }
         case 'addArrayItem': {
-          return <AddItemNodeContent node={node} onClick={onAddArrayItem} />;
+          return <AddItemNodeContent node={node} onClick={onAddArrayItem} dataTest="add-array-item" />;
         }
         case 'addField': {
-          return <AddItemNodeContent node={node} onClick={onAddField} />;
+          return <AddItemNodeContent node={node} onClick={onAddField} dataTest="add-field-item" />;
         }
         case 'addEmptyObject': {
-          return <AddItemNodeContent node={node} onClick={onAddEmptyObject} />;
+          return <AddItemNodeContent node={node} onClick={onAddEmptyObject} dataTest="add-empty-object" />;
         }
         default: {
           return (

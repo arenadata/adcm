@@ -8,15 +8,9 @@ interface CollapseNodeProps<T> {
   node: Node<T>;
   getNodeClassName: (node: Node<T>) => string;
   renderNodeContent: (node: Node<T>, isExpanded: boolean, onExpand: () => void) => ReactNode;
-  dataSet?: string;
 }
 
-const CollapseNode = <T,>({
-  node,
-  getNodeClassName,
-  renderNodeContent,
-  dataSet = 'collapse-node-container',
-}: CollapseNodeProps<T>) => {
+const CollapseNode = <T,>({ node, getNodeClassName, renderNodeContent }: CollapseNodeProps<T>) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = Boolean(node.children?.length);
   const children = (node.children ?? []) as Node<T>[];
@@ -28,10 +22,12 @@ const CollapseNode = <T,>({
   };
 
   return (
-    <div className={cn(s.collapseNode, getNodeClassName(node))} data-test={dataSet}>
-      <div className={s.collapseNode__trigger}>{renderNodeContent(node, isExpanded, toggleCollapseNode)}</div>
+    <div className={cn(s.collapseNode, getNodeClassName(node))} data-test="node-container">
+      <div className={s.collapseNode__trigger} data-test="node-block">
+        {renderNodeContent(node, isExpanded, toggleCollapseNode)}
+      </div>
       {hasChildren && (
-        <div className={s.collapseNode__children}>
+        <div className={s.collapseNode__children} data-test="children-block">
           <Collapse isExpanded={isExpanded}>
             {children.map((childNode) => (
               <CollapseNode

@@ -88,13 +88,17 @@ const FieldNodeContent = ({ node, error, onClick, onDeleteClick, onFieldAttribut
           onToggle={handleIsActiveChange}
         />
       )}
-      {fieldNode.data.isDeletable && <Icon size={16} name="g1-delete" onClick={handleDeleteClick} />}
+      {fieldNode.data.isDeletable && (
+        <Icon size={16} name="g1-delete" onClick={handleDeleteClick} data-test="delete-btn" />
+      )}
       {error && (
         <Tooltip label={error}>
-          <Icon size={14} name="alert-circle" />
+          <Icon size={14} name="alert-circle" data-test="error" />
         </Tooltip>
       )}
-      <span className={s.nodeContent__title}>{fieldNode.data.title}: </span>
+      <span className={s.nodeContent__title} data-test="node-name">
+        {fieldNode.data.title}:{' '}
+      </span>
       {adcmMeta.synchronization && fieldAttributes && (
         <SynchronizedAttribute
           isSynchronized={fieldAttributes.isSynchronized}
@@ -102,7 +106,7 @@ const FieldNodeContent = ({ node, error, onClick, onDeleteClick, onFieldAttribut
           onToggle={handleIsSynchronizedChange}
         />
       )}
-      <span className={s.nodeContent__value} onClick={handleClick}>
+      <span className={s.nodeContent__value} data-test="node-value" onClick={handleClick}>
         {value}
       </span>
     </div>
