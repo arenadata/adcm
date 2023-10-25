@@ -16,7 +16,6 @@ export const dateDuration = (dateTo: Date) => {
 
 export const secondsToDuration = (seconds: number) => {
   const curDate = new Date();
-  const microSeconds = String(seconds).includes('.') ? `.${String(seconds).split('.')[1]}` : '';
 
-  return `${dateDuration(new Date(curDate.getTime() + seconds * 1000))}${microSeconds}`;
+  return dateDuration(new Date(curDate.getTime() + Math.round(seconds) * 1000));
 };
