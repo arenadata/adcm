@@ -1,7 +1,7 @@
 import { AdcmClusterImportPostItem, AdcmClusterImportService } from '@models/adcm';
 
 export interface SelectedImportItem extends AdcmClusterImportPostItem {
-  name: string;
+  prototypeName: string;
 }
 
 export interface SelectedImportHandlerData extends SelectedImportItem {

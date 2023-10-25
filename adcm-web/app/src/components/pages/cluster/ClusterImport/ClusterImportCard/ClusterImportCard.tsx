@@ -42,7 +42,7 @@ const ClusterImportCard = ({
   const isAllServicesSelected = clusterImport.importServices?.every(
     (service) =>
       selectedImports.services.has(service.id) ||
-      (!service.isMultiBind && selectedSingleBind.services.has(service.name)),
+      (!service.isMultiBind && selectedSingleBind.services.has(service.prototype.name)),
   );
 
   const isAnyServiceSelected = clusterImport.importServices?.some((service) =>
@@ -51,26 +51,29 @@ const ClusterImportCard = ({
 
   // Disable "Select All" checkbox if all cluster service are "isMultiBind = false" and they already selected in another clusters
   const isAllServicesDisabled = clusterImport.importServices?.every(
-    (service) => selectedSingleBind.services.has(service.name) && !selectedImports.services.has(service.id),
+    (service) => selectedSingleBind.services.has(service.prototype.name) && !selectedImports.services.has(service.id),
   );
 
   // Need to show notification if service required for import, and it is not already selected in current or any another clusters
   const requiredServiceImport =
     clusterImport.importServices?.filter(
-      (service) => service.isRequired && !isItemSelected([...selectedImports.services.values()], service.name),
+      (service) =>
+        service.isRequired && !isItemSelected([...selectedImports.services.values()], service.prototype.name),
     ) || [];
 
   // Disable if cluster "isMultiBind = false" and such cluster already selected and if selected cluster with same name is not current cluster;
   const isClusterImportDisabled =
-    !clusterImport.importCluster?.isMultiBind &&
-    !selectedImports.clusters.has(clusterImport.cluster.id) &&
-    selectedSingleBind.clusters.has(clusterImport.cluster.name);
+    !clusterImport.importCluster ||
+    (!clusterImport.importCluster.isMultiBind &&
+      !selectedImports.clusters.has(clusterImport.cluster.id) &&
+      selectedSingleBind.clusters.has(clusterImport.importCluster.prototype.name));
 
   // If cluster required for import and there is not selected cluster with same name
   const isClusterRequired =
     clusterImport.importCluster?.isRequired &&
-    isItemSelected([...selectedImports.clusters.values()], clusterImport.cluster.name);
+    isItemSelected([...selectedImports.clusters.values()], clusterImport.importCluster.prototype.name);
 
+  const isClusterSelected = !!(clusterImport.importCluster && selectedImports.clusters.has(clusterImport.cluster.id));
   const clusterCheckHandler = () => {
     if (!clusterImport.importCluster) return;
 
@@ -78,7 +81,7 @@ const ClusterImportCard = ({
       {
         id: clusterImport.importCluster.id,
         type: AdcmClusterImportPayloadType.Cluster,
-        name: clusterImport.cluster.name,
+        prototypeName: clusterImport.importCluster.prototype.name,
         isMultiBind: clusterImport.importCluster.isMultiBind,
       },
     ]);
@@ -119,7 +122,12 @@ const ClusterImportCard = ({
         </div>
         <div className={s.clusterImportItem__block}>
           {clusterImport.importCluster && (
-            <Checkbox label="Cluster configuration" onChange={clusterCheckHandler} disabled={isClusterImportDisabled} />
+            <Checkbox
+              label="Cluster configuration"
+              checked={isClusterSelected}
+              onChange={clusterCheckHandler}
+              disabled={isClusterImportDisabled}
+            />
           )}
         </div>
         <div className={s.clusterImportItem__block}>
