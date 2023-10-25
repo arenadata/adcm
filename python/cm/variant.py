@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from functools import wraps
+from typing import Callable
 
 from cm.errors import AdcmEx
 from cm.errors import raise_adcm_ex as err
@@ -21,6 +23,28 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django.core.exceptions import ObjectDoesNotExist
+
+
+def return_empty_on_not_found(func: Callable) -> Callable:
+    """
+    There are some cases when variant predicate target object doesn't exist
+    (e.g. service not added, but hosts on it are required in cluster's config).
+    Use this function to return empty list instead of throwing error,
+    otherwise each call to get_variant that'll call error-throwing function
+    will result in something like 404/500 (based on type of raised Exception).
+
+    Originally introduced as part of solution for ADCM-4778
+    """
+
+    @wraps(func)
+    def with_not_found_handle(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except ObjectDoesNotExist:
+            return []
+
+    return with_not_found_handle
 
 
 def get_cluster(obj):
@@ -91,16 +115,17 @@ def var_host_get_service(cluster, args, func):
     if "service" not in args:
         err("CONFIG_VARIANT_ERROR", f'no "service" argument for predicate "{func}"')
 
-    return ClusterObject.obj.get(cluster=cluster, prototype__name=args["service"])
+    return ClusterObject.objects.get(cluster=cluster, prototype__name=args["service"])
 
 
 def var_host_get_component(cluster, args, service, func):
     if "component" not in args:
         err("CONFIG_VARIANT_ERROR", f'no "component" argument for predicate "{func}"')
 
-    return ServiceComponent.obj.get(cluster=cluster, service=service, prototype__name=args["component"])
+    return ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name=args["component"])
 
 
+@return_empty_on_not_found
 def var_host_in_service(cluster, args):
     out = []
     service = var_host_get_service(cluster, args, "in_service")
@@ -110,6 +135,7 @@ def var_host_in_service(cluster, args):
     return out
 
 
+@return_empty_on_not_found
 def var_host_not_in_service(cluster, args):
     out = []
     service = var_host_get_service(cluster, args, "not_in_service")
@@ -130,6 +156,7 @@ def var_host_in_cluster(cluster, args):  # pylint: disable=unused-argument
     return out
 
 
+@return_empty_on_not_found
 def var_host_in_component(cluster, args):
     out = []
     service = var_host_get_service(cluster, args, "in_component")
@@ -142,6 +169,7 @@ def var_host_in_component(cluster, args):
     return out
 
 
+@return_empty_on_not_found
 def var_host_not_in_component(cluster, args):
     out = []
     service = var_host_get_service(cluster, args, "not_in_component")
