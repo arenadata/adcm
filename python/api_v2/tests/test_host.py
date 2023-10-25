@@ -142,7 +142,10 @@ class TestHost(BaseAPITestCase):
             data={"name": new_host.name},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertDictEqual(response.json(), {"code": "HOST_CONFLICT", "desc": "duplicate host", "level": "error"})
+        self.assertDictEqual(
+            response.json(),
+            {"code": "HOST_CONFLICT", "desc": "Host with the same name already exists.", "level": "error"},
+        )
 
     def test_update_name_state_not_create_fail(self):
         self.host.state = "running"
@@ -250,7 +253,7 @@ class TestClusterHost(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertDictEqual(
             response.json(),
-            {"code": "FOREIGN_HOST", "desc": "Host `test_host` belong to cluster `cluster_2`", "level": "error"},
+            {"code": "FOREIGN_HOST", "desc": "Host already linked to another cluster.", "level": "error"},
         )
 
     def test_create_not_found_fail(self):

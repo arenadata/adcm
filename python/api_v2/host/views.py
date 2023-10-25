@@ -164,9 +164,6 @@ class HostClusterViewSet(  # pylint:disable=too-many-ancestors
     def destroy(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         host = self.get_object()
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
-        if host.cluster != cluster:
-            raise AdcmEx(code="FOREIGN_HOST", msg=f"Host #{host.id} doesn't belong to cluster #{cluster.id}")
-
         check_custom_perm(request.user, "unmap_host_from", "cluster", cluster)
         remove_host_from_cluster(host=host)
         return Response(status=HTTP_204_NO_CONTENT)

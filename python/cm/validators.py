@@ -22,7 +22,7 @@ class HostUniqueValidator(UniqueValidator):
         try:
             super().__call__(value, serializer_field)
         except ValidationError as e:
-            raise AdcmEx("HOST_CONFLICT", "duplicate host") from e
+            raise AdcmEx(code="HOST_CONFLICT", msg="Host with the same name already exists.") from e
 
 
 class ClusterUniqueValidator(UniqueValidator):

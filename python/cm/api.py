@@ -306,7 +306,7 @@ def remove_host_from_cluster_by_pk(cluster_pk, fqdn, host_pk):
 def delete_host(host: Host, cancel_tasks: bool = True) -> None:
     cluster = host.cluster
     if cluster:
-        raise_adcm_ex(code="HOST_CONFLICT", msg=f'Host #{host.pk} "{host.fqdn}" belong to {obj_ref(cluster)}')
+        raise AdcmEx(code="HOST_CONFLICT", msg="Unable to remove a host associated with a cluster.")
 
     if cancel_tasks:
         cancel_locking_tasks(obj=host, obj_deletion=True)
@@ -405,9 +405,9 @@ def delete_cluster(cluster, cancel_tasks=True):
 
 def remove_host_from_cluster(host: Host) -> Host:
     cluster = host.cluster
-    hostcomponent = HostComponent.objects.filter(cluster=cluster, host=host)
-    if hostcomponent:
-        return raise_adcm_ex(code="HOST_CONFLICT", msg=f"Host #{host.pk} has component(s)")
+
+    if HostComponent.objects.filter(cluster=cluster, host=host).exists():
+        return raise_adcm_ex(code="HOST_CONFLICT", msg="There are components on the host.")
 
     if cluster.state == "upgrading":
         return raise_adcm_ex(code="HOST_CONFLICT", msg="It is forbidden to delete host from cluster in upgrade mode")
@@ -1115,10 +1115,10 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
 
 def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
     if host.cluster:
-        if host.cluster.pk != cluster.pk:
-            raise_adcm_ex("FOREIGN_HOST", f"Host `{host.name}` belong to cluster `{host.cluster.name}`")
-        else:
-            raise_adcm_ex("HOST_CONFLICT")
+        if host.cluster.pk == cluster.pk:
+            raise AdcmEx(code="HOST_CONFLICT", msg="The host is already associated with this cluster.")
+
+        raise AdcmEx(code="FOREIGN_HOST", msg="Host already linked to another cluster.")
 
     with atomic():
         host.cluster = cluster
