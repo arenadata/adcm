@@ -264,7 +264,7 @@ def make_ui_service_status(service: ClusterObject, host_components: Iterable[Hos
     return {
         "id": service.id,
         "name": service.display_name,
-        "status": 32 if service_map is None else service_map.get("STATUS", 0),
+        "status": 32 if service_map is None else service_map.get("status", 0),
         "hc": comp_list,
     }
 
@@ -286,7 +286,7 @@ def make_ui_cluster_status(cluster: Cluster, host_components: Iterable[HostCompo
 
     return {
         "name": cluster.name,
-        "status": 32 if cluster_map is None else cluster_map.get("STATUS", 0),
+        "status": 32 if cluster_map is None else cluster_map.get("status", 0),
         "chilren": {  # backward compatibility typo
             "hosts": host_list,
             "services": service_list,
@@ -312,6 +312,6 @@ def make_ui_host_status(host: Host, host_components: Iterable[HostComponent]) ->
     return {
         "id": host.id,
         "name": host.fqdn,
-        "status": 32 if host_map is None else host_map.get("STATUS", 0),
+        "status": 32 if host_map is None else host_map.get("status", 0),
         "hc": comp_list,
     }
