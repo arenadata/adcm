@@ -20,7 +20,7 @@ const EnumControl = ({ fieldName, value, fieldSchema, isReadonly, onChange }: En
   };
 
   return (
-    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} isReadonly={isReadonly} onResetToDefault={onChange}>
+    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} disabled={isReadonly} onResetToDefault={onChange}>
       <Select
         value={value}
         onChange={handleSelectChange}

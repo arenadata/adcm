@@ -8,7 +8,6 @@ export const schema: ConfigurationSchema = {
   required: ['cluster_config'],
   readOnly: false,
   adcmMeta: {
-    nullValue: null,
     isAdvanced: false,
     isInvisible: false,
     activation: null,
@@ -24,7 +23,6 @@ export const schema: ConfigurationSchema = {
       additionalProperties: false,
       readOnly: false,
       adcmMeta: {
-        nullValue: null,
         isAdvanced: false,
         isInvisible: false,
         activation: null,
@@ -46,7 +44,6 @@ export const schema: ConfigurationSchema = {
           type: 'array',
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: {
@@ -63,7 +60,6 @@ export const schema: ConfigurationSchema = {
             additionalProperties: false,
             readOnly: false,
             adcmMeta: {
-              nullValue: null,
               isAdvanced: false,
               isInvisible: false,
               activation: null,
@@ -78,7 +74,6 @@ export const schema: ConfigurationSchema = {
                 default: 'default cluster name',
                 readOnly: false,
                 adcmMeta: {
-                  nullValue: null,
                   isAdvanced: false,
                   isInvisible: false,
                   activation: null,
@@ -92,7 +87,6 @@ export const schema: ConfigurationSchema = {
                 default: [],
                 readOnly: false,
                 adcmMeta: {
-                  nullValue: null,
                   isAdvanced: false,
                   isInvisible: false,
                   activation: null,
@@ -105,7 +99,6 @@ export const schema: ConfigurationSchema = {
                   additionalProperties: false,
                   readOnly: false,
                   adcmMeta: {
-                    nullValue: null,
                     isAdvanced: false,
                     isInvisible: false,
                     activation: null,
@@ -120,7 +113,6 @@ export const schema: ConfigurationSchema = {
                       default: 10,
                       readOnly: false,
                       adcmMeta: {
-                        nullValue: null,
                         isAdvanced: false,
                         isInvisible: false,
                         activation: null,
@@ -134,7 +126,6 @@ export const schema: ConfigurationSchema = {
                       default: 11,
                       readOnly: false,
                       adcmMeta: {
-                        nullValue: null,
                         isAdvanced: false,
                         isInvisible: false,
                         activation: null,
@@ -148,7 +139,6 @@ export const schema: ConfigurationSchema = {
                       default: [{ host: 'test_test' }],
                       readOnly: false,
                       adcmMeta: {
-                        nullValue: null,
                         isAdvanced: false,
                         isInvisible: false,
                         activation: null,
@@ -161,7 +151,6 @@ export const schema: ConfigurationSchema = {
                         additionalProperties: false,
                         readOnly: false,
                         adcmMeta: {
-                          nullValue: null,
                           isAdvanced: false,
                           isInvisible: false,
                           activation: null,
@@ -176,7 +165,6 @@ export const schema: ConfigurationSchema = {
                             default: 'default-host',
                             readOnly: false,
                             adcmMeta: {
-                              nullValue: null,
                               isAdvanced: false,
                               isInvisible: false,
                               activation: null,
@@ -201,7 +189,6 @@ export const schema: ConfigurationSchema = {
       default: {},
       readOnly: false,
       adcmMeta: {
-        nullValue: null,
         isAdvanced: false,
         isInvisible: false,
         activation: null,
@@ -233,7 +220,6 @@ export const schema: ConfigurationSchema = {
           description: 'someBoolean description',
           readOnly: true,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -246,7 +232,6 @@ export const schema: ConfigurationSchema = {
           type: 'string',
           readOnly: true,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -259,7 +244,6 @@ export const schema: ConfigurationSchema = {
           type: 'number',
           readOnly: true,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -273,7 +257,6 @@ export const schema: ConfigurationSchema = {
           default: 'custom value',
           readOnly: true,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -289,7 +272,6 @@ export const schema: ConfigurationSchema = {
           enum: ['__one__', 2, '!!!three!!!'],
           readOnly: true,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -304,7 +286,6 @@ export const schema: ConfigurationSchema = {
           type: 'string',
           readOnly: true,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -317,7 +298,6 @@ export const schema: ConfigurationSchema = {
           type: 'string',
           readOnly: true,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -334,7 +314,6 @@ export const schema: ConfigurationSchema = {
           default: '{ "default": null, "test": "ddd" }',
           readOnly: true,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -350,7 +329,6 @@ export const schema: ConfigurationSchema = {
           format: 'yaml',
           readOnly: true,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -366,7 +344,6 @@ export const schema: ConfigurationSchema = {
               type: 'string',
               readOnly: true,
               adcmMeta: {
-                nullValue: null,
                 isAdvanced: false,
                 isInvisible: false,
                 activation: null,
@@ -384,7 +361,6 @@ export const schema: ConfigurationSchema = {
           type: 'string',
           readOnly: true,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: true,
             activation: null,
@@ -397,7 +373,6 @@ export const schema: ConfigurationSchema = {
           type: 'string',
           readOnly: true,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: true,
             isInvisible: false,
             activation: null,
@@ -412,7 +387,6 @@ export const schema: ConfigurationSchema = {
           default: {},
           readOnly: true,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -427,7 +401,6 @@ export const schema: ConfigurationSchema = {
               default: 'some default',
               readOnly: true,
               adcmMeta: {
-                nullValue: null,
                 isAdvanced: false,
                 isInvisible: false,
                 activation: null,
@@ -444,7 +417,6 @@ export const schema: ConfigurationSchema = {
           default: {},
           readOnly: true,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -460,7 +432,6 @@ export const schema: ConfigurationSchema = {
           default: 'some default',
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: {
@@ -479,7 +450,6 @@ export const schema: ConfigurationSchema = {
           default: {},
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: {
@@ -498,7 +468,6 @@ export const schema: ConfigurationSchema = {
               default: 'some default',
               readOnly: false,
               adcmMeta: {
-                nullValue: null,
                 isAdvanced: false,
                 isInvisible: false,
                 activation: null,
@@ -516,7 +485,6 @@ export const schema: ConfigurationSchema = {
       default: {},
       readOnly: false,
       adcmMeta: {
-        nullValue: null,
         isAdvanced: false,
         isInvisible: false,
         activation: null,
@@ -546,7 +514,6 @@ export const schema: ConfigurationSchema = {
           description: 'someBoolean description',
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -560,7 +527,6 @@ export const schema: ConfigurationSchema = {
           default: 'default value',
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -574,7 +540,6 @@ export const schema: ConfigurationSchema = {
           default: 'custom value',
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -590,7 +555,6 @@ export const schema: ConfigurationSchema = {
           enum: ['__one__', 2, '!!!three!!!', null],
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -605,7 +569,6 @@ export const schema: ConfigurationSchema = {
           type: 'string',
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -618,7 +581,6 @@ export const schema: ConfigurationSchema = {
           type: 'string',
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -635,7 +597,6 @@ export const schema: ConfigurationSchema = {
           default: '{ "default": null, "test": "ddd" }',
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -651,7 +612,6 @@ export const schema: ConfigurationSchema = {
           format: 'yaml',
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -668,7 +628,6 @@ export const schema: ConfigurationSchema = {
               type: 'string',
               readOnly: false,
               adcmMeta: {
-                nullValue: null,
                 isAdvanced: false,
                 isInvisible: false,
                 activation: null,
@@ -686,7 +645,6 @@ export const schema: ConfigurationSchema = {
           type: 'string',
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: true,
             activation: null,
@@ -699,7 +657,6 @@ export const schema: ConfigurationSchema = {
           type: 'string',
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: true,
             isInvisible: false,
             activation: null,
@@ -714,7 +671,6 @@ export const schema: ConfigurationSchema = {
           default: {},
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -729,7 +685,6 @@ export const schema: ConfigurationSchema = {
               default: 'some default',
               readOnly: false,
               adcmMeta: {
-                nullValue: null,
                 isAdvanced: false,
                 isInvisible: false,
                 activation: null,
@@ -746,7 +701,6 @@ export const schema: ConfigurationSchema = {
           default: {},
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: null,
@@ -763,7 +717,6 @@ export const schema: ConfigurationSchema = {
           default: {},
           readOnly: false,
           adcmMeta: {
-            nullValue: null,
             isAdvanced: false,
             isInvisible: false,
             activation: {
@@ -781,7 +734,6 @@ export const schema: ConfigurationSchema = {
               default: 'some default',
               readOnly: false,
               adcmMeta: {
-                nullValue: null,
                 isAdvanced: false,
                 isInvisible: false,
                 activation: {
@@ -811,7 +763,7 @@ export const complexSchema: ConfigurationSchema = {
     isInvisible: false,
     activation: null,
     synchronization: null,
-    nullValue: null,
+
     isSecret: false,
     stringExtra: null,
     enumExtra: null,
@@ -836,7 +788,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: null,
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -852,7 +804,7 @@ export const complexSchema: ConfigurationSchema = {
           isInvisible: false,
           activation: null,
           synchronization: null,
-          nullValue: null,
+
           isSecret: false,
           stringExtra: null,
           enumExtra: null,
@@ -869,7 +821,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -886,7 +838,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -903,7 +855,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -920,7 +872,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -941,7 +893,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: null,
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -957,7 +909,7 @@ export const complexSchema: ConfigurationSchema = {
           isInvisible: false,
           activation: null,
           synchronization: null,
-          nullValue: null,
+
           isSecret: false,
           stringExtra: null,
           enumExtra: null,
@@ -974,7 +926,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -991,7 +943,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -1008,7 +960,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -1025,7 +977,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -1051,7 +1003,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: null,
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -1068,7 +1020,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1085,7 +1037,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1102,7 +1054,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1119,7 +1071,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1139,7 +1091,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: null,
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -1156,7 +1108,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1173,7 +1125,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1190,7 +1142,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1207,7 +1159,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1232,7 +1184,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: null,
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -1249,7 +1201,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1265,7 +1217,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -1283,7 +1235,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1299,7 +1251,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -1317,7 +1269,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1333,7 +1285,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -1351,7 +1303,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1367,7 +1319,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -1388,7 +1340,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: null,
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -1405,7 +1357,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1421,7 +1373,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -1439,7 +1391,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1455,7 +1407,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -1473,7 +1425,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1489,7 +1441,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -1507,7 +1459,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1523,7 +1475,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -1546,7 +1498,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: [],
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1562,7 +1514,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -1587,7 +1539,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: [],
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1603,7 +1555,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -1629,7 +1581,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: {},
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -1648,7 +1600,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: null,
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -1672,7 +1624,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1688,7 +1640,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -1705,7 +1657,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -1722,7 +1674,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -1739,7 +1691,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -1756,7 +1708,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -1777,7 +1729,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1793,7 +1745,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -1810,7 +1762,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -1827,7 +1779,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -1844,7 +1796,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -1861,7 +1813,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -1887,7 +1839,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1904,7 +1856,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -1921,7 +1873,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -1938,7 +1890,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -1955,7 +1907,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -1975,7 +1927,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -1992,7 +1944,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -2009,7 +1961,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -2026,7 +1978,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -2043,7 +1995,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -2068,7 +2020,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -2085,7 +2037,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -2101,7 +2053,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -2119,7 +2071,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -2135,7 +2087,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -2153,7 +2105,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -2169,7 +2121,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -2187,7 +2139,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -2203,7 +2155,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -2224,7 +2176,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -2241,7 +2193,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -2257,7 +2209,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -2275,7 +2227,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -2291,7 +2243,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -2309,7 +2261,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -2325,7 +2277,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -2343,7 +2295,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -2359,7 +2311,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -2382,7 +2334,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: [],
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -2398,7 +2350,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -2423,7 +2375,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: [],
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -2439,7 +2391,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -2465,7 +2417,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: {},
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -2484,7 +2436,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: {},
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -2524,7 +2476,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: null,
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -2540,7 +2492,7 @@ export const complexSchema: ConfigurationSchema = {
           isInvisible: false,
           activation: null,
           synchronization: null,
-          nullValue: null,
+
           isSecret: false,
           stringExtra: null,
           enumExtra: null,
@@ -2557,7 +2509,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -2574,7 +2526,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -2591,7 +2543,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -2608,7 +2560,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -2630,7 +2582,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: null,
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -2646,7 +2598,7 @@ export const complexSchema: ConfigurationSchema = {
           isInvisible: false,
           activation: null,
           synchronization: null,
-          nullValue: null,
+
           isSecret: false,
           stringExtra: null,
           enumExtra: null,
@@ -2663,7 +2615,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -2680,7 +2632,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -2697,7 +2649,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -2714,7 +2666,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -2741,7 +2693,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: null,
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -2758,7 +2710,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -2775,7 +2727,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -2792,7 +2744,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -2809,7 +2761,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -2830,7 +2782,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: null,
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -2847,7 +2799,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -2864,7 +2816,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -2881,7 +2833,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -2898,7 +2850,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -2924,7 +2876,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: null,
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -2941,7 +2893,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -2957,7 +2909,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -2975,7 +2927,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -2991,7 +2943,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -3009,7 +2961,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -3025,7 +2977,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -3043,7 +2995,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -3059,7 +3011,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -3081,7 +3033,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: null,
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -3098,7 +3050,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -3114,7 +3066,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -3132,7 +3084,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -3148,7 +3100,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -3166,7 +3118,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -3182,7 +3134,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -3200,7 +3152,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -3216,7 +3168,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -3238,7 +3190,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: [],
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -3254,7 +3206,7 @@ export const complexSchema: ConfigurationSchema = {
           isInvisible: false,
           activation: null,
           synchronization: null,
-          nullValue: null,
+
           isSecret: false,
           stringExtra: null,
           enumExtra: null,
@@ -3273,7 +3225,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: [],
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -3289,7 +3241,7 @@ export const complexSchema: ConfigurationSchema = {
           isInvisible: false,
           activation: null,
           synchronization: null,
-          nullValue: null,
+
           isSecret: false,
           stringExtra: null,
           enumExtra: null,
@@ -3311,7 +3263,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: {},
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -3331,7 +3283,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: {},
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -3351,7 +3303,7 @@ export const complexSchema: ConfigurationSchema = {
         isInvisible: false,
         activation: null,
         synchronization: null,
-        nullValue: null,
+
         isSecret: false,
         stringExtra: null,
         enumExtra: null,
@@ -3375,7 +3327,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -3391,7 +3343,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -3408,7 +3360,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -3425,7 +3377,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -3442,7 +3394,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -3459,7 +3411,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -3481,7 +3433,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -3497,7 +3449,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -3514,7 +3466,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -3531,7 +3483,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -3548,7 +3500,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -3565,7 +3517,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -3592,7 +3544,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -3609,7 +3561,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -3626,7 +3578,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -3643,7 +3595,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -3660,7 +3612,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -3681,7 +3633,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -3698,7 +3650,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -3715,7 +3667,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -3732,7 +3684,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -3749,7 +3701,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -3775,7 +3727,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -3792,7 +3744,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -3808,7 +3760,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -3826,7 +3778,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -3842,7 +3794,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -3860,7 +3812,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -3876,7 +3828,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -3894,7 +3846,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -3910,7 +3862,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -3932,7 +3884,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -3949,7 +3901,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -3965,7 +3917,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -3983,7 +3935,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -3999,7 +3951,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -4017,7 +3969,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -4033,7 +3985,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -4051,7 +4003,7 @@ export const complexSchema: ConfigurationSchema = {
                 isInvisible: false,
                 activation: null,
                 synchronization: null,
-                nullValue: null,
+
                 isSecret: false,
                 stringExtra: null,
                 enumExtra: null,
@@ -4067,7 +4019,7 @@ export const complexSchema: ConfigurationSchema = {
                   isInvisible: false,
                   activation: null,
                   synchronization: null,
-                  nullValue: null,
+
                   isSecret: false,
                   stringExtra: null,
                   enumExtra: null,
@@ -4089,7 +4041,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: [],
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -4105,7 +4057,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -4124,7 +4076,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: [],
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -4140,7 +4092,7 @@ export const complexSchema: ConfigurationSchema = {
               isInvisible: false,
               activation: null,
               synchronization: null,
-              nullValue: null,
+
               isSecret: false,
               stringExtra: null,
               enumExtra: null,
@@ -4162,7 +4114,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: {},
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -4182,7 +4134,7 @@ export const complexSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: {},
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -4241,7 +4193,7 @@ export const nullableSchema: ConfigurationSchema = {
     isInvisible: false,
     activation: null,
     synchronization: null,
-    nullValue: null,
+
     isSecret: false,
     stringExtra: null,
     enumExtra: null,
@@ -4262,7 +4214,7 @@ export const nullableSchema: ConfigurationSchema = {
             isInvisible: false,
             activation: null,
             synchronization: null,
-            nullValue: null,
+
             isSecret: false,
             stringExtra: null,
             enumExtra: null,
@@ -4282,7 +4234,7 @@ export const nullableSchema: ConfigurationSchema = {
                     isInvisible: false,
                     activation: null,
                     synchronization: null,
-                    nullValue: {},
+
                     isSecret: false,
                     stringExtra: null,
                     enumExtra: null,

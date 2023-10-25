@@ -20,16 +20,16 @@ const StringControl = ({ fieldName, value, fieldSchema, isReadonly, onChange }: 
   const stringValue = value as string;
 
   return (
-    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} isReadonly={isReadonly} onResetToDefault={onChange}>
+    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} disabled={isReadonly} onResetToDefault={onChange}>
       {fieldSchema.adcmMeta.stringExtra?.suggestions ? (
         <InputWithAutocomplete
           value={stringValue}
-          readOnly={isReadonly}
+          disabled={isReadonly}
           suggestions={fieldSchema.adcmMeta.stringExtra.suggestions}
           onChange={handleChange}
         />
       ) : (
-        <Input value={stringValue} readOnly={isReadonly} onChange={handleChange} />
+        <Input value={stringValue} disabled={isReadonly} onChange={handleChange} />
       )}
     </ConfigurationField>
   );

@@ -1,9 +1,6 @@
 import { JSONObject } from '../json';
 import { JSONSchema7, JSONSchema7TypeName } from 'json-schema';
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-type NullValue = {} | [] | null;
-
 export interface AdcmFieldMetaData {
   isAdvanced?: boolean;
   isInvisible?: boolean;
@@ -13,7 +10,6 @@ export interface AdcmFieldMetaData {
   synchronization: {
     isAllowChange: boolean;
   } | null;
-  nullValue: NullValue;
   isSecret?: boolean;
   stringExtra?: {
     suggestions?: string[];
