@@ -2,7 +2,7 @@
   --collapse-node-child-padding-top: 20px;
   --collapse-node-child-padding-left: 16px;
   --collapse-node-margin-bottom: 12px;
-  --collapse-node-border-width: 1px;
+  --collapse-node-border-width: 2px;
 
   &:not(:last-child) {
     padding-bottom: var(--collapse-node-margin-bottom);
@@ -15,7 +15,7 @@
   }
 
   &__children {
-    margin-left: 40px;
+    margin-left: 16px;
   }
 
   &__children &:first-child {

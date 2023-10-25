@@ -28,7 +28,7 @@ const ConfigurationEditorDialog = ({
       <div className={s.configurationEditorDialog}>
         <div className={s.configurationEditorDialog__body}>{children}</div>
         <div className={s.configurationEditorDialog__footer}>
-          <Button variant="secondary" onClick={onCancel}>
+          <Button variant="secondary" onClick={onCancel} autoFocus>
             Cancel
           </Button>
           <Button onClick={onApply} disabled={isApplyDisabled}>
