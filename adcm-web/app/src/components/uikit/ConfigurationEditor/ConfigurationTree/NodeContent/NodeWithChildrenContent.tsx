@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react';
-import { Icon } from '@uikit';
+import { IconButton } from '@uikit';
 
 import { ConfigurationArray, ConfigurationObject, ConfigurationNode } from '../../ConfigurationEditor.types';
 import { ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
@@ -72,7 +72,7 @@ const NodeWithChildrenContent = ({
         />
       )}
 
-      {isDeletable && <Icon size={16} name="g1-delete" onClick={handleDeleteClick} data-test="delete-btn" />}
+      {isDeletable && <IconButton size={14} icon="g3-delete" onClick={handleDeleteClick} data-test="delete-btn" />}
       <span className={s.nodeContent__title} data-test="node-name">
         {node.data.title}
       </span>
@@ -90,7 +90,13 @@ const NodeWithChildrenContent = ({
       )}
 
       {hasChildren && (
-        <Icon name="chevron" size={12} className={s.nodeContent__arrow} onClick={onExpand} data-test="expand-btn" />
+        <IconButton
+          icon="chevron"
+          size={12}
+          className={s.nodeContent__arrow}
+          onClick={onExpand}
+          data-test="expand-btn"
+        />
       )}
     </div>
   );

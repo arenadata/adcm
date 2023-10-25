@@ -1,5 +1,5 @@
 import { useCallback, useRef, useMemo } from 'react';
-import { Icon, Tooltip } from '@uikit';
+import { IconButton, Tooltip } from '@uikit';
 import { Node } from '@uikit/CollapseTree2/CollapseNode.types';
 import { ConfigurationField, ConfigurationNode } from '../../ConfigurationEditor.types';
 import { nullStub, secretStub } from '../../ConfigurationEditor.constants';
@@ -8,6 +8,7 @@ import cn from 'classnames';
 import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
 import SynchronizedAttribute from './SyncronizedAttribute/SynchronizedAttribute';
 import { ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
+import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 
 interface FieldNodeContentProps {
   node: ConfigurationNode;
@@ -89,11 +90,11 @@ const FieldNodeContent = ({ node, error, onClick, onDeleteClick, onFieldAttribut
         />
       )}
       {fieldNode.data.isDeletable && (
-        <Icon size={16} name="g1-delete" onClick={handleDeleteClick} data-test="delete-btn" />
+        <IconButton size={14} icon="g3-delete" onClick={handleDeleteClick} data-test="delete-btn" />
       )}
       {error && (
         <Tooltip label={error}>
-          <Icon size={14} name="alert-circle" data-test="error" />
+          <MarkerIcon variant="round" type="alert" size={16} data-test="error" />
         </Tooltip>
       )}
       <span className={s.nodeContent__title} data-test="node-name">
