@@ -16,7 +16,7 @@ export const getCheckServiceList = ({ services, selectedImports, selectedSingleB
   formatForSelectedToggleHandlerData(
     services.filter((service) => {
       if (selectedImports.services.has(service.id)) return false;
-      return service.isMultiBind || !selectedSingleBind.services.has(service.name);
+      return service.isMultiBind || !selectedSingleBind.services.has(service.prototype.name);
     }),
   );
 
@@ -29,6 +29,7 @@ export const formatForSelectedToggleHandlerData = (services: AdcmClusterImportSe
     type: AdcmClusterImportPayloadType.Service,
     name: service.name,
     isMultiBind: service.isMultiBind,
+    prototypeName: service.prototype.name,
   }));
 
 export const getRequiredImports = (clusterImports: AdcmClusterImport[]): ClusterImportsSetGroup => {
@@ -38,12 +39,12 @@ export const getRequiredImports = (clusterImports: AdcmClusterImport[]): Cluster
   };
 
   clusterImports.forEach((item) => {
-    if (item.importCluster?.isRequired) {
-      importsSet.clusters.add(item.cluster.name);
+    if (item.importCluster && item.importCluster.isRequired) {
+      importsSet.clusters.add(item.importCluster.prototype.name);
     }
 
     item.importServices?.forEach((service) => {
-      if (service.isRequired) importsSet.services.add(service.name);
+      if (service.isRequired) importsSet.services.add(service.prototype.name);
     });
   });
 
@@ -58,8 +59,8 @@ export const getIsImportsValid = (
   const isOneSelected = selectedImports.services.size > 0 || selectedImports.clusters.size > 0;
   if (!isOneSelected) return false;
 
-  const selectedClustersName = [...selectedImports.clusters.values()].map((value) => value.name);
-  const selectedServicesName = [...selectedImports.services.values()].map((value) => value.name);
+  const selectedClustersName = [...selectedImports.clusters.values()].map((value) => value.prototypeName);
+  const selectedServicesName = [...selectedImports.services.values()].map((value) => value.prototypeName);
 
   const isRequiredClustersSelected = [...requiredImports.clusters].every((cluster) =>
     selectedClustersName.includes(cluster),
@@ -119,21 +120,21 @@ export const getLoadableData = (
         loadedImports.services.set(foundService.id, {
           id: foundService.id,
           type: AdcmClusterImportPayloadType.Service,
-          name: foundService.name,
+          prototypeName: foundService.prototype.name,
         });
 
         if (!foundService.isMultiBind) {
-          loadedSingleBind.services.add(foundService.name);
+          loadedSingleBind.services.add(foundService.prototype.name);
         }
       } else {
         loadedImports.clusters.set(clusterImport.cluster.id, {
           id: clusterImport.cluster.id,
           type: AdcmClusterImportPayloadType.Cluster,
-          name: clusterImport.cluster.name,
+          prototypeName: clusterImport.importCluster?.prototype.name || '',
         });
 
-        if (!clusterImport.importCluster?.isMultiBind) {
-          loadedSingleBind.clusters.add(clusterImport.cluster.name);
+        if (clusterImport.importCluster && !clusterImport.importCluster.isMultiBind) {
+          loadedSingleBind.clusters.add(clusterImport.importCluster.prototype.name);
         }
       }
     });
@@ -160,15 +161,15 @@ export const prepToggleSelectedSingleBindData = (
     services: new Set(singleBindList.services),
   };
 
-  selectedImports.forEach(({ type, name, isMultiBind }) => {
+  selectedImports.forEach(({ type, prototypeName, isMultiBind }) => {
     const keyName = type === AdcmClusterImportPayloadType.Cluster ? 'clusters' : 'services';
 
     if (isMultiBind) return;
 
-    if (curSelectedMultiBind[keyName].has(name)) {
-      curSelectedMultiBind[keyName].delete(name);
+    if (curSelectedMultiBind[keyName].has(prototypeName)) {
+      curSelectedMultiBind[keyName].delete(prototypeName);
     } else {
-      curSelectedMultiBind[keyName].add(name);
+      curSelectedMultiBind[keyName].add(prototypeName);
     }
   });
 
@@ -184,18 +185,18 @@ export const prepToggleSelectedImportsData = (
     services: new Map(selectedData.services),
   };
 
-  newSelectedData.forEach(({ id, type, name }) => {
+  newSelectedData.forEach(({ id, type, prototypeName }) => {
     const keyName = type === AdcmClusterImportPayloadType.Cluster ? 'clusters' : 'services';
     if (curItems[keyName].has(id)) {
       curItems[keyName].delete(id);
     } else {
-      curItems[keyName].set(id, { id, type, name });
+      curItems[keyName].set(id, { id, type, prototypeName });
     }
   });
 
   return curItems;
 };
 
-export const isItemSelected = (itemsArray: SelectedImportItem[], name: string): boolean => {
-  return !!itemsArray.find((item) => item.name === name);
+export const isItemSelected = (itemsArray: SelectedImportItem[], prototypeName: string): boolean => {
+  return !!itemsArray.find((item) => item.prototypeName === prototypeName);
 };

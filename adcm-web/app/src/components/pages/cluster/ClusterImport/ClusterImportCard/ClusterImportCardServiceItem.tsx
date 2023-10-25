@@ -14,14 +14,15 @@ const ClusterImportCardServiceItem = ({
       {
         id: service.id,
         type: AdcmClusterImportPayloadType.Service,
-        name: service.name,
         isMultiBind: service.isMultiBind,
+        prototypeName: service.prototype.name,
       },
     ]);
   };
 
   const isServiceSelected = selectedImports.services.has(service.id);
-  const isDisabled = !service.isMultiBind && selectedSingleBind.services.has(service.name) && !isServiceSelected;
+  const isDisabled =
+    !service.isMultiBind && selectedSingleBind.services.has(service.prototype.name) && !isServiceSelected;
 
   return (
     <Checkbox

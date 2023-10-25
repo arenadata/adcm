@@ -5,6 +5,13 @@ export enum AdcmClusterImportPayloadType {
   Service = 'service',
 }
 
+export interface AdcmClusterImportPrototype {
+  id: number;
+  name: string;
+  displayName: string;
+  version: string;
+}
+
 export interface AdcmClusterImportService {
   id: number;
   name: string;
@@ -12,6 +19,7 @@ export interface AdcmClusterImportService {
   version: string;
   isRequired: boolean;
   isMultiBind: boolean;
+  prototype: AdcmClusterImportPrototype;
 }
 
 export interface AdcmClusterImportBind {
@@ -33,6 +41,7 @@ export interface AdcmClusterImport {
     id: number;
     isRequired: boolean;
     isMultiBind: boolean;
+    prototype: AdcmClusterImportPrototype;
   };
   importServices: AdcmClusterImportService[] | null;
   binds: AdcmClusterImportBind[];
