@@ -9,13 +9,13 @@ export interface SynchronizedAttributeProps {
 
 const synchronizedTitle = (
   <>
-    <strong>Turn on synchronization</strong> with Primary configuration
+    <strong>Turn off synchronization</strong> with Primary configuration
   </>
 );
 
 const notSynchronizedTitle = (
   <>
-    <strong>Turn off synchronization</strong> with Primary configuration
+    <strong>Turn on synchronization</strong> with Primary configuration
   </>
 );
 
