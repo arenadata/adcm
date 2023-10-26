@@ -48,7 +48,6 @@ import clusterOverviewHostsTableSlice from '@store/adcm/cluster/overview/overvie
 
 import { apiMiddleware } from './middlewares/apiMiddleware';
 import { wsMiddleware } from './middlewares/wsMiddeware';
-import { refreshDataOnNewConcernMiddleware } from './middlewares/refreshDataOnNewConcernMiddleware';
 import clusterSlice from './adcm/clusters/clusterSlice';
 import usersSlice from './adcm/users/usersSlice';
 import usersTableSlice from './adcm/users/usersTableSlice';
@@ -225,8 +224,7 @@ const rootReducer = combineReducers({
 
 export const store = configureStore({
   reducer: rootReducer,
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(apiMiddleware, wsMiddleware, refreshDataOnNewConcernMiddleware),
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(apiMiddleware, wsMiddleware),
 });
 
 export type StoreState = ReturnType<typeof rootReducer>;

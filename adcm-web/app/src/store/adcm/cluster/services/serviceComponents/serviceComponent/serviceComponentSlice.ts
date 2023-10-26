@@ -101,6 +101,18 @@ const serviceComponentSlice = createSlice({
         };
       }
     });
+    builder.addCase(wsActions.create_component_concern, (state, action) => {
+      const { id: serviceComponentId, changes: newConcern } = action.payload.object;
+      if (
+        state.serviceComponent?.id === serviceComponentId &&
+        state.serviceComponent.concerns.every((concern) => concern.id !== newConcern.id)
+      ) {
+        state.serviceComponent = {
+          ...state.serviceComponent,
+          concerns: [...state.serviceComponent.concerns, newConcern],
+        };
+      }
+    });
     builder.addCase(wsActions.delete_component_concern, (state, action) => {
       const { id, changes } = action.payload.object;
       if (state.serviceComponent?.id === id) {

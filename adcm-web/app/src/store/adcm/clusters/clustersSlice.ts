@@ -80,6 +80,16 @@ const clustersSlice = createSlice({
         () => changes,
       );
     });
+    builder.addCase(wsActions.create_cluster_concern, (state, action) => {
+      const { id: clusterId, changes: newConcern } = action.payload.object;
+      state.clusters = updateIfExists<AdcmCluster>(
+        state.clusters,
+        (cluster) => cluster.id === clusterId && cluster.concerns.every((concern) => concern.id !== newConcern.id),
+        (cluster) => ({
+          concerns: [...cluster.concerns, newConcern],
+        }),
+      );
+    });
     builder.addCase(wsActions.delete_cluster_concern, (state, action) => {
       const { id, changes } = action.payload.object;
       state.clusters = updateIfExists<AdcmCluster>(

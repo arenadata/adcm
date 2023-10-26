@@ -86,6 +86,16 @@ const clusterHostsSlice = createSlice({
         () => changes,
       );
     });
+    builder.addCase(wsActions.create_host_concern, (state, action) => {
+      const { id: hostId, changes: newConcern } = action.payload.object;
+      state.hosts = updateIfExists<AdcmClusterHost>(
+        state.hosts,
+        (host) => host.id === hostId && host.concerns.every((concern) => concern.id !== newConcern.id),
+        (host) => ({
+          concerns: [...host.concerns, newConcern],
+        }),
+      );
+    });
     builder.addCase(wsActions.delete_host_concern, (state, action) => {
       const { id, changes } = action.payload.object;
       state.hosts = updateIfExists<AdcmClusterHost>(
