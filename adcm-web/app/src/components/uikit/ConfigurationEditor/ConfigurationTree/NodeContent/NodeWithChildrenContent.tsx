@@ -2,7 +2,7 @@ import { useCallback, useRef } from 'react';
 import { IconButton } from '@uikit';
 
 import { ConfigurationArray, ConfigurationObject, ConfigurationNode } from '../../ConfigurationEditor.types';
-import { ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
+import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
 import s from '../ConfigurationTree.module.scss';
 import cn from 'classnames';
 import SynchronizedAttribute from './SyncronizedAttribute/SynchronizedAttribute';
@@ -13,7 +13,8 @@ interface NodeWithChildrenContentProps {
   node: ConfigurationNode;
   error?: string;
   isExpanded: boolean;
-  onDelete: (node: ConfigurationNode, nodeRef: React.RefObject<HTMLElement>) => void;
+  onClear: ChangeConfigurationNodeHandler;
+  onDelete: ChangeConfigurationNodeHandler;
   onExpand: () => void;
   onFieldAttributeChange: ChangeFieldAttributesHandler;
 }
@@ -22,6 +23,7 @@ const NodeWithChildrenContent = ({
   node,
   isExpanded,
   error,
+  onClear,
   onDelete,
   onExpand,
   onFieldAttributeChange,
@@ -51,6 +53,10 @@ const NodeWithChildrenContent = ({
     [fieldAttributes, node.key, onFieldAttributeChange],
   );
 
+  const handleClearClick = () => {
+    onClear(node, ref);
+  };
+
   const handleDeleteClick = () => {
     onDelete(node, ref);
   };
@@ -72,6 +78,9 @@ const NodeWithChildrenContent = ({
         />
       )}
 
+      {fieldNodeData.isCleanable && fieldNodeData.value !== null && (
+        <IconButton size={14} icon="g3-clear" onClick={handleClearClick} data-test="clear-btn" />
+      )}
       {isDeletable && <IconButton size={14} icon="g3-delete" onClick={handleDeleteClick} data-test="delete-btn" />}
       <span className={s.nodeContent__title} data-test="node-name">
         {node.data.title}

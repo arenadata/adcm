@@ -84,13 +84,20 @@ const ConfigurationEditor = ({
     [configuration, onConfigurationChange],
   );
 
+  const handleClearField = useCallback(
+    (node: ConfigurationNode) => {
+      const newConfiguration = editField(configuration, node.data.path, null);
+      onConfigurationChange(newConfiguration);
+    },
+    [configuration, onConfigurationChange],
+  );
+
   const handleDeleteField = useCallback(
     (node: ConfigurationNode) => {
       const parentNodeData = node.data.parentNode.data;
 
       const isParentArray = parentNodeData.type === 'array';
       const isParentMap = parentNodeData.type === 'object' && parentNodeData.objectType === 'map';
-      const isParentStructure = parentNodeData.type === 'object' && parentNodeData.objectType === 'structure';
 
       if (isParentArray) {
         const newConfiguration = deleteArrayItem(configuration, node.data.path);
@@ -99,11 +106,6 @@ const ConfigurationEditor = ({
 
       if (isParentMap) {
         const newConfiguration = deleteField(configuration, node.data.path);
-        onConfigurationChange(newConfiguration);
-      }
-
-      if (isParentStructure) {
-        const newConfiguration = editField(configuration, node.data.path, null);
         onConfigurationChange(newConfiguration);
       }
     },
@@ -130,6 +132,7 @@ const ConfigurationEditor = ({
         onAddEmptyObject={handleAddEmptyObject}
         onEditField={handleOpenEditFieldDialog}
         onAddField={handleOpenAddFieldDialog}
+        onClear={handleClearField}
         onDelete={handleDeleteField}
         onAddArrayItem={handleAddArrayItem}
         onFieldAttributesChange={handleFieldAttributesChange}
