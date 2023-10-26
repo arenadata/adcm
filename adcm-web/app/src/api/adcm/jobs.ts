@@ -28,11 +28,7 @@ export class AdcmJobsApi {
     return response.data;
   }
 
-  public static async restartJob(id: number) {
-    await httpClient.post(`/api/v2/tasks/${id}/restart`);
-  }
-
   public static async stopJob(id: number) {
-    await httpClient.post(`/api/v2/tasks/${id}/terminate`);
+    await httpClient.post(`/api/v2/tasks/${id}/terminate/`);
   }
 }
