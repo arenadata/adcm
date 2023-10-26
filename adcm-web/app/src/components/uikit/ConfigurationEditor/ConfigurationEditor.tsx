@@ -97,14 +97,14 @@ const ConfigurationEditor = ({
       const parentNodeData = node.data.parentNode.data;
 
       const isParentArray = parentNodeData.type === 'array';
-      const isParentMap = parentNodeData.type === 'object' && parentNodeData.objectType === 'map';
+      const isParentObject = parentNodeData.type === 'object';
 
       if (isParentArray) {
         const newConfiguration = deleteArrayItem(configuration, node.data.path);
         onConfigurationChange(newConfiguration);
       }
 
-      if (isParentMap) {
+      if (isParentObject) {
         const newConfiguration = deleteField(configuration, node.data.path);
         onConfigurationChange(newConfiguration);
       }
