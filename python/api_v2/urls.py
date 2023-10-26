@@ -27,7 +27,7 @@ urlpatterns = [
     path("audit/", include(("api_v2.audit.urls", "audit"))),
     path("jobs/", include("api_v2.job.urls")),
     path("tasks/", include("api_v2.task.urls")),
-    path("adcm/", include(("api_v2.adcm.urls", "adcm"))),
+    path("adcm/", include(("api_v2.adcm.urls"))),
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("profile/", ProfileView.as_view(), name="profile"),
