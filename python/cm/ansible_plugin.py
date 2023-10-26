@@ -277,7 +277,7 @@ def get_service_by_name(cluster_id, service_name):
 
 def _set_object_state(obj: ADCMEntity, state: str) -> ADCMEntity:
     obj.set_state(state)
-    update_event(obj, update=(UpdateEventType.STATE, state))
+    update_event(object_=obj, update=(UpdateEventType.STATE, state))
     return obj
 
 
