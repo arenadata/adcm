@@ -7,28 +7,14 @@ import { refreshJobs } from './jobsSlice';
 import { AdcmJobsApi } from '@api/adcm/jobs';
 
 interface AdcmJobsActionState {
-  restartDialog: {
-    id: number | null;
-  };
   stopDialog: {
     id: number | null;
   };
 }
 
-const restartJobWithUpdate = createAsyncThunk('adcm/jobs/restartJob', async (id: number, thunkAPI) => {
-  try {
-    AdcmJobsApi.restartJob(id);
-    thunkAPI.dispatch(showInfo({ message: 'Job has been restarted' }));
-    await thunkAPI.dispatch(refreshJobs());
-  } catch (error) {
-    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-    return error;
-  }
-});
-
 const stopJobWithUpdate = createAsyncThunk('adcm/jobs/stopJob', async (id: number, thunkAPI) => {
   try {
-    AdcmJobsApi.stopJob(id);
+    await AdcmJobsApi.stopJob(id);
     thunkAPI.dispatch(showInfo({ message: 'Job has been stopped' }));
     await thunkAPI.dispatch(refreshJobs());
   } catch (error) {
@@ -38,9 +24,6 @@ const stopJobWithUpdate = createAsyncThunk('adcm/jobs/stopJob', async (id: numbe
 });
 
 const createInitialState = (): AdcmJobsActionState => ({
-  restartDialog: {
-    id: null,
-  },
   stopDialog: {
     id: null,
   },
@@ -53,12 +36,6 @@ const jobsSlice = createSlice({
     cleanupActions() {
       return createInitialState();
     },
-    openRestartDialog(state, action) {
-      state.restartDialog.id = action.payload;
-    },
-    closeRestartDialog(state) {
-      state.restartDialog.id = null;
-    },
     openStopDialog(state, action) {
       state.stopDialog.id = action.payload;
     },
@@ -67,23 +44,12 @@ const jobsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder
-      .addCase(restartJobWithUpdate.pending, (state) => {
-        jobsSlice.caseReducers.closeRestartDialog(state);
-      })
-      .addCase(stopJobWithUpdate.pending, (state) => {
-        jobsSlice.caseReducers.closeStopDialog(state);
-      });
+    builder.addCase(stopJobWithUpdate.pending, (state) => {
+      jobsSlice.caseReducers.closeStopDialog(state);
+    });
   },
 });
 
-const { openRestartDialog, closeRestartDialog, openStopDialog, closeStopDialog } = jobsSlice.actions;
-export {
-  restartJobWithUpdate,
-  stopJobWithUpdate,
-  openRestartDialog,
-  closeRestartDialog,
-  openStopDialog,
-  closeStopDialog,
-};
+const { openStopDialog, closeStopDialog } = jobsSlice.actions;
+export { stopJobWithUpdate, openStopDialog, closeStopDialog };
 export default jobsSlice.reducer;

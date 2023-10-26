@@ -56,9 +56,13 @@ const JobPageChildJobsTable = () => {
             <DateTimeCell value={job.startTime} />
             <DateTimeCell value={job.endTime} />
             <TableCell hasIconOnly align="center">
-              {job.status === AdcmJobStatus.Success && (
-                <IconButton icon="g1-stop" title="Stop the job" size={32} onClick={handleStopClick(job.id)} />
-              )}
+              <IconButton
+                icon="g1-skip"
+                title="Stop the job"
+                size={32}
+                onClick={handleStopClick(job.id)}
+                disabled={!job.isTerminatable || job.status !== AdcmJobStatus.Running}
+              />
             </TableCell>
             <TableCell>
               <Button
