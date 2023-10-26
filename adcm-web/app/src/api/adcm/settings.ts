@@ -6,11 +6,15 @@ import {
   ConfigurationSchema,
   ConfigurationData,
   ConfigurationAttributes,
+  AdcmSettings,
+  AdcmDynamicAction,
+  AdcmDynamicActionDetails,
+  AdcmDynamicActionRunConfig,
 } from '@models/adcm';
 
 export class AdcmSettingsApi {
   public static async getSettings() {
-    const response = await httpClient.get<Batch<AdcmConfigShortView>>('/api/v2/adcm/');
+    const response = await httpClient.get<AdcmSettings>('/api/v2/adcm/');
     return response.data;
   }
 
@@ -39,6 +43,22 @@ export class AdcmSettingsApi {
       adcmMeta: attributes,
       config: configurationData,
     });
+    return response.data;
+  }
+
+  public static async getAdcmSettingsActions() {
+    const response = await httpClient.get<AdcmDynamicAction[]>('/api/v2/adcm/actions/');
+    return response.data;
+  }
+
+  public static async getAdcmSettingsActionDetails(actionId: number) {
+    const response = await httpClient.get<AdcmDynamicActionDetails>(`/api/v2/adcm/actions/${actionId}/`);
+    return response.data;
+  }
+
+  public static async runAdcmSettingsAction(actionId: number, actionRunConfig: AdcmDynamicActionRunConfig) {
+    const response = await httpClient.post(`/api/v2/adcm/actions/${actionId}/run/`, actionRunConfig);
+
     return response.data;
   }
 }
