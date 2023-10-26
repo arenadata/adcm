@@ -1,4 +1,4 @@
-import { AdcmCluster, AdcmComponent, AdcmHost, AdcmHostProvider } from '.';
+import { AdcmCluster, AdcmComponent, AdcmConcerns, AdcmHost, AdcmHostProvider } from '.';
 import { AdcmTask } from './jobs';
 import { AdcmService } from './service';
 
@@ -28,7 +28,9 @@ export type CreateConcernEvent = {
     | 'create_hostprovider_concern'
     | 'create_host_concern';
   object: {
+    // the concrete entity id, e.g. clusterId
     id: number;
+    changes: AdcmConcerns;
   };
 };
 

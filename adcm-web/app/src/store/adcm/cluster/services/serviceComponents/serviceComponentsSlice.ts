@@ -97,6 +97,18 @@ const serviceComponentsSlice = createSlice({
         () => changes,
       );
     });
+    builder.addCase(wsActions.create_component_concern, (state, action) => {
+      const { id: serviceComponentId, changes: newConcern } = action.payload.object;
+      state.serviceComponents = updateIfExists<AdcmServiceComponent>(
+        state.serviceComponents,
+        (serviceComponent) =>
+          serviceComponent.id === serviceComponentId &&
+          serviceComponent.concerns.every((concern) => concern.id !== newConcern.id),
+        (serviceComponent) => ({
+          concerns: [...serviceComponent.concerns, newConcern],
+        }),
+      );
+    });
     builder.addCase(wsActions.delete_component_concern, (state, action) => {
       const { id, changes } = action.payload.object;
       state.serviceComponents = updateIfExists<AdcmServiceComponent>(

@@ -171,11 +171,21 @@ const servicesSlice = createSlice({
         () => changes,
       );
     });
-    builder.addCase(wsActions.delete_service_concern, (state, action) => {
-      const { id, changes } = action.payload.object;
+    builder.addCase(wsActions.create_service_concern, (state, action) => {
+      const { id: serviceId, changes: newConcern } = action.payload.object;
       state.services = updateIfExists<AdcmService>(
         state.services,
-        (service) => service.id === id,
+        (service) => service.id === serviceId && service.concerns.every((concern) => concern.id !== newConcern.id),
+        (service) => ({
+          concerns: [...service.concerns, newConcern],
+        }),
+      );
+    });
+    builder.addCase(wsActions.delete_service_concern, (state, action) => {
+      const { id: serviceId, changes } = action.payload.object;
+      state.services = updateIfExists<AdcmService>(
+        state.services,
+        (service) => service.id === serviceId,
         (service) => ({
           concerns: service.concerns.filter((concern) => concern.id !== changes.id),
         }),

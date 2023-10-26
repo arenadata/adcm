@@ -179,6 +179,18 @@ const clusterHostSlice = createSlice({
         state.clusterHost = { ...state.clusterHost, ...changes };
       }
     });
+    builder.addCase(wsActions.create_host_concern, (state, action) => {
+      const { id: clusterHostId, changes: newConcern } = action.payload.object;
+      if (
+        state.clusterHost?.id === clusterHostId &&
+        state.clusterHost.concerns.every((concern) => concern.id !== newConcern.id)
+      ) {
+        state.clusterHost = {
+          ...state.clusterHost,
+          concerns: [...state.clusterHost.concerns, newConcern],
+        };
+      }
+    });
     builder.addCase(wsActions.delete_host_concern, (state, action) => {
       const { id, changes } = action.payload.object;
       if (state.clusterHost?.id === id) {
@@ -194,6 +206,18 @@ const clusterHostSlice = createSlice({
         state.relatedData.hostComponents,
         (hostComponent) => hostComponent.id === id,
         () => changes,
+      );
+    });
+    builder.addCase(wsActions.create_component_concern, (state, action) => {
+      const { id: hostComponentId, changes: newConcern } = action.payload.object;
+      state.relatedData.hostComponents = updateIfExists<AdcmServiceComponent>(
+        state.relatedData.hostComponents,
+        (hostComponent) =>
+          hostComponent.id === hostComponentId &&
+          hostComponent.concerns.every((concern) => concern.id !== newConcern.id),
+        (hostComponent) => ({
+          concerns: [...hostComponent.concerns, newConcern],
+        }),
       );
     });
     builder.addCase(wsActions.delete_component_concern, (state, action) => {

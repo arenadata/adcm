@@ -71,6 +71,15 @@ const clusterSlice = createSlice({
         };
       }
     });
+    builder.addCase(wsActions.create_cluster_concern, (state, action) => {
+      const { id: clusterId, changes: newConcern } = action.payload.object;
+      if (state.cluster?.id === clusterId && state.cluster.concerns.every((concern) => concern.id !== newConcern.id)) {
+        state.cluster = {
+          ...state.cluster,
+          concerns: [...state.cluster.concerns, newConcern],
+        };
+      }
+    });
     builder.addCase(wsActions.delete_cluster_concern, (state, action) => {
       const { id, changes } = action.payload.object;
       if (state.cluster?.id === id) {
