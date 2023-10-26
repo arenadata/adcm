@@ -110,6 +110,8 @@ import hostProviderConfigGroupSlice from '@store/adcm/hostProvider/configuration
 import hostProviderConfigGroupConfigurationSlice from '@store/adcm/hostProvider/configurationGroupSingle/configuration/hostProviderConfigGroupConfigurationSlice';
 import hostProviderConfigGroupConfigurationsCompareSlice from '@store/adcm/hostProvider/configurationGroupSingle/configuration/hostProviderConfigGroupConfigurationsCompareSlice';
 import bellSlice from '@store/adcm/bell/bellSlice';
+import adcmSettingsSlice from '@store/adcm/settings/settingsSlice';
+import adcmSettingsDynamicActionsSlice from '@store/adcm/settings/settingsDynamicActionsSlice';
 
 const rootReducer = combineReducers({
   auth: authSlice,
@@ -220,6 +222,8 @@ const rootReducer = combineReducers({
     rolesActions: rolesActionsSlice,
     settingsConfigurations: settingsConfigurationsSlice,
     settingsConfigurationsCompare: settingsConfigurationsCompareSlice,
+    adcmSettings: adcmSettingsSlice,
+    adcmSettingsDynamicActions: adcmSettingsDynamicActionsSlice,
   }),
 });
 
