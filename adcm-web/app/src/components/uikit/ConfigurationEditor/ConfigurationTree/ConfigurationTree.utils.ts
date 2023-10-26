@@ -81,13 +81,15 @@ const getNodeProps = (
   }
 
   const isReadonly = fieldSchema.readOnly || isSynchronized || isParentSynchronized;
-  const isDeletable = !isReadonly && (!isRequiredField || isArrayItem || isNullable);
+  const isCleanable = !isReadonly && isNullable;
+  const isDeletable = !isReadonly && (!isRequiredField || isArrayItem);
 
   return {
     title,
     isArrayItem,
     isRequiredField,
     isReadonly,
+    isCleanable,
     isDeletable,
   };
 };
@@ -115,8 +117,10 @@ const buildRootNode = (
       path: [],
       parentNode: {} as ConfigurationNode,
       fieldSchema,
+      isNullable: false,
       isDeletable: false,
       isReadonly: false,
+      isCleanable: false,
       objectType: 'structure',
       value: configuration,
     },
@@ -172,7 +176,7 @@ const buildObjectNode = (
   const key = buildKey(path);
   const fieldAttributes = attributes[key];
 
-  const { title, isReadonly, isDeletable } = getNodeProps(
+  const { title, isReadonly, isCleanable, isDeletable } = getNodeProps(
     fieldName,
     fieldSchema,
     isNullable,
@@ -187,7 +191,9 @@ const buildObjectNode = (
       type: 'object',
       path,
       fieldSchema,
+      isNullable,
       parentNode,
+      isCleanable,
       isDeletable,
       isReadonly,
       objectType: 'map',
@@ -205,26 +211,22 @@ const buildObjectNode = (
   } else {
     const addedFields = new Set();
 
-    // add children from schema
-    for (const key of Object.keys(fieldSchema.properties)) {
-      const fieldPath = [...path, key];
-      const propertyValue = objectValue?.[key] ?? null;
-      const childrenFieldSchema = fieldSchema.properties[key];
-
-      children.push(buildNode(key, fieldPath, node, childrenFieldSchema, propertyValue, attributes));
-      addedFields.add(key);
+    if (!fieldSchema.additionalProperties) {
+      nodeData.objectType = 'structure';
     }
 
-    // check if all props are required (object is structure)
-    if (fieldSchema.required?.length && !fieldSchema.additionalProperties) {
-      const areAllPropsRequired = fieldSchema.required.every((fieldName) => addedFields.has(fieldName));
-      if (areAllPropsRequired) {
-        nodeData.objectType = 'structure';
-      }
-    }
-
-    // add children from data (map case)
     if (objectValue) {
+      // add children from schema
+      for (const key of Object.keys(fieldSchema.properties)) {
+        const fieldPath = [...path, key];
+        const propertyValue = objectValue?.[key] ?? null;
+        const childrenFieldSchema = fieldSchema.properties[key];
+
+        children.push(buildNode(key, fieldPath, node, childrenFieldSchema, propertyValue, attributes));
+        addedFields.add(key);
+      }
+
+      // add children from data (map case)
       for (const [key, propertyValue] of Object.entries(objectValue)) {
         if (!addedFields.has(key)) {
           const fieldPath = [...path, key];
@@ -265,7 +267,7 @@ const buildFieldNode = (
   const key = buildKey(path);
   const fieldAttributes = attributes[key];
 
-  const { title, isReadonly, isDeletable } = getNodeProps(
+  const { title, isReadonly, isCleanable, isDeletable } = getNodeProps(
     fieldName,
     fieldSchema,
     isNullable,
@@ -281,7 +283,9 @@ const buildFieldNode = (
       path,
       parentNode,
       fieldSchema,
+      isNullable,
       value: fieldValue as JSONPrimitive,
+      isCleanable,
       isDeletable,
       isReadonly,
       fieldAttributes,
@@ -300,7 +304,7 @@ const buildAddEmptyObjectNode = (
     key: buildKey(path),
     data: {
       type: 'addEmptyObject',
-      title: 'Add',
+      title: 'Set',
       path,
       parentNode,
       fieldSchema,
@@ -341,7 +345,7 @@ const buildArrayNode = (
   const key = buildKey(path);
   const fieldAttributes = attributes[key];
 
-  const { title, isReadonly, isDeletable } = getNodeProps(
+  const { title, isReadonly, isCleanable, isDeletable } = getNodeProps(
     fieldName,
     fieldSchema,
     isNullable,
@@ -357,7 +361,9 @@ const buildArrayNode = (
       path,
       parentNode,
       fieldSchema,
+      isNullable,
       isReadonly,
+      isCleanable,
       isDeletable,
       value: array,
       fieldAttributes,
@@ -415,7 +421,9 @@ const buildUnknownNode = (
       path,
       parentNode,
       fieldSchema,
+      isNullable: false,
       value: 'some value',
+      isCleanable: false,
       isDeletable: false,
       isReadonly: true,
     },
@@ -473,7 +481,7 @@ const determineFieldSchema = (
   } else {
     const [schema1, schema2] = fieldSchema.oneOf ?? [];
 
-    if (schema1.type === null) {
+    if (schema1.type === 'null') {
       return { isNullable: true, fieldSchema: schema2 as SingleSchemaDefinition };
     } else {
       return { isNullable: true, fieldSchema: schema1 as SingleSchemaDefinition };

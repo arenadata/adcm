@@ -9,11 +9,13 @@ export type ConfigurationField = {
   type: 'field';
   title: string;
   fieldSchema: SingleSchemaDefinition;
+  isNullable: boolean;
   fieldAttributes?: FieldAttributes;
   parentNode: ConfigurationNode;
   value: JSONPrimitive;
   path: ConfigurationNodePath;
   isDeletable: boolean;
+  isCleanable: boolean;
   isReadonly: boolean;
 };
 
@@ -30,11 +32,13 @@ export type ConfigurationObject = {
   type: 'object';
   title: string;
   fieldSchema: SingleSchemaDefinition;
+  isNullable: boolean;
   parentNode: ConfigurationNode;
   fieldAttributes?: FieldAttributes;
   path: ConfigurationNodePath;
   isDeletable: boolean;
   isReadonly: boolean;
+  isCleanable: boolean;
   objectType: 'map' | 'structure';
   value: JSONValue;
 };
@@ -52,11 +56,13 @@ export type ConfigurationArray = {
   type: 'array';
   title: string;
   fieldSchema: SingleSchemaDefinition;
+  isNullable: boolean;
   parentNode: ConfigurationNode;
   fieldAttributes?: FieldAttributes;
   path: ConfigurationNodePath;
   isReadonly: boolean;
   isDeletable: boolean;
+  isCleanable: boolean;
   value: JSONValue;
 };
 

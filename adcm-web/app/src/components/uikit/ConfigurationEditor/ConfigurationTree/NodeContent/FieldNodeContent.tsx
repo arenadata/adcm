@@ -1,27 +1,34 @@
 import { useCallback, useRef, useMemo } from 'react';
 import { IconButton, Tooltip } from '@uikit';
-import { Node } from '@uikit/CollapseTree2/CollapseNode.types';
 import { ConfigurationField, ConfigurationNode } from '../../ConfigurationEditor.types';
-import { nullStub, secretStub } from '../../ConfigurationEditor.constants';
+import { emptyStringStub, nullStub, secretStub } from '../../ConfigurationEditor.constants';
 import s from '../ConfigurationTree.module.scss';
 import cn from 'classnames';
 import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
 import SynchronizedAttribute from './SyncronizedAttribute/SynchronizedAttribute';
-import { ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
+import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 
 interface FieldNodeContentProps {
   node: ConfigurationNode;
   error?: string;
-  onClick: (node: ConfigurationNode, nodeRef: React.RefObject<HTMLElement>) => void;
-  onDeleteClick: (node: ConfigurationNode, nodeRef: React.RefObject<HTMLElement>) => void;
+  onClick: ChangeConfigurationNodeHandler;
+  onClear: ChangeConfigurationNodeHandler;
+  onDelete: ChangeConfigurationNodeHandler;
   onFieldAttributeChange: ChangeFieldAttributesHandler;
 }
 
-const FieldNodeContent = ({ node, error, onClick, onDeleteClick, onFieldAttributeChange }: FieldNodeContentProps) => {
+const FieldNodeContent = ({
+  node,
+  error,
+  onClick,
+  onClear,
+  onDelete,
+  onFieldAttributeChange,
+}: FieldNodeContentProps) => {
   const ref = useRef(null);
-  const fieldNode = node as Node<ConfigurationField>;
-  const adcmMeta = fieldNode.data.fieldSchema.adcmMeta;
+  const fieldNodeData = node.data as ConfigurationField;
+  const adcmMeta = fieldNodeData.fieldSchema.adcmMeta;
   const fieldAttributes = node.data.fieldAttributes;
 
   const handleIsActiveChange = useCallback(
@@ -46,8 +53,12 @@ const FieldNodeContent = ({ node, error, onClick, onDeleteClick, onFieldAttribut
     onClick(node, ref);
   };
 
+  const handleClearClick = () => {
+    onClear(node, ref);
+  };
+
   const handleDeleteClick = () => {
-    onDeleteClick(node, ref);
+    onDelete(node, ref);
   };
 
   const className = cn(s.nodeContent, {
@@ -55,11 +66,11 @@ const FieldNodeContent = ({ node, error, onClick, onDeleteClick, onFieldAttribut
   });
 
   const value: string | number | boolean = useMemo(() => {
-    if (fieldNode.data.fieldSchema.enum) {
-      if (fieldNode.data.fieldSchema.adcmMeta.enumExtra?.labels) {
-        const valueIndex = fieldNode.data.fieldSchema.enum?.indexOf(fieldNode.data.value);
+    if (fieldNodeData.fieldSchema.enum) {
+      if (fieldNodeData.fieldSchema.adcmMeta.enumExtra?.labels) {
+        const valueIndex = fieldNodeData.fieldSchema.enum?.indexOf(fieldNodeData.value);
         if (valueIndex !== undefined) {
-          return fieldNode.data.fieldSchema.adcmMeta.enumExtra.labels[valueIndex];
+          return fieldNodeData.fieldSchema.adcmMeta.enumExtra.labels[valueIndex];
         }
       }
     }
@@ -68,16 +79,20 @@ const FieldNodeContent = ({ node, error, onClick, onDeleteClick, onFieldAttribut
       return secretStub;
     }
 
-    if (fieldNode.data.value === null) {
+    if (fieldNodeData.value === null) {
       return nullStub;
     }
 
-    return fieldNode.data.value.toString();
+    if (fieldNodeData.value === '') {
+      return emptyStringStub;
+    }
+
+    return fieldNodeData.value.toString();
   }, [
     adcmMeta.isSecret,
-    fieldNode.data.fieldSchema.adcmMeta.enumExtra,
-    fieldNode.data.fieldSchema.enum,
-    fieldNode.data.value,
+    fieldNodeData.fieldSchema.adcmMeta.enumExtra,
+    fieldNodeData.fieldSchema.enum,
+    fieldNodeData.value,
   ]);
 
   return (
@@ -89,7 +104,10 @@ const FieldNodeContent = ({ node, error, onClick, onDeleteClick, onFieldAttribut
           onToggle={handleIsActiveChange}
         />
       )}
-      {fieldNode.data.isDeletable && (
+      {fieldNodeData.isCleanable && fieldNodeData.value !== null && (
+        <IconButton size={14} icon="g3-clear" onClick={handleClearClick} data-test="clear-btn" />
+      )}
+      {fieldNodeData.isDeletable && (
         <IconButton size={14} icon="g3-delete" onClick={handleDeleteClick} data-test="delete-btn" />
       )}
       {error && (
@@ -98,7 +116,7 @@ const FieldNodeContent = ({ node, error, onClick, onDeleteClick, onFieldAttribut
         </Tooltip>
       )}
       <span className={s.nodeContent__title} data-test="node-name">
-        {fieldNode.data.title}:{' '}
+        {`${fieldNodeData.title}: `}
       </span>
       {adcmMeta.synchronization && fieldAttributes && (
         <SynchronizedAttribute

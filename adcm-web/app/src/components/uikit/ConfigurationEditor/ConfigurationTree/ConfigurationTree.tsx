@@ -24,6 +24,7 @@ export interface ConfigurationTreeProps {
   onEditField: ChangeConfigurationNodeHandler;
   onAddEmptyObject: ChangeConfigurationNodeHandler;
   onAddField: ChangeConfigurationNodeHandler;
+  onClear: ChangeConfigurationNodeHandler;
   onDelete: ChangeConfigurationNodeHandler;
   onAddArrayItem: ChangeConfigurationNodeHandler;
   onFieldAttributesChange: ChangeFieldAttributesHandler;
@@ -49,6 +50,7 @@ const ConfigurationTree = memo(
     onEditField,
     onAddEmptyObject,
     onAddField,
+    onClear,
     onDelete,
     onAddArrayItem,
     onFieldAttributesChange,
@@ -77,7 +79,8 @@ const ConfigurationTree = memo(
               node={node}
               error={error}
               onClick={onEditField}
-              onDeleteClick={onDelete}
+              onClear={onClear}
+              onDelete={onDelete}
               onFieldAttributeChange={onFieldAttributesChange}
             />
           );
@@ -97,6 +100,7 @@ const ConfigurationTree = memo(
               node={node}
               isExpanded={isExpanded}
               error={error}
+              onClear={onClear}
               onDelete={onDelete}
               onExpand={onExpand}
               onFieldAttributeChange={onFieldAttributesChange}
