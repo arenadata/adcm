@@ -2752,7 +2752,7 @@ class TestADCMConfig(BaseAPITestCase):
         self.adcm_current_config = ConfigLog.objects.get(id=self.adcm.config.current)
 
     def test_list_success(self):
-        response = self.client.get(path=reverse(viewname="v2:adcm:config-list"))
+        response = self.client.get(path=reverse(viewname="v2:adcm-config-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
@@ -2764,7 +2764,7 @@ class TestADCMConfig(BaseAPITestCase):
 
     def test_retrieve_success(self):
         response = self.client.get(
-            path=reverse(viewname="v2:adcm:config-detail", kwargs={"pk": self.adcm_current_config.pk})
+            path=reverse(viewname="v2:adcm-config-detail", kwargs={"pk": self.adcm_current_config.pk})
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -2826,7 +2826,7 @@ class TestADCMConfig(BaseAPITestCase):
             "description": "new ADCM config",
         }
 
-        response = self.client.post(path=reverse(viewname="v2:adcm:config-list"), data=data)
+        response = self.client.post(path=reverse(viewname="v2:adcm-config-list"), data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(ConfigLog.objects.filter(obj_ref=self.adcm.config).count(), 2)
@@ -2834,7 +2834,7 @@ class TestADCMConfig(BaseAPITestCase):
         self.assertEqual(response.json()["description"], "new ADCM config")
 
     def test_schema(self):
-        response = self.client.get(path=reverse(viewname="v2:adcm:config-schema"))
+        response = self.client.get(path=reverse(viewname="v2:adcm-config-schema"))
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = {
