@@ -9,11 +9,20 @@ const BundleUploadButton: React.FC = () => {
 
   const inputRef = useRef<HTMLInputElement | null>(null);
 
+  const clearFile = () => {
+    if (inputRef.current) {
+      inputRef.current.value = '';
+    }
+  };
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { files } = e.target;
     if (files === null || isUploading) return;
 
-    dispatch(uploadWithUpdateBundles([...files]));
+    dispatch(uploadWithUpdateBundles([...files])).then(() => {
+      // we shouldn't use .unwrap() for dispatch, because we should clear file for success and failed done
+      clearFile();
+    });
   };
 
   const handleClick = () => {
