@@ -5,6 +5,7 @@ import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { getRoles } from './rolesSlice';
 import { AdcmCreateRolePayload, AdcmRole, AdcmRoleType, UpdateRolePayload } from '@models/adcm';
+import { SortParams } from '@models/table';
 
 interface AdcmRolesActionState {
   deleteDialog: {
@@ -77,9 +78,34 @@ const updateRole = createAsyncThunk(
 
 const loadAllRoles = createAsyncThunk('adcm/role/createRoleDialog/loadAllRoles', async (arg, thunkAPI) => {
   try {
-    return await AdcmRolesApi.getRoles({
-      type: AdcmRoleType.Business,
-    });
+    const sortParams = {
+      sortBy: 'displayName',
+      sortDirection: 'asc',
+    } as SortParams;
+
+    const { count, results } = await AdcmRolesApi.getRoles(
+      {
+        type: AdcmRoleType.Business,
+      },
+      sortParams,
+    );
+    if (count === results.length) {
+      return results;
+    }
+
+    // count > results.length
+    const { results: roles } = await AdcmRolesApi.getRoles(
+      {
+        type: AdcmRoleType.Business,
+      },
+      sortParams,
+      {
+        perPage: count,
+        pageNumber: 0,
+      },
+    );
+
+    return roles;
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
@@ -139,7 +165,10 @@ const rolesActionsSlice = createSlice({
       state.relatedData.isLoaded = true;
     });
     builder.addCase(loadAllRoles.fulfilled, (state, action) => {
-      state.relatedData.allRoles = action.payload.results;
+      state.relatedData.allRoles = action.payload;
+    });
+    builder.addCase(loadAllRoles.rejected, (state) => {
+      state.relatedData.allRoles = [];
     });
     builder.addCase(createRole.fulfilled, () => {
       return createInitialState();
