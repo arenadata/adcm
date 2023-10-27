@@ -34,7 +34,16 @@ const AccessManagerRoleDialogForm: React.FC<AccessManagerRoleDialogFormProps> = 
 
   const allPermissionsByProducts = useMemo(() => {
     return allPermissions
-      .filter((role) => role.categories.find((cat) => productsSelected.includes(cat)) || role.isAnyCategory)
+      .filter((role) => {
+        // when selected some products
+        if (productsSelected.length > 0) {
+          // show roles for products
+          return role.isAnyCategory || role.categories.some((cat) => productsSelected.includes(cat));
+        }
+
+        // in this case show not products roles
+        return !role.isAnyCategory && role.categories.length === 0;
+      })
       .map((permission) => {
         return {
           key: permission.id,
