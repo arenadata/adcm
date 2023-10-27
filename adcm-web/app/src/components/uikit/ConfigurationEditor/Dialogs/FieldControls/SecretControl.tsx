@@ -29,7 +29,7 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
 
   useEffect(() => {
     const areEqual = secret === confirm;
-    onChange(secret, areEqual && secret !== '');
+    onChange(secret, areEqual);
     setError(!areEqual ? mismatchErrorText : undefined);
   }, [confirm, onChange, secret]);
 
