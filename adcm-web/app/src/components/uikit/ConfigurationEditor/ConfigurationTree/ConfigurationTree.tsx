@@ -70,7 +70,11 @@ const ConfigurationTree = memo(
       return getNodeClassName(node, hasError);
     };
 
-    const handleRenderNodeContent = (node: ConfigurationNode, isExpanded: boolean, onExpand: () => void) => {
+    const handleRenderNodeContent = (
+      node: ConfigurationNode,
+      isExpanded: boolean,
+      onExpand: (isOpen: boolean) => void,
+    ) => {
       const error = typeof errorsPaths[node.key] === 'string' ? (errorsPaths[node.key] as string) : undefined;
       switch (node.data.type) {
         case 'field': {

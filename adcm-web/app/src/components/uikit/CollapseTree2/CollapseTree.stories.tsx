@@ -16,9 +16,9 @@ type SomeObject = {
   isValid: boolean;
 };
 
-const renderNodeContent = (node: Node<SomeObject>, isExpanded: boolean, onExpand: () => void) => {
+const renderNodeContent = (node: Node<SomeObject>, isExpanded: boolean, onExpand: (isOpen: boolean) => void) => {
   const handleClick = () => {
-    onExpand();
+    onExpand(!isExpanded);
   };
 
   const className = cn(s.nodeContent, {
