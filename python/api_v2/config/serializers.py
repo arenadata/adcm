@@ -41,7 +41,7 @@ class ConfigLogSerializer(ConfigLogListSerializer):
         fields = ["id", "is_current", "creation_time", "config", "adcm_meta", "description"]
 
     def validate_config(self, value):
-        if isinstance(self.context["object_"], ADCM):
+        if isinstance(self.context["object_"], ADCM) and isinstance(value, dict):
             auth_policy = value.get("auth_policy")
             if not auth_policy:
                 return value

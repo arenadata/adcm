@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from audit.cases.common import (
     get_obj_name,
     get_or_create_audit_obj,
@@ -25,6 +24,7 @@ from audit.models import (
 )
 from cm.models import Cluster, ClusterBind, ClusterObject, Host, Prototype
 from django.db.models import Model
+from django.views import View
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
@@ -72,7 +72,7 @@ def make_export_name(cluster_name: str, service_name: str) -> str:
 # pylint: disable-next=too-many-locals,too-many-branches,too-many-statements
 def cluster_case(
     path: list[str, ...],
-    view: GenericAPIView,
+    view: GenericAPIView | View,
     response: Response,
     deleted_obj: Model,
     api_version: int = 1,

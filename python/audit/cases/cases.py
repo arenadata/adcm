@@ -84,8 +84,8 @@ def get_audit_operation_and_object(
             response=response,
             deleted_obj=deleted_obj,
         )
-    elif "adcm" in path:
-        audit_operation, audit_object = adcm_case(path=path)
+    elif "adcm" in path or "profile" in path:
+        audit_operation, audit_object = adcm_case(path=path, view=view, response=response, api_version=api_version)
     elif "task" in path or "job" in path:
         audit_operation, audit_object = task_job_case(path=path)
     else:
