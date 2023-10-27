@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from unittest.mock import patch
 
 from api_v2.tests.base import BaseAPITestCase
 from cm.models import Action, Host, HostComponent, HostProvider, ServiceComponent
@@ -320,17 +321,20 @@ class TestHostActions(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_host_cluster_run_success(self):
-        response = self.client.post(
-            path=reverse(
-                "v2:host-cluster-action-run",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "host_pk": self.host.pk,
-                    "pk": self.action.pk,
-                },
-            ),
-            data={"host_component_map": [], "config": {}, "adcm_meta": {}, "is_verbose": False},
-        )
+        with patch(
+            "api_v2.action.views.start_task", return_value=self.create_task_log(object_=self.host, action=self.action)
+        ):
+            response = self.client.post(
+                path=reverse(
+                    "v2:host-cluster-action-run",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "host_pk": self.host.pk,
+                        "pk": self.action.pk,
+                    },
+                ),
+                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+            )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
@@ -351,10 +355,13 @@ class TestHostActions(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_host_run_success(self):
-        response = self.client.post(
-            path=reverse("v2:host-action-run", kwargs={"host_pk": self.host.pk, "pk": self.action.pk}),
-            data={"host_component_map": [], "config": {}, "adcm_meta": {}, "is_verbose": False},
-        )
+        with patch(
+            "api_v2.action.views.start_task", return_value=self.create_task_log(object_=self.host, action=self.action)
+        ):
+            response = self.client.post(
+                path=reverse("v2:host-action-run", kwargs={"host_pk": self.host.pk, "pk": self.action.pk}),
+                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+            )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 

@@ -26,6 +26,7 @@ from cm.api import (
 from cm.bundle import prepare_bundle, process_file
 from cm.models import (
     ADCM,
+    Action,
     ADCMEntity,
     ADCMModel,
     Bundle,
@@ -37,8 +38,10 @@ from cm.models import (
     HostProvider,
     ObjectType,
     Prototype,
+    TaskLog,
 )
 from django.conf import settings
+from django.utils import timezone
 from init_db import init
 from rbac.models import User
 from rbac.services.user import create_user
@@ -167,3 +170,12 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
             }
 
         return create_user(**user_data)
+
+    def create_task_log(self, object_: ADCMEntity, action: Action) -> TaskLog:
+        return TaskLog.objects.create(
+            object_id=self.cluster_1.pk,
+            object_type=object_.content_type,
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+            action=action,
+        )
