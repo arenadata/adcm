@@ -1,5 +1,5 @@
 import { SingleSchemaDefinition } from '@models/adcm';
-import { nullStub } from '../../ConfigurationEditor.constants';
+import { nullStub } from '../../ConfigurationTree/ConfigurationTree.constants';
 
 export const getEnumOptions = (fieldSchema: SingleSchemaDefinition) => {
   if (fieldSchema.enum === undefined) {

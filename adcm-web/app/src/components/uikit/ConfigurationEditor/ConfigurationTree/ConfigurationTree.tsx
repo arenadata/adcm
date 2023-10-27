@@ -15,6 +15,7 @@ import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from 
 import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from './ConfigurationTree.types';
 import s from './ConfigurationTree.module.scss';
 import cn from 'classnames';
+import { rootNodeKey } from './ConfigurationTree.constants';
 
 export interface ConfigurationTreeProps {
   schema: ConfigurationSchema;
@@ -117,6 +118,7 @@ const ConfigurationTree = memo(
     return (
       <CollapseNode
         node={filteredTree}
+        isInitiallyExpanded={filteredTree.key === rootNodeKey}
         getNodeClassName={handleGetNodeClassName}
         renderNodeContent={handleRenderNodeContent}
       />

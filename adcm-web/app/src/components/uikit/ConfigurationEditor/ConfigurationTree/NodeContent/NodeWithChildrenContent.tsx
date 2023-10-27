@@ -7,7 +7,7 @@ import s from '../ConfigurationTree.module.scss';
 import cn from 'classnames';
 import SynchronizedAttribute from './SyncronizedAttribute/SynchronizedAttribute';
 import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
-import { nullStub } from '@uikit/ConfigurationEditor/ConfigurationEditor.constants';
+import { nullStub } from '../ConfigurationTree.constants';
 
 interface NodeWithChildrenContentProps {
   node: ConfigurationNode;

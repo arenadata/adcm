@@ -487,8 +487,12 @@ export const schema: ConfigurationSchema = {
       adcmMeta: {
         isAdvanced: false,
         isInvisible: false,
-        activation: null,
-        synchronization: null,
+        activation: {
+          isAllowChange: true,
+        },
+        synchronization: {
+          isAllowChange: true,
+        },
         isSecret: false,
         stringExtra: null,
       },

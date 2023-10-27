@@ -6,12 +6,18 @@ import cn from 'classnames';
 
 interface CollapseNodeProps<T> {
   node: Node<T>;
+  isInitiallyExpanded?: boolean;
   getNodeClassName: (node: Node<T>) => string;
   renderNodeContent: (node: Node<T>, isExpanded: boolean, onExpand: (isOpen: boolean) => void) => ReactNode;
 }
 
-const CollapseNode = <T,>({ node, getNodeClassName, renderNodeContent }: CollapseNodeProps<T>) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+const CollapseNode = <T,>({
+  node,
+  isInitiallyExpanded = false,
+  getNodeClassName,
+  renderNodeContent,
+}: CollapseNodeProps<T>) => {
+  const [isExpanded, setIsExpanded] = useState(isInitiallyExpanded);
   const hasChildren = Boolean(node.children?.length);
   const children = (node.children ?? []) as Node<T>[];
 
