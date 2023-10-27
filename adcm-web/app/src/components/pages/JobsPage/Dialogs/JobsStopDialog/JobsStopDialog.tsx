@@ -1,6 +1,6 @@
+import StopJobDialog from '@commonComponents/StopJobDialog/StopJobDialog';
 import { useDispatch, useStore } from '@hooks';
 import { closeStopDialog, stopJobWithUpdate } from '@store/adcm/jobs/jobsActionsSlice';
-import { Dialog } from '@uikit';
 import React from 'react';
 
 const JobsStopDialog: React.FC = () => {
@@ -34,15 +34,12 @@ const JobsStopDialog: React.FC = () => {
   };
 
   return (
-    <Dialog
+    <StopJobDialog
       isOpen={isOpenDialog}
-      onOpenChange={handleCloseConfirm}
       title={`Terminate the job "${name}"`}
       onAction={handleConfirmDialog}
-      actionButtonLabel="Stop"
-    >
-      Selected job will be terminated
-    </Dialog>
+      onOpenChange={handleCloseConfirm}
+    />
   );
 };
 
