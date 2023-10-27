@@ -16,12 +16,18 @@ export class AdcmClusterServicesApi {
     const queryParams = prepareQueryParams(filter, sortParams, paginationParams);
 
     const query = qs.stringify(queryParams);
-    const response = await httpClient.get<Batch<AdcmService>>(`/api/v2/clusters/${clusterId}/services?${query}`);
+    const response = await httpClient.get<Batch<AdcmService>>(`/api/v2/clusters/${clusterId}/services/?${query}`);
     return response.data;
   }
 
   public static async getClusterServicePrototypes(clusterId: number) {
     const response = await httpClient.get<AdcmServicePrototype[]>(`/api/v2/clusters/${clusterId}/service-prototypes/`);
+    return response.data;
+  }
+
+  // return AdcmServicePrototype[] for not added service to cluster
+  public static async getClusterServiceCandidates(clusterId: number) {
+    const response = await httpClient.get<AdcmServicePrototype[]>(`/api/v2/clusters/${clusterId}/service-candidates/`);
     return response.data;
   }
 

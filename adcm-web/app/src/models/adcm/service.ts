@@ -6,16 +6,16 @@ export enum AdcmServiceStatus {
 }
 
 export interface AdcmServiceDependOnServiceComponent {
-  prototypeId: number;
-  name: string;
-  displayName: string;
-}
-
-export interface AdcmServiceDependOnService {
   id: number;
   name: string;
   displayName: string;
-  componentPrototypes: AdcmServiceDependOnServiceComponent[];
+  version: string;
+}
+
+export interface AdcmServiceDependOnService {
+  servicePrototype: Omit<AdcmServicePrototype, 'dependOn' | 'isRequired'> & {
+    componentPrototypes: AdcmServiceDependOnServiceComponent[];
+  };
 }
 
 export interface AdcmService {
@@ -42,7 +42,10 @@ export interface AdcmServicePrototype {
   displayName: string;
   type: AdcmPrototypeType.Service;
   version: string;
-  licenseStatus: AdcmLicenseStatus;
+  license: {
+    status: AdcmLicenseStatus;
+    text: string;
+  };
   isRequired: boolean;
   dependOn: AdcmServiceDependOnService[] | null;
 }

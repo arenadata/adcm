@@ -17,7 +17,8 @@
     }
 
     &_compactMode {
-      padding: 0 0 12px 0;
+      padding: 0;
+      margin-bottom: 12px;
 
       &:not(:last-child) {
         border-bottom: none;

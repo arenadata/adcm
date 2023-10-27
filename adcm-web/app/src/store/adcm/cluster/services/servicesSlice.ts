@@ -4,7 +4,7 @@ import { AdcmService, AdcmPrototype, AdcmLicenseStatus } from '@models/adcm';
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { updateIfExists } from '@utils/objectUtils';
 import { AdcmPrototypesApi, RequestError } from '@api';
@@ -53,54 +53,11 @@ const getServices = createAsyncThunk('adcm/services/getServices', async (arg: Lo
   });
 });
 
-const getServicesLicenses = createAsyncThunk(
-  'adcm/services/getServicesLicenses',
-  async (serviceIds: number[], thunkAPI) => {
-    thunkAPI.dispatch(setIsLoading(true));
-    const startDate = new Date();
-
-    const {
-      adcm: {
-        servicesActions: {
-          relatedData: { servicePrototypes },
-        },
-      },
-    } = thunkAPI.getState();
-
-    thunkAPI.dispatch(cleanupServiceLicense());
-
-    servicePrototypes
-      .filter((service) => serviceIds.includes(service.id) && service.licenseStatus === AdcmLicenseStatus.Unaccepted)
-      .map((service) => {
-        thunkAPI.dispatch(getServiceLicense(service.id));
-      });
-    executeWithMinDelay({
-      startDate,
-      delay: defaultSpinnerDelay,
-      callback: () => {
-        thunkAPI.dispatch(setIsLoading(false));
-      },
-    });
-  },
-);
-
-const getServiceLicense = createAsyncThunk('adcm/services/getServiceLicense', async (serviceId: number, thunkAPI) => {
-  try {
-    const serviceLicense = await AdcmPrototypesApi.getPrototype(serviceId);
-
-    return serviceLicense;
-  } catch (error) {
-    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-    return thunkAPI.rejectWithValue([]);
-  }
-});
-
 const acceptServiceLicense = createAsyncThunk(
   'adcm/servicesActions/acceptServiceLicense',
   async (serviceId: number, thunkAPI) => {
     try {
       await AdcmPrototypesApi.postAcceptLicense(serviceId);
-      thunkAPI.dispatch(showInfo({ message: 'License was accepted' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue([]);
@@ -144,16 +101,6 @@ const servicesSlice = createSlice({
     builder.addCase(loadClusterServiceFromBackend.rejected, (state) => {
       state.services = [];
     });
-    builder.addCase(getServiceLicense.fulfilled, (state, action) => {
-      const prototypeId = action.meta.arg;
-      const service = state.serviceLicense.find((service) => service.id === prototypeId);
-      if (!service) {
-        state.serviceLicense = [...state.serviceLicense, action.payload];
-      }
-    });
-    builder.addCase(getServiceLicense.rejected, (state) => {
-      state.serviceLicense = [];
-    });
     builder.addCase(acceptServiceLicense.fulfilled, (state, action) => {
       const serviceId = action.meta.arg;
       const service = state.serviceLicense.find((service) => service.id === serviceId);
@@ -195,6 +142,6 @@ const servicesSlice = createSlice({
 });
 
 export const { setIsLoading, cleanupServices, cleanupServiceLicense } = servicesSlice.actions;
-export { getServices, refreshServices, getServicesLicenses, getServiceLicense, acceptServiceLicense };
+export { getServices, refreshServices, acceptServiceLicense };
 
 export default servicesSlice.reducer;
