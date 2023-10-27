@@ -5,10 +5,10 @@ import iconButtonStyles from '@uikit/IconButton/IconButton.module.scss';
 import cn from 'classnames';
 import { Popover } from '@uikit';
 import { useDebounce, useDispatch, useRequestTimer, useStore } from '@hooks';
-import JobInfoRow from '@layouts/partials/HeaderNotifications/JobInfoRow/JobInfoRow';
+import JobInfo from '@layouts/partials/HeaderNotifications/JobInfo/JobInfo';
 import { AdcmJobStatus } from '@models/adcm';
 import { getJobs, refreshJobs } from '@store/adcm/bell/bellSlice';
-import { SpinnerPanel } from '@uikit/Spinner/Spinner';
+import Spinner from '@uikit/Spinner/Spinner';
 import { defaultDebounceDelay } from '@constants';
 
 const HeaderNotifications: React.FC = () => {
@@ -58,10 +58,12 @@ const HeaderNotifications: React.FC = () => {
       </button>
       <Popover isOpen={isOpen} onOpenChange={setIsOpen} triggerRef={localRef}>
         <div className={s.bellPopoverPanel}>
-          <div className={s.bellPopoverPanel_content}>
-            {isLoading && <SpinnerPanel />}
-            {!isLoading && jobs.map((job) => <JobInfoRow key={job.id} job={job} />)}
-          </div>
+          {isLoading && (
+            <div className={s.bellPopoverPanel__spinner}>
+              <Spinner />
+            </div>
+          )}
+          {!isLoading && <JobInfo jobs={jobs} />}
         </div>
       </Popover>
     </>

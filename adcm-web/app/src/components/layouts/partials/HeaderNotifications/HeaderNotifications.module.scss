@@ -2,13 +2,11 @@
   body.theme-dark {
     --bell-popover-panel-background-color: #212121;
     --bell-popover-panel-border-color: var(--color-xdark);
-    --bell-popover-panel-content-background-color: var(--color-xdark-new-50);
   }
 
   body.theme-light {
     --bell-popover-panel-background-color: var(--color-popup-light);
     --bell-popover-panel-border-color: var(--color-stroke-light);
-    --bell-popover-panel-content-background-color: var(--color-xwhite-50);
   }
 }
 
@@ -60,16 +58,15 @@
 }
 
 .bellPopoverPanel {
-  width: 314px;
-  max-height: 244px;
+  width: 315px;
+  min-height: 25px;
   border-radius: 6px;
   border: 1px solid var(--bell-popover-panel-border-color);
   background-color: var(--bell-popover-panel-background-color);
+  padding: 16px;
+  position: relative;
 
-  &_content {
-    background-color: var(--bell-popover-panel-content-background-color);
-    border-radius: 8px;
-    overflow: hidden;
-    margin: 16px;
+  &__spinner {
+    text-align: center;
   }
 }
