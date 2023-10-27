@@ -440,12 +440,12 @@ class TestClusterGroupConfig(BaseAPITestCase):
                 "variant_not_strict": "value1",
             },
             "adcmMeta": {
-                "/activatable_group": {"isActive": True, "isSynchronized": False},
-                "/boolean": {"isSynchronized": False},
-                "/group/float": {"isSynchronized": False},
-                "/variant_not_strict": {"isSynchronized": False},
-                "/list": {"isSynchronized": False},
-                "/activatable_group/integer": {"isSynchronized": False},
+                "/activatable_group": {"isActive": True, "isSynchronized": True},
+                "/boolean": {"isSynchronized": True},
+                "/group/float": {"isSynchronized": True},
+                "/variant_not_strict": {"isSynchronized": True},
+                "/list": {"isSynchronized": True},
+                "/activatable_group/integer": {"isSynchronized": True},
             },
             "description": "init",
         }
@@ -461,12 +461,12 @@ class TestClusterGroupConfig(BaseAPITestCase):
                 "variant_not_strict": "value5",
             },
             "adcmMeta": {
-                "/activatable_group": {"isActive": True, "isSynchronized": True},
-                "/boolean": {"isSynchronized": True},
-                "/group/float": {"isSynchronized": True},
-                "/variant_not_strict": {"isSynchronized": True},
-                "/list": {"isSynchronized": True},
-                "/activatable_group/integer": {"isSynchronized": True},
+                "/activatable_group": {"isActive": True, "isSynchronized": False},
+                "/boolean": {"isSynchronized": False},
+                "/group/float": {"isSynchronized": False},
+                "/variant_not_strict": {"isSynchronized": False},
+                "/list": {"isSynchronized": False},
+                "/activatable_group/integer": {"isSynchronized": False},
             },
             "description": "new config",
         }
@@ -1017,10 +1017,10 @@ class TestServiceGroupConfig(BaseAPITestCase):
                 "string": "string",
             },
             "adcmMeta": {
-                "/activatable_group": {"isActive": True, "isSynchronized": False},
-                "/activatable_group/text": {"isSynchronized": False},
-                "/group/password": {"isSynchronized": False},
-                "/string": {"isSynchronized": False},
+                "/activatable_group": {"isActive": True, "isSynchronized": True},
+                "/activatable_group/text": {"isSynchronized": True},
+                "/group/password": {"isSynchronized": True},
+                "/string": {"isSynchronized": True},
             },
             "description": "init",
         }
@@ -1036,10 +1036,10 @@ class TestServiceGroupConfig(BaseAPITestCase):
                 "string": "new string",
             },
             "adcmMeta": {
-                "/activatable_group": {"isActive": True, "isSynchronized": True},
-                "/activatable_group/text": {"isSynchronized": True},
-                "/group/password": {"isSynchronized": True},
-                "/string": {"isSynchronized": True},
+                "/activatable_group": {"isActive": True, "isSynchronized": False},
+                "/activatable_group/text": {"isSynchronized": False},
+                "/group/password": {"isSynchronized": False},
+                "/string": {"isSynchronized": False},
             },
             "description": "new config",
         }
@@ -1567,10 +1567,10 @@ class TestComponentGroupConfig(BaseAPITestCase):
                 "secrettext": "secrettext",
             },
             "adcmMeta": {
-                "/activatable_group": {"isActive": True, "isSynchronized": False},
-                "/activatable_group/secretfile": {"isSynchronized": False},
-                "/group/file": {"isSynchronized": False},
-                "/secrettext": {"isSynchronized": False},
+                "/activatable_group": {"isActive": True, "isSynchronized": True},
+                "/activatable_group/secretfile": {"isSynchronized": True},
+                "/group/file": {"isSynchronized": True},
+                "/secrettext": {"isSynchronized": True},
             },
             "description": "init",
         }
@@ -1589,10 +1589,10 @@ class TestComponentGroupConfig(BaseAPITestCase):
                 "secrettext": "new secrettext",
             },
             "adcmMeta": {
-                "/activatable_group": {"isActive": True, "isSynchronized": True},
-                "/activatable_group/secretfile": {"isSynchronized": True},
-                "/group/file": {"isSynchronized": True},
-                "/secrettext": {"isSynchronized": True},
+                "/activatable_group": {"isActive": True, "isSynchronized": False},
+                "/activatable_group/secretfile": {"isSynchronized": False},
+                "/group/file": {"isSynchronized": False},
+                "/secrettext": {"isSynchronized": False},
             },
             "description": "new config",
         }
@@ -2162,10 +2162,10 @@ class TestProviderGroupConfig(BaseAPITestCase):
 
         expected_data = {
             "adcmMeta": {
-                "/activatable_group": {"isActive": True, "isSynchronized": False},
-                "/json": {"isSynchronized": False},
-                "/group/map": {"isSynchronized": False},
-                "/activatable_group/secretmap": {"isSynchronized": False},
+                "/activatable_group": {"isActive": True, "isSynchronized": True},
+                "/json": {"isSynchronized": True},
+                "/group/map": {"isSynchronized": True},
+                "/activatable_group/secretmap": {"isSynchronized": True},
             },
             "config": {
                 "group": {"map": {"integer_key": "10", "string_key": "string"}},
@@ -2229,10 +2229,10 @@ class TestProviderGroupConfig(BaseAPITestCase):
                 "json": '{"key": "value", "new key": "new value"}',
             },
             "adcmMeta": {
-                "/activatable_group": {"isActive": True, "isSynchronized": True},
-                "/json": {"isSynchronized": True},
-                "/group/map": {"isSynchronized": True},
-                "/activatable_group/secretmap": {"isSynchronized": True},
+                "/activatable_group": {"isActive": True, "isSynchronized": False},
+                "/json": {"isSynchronized": False},
+                "/group/map": {"isSynchronized": False},
+                "/activatable_group/secretmap": {"isSynchronized": False},
             },
             "description": "new config",
         }
@@ -3733,10 +3733,10 @@ class TestAttrTransformation(BaseAPITestCase):
         }
         adcm_meta = convert_attr_to_adcm_meta(attr=attr)
         expected_adcm_meta = {
-            "/activatable_group": {"isActive": True, "isSynchronized": True},
-            "/activatable_group/string": {"isSynchronized": True},
-            "/group/string": {"isSynchronized": False},
-            "/string": {"isSynchronized": True},
+            "/activatable_group": {"isActive": True, "isSynchronized": False},
+            "/activatable_group/string": {"isSynchronized": False},
+            "/group/string": {"isSynchronized": True},
+            "/string": {"isSynchronized": False},
         }
 
         self.assertDictEqual(adcm_meta, expected_adcm_meta)
