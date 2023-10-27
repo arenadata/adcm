@@ -412,11 +412,12 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
                 kwargs={"cluster_pk": cluster.pk, "pk": upgrade.pk},
             ),
         )
+
         self.assertEqual(response.status_code, HTTP_200_OK)
         schema = response.json()["configuration"]["configSchema"]
-        self.assertEqual(schema["properties"]["pick_host"]["enum"], ["first_host", "second_host"])
+        self.assertEqual(schema["properties"]["pick_host"]["enum"], ["first_host", "second_host", None])
         self.assertEqual(
-            schema["properties"]["grouped"]["properties"]["pick_host"]["enum"], ["first_host", "second_host"]
+            schema["properties"]["grouped"]["properties"]["pick_host"]["enum"], ["first_host", "second_host", None]
         )
 
 
