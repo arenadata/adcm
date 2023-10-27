@@ -15,7 +15,7 @@ interface NodeWithChildrenContentProps {
   isExpanded: boolean;
   onClear: ChangeConfigurationNodeHandler;
   onDelete: ChangeConfigurationNodeHandler;
-  onExpand: () => void;
+  onExpand: (isOpen: boolean) => void;
   onFieldAttributeChange: ChangeFieldAttributesHandler;
 }
 
@@ -40,8 +40,10 @@ const NodeWithChildrenContent = ({
       if (fieldAttributes) {
         onFieldAttributeChange(node.key, { ...fieldAttributes, isActive });
       }
+
+      onExpand(isActive);
     },
-    [fieldAttributes, node.key, onFieldAttributeChange],
+    [fieldAttributes, node.key, onFieldAttributeChange, onExpand],
   );
 
   const handleIsSynchronizedChange = useCallback(
@@ -61,12 +63,17 @@ const NodeWithChildrenContent = ({
     onDelete(node, ref);
   };
 
+  const handleExpandClick = () => {
+    onExpand(!isExpanded);
+  };
+
   const className = cn(s.nodeContent, {
     'is-open': isExpanded,
     'is-failed': error !== undefined,
   });
 
   const hasChildren = Boolean(node.children?.length);
+  const isExpandable = fieldAttributes === undefined ? hasChildren : hasChildren && fieldAttributes.isActive;
 
   return (
     <div className={className} ref={ref}>
@@ -98,12 +105,12 @@ const NodeWithChildrenContent = ({
         </span>
       )}
 
-      {hasChildren && (
+      {isExpandable && (
         <IconButton
           icon="chevron"
           size={12}
           className={s.nodeContent__arrow}
-          onClick={onExpand}
+          onClick={handleExpandClick}
           data-test="expand-btn"
         />
       )}

@@ -7,7 +7,7 @@ import cn from 'classnames';
 interface CollapseNodeProps<T> {
   node: Node<T>;
   getNodeClassName: (node: Node<T>) => string;
-  renderNodeContent: (node: Node<T>, isExpanded: boolean, onExpand: () => void) => ReactNode;
+  renderNodeContent: (node: Node<T>, isExpanded: boolean, onExpand: (isOpen: boolean) => void) => ReactNode;
 }
 
 const CollapseNode = <T,>({ node, getNodeClassName, renderNodeContent }: CollapseNodeProps<T>) => {
@@ -15,9 +15,9 @@ const CollapseNode = <T,>({ node, getNodeClassName, renderNodeContent }: Collaps
   const hasChildren = Boolean(node.children?.length);
   const children = (node.children ?? []) as Node<T>[];
 
-  const toggleCollapseNode = () => {
+  const toggleCollapseNode = (isOpen: boolean) => {
     if (hasChildren) {
-      setIsExpanded((prev) => !prev);
+      setIsExpanded(isOpen);
     }
   };
 
