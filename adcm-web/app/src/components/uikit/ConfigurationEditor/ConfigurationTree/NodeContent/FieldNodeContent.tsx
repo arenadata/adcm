@@ -1,7 +1,7 @@
 import { useCallback, useRef, useMemo } from 'react';
 import { IconButton, Tooltip } from '@uikit';
 import { ConfigurationField, ConfigurationNode } from '../../ConfigurationEditor.types';
-import { emptyStringStub, nullStub, secretStub } from '../../ConfigurationEditor.constants';
+import { emptyStringStub, nullStub, secretStub } from '../ConfigurationTree.constants';
 import s from '../ConfigurationTree.module.scss';
 import cn from 'classnames';
 import ActivationAttribute from './ActivationAttribute/ActivationAttribute';

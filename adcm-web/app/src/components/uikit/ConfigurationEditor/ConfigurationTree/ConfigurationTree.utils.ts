@@ -16,6 +16,7 @@ import {
   ConfigurationArray,
 } from '../ConfigurationEditor.types';
 import { validate as validateJsonSchema } from '@utils/jsonSchemaUtils';
+import { primitiveFieldTypes, rootNodeKey, rootNodeTitle } from './ConfigurationTree.constants';
 
 export const validate = (schema: SchemaDefinition, configuration: JSONObject, attributes: ConfigurationAttributes) => {
   const { errorsPaths } = validateJsonSchema(schema, configuration);
@@ -110,9 +111,9 @@ const buildRootNode = (
 ): ConfigurationNode => {
   const { fieldSchema } = determineFieldSchema(schema);
   const rootNode: ConfigurationNode = {
-    key: 'root-node',
+    key: rootNodeKey,
     data: {
-      title: getTitle('Configuration', fieldSchema),
+      title: getTitle(rootNodeTitle, fieldSchema),
       type: 'object',
       path: [],
       parentNode: {} as ConfigurationNode,
@@ -138,8 +139,6 @@ const buildRootNode = (
   return rootNode;
 };
 
-const fieldTypes = new Set(['string', 'integer', 'number', 'boolean']);
-
 const buildNode = (
   fieldName: string,
   path: ConfigurationNodePath,
@@ -153,7 +152,7 @@ const buildNode = (
     return buildObjectNode(fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
   } else if (singleFieldSchema.type === 'array') {
     return buildArrayNode(fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
-  } else if (fieldTypes.has(singleFieldSchema.type as string)) {
+  } else if (primitiveFieldTypes.has(singleFieldSchema.type as string)) {
     return buildFieldNode(fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
   } else if (singleFieldSchema.type === undefined && singleFieldSchema.enum) {
     return buildFieldNode(fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
