@@ -255,6 +255,25 @@ class TestCluster(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             ],
         )
 
+    def test_service_candidates_success(self):
+        self.add_service_to_cluster(service_name="service_3_manual_add", cluster=self.cluster_1)
+
+        response = self.client.get(
+            path=reverse(viewname="v2:cluster-service-candidates", kwargs={"pk": self.cluster_1.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()), 4)
+        self.assertListEqual(
+            [prototype["displayName"] for prototype in response.json()],
+            [
+                "service_1",
+                "service_2",
+                "service_4_save_config_without_required_field",
+                "service_5_variant_type_without_values",
+            ],
+        )
+
     def test_service_create_success(self):
         service_prototype = Prototype.objects.filter(type="service").first()
         response = self.client.post(
