@@ -3,6 +3,7 @@ import { RequestError, AuthApi, AdcmProfileApi } from '@api';
 import { createAsyncThunk } from './redux';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { UserRBAC } from '@models/RBAC';
+import { showError } from './notificationsSlice';
 
 type LoginActionPayload = {
   username: string;
@@ -30,6 +31,7 @@ const login = createAsyncThunk('auth/login', async (arg: LoginActionPayload, thu
     await AuthApi.login(arg.username, arg.password);
     return AdcmProfileApi.getProfile();
   } catch (error) {
+    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
     return thunkAPI.rejectWithValue(error);
   }
 });
