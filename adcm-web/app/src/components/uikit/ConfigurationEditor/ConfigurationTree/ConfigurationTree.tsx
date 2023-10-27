@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useState } from 'react';
 import CollapseNode from '@uikit/CollapseTree2/CollapseNode';
 import FieldNodeContent from './NodeContent/FieldNodeContent';
 import AddItemNodeContent from './NodeContent/AddItemNodeContent';
@@ -31,13 +31,14 @@ export interface ConfigurationTreeProps {
   onChangeIsValid?: (isValid: boolean) => void;
 }
 
-const getNodeClassName = (node: ConfigurationNode, hasError: boolean) => {
+const getNodeClassName = (node: ConfigurationNode, hasError: boolean, isSelected: boolean) => {
   const isReadonly = (node.data as ConfigurationArray | ConfigurationObject | ConfigurationField).isReadonly;
 
   return cn(s.collapseNode, {
     [s.collapseNode_advanced]: !hasError && node.data.fieldSchema.adcmMeta.isAdvanced,
     [s.collapseNode_failed]: hasError,
     [s.collapseNode_disabled]: !hasError && isReadonly,
+    [s.isSelected]: isSelected,
   });
 };
 
@@ -57,6 +58,7 @@ const ConfigurationTree = memo(
     onChangeIsValid,
   }: ConfigurationTreeProps) => {
     const tree: ConfigurationNode = buildTreeNodes(schema, configuration, attributes);
+    const [selectedNode, setSelectedNode] = useState<ConfigurationNode | null>(null);
     const filteredTree = filterTreeNodes(tree, filter);
     const { isValid, errorsPaths } = validate(schema, configuration, attributes);
     !isValid && console.error(errorsPaths);
@@ -65,9 +67,15 @@ const ConfigurationTree = memo(
       onChangeIsValid?.(isValid);
     }, [isValid, onChangeIsValid]);
 
+    const handleClick = (node: ConfigurationNode, ref: React.RefObject<HTMLElement>) => {
+      setSelectedNode(node);
+      onEditField(node, ref);
+    };
+
     const handleGetNodeClassName = (node: ConfigurationNode) => {
       const hasError = errorsPaths[node.key] !== undefined;
-      return getNodeClassName(node, hasError);
+      const isSelected = node.key === selectedNode?.key;
+      return getNodeClassName(node, hasError, isSelected);
     };
 
     const handleRenderNodeContent = (
@@ -82,7 +90,7 @@ const ConfigurationTree = memo(
             <FieldNodeContent
               node={node}
               error={error}
-              onClick={onEditField}
+              onClick={handleClick}
               onClear={onClear}
               onDelete={onDelete}
               onFieldAttributeChange={onFieldAttributesChange}

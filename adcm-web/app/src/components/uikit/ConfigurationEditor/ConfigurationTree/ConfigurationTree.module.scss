@@ -10,6 +10,9 @@
     --node-content-background-default-hover: var(--color-xdark-plate20);
     --node-content-label-color-default-hover: var(--color-xwhite);
 
+    // selected
+    --node-content-selected-border-default: var(--color-xgreen-saturated);
+    --node-content-selected-border-error: var(--color-xred);
 
     // failed
     --node-content-border-error: var(--color-dark-red);
@@ -36,6 +39,9 @@
     --node-content-background-default-hover: #EEF2F5;
     --node-content-label-color-default-hover: var(--color-xblack);
 
+    // selected
+    --node-content-selected-border-default: var(--color-xgreen);
+    --node-content-selected-border-error: var(--color-xred-light);
 
     // failed
     --node-content-border-error: var(--color-xred);
@@ -108,6 +114,11 @@
   --node-content-background-hover: var(--node-content-background-default-hover);
   --node-content-label-color-hover: var(--node-content-label-color-default-hover);
 
+  &.isSelected {
+    & > div > div {
+      --node-content-border: var(--node-content-selected-border-default);
+    }
+  }
 
   // borders
   --collapse-node-parent-border-color: var(--node-content-border);
@@ -120,6 +131,14 @@
 
     & > div > div > .collapseNode {
       --collapse-node-parent-border-color: var(--node-content-border-error);
+    }
+  }
+
+  &_failed {
+    &.isSelected {
+      & > div > div {
+        --node-content-border: var(--node-content-selected-border-error);
+      }
     }
   }
 
