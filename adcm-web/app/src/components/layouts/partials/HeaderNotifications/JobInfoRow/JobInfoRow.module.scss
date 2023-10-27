@@ -20,6 +20,12 @@
     text-align: end;
   }
 
+  &__link {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
   &:not(:last-child) {
     border-bottom: 1px solid var(--job-border-bottom-color);
   }
