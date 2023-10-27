@@ -1,204 +1,99 @@
-import { useDispatch, useStore } from '@hooks';
-import { useParams } from 'react-router-dom';
+import { useDispatch, useForm, useStore } from '@hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   addService,
-  cleanupServicesActions,
-  closeAddDialog,
-  openServiceAddDialog,
+  closeAddServicesDialog,
+  getServiceCandidates,
 } from '@store/adcm/cluster/services/servicesActionsSlice';
-import { AdcmLicenseStatus, AdcmPrototype, AdcmServiceDependOnService } from '@models/adcm';
-import { acceptServiceLicense as acceptLicense, getServicesLicenses } from '@store/adcm/cluster/services/servicesSlice';
-import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
+import { AddClusterServicesFormData, AddServiceStepKey } from './AddClusterServiceDialog.types';
+import { AdcmLicenseStatus } from '@models/adcm';
 
-export interface AddClusterServicesFormData {
-  clusterId: number | null;
-  serviceIds: number[];
-}
-
-const initialFormData: AddClusterServicesFormData = {
+const getInitialFormData = (): AddClusterServicesFormData => ({
   clusterId: null,
-  serviceIds: [],
-};
+  selectedServicesIds: [],
+  serviceCandidatesAcceptedLicense: new Set(),
+});
 
-export const useAddClusterServiceForm = () => {
+export const useAddClusterServiceDialog = () => {
   const dispatch = useDispatch();
 
-  const { clusterId: clusterIdFromUrl } = useParams();
-  const clusterId = Number(clusterIdFromUrl);
-  const isOpen = useStore(({ adcm }) => adcm.servicesActions.isAddServiceDialogOpen);
-  const servicesInTable = useStore(({ adcm }) => adcm.services.services);
-  const servicePrototypes = useStore(({ adcm }) => adcm.servicesActions.relatedData.servicePrototypes);
-  const serviceLicenses = useStore(({ adcm }) => adcm.services.serviceLicense);
-  const servicesInTableIds = useMemo(() => servicesInTable.map((service) => service.prototype.id), [servicesInTable]);
-  const nonAppendedServices = useMemo(
-    () => servicePrototypes.filter(({ id }) => !servicesInTableIds.includes(id)),
-    [servicePrototypes, servicesInTableIds],
-  );
+  const { formData, handleChangeFormData, setFormData } = useForm<AddClusterServicesFormData>(getInitialFormData());
+  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
+  const isOpen = useStore(({ adcm }) => adcm.servicesActions.addServicesDialog.isOpen);
+  const serviceCandidates = useStore(({ adcm }) => adcm.servicesActions.relatedData.serviceCandidates);
 
-  const [formData, setFormData] = useState<AddClusterServicesFormData>(initialFormData);
-  const [processedServiceData, setProcessedServiceData] = useState<AddClusterServicesFormData>(initialFormData);
-  const [isLicenseAcceptanceDialogOpen, setLicenseAcceptanceDialogOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState(AddServiceStepKey.SelectServices);
 
   useEffect(() => {
-    setFormData(initialFormData);
-  }, [isOpen]);
-
-  const nonAppendedServicesWithDeps = useMemo(() => {
-    const { serviceIds } = formData;
-
-    return nonAppendedServices.filter(
-      (service) => serviceIds.includes(service.id) && service.dependOn && service.dependOn.length > 0,
-    );
-  }, [formData, nonAppendedServices]);
-
-  const servicePrototypesOptions = useMemo(() => {
-    return nonAppendedServices.map(({ displayName, id }) => ({ value: id, label: displayName }));
-  }, [nonAppendedServices]);
-
-  const isServicesWithLicenseSelected = useMemo(() => {
-    const { serviceIds } = formData;
-
-    return !!nonAppendedServices.find(
-      (service) => serviceIds.includes(service.id) && service.licenseStatus === AdcmLicenseStatus.Unaccepted,
-    );
-  }, [formData, nonAppendedServices]);
-
-  const servicesWithDependencies = useMemo(() => {
-    const { serviceIds } = formData;
-
-    return nonAppendedServicesWithDeps
-      .flatMap((service) =>
-        (service.dependOn as AdcmServiceDependOnService[]).map((dependOnService) => ({
-          ...dependOnService,
-          dependableService: service.name,
-        })),
-      )
-      .filter((service) => !servicesInTableIds.includes(service.id) && !serviceIds.includes(service.id));
-  }, [formData, nonAppendedServicesWithDeps, servicesInTableIds]);
-
-  const servicesWithDependenciesList = useMemo(() => {
-    return nonAppendedServicesWithDeps
-      .map((service) => ({
-        id: service.id,
-        displayName: service.displayName,
-        dependencies: servicesWithDependencies.filter(({ dependableService }) => service.name === dependableService),
-      }))
-      .filter((service) => service.dependencies.length > 0);
-  }, [servicesWithDependencies, nonAppendedServicesWithDeps]);
-
-  const isServicesAndDependenciesChecked = useMemo(() => {
-    const { serviceIds } = formData;
-
-    if (servicesWithDependencies.length > 0 && serviceIds.length > 0) {
-      return (
-        [...new Set([...servicesWithDependencies.map((service) => service?.id), ...serviceIds])].sort().join() ===
-        serviceIds.join()
-      );
+    if (isOpen && cluster) {
+      dispatch(getServiceCandidates(cluster.id));
     }
+  }, [isOpen, cluster, dispatch]);
 
-    return serviceIds.length > 0;
-  }, [formData, servicesWithDependencies]);
+  const unacceptedSelectedServices = useMemo(() => {
+    return serviceCandidates.filter(
+      ({ id, license }) => license.status === AdcmLicenseStatus.Unaccepted && formData.selectedServicesIds.includes(id),
+    );
+  }, [formData.selectedServicesIds, serviceCandidates]);
 
-  const isValid = useMemo(() => {
-    const { serviceIds } = formData;
-    return serviceIds.length > 0 && isServicesAndDependenciesChecked;
-  }, [formData, isServicesAndDependenciesChecked]);
+  const handleClose = useCallback(() => {
+    setCurrentStep(AddServiceStepKey.SelectServices);
+    setFormData(getInitialFormData());
+    dispatch(closeAddServicesDialog());
+  }, [setFormData, setCurrentStep, dispatch]);
 
-  const resetForm = useCallback(() => {
-    setFormData(initialFormData);
-  }, []);
+  const switchToLicenseStep = () => {
+    setCurrentStep(AddServiceStepKey.ServicesLicenses);
+  };
 
-  const openLicenseAcceptanceDialog = useCallback(() => {
-    setLicenseAcceptanceDialogOpen(true);
-    setProcessedServiceData(formData);
-    dispatch(cleanupServicesActions());
-  }, [dispatch, formData]);
-
-  const submit = useCallback(() => {
-    const { serviceIds } = isLicenseAcceptanceDialogOpen ? processedServiceData : formData;
-
-    if (serviceIds.length > 0) {
+  const handleSubmit = () => {
+    if (cluster) {
       dispatch(
         addService({
-          clusterId: clusterId ?? undefined,
-          serviceIds,
+          clusterId: cluster.id,
+          servicesIds: formData.selectedServicesIds,
         }),
+      );
+      handleClose();
+    }
+  };
+
+  const isValid = useMemo(() => {
+    // when user not select services disabled submit
+    if (formData.selectedServicesIds.length === 0) return false;
+
+    if (currentStep === AddServiceStepKey.SelectServices) {
+      return (
+        serviceCandidates
+          // search only selected services
+          .filter(({ id }) => formData.selectedServicesIds.includes(id))
+          // check that for every selected services all their dependencies services selected too
+          .every(({ dependOn }) => {
+            return (
+              dependOn?.every(({ servicePrototype }) => formData.selectedServicesIds.includes(servicePrototype.id)) ??
+              true
+            );
+          })
       );
     }
 
-    if (isLicenseAcceptanceDialogOpen) {
-      setLicenseAcceptanceDialogOpen(false);
-    } else {
-      dispatch(closeAddDialog());
+    if (currentStep === AddServiceStepKey.ServicesLicenses) {
+      // all unacceptedServices already accepted
+      return unacceptedSelectedServices.every(({ id }) => formData.serviceCandidatesAcceptedLicense.has(id));
     }
-  }, [isLicenseAcceptanceDialogOpen, processedServiceData, formData, dispatch, clusterId]);
 
-  const getLicenses = (serviceIds: number[]) => {
-    if (serviceIds.length > 0) {
-      dispatch(getServicesLicenses(serviceIds));
-    }
-  };
-
-  const acceptServiceLicense = (serviceId: number) => {
-    dispatch(acceptLicense(serviceId));
-  };
-
-  const handleClose = () => {
-    dispatch(cleanupServicesActions());
-  };
-
-  const handleLicenseAcceptanceDialogClose = () => {
-    setLicenseAcceptanceDialogOpen(false);
-    dispatch(cleanupServicesActions());
-    dispatch(closeAddDialog());
-  };
-
-  const handleLicenseAcceptanceDialogBack = () => {
-    setLicenseAcceptanceDialogOpen(false);
-    dispatch(openServiceAddDialog(clusterId));
-  };
-
-  const handleChangeFormData = (changes: Partial<AddClusterServicesFormData>) => {
-    setFormData({
-      ...formData,
-      ...changes,
-    });
-  };
-
-  const isAllLicensesAccepted = (licenses: Omit<AdcmPrototype, 'type' | 'description' | 'bundleId'>[] | []) => {
-    return licenses?.every((step) => step.license.status === AdcmLicenseStatus.Accepted);
-  };
-
-  const dialogControls = (
-    <CustomDialogControls
-      actionButtonLabel="Add"
-      cancelButtonLabel={'Back'}
-      isActionDisabled={!isAllLicensesAccepted(serviceLicenses)}
-      onCancel={handleLicenseAcceptanceDialogBack}
-      onAction={submit}
-    />
-  );
+    return true;
+  }, [currentStep, formData, serviceCandidates, unacceptedSelectedServices]);
 
   return {
     isOpen,
-    isLicenseAcceptanceDialogOpen,
-    isValid,
-    formData,
-    resetForm,
-    submit,
-    getLicenses,
-    dialogControls,
+    currentStep,
+    onSubmit: handleSubmit,
     onClose: handleClose,
-    onCloseLicenseAcceptanceDialog: handleLicenseAcceptanceDialogClose,
-    onOpenLicenseAcceptanceDialog: openLicenseAcceptanceDialog,
-    onChangeFormData: handleChangeFormData,
-    onAcceptServiceLicense: acceptServiceLicense,
-    relatedData: {
-      servicesWithDependenciesList,
-      isServicesWithLicenseSelected,
-      servicePrototypesOptions,
-      serviceLicenses,
-    },
+    formData,
+    handleChangeFormData,
+    isValid,
+    switchToLicenseStep,
+    unacceptedSelectedServices,
   };
 };

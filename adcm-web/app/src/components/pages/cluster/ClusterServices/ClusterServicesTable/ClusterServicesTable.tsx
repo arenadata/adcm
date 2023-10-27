@@ -21,6 +21,7 @@ const ClusterServicesTable = () => {
   const isLoading = useStore((s) => s.adcm.services.isLoading);
   const sortParams = useStore((s) => s.adcm.servicesTable.sortParams);
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
+  const isAddingServices = useStore(({ adcm }) => adcm.servicesActions.isAddingServices);
 
   const getHandleDeleteClick = (serviceId: number) => () => {
     dispatch(openDeleteDialog(serviceId));
@@ -38,7 +39,7 @@ const ClusterServicesTable = () => {
 
   return (
     <Table
-      isLoading={isLoading}
+      isLoading={isLoading || isAddingServices}
       columns={columns}
       sortParams={sortParams}
       onSorting={handleSorting}

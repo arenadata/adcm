@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { getServices, setIsLoading } from '@store/adcm/cluster/services/servicesSlice';
+import { getServices } from '@store/adcm/cluster/services/servicesSlice';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { RequestError } from '@api';
@@ -8,19 +8,16 @@ import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
 import { AdcmMaintenanceMode, AdcmService, AdcmServicePrototype } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
+import { clearSolvedDependencies } from '@utils/dependsOnUtils';
 
 interface AddClusterServicePayload {
   clusterId: number;
-  serviceIds: number[];
+  servicesIds: number[];
 }
 
 interface DeleteClusterServicePayload {
   clusterId: number;
   serviceId: number;
-}
-
-interface LoadClusterServicesPayload {
-  clusterId: number;
 }
 
 interface toggleMaintenanceModePayload {
@@ -29,24 +26,12 @@ interface toggleMaintenanceModePayload {
   maintenanceMode: AdcmMaintenanceMode;
 }
 
-const openServiceAddDialog = createAsyncThunk(
-  'adcm/servicesActions/openServiceAddDialog',
-  async (clusterId: number, thunkAPI) => {
-    try {
-      thunkAPI.dispatch(getServicePrototypes({ clusterId }));
-    } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
 const addService = createAsyncThunk(
   'adcm/servicesActions/addService',
-  async ({ clusterId, serviceIds }: AddClusterServicePayload, thunkAPI) => {
-    thunkAPI.dispatch(setIsCreating(true));
+  async ({ clusterId, servicesIds }: AddClusterServicePayload, thunkAPI) => {
+    thunkAPI.dispatch(setIsAddingServices(true));
     try {
-      await AdcmClusterServicesApi.addClusterService(clusterId, serviceIds);
+      await AdcmClusterServicesApi.addClusterService(clusterId, servicesIds);
       thunkAPI.dispatch(showInfo({ message: 'Service was added' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
@@ -73,33 +58,26 @@ const deleteService = createAsyncThunk(
   },
 );
 
-const getServicePrototypesFromBackend = createAsyncThunk(
-  'adcm/servicesActions/getServicePrototypesFromBackend',
-  async ({ clusterId }: LoadClusterServicesPayload, thunkAPI) => {
-    try {
-      const servicePrototypes = await AdcmClusterServicesApi.getClusterServicePrototypes(clusterId);
-      return servicePrototypes;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
-const getServicePrototypes = createAsyncThunk(
-  'adcm/servicesActions/getServicePrototypes',
-  async (arg: LoadClusterServicesPayload, thunkAPI) => {
-    thunkAPI.dispatch(setIsLoading(true));
+const getServiceCandidates = createAsyncThunk(
+  'adcm/servicesActions/getServiceCandidates',
+  async (clusterId: number, thunkAPI) => {
     const startDate = new Date();
+    thunkAPI.dispatch(setIsServiceCandidatesLoading(true));
 
-    await thunkAPI.dispatch(getServicePrototypesFromBackend(arg));
-
-    executeWithMinDelay({
-      startDate,
-      delay: defaultSpinnerDelay,
-      callback: () => {
-        thunkAPI.dispatch(setIsLoading(false));
-      },
-    });
+    try {
+      return await AdcmClusterServicesApi.getClusterServiceCandidates(clusterId);
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
+    } finally {
+      executeWithMinDelay({
+        startDate,
+        delay: defaultSpinnerDelay,
+        callback: () => {
+          thunkAPI.dispatch(setIsServiceCandidatesLoading(false));
+        },
+      });
+    }
   },
 );
 
@@ -118,30 +96,36 @@ const toggleMaintenanceModeWithUpdate = createAsyncThunk(
 );
 
 interface AdcmClusterServicesActionsState {
-  isAddServiceDialogOpen: boolean;
   maintenanceModeDialog: {
     service: AdcmService | null;
   };
-  isCreating: boolean;
+  isAddingServices: boolean;
+  addServicesDialog: {
+    isOpen: boolean;
+  };
   deleteDialog: {
     serviceId: number | null;
   };
   relatedData: {
-    servicePrototypes: AdcmServicePrototype[];
+    serviceCandidates: AdcmServicePrototype[];
+    isServiceCandidatesLoading: boolean;
   };
 }
 
 const createInitialState = (): AdcmClusterServicesActionsState => ({
-  isAddServiceDialogOpen: false,
   maintenanceModeDialog: {
     service: null,
   },
-  isCreating: false,
+  addServicesDialog: {
+    isOpen: false,
+  },
+  isAddingServices: false,
   deleteDialog: {
     serviceId: null,
   },
   relatedData: {
-    servicePrototypes: [],
+    serviceCandidates: [],
+    isServiceCandidatesLoading: false,
   },
 });
 
@@ -152,17 +136,23 @@ const servicesActionsSlice = createSlice({
     cleanupServicesActions() {
       return createInitialState();
     },
-    closeAddDialog(state) {
-      state.isAddServiceDialogOpen = false;
+    openAddServicesDialog(state) {
+      state.addServicesDialog.isOpen = true;
+    },
+    closeAddServicesDialog(state) {
+      state.addServicesDialog.isOpen = false;
     },
     openDeleteDialog(state, action) {
       state.deleteDialog.serviceId = action.payload;
     },
+    setIsServiceCandidatesLoading(state, action) {
+      state.relatedData.isServiceCandidatesLoading = action.payload;
+    },
     closeDeleteDialog(state) {
       state.deleteDialog.serviceId = null;
     },
-    setIsCreating(state, action) {
-      state.isCreating = action.payload;
+    setIsAddingServices(state, action) {
+      state.isAddingServices = action.payload;
     },
     openMaintenanceModeDialog(state, action) {
       state.maintenanceModeDialog.service = action.payload;
@@ -172,14 +162,12 @@ const servicesActionsSlice = createSlice({
     },
   },
   extraReducers(builder) {
-    builder.addCase(openServiceAddDialog.fulfilled, (state) => {
-      state.isAddServiceDialogOpen = true;
+    builder.addCase(getServiceCandidates.fulfilled, (state, action) => {
+      // remove dependencies to earlier added services
+      state.relatedData.serviceCandidates = clearSolvedDependencies(action.payload);
     });
-    builder.addCase(getServicePrototypesFromBackend.fulfilled, (state, action) => {
-      state.relatedData.servicePrototypes = action.payload;
-    });
-    builder.addCase(getServicePrototypesFromBackend.rejected, (state) => {
-      state.relatedData.servicePrototypes = [];
+    builder.addCase(getServiceCandidates.rejected, (state) => {
+      state.relatedData.serviceCandidates = [];
     });
     builder.addCase(toggleMaintenanceModeWithUpdate.pending, (state) => {
       servicesActionsSlice.caseReducers.closeMaintenanceModeDialog(state);
@@ -187,16 +175,29 @@ const servicesActionsSlice = createSlice({
   },
 });
 
-export const {
-  closeAddDialog,
+const {
+  openAddServicesDialog,
+  closeAddServicesDialog,
   openDeleteDialog,
   closeDeleteDialog,
   cleanupServicesActions,
-  setIsCreating,
+  setIsAddingServices,
   openMaintenanceModeDialog,
   closeMaintenanceModeDialog,
+  setIsServiceCandidatesLoading,
 } = servicesActionsSlice.actions;
 
-export { openServiceAddDialog, addService, deleteService, getServicePrototypes, toggleMaintenanceModeWithUpdate };
+export {
+  addService,
+  deleteService,
+  getServiceCandidates,
+  toggleMaintenanceModeWithUpdate,
+  openAddServicesDialog,
+  closeAddServicesDialog,
+  openDeleteDialog,
+  closeDeleteDialog,
+  openMaintenanceModeDialog,
+  closeMaintenanceModeDialog,
+};
 
 export default servicesActionsSlice.reducer;

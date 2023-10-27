@@ -1,18 +1,16 @@
 import { Button } from '@uikit';
 import ClusterServicesFilters from './ClusterServicesTableFilters';
 import TableToolbar from '@commonComponents/Table/TableToolbar/TableToolbar';
-import { openServiceAddDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
-import { useParams } from 'react-router-dom';
 import { useDispatch, useStore } from '@hooks';
+import { openAddServicesDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
 
 const ClustersTableHeader = () => {
   const dispatch = useDispatch();
-  const { clusterId: clusterIdFromUrl } = useParams();
-  const clusterId = Number(clusterIdFromUrl);
-  const isCreating = useStore(({ adcm }) => adcm.servicesActions.isCreating);
+  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
+  const isAddingServices = useStore(({ adcm }) => adcm.servicesActions.isAddingServices);
 
   const handleAddClusterServiceClick = () => {
-    dispatch(openServiceAddDialog(clusterId));
+    dispatch(openAddServicesDialog());
   };
 
   return (
@@ -20,8 +18,8 @@ const ClustersTableHeader = () => {
       <ClusterServicesFilters />
       <Button
         onClick={handleAddClusterServiceClick}
-        disabled={isCreating}
-        iconLeft={isCreating ? 'g1-load' : undefined}
+        disabled={isAddingServices || !cluster}
+        iconLeft={isAddingServices ? 'g1-load' : undefined}
       >
         Add service
       </Button>
