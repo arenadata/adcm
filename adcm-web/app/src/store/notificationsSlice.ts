@@ -48,8 +48,11 @@ const notificationsSlice = createSlice({
     closeNotification(state, action: PayloadAction<string>) {
       state.notifications = state.notifications.filter((n) => n.id !== action.payload);
     },
+    cleanupNotifications() {
+      return createInitialState();
+    },
   },
 });
 
-export const { showInfo, showError, closeNotification } = notificationsSlice.actions;
+export const { showInfo, showError, closeNotification, cleanupNotifications } = notificationsSlice.actions;
 export default notificationsSlice.reducer;
