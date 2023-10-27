@@ -1506,8 +1506,8 @@ class TaskLog(ADCMModel):
     restore_hc_on_fail = models.BooleanField(default=True)
     hosts = models.JSONField(null=True, default=None)
     verbose = models.BooleanField(default=False)
-    start_date = models.DateTimeField()
-    finish_date = models.DateTimeField()
+    start_date = models.DateTimeField(null=True, default=None)
+    finish_date = models.DateTimeField(null=True, default=None)
     lock = models.ForeignKey("ConcernItem", null=True, on_delete=models.SET_NULL, default=None)
 
     __error_code__ = "TASK_NOT_FOUND"
@@ -1548,7 +1548,10 @@ class TaskLog(ADCMModel):
             raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
 
     @property
-    def duration(self) -> float:
+    def duration(self) -> float | None:
+        if self.finish_date is None or self.start_date is None:
+            return None
+
         return (self.finish_date - self.start_date).total_seconds()
 
 
@@ -1560,8 +1563,8 @@ class JobLog(ADCMModel):
     selector = models.JSONField(default=dict)
     log_files = models.JSONField(default=list)
     status = models.CharField(max_length=1000, choices=JobStatus.choices)
-    start_date = models.DateTimeField()
-    finish_date = models.DateTimeField(db_index=True)
+    start_date = models.DateTimeField(null=True, default=None)
+    finish_date = models.DateTimeField(db_index=True, null=True, default=None)
 
     __error_code__ = "JOB_NOT_FOUND"
 
@@ -1588,11 +1591,12 @@ class JobLog(ADCMModel):
             os.kill(self.pid, signal.SIGTERM)
         except OSError as e:
             raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
-        self.status = JobStatus.ABORTED
-        self.save()
 
     @property
-    def duration(self) -> float:
+    def duration(self) -> float | None:
+        if self.finish_date is None or self.start_date is None:
+            return None
+
         return (self.finish_date - self.start_date).total_seconds()
 
 
