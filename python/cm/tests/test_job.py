@@ -31,7 +31,7 @@ from cm.job import (
     re_prepare_job,
     restore_hc,
     set_action_state,
-    set_job_status,
+    set_job_start_status,
 )
 from cm.models import (
     ADCM,
@@ -148,7 +148,7 @@ class TestJob(BaseTestCase):
         status = JobStatus.RUNNING
         pid = 10
 
-        set_job_status(job.id, status, pid)
+        set_job_start_status(job_id=job.id, pid=pid)
 
         job = JobLog.objects.get(id=job.id)
 

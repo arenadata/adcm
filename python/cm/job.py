@@ -728,8 +728,6 @@ def create_task(
         hosts=hosts,
         post_upgrade_hc_map=post_upgrade_hc,
         verbose=verbose,
-        start_date=timezone.now(),
-        finish_date=timezone.now(),
         status=JobStatus.CREATED,
         selector=get_selector(obj, action),
     )
@@ -745,15 +743,12 @@ def create_task(
             action=action,
             sub_action=sub_action,
             log_files=action.log_files,
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
             status=JobStatus.CREATED,
             selector=get_selector(obj, action),
         )
         log_type = sub_action.script_type if sub_action else action.script_type
         LogStorage.objects.create(job=job, name=log_type, type="stdout", format="txt")
         LogStorage.objects.create(job=job, name=log_type, type="stderr", format="txt")
-        set_job_status(job.pk, JobStatus.CREATED)
         Path(settings.RUN_DIR, f"{job.pk}", "tmp").mkdir(parents=True, exist_ok=True)
 
     return task
@@ -979,15 +974,20 @@ def set_task_final_status(task: TaskLog, status: str):
     task.save(update_fields=["status", "finish_date"])
 
 
-def set_job_status(job_id: int, status: str, pid: int = 0):
-    job_query = JobLog.objects.filter(id=job_id)
-    job_query.update(status=status, pid=pid, finish_date=timezone.now())
-    job = job_query.first()
+def set_job_start_status(job_id: int, pid: int) -> None:
+    job = JobLog.objects.get(id=job_id)
+    job.status = JobStatus.RUNNING
+    job.start_date = timezone.now()
+    job.pid = pid
+    job.save(update_fields=["status", "start_date", "pid"])
 
-    if status == JobStatus.RUNNING:
-        if job.task.lock and job.task.task_object:
-            job.task.lock.reason = job.cook_reason()
-            job.task.lock.save(update_fields=["reason"])
+    if job.task.lock and job.task.task_object:
+        job.task.lock.reason = job.cook_reason()
+        job.task.lock.save(update_fields=["reason"])
+
+
+def set_job_final_status(job_id: int, status: str) -> None:
+    JobLog.objects.filter(id=job_id).update(status=status, finish_date=timezone.now())
 
 
 def abort_all():
@@ -996,7 +996,7 @@ def abort_all():
         unlock_affected_objects(task=task)
 
     for job in JobLog.objects.filter(status=JobStatus.RUNNING):
-        set_job_status(job.pk, JobStatus.ABORTED)
+        set_job_final_status(job_id=job.pk, status=JobStatus.ABORTED)
 
 
 def getattr_first(attr: str, *objects: Any, default: Any = None) -> Any:
