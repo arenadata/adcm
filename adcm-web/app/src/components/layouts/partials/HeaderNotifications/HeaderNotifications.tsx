@@ -3,11 +3,11 @@ import { ReactComponent as Bell } from './images/complex-bell.svg';
 import s from './HeaderNotifications.module.scss';
 import iconButtonStyles from '@uikit/IconButton/IconButton.module.scss';
 import cn from 'classnames';
-import { Button, Popover } from '@uikit';
+import { Popover } from '@uikit';
 import { useDebounce, useDispatch, useRequestTimer, useStore } from '@hooks';
 import JobInfoRow from '@layouts/partials/HeaderNotifications/JobInfoRow/JobInfoRow';
 import { AdcmJobStatus } from '@models/adcm';
-import { cleanupBell, getJobs, refreshJobs } from '@store/adcm/bell/bellSlice';
+import { getJobs, refreshJobs } from '@store/adcm/bell/bellSlice';
 import { SpinnerPanel } from '@uikit/Spinner/Spinner';
 import { defaultDebounceDelay } from '@constants';
 
@@ -41,10 +41,6 @@ const HeaderNotifications: React.FC = () => {
     setIsOpen((prev) => !prev);
   };
 
-  const handleAcknowledgeClick = () => {
-    dispatch(cleanupBell());
-  };
-
   const debounceGetData = useDebounce(() => {
     dispatch(getJobs());
   }, defaultDebounceDelay);
@@ -65,11 +61,6 @@ const HeaderNotifications: React.FC = () => {
           <div className={s.bellPopoverPanel_content}>
             {isLoading && <SpinnerPanel />}
             {!isLoading && jobs.map((job) => <JobInfoRow key={job.id} job={job} />)}
-          </div>
-          <div className={s.bellPopoverPanel_footer}>
-            <Button className={s.acknowledgeButton} variant="clear" onClick={handleAcknowledgeClick}>
-              Acknowledge
-            </Button>
           </div>
         </div>
       </Popover>

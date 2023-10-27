@@ -61,7 +61,7 @@
 
 .bellPopoverPanel {
   width: 314px;
-  height: 244px;
+  max-height: 244px;
   border-radius: 6px;
   border: 1px solid var(--bell-popover-panel-border-color);
   background-color: var(--bell-popover-panel-background-color);
@@ -72,13 +72,4 @@
     overflow: hidden;
     margin: 16px;
   }
-
-  &_footer {
-    margin-right: 16px;
-    float: right;
-  }
-}
-
-.acknowledgeButton {
-  color: var(--color-xblue);
 }
