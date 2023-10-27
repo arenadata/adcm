@@ -301,7 +301,7 @@ const buildAddEmptyObjectNode = (
   parentNode: ConfigurationNode,
 ) => {
   const node: ConfigurationNode = {
-    key: buildKey(path),
+    key: buildKey([...path, 'addEmptyObjectButton']),
     data: {
       type: 'addEmptyObject',
       title: 'Set',
@@ -318,7 +318,7 @@ const buildAddFieldNode = (path: ConfigurationNodePath, parentNode: Configuratio
   const fieldSchema: SingleSchemaDefinition = getDefaultFieldSchema(parentNode.data.fieldSchema);
 
   const node: ConfigurationNode = {
-    key: buildKey(path),
+    key: buildKey([...path, 'addFieldButton']),
     data: {
       type: 'addField',
       title: 'Add property',
@@ -394,7 +394,7 @@ const buildAddArrayItemNode = (
   fieldSchema: SingleSchemaDefinition,
 ) => {
   const node: ConfigurationNode = {
-    key: buildKey(path),
+    key: buildKey([...path, 'addArrayItemButton']),
     data: {
       type: 'addArrayItem',
       title: '1',
