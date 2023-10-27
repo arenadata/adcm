@@ -18,7 +18,6 @@ from rest_framework.status import (
     HTTP_401_UNAUTHORIZED,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
-    HTTP_405_METHOD_NOT_ALLOWED,
     HTTP_409_CONFLICT,
     HTTP_501_NOT_IMPLEMENTED,
 )
@@ -57,7 +56,6 @@ ERRORS = {
     "TASK_NOT_FOUND": ("task doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "JOB_NOT_FOUND": ("job doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "LOG_NOT_FOUND": ("log file is not found", HTTP_404_NOT_FOUND, ERR),
-    "LOG_FOR_TASK_VIEW_NOT_ALLOWED": ("method to read logs for tasks is not allowed", HTTP_405_METHOD_NOT_ALLOWED, ERR),
     "UPGRADE_NOT_FOUND": ("upgrade is not found", HTTP_404_NOT_FOUND, ERR),
     "USER_NOT_FOUND": ("user profile is not found", HTTP_404_NOT_FOUND, ERR),
     "GROUP_NOT_FOUND": ("group is not found", HTTP_404_NOT_FOUND, ERR),
