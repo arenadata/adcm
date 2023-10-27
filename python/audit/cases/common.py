@@ -19,6 +19,7 @@ from audit.models import (
     AuditOperation,
 )
 from cm.models import (
+    ADCM,
     Action,
     ADCMEntity,
     ClusterObject,
@@ -209,7 +210,7 @@ def obj_pk_case(
         obj_name = get_obj_name(obj=obj, obj_type=obj_type) or obj.name
 
     audit_object = get_or_create_audit_obj(
-        object_id=obj_pk,
+        object_id=str(obj_pk),
         object_name=obj_name,
         object_type=obj_type,
     )
@@ -217,7 +218,7 @@ def obj_pk_case(
     return audit_operation, audit_object
 
 
-def action_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | None]:
+def action_case(path: list[str]) -> tuple[AuditOperation, AuditObject | None]:
     audit_operation = None
     audit_object = None
 
@@ -247,10 +248,27 @@ def action_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | Non
             else:
                 audit_object = None
 
+        case ["adcm", "actions", action_pk]:
+            audit_operation = AuditOperation(
+                name="{action_display_name} action launched",
+                operation_type=AuditLogOperationType.UPDATE,
+            )
+
+            action = Action.objects.filter(pk=action_pk).first()
+            if action:
+                audit_operation.name = audit_operation.name.format(action_display_name=action.display_name)
+
+            obj, object_type = ADCM.objects.first(), AuditObjectType.ADCM
+            audit_object = get_or_create_audit_obj(
+                object_id=obj.pk,
+                object_name=get_obj_name(obj=obj, obj_type=object_type),
+                object_type=object_type,
+            )
+
     return audit_operation, audit_object
 
 
-def upgrade_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | None]:
+def upgrade_case(path: list[str]) -> tuple[AuditOperation, AuditObject | None]:
     audit_operation = None
     audit_object = None
 
@@ -282,7 +300,7 @@ def upgrade_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | No
     return audit_operation, audit_object
 
 
-def task_job_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | None]:
+def task_job_case(path: list[str]) -> tuple[AuditOperation, AuditObject | None]:
     audit_operation = None
     audit_object = None
 

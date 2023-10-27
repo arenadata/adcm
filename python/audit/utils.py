@@ -319,7 +319,7 @@ def audit(func):
             error = exc
             res = None
 
-            if api_version == 2:
+            if api_version == 2 and isinstance(view, GenericViewSet):
                 deleted_obj = _get_target_object_by_view(view=view)
 
             elif api_version == 1 and (

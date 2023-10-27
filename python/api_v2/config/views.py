@@ -77,7 +77,6 @@ class ConfigLogViewSet(
             or request.user.has_perm(perm=parent_view_perm)
         ):
             raise NotFound("Can't find config's parent object")
-
         if parent_object.config is None:
             raise AdcmEx(code="CONFIG_NOT_FOUND", msg="This object has no config")
 
