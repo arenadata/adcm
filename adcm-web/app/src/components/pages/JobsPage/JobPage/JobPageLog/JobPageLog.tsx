@@ -4,7 +4,7 @@ import { Button, Tab, TabsBlock } from '@uikit';
 import CodeHighlighter from '@uikit/CodeHighlighter/CodeHighlighter';
 import { useRequestJobLogPage } from './useRequestJobLogPage';
 import s from './JobPageLog.module.scss';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { apiHost } from '@constants';
 
 interface JobPageLogProps {
@@ -28,7 +28,7 @@ const JobPageLog: React.FC<JobPageLogProps> = ({ id, isLinkEmpty = false }) => {
   const logNamePartPath = getPathLogName(pathname);
 
   const [logNameClick, setLogNameClick] = useState<string>('stdout');
-  const handleTabClick = (log: string) => () => {
+  const getHandleTabClick = (log: string) => () => {
     setLogNameClick(log);
   };
 
@@ -40,18 +40,18 @@ const JobPageLog: React.FC<JobPageLogProps> = ({ id, isLinkEmpty = false }) => {
   return (
     <>
       <TabsBlock variant="secondary" className={s.jobLog}>
-        <Tab to={isLinkEmpty ? '' : 'stdout'} onClick={handleTabClick('stdout')} isActive={logName === 'stdout'}>
+        <Tab to={isLinkEmpty ? '' : 'stdout'} onClick={getHandleTabClick('stdout')} isActive={logName === 'stdout'}>
           Ansible [stdout]
         </Tab>
-        <Tab to={isLinkEmpty ? '' : 'stderr'} onClick={handleTabClick('stderr')} isActive={logName === 'stderr'}>
+        <Tab to={isLinkEmpty ? '' : 'stderr'} onClick={getHandleTabClick('stderr')} isActive={logName === 'stderr'}>
           Ansible [stderr]
         </Tab>
       </TabsBlock>
       <CodeHighlighter code={log?.content.trim() || ''} language="javascript" className={s.codeHighlighter} />
       {log?.content && (
-        <Link to={downloadLink} download="download" target="_blank">
+        <a href={downloadLink} download="download" target="_blank">
           <Button variant="secondary" className={s.jobLogDownloadButton} children="Download" />
-        </Link>
+        </a>
       )}
     </>
   );

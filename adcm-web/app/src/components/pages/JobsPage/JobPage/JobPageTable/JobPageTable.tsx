@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { Table, TableRow, TableCell } from '@uikit';
 import { useStore } from '@hooks';
 import { columns } from './JobPageTable.constants';
@@ -21,9 +20,9 @@ const JobPageTable = () => {
         <DateTimeCell value={task.startTime} />
         <DateTimeCell value={task.endTime} />
         <TableCell hasIconOnly align="center">
-          <Link to={downloadLink} download="download">
+          <a href={downloadLink} download="download">
             Download
-          </Link>
+          </a>
         </TableCell>
       </TableRow>
     </Table>
