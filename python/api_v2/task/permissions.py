@@ -9,10 +9,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.log_storage.views import LogStorageViewSet
-from rest_framework.routers import SimpleRouter
 
-router = SimpleRouter()
-router.register("", LogStorageViewSet)
+from rest_framework.permissions import DjangoObjectPermissions
 
-urlpatterns = router.urls
+
+class TaskPermissions(DjangoObjectPermissions):
+    perms_map = {
+        "GET": [],
+        "OPTIONS": [],
+        "HEAD": [],
+        "POST": ["%(app_label)s.change_%(model_name)s"],
+        "PUT": ["%(app_label)s.change_%(model_name)s"],
+        "PATCH": ["%(app_label)s.change_%(model_name)s"],
+        "DELETE": ["%(app_label)s.delete_%(model_name)s"],
+    }
+
+    def has_permission(self, request, view):
+        return True
