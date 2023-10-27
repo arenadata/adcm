@@ -16,9 +16,11 @@ from api_v2.hostprovider.serializers import (
     HostProviderSerializer,
 )
 from api_v2.views import CamelCaseReadOnlyModelViewSet
+from audit.utils import audit
 from cm.api import add_host_provider, delete_host_provider
-from cm.errors import raise_adcm_ex
+from cm.errors import AdcmEx
 from cm.models import HostProvider, ObjectType, Prototype
+from django.db.utils import IntegrityError
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.response import Response
@@ -47,19 +49,24 @@ class HostProviderViewSet(  # pylint:disable=too-many-ancestors
 
         return self.serializer_class
 
+    @audit
     def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
-            return raise_adcm_ex(code="HOSTPROVIDER_CREATE_ERROR")
+            raise AdcmEx(code="HOSTPROVIDER_CREATE_ERROR")
 
-        host_provider = add_host_provider(
-            prototype=Prototype.objects.get(pk=serializer.validated_data["prototype_id"], type=ObjectType.PROVIDER),
-            name=serializer.validated_data["name"],
-            description=serializer.validated_data.get("description", ""),
-        )
+        try:
+            host_provider = add_host_provider(
+                prototype=Prototype.objects.get(pk=serializer.validated_data["prototype_id"], type=ObjectType.PROVIDER),
+                name=serializer.validated_data["name"],
+                description=serializer.validated_data.get("description", ""),
+            )
+        except IntegrityError as e:
+            raise AdcmEx(code="PROVIDER_CONFLICT") from e
 
         return Response(data=HostProviderSerializer(host_provider).data, status=HTTP_201_CREATED)
 
+    @audit
     def destroy(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         host_provider = self.get_object()
         delete_host_provider(host_provider)

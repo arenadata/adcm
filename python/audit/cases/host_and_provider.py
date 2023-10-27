@@ -71,14 +71,14 @@ def host_and_provider_case(
                 response=response,
             )
 
-        case ["provider"]:
+        case ["provider"] | ["hostproviders"]:
             audit_operation, audit_object = response_case(
                 obj_type=AuditObjectType.PROVIDER,
                 operation_type=AuditLogOperationType.CREATE,
                 response=response,
             )
 
-        case ["provider", provider_pk]:
+        case ["provider" | "hostproviders", provider_pk]:
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.PROVIDER.capitalize()} {AuditLogOperationType.DELETE}d",
                 operation_type=AuditLogOperationType.DELETE,
@@ -95,6 +95,7 @@ def host_and_provider_case(
         case (
             ["provider", provider_pk, "config", "history"]
             | ["provider", provider_pk, "config", "history", _, "restore"]
+            | ["hostproviders", provider_pk, "configs"]
         ):
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.PROVIDER,

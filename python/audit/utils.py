@@ -60,7 +60,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     is_success,
 )
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 URL_PATH_PATTERN = re.compile(r".*/api/v(?P<api_version>\d+)/(?P<target_path>.*?)/?$")
 
@@ -76,8 +76,8 @@ def _get_view_and_request(args) -> tuple[GenericAPIView, Request]:
     return view, request
 
 
-def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs: dict) -> Model | None:
-    # pylint: disable=too-many-branches
+def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs: dict, api_version: int) -> Model | None:
+    # pylint: disable=too-many-branches, too-many-statements
 
     try:
         deleted_obj = view.get_object()
@@ -92,39 +92,78 @@ def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs: dict) -> Mo
         except AttributeError:
             deleted_obj = None
     except (AdcmEx, Http404) as e:  # when denied returns 404 from PermissionListMixin
-        try:
-            if getattr(view, "queryset") is None:
-                raise TypeError from e
+        if api_version == 1:
+            try:
+                if getattr(view, "queryset") is None:
+                    raise TypeError from e
 
-            if view.queryset.count() == 1:
-                deleted_obj = view.queryset.all()[0]
-            elif "pk" in view.kwargs:
-                try:
-                    deleted_obj = view.queryset.get(pk=int(view.kwargs["pk"]))
-                except ValueError:
+                if view.queryset.count() == 1:
+                    deleted_obj = view.queryset.all()[0]
+                elif "pk" in view.kwargs:
+                    try:
+                        deleted_obj = view.queryset.get(pk=int(view.kwargs["pk"]))
+                    except ValueError:
+                        deleted_obj = None
+                else:
                     deleted_obj = None
-            else:
+            except TypeError:
+                if "role" in request.path:
+                    deleted_obj = Role.objects.filter(pk=view.kwargs["pk"]).first()
+                else:
+                    deleted_obj = None
+            except (IndexError, ObjectDoesNotExist):
                 deleted_obj = None
-        except TypeError:
-            if "role" in request.path:
-                deleted_obj = Role.objects.filter(pk=view.kwargs["pk"]).first()
-            else:
-                deleted_obj = None
-        except (IndexError, ObjectDoesNotExist):
-            deleted_obj = None
+        elif api_version == 2:
+            deleted_obj = _get_target_object_by_view(view=view)
+        else:
+            raise ValueError(f"Unexpected api version: `{api_version}`") from e
     except (KeyError, ValueError):
         deleted_obj = None
-    except PermissionDenied:
-        if "cluster_id" in kwargs:
-            deleted_obj = Cluster.objects.filter(pk=kwargs["cluster_id"]).first()
-        elif "service_id" in kwargs:
-            deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
-        elif "provider_id" in kwargs:
-            deleted_obj = HostProvider.objects.filter(pk=kwargs["provider_id"]).first()
+    except PermissionDenied as e:
+        deleted_obj = None
+
+        if api_version == 1:
+            if "cluster_id" in kwargs:
+                deleted_obj = Cluster.objects.filter(pk=kwargs["cluster_id"]).first()
+            elif "service_id" in kwargs:
+                deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
+            elif "provider_id" in kwargs:
+                deleted_obj = HostProvider.objects.filter(pk=kwargs["provider_id"]).first()
+
+        elif api_version == 2:
+            deleted_obj = _get_target_object_by_view(view=view)
+
         else:
-            deleted_obj = None
+            raise ValueError(f"Unexpected api version: `{api_version}`") from e
 
     return deleted_obj
+
+
+def _get_target_object_by_view(view: GenericViewSet) -> Host | HostProvider | Cluster | ClusterObject | None:
+    """
+    Here we consider the final object only.
+    E.g.:
+        for request path `.../clusters/-8/hosts/3/`
+        `Host #3` will be returned, though `Cluster #-8` does not exist
+    """
+
+    match (view.__class__.__name__, view.action, view.kwargs):
+        case ("HostClusterViewSet", "destroy" | "maintenance_mode", {"cluster_pk": _, "pk": host_pk}):
+            target_object = Host.objects.filter(pk=host_pk).first()
+        case ("ServiceViewSet", "destroy", {"cluster_pk": _, "pk": servie_pk}):
+            target_object = ClusterObject.objects.filter(pk=servie_pk).first()
+        case ("ClusterViewSet", _, {"pk": cluster_pk}) | (
+            "ImportViewSet" | "ConfigLogViewSet" | "HostClusterViewSet" | "ServiceViewSet",
+            _,
+            {"cluster_pk": cluster_pk},
+        ):
+            target_object = Cluster.objects.filter(pk=cluster_pk).first()
+        case ("HostProviderViewSet", _, {"pk": hostprovider_pk}):
+            target_object = HostProvider.objects.filter(pk=hostprovider_pk).first()
+        case _:
+            target_object = None
+
+    return target_object
 
 
 # pylint: disable=too-many-branches
@@ -252,19 +291,18 @@ def audit(func):
         if api_version == -1:
             return func(*args, **kwargs)
 
+        deleted_obj = None
         if request.method == "DELETE":
-            deleted_obj = _get_deleted_obj(view=view, request=request, kwargs=kwargs)
-            if "bind_id" in kwargs:
+            deleted_obj = _get_deleted_obj(view=view, request=request, kwargs=kwargs, api_version=api_version)
+            if "bind_id" in kwargs and api_version == 1:
                 deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
-        else:
+        elif api_version == 1:
             if "host_id" in kwargs and "maintenance-mode" in request.path:
                 deleted_obj = Host.objects.filter(pk=kwargs["host_id"]).first()
             elif "service_id" in kwargs and "maintenance-mode" in request.path:
                 deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
             elif "component_id" in kwargs and "maintenance-mode" in request.path:
                 deleted_obj = ServiceComponent.objects.filter(pk=kwargs["component_id"]).first()
-            else:
-                deleted_obj = None
 
         prev_data, current_obj = _get_obj_changes_data(view=view)
 
@@ -282,17 +320,7 @@ def audit(func):
             res = None
 
             if api_version == 2:
-                match (view.__class__.__name__, view.action, view.kwargs):
-                    case ("HostClusterViewSet", "destroy" | "maintenance_mode", {"cluster_pk": _, "pk": host_pk}):
-                        deleted_obj = Host.objects.filter(pk=host_pk).first()
-                    case ("ServiceViewSet", "destroy", {"cluster_pk": cluster_pk, "pk": servie_pk}):
-                        deleted_obj = ClusterObject.objects.filter(pk=servie_pk).first()
-                    case ("ClusterViewSet", _, {"pk": cluster_pk}) | (
-                        "ImportViewSet" | "ConfigLogViewSet" | "HostClusterViewSet" | "ServiceViewSet",
-                        _,
-                        {"cluster_pk": cluster_pk},
-                    ):
-                        deleted_obj = Cluster.objects.filter(pk=cluster_pk).first()
+                deleted_obj = _get_target_object_by_view(view=view)
 
             elif api_version == 1 and (
                 getattr(exc, "msg", None)
