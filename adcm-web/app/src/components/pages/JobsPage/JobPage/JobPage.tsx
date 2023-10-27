@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import JobPageChildJobsTable from './JobPageChildJobsTable/JobPageChildJobsTable';
 import JobPageLog from './JobPageLog/JobPageLog';
+import JobPageStopJobDialog from './Dialogs/JobPageStopJobDialog';
 
 const JobPage: React.FC = () => {
   useRequestJobPage();
@@ -32,6 +33,7 @@ const JobPage: React.FC = () => {
           <JobPageChildJobsTable />
         </TableContainer>
       )}
+      <JobPageStopJobDialog />
     </>
   );
 };

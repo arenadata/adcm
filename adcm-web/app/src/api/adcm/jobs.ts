@@ -14,7 +14,7 @@ export class AdcmJobsApi {
   }
 
   public static async getJob(id: number) {
-    const response = await httpClient.get<AdcmJob>(`/api/v2/jobs/${id}`);
+    const response = await httpClient.get<AdcmJob>(`/api/v2/jobs/${id}/`);
     return response.data;
   }
 
@@ -30,5 +30,9 @@ export class AdcmJobsApi {
 
   public static async stopJob(id: number) {
     await httpClient.post(`/api/v2/tasks/${id}/terminate/`);
+  }
+
+  public static async stopChildJob(childJobId: number) {
+    await httpClient.post(`/api/v2/jobs/${childJobId}/terminate/`);
   }
 }

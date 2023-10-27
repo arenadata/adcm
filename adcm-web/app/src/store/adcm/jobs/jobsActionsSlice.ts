@@ -3,7 +3,7 @@ import { RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { refreshJobs } from './jobsSlice';
+import { getTask, refreshJobs } from './jobsSlice';
 import { AdcmJobsApi } from '@api/adcm/jobs';
 
 interface AdcmJobsActionState {
@@ -12,16 +12,43 @@ interface AdcmJobsActionState {
   };
 }
 
-const stopJobWithUpdate = createAsyncThunk('adcm/jobs/stopJob', async (id: number, thunkAPI) => {
+const stopJob = createAsyncThunk('adcm/jobsActions/stopJob', async (id: number, thunkAPI) => {
   try {
     await AdcmJobsApi.stopJob(id);
     thunkAPI.dispatch(showInfo({ message: 'Job has been stopped' }));
-    await thunkAPI.dispatch(refreshJobs());
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
     return error;
   }
 });
+
+const stopJobWithUpdate = createAsyncThunk('adcm/jobsActions/stopJobWithUpdate', async (arg: number, thunkAPI) => {
+  await thunkAPI.dispatch(stopJob(arg)).unwrap();
+  thunkAPI.dispatch(refreshJobs());
+});
+
+const stopChildJob = createAsyncThunk('adcm/jobsActions/stopChildJob', async (childJobId: number, thunkAPI) => {
+  try {
+    await AdcmJobsApi.stopChildJob(childJobId);
+    thunkAPI.dispatch(showInfo({ message: 'Job has been stopped' }));
+  } catch (error) {
+    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+    return error;
+  }
+});
+
+interface StopChildJobWithUpdatePayload {
+  childJobId: number;
+  jobId: number;
+}
+
+const stopChildJobWithUpdate = createAsyncThunk(
+  'adcm/jobsActions/stopChildJobWithUpdate',
+  async ({ childJobId, jobId }: StopChildJobWithUpdatePayload, thunkAPI) => {
+    await thunkAPI.dispatch(stopChildJob(childJobId)).unwrap();
+    thunkAPI.dispatch(getTask(jobId));
+  },
+);
 
 const createInitialState = (): AdcmJobsActionState => ({
   stopDialog: {
@@ -44,12 +71,15 @@ const jobsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(stopJobWithUpdate.pending, (state) => {
+    builder.addCase(stopJob.pending, (state) => {
+      jobsSlice.caseReducers.closeStopDialog(state);
+    });
+    builder.addCase(stopChildJob.pending, (state) => {
       jobsSlice.caseReducers.closeStopDialog(state);
     });
   },
 });
 
 const { openStopDialog, closeStopDialog } = jobsSlice.actions;
-export { stopJobWithUpdate, openStopDialog, closeStopDialog };
+export { stopJobWithUpdate, stopChildJobWithUpdate, openStopDialog, closeStopDialog };
 export default jobsSlice.reducer;
