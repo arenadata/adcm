@@ -23,7 +23,6 @@ from cm.models import (
     Prototype,
 )
 from django.urls import reverse
-from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -50,7 +49,7 @@ class TestServiceAPI(BaseAPITestCase):
         return inner
 
     def test_list_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
         )
 
@@ -60,7 +59,7 @@ class TestServiceAPI(BaseAPITestCase):
     def test_adcm_4544_list_service_name_ordering_success(self):
         service_3 = self.add_service_to_cluster(service_name="service_3_manual_add", cluster=self.cluster_1)
         service_list = [self.service_1.display_name, self.service_2.display_name, service_3.display_name]
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data={"ordering": "displayName"},
         )
@@ -81,7 +80,7 @@ class TestServiceAPI(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(
                 viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk}
             ),
@@ -91,7 +90,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.json()["id"], self.service_2.pk)
 
     def test_delete_success(self):
-        response: Response = self.client.delete(
+        response = self.client.delete(
             path=reverse(
                 viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk}
             ),
@@ -104,7 +103,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.service_2.state = "non_created"
         self.service_2.save(update_fields=["state"])
 
-        response: Response = self.client.delete(
+        response = self.client.delete(
             path=reverse(
                 viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk}
             ),
@@ -117,7 +116,7 @@ class TestServiceAPI(BaseAPITestCase):
         initial_service_count = ClusterObject.objects.count()
         manual_add_service_proto = Prototype.objects.get(type=ObjectType.SERVICE, name="service_3_manual_add")
 
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data=[{"prototype_id": manual_add_service_proto.pk}],
         )
@@ -126,7 +125,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(ClusterObject.objects.count(), initial_service_count + 1)
 
     def test_filter_by_name_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data={"name": "service_1"},
         )
@@ -135,7 +134,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
 
     def test_filter_by_display_name_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data={"display_name": "vice_1"},
         )
@@ -145,7 +144,7 @@ class TestServiceAPI(BaseAPITestCase):
 
     def test_filter_by_status_success(self):
         with patch("api_v2.service.filters.get_service_status", new_callable=self.get_service_status_mock):
-            response: Response = self.client.get(
+            response = self.client.get(
                 path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
                 data={"status": ADCMEntityStatus.UP},
             )
@@ -155,7 +154,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.json()["results"][0]["id"], self.service_2.pk)
 
     def test_limit_offset_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data={"limit": 1, "offset": 1},
         )
@@ -164,7 +163,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(len(response.json()["results"]), 1)
 
     def test_change_mm(self):
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(
                 viewname="v2:service-maintenance-mode",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk},
@@ -175,7 +174,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_action_list_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(
                 viewname="v2:service-action-list",
                 kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_2.pk},
@@ -186,7 +185,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(len(response.json()), 2)
 
     def test_action_retrieve_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(
                 viewname="v2:service-action-detail",
                 kwargs={
@@ -201,16 +200,20 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
-        response: Response = self.client.post(
-            path=reverse(
-                viewname="v2:service-action-run",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_2.pk,
-                    "pk": self.action.pk,
-                },
-            ),
-            data={"host_component_map": [], "config": {}, "adcm_meta": {}, "is_verbose": False},
-        )
+        with patch(
+            "api_v2.action.views.start_task",
+            return_value=self.create_task_log(object_=self.service_2, action=self.action),
+        ):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:service-action-run",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_2.pk,
+                        "pk": self.action.pk,
+                    },
+                ),
+                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+            )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

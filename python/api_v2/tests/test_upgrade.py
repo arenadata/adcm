@@ -203,12 +203,12 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
                     kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.upgrade_cluster_via_action_complex.pk},
                 ),
                 data={
-                    "host_component_map": [{"hostId": host.pk, "componentId": component_1.pk}],
+                    "hostComponentMap": [{"hostId": host.pk, "componentId": component_1.pk}],
                     "configuration": {
                         "config": {"simple": "val", "grouped": {"simple": 5, "second": 4.3}, "after": ["x", "y"]},
-                        "adcm_meta": {},
+                        "adcmMeta": {},
                     },
-                    "is_verbose": True,
+                    "isVerbose": True,
                 },
             )
 
@@ -355,7 +355,7 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
                         viewname="v2:upgrade-run",
                         kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.upgrade_cluster_via_action_complex.pk},
                     ),
-                    data={"host_component_map": hc_data},
+                    data={"hostComponentMap": hc_data},
                 )
 
                 self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
