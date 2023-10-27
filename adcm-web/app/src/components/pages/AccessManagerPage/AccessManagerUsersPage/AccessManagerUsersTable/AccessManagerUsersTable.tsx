@@ -3,10 +3,9 @@ import { Table, TableRow, TableCell, IconButton, Checkbox } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { columns } from './AccessManagerUsersTable.constants';
 import {
-  blockUsers,
+  openUnblockDialog,
   openUserUpdateDialog,
   setSelectedItemsIds as setSelectedUsersIds,
-  unblockUsers,
 } from '@store/adcm/users/usersActionsSlice';
 import { setSortParams } from '@store/adcm/users/usersTableSlice';
 import { SortParams } from '@uikit/types/list.types';
@@ -45,12 +44,8 @@ const AccessManagerUsersTable = () => {
     dispatch(setSortParams(sortParams));
   };
 
-  const handleBlockClick = (id: number) => () => {
-    dispatch(blockUsers([id]));
-  };
-
   const handleUnblockClick = (id: number) => () => {
-    dispatch(unblockUsers([id]));
+    dispatch(openUnblockDialog([id]));
   };
 
   const handleEditUserClick = (user: AdcmUser) => () => {
@@ -82,9 +77,6 @@ const AccessManagerUsersTable = () => {
             <TableCell>{user.type}</TableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-edit" size={32} title="Edit" onClick={handleEditUserClick(user)} />
-              {user.status === AdcmUserStatus.Active && (
-                <IconButton icon="g1-block" size={32} title="Block" onClick={handleBlockClick(user.id)} />
-              )}
               {user.status === AdcmUserStatus.Blocked && (
                 <IconButton icon="g1-unblock" size={32} title="Unblock" onClick={handleUnblockClick(user.id)} />
               )}

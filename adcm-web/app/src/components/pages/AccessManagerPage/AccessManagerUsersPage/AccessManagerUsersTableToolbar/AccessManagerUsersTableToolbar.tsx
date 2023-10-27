@@ -2,7 +2,7 @@ import AccessManagerUsersTableFilters from './AccessManagerUsersTableFilters';
 import { ButtonGroup } from '@uikit';
 import TableToolbar from '@commonComponents/Table/TableToolbar/TableToolbar';
 import AccessManagerUsersDeleteButton from './AccessManagerUsersDeleteButton/AccessManagerUsersDeleteButton';
-import AccessManagerUsersBlockUnblockButtons from './AccessManagerUsersBlockUnblockButton';
+import AccessManagerUsersBlockUnblockButtons from './AccessManagerUsersUnblockButton';
 import AccessManagerUsersCreateButton from './AccessManagerUsersCreateButton';
 
 const AccessManagerUsersTableToolbar = () => {

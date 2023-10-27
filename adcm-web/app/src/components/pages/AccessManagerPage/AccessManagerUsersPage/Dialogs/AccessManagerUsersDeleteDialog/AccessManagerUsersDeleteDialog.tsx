@@ -21,7 +21,6 @@ const AccessManagerUsersDeleteDialog: React.FC = () => {
   );
 
   const isOpenDeleteDialog = !!deletableUser;
-  const userName = deletableUser?.username;
 
   const handleCloseConfirm = () => {
     dispatch(closeDeleteDialog());
@@ -38,11 +37,11 @@ const AccessManagerUsersDeleteDialog: React.FC = () => {
       <Dialog
         isOpen={isOpenDeleteDialog}
         onOpenChange={handleCloseConfirm}
-        title={`Delete users "${userName}"`}
+        title="Delete user"
         onAction={handleConfirmDialog}
         actionButtonLabel="Delete"
       >
-        User will be deleted.
+        Selected user will be deleted
       </Dialog>
     </>
   );
