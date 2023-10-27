@@ -24,7 +24,7 @@ const AddConfigurationFieldDialog = ({
 }: AddConfigurationFieldDialogProps) => {
   const [fieldName, setFieldName] = useState('');
   const [value, setValue] = useState('');
-  const [isValueValid, setIsValueValid] = useState(false);
+  const [isValueValid, setIsValueValid] = useState(true);
 
   const handleFieldNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFieldName(e.target.value);
