@@ -2,8 +2,8 @@ import { createSlice } from '@reduxjs/toolkit';
 import { RequestError, AuthApi, AdcmProfileApi } from '@api';
 import { createAsyncThunk } from './redux';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { UserRBAC } from '@models/RBAC';
 import { showError } from './notificationsSlice';
+import { AdcmProfileUser } from '@models/adcm';
 
 type LoginActionPayload = {
   username: string;
@@ -23,7 +23,7 @@ type UserState = {
   hasError: boolean;
   authState: AuthState;
   message: string;
-  profile: UserRBAC;
+  profile: AdcmProfileUser;
 };
 
 const login = createAsyncThunk('auth/login', async (arg: LoginActionPayload, thunkAPI) => {
@@ -58,7 +58,7 @@ const createInitialState = (): UserState => ({
   hasError: false,
   authState: AUTH_STATE.NotAuth,
   message: '',
-  profile: {} as UserRBAC,
+  profile: {} as AdcmProfileUser,
 });
 
 const authSlice = createSlice({

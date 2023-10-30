@@ -41,7 +41,7 @@ export const useRbacUserUpdateDialog = () => {
         lastName: user.lastName,
         email: user.email,
         groups: user.groups.map(({ id }) => id),
-        isSuperUser: user.isSuperuser,
+        isSuperUser: user.isSuperUser,
       });
     }
   }, [user, setFormData]);
@@ -53,7 +53,7 @@ export const useRbacUserUpdateDialog = () => {
         (formData.password.length >= authSettings.minPasswordLength &&
           formData.password.length <= authSettings.maxPasswordLength)
           ? undefined
-          : `Password should be greater than ${authSettings.minPasswordLength - 1} 
+          : `Password should be greater than ${authSettings.minPasswordLength - 1}
             and less than ${authSettings.maxPasswordLength + 1}`,
       firstName: required(formData.firstName) ? undefined : 'First Name field is required',
       lastName: required(formData.lastName) ? undefined : 'Last Name field is required',

@@ -18,4 +18,10 @@
       margin-bottom: auto;
     }
   }
+  &__menu &__userName {
+    max-width: 150px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
 }
