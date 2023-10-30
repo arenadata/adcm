@@ -3,15 +3,17 @@ import Concern from '@commonComponents/Concern/Concern';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { serviceComponentsStatusMap } from '@pages/cluster/service/ServiceComponents/ServiceComponentsTable/ServiceComponentsTable.constants';
 import { Table, TableCell, TableRow } from '@uikit';
-import { Link, generatePath } from 'react-router-dom';
+import { Link, generatePath, useParams } from 'react-router-dom';
 import { columns } from './HostComponentsTable.constants';
 import { SortParams } from '@uikit/types/list.types';
 import { useDispatch, useStore } from '@hooks';
 import { setSortParams } from '@store/adcm/cluster/hosts/host/clusterHostTableSlice';
-import ServiceComponentsDynamicActionsIcon from '@pages/cluster/service/ServiceComponents/ServiceComponentsDynamicActionsIcon/ServiceComponentsDynamicActionsIcon';
+import HostComponentsDynamicActionsIcon from '@commonComponents/host/HostComponentsDynamicActionsIcon/HostComponentsDynamicActionsIcon';
 
 const HostComponentsTable: React.FC = () => {
   const dispatch = useDispatch();
+  const { hostId: hostIdFromUrl } = useParams();
+  const hostId = Number(hostIdFromUrl);
   const hostComponents = useStore((s) => s.adcm.clusterHost.relatedData.hostComponents);
   const isLoading = useStore((s) => s.adcm.clusterHost.isLoading);
   const sortParams = useStore((s) => s.adcm.clusterHostTable.sortParams);
@@ -28,9 +30,10 @@ const HostComponentsTable: React.FC = () => {
             <StatusableCell status={serviceComponentsStatusMap[hostComponent.status]}>
               <Link
                 className="text-link"
-                to={generatePath('/clusters/:clusterId/services/:serviceId/components', {
+                to={generatePath('/clusters/:clusterId/services/:serviceId/components/:componentId', {
                   clusterId: `${hostComponent.cluster.id}`,
                   serviceId: `${hostComponent.service.id}`,
+                  componentId: `${hostComponent.id}`,
                 })}
               >
                 {hostComponent.displayName}
@@ -40,7 +43,9 @@ const HostComponentsTable: React.FC = () => {
               <Concern concerns={hostComponent.concerns} />
             </TableCell>
             <TableCell hasIconOnly align="center">
-              {hostComponent && <ServiceComponentsDynamicActionsIcon component={hostComponent} />}
+              {hostComponent && hostId && (
+                <HostComponentsDynamicActionsIcon component={hostComponent} hostId={hostId} />
+              )}
             </TableCell>
           </TableRow>
         );

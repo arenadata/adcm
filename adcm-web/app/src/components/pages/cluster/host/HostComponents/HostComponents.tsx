@@ -2,8 +2,8 @@ import React from 'react';
 import HostComponentsTable from '@commonComponents/host/HostComponentsTable/HostComponentsTable';
 import HostComponentsTableToolbar from './HostComponentsTableToolbar/HostComponentsTableToolbar';
 import HostComponentsTableFooter from './HostComponentsTableFooter/HostComponentsTableFooter';
-import ServiceComponentsDynamicActionDialog from '@pages/cluster/service/ServiceComponents/Dialogs/ServiceComponentsDynamicActionDialog/ServiceComponentsDynamicActionDialog';
-import { useRequestHostComponents } from '../useRequestHostComponents';
+import { useRequestHostComponents } from './useRequestHostComponents';
+import HostComponentsDynamicActionDialog from './HostComponentsDynamicActionDialog/HostComponentsDynamicActionDialog';
 
 const HostComponents: React.FC = () => {
   useRequestHostComponents();
@@ -12,7 +12,7 @@ const HostComponents: React.FC = () => {
       <HostComponentsTableToolbar />
       <HostComponentsTable />
       <HostComponentsTableFooter />
-      <ServiceComponentsDynamicActionDialog />
+      <HostComponentsDynamicActionDialog />
     </>
   );
 };

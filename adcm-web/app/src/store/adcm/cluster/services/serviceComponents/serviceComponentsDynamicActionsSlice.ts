@@ -9,12 +9,11 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 
 interface LoadClusterServiceComponentsDynamicActions {
   components: AdcmServiceComponent[];
-  isHostOwnAction: boolean;
 }
 
 const loadClusterServiceComponentsDynamicActions = createAsyncThunk(
   'adcm/services/serviceComponents/serviceComponentDynamicActions/loadClusterServiceComponentsDynamicActions',
-  async ({ components, isHostOwnAction }: LoadClusterServiceComponentsDynamicActions, thunkAPI) => {
+  async ({ components }: LoadClusterServiceComponentsDynamicActions, thunkAPI) => {
     try {
       const actionsPromises = await Promise.allSettled(
         components.map(async (component) => {
@@ -29,7 +28,6 @@ const loadClusterServiceComponentsDynamicActions = createAsyncThunk(
               clusterId,
               serviceId,
               componentId,
-              isHostOwnAction,
             ),
           };
         }),

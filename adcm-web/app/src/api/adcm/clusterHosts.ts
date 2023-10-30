@@ -63,9 +63,18 @@ export class AdcmClusterHostsApi {
     return response.data;
   }
 
-  public static async getClusterHostActions(clusterId: number, hostId: number) {
+  public static async getClusterHostOwnActions(clusterId: number, hostId: number) {
+    const query = qs.stringify({ is_host_own_action: true });
     const response = await httpClient.get<AdcmDynamicAction[]>(
-      `/api/v2/clusters/${clusterId}/hosts/${hostId}/actions/`,
+      `/api/v2/clusters/${clusterId}/hosts/${hostId}/actions/?${query}`,
+    );
+    return response.data;
+  }
+
+  public static async getClusterHostComponentActions(clusterId: number, hostId: number, componentPrototypeId: number) {
+    const query = qs.stringify({ is_host_own_action: false, prototype_id: componentPrototypeId });
+    const response = await httpClient.get<AdcmDynamicAction[]>(
+      `/api/v2/clusters/${clusterId}/hosts/${hostId}/actions/?${query}`,
     );
     return response.data;
   }

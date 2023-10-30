@@ -33,7 +33,8 @@ export class AdcmHostsApi {
   }
 
   public static async getHostActions(hostId: number) {
-    const response = await httpClient.get<AdcmDynamicAction[]>(`/api/v2/hosts/${hostId}/actions/`);
+    const query = qs.stringify({ is_host_own_action: true });
+    const response = await httpClient.get<AdcmDynamicAction[]>(`/api/v2/hosts/${hostId}/actions/?${query}`);
     return response.data;
   }
 
