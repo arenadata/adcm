@@ -73,7 +73,7 @@ const NodeWithChildrenContent = ({
   });
 
   const hasChildren = Boolean(node.children?.length);
-  const isExpandable = fieldAttributes === undefined ? hasChildren : hasChildren && fieldAttributes.isActive;
+  const isExpandable = fieldAttributes?.isActive === undefined ? hasChildren : Boolean(fieldAttributes.isActive);
 
   return (
     <div className={className} ref={ref}>
