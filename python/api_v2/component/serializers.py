@@ -155,3 +155,9 @@ class HostComponentSerializer(ModelSerializer):
     @staticmethod
     def get_status(instance: ServiceComponent) -> str:
         return get_obj_status(obj=instance)
+
+
+class ComponentAuditSerializer(ModelSerializer):
+    class Meta:
+        model = ServiceComponent
+        fields = ["maintenance_mode"]

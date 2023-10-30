@@ -2192,6 +2192,296 @@ class TestBundleAudit(BaseAPITestCase):
         )
 
 
+class TestComponentAudit(AuditBaseTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_1 = ClusterObject.objects.get(cluster=self.cluster_1, prototype__name="service_1")
+        self.component_1 = ServiceComponent.objects.get(prototype__name="component_1", service=self.service_1)
+        self.component_action = Action.objects.get(name="action_1_comp_1", prototype=self.component_1.prototype)
+        self.config_post_data = {
+            "config": {
+                "group": {"file": "new content"},
+                "activatable_group": {"secretfile": "new content"},
+                "secrettext": "new secrettext",
+            },
+            "adcmMeta": {"/activatable_group": {"isActive": True}},
+            "description": "new config",
+        }
+
+    def test_run_action_success(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:component-action-run",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                    "pk": self.component_action.pk,
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.component_action.display_name} action launched",
+            operation_type="update",
+            operation_result="success",
+            audit_object__object_id=self.component_1.pk,
+            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
+            audit_object__object_type="component",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_run_action_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with (
+            self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"),
+            self.grant_permissions(to=self.test_user, on=self.service_1, role_name="View service configurations"),
+            self.grant_permissions(to=self.test_user, on=self.component_1, role_name="View component configurations"),
+        ):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="v2:component-action-run",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                        "pk": self.component_action.pk,
+                    },
+                ),
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.component_action.display_name} action launched",
+            operation_type="update",
+            operation_result="denied",
+            audit_object__object_id=self.component_1.pk,
+            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
+            audit_object__object_type="component",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_run_action_fail(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:component-action-run",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                    "pk": self.get_non_existent_pk(model=Action),
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="{action_display_name} action launched",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__object_id=self.component_1.pk,
+            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
+            audit_object__object_type="component",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_update_config_success(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:component-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                },
+            ),
+            data=self.config_post_data,
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        self.check_last_audit_log(
+            operation_name="Component configuration updated",
+            operation_type="update",
+            operation_result="success",
+            audit_object__object_id=self.component_1.pk,
+            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
+            audit_object__object_type="component",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_update_config_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with (
+            self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"),
+            self.grant_permissions(to=self.test_user, on=self.service_1, role_name="View service configurations"),
+            self.grant_permissions(to=self.test_user, on=self.component_1, role_name="View component configurations"),
+        ):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="v2:component-config-list",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                    },
+                ),
+                data=self.config_post_data,
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name="Component configuration updated",
+            operation_type="update",
+            operation_result="denied",
+            audit_object__object_id=self.component_1.pk,
+            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
+            audit_object__object_type="component",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_update_config_wrong_data_fail(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:component-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                },
+            ),
+            data={"wrong": ["d", "a", "t", "a"]},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="Component configuration updated",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__object_id=self.component_1.pk,
+            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
+            audit_object__object_type="component",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_update_config_not_exists_fail(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:component-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.get_non_existent_pk(model=ServiceComponent),
+                },
+            ),
+            data=self.config_post_data,
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="Component configuration updated",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_change_mm_success(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:component-maintenance-mode",
+                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk, "pk": self.component_1.pk},
+            ),
+            data={"maintenanceMode": "on"},
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.check_last_audit_log(
+            operation_name="Component updated",
+            operation_type="update",
+            operation_result="success",
+            audit_object__object_id=self.component_1.pk,
+            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
+            audit_object__object_type="component",
+            audit_object__is_deleted=False,
+            object_changes={"current": {"maintenance_mode": "on"}, "previous": {"maintenance_mode": "off"}},
+            user__username="admin",
+        )
+
+    def test_change_mm_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with (
+            self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"),
+            self.grant_permissions(to=self.test_user, on=self.service_1, role_name="View service configurations"),
+            self.grant_permissions(to=self.test_user, on=self.component_1, role_name="View component configurations"),
+        ):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="v2:component-maintenance-mode",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "pk": self.component_1.pk,
+                    },
+                ),
+                data={"maintenanceMode": "on"},
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name="Component updated",
+            operation_type="update",
+            operation_result="denied",
+            audit_object__object_id=self.component_1.pk,
+            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
+            audit_object__object_type="component",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_change_mm_fail(self):
+        response: Response = self.client.post(
+            path=reverse(
+                viewname="v2:component-maintenance-mode",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "pk": self.get_non_existent_pk(model=ServiceComponent),
+                },
+            ),
+            data={"maintenanceMode": "on"},
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="Component updated",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+
 class TestHostAudit(AuditBaseTestCase):  # pylint: disable=too-many-ancestors,too-many-public-methods
     def setUp(self) -> None:
         super().setUp()
