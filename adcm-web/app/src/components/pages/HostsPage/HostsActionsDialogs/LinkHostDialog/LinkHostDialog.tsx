@@ -51,7 +51,7 @@ const LinkHostDialog = () => {
 
   return (
     <Dialog
-      title={`Linking for host "${linkableHost?.name}"`}
+      title="Link host"
       isOpen={isOpenLink}
       onOpenChange={handleCloseDialog}
       onAction={submit}
