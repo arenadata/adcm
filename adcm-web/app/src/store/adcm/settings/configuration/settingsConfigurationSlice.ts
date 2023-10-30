@@ -11,6 +11,7 @@ import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
+import { checkSession } from '@store/authSlice';
 
 type AdcmSettingsState = {
   isConfigurationLoading: boolean;
@@ -42,7 +43,11 @@ const createWithUpdateSettingsConfiguration = createAsyncThunk(
   'adcm/settings/configuration/createWithUpdateSettingsConfiguration',
   async (arg: SaveSettingsPayload, thunkAPI) => {
     await thunkAPI.dispatch(createSettingsConfiguration(arg)).unwrap();
-    await thunkAPI.dispatch(getSettingsConfigurationVersions());
+    // TODO: rework in future. We can save password [min,max] settings in adcm settings. And it should influence o user Create/Edit forms
+    // settings for this form we get from auth.profile.
+    // as fast fix: check session and update auth.profile
+    thunkAPI.dispatch(checkSession());
+    thunkAPI.dispatch(getSettingsConfigurationVersions());
   },
 );
 
