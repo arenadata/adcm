@@ -23,7 +23,6 @@ from audit.models import (
     AuditOperation,
 )
 from cm.models import Cluster, ClusterBind, ClusterObject, Host, Prototype
-from django.db.models import Model
 from django.views import View
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
@@ -71,10 +70,10 @@ def make_export_name(cluster_name: str, service_name: str) -> str:
 
 # pylint: disable-next=too-many-locals,too-many-branches,too-many-statements
 def cluster_case(
-    path: list[str, ...],
+    path: list[str],
     view: GenericAPIView | View,
     response: Response,
-    deleted_obj: Model,
+    deleted_obj: Cluster,
     api_version: int = 1,
 ) -> tuple[AuditOperation, AuditObject | None]:
     audit_operation = None
@@ -146,7 +145,8 @@ def cluster_case(
             "maintenance-mode",
         ] | ["clusters", cluster_pk, "hosts", host_pk, "maintenance-mode"]:
             if view.request.method == "DELETE":
-                name = "host removed"
+                name = "Host removed"
+                operation_type = AuditLogOperationType.UPDATE
                 if not isinstance(deleted_obj, Host):
                     deleted_obj = Host.objects.filter(pk=host_pk).first()
 
@@ -165,6 +165,7 @@ def cluster_case(
             else:
                 obj = Host.objects.filter(pk=host_pk).first()
                 name = f"{AuditObjectType.HOST.capitalize()} updated"
+                operation_type = AuditLogOperationType.UPDATE
                 if obj:
                     audit_object = get_or_create_audit_obj(
                         object_id=host_pk,
@@ -174,7 +175,7 @@ def cluster_case(
 
             audit_operation = AuditOperation(
                 name=name,
-                operation_type=AuditLogOperationType.UPDATE,
+                operation_type=operation_type,
             )
 
         case ["cluster", cluster_pk, "hostcomponent"] | ["clusters", cluster_pk, "mapping"]:

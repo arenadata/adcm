@@ -22,7 +22,7 @@ from adcm.utils import get_obj_type
 
 # pylint: disable-next=too-many-locals,too-many-branches,too-many-statements
 def config_case(
-    path: list[str, ...],
+    path: list[str],
     view: View,
     response: Response,
     deleted_obj: Model,

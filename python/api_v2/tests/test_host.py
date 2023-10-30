@@ -64,7 +64,7 @@ class TestHost(BaseAPITestCase):
         response = self.client.post(
             path=reverse(viewname="v2:host-list"),
             data={
-                "hostprovider_id": self.provider.pk,
+                "hostproviderId": self.provider.pk,
                 "name": "new-test-host",
             },
         )
@@ -115,7 +115,7 @@ class TestHost(BaseAPITestCase):
         response = self.client.post(
             path=reverse(viewname="v2:host-list"),
             data={
-                "hostprovider_id": self.provider.pk,
+                "hostproviderId": self.provider.pk,
                 "name": "new_test_host",
             },
         )
@@ -188,7 +188,7 @@ class TestHost(BaseAPITestCase):
     def test_maintenance_mode(self):
         response = self.client.post(
             path=reverse(viewname="v2:host-maintenance-mode", kwargs={"pk": self.host.pk}),
-            data={"maintenance_mode": "on"},
+            data={"maintenanceMode": "on"},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -197,7 +197,7 @@ class TestHost(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         response = self.client.post(
             path=reverse(viewname="v2:host-maintenance-mode", kwargs={"pk": self.host.pk}),
-            data={"maintenance_mode": "on"},
+            data={"maintenanceMode": "on"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["maintenance_mode"], "on")
@@ -272,7 +272,7 @@ class TestClusterHost(BaseAPITestCase):
                 viewname="v2:host-cluster-maintenance-mode",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host.pk},
             ),
-            data={"maintenance_mode": "on"},
+            data={"maintenanceMode": "on"},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

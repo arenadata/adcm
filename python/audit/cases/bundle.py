@@ -18,7 +18,6 @@ from audit.models import (
     AuditOperation,
 )
 from cm.models import Bundle
-from django.db.models import Model
 from django.views import View
 from rest_framework.response import Response
 
@@ -27,7 +26,7 @@ def bundle_case(
     path: list[str],
     view: View,
     response: Response | None,
-    deleted_obj: Model,
+    deleted_obj: Bundle,
 ) -> tuple[AuditOperation | None, AuditObject | None]:
     audit_operation = None
     audit_object = None

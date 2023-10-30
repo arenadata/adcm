@@ -14,8 +14,9 @@ from audit.cases.bundle import bundle_case
 from audit.cases.cluster import cluster_case
 from audit.cases.common import action_case, task_job_case, upgrade_case
 from audit.cases.config import config_case
-from audit.cases.host_and_provider import host_and_provider_case
+from audit.cases.host import host_case
 from audit.cases.license import license_case
+from audit.cases.provider import provider_case
 from audit.cases.rbac import rbac_case
 from audit.cases.service import service_case
 from audit.cases.stack import stack_case
@@ -71,10 +72,16 @@ def get_audit_operation_and_object(  # pylint: disable=too-many-branches
             response=response,
             deleted_obj=deleted_obj,
         )
-    elif "host" in path or "provider" in path or "hostproviders" in path:
-        audit_operation, audit_object = host_and_provider_case(
+    elif "host" in path or "hosts" in path:
+        audit_operation, audit_object = host_case(
             path=path,
             view=view,
+            response=response,
+            deleted_obj=deleted_obj,
+        )
+    elif "provider" in path or "hostproviders" in path:
+        audit_operation, audit_object = provider_case(
+            path=path,
             response=response,
             deleted_obj=deleted_obj,
         )
