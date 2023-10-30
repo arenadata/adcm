@@ -1,8 +1,7 @@
-import { useDispatch, useStore } from '@hooks';
+import { useDispatch, useStore, useForm } from '@hooks';
 import { closeUserCreateDialog, createUser } from '@store/adcm/users/usersActionsSlice';
 import { RbacUserFormData } from '@pages/AccessManagerPage/AccessManagerUsersPage/RbacUserForm/RbacUserForm.types';
 import { useEffect } from 'react';
-import { useForm } from '@hooks/useForm';
 import { isEmailValid, isNameUniq, required } from '@utils/validationsUtils';
 
 const initialFormData: RbacUserFormData = {
@@ -42,7 +41,7 @@ export const useRbacUserCreateDialog = () => {
         (formData.password.length >= authSettings.minPasswordLength &&
         formData.password.length <= authSettings.maxPasswordLength
           ? undefined
-          : `Password should be greater than ${authSettings.minPasswordLength - 1} 
+          : `Password should be greater than ${authSettings.minPasswordLength - 1}
           and less than ${authSettings.maxPasswordLength + 1}`),
       firstName: required(formData.firstName) ? undefined : 'First Name field is required',
       lastName: required(formData.lastName) ? undefined : 'Last Name field is required',
