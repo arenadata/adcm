@@ -25,7 +25,7 @@ export const useRequestServiceComponent = () => {
 
   useEffect(() => {
     if (component) {
-      dispatch(loadClusterServiceComponentsDynamicActions({ components: [component], isHostOwnAction: false }));
+      dispatch(loadClusterServiceComponentsDynamicActions({ components: [component] }));
     }
   }, [dispatch, component]);
 

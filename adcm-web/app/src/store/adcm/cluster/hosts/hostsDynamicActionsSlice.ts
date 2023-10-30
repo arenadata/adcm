@@ -20,7 +20,7 @@ const loadClusterHostsDynamicActions = createAsyncThunk(
       const actionsPromises = await Promise.allSettled(
         hosts.map(async ({ id: hostId }) => ({
           hostId,
-          dynamicActions: await AdcmClusterHostsApi.getClusterHostActions(clusterId, hostId),
+          dynamicActions: await AdcmClusterHostsApi.getClusterHostOwnActions(clusterId, hostId),
         })),
       );
       const clusterHostsActions = fulfilledFilter(actionsPromises);

@@ -2,7 +2,7 @@ import { httpClient } from '@api/httpClient';
 import { AdcmMaintenanceMode, AdcmServiceComponent, Batch } from '@models/adcm';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { SortParams } from '@models/table';
-import { prepareQueryParams, prepareSorting } from '@utils/apiUtils';
+import { prepareSorting } from '@utils/apiUtils';
 import qs from 'qs';
 
 export class AdcmClusterServiceComponentsApi {
@@ -39,17 +39,9 @@ export class AdcmClusterServiceComponentsApi {
     return response.data;
   }
 
-  public static async getClusterServiceComponentsActions(
-    clusterId: number,
-    serviceId: number,
-    componentId: number,
-    filter: boolean,
-  ) {
-    const queryParams = prepareQueryParams({ is_own_host_action: filter });
-    const query = qs.stringify(queryParams);
-
+  public static async getClusterServiceComponentsActions(clusterId: number, serviceId: number, componentId: number) {
     const response = await httpClient.get<AdcmDynamicAction[]>(
-      `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/actions/?${query}`,
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/actions/`,
     );
     return response.data;
   }
