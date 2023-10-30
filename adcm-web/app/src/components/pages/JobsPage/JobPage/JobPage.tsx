@@ -8,18 +8,29 @@ import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import JobPageChildJobsTable from './JobPageChildJobsTable/JobPageChildJobsTable';
 import JobPageLog from './JobPageLog/JobPageLog';
 import JobPageStopJobDialog from './Dialogs/JobPageStopJobDialog';
+import { useParams } from 'react-router-dom';
 
 const JobPage: React.FC = () => {
   useRequestJobPage();
 
   const dispatch = useDispatch();
+
   const task = useStore(({ adcm }) => adcm.jobs.task);
+
+  const params = useParams();
+  const logNamePartPath = params['*'] || 'stdout';
 
   useEffect(() => {
     if (task) {
-      dispatch(setBreadcrumbs([{ href: '/jobs', label: 'Jobs' }, { label: task.displayName }]));
+      const jobBreadcrumbs = [{ href: '/jobs', label: 'Jobs' }, { label: task.displayName }];
+
+      if (task.childJobs?.length === 1) {
+        jobBreadcrumbs.push({ label: logNamePartPath });
+      }
+
+      dispatch(setBreadcrumbs(jobBreadcrumbs));
     }
-  }, [task, dispatch]);
+  }, [task, logNamePartPath, dispatch]);
 
   return (
     <>

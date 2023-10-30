@@ -4,7 +4,7 @@ import { Button, Tab, TabsBlock } from '@uikit';
 import CodeHighlighter from '@uikit/CodeHighlighter/CodeHighlighter';
 import { useRequestJobLogPage } from './useRequestJobLogPage';
 import s from './JobPageLog.module.scss';
-import { useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { apiHost } from '@constants';
 
 interface JobPageLogProps {
@@ -12,20 +12,14 @@ interface JobPageLogProps {
   isLinkEmpty?: boolean;
 }
 
-const getPathLogName = (pathname: string) => {
-  const parts = pathname.split('/');
-  const logNamePartPath = (parts[parts.length - 1] !== '' ? parts.at(-1) : parts.at(-2)) ?? '';
-  return !isNaN(+logNamePartPath) ? 'stdout' : logNamePartPath;
-};
-
 const JobPageLog: React.FC<JobPageLogProps> = ({ id, isLinkEmpty = false }) => {
   useRequestJobLogPage(id);
 
   const childJob = useStore(({ adcm }) => adcm.jobs.task.childJobs.find((job) => job.id === id));
   const logs = childJob?.logs ?? [];
 
-  const { pathname } = useLocation();
-  const logNamePartPath = getPathLogName(pathname);
+  const params = useParams();
+  const logNamePartPath = params['*'] || 'stdout';
 
   const [logNameClick, setLogNameClick] = useState<string>('stdout');
   const getHandleTabClick = (log: string) => () => {
