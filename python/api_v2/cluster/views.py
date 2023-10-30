@@ -30,7 +30,12 @@ from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.host.serializers import HostMappingSerializer
 from api_v2.views import CamelCaseModelViewSet
-from cm.api import add_cluster, retrieve_host_component_objects, set_host_component
+from cm.api import (
+    add_cluster,
+    delete_cluster,
+    retrieve_host_component_objects,
+    set_host_component,
+)
 from cm.issue import update_hierarchy_issues
 from cm.models import (
     Cluster,
@@ -47,7 +52,12 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_403_FORBIDDEN,
+)
 
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
@@ -116,6 +126,12 @@ class ClusterViewSet(
         update_hierarchy_issues(obj=instance)
 
         return Response(status=HTTP_200_OK, data=ClusterSerializer(instance).data)
+
+    def destroy(self, request, *args, **kwargs):
+        cluster = self.get_object()
+        delete_cluster(cluster=cluster)
+
+        return Response(status=HTTP_204_NO_CONTENT)
 
     @action(methods=["get"], detail=True, url_path="service-prototypes")
     def service_prototypes(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument

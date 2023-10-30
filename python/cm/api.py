@@ -383,24 +383,27 @@ def delete_service(service: ClusterObject) -> None:
     logger.info("service #%s is deleted", service_pk)
 
 
-@atomic
-def delete_cluster(cluster, cancel_tasks=True):
-    if cancel_tasks:
-        cancel_locking_tasks(cluster, obj_deletion=True)
+def delete_cluster(cluster: Cluster) -> None:
+    tasks = []
+    for lock in cluster.concerns.filter(type=ConcernType.LOCK):
+        for task in TaskLog.objects.filter(lock=lock):
+            tasks.append(task)
 
-    cluster_pk = cluster.pk
     hosts = cluster.host_set.order_by("id")
     host_pks = [str(host.pk) for host in hosts]
     hosts.update(maintenance_mode=MaintenanceMode.OFF)
     logger.debug(
         "Deleting cluster #%s. Set `%s` maintenance mode value for `%s` hosts.",
-        cluster_pk,
+        cluster.pk,
         MaintenanceMode.OFF,
         ", ".join(host_pks),
     )
     cluster.delete()
     update_issue_after_deleting()
     load_service_map()
+
+    for task in tasks:
+        task.cancel(obj_deletion=True)
 
 
 def remove_host_from_cluster(host: Host) -> Host:

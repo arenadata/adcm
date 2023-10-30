@@ -86,8 +86,8 @@ def run_job(task_id, job_id, err_file):
         )
         res = proc.wait()
         return res
-    except Exception:  # pylint: disable=broad-except
-        logger.error("exception running job %s", job_id)
+    except Exception as error:  # pylint: disable=broad-except
+        logger.error("exception running job %s: %s", job_id, error)
         return 1
 
 
