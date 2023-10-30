@@ -77,7 +77,11 @@ const getConcernPath = (concern: AdcmConcerns, placeHolderProps: AdcmConcernPlac
     case AdcmConcernCause.HostComponent:
       return `${clusterPath}/mapping`;
     case AdcmConcernCause.Import:
-      return `${getConcernObjectPath(placeHolderProps)}/import`;
+      return `${clusterPath}/import/${
+        placeHolderProps.type === 'service'
+          ? `services/?serviceId=${placeHolderProps.params.serviceId}`
+          : placeHolderProps.type
+      }`;
     case AdcmConcernCause.Service:
     case AdcmConcernCause.Requirement:
       return `${clusterPath}/services`;

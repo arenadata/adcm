@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import {
   getClusterServiceImports,
   saveClusterServiceImports,
@@ -34,6 +34,9 @@ export const useClusterImportsService = () => {
   const dispatch = useDispatch();
   const { clusterId: clusterIdFromUrl } = useParams();
   const clusterId = Number(clusterIdFromUrl);
+  const [searchParams] = useSearchParams();
+
+  const concernServiceId = Number(searchParams.get('serviceId'));
 
   const [initialImports, setInitialImports] = useState<SelectedImportsGroup>({
     clusters: new Map(),
@@ -109,9 +112,18 @@ export const useClusterImportsService = () => {
     dispatch(setPaginationParams(pageData));
   };
 
-  const handleServiceChange = (value: number | null) => {
-    dispatch(setFilter({ serviceId: value }));
-  };
+  const handleServiceChange = useCallback(
+    (value: number | null) => {
+      dispatch(setFilter({ serviceId: value }));
+    },
+    [dispatch],
+  );
+
+  useEffect(() => {
+    if (concernServiceId) {
+      handleServiceChange(concernServiceId);
+    }
+  }, [handleServiceChange, concernServiceId]);
 
   return {
     clusterImports,
