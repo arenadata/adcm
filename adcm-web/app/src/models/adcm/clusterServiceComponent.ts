@@ -1,4 +1,4 @@
-import { AdcmConcerns, AdcmMaintenanceMode, AdcmPrototypeType, AdcmServicePrototype } from '.';
+import { AdcmConcerns, AdcmMaintenanceMode, AdcmPrototypeShortView } from '.';
 
 export enum AdcmServiceComponentStatus {
   Up = 'up',
@@ -19,10 +19,6 @@ export interface AdcmServiceComponentHost {
   name: string;
 }
 
-export interface AdcmServiceComponentPrototype extends Omit<AdcmServicePrototype, 'type'> {
-  type: AdcmPrototypeType.Component;
-}
-
 export interface AdcmServiceComponent {
   id: number;
   name: string;
@@ -30,7 +26,7 @@ export interface AdcmServiceComponent {
   state: string;
   hosts: AdcmServiceComponentHost[];
   status: AdcmServiceComponentStatus;
-  prototype: AdcmServiceComponentPrototype;
+  prototype: AdcmPrototypeShortView;
   cluster: {
     id: number;
     name: string;

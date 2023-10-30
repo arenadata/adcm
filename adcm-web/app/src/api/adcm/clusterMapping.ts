@@ -1,5 +1,5 @@
 import { httpClient } from '@api/httpClient';
-import { AdcmMapping, AdcmHostShortView, AdcmComponent } from '@models/adcm/';
+import { AdcmMapping, AdcmHostShortView, AdcmMappingComponent } from '@models/adcm/';
 
 export class AdcmClusterMappingApi {
   public static async getMapping(clusterId: number) {
@@ -17,7 +17,7 @@ export class AdcmClusterMappingApi {
   }
 
   public static async getMappingComponents(clusterId: number) {
-    const response = await httpClient.get<AdcmComponent[]>(`/api/v2/clusters/${clusterId}/mapping/components/`);
+    const response = await httpClient.get<AdcmMappingComponent[]>(`/api/v2/clusters/${clusterId}/mapping/components/`);
     return response.data;
   }
 }

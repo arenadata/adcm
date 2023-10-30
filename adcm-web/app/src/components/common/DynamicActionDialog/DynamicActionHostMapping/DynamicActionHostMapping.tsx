@@ -6,7 +6,7 @@ import { DynamicActionCommonOptions } from '@commonComponents/DynamicActionDialo
 import s from '@commonComponents/DynamicActionDialog/DynamicActionDialog.module.scss';
 import { useClusterMapping } from '@pages/cluster/ClusterMapping/useClusterMapping';
 import ComponentContainer from '@pages/cluster/ClusterMapping/ComponentsMapping/ComponentContainer/ComponentContainer';
-import { AdcmComponent, AdcmComponentService } from '@models/adcm';
+import { AdcmMappingComponent, AdcmMappingComponentService } from '@models/adcm';
 import { SpinnerPanel } from '@uikit/Spinner/Spinner';
 import { getMappings, cleanupMappings } from '@store/adcm/cluster/mapping/mappingSlice';
 import { Link } from 'react-router-dom';
@@ -56,7 +56,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
     onSubmit({ hostComponentMap: hostComponentMapping });
   };
 
-  const getMapRules = (service: AdcmComponentService, component: AdcmComponent) => {
+  const getMapRules = (service: AdcmMappingComponentService, component: AdcmMappingComponent) => {
     return actionDetails.hostComponentMapRules.filter(
       (rule) => rule.service === service.name && rule.component === component.name,
     );
@@ -112,7 +112,8 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
                   onMap={handleMapHostsToComponent}
                   onUnmap={handleUnmap}
                   allowActions={allowActions}
-                  isDisabled={actions.length === 0}
+                  denyAddHostReason="Add host do not allow in config of action"
+                  denyRemoveHostReason="Remove host do not allow in config of action"
                 />
               );
             }),

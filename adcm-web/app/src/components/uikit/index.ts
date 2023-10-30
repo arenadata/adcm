@@ -17,6 +17,7 @@ import InputNumber from '@uikit/InputNumber/InputNumber';
 import InputPassword from './InputPassword/InputPassword';
 import InputWithAutoComplete from './InputWithAutocomplete/InputWithAutocomplete';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
+import MarkedList from '@uikit/MarkedList/MarkedList';
 import type { MarkerIconType } from '@uikit/MarkerIcon/MarkerIcon.types';
 import MultiSelectList from '@uikit/Select/MultiSelect/MultiSelectList/MultiSelectList';
 import MultiSelectPanel from '@uikit/Select/MultiSelect/MultiSelectPanel/MultiSelectPanel';
@@ -77,6 +78,7 @@ export {
   IconsNames,
   LabeledField,
   MarkerIcon,
+  MarkedList,
   MarkerIconType,
   MultiSelectList,
   MultiSelectPanel,

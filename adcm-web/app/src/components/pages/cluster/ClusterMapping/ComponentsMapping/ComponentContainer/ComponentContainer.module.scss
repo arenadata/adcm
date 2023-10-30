@@ -13,7 +13,6 @@
     --component-container-background: var(--color-xgray-alt-30);
     --component-container-default-border-color: var(--color-stroke-light);
 
-    --component-container-notRequired-border-color: var(--color-xdark);
     --component-container-notRequired-border-color: var(--color-stroke-light);
   }
 }
@@ -50,6 +49,7 @@
   display: flex;
   gap: 12px;
   line-height: 28px;
+  align-items: flex-start;
 
   &__title {
     flex-shrink: 0;
@@ -68,6 +68,14 @@
 
   &__count {
     flex-shrink: 0;
+  }
+
+  &__errors {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 10px;
   }
 
   &__add {

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { setLocalMapping } from '@store/adcm/cluster/mapping/mappingSlice';
-import { AdcmComponent, AdcmHostShortView } from '@models/adcm';
+import { AdcmMappingComponent, AdcmHostShortView } from '@models/adcm';
 import { arrayToHash } from '@utils/arrayUtils';
 import {
   getComponentsMapping,
@@ -33,6 +33,7 @@ export const useClusterMapping = () => {
     hasSaveError,
     state,
   } = useStore(({ adcm }) => adcm.clusterMapping);
+  const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
 
   const hostsDictionary: HostsDictionary = useMemo(() => arrayToHash(hosts, (h) => h.id), [hosts]);
   const componentsDictionary: ComponentsDictionary = useMemo(() => arrayToHash(components, (c) => c.id), [components]);
@@ -61,10 +62,20 @@ export const useClusterMapping = () => {
     [isLoaded, componentsMapping],
   );
 
-  const mappingValidation = useMemo(() => validate(componentsMapping, hosts.length), [componentsMapping, hosts.length]);
+  const servicesMappingDictionary = useMemo(() => {
+    return Object.fromEntries(servicesMapping.map((item) => [item.service.prototype.id, item]));
+  }, [servicesMapping]);
+
+  const mappingValidation = useMemo(() => {
+    return validate(componentsMapping, {
+      servicesMappingDictionary,
+      notAddedServicesDictionary,
+      allHostsCount: hosts.length,
+    });
+  }, [componentsMapping, servicesMappingDictionary, notAddedServicesDictionary, hosts.length]);
 
   const handleMapHostsToComponent = useCallback(
-    (hosts: AdcmHostShortView[], component: AdcmComponent) => {
+    (hosts: AdcmHostShortView[], component: AdcmMappingComponent) => {
       const newLocalMapping = mapHostsToComponent(servicesMapping, hosts, component);
       dispatch(setLocalMapping(newLocalMapping));
     },

@@ -9,6 +9,8 @@ import { Link, useParams } from 'react-router-dom';
 import { saveMapping } from '@store/adcm/cluster/mapping/mappingSlice';
 import { useDispatch, useStore } from '@hooks';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
+import RequiredServicesDialog from '@pages/cluster/ClusterMapping/ComponentsMapping/RequiredServicesDialog/RequiredServicesDialog';
+import { AdcmEntitySystemState, AdcmMaintenanceMode } from '@models/adcm';
 
 const buildServiceAnchorId = (id: number) => `anchor_${id}`;
 
@@ -111,17 +113,24 @@ const ComponentsMapping = () => {
                   {service.displayName}
                   <MarkerIcon type={markerType} variant="square" size="medium" />
                 </Text>
-                {componentsMapping.map((componentMapping) => (
-                  <ComponentContainer
-                    key={componentMapping.component.id}
-                    componentMapping={componentMapping}
-                    componentMappingValidation={mappingValidation.byComponents[componentMapping.component.id]}
-                    filter={servicesMappingFilter}
-                    allHosts={hosts}
-                    onMap={handleMapHostsToComponent}
-                    onUnmap={handleUnmap}
-                  />
-                ))}
+                {componentsMapping.map((componentMapping) => {
+                  const isEditableComponent =
+                    componentMapping.component.service.state === AdcmEntitySystemState.Created &&
+                    componentMapping.component.maintenanceMode !== AdcmMaintenanceMode.On;
+
+                  return (
+                    <ComponentContainer
+                      key={componentMapping.component.id}
+                      componentMapping={componentMapping}
+                      componentMappingValidation={mappingValidation.byComponents[componentMapping.component.id]}
+                      filter={servicesMappingFilter}
+                      allHosts={hosts}
+                      onMap={handleMapHostsToComponent}
+                      onUnmap={handleUnmap}
+                      allowActions={isEditableComponent ? undefined : []}
+                    />
+                  );
+                })}
               </div>
             );
           })}
@@ -138,6 +147,8 @@ const ComponentsMapping = () => {
           <AnchorList items={anchorItems} />
         </AnchorBar>
       </div>
+
+      <RequiredServicesDialog />
     </div>
   );
 };

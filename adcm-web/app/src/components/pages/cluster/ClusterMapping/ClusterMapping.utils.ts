@@ -1,11 +1,10 @@
 import {
   AdcmComponentConstraint,
   AdcmHostShortView,
-  AdcmComponent,
+  AdcmMappingComponent,
   AdcmMapping,
-  AdcmComponentService,
-  AdcmComponentDependency,
-  AdcmServiceComponentPrototype,
+  AdcmMappingComponentService,
+  AdcmDependOnService,
 } from '@models/adcm';
 import {
   HostMapping,
@@ -18,11 +17,15 @@ import {
   HostId,
   HostsDictionary,
   MappingValidation,
+  ValidateCache,
+  ComponentValidateResult,
+  ValidateRelatedData,
+  ValidationSuccess,
 } from './ClusterMapping.types';
 
 export const getComponentsMapping = (
   mapping: AdcmMapping[],
-  components: AdcmComponent[],
+  components: AdcmMappingComponent[],
   hostsDictionary: HostsDictionary,
 ): ComponentMapping[] => {
   const result: ComponentMapping[] = [];
@@ -48,9 +51,9 @@ export const getComponentsMapping = (
 export const getHostsMapping = (
   mapping: AdcmMapping[],
   hosts: AdcmHostShortView[],
-  componentsDictionary: Record<ComponentId, AdcmComponent>,
+  componentsDictionary: Record<ComponentId, AdcmMappingComponent>,
 ): HostMapping[] => {
-  const hostComponentsDictionary: Record<HostId, AdcmComponent[]> = {}; // key - component Id
+  const hostComponentsDictionary: Record<HostId, AdcmMappingComponent[]> = {}; // key - component Id
 
   for (const m of mapping) {
     hostComponentsDictionary[m.hostId] = hostComponentsDictionary[m.hostId] ?? [];
@@ -68,7 +71,7 @@ export const getHostsMapping = (
 };
 
 export const getServicesMapping = (componentMapping: ComponentMapping[]): ServiceMapping[] => {
-  const servicesDictionary: Record<ServiceId, AdcmComponentService> = {}; // key - service Id
+  const servicesDictionary: Record<ServiceId, AdcmMappingComponentService> = {}; // key - serviceId
   const serviceComponentsDictionary: Record<ServiceId, ComponentMapping[]> = {}; // // key - service Id
 
   // group components by service id
@@ -90,13 +93,17 @@ export const getServicesMapping = (componentMapping: ComponentMapping[]): Servic
   return result;
 };
 
-export const validate = (componentMapping: ComponentMapping[], allHostsCount: number): MappingValidation => {
+export const validate = (componentMapping: ComponentMapping[], relatedData: ValidateRelatedData): MappingValidation => {
   const byComponents: Record<ComponentId, ComponentMappingValidation> = {};
   let isAllMappingValid = true;
+  const validateCash: ValidateCache = {
+    componentsCache: new Map(),
+    servicesCache: new Map(),
+  };
 
   for (const cm of componentMapping) {
-    const constraintsValidationResult = validateConstraints(cm.component.constraints, allHostsCount, cm.hosts.length);
-    const requireValidationResults = validateRequire(cm.component.dependOn, cm.component.prototype);
+    const { constraintsValidationResult, requireValidationResults } = validateComponent(cm, relatedData, validateCash);
+
     const isValid = constraintsValidationResult.isValid && requireValidationResults.isValid;
 
     isAllMappingValid = isAllMappingValid && isValid;
@@ -117,7 +124,7 @@ export const validate = (componentMapping: ComponentMapping[], allHostsCount: nu
 export const mapHostsToComponent = (
   servicesMapping: ServiceMapping[],
   hosts: AdcmHostShortView[],
-  component: AdcmComponent,
+  component: AdcmMappingComponent,
 ) => {
   const result: AdcmMapping[] = [];
 
@@ -149,7 +156,7 @@ export const validateConstraints = (
   if (constraints.length == 2 && typeof c1 === 'number' && typeof c2 === 'number') {
     return c1 <= componentHostsCount && componentHostsCount <= c2
       ? { isValid: true }
-      : { isValid: false, error: `From ${c1} to ${c2} components should be installed.` };
+      : { isValid: false, errors: [`From ${c1} to ${c2} components should be installed.`] };
   }
 
   if (constraints.length == 2 && typeof c1 === 'number' && typeof c2 === 'string') {
@@ -157,19 +164,19 @@ export const validateConstraints = (
       case 'odd':
         return ((c1 === 0 && componentHostsCount === 0) || componentHostsCount % 2) && componentHostsCount >= c1
           ? { isValid: true }
-          : { isValid: false, error: `${c1} or more components should be installed. Total amount should be odd.` };
+          : { isValid: false, errors: [`${c1} or more components should be installed. Total amount should be odd.`] };
       case '+':
       default:
         return componentHostsCount >= c1
           ? { isValid: true }
-          : { isValid: false, error: `${c1} or more components should be installed.` };
+          : { isValid: false, errors: [`${c1} or more components should be installed.`] };
     }
   }
 
   if (constraints.length == 1 && typeof c1 === 'number') {
     return componentHostsCount === c1
       ? { isValid: true }
-      : { isValid: false, error: `Exactly ${c1} component should be installed.` };
+      : { isValid: false, errors: [`Exactly ${c1} component should be installed.`] };
   }
 
   if (constraints.length == 1 && typeof c1 === 'string') {
@@ -177,15 +184,15 @@ export const validateConstraints = (
       case '+':
         return componentHostsCount === hostsCount
           ? { isValid: true }
-          : { isValid: false, error: 'Component should be installed on all hosts of cluster.' };
+          : { isValid: false, errors: ['Component should be installed on all hosts of cluster.'] };
       case 'odd':
         return componentHostsCount % 2
           ? { isValid: true }
-          : { isValid: false, error: '1 or more components should be installed. Total amount should be odd.' };
+          : { isValid: false, errors: ['1 or more components should be installed. Total amount should be odd.'] };
     }
   }
 
-  return { isValid: false, error: 'Unknown constraints.' };
+  return { isValid: false, errors: ['Unknown constraints.'] };
 };
 
 export const getConstraintsLimit = (constraints: AdcmComponentConstraint[]) => {
@@ -194,17 +201,136 @@ export const getConstraintsLimit = (constraints: AdcmComponentConstraint[]) => {
   return limit;
 };
 
-export const validateRequire = (
-  dependencies: AdcmComponentDependency[] | null,
-  prototype: AdcmServiceComponentPrototype | undefined,
+export const validateDependOn = (
+  component: AdcmMappingComponent,
+  relatedData: ValidateRelatedData,
+  validateCash: ValidateCache,
 ): ValidationResult => {
-  const isPrototypeExists = !!dependencies?.find((dependency) => dependency.id === prototype?.id);
+  // component have not dependencies
+  if (!component.dependOn || component.dependOn.length === 0) {
+    return { isValid: true };
+  }
 
-  if (dependencies && !isPrototypeExists) {
+  const errors = [];
+  for (const { servicePrototype: dependService } of component.dependOn) {
+    // component depend on not added service
+    if (!validateServiceRequire(dependService, relatedData, validateCash)) {
+      let error = `Requires mapping of service "${dependService.displayName}"`;
+
+      // when component depend on special components of service
+      if (dependService.componentPrototypes.length > 0) {
+        const componentsNames = dependService.componentPrototypes.map(({ displayName }) => displayName);
+        error += ` (components: ${componentsNames.join(', ')})`;
+      }
+      errors.push(error);
+    }
+  }
+
+  if (errors.length > 0) {
     return {
       isValid: false,
-      error: `requires mapping of ${dependencies.map((d) => d.displayName).join(',')}`,
+      errors,
     };
   }
+
   return { isValid: true };
+};
+
+const validateServiceRequire = (
+  servicePrototype: AdcmDependOnService['servicePrototype'],
+  relatedData: ValidateRelatedData,
+  validateCash: ValidateCache,
+) => {
+  const { servicesCache } = validateCash;
+  if (servicesCache.has(servicePrototype.id)) {
+    return servicesCache.get(servicePrototype.id);
+  }
+
+  const { notAddedServicesDictionary, servicesMappingDictionary } = relatedData;
+
+  // component depend on not added service
+  if (notAddedServicesDictionary[servicePrototype.id]) {
+    servicesCache.set(servicePrototype.id, false);
+    return false;
+  }
+
+  const dependServiceMapping = servicesMappingDictionary[servicePrototype.id];
+  // component depend on added service (but this service have no child components)
+  if (!dependServiceMapping || dependServiceMapping.componentsMapping.length === 0) {
+    servicesCache.set(servicePrototype.id, true);
+    return true;
+  }
+
+  const componentPrototypesIds = servicePrototype.componentPrototypes.map(({ id }) => id);
+
+  const requiredComponents = dependServiceMapping.componentsMapping.filter(({ component }) =>
+    componentPrototypesIds.includes(component.prototype.id),
+  );
+
+  for (const requiredComponentItem of requiredComponents) {
+    const { constraintsValidationResult, requireValidationResults } = validateComponent(
+      requiredComponentItem,
+      relatedData,
+      validateCash,
+    );
+    const isValidChildComponent = constraintsValidationResult.isValid && requireValidationResults.isValid;
+
+    const isMappedChildComponent = requiredComponentItem.hosts.length > 0;
+
+    if (!isValidChildComponent || !isMappedChildComponent) {
+      servicesCache.set(servicePrototype.id, false);
+      return false;
+    }
+  }
+
+  servicesCache.set(servicePrototype.id, true);
+  return true;
+};
+
+const validateComponent = (
+  componentMapping: ComponentMapping,
+  relatedData: ValidateRelatedData,
+  validateCash: ValidateCache,
+) => {
+  const { componentsCache } = validateCash;
+  if (componentsCache.has(componentMapping.component.id)) {
+    return componentsCache.get(componentMapping.component.id) as ComponentValidateResult;
+  }
+
+  const constraintsValidationResult = validateConstraints(
+    componentMapping.component.constraints,
+    relatedData.allHostsCount,
+    componentMapping.hosts.length,
+  );
+
+  // if component can be not mapping (constraint = [0,...]) and user not mapped some hosts to this component
+  // then we can ignore validateDependOn for this component
+  const requireValidationResults = isMandatoryComponent(componentMapping)
+    ? validateDependOn(componentMapping.component, relatedData, validateCash)
+    : ({ isValid: true } as ValidationSuccess);
+
+  const result = {
+    constraintsValidationResult,
+    requireValidationResults,
+  };
+
+  componentsCache.set(componentMapping.component.id, result);
+
+  return result;
+};
+
+const isMandatoryComponent = (componentMapping: ComponentMapping) => {
+  const { component, hosts } = componentMapping;
+
+  // not mandatory when constraint [0, *] and not mapped hosts
+  return !(component.constraints[0] === 0 && hosts.length === 0);
+};
+
+export const isComponentDependOnNotAddedServices = (
+  component: AdcmMappingComponent,
+  notAddedServicesDictionary: ValidateRelatedData['notAddedServicesDictionary'],
+) => {
+  if (!component.dependOn?.length) return false;
+
+  return component.dependOn.some(({ servicePrototype }) => !!notAddedServicesDictionary[servicePrototype.id]);
 };

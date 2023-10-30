@@ -4,7 +4,7 @@ import { TabsBlock, Tab } from '@uikit';
 import s from './ClusterMapping.module.scss';
 import { useDispatch, useStore } from '@hooks';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
-import { getMappings, cleanupMappings } from '@store/adcm/cluster/mapping/mappingSlice';
+import { getMappings, cleanupMappings, getNotAddedServices } from '@store/adcm/cluster/mapping/mappingSlice';
 
 const ClusterMapping: React.FC = () => {
   const dispatch = useDispatch();
@@ -16,6 +16,7 @@ const ClusterMapping: React.FC = () => {
   useEffect(() => {
     if (!Number.isNaN(clusterId)) {
       dispatch(getMappings({ clusterId }));
+      dispatch(getNotAddedServices({ clusterId }));
     }
 
     return () => {

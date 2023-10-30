@@ -48,3 +48,10 @@ export interface AdcmProduct {
   name: string;
   displayName: string;
 }
+
+export interface AdcmPrototypeShortView {
+  id: number;
+  name: string;
+  displayName: string;
+  version: string;
+}

@@ -1,4 +1,4 @@
-import { AdcmHostShortView, AdcmComponent, AdcmMaintenanceMode, AdcmMapping } from '@models/adcm';
+import { AdcmHostShortView, AdcmMappingComponent, AdcmMaintenanceMode, AdcmMapping } from '@models/adcm';
 import { HostMapping, ServiceMapping } from './ClusterMapping.types';
 import { getComponentsMapping, getHostsMapping, getServicesMapping, mapHostsToComponent } from './ClusterMapping.utils';
 import { arrayToHash } from '@utils/arrayUtils';
@@ -17,11 +17,25 @@ const services = [
     id: 1,
     name: 'service 1',
     displayName: 'Service 1',
+    state: 'create',
+    prototype: {
+      id: 1,
+      name: 'service 1',
+      displayName: 'Service 1',
+      version: '0.1',
+    },
   },
   {
     id: 2,
     name: 'service 2',
     displayName: 'Service 2',
+    state: 'create',
+    prototype: {
+      id: 2,
+      name: 'service 2',
+      displayName: 'Service 2',
+      version: '0.2',
+    },
   },
 ];
 
@@ -46,7 +60,7 @@ const hosts: AdcmHostShortView[] = [
   },
 ];
 
-const components: AdcmComponent[] = [
+const components: AdcmMappingComponent[] = [
   {
     id: 1,
     name: 'component 1',
@@ -56,6 +70,12 @@ const components: AdcmComponent[] = [
     constraints: [0, 1],
     dependOn: null,
     service: services[0],
+    prototype: {
+      id: 1,
+      name: 'component 1',
+      displayName: 'Component 1',
+      version: '0.11',
+    },
   },
   {
     id: 2,
@@ -66,6 +86,12 @@ const components: AdcmComponent[] = [
     constraints: [0, 1],
     dependOn: null,
     service: services[0],
+    prototype: {
+      id: 2,
+      name: 'component 2',
+      displayName: 'Component 2',
+      version: '0.11',
+    },
   },
   {
     id: 3,
@@ -76,6 +102,12 @@ const components: AdcmComponent[] = [
     constraints: [0, 1],
     dependOn: null,
     service: services[1],
+    prototype: {
+      id: 3,
+      name: 'component 3',
+      displayName: 'Component 3',
+      version: '0.11',
+    },
   },
 ];
 

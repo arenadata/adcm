@@ -1,5 +1,5 @@
-import { AdcmServiceComponentPrototype } from './clusterServiceComponent';
 import { AdcmMaintenanceMode } from './maintenanceMode';
+import { AdcmDependOnService, AdcmEntityState, AdcmPrototypeShortView } from '@models/adcm/index';
 
 export interface AdcmMapping {
   id?: number;
@@ -29,29 +29,24 @@ export interface AdcmComponentDependency {
 
 export type AdcmComponentConstraint = number | string;
 
-export interface AdcmComponentService {
+export interface AdcmMappingComponentService {
   id: number;
   name: string;
   displayName: string;
+  state: AdcmEntityState;
+  prototype: AdcmPrototypeShortView;
 }
 
-export interface AdcmComponentPrototype {
-  id: number;
-  name: string;
-  displayName: string;
-  version: string;
-}
-
-export interface AdcmComponent {
+export interface AdcmMappingComponent {
   id: number;
   name: string;
   displayName: string;
   isMaintenanceModeAvailable: boolean;
   maintenanceMode: AdcmMaintenanceMode;
   constraints: AdcmComponentConstraint[];
-  service: AdcmComponentService;
-  dependOn: AdcmComponentDependency[] | null;
-  prototype?: AdcmServiceComponentPrototype;
+  service: AdcmMappingComponentService;
+  prototype: AdcmPrototypeShortView;
+  dependOn: AdcmDependOnService[] | null;
 }
 
 export interface CreateMappingPayload {

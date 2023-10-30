@@ -10,9 +10,17 @@ export interface MappingItemTagProps {
   isDisabled?: boolean;
   validationResult?: ValidationResult;
   onDeleteClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  denyRemoveHostReason?: React.ReactNode;
 }
 
-const MappingItemTag = ({ id, label, isDisabled = false, validationResult, onDeleteClick }: MappingItemTagProps) => {
+const MappingItemTag = ({
+  id,
+  label,
+  isDisabled = false,
+  validationResult,
+  onDeleteClick,
+  denyRemoveHostReason,
+}: MappingItemTagProps) => {
   const className = cn(s.mappingTag, {
     [s['mappingTag_valid']]: validationResult?.isValid === true,
     [s['mappingTag_error']]: validationResult?.isValid === false,
@@ -31,7 +39,7 @@ const MappingItemTag = ({ id, label, isDisabled = false, validationResult, onDel
             variant="secondary"
             size={20}
             onClick={onDeleteClick}
-            title="Remove"
+            title={isDisabled ? denyRemoveHostReason : 'Remove'}
             disabled={isDisabled}
           />
         ) : null
@@ -41,7 +49,7 @@ const MappingItemTag = ({ id, label, isDisabled = false, validationResult, onDel
         <ConditionalWrapper
           Component={Tooltip}
           isWrap={!validationResult.isValid}
-          label={(validationResult as ValidationError).error}
+          label={(validationResult as ValidationError).errors?.join(', ')}
           placement={'bottom-start'}
           className={s.mappingTag__tooltip}
           offset={16}
