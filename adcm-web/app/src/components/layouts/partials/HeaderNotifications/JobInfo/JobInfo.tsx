@@ -23,16 +23,18 @@ const JobInfo: React.FC<JobInfoProps> = ({ jobs }) => {
             <JobsStatusIconCell size={14} status={job.status} />
           </td>
           <td className={s.job__link}>
-            <ConditionalWrapper
-              Component={Tooltip}
-              isWrap={job.name.length > symbolsNumberToShowTooltip}
-              label={job.name}
-              placement={'bottom-start'}
-            >
-              <Link className="text-link" to={`/jobs/${job.id}`}>
-                {job.name}
-              </Link>
-            </ConditionalWrapper>
+            {job?.name && (
+              <ConditionalWrapper
+                Component={Tooltip}
+                isWrap={job.name.length > symbolsNumberToShowTooltip}
+                label={job.name}
+                placement={'bottom-start'}
+              >
+                <Link className="text-link" to={`/jobs/${job.id}`}>
+                  {job.name}
+                </Link>
+              </ConditionalWrapper>
+            )}
           </td>
         </tr>
       ))}

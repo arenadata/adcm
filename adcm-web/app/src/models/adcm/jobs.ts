@@ -29,8 +29,8 @@ export interface AdcmJobObjectAdvanced extends AdcmJobObject {
 
 export interface AdcmJob {
   id: number;
-  name: string;
-  displayName: string;
+  name?: string;
+  displayName?: string;
   status: AdcmJobStatus;
   objects: AdcmJobObject[];
   duration: number;
