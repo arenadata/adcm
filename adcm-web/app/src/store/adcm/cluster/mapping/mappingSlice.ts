@@ -2,7 +2,10 @@ import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 import { RequestError, AdcmClusterMappingApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showInfo } from '@store/notificationsSlice';
-import { AdcmComponent, AdcmHostShortView, AdcmMapping, AdcmError } from '@models/adcm';
+import { AdcmMappingComponent, AdcmHostShortView, AdcmMapping, AdcmError, AdcmServicePrototype } from '@models/adcm';
+import { ServiceId } from '@pages/cluster/ClusterMapping/ClusterMapping.types';
+import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
+import { arrayToHash } from '@utils/arrayUtils';
 
 type MappingState = 'no-changes' | 'editing' | 'saved';
 
@@ -20,10 +23,16 @@ type AdcmClusterMappingsState = {
   state: MappingState;
   localMapping: AdcmMapping[];
   hosts: AdcmHostShortView[];
-  components: AdcmComponent[];
+  components: AdcmMappingComponent[];
   isLoading: boolean;
   isLoaded: boolean;
   hasSaveError: boolean;
+  relatedData: {
+    notAddedServicesDictionary: Record<ServiceId, AdcmServicePrototype>;
+  };
+  requiredServicesDialog: {
+    component: AdcmMappingComponent | null;
+  };
 };
 
 const loadMapping = createAsyncThunk(
@@ -87,6 +96,17 @@ const getMappings = createAsyncThunk(
   },
 );
 
+const getNotAddedServices = createAsyncThunk(
+  'adcm/cluster/mapping/getNotAddedServices',
+  async ({ clusterId }: GetClusterMappingArg, thunkAPI) => {
+    try {
+      return await AdcmClusterServicesApi.getClusterServiceCandidates(clusterId);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
 const createInitialState = (): AdcmClusterMappingsState => ({
   mapping: [],
   state: 'no-changes',
@@ -96,6 +116,12 @@ const createInitialState = (): AdcmClusterMappingsState => ({
   isLoading: false,
   isLoaded: false,
   hasSaveError: false,
+  relatedData: {
+    notAddedServicesDictionary: {},
+  },
+  requiredServicesDialog: {
+    component: null,
+  },
 });
 
 const mappingSlice = createSlice({
@@ -112,6 +138,12 @@ const mappingSlice = createSlice({
     },
     cleanupMappings() {
       return createInitialState();
+    },
+    openRequiredServicesDialog(state, action) {
+      state.requiredServicesDialog.component = action.payload;
+    },
+    closeRequiredServicesDialog(state) {
+      state.requiredServicesDialog.component = null;
     },
   },
   extraReducers: (builder) => {
@@ -144,9 +176,25 @@ const mappingSlice = createSlice({
     builder.addCase(saveMapping.rejected, (state) => {
       state.hasSaveError = true;
     });
+    builder.addCase(getNotAddedServices.fulfilled, (state, action) => {
+      state.relatedData.notAddedServicesDictionary = arrayToHash(action.payload, (s) => s.id);
+    });
+    builder.addCase(getNotAddedServices.rejected, (state) => {
+      state.relatedData.notAddedServicesDictionary = {};
+    });
   },
 });
 
-const { setLocalMapping, revertChanges, cleanupMappings } = mappingSlice.actions;
-export { getMappings, saveMapping, setLocalMapping, revertChanges, cleanupMappings };
+const { setLocalMapping, revertChanges, cleanupMappings, openRequiredServicesDialog, closeRequiredServicesDialog } =
+  mappingSlice.actions;
+export {
+  getMappings,
+  saveMapping,
+  setLocalMapping,
+  revertChanges,
+  cleanupMappings,
+  getNotAddedServices,
+  openRequiredServicesDialog,
+  closeRequiredServicesDialog,
+};
 export default mappingSlice.reducer;

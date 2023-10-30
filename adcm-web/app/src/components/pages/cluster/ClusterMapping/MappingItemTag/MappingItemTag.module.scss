@@ -19,9 +19,9 @@
     --mapping-tag-error-tooltip-color: var(--color-xwhite-off);
     --mapping-tag-error-tooltip-background-color: var(--color-xred-dark);
     --mapping-tag-error-tooltip-border-color: var(--color-xdark);
-    --mapping-tag-error-tooltip-shadow: 0px 20px 20px 0px rgba(2, 1, 17, 0.20); 
+    --mapping-tag-error-tooltip-shadow: 0px 20px 20px 0px rgba(2, 1, 17, 0.20);
   }
-  
+
   body.theme-light {
     --mapping-tag-background-color: var(--color-xgray-alt-30);
 
@@ -46,13 +46,14 @@
 
 .mappingTag {
   background-color: var(--mapping-tag-background-color);
+  align-items: center !important;
 
   &__tooltip {
     border-radius: 8px;
     border: 1px solid var(--mapping-tag-error-tooltip-border-color);
     color: var(--mapping-tag-error-tooltip-color);
     background-color: var(--mapping-tag-error-tooltip-background-color);
-    box-shadow: var(--mapping-tag-error-tooltip-shadow); 
+    box-shadow: var(--mapping-tag-error-tooltip-shadow);
   }
 
   &_valid {

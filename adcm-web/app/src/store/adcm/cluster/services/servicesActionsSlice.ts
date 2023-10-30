@@ -26,20 +26,30 @@ interface toggleMaintenanceModePayload {
   maintenanceMode: AdcmMaintenanceMode;
 }
 
-const addService = createAsyncThunk(
-  'adcm/servicesActions/addService',
+const addServices = createAsyncThunk(
+  'adcm/servicesActions/addServices',
   async ({ clusterId, servicesIds }: AddClusterServicePayload, thunkAPI) => {
-    thunkAPI.dispatch(setIsAddingServices(true));
     try {
       await AdcmClusterServicesApi.addClusterService(clusterId, servicesIds);
-      thunkAPI.dispatch(showInfo({ message: 'Service was added' }));
+      thunkAPI.dispatch(showInfo({ message: `Service${servicesIds.length > 0 ? 's' : ''} was added` }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue([]);
-    } finally {
-      thunkAPI.dispatch(cleanupServicesActions());
-      thunkAPI.dispatch(getServices({ clusterId }));
     }
+  },
+);
+
+const addServicesWithUpdate = createAsyncThunk(
+  'adcm/servicesActions/addServicesWithUpdate',
+  async (arg: AddClusterServicePayload, thunkAPI) => {
+    thunkAPI.dispatch(setIsAddingServices(true));
+
+    await thunkAPI.dispatch(addServices(arg)).unwrap();
+
+    thunkAPI.dispatch(cleanupServicesActions());
+    await thunkAPI.dispatch(getServices({ clusterId: arg.clusterId })).unwrap();
+
+    thunkAPI.dispatch(setIsAddingServices(false));
   },
 );
 
@@ -188,7 +198,7 @@ const {
 } = servicesActionsSlice.actions;
 
 export {
-  addService,
+  addServices,
   deleteService,
   getServiceCandidates,
   toggleMaintenanceModeWithUpdate,
@@ -198,6 +208,7 @@ export {
   closeDeleteDialog,
   openMaintenanceModeDialog,
   closeMaintenanceModeDialog,
+  addServicesWithUpdate,
 };
 
 export default servicesActionsSlice.reducer;

@@ -1,25 +1,32 @@
-import { useState, useRef, useMemo } from 'react';
-import { Tags } from '@uikit';
+import { useMemo, useRef, useState } from 'react';
+import { SelectOption, Tags } from '@uikit';
 import MappingItemSelect from '../../MappingItemSelect/MappingItemSelect';
 import MappingItemTag from '../../MappingItemTag/MappingItemTag';
 import AddMappingButton from '../../AddMappingButton/AddMappingButton';
 import MappingError from '../../MappingError/MappingError';
-import { AdcmHostShortView, AdcmComponent } from '@models/adcm';
-import { ComponentMapping, ServiceMappingFilter, ComponentMappingValidation } from '../../ClusterMapping.types';
-import { getConstraintsLimit } from '../../ClusterMapping.utils';
+import {
+  AdcmHostComponentMapRuleAction,
+  AdcmHostShortView,
+  AdcmMaintenanceMode,
+  AdcmMappingComponent,
+} from '@models/adcm';
+import { ComponentMapping, ComponentMappingValidation, ServiceMappingFilter } from '../../ClusterMapping.types';
+import { getConstraintsLimit, isComponentDependOnNotAddedServices } from '../../ClusterMapping.utils';
 import s from './ComponentContainer.module.scss';
 import cn from 'classnames';
-import { AdcmHostComponentMapRuleAction } from '@models/adcm/dynamicAction';
+import { useDispatch, useStore } from '@hooks';
+import { openRequiredServicesDialog } from '@store/adcm/cluster/mapping/mappingSlice';
 
 export interface ComponentContainerProps {
   componentMapping: ComponentMapping;
   componentMappingValidation: ComponentMappingValidation;
   filter: ServiceMappingFilter;
   allHosts: AdcmHostShortView[];
-  onMap: (hosts: AdcmHostShortView[], component: AdcmComponent) => void;
+  onMap: (hosts: AdcmHostShortView[], component: AdcmMappingComponent) => void;
   onUnmap: (hostId: number, componentId: number) => void;
-  isDisabled?: boolean;
   allowActions?: AdcmHostComponentMapRuleAction[];
+  denyAddHostReason?: React.ReactNode;
+  denyRemoveHostReason?: React.ReactNode;
 }
 
 const defaultAllowActions = [AdcmHostComponentMapRuleAction.Add, AdcmHostComponentMapRuleAction.Remove];
@@ -31,17 +38,25 @@ const ComponentContainer = ({
   allHosts,
   onUnmap,
   onMap,
-  isDisabled = false,
+  denyAddHostReason = <DenyActionTooltip />,
+  denyRemoveHostReason = <DenyActionTooltip />,
   allowActions = defaultAllowActions,
 }: ComponentContainerProps) => {
+  const dispatch = useDispatch();
+  const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const addIconRef = useRef(null);
   const { component, hosts } = componentMapping;
-  const hostsOptions = useMemo(
+
+  const isDisabled = !allowActions?.length;
+
+  const hostsOptions = useMemo<SelectOption<AdcmHostShortView>[]>(
     () =>
-      allHosts.map((item) => ({
-        label: item.name,
-        value: item,
+      allHosts.map((host) => ({
+        label: host.name,
+        value: host,
+        disabled: host.maintenanceMode === AdcmMaintenanceMode.On,
+        title: 'You can not choose a host with maintenance mode is On',
       })),
     [allHosts],
   );
@@ -52,7 +67,11 @@ const ComponentContainer = ({
   );
 
   const handleAddClick = () => {
-    setIsSelectOpen(true);
+    if (isComponentDependOnNotAddedServices(component, notAddedServicesDictionary)) {
+      dispatch(openRequiredServicesDialog(component));
+    } else {
+      setIsSelectOpen(true);
+    }
   };
 
   const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -91,18 +110,25 @@ const ComponentContainer = ({
           <span className={s.componentContainerHeader__count}>
             {hosts.length} / {limit}
           </span>
-          {!componentMappingValidation.isValid && !componentMappingValidation.constraintsValidationResult.isValid && (
-            <MappingError message={componentMappingValidation.constraintsValidationResult.error} />
-          )}
-          {!componentMappingValidation.isValid && !componentMappingValidation.requireValidationResults.isValid && (
-            <MappingError message={componentMappingValidation.requireValidationResults.error} />
-          )}
+          <div className={s.componentContainerHeader__errors}>
+            {!componentMappingValidation.isValid &&
+              !componentMappingValidation.constraintsValidationResult.isValid &&
+              componentMappingValidation.constraintsValidationResult.errors.map((error) => (
+                <MappingError message={error} key={error} />
+              ))}
+            {!componentMappingValidation.isValid &&
+              !componentMappingValidation.requireValidationResults.isValid &&
+              componentMappingValidation.requireValidationResults.errors.map((error) => (
+                <MappingError message={error} key={error} />
+              ))}
+          </div>
           <AddMappingButton
             className={s.componentContainerHeader__add}
             ref={addIconRef}
             label="Add hosts"
             onAddClick={handleAddClick}
-            isDisabled={isDisabled || !allowActions.includes(AdcmHostComponentMapRuleAction.Add)}
+            denyAddHostReason={denyAddHostReason}
+            isDisabled={!allowActions.includes(AdcmHostComponentMapRuleAction.Add)}
           />
         </div>
         {visibleHosts.length > 0 && (
@@ -113,7 +139,8 @@ const ComponentContainer = ({
                 id={host.id}
                 label={host.name}
                 onDeleteClick={handleDelete}
-                isDisabled={isDisabled || !allowActions.includes(AdcmHostComponentMapRuleAction.Remove)}
+                isDisabled={!allowActions.includes(AdcmHostComponentMapRuleAction.Remove)}
+                denyRemoveHostReason={denyRemoveHostReason}
               />
             ))}
           </Tags>
@@ -134,3 +161,10 @@ const ComponentContainer = ({
 };
 
 export default ComponentContainer;
+
+const DenyActionTooltip = () => (
+  <div>
+    <div>Service of component must have state 'Created'</div>
+    <div>Component must not have maintenance mode is On</div>
+  </div>
+);

@@ -1,4 +1,4 @@
-import { AdcmCluster, AdcmComponent, AdcmConcerns, AdcmHost, AdcmHostProvider } from '.';
+import { AdcmCluster, AdcmConcerns, AdcmHost, AdcmHostProvider, AdcmServiceComponent } from '.';
 import { AdcmTask } from './jobs';
 import { AdcmService } from './service';
 
@@ -85,7 +85,7 @@ export type UpdateServiceEvent = {
 
 // Component events
 
-type ComponentChanges = Omit<AdcmComponent, 'id'>;
+type ComponentChanges = Omit<AdcmServiceComponent, 'id'>;
 
 export type UpdateComponentEvent = {
   event: 'update_component';

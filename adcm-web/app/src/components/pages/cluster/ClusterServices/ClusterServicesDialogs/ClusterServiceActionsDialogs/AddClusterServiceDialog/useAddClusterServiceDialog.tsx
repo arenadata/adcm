@@ -1,7 +1,7 @@
 import { useDispatch, useForm, useStore } from '@hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  addService,
+  addServicesWithUpdate,
   closeAddServicesDialog,
   getServiceCandidates,
 } from '@store/adcm/cluster/services/servicesActionsSlice';
@@ -49,7 +49,7 @@ export const useAddClusterServiceDialog = () => {
   const handleSubmit = () => {
     if (cluster) {
       dispatch(
-        addService({
+        addServicesWithUpdate({
           clusterId: cluster.id,
           servicesIds: formData.selectedServicesIds,
         }),
