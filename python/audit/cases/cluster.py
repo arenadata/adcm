@@ -354,6 +354,7 @@ def cluster_case(
             | ["service", _, "component", component_pk, "config", "history", _, "restore"]
             | ["component", component_pk, "config", "history"]
             | ["component", component_pk, "config", "history", _, "restore"]
+            | ["clusters", _, "services", _, "components", component_pk, "configs"]
         ):
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.COMPONENT,
@@ -428,7 +429,15 @@ def cluster_case(
         case (
             ["component", component_pk]
             | ["component", component_pk, _]
-            | ["cluster", _, "service", _, "component", component_pk, "maintenance-mode"]
+            | [
+                "cluster" | "clusters",
+                _,
+                "service" | "services",
+                _,
+                "component" | "components",
+                component_pk,
+                "maintenance-mode",
+            ]
             | ["service", _, "component", component_pk, "maintenance-mode"]
         ):
             audit_operation, audit_object = obj_pk_case(

@@ -20,6 +20,9 @@ from api.service.serializers import ServiceAuditSerializer
 from api_v2.cluster.serializers import (
     ClusterAuditSerializer as ClusterAuditSerializerV2,
 )
+from api_v2.component.serializers import (
+    ComponentAuditSerializer as ComponentAuditSerializerV2,
+)
 from api_v2.host.serializers import HostAuditSerializer as HostAuditSerializerV2
 from api_v2.service.serializers import (
     ServiceAuditSerializer as ServiceAuditSerializerV2,
@@ -208,7 +211,10 @@ def _get_object_changes(prev_data: dict, current_obj: Model, api_version: int) -
         elif api_version == 2:
             serializer_class = ServiceAuditSerializerV2
     elif isinstance(current_obj, ServiceComponent):
-        serializer_class = ComponentAuditSerializer
+        if api_version == 1:
+            serializer_class = ComponentAuditSerializer
+        elif api_version == 2:
+            serializer_class = ComponentAuditSerializerV2
 
     if not serializer_class:
         return {}
@@ -274,6 +280,9 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
             pk = view.kwargs["pk"]
         elif view.__class__.__name__ == "ServiceViewSet" and view.action == "maintenance_mode":
             serializer_class = ServiceAuditSerializerV2
+            pk = view.kwargs["pk"]
+        elif view.__class__.__name__ == "ComponentViewSet" and view.action == "maintenance_mode":
+            serializer_class = ComponentAuditSerializerV2
             pk = view.kwargs["pk"]
 
     if serializer_class:
