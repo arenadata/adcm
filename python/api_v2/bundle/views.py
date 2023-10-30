@@ -12,6 +12,7 @@
 from api_v2.bundle.filters import BundleFilter
 from api_v2.bundle.serializers import BundleListSerializer, UploadBundleSerializer
 from api_v2.views import CamelCaseGenericViewSet
+from audit.utils import audit
 from cm.bundle import delete_bundle, load_bundle, upload_file
 from cm.models import Bundle, ObjectType
 from django.db.models import F
@@ -42,6 +43,7 @@ class BundleViewSet(  # pylint: disable=too-many-ancestors
     filterset_class = BundleFilter
     filter_backends = (DjangoFilterBackend,)
 
+    @audit
     def create(self, request, *args, **kwargs) -> Response:
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -50,6 +52,7 @@ class BundleViewSet(  # pylint: disable=too-many-ancestors
 
         return Response(status=HTTP_201_CREATED, data=self.serializer_class(bundle).data)
 
+    @audit
     def destroy(self, request, *args, **kwargs) -> Response:
         bundle = self.get_object()
         delete_bundle(bundle=bundle)

@@ -15,10 +15,11 @@
 from datetime import timedelta
 
 from api_v2.tests.base import BaseAPITestCase
-from audit.models import AuditObject, AuditSession
+from audit.models import AuditLogOperationType, AuditObject, AuditSession
 from cm.models import (
     ADCM,
     Action,
+    Bundle,
     Cluster,
     ClusterObject,
     Host,
@@ -28,6 +29,7 @@ from cm.models import (
     ServiceComponent,
     Upgrade,
 )
+from django.conf import settings
 from rbac.models import User
 from rbac.services.user import create_user
 from rest_framework.response import Response
@@ -1784,4 +1786,90 @@ class TestADCMAudit(BaseAPITestCase):
             operation_result="denied",
             audit_object__is_deleted=False,
             user__username=self.test_user_credentials["username"],
+        )
+
+
+class TestBundleAudit(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = create_user(**self.test_user_credentials)
+
+    def test_audit_upload_success(self):
+        new_bundle_file = self.prepare_bundle_file(source_dir=self.test_bundles_dir / "cluster_actions")
+        with open(settings.DOWNLOAD_DIR / new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+            response = self.client.post(
+                path=reverse(viewname="v2:bundle-list"),
+                data={"file": f},
+                format="multipart",
+            )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.check_last_audit_log(
+            operation_name="Bundle uploaded",
+            operation_result="success",
+            operation_type=AuditLogOperationType.CREATE,
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_audit_delete_success(self):
+        bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_actions")
+        response = self.client.delete(path=reverse(viewname="v2:bundle-detail", kwargs={"pk": bundle.pk}))
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.check_last_audit_log(
+            operation_name="Bundle deleted",
+            operation_type="delete",
+            operation_result="success",
+            audit_object__object_id=bundle.pk,
+            audit_object__object_name=bundle.name,
+            audit_object__object_type="bundle",
+            audit_object__is_deleted=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_audit_delete_non_existent_fail(self):
+        response = self.client.delete(path=reverse(viewname="v2:bundle-detail", kwargs={"pk": 100}))
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_last_audit_log(
+            operation_name="Bundle deleted",
+            operation_type="delete",
+            operation_result="fail",
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_audit_delete_access_denied_fail(self):
+        bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_actions")
+        self.client.login(**self.test_user_credentials)
+        response = self.client.delete(path=reverse(viewname="v2:bundle-detail", kwargs={"pk": bundle.pk}))
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_last_audit_log(
+            operation_name="Bundle deleted",
+            operation_type="delete",
+            operation_result="denied",
+            object_changes={},
+            user__username=self.test_user_credentials["username"],
+        )
+
+    def test_audit_accept_license_success(self):
+        bundle = Bundle.objects.filter(name="cluster_one").first()
+        bundle_prototype = Prototype.objects.get(bundle=bundle, type="cluster")
+
+        response = self.client.post(
+            path=reverse(viewname="v2:prototype-accept-license", kwargs={"pk": bundle_prototype.pk})
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.check_last_audit_log(
+            operation_name="Bundle license accepted",
+            operation_type="update",
+            operation_result="success",
+            audit_object__object_id=bundle.pk,
+            audit_object__object_name=bundle.name,
+            object_changes={},
+            user__username="admin",
         )
