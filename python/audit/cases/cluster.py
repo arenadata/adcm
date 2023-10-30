@@ -308,6 +308,7 @@ def cluster_case(
             | ["cluster", _, "service", service_pk, "config", "history", _, "restore"]
             | ["service", service_pk, "config", "history"]
             | ["service", service_pk, "config", "history", _, "restore"]
+            | ["clusters", _, "services", service_pk, "configs"]
         ):
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.SERVICE,
@@ -316,7 +317,10 @@ def cluster_case(
                 operation_aux_str=CONFIGURATION_STR,
             )
 
-        case (["cluster", _, "service", service_pk, "import"] | ["service", service_pk, "import"]):
+        case (
+            ["cluster" | "clusters", _, "service" | "services", service_pk, "import" | "imports"]
+            | ["service", service_pk, "import"]
+        ):
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.SERVICE,
                 operation_type=AuditLogOperationType.UPDATE,
@@ -324,7 +328,7 @@ def cluster_case(
                 operation_aux_str="import ",
             )
 
-        case ["cluster", _, "service", service_pk, "maintenance-mode"]:
+        case ["cluster" | "clusters", _, "service" | "services", service_pk, "maintenance-mode"]:
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.SERVICE,
                 operation_type=AuditLogOperationType.UPDATE,

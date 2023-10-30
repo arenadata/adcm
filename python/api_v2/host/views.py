@@ -130,6 +130,7 @@ class HostClusterViewSet(  # pylint:disable=too-many-ancestors
     object_actions = ["destroy"]
     permission_required = [VIEW_HOST_PERM]
     filterset_class = HostClusterFilter
+    audit_model_hint = Host
 
     def get_serializer_class(self):
         if self.action == "maintenance_mode":

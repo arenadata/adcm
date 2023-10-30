@@ -20,7 +20,10 @@ from api.service.serializers import ServiceAuditSerializer
 from api_v2.cluster.serializers import (
     ClusterAuditSerializer as ClusterAuditSerializerV2,
 )
-from api_v2.cluster.serializers import ClusterUpdateSerializer
+from api_v2.host.serializers import HostAuditSerializer as HostAuditSerializerV2
+from api_v2.service.serializers import (
+    ServiceAuditSerializer as ServiceAuditSerializerV2,
+)
 from audit.cases.cases import get_audit_operation_and_object
 from audit.cef_logger import cef_logger
 from audit.models import (
@@ -139,7 +142,9 @@ def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs: dict, api_v
     return deleted_obj
 
 
-def _get_target_object_by_view(view: GenericViewSet) -> Host | HostProvider | Cluster | ClusterObject | None:
+def _get_target_object_by_view(
+    view: GenericViewSet,
+) -> Host | HostProvider | Cluster | ClusterObject | ServiceComponent | None:
     """
     Here we consider the final object only.
     E.g.:
@@ -150,16 +155,26 @@ def _get_target_object_by_view(view: GenericViewSet) -> Host | HostProvider | Cl
     match (view.__class__.__name__, view.action, view.kwargs):
         case ("HostClusterViewSet", "destroy" | "maintenance_mode", {"cluster_pk": _, "pk": host_pk}):
             target_object = Host.objects.filter(pk=host_pk).first()
-        case ("ServiceViewSet", "destroy", {"cluster_pk": _, "pk": servie_pk}):
-            target_object = ClusterObject.objects.filter(pk=servie_pk).first()
+        case ("ServiceViewSet", _, {"cluster_pk": _, "pk": service_pk}) | (
+            "ImportViewSet",
+            _,
+            {"cluster_pk": _, "service_pk": service_pk},
+        ):
+            target_object = ClusterObject.objects.filter(pk=service_pk).first()
         case ("ClusterViewSet", _, {"pk": cluster_pk}) | (
-            "ImportViewSet" | "ConfigLogViewSet" | "HostClusterViewSet" | "ServiceViewSet",
+            "ImportViewSet" | "HostClusterViewSet" | "ServiceViewSet",
             _,
             {"cluster_pk": cluster_pk},
         ):
             target_object = Cluster.objects.filter(pk=cluster_pk).first()
         case ("HostProviderViewSet", _, {"pk": hostprovider_pk}):
             target_object = HostProvider.objects.filter(pk=hostprovider_pk).first()
+        case ("ConfigLogViewSet", _, {"cluster_pk": _, "service_pk": _, "component_pk": component_pk}):
+            target_object = ServiceComponent.objects.filter(pk=component_pk).first()
+        case ("ConfigLogViewSet", _, {"cluster_pk": _, "service_pk": service_pk}):
+            target_object = ClusterObject.objects.filter(pk=service_pk).first()
+        case ("ConfigLogViewSet", _, {"cluster_pk": cluster_pk}):
+            target_object = Cluster.objects.filter(pk=cluster_pk).first()
         case _:
             target_object = None
 
@@ -183,9 +198,15 @@ def _get_object_changes(prev_data: dict, current_obj: Model, api_version: int) -
         elif api_version == 2:
             serializer_class = ClusterAuditSerializerV2
     elif isinstance(current_obj, Host):
-        serializer_class = HostAuditSerializer
+        if api_version == 1:
+            serializer_class = HostAuditSerializer
+        elif api_version == 2:
+            serializer_class = HostAuditSerializerV2
     elif isinstance(current_obj, ClusterObject):
-        serializer_class = ServiceAuditSerializer
+        if api_version == 1:
+            serializer_class = ServiceAuditSerializer
+        elif api_version == 2:
+            serializer_class = ServiceAuditSerializerV2
     elif isinstance(current_obj, ServiceComponent):
         serializer_class = ComponentAuditSerializer
 
@@ -211,7 +232,7 @@ def _get_object_changes(prev_data: dict, current_obj: Model, api_version: int) -
 
 
 def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | None, Model | None]:
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches,too-many-statements
 
     prev_data = None
     current_obj = None
@@ -236,7 +257,7 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
             serializer_class = HostAuditSerializer
             pk = view.kwargs["host_id"]
         elif view.__class__.__name__ == "ClusterViewSet":
-            serializer_class = ClusterUpdateSerializer
+            serializer_class = ClusterAuditSerializerV2
             pk = view.kwargs["pk"]
     elif view.request.method == "POST":
         if view.__class__.__name__ == "ServiceMaintenanceModeView":
@@ -248,9 +269,19 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
         elif view.__class__.__name__ == "ComponentMaintenanceModeView":
             serializer_class = ComponentAuditSerializer
             pk = view.kwargs["component_id"]
+        elif view.__class__.__name__ == "HostClusterViewSet" and view.action == "maintenance_mode":
+            serializer_class = HostAuditSerializerV2
+            pk = view.kwargs["pk"]
+        elif view.__class__.__name__ == "ServiceViewSet" and view.action == "maintenance_mode":
+            serializer_class = ServiceAuditSerializerV2
+            pk = view.kwargs["pk"]
 
     if serializer_class:
-        model = view.get_queryset().model
+        if hasattr(view, "audit_model_hint"):  # for cases when get_queryset() raises error
+            model = view.audit_model_hint
+        else:
+            model = view.get_queryset().model
+
         try:
             current_obj = model.objects.filter(pk=pk).first()
             prev_data = serializer_class(model.objects.filter(pk=pk).first()).data
