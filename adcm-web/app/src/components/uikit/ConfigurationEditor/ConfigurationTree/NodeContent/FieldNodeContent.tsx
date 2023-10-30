@@ -75,16 +75,16 @@ const FieldNodeContent = ({
       }
     }
 
-    if (adcmMeta.isSecret) {
-      return secretStub;
+    if (fieldNodeData.value === '') {
+      return emptyStringStub;
     }
 
     if (fieldNodeData.value === null) {
       return nullStub;
     }
 
-    if (fieldNodeData.value === '') {
-      return emptyStringStub;
+    if (adcmMeta.isSecret) {
+      return secretStub;
     }
 
     return fieldNodeData.value.toString();
