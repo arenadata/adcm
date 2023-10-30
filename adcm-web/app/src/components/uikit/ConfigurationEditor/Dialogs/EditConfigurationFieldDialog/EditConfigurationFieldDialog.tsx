@@ -31,7 +31,7 @@ const EditConfigurationFieldDialog = ({
   const adcmMeta = fieldNode.data.fieldSchema.adcmMeta;
 
   const [value, setValue] = useState<JSONPrimitive>(fieldNode.data.value);
-  const [isApplyDisabled, setIsApplyDisabled] = useState(true);
+  const [isValueValid, setIsValueValid] = useState(true);
 
   const handleOpenChange = (isOpen: boolean) => {
     onOpenChange(isOpen);
@@ -39,7 +39,7 @@ const EditConfigurationFieldDialog = ({
 
   const handleValueChange = useCallback((value: JSONPrimitive, isValid = true) => {
     setValue(value as JSONPrimitive);
-    setIsApplyDisabled(!isValid);
+    setIsValueValid(isValid);
   }, []);
 
   const handleCancel = () => {
@@ -98,7 +98,7 @@ const EditConfigurationFieldDialog = ({
       isOpen={isOpen}
       onCancel={handleCancel}
       onApply={handleApply}
-      isApplyDisabled={isApplyDisabled}
+      isApplyDisabled={!isValueValid || fieldNode.data.isReadonly}
       onOpenChange={handleOpenChange}
     >
       {Control && (
