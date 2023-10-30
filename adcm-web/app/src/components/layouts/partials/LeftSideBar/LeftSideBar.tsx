@@ -6,10 +6,12 @@ import MainLogo from '@layouts/partials/MainLogo/MainLogo';
 import { useMediaQuery } from '@uikit/hooks/useMediaQuery';
 
 import s from './LeftSideBar.module.scss';
-import { useDispatch } from '@hooks';
+import { useDispatch, useStore } from '@hooks';
 import { logout } from '@store/authSlice';
 
 const LeftSideBar: React.FC<HTMLAttributes<HTMLDivElement>> = ({ className }) => {
+  const { username, firstName } = useStore((s) => s.auth.profile);
+
   const [isSlim, setIsSlim] = useState(false);
 
   useMediaQuery('(max-width: 980px)', setIsSlim);
@@ -44,7 +46,7 @@ const LeftSideBar: React.FC<HTMLAttributes<HTMLDivElement>> = ({ className }) =>
 
       <LeftBarMenu className={s.leftSideBar__menu} data-test="nav-menu-settings">
         <LeftBarMenuItem icon="g2-user" to="/profile" isSmall={isSlim}>
-          Admin
+          <div className={s.leftSideBar__userName}>{firstName || username}</div>
         </LeftBarMenuItem>
         <LeftBarMenuItem icon="g2-configuration" to="/settings" isSmall={isSlim}>
           Settings

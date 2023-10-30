@@ -212,11 +212,17 @@ const usersActionsSlice = createSlice({
       .addCase(createUser.fulfilled, (state) => {
         usersActionsSlice.caseReducers.closeUserCreateDialog(state);
       })
+      .addCase(createUser.rejected, (state) => {
+        state.createDialog.isCreating = false;
+      })
       .addCase(updateUser.pending, (state) => {
         state.updateDialog.isUpdating = true;
       })
       .addCase(updateUser.fulfilled, (state) => {
         usersActionsSlice.caseReducers.closeUserUpdateDialog(state);
+      })
+      .addCase(updateUser.rejected, (state) => {
+        state.updateDialog.isUpdating = false;
       });
   },
 });

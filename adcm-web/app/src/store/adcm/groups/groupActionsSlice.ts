@@ -78,6 +78,7 @@ const groupsActionsSlice = createSlice({
     },
     closeUpdateDialog(state) {
       state.updateDialog.group = null;
+      state.updateDialog.isUpdating = false;
     },
   },
   extraReducers: (builder) => {
@@ -89,8 +90,10 @@ const groupsActionsSlice = createSlice({
         state.updateDialog.isUpdating = true;
       })
       .addCase(updateGroup.fulfilled, (state) => {
-        state.updateDialog.isUpdating = false;
         groupsActionsSlice.caseReducers.closeUpdateDialog(state);
+      })
+      .addCase(updateGroup.rejected, (state) => {
+        state.updateDialog.isUpdating = false;
       });
   },
 });

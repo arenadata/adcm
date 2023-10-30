@@ -22,7 +22,7 @@ export interface AdcmUser {
   groups: AdcmUserGroup[];
   status: AdcmUserStatus;
   isBuiltIn: boolean;
-  isSuperuser: boolean;
+  isSuperUser: boolean;
   type: string;
   username: string;
 }
