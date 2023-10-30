@@ -74,7 +74,7 @@ def _rbac_case(
 
 
 def rbac_case(
-    path: list[str, ...],
+    path: list[str],
     view: View,
     response: Response,
     deleted_obj: Model,

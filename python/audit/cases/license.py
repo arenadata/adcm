@@ -23,7 +23,7 @@ from rest_framework.response import Response
 
 
 def license_case(
-    path: list[str, ...],
+    path: list[str],
     view: View,
     response: Response,
 ) -> tuple[AuditOperation | None, AuditObject | None]:

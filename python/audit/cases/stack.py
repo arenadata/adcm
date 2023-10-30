@@ -22,7 +22,7 @@ from rest_framework.response import Response
 
 
 def stack_case(
-    path: list[str, ...],
+    path: list[str],
     response: Response,
     deleted_obj: Model,
 ) -> tuple[AuditOperation | None, AuditObject | None]:

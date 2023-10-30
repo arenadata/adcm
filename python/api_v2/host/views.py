@@ -70,6 +70,7 @@ class HostViewSet(ModelObjectPermissionsByActionMixin, PermissionListMixin, Conf
 
         return HostSerializer
 
+    @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -92,12 +93,14 @@ class HostViewSet(ModelObjectPermissionsByActionMixin, PermissionListMixin, Conf
 
         return Response(data=HostSerializer(instance=host).data, status=HTTP_201_CREATED)
 
+    @audit
     def destroy(self, request, *args, **kwargs):
         host = self.get_object()
         check_custom_perm(request.user, "remove", "host", host)
         delete_host(host=host)
         return Response(status=HTTP_204_NO_CONTENT)
 
+    @audit
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
 
@@ -119,6 +122,7 @@ class HostViewSet(ModelObjectPermissionsByActionMixin, PermissionListMixin, Conf
 
         return Response(status=HTTP_200_OK, data=HostSerializer(instance=instance).data)
 
+    @audit
     @action(methods=["post"], detail=True, url_path="maintenance-mode")
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         return maintenance_mode(request=request, **kwargs)
