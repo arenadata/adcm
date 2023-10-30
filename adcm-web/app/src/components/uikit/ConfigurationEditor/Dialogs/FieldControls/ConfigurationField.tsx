@@ -27,12 +27,7 @@ const ConfigurationField = ({
 
   return (
     <div className={s.configurationField}>
-      <FormField
-        className={s.configurationField__control}
-        label={label}
-        error={error}
-        hint={fieldSchema.description ?? 'No description'}
-      >
+      <FormField className={s.configurationField__control} label={label} error={error} hint={fieldSchema.description}>
         {children}
       </FormField>
       <div className={s.configurationField__actions}>
