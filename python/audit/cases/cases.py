@@ -9,24 +9,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 from audit.cases.adcm import adcm_case
+from audit.cases.bundle import bundle_case
 from audit.cases.cluster import cluster_case
 from audit.cases.common import action_case, task_job_case, upgrade_case
 from audit.cases.config import config_case
 from audit.cases.host_and_provider import host_and_provider_case
+from audit.cases.license import license_case
 from audit.cases.rbac import rbac_case
 from audit.cases.service import service_case
 from audit.cases.stack import stack_case
 from audit.models import AuditObject, AuditOperation
 from django.db.models import Model
 from django.views import View
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
 
-def get_audit_operation_and_object(
-    view: View,
+def get_audit_operation_and_object(  # pylint: disable=too-many-branches
+    view: View | GenericAPIView,
     response: Response,
     deleted_obj: Model,
     path: list[str],
@@ -88,6 +89,15 @@ def get_audit_operation_and_object(
         audit_operation, audit_object = adcm_case(path=path, view=view, response=response, api_version=api_version)
     elif "task" in path or "job" in path:
         audit_operation, audit_object = task_job_case(path=path)
+    elif "bundles" in path:
+        audit_operation, audit_object = bundle_case(
+            path=path,
+            view=view,
+            response=response,
+            deleted_obj=deleted_obj,
+        )
+    elif "accept" in path:
+        audit_operation, audit_object = license_case(path=path, view=view, response=response)
     else:
         return None, None, None
 
