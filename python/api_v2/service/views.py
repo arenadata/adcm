@@ -99,6 +99,7 @@ class ServiceViewSet(  # pylint: disable=too-many-ancestors
         instance = self.get_object()
         return delete_service_from_api(service=instance)
 
+    @audit
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode")
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument

@@ -189,3 +189,9 @@ class ClusterHostStatusSerializer(EmptySerializer):
         return RelatedComponentStatusSerializer(
             instance=[hc.component for hc in instance.hostcomponent_set.select_related("component")], many=True
         ).data
+
+
+class HostAuditSerializer(ModelSerializer):
+    class Meta:
+        model = Host
+        fields = ["maintenance_mode"]
