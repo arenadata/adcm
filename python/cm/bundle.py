@@ -313,13 +313,27 @@ def process_adcm():
         init_adcm(bundle)
 
 
-def init_adcm(bundle):
+def set_adcm_url(adcm: ADCM) -> None:
+    adcm_url = os.getenv("DEFAULT_ADCM_URL")
+
+    if adcm_url is None:
+        return
+
+    config_log = ConfigLog.objects.filter(id=adcm.config.current).first()
+    config_log.config["global"]["adcm_url"] = adcm_url
+    config_log.save(update_fields=["config"])
+    logger.info("Set ADCM's URL from environment variable: %s", adcm_url)
+
+
+def init_adcm(bundle: Bundle) -> ADCM:
     proto = Prototype.objects.get(type="adcm", bundle=bundle)
+
     with transaction.atomic():
         adcm = ADCM.objects.create(prototype=proto, name="ADCM")
-        obj_conf = init_object_config(proto, adcm)
-        adcm.config = obj_conf
-        adcm.save()
+        adcm.config = init_object_config(proto, adcm)
+        adcm.save(update_fields=["config"])
+
+    set_adcm_url(adcm=adcm)
 
     logger.info("init adcm object version %s OK", proto.version)
 

@@ -2851,7 +2851,7 @@ class TestADCMConfig(BaseAPITestCase):
                                 "that information from url you enter in browser.\nBut if your network has "
                                 "more complicated structure and we guess wrong, please fix that here.\n"
                             ),
-                            "default": None,
+                            "default": "http://127.0.0.1:8000/",
                             "readOnly": False,
                             "adcmMeta": {
                                 "isAdvanced": False,
