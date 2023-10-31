@@ -119,7 +119,7 @@ def run_task(task_id: int, args: str | None = None) -> None:  # pylint: disable=
     task.status = JobStatus.RUNNING
     task.save(update_fields=["pid", "restore_hc_on_fail", "start_date", "status"])
 
-    update_event(object_=task, update=(UpdateEventType.STATUS, JobStatus.RUNNING))
+    update_event(object_=task, update=[(UpdateEventType.STATUS, JobStatus.RUNNING)])
 
     jobs = JobLog.objects.filter(task_id=task.id).order_by("id")
     if not jobs:
