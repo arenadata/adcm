@@ -23,6 +23,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
 from adcm.permissions import VIEW_JOBLOG_PERMISSION
+from adcm.serializers import EmptySerializer
 
 
 class JobViewSet(
@@ -36,6 +37,9 @@ class JobViewSet(
     def get_serializer_class(self):
         if self.action == "retrieve":
             return JobRetrieveSerializer
+
+        if self.action == "terminate":
+            return EmptySerializer
 
         return JobListSerializer
 
