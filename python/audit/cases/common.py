@@ -248,7 +248,7 @@ def action_case(path: list[str]) -> tuple[AuditOperation, AuditObject | None]:
             else:
                 audit_object = None
 
-        case ["adcm", "actions", action_pk]:
+        case ["adcm", "actions", action_pk, "run"]:
             audit_operation = AuditOperation(
                 name="{action_display_name} action launched",
                 operation_type=AuditLogOperationType.UPDATE,

@@ -400,12 +400,25 @@ def audit(func):
                     status_code = exc.status_code
 
                 if status_code == HTTP_404_NOT_FOUND:
-                    action_perm_denied = (
-                        kwargs.get("action_id") and Action.objects.filter(pk=kwargs["action_id"]).exists()
-                    )
-                    task_perm_denied = kwargs.get("task_pk") and TaskLog.objects.filter(pk=kwargs["task_pk"]).exists()
-                    if action_perm_denied or task_perm_denied:
-                        status_code = HTTP_403_FORBIDDEN
+                    if api_version == 1:
+                        action_perm_denied = (
+                            kwargs.get("action_id") and Action.objects.filter(pk=kwargs["action_id"]).exists()
+                        )
+                        task_perm_denied = (
+                            kwargs.get("task_pk") and TaskLog.objects.filter(pk=kwargs["task_pk"]).exists()
+                        )
+                        if action_perm_denied or task_perm_denied:
+                            status_code = HTTP_403_FORBIDDEN
+
+                    if api_version == 2:
+                        if (
+                            view.__class__.__name__ in ["ActionViewSet", "AdcmActionViewSet"]
+                            and view.action == "run"
+                            and "pk" in view.kwargs
+                            and Action.objects.filter(pk=view.kwargs["pk"]).exists()
+                        ):
+                            status_code = HTTP_403_FORBIDDEN
+
             else:  # when denied returns 404 from PermissionListMixin
                 if getattr(exc, "msg", None) and (  # pylint: disable=too-many-boolean-expressions
                     "There is host" in exc.msg

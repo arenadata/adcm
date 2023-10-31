@@ -191,6 +191,7 @@ class ClusterViewSet(
             data=RelatedHostsStatusesSerializer(instance=self.paginate_queryset(queryset=queryset), many=True).data
         )
 
+    @audit
     @action(
         methods=["get", "post"],
         detail=True,

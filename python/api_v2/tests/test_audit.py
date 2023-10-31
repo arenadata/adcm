@@ -401,7 +401,7 @@ class TestClusterAudit(
             path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
             data=[{"source": {"id": self.cluster_1.pk, "type": ObjectType.CLUSTER}}],
         )
-        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         self.check_last_audit_log(
             operation_name="Cluster import updated",
@@ -928,7 +928,7 @@ class TestClusterAudit(
                     kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action.pk},
                 ),
             )
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
             operation_name=f"{self.cluster_action.display_name} action launched",
@@ -998,7 +998,7 @@ class TestClusterAudit(
                     },
                 ),
             )
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
             operation_name=f"{self.service_action.display_name} action launched",
@@ -1078,7 +1078,7 @@ class TestClusterAudit(
                     },
                 ),
             )
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
             operation_name=f"{self.component_action.display_name} action launched",
@@ -1160,7 +1160,7 @@ class TestClusterAudit(
                 ),
             )
 
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
             operation_name=f"{self.host_action.display_name} action launched",
@@ -1533,7 +1533,7 @@ class TestHostproviderAudit(AuditBaseTestCase):  # pylint: disable=too-many-ance
                     kwargs={"hostprovider_pk": self.provider.pk, "pk": self.provider_action.pk},
                 ),
             )
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
             operation_name=f"{self.provider_action.display_name} action launched",
@@ -1701,7 +1701,7 @@ class TestADCMAudit(BaseAPITestCase):
         Action.objects.filter(name="test_ldap_connection")
 
     def test_adcm_config_change_success(self):
-        response = self.client.post(path=reverse(viewname="v2:adcm:config-list"), data=self.data)
+        response = self.client.post(path=reverse(viewname="v2:adcm-config-list"), data=self.data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.check_last_audit_log(
             operation_name="ADCM configuration updated",
@@ -1716,7 +1716,7 @@ class TestADCMAudit(BaseAPITestCase):
         )
 
     def test_adcm_config_change_fail(self):
-        response = self.client.post(path=reverse(viewname="v2:adcm:config-list"), data={})
+        response = self.client.post(path=reverse(viewname="v2:adcm-config-list"), data={})
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.check_last_audit_log(
             operation_name="ADCM configuration updated",
@@ -1725,9 +1725,11 @@ class TestADCMAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-    def test_adcm_config_change_access_denied_fail(self):
+    def test_adcm_config_change_access_fail(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(path=reverse(viewname="v2:adcm:config-list"), data=self.data)
+
+        response = self.client.post(path=reverse(viewname="v2:adcm-config-list"), data=self.data)
+
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_last_audit_log(
             operation_name="ADCM configuration updated",
@@ -1749,7 +1751,7 @@ class TestADCMAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-    def test_adcm_profile_password_change_acces_denied_fail(self):
+    def test_adcm_profile_password_change_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.put(
             path=reverse(viewname="v2:profile"), data={"newPassword": "newtestpassword", "currentPassword": "admin"}
@@ -1763,9 +1765,11 @@ class TestADCMAudit(BaseAPITestCase):
             user__username=self.test_user_credentials["username"],
         )
 
-    def test_adcm_run_action_success(self):
+    def test_adcm_run_action_fail(self):
         adcm_action_pk = Action.objects.filter(name="test_ldap_connection").first().pk
-        response = self.client.post(path=reverse(viewname="v2:adcm:action-detail", kwargs={"pk": adcm_action_pk}))
+
+        response = self.client.post(path=reverse(viewname="v2:adcm-action-run", kwargs={"pk": adcm_action_pk}))
+
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.check_last_audit_log(
             operation_name="Test LDAP connection action launched",
@@ -1778,8 +1782,10 @@ class TestADCMAudit(BaseAPITestCase):
     def test_adcm_run_action_access_denied_fail_success(self):
         adcm_action_pk = Action.objects.filter(name="test_ldap_connection").first().pk
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(path=reverse(viewname="v2:adcm:action-detail", kwargs={"pk": adcm_action_pk}))
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        response = self.client.post(path=reverse(viewname="v2:adcm-action-run", kwargs={"pk": adcm_action_pk}))
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_last_audit_log(
             operation_name="Test LDAP connection action launched",
             operation_type="update",
@@ -1998,7 +2004,7 @@ class TestServiceAudit(AuditBaseTestCase):  # pylint: disable=too-many-ancestors
                     },
                 ),
             )
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
             operation_name=f"{self.service_action.display_name} action launched",
@@ -2045,7 +2051,8 @@ class TestServiceAudit(AuditBaseTestCase):  # pylint: disable=too-many-ancestors
             ),
             data=[{"source": {"id": self.export_service.pk, "type": ObjectType.SERVICE}}],
         )
-        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         self.check_last_audit_log(
             operation_name="Service import updated",
@@ -2255,7 +2262,7 @@ class TestComponentAudit(AuditBaseTestCase):  # pylint: disable=too-many-ancesto
                     },
                 ),
             )
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
             operation_name=f"{self.component_action.display_name} action launched",
