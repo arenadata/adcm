@@ -76,8 +76,42 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/clusters/:clusterId/services/:serviceId/configuration-groups/:groupId': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        href: '/clusters/:clusterId/services',
+        label: 'Services',
+      },
+    ],
+  },
   '/clusters/:clusterId/services/:serviceId/components': {
     pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        href: '/clusters/:clusterId/services',
+        label: 'Services',
+      },
+    ],
+  },
+  '/clusters/:clusterId/services/:serviceId/components/:componentId/primary-configuration': {
+    pageTitle: 'Cluster',
     breadcrumbs: [
       {
         href: '/clusters',
