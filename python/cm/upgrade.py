@@ -412,8 +412,10 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-m
             old_host_proto = Prototype.objects.get(bundle=old_bundle, type="host", name=host.prototype.name)
             revert_object(obj=host, old_proto=old_host_proto)
 
-    update_event(object_=obj, update=(UpdateEventType.STATE, obj.state))
-    update_event(object_=obj, update=(UpdateEventType.VERSION, obj.prototype.version))
+    obj.refresh_from_db()
+    update_event(
+        object_=obj, update=[(UpdateEventType.STATE, obj.state), (UpdateEventType.VERSION, obj.prototype.version)]
+    )
 
 
 def set_before_upgrade(obj: ADCMEntity) -> None:
@@ -484,12 +486,17 @@ def do_upgrade(
     obj.before_upgrade["bundle_id"] = obj.prototype.bundle.pk
     update_before_upgrade(obj=obj)
 
+    update = []
     if not upgrade.action:
         bundle_switch(obj=obj, upgrade=upgrade)
         if upgrade.state_on_success:
             obj.state = upgrade.state_on_success
             obj.save(update_fields=["state"])
-            update_event(object_=obj, update=(UpdateEventType.STATE, upgrade.state_on_success))
+            update.append((UpdateEventType.STATE, upgrade.state_on_success))
+
+        obj.refresh_from_db()
+        update.append((UpdateEventType.VERSION, obj.prototype.version))
+        update_event(object_=obj, update=update)
     else:
         task = start_task(
             action=upgrade.action,
@@ -535,5 +542,4 @@ def bundle_switch(obj: Cluster | HostProvider, upgrade: Upgrade) -> None:
 
     obj.refresh_from_db()
     re_apply_policy_for_upgrade(obj=obj)
-    update_event(object_=obj, update=(UpdateEventType.VERSION, obj.prototype.version))
     logger.info("upgrade %s OK to version %s", obj_ref(obj=obj), obj.prototype.version)
