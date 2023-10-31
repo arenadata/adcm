@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 3.0
+  version: 3.1
 
   actions:
     run_ldap_sync:
@@ -34,6 +34,7 @@
             We have to know ADCM's Url to send information from host. We try to guess that information from url you enter in browser.
             But if your network has more complicated structure and we guess wrong, please fix that here.
           type: string
+          default: "http://127.0.0.1:8000/"
         - name: "verification_public_key"
           display_name: "Bundle verification public key"
           description: |

@@ -1,0 +1,7 @@
+<svg viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="5" cy="5" r="4.5" stroke="currentColor"/>
+  <path d="M8.125 1.5625L1.5625 8.125" stroke="currentColor" stroke-linejoin="round"/>
+  <defs>
+    <rect width="10" height="10" fill="currentColor"/>
+  </defs>
+</svg>

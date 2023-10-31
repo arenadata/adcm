@@ -1,0 +1,32 @@
+:global {
+  body.theme-dark {
+    --role-expanded-block-title-color: var(--color-xgreen-saturated);
+  }
+
+  body.theme-light {
+    --role-expanded-block-title-color: var(--color-xgreen);
+  }
+}
+
+.content {
+  &__title {
+    color: var(--role-expanded-block-title-color);
+    margin: 16px 0;
+    font-weight: 500;
+  }
+
+  &__checkboxes label {
+    margin-right: 30px;
+  }
+
+  &__tags {
+    flex-direction: column;
+    width: fit-content;
+    margin-top: 16px;
+
+    div {
+      width: fit-content;
+      padding: 6px, 12px;
+    }
+  }
+}

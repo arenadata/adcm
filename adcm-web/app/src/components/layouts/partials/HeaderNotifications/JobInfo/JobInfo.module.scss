@@ -1,0 +1,49 @@
+:global {
+  body.theme-dark {
+    --job-border-bottom-color: var(--color-xdark);
+    --bell-jobs-background: var(--color-xdark-new-50);
+  }
+
+  body.theme-light {
+    --job-border-bottom-color: var(--color-stroke-light);
+    --bell-jobs-background: var(--color-xwhite-50);
+  }
+}
+
+.jobs {
+  font-size: 14px;
+  line-height: 20px;
+  border-collapse: collapse;
+  width: 100%;
+
+  background-color: var(--bell-jobs-background);
+  border-radius: 8px;
+
+  td {
+    padding: 8px 12px;
+  }
+
+  tr {
+    &:not(:last-child) {
+      border-bottom: 1px solid var(--job-border-bottom-color);
+    }
+  }
+}
+
+.job {
+  &__id {
+    width: 30px;
+    text-align: end;
+  }
+
+  &__icon {
+    width: 14px;
+  }
+
+  &__link {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 0;
+  }
+}

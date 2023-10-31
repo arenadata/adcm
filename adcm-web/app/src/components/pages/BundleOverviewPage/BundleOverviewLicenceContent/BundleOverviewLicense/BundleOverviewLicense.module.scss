@@ -1,0 +1,21 @@
+:global {
+  body.theme-dark {
+    --license-text-color: var(--color-xgray-lighter);
+  }
+
+  body.theme-light {
+    --license-text-color: var(--color-added-text);
+  }
+}
+
+.bundleOverviewLicense {
+  pre {
+    color: var(--license-text-color);
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 20px;
+    white-space: break-spaces;
+    font-family: inherit;
+  }
+}

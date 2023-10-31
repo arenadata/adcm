@@ -1,0 +1,54 @@
+:global {
+  body.theme-dark {
+    --input-time-background: var(--color-xdark-plate20);
+    --input-time-inputs-border: var(--color-xdark);
+  }
+  body.theme-light {
+    --input-time-background: var(--color-xwhite-50);
+    --input-time-inputs-border: var(--color-xgray-lighter);
+  }
+}
+
+.InputTime {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 4px 4px 12px;
+  border-radius: 8px;
+  background: var(--input-time-background);
+
+  &__label {
+    color: var(--color-xgray-light);
+  }
+
+  &__inputs {
+    display: flex;
+    justify-content: center;
+    width: 110px;
+    padding: 1px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--input-time-inputs-border); 
+    color: var(--color-xgray-light);
+
+    &:focus-within {
+      color: var(--field-color-primary);
+    }
+  }
+
+  &__input {
+    width: 17px;
+    box-sizing: border-box;
+    border: none;
+    background-color: transparent;
+    color: inherit;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+    outline: none;
+  }
+
+  &__delimiter {
+    display: inline-block;
+    padding: 0 3px;
+  }
+}

@@ -1,0 +1,22 @@
+---
+- type: cluster
+  name: cluster_export
+  version: &version '1.0'
+  config:
+    - name: string
+      type: string
+      required: false
+      default: string
+  export:
+    - string
+
+- name: service_export
+  type: service
+  version: *version
+  config:
+    - name: text
+      type: text
+      required: false
+      default: text
+  export:
+    - text

@@ -2192,7 +2192,7 @@ class TestBundleAudit(BaseAPITestCase):
         )
 
 
-class TestComponentAudit(AuditBaseTestCase):
+class TestComponentAudit(AuditBaseTestCase):  # pylint: disable=too-many-ancestors
     def setUp(self) -> None:
         super().setUp()
 

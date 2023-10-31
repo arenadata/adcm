@@ -1,0 +1,48 @@
+:global {
+  body {
+    &.theme-dark {
+      --list-transfer-panel-background: var(--color-xdark-new-20);
+    }
+
+    &.theme-light {
+      --list-transfer-panel-background: var(--color-xgray-alt-30);
+    }
+  }
+}
+
+.listTransferPanel {
+  background: var(--list-transfer-panel-background);
+  padding: 8px 12px 12px 12px;
+  border-radius: 5px;
+
+  &__title {
+    color: var(--list-transfer-panel-title-color, inherit);
+    font-weight: 500;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__filters {
+    gap: 12px;
+    display: flex;
+    margin-bottom: 20px;
+  }
+  &__search {
+    flex: 1;
+  }
+
+  &__checkAll {
+    margin-bottom: 20px;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+    overflow: auto;
+    max-height: var(--list-transfer-list-max-height, none);
+  }
+}

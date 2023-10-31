@@ -1,0 +1,97 @@
+:global {
+  body.theme-dark {
+    --accept-panel-background: var(--color-xdark-new-20);
+    --accept-panel-disabled-background: var(--color-xdark-new-20);
+    --accept-panel--disabled-text: var(--color-all-new-black);
+    --license-border: var(--color-xdark);
+    --license-background: var(--color-xdark-new-50);
+    --license-title-color: var(--color-xgreen-saturated);
+    --checkbox-disabled: var(--color-all-new-black);
+    --button-disabled: var(--color-xgray-medium);
+    --button-disabled-text: var(--color-all-new-black);
+    --code-highlite-scrollbar-thumb: var(--color-xdark);
+  }
+
+  body.theme-light {
+    --accept-panel-background: var(--color-xgray-alt-30);
+    --accept-panel-disabled-background: var(--color-xdark-new-20);
+    --accept-panel--disabled-text: var(--color-all-new-black);
+    --license-border: var(--color-stroke-light);
+    --license-background: var(--color-xwhite-off);
+    --license-title-color: var(--color-xgreen);
+    --checkbox-disabled: var(--color-all-new-black);
+    --button-disabled: var(--color-xgray-medium);
+    --button-disabled-text: var(--color-all-new-black);
+    --code-highlite-scrollbar-thumb: var(--color-xgray-alt);
+  }
+}
+
+.acceptPanel {
+  display: flex;
+  justify-content: space-between;
+  margin: 32px 0;
+  border-radius: 12px;
+  background-color: var(--accept-panel-background);
+  padding: 8px 12px;
+
+  &_licenseAccepted {
+    pointer-events: none;
+    background: var(--accept-panel-disabled-background);
+
+    label {
+
+      span {
+        color: var(--accept-panel--disabled-text);
+      }
+    }
+  }
+
+  .checkbox {
+
+    &_licenseAccepted {
+
+      div {
+        border-color: var(--checkbox-disabled);
+        --checkbox-mark-color: var(--checkbox-disabled);
+      }
+    }
+  }
+
+  .button {
+
+    &_licenseAccepted {
+      background-color: var(--button-disabled);
+      border-color: var(--button-disabled);
+      color: var(--button-disabled-text)
+    }
+  }
+}
+
+.licenseField {
+  background: var(--license-background);
+  border: 1px solid var(--license-border);
+  border-radius: 15px;
+  padding: 24px;
+  position: relative;
+  box-sizing: border-box;
+  max-height: 350px;
+  overflow: auto;
+
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-xgray-light);
+  scroll-padding: 10px;
+
+  &::-webkit-scrollbar-track-piece:end {
+    margin-bottom: 24px;
+  }
+
+  &::-webkit-scrollbar-track-piece:start {
+    margin-top: 24px;
+  }
+
+  pre {
+    white-space: break-spaces;
+  }
+}

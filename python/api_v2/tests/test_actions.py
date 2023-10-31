@@ -12,6 +12,7 @@
 from functools import partial
 from operator import itemgetter
 from typing import TypeAlias
+from unittest.mock import patch
 
 from api_v2.tests.base import BaseAPITestCase
 from cm.models import (
@@ -227,7 +228,6 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
 
     def test_adcm_4516_disallowed_host_action_not_executable_success(self) -> None:
         self.add_host_to_cluster(self.cluster, self.host_1)
-        allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
         disallowed_action = Action.objects.filter(display_name="cluster_host_action_disallowed").first()
         check_host_1_actions = partial(
             self.check_object_action_list, *get_viewname_and_kwargs_for_object(object_=self.host_1)
@@ -242,38 +242,54 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
         )
 
         self.host_1.maintenance_mode = MaintenanceMode.ON
+        self.host_1.save(update_fields=["maintenance_mode"])
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-action-run",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": allowed_action.pk},
-            ),
-            data={"host_component_map": [], "config": {}, "adcm_meta": {}, "is_verbose": False},
-        )
-        self.assertEqual(response.status_code, HTTP_200_OK)
+        with patch(
+            "api_v2.action.views.start_task",
+            return_value=self.create_task_log(object_=self.host_1, action=disallowed_action),
+        ):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:host-action-run",
+                    kwargs={"host_pk": self.host_1.pk, "pk": disallowed_action.pk},
+                ),
+                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+            )
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-action-run",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": disallowed_action.pk},
-            ),
-            data={"host_component_map": [], "config": {}, "adcm_meta": {}, "is_verbose": False},
-        )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "ACTION_ERROR",
+                "desc": "The Action is not available. Host in 'Maintenance mode'",
+                "level": "error",
+            },
+        )
 
     def test_adcm_4535_job_cant_be_terminated_success(self) -> None:
+        self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
+
         response = self.client.post(
             path=reverse(
-                viewname="v2:cluster-action-run",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": allowed_action.pk},
+                viewname="v2:host-action-run",
+                kwargs={"host_pk": self.host_1.pk, "pk": allowed_action.pk},
             ),
-            data={"host_component_map": [], "config": {}, "adcm_meta": {}, "is_verbose": False},
+            data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
         )
+
         self.assertEqual(response.status_code, HTTP_200_OK)
         job = JobLog.objects.filter(action__name="cluster_host_action_allowed").first()
         response = self.client.post(path=reverse(viewname="v2:joblog-terminate", kwargs={"pk": job.pk}), data={})
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "JOB_TERMINATION_ERROR",
+                "desc": "Can't terminate job #1, pid: 0 with status created",
+                "level": "error",
+            },
+        )
 
     def check_object_action_list(self, viewname: str, object_kwargs: dict, expected_actions: list[str]) -> None:
         response: Response = self.client.get(path=reverse(viewname=viewname, kwargs=object_kwargs))

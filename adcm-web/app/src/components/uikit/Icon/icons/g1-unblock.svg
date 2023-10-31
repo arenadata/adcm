@@ -1,0 +1,9 @@
+<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<mask id="path-2-inside-1_1904_99745" fill="white">
+<rect x="8.5" y="12.7058" width="15" height="11.2941" rx="1"/>
+</mask>
+<rect x="8.5" y="12.7058" width="15" height="11.2941" rx="1" stroke="currentColor" stroke-width="2.4" mask="url(#path-2-inside-1_1904_99745)"/>
+<path d="M26.75 12.8105V11C26.75 9.34315 25.4069 8 23.75 8H22.25C20.5931 8 19.25 9.34315 19.25 11V12.8105" stroke="currentColor" stroke-width="1.2"/>
+<path d="M16.0007 17.4119L16.0007 21.1766" stroke="currentColor" stroke-width="1.2"/>
+<ellipse cx="16" cy="17.4119" rx="0.9375" ry="0.941176" fill="currentColor"/>
+</svg>

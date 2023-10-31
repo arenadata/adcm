@@ -1,0 +1,23 @@
+:global {
+  body.theme-dark {
+    --license-acceptance-text-color: var(--color-xgray-lighter);
+  }
+
+  body.theme-light {
+    --license-acceptance-text-color: var(--color-xgray-light);
+  }
+}
+
+.licenseAcceptanceList {
+  &__tabs {
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  &__tab_licenseAccepted {
+    color: var(--text-green-color) !important;
+  }
+  &__text:global(.scroll) {
+    max-height: calc(100vh - 400px);
+    overflow-y: auto;
+  }
+}

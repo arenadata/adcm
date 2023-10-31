@@ -20,10 +20,10 @@ from pathlib import Path
 
 import adcm.init_django  # pylint: disable=unused-import
 
-import cm.job
 from cm.ansible_plugin import finish_check
 from cm.api import get_hc, save_hc
 from cm.errors import AdcmEx
+from cm.job import check_hostcomponentmap, set_job_final_status, set_job_start_status
 from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, Prototype, ServiceComponent
 from cm.upgrade import bundle_revert, bundle_switch
@@ -51,16 +51,16 @@ def read_config(job_id):
     return conf
 
 
-def set_job_status(job_id, ret, pid):
-    if ret == 0:
-        cm.job.set_job_status(job_id, JobStatus.SUCCESS, pid)
+def set_job_status(job_id: int, return_code: int) -> int:
+    if return_code == 0:
+        set_job_final_status(job_id=job_id, status=JobStatus.SUCCESS)
         return 0
-    elif ret == -15:
-        cm.job.set_job_status(job_id, JobStatus.ABORTED, pid)
+    elif return_code == -15:
+        set_job_final_status(job_id=job_id, status=JobStatus.ABORTED)
         return 15
     else:
-        cm.job.set_job_status(job_id, JobStatus.FAILED, pid)
-        return ret
+        set_job_final_status(job_id=job_id, status=JobStatus.FAILED)
+        return return_code
 
 
 def set_pythonpath(env, stack_dir):
@@ -111,23 +111,23 @@ def process_err_out_file(job_id, job_type):
 
 def start_subprocess(job_id, cmd, conf, out_file, err_file):
     logger.info("job run cmd: %s", " ".join(cmd))
-    proc = subprocess.Popen(  # pylint: disable=consider-using-with
+    process = subprocess.Popen(  # pylint: disable=consider-using-with
         cmd,
         env=get_configured_env(job_config=conf),
         stdout=out_file,
         stderr=err_file,
     )
-    cm.job.set_job_status(job_id, JobStatus.RUNNING, proc.pid)
-    logger.info("run job #%s, pid %s", job_id, proc.pid)
-    ret = proc.wait()
+    set_job_start_status(job_id=job_id, pid=process.pid)
+    logger.info("run job #%s, pid %s", job_id, process.pid)
+    return_code = process.wait()
     finish_check(job_id)
-    ret = set_job_status(job_id, ret, proc.pid)
+    return_code = set_job_status(job_id=job_id, return_code=return_code)
 
     out_file.close()
     err_file.close()
 
-    logger.info("finish job subprocess #%s, pid %s, ret %s", job_id, proc.pid, ret)
-    return ret
+    logger.info("finish job subprocess #%s, pid %s, ret %s", job_id, process.pid, return_code)
+    return return_code
 
 
 def run_ansible(job_id: int) -> None:
@@ -157,7 +157,7 @@ def run_ansible(job_id: int) -> None:
 
 
 def run_internal(job: JobLog) -> None:
-    cm.job.set_job_status(job.id, JobStatus.RUNNING)
+    set_job_start_status(job_id=job.id, pid=0)
     out_file, err_file = process_err_out_file(job_id=job.id, job_type="internal")
     script = job.sub_action.script if job.sub_action else job.action.script
 
@@ -177,12 +177,12 @@ def run_internal(job: JobLog) -> None:
             re_apply_policy_for_jobs(action_object=job.task.task_object, task=job.task)
     except AdcmEx as e:
         err_file.write(e.msg)
-        cm.job.set_job_status(job_id=job.id, status=JobStatus.FAILED)
+        set_job_final_status(job_id=job.id, status=JobStatus.FAILED)
         out_file.close()
         err_file.close()
         sys.exit(1)
 
-    cm.job.set_job_status(job.id, JobStatus.SUCCESS)
+    set_job_final_status(job_id=job.id, status=JobStatus.SUCCESS)
     out_file.close()
     err_file.close()
     sys.exit(0)
@@ -220,7 +220,7 @@ def switch_hc(task, action):
             hostcomponent["component_id"] = comp.id
             hostcomponent["service_id"] = comp.service.id
 
-    host_map, _ = cm.job.check_hostcomponentmap(cluster, action, new_hc)
+    host_map, _ = check_hostcomponentmap(cluster, action, new_hc)
     if host_map is not None:
         save_hc(cluster, host_map)
 

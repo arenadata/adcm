@@ -1,0 +1,11 @@
+.CalendarPicker {
+  box-sizing: border-box;
+  justify-content: center;
+  padding: 12px 20px 20px;
+
+  &__section {
+    &:not(:last-child) {
+      margin-bottom: 12px;
+    }
+  }
+}

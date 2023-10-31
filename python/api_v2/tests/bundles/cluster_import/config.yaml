@@ -1,0 +1,42 @@
+- type: cluster
+  name: cluster_import
+  version: 1.0
+  import:
+    cluster_export:
+      versions:
+        min: 1.0
+        max: 2.0
+    service_export:
+      versions:
+        min: 1.0
+        max: 2.0
+    not_exist:
+      default:
+        - group
+  config:
+    - name: boolean
+      type: boolean
+      default: true
+    - name: group
+      type: group
+      subs:
+        - name: string
+          type: string
+          default: string
+
+- type: service
+  name: service_import
+  version: 1.0
+  import:
+    cluster_export:
+      versions:
+        min: 1.0
+        max: 2.0
+    service_export:
+      versions:
+        min: 1.0
+        max: 2.0
+  config:
+    - name: string
+      type: string
+      default: string

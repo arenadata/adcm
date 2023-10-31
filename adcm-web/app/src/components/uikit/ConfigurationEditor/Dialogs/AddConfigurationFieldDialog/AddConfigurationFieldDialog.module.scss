@@ -1,0 +1,11 @@
+.addConfigurationFieldDialog {
+  &__content {
+    display: flex;
+    gap: 12px;
+    flex-direction: column;
+  }
+
+  &__input {
+    margin-right: 44px; // 12px + 32px (reset button width)
+  }
+}

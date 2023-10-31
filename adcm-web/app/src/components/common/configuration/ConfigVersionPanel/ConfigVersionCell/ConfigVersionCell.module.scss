@@ -1,0 +1,61 @@
+:global {
+  body.theme-dark {
+    --config-version-cell-border: var(--color-xdark);
+    --config-version-cell-border-selected: var(--color-xgreen-saturated);
+    --config-version-cell-background-selected: var(--color-xdark-new-full);
+    --config-version-cell-background-hover: var(--color-xdark-new-50);
+  }
+
+  body.theme-light {
+    --config-version-cell-border: var(--color-stroke-light);
+    --config-version-cell-border-selected: var(--color-xgreen-saturated);
+    --config-version-cell-background-selected: var(--color-xgray-alt);
+    --config-version-cell-background-hover: #EEF2F5;
+  }
+}
+
+.configVersionCell {
+  width: 200px;
+  min-height: 96px;
+  box-sizing: border-box;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+
+  transition: background-color 250ms, border-color 250ms;
+
+  border: 2px solid var(--config-version-cell-border);
+  background-color: var(--config-version-cell-background);
+  color: var(--color-xgray-light);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    margin-top: -2px;
+    margin-bottom: 4px;
+    & > :last-child {
+      margin-left: auto;
+      display: flex;
+    }
+  }
+  &__title {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 18px;
+    color: var(--text-green-color);
+    transition: color 250ms;
+  }
+
+  &_selected {
+    background-color: var(--config-version-cell-background-selected);
+    border-color: var(--config-version-cell-border-selected);
+
+    &:not(:hover) .configVersionCell__title {
+      color: var(--text-accent-color);
+    }
+  }
+
+  &:hover {
+    background-color: var(--config-version-cell-background-hover);
+  }
+}

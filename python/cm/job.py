@@ -728,8 +728,6 @@ def create_task(
         hosts=hosts,
         post_upgrade_hc_map=post_upgrade_hc,
         verbose=verbose,
-        start_date=timezone.now(),
-        finish_date=timezone.now(),
         status=JobStatus.CREATED,
         selector=get_selector(obj, action),
     )
@@ -745,15 +743,12 @@ def create_task(
             action=action,
             sub_action=sub_action,
             log_files=action.log_files,
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
             status=JobStatus.CREATED,
             selector=get_selector(obj, action),
         )
         log_type = sub_action.script_type if sub_action else action.script_type
         LogStorage.objects.create(job=job, name=log_type, type="stdout", format="txt")
         LogStorage.objects.create(job=job, name=log_type, type="stderr", format="txt")
-        set_job_status(job.pk, JobStatus.CREATED)
         Path(settings.RUN_DIR, f"{job.pk}", "tmp").mkdir(parents=True, exist_ok=True)
 
     return task
@@ -844,52 +839,24 @@ def restore_hc(task: TaskLog, action: Action, status: str):
     save_hc(cluster, host_comp_list)
 
 
-def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:
-    action = task.action
-    obj = task.task_object
-    state, multi_state_set, multi_state_unset = get_state(action=action, job=job, status=status)
-
-    with atomic():
-        set_action_state(
-            action=action,
-            task=task,
-            obj=obj,
-            state=state,
-            multi_state_set=multi_state_set,
-            multi_state_unset=multi_state_unset,
-        )
-        restore_hc(task=task, action=action, status=status)
-        unlock_affected_objects(task=task)
-        update_hierarchy_issues(obj=obj)
-        set_task_final_status(task=task, status=status)
-
+def audit_task(
+    action: Action, object_: Cluster | ClusterObject | ServiceComponent | HostProvider | Host, status: str
+) -> None:
     upgrade = Upgrade.objects.filter(action=action).first()
+
     if upgrade:
         operation_name = f"{action.display_name} upgrade completed"
     else:
         operation_name = f"{action.display_name} action completed"
 
-    if (
-        action.name in {settings.ADCM_TURN_ON_MM_ACTION_NAME, settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME}
-        and obj.maintenance_mode == MaintenanceMode.CHANGING
-    ):
-        obj.maintenance_mode = MaintenanceMode.OFF
-        obj.save()
+    obj_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP.get(object_.__class__)
 
-    if (
-        action.name in {settings.ADCM_TURN_OFF_MM_ACTION_NAME, settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME}
-        and obj.maintenance_mode == MaintenanceMode.CHANGING
-    ):
-        obj.maintenance_mode = MaintenanceMode.ON
-        obj.save()
-
-    obj_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP.get(obj.__class__)
     if not obj_type:
         return
 
     audit_object = get_or_create_audit_obj(
-        object_id=obj.pk,
-        object_name=obj.name,
+        object_id=object_.pk,
+        object_name=object_.name,
         object_type=obj_type,
     )
     if status == "success":
@@ -905,13 +872,53 @@ def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:
         object_changes={},
     )
     cef_logger(audit_instance=audit_log, signature_id="Action completion")
+
+
+def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:
+    action = task.action
+    obj = task.task_object
+
+    state, multi_state_set, multi_state_unset = get_state(action=action, job=job, status=status)
+
+    set_action_state(
+        action=action,
+        task=task,
+        obj=obj,
+        state=state,
+        multi_state_set=multi_state_set,
+        multi_state_unset=multi_state_unset,
+    )
+    restore_hc(task=task, action=action, status=status)
+    unlock_affected_objects(task=task)
+
+    if obj is not None:
+        update_hierarchy_issues(obj=obj)
+
+        if (
+            action.name in {settings.ADCM_TURN_ON_MM_ACTION_NAME, settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME}
+            and obj.maintenance_mode == MaintenanceMode.CHANGING
+        ):
+            obj.maintenance_mode = MaintenanceMode.OFF
+            obj.save()
+
+        if (
+            action.name in {settings.ADCM_TURN_OFF_MM_ACTION_NAME, settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME}
+            and obj.maintenance_mode == MaintenanceMode.CHANGING
+        ):
+            obj.maintenance_mode = MaintenanceMode.ON
+            obj.save()
+
+        audit_task(action=action, object_=obj, status=status)
+
+    set_task_final_status(task=task, status=status)
+
     update_event(object_=task, update=(UpdateEventType.STATUS, status))
 
     try:
         load_mm_objects()
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as error:  # pylint: disable=broad-except
         logger.warning("Error loading mm objects on task finish")
-        logger.exception(e)
+        logger.exception(error)
 
 
 def cook_log_name(tag, level, ext="txt"):
@@ -979,15 +986,20 @@ def set_task_final_status(task: TaskLog, status: str):
     task.save(update_fields=["status", "finish_date"])
 
 
-def set_job_status(job_id: int, status: str, pid: int = 0):
-    job_query = JobLog.objects.filter(id=job_id)
-    job_query.update(status=status, pid=pid, finish_date=timezone.now())
-    job = job_query.first()
+def set_job_start_status(job_id: int, pid: int) -> None:
+    job = JobLog.objects.get(id=job_id)
+    job.status = JobStatus.RUNNING
+    job.start_date = timezone.now()
+    job.pid = pid
+    job.save(update_fields=["status", "start_date", "pid"])
 
-    if status == JobStatus.RUNNING:
-        if job.task.lock and job.task.task_object:
-            job.task.lock.reason = job.cook_reason()
-            job.task.lock.save(update_fields=["reason"])
+    if job.task.lock and job.task.task_object:
+        job.task.lock.reason = job.cook_reason()
+        job.task.lock.save(update_fields=["reason"])
+
+
+def set_job_final_status(job_id: int, status: str) -> None:
+    JobLog.objects.filter(id=job_id).update(status=status, finish_date=timezone.now())
 
 
 def abort_all():
@@ -996,7 +1008,7 @@ def abort_all():
         unlock_affected_objects(task=task)
 
     for job in JobLog.objects.filter(status=JobStatus.RUNNING):
-        set_job_status(job.pk, JobStatus.ABORTED)
+        set_job_final_status(job_id=job.pk, status=JobStatus.ABORTED)
 
 
 def getattr_first(attr: str, *objects: Any, default: Any = None) -> Any:

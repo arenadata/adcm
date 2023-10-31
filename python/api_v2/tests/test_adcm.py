@@ -21,20 +21,20 @@ class TestADCM(BaseAPITestCase):
         self.client.login(username="admin", password="admin")
 
     def test_retrieve_success(self):
-        response = self.client.get(path=reverse(viewname="v2:adcm:adcm"))
+        response = self.client.get(path=reverse(viewname="v2:adcm-detail"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], ADCM.objects.first().pk)
 
     def test_list_actions_success(self):
-        response = self.client.get(path=reverse(viewname="v2:adcm:action-list"))
+        response = self.client.get(path=reverse(viewname="v2:adcm-action-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 2)
 
     def test_retrieve_actions_success(self):
         response = self.client.get(
-            path=reverse(viewname="v2:adcm:action-detail", kwargs={"pk": Action.objects.last().pk})
+            path=reverse(viewname="v2:adcm-action-detail", kwargs={"pk": Action.objects.last().pk})
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

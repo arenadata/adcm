@@ -20,6 +20,7 @@ from api_v2.imports.types import (
     UIImportCluster,
     UIImportServices,
     UIObjectImport,
+    UIPrototype,
 )
 from cm.api import is_version_suitable
 from cm.errors import raise_adcm_ex
@@ -58,7 +59,15 @@ def _format_import_cluster(cluster: Cluster, prototype_import: PrototypeImport |
         return None
 
     return UIImportCluster(
-        id=cluster.pk, is_multi_bind=prototype_import.multibind, is_required=prototype_import.required
+        id=cluster.pk,
+        is_multi_bind=prototype_import.multibind,
+        is_required=prototype_import.required,
+        prototype=UIPrototype(
+            id=cluster.prototype.pk,
+            name=cluster.prototype.name,
+            display_name=cluster.prototype.display_name,
+            version=cluster.prototype.version,
+        ),
     )
 
 
@@ -79,6 +88,12 @@ def _format_import_services(service_candidates: list[ServiceImportCandidate]) ->
                 version=service.version,
                 is_required=prototype_import.required,
                 is_multi_bind=prototype_import.multibind,
+                prototype=UIPrototype(
+                    id=service.prototype.pk,
+                    name=service.prototype.name,
+                    display_name=service.prototype.display_name,
+                    version=service.prototype.version,
+                ),
             )
         )
 
@@ -172,8 +187,10 @@ def get_imports(obj: Cluster | ClusterObject) -> list[UIObjectImport]:
 
     out_data = []
     import_candidates = _get_import_candidates(prototype=obj.prototype)
-    binds = ClusterBind.objects.filter(cluster=cluster, service=service).select_related(
-        "source_cluster", "source_service", "source_cluster__prototype", "source_service__prototype"
+    binds = (
+        ClusterBind.objects.filter(cluster=cluster, service=service)
+        .select_related("source_cluster", "source_service", "source_cluster__prototype", "source_service__prototype")
+        .order_by("pk")
     )
 
     for import_candidate in sorted(import_candidates, key=lambda candidate: candidate["obj"].name):

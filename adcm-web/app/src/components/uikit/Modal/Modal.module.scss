@@ -1,0 +1,19 @@
+:global {
+  body.theme-dark {
+    --modal-overlay-background: rgba(18, 18, 18, 0.8);
+  }
+  body.theme-light {
+    --modal-overlay-background: rgba(227, 234, 238, 0.8);
+  }
+}
+
+.modalOverlay {
+  backdrop-filter: blur(5px);
+  background: var(--modal-overlay-background);
+  display: flex;
+  padding: 20px;
+}
+
+.modal {
+  margin: auto;
+}

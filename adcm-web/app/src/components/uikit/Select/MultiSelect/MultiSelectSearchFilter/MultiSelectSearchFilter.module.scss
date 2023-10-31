@@ -1,0 +1,22 @@
+:global {
+  body.theme-dark {
+    --multi-search-background: #28282D;
+  }
+
+  body.theme-light {
+    --multi-search-background: var(--color-xwhite-50);
+  }
+}
+
+.multiSelectSearchFilter {
+  margin-bottom: 12px;
+  border-radius: 8px;
+  background-color: var(--multi-search-background);
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+
+  &__select {
+    width: 100%;
+  }
+}

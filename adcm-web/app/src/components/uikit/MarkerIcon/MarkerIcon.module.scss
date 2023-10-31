@@ -1,0 +1,66 @@
+:global {
+  body.theme-dark {
+    --marker-alert-background: var(--color-xred);
+    --marker-alert-color: var(--color-xwhite-off);
+
+    --marker-warning-background: var(--color-yellow-light);
+    --marker-warning-color: var(--color-xdark);
+
+    --marker-check-background: var(--color-xgreen-saturated);
+    --marker-check-color: var(--color-xdark);
+
+    --marker-info-background: var(--color-xgreen);
+    --marker-info-color: var(--color-xdark);
+  }
+
+  body.theme-light {
+    --marker-alert-background: var(--color-xred-light);
+    --marker-alert-color: var(--color-xwhite);
+
+    --marker-warning-background: var(--color-json-orange);
+    --marker-warning-color: var(--color-xdark);
+
+    --marker-check-background: var(--color-presson-light);
+    --marker-check-color: var(--color-xdark);
+
+    --marker-info-background: var(--color-presson-light);
+    --marker-info-color: var(--color-xdark);
+  }
+}
+
+.markerIcon {
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  background: var(--marker-background);
+  color: var(--marker-color);
+
+  &_square {
+    border-radius: 4px;
+  }
+
+  &_round {
+    border-radius: 50%;
+  }
+  
+
+  &_alert {
+    --marker-background: var(--marker-alert-background);
+    --marker-color: var(--marker-alert-color);
+  }
+
+  &_warning {
+    --marker-background: var(--marker-warning-background);
+    --marker-color: var(--marker-warning-color);
+  }
+
+  &_check {
+    --marker-background: var(--marker-check-background);
+    --marker-color: var(--marker-check-color);
+  }
+
+  &_info {
+    --marker-background: var(--marker-info-background);
+    --marker-color: var(--marker-info-color);
+  }
+}

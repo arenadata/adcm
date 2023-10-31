@@ -1,0 +1,19 @@
+:global {
+  body.theme-dark {
+    --tab-color-primary: var(--color-xgreen);
+  }
+
+  body.theme-light {
+    --tab-color-primary: var(--color-xgreen);
+  }
+}
+
+.licenseTab {
+
+  &__button {
+
+    &_licenseAccepted {
+      color: var(--tab-color-primary) !important;
+    }
+  }
+}

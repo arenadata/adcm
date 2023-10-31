@@ -101,10 +101,6 @@ class Field(ABC):  # pylint: disable=too-many-instance-attributes
         return {"isAllowChange": is_allow_change}
 
     @property
-    def null_value(self) -> list | dict | None:
-        return None
-
-    @property
     def is_secret(self) -> bool:
         return False
 
@@ -132,7 +128,6 @@ class Field(ABC):  # pylint: disable=too-many-instance-attributes
                 "isInvisible": self.is_invisible,
                 "activation": self.activation,
                 "synchronization": self.synchronization,
-                "nullValue": self.null_value,
                 "isSecret": self.is_secret,
                 "stringExtra": self.string_extra,
                 "enumExtra": self.enum_extra,
@@ -258,10 +253,6 @@ class Map(Field):
     type = "object"
 
     @property
-    def null_value(self) -> list | dict | None:
-        return {}
-
-    @property
     def default(self) -> Any:
         default = super().default
 
@@ -278,6 +269,9 @@ class Map(Field):
         if self.required:
             data.update({"minProperties": 1})
 
+        if not self.required:
+            return {"oneOf": [data, {"type": "null"}]}
+
         return data
 
 
@@ -285,18 +279,6 @@ class SecretMap(Map):
     @property
     def is_secret(self) -> bool:
         return True
-
-    @property
-    def null_value(self) -> list | dict | None:
-        return None
-
-    def to_dict(self) -> dict:
-        data = super().to_dict()
-
-        if not self.required:
-            return {"oneOf": [data, {"type": "null"}]}
-
-        return data
 
 
 class Structure(Field):
@@ -339,7 +321,7 @@ class Structure(Field):
 
         return default
 
-    def _get_inner(self, title: str = "", **kwargs) -> dict:
+    def _get_inner(self, title: str = "", is_invisible: bool = False, **kwargs) -> dict:
         type_ = self._get_schema_type(type_=kwargs["match"])
 
         data = {
@@ -350,10 +332,9 @@ class Structure(Field):
             "readOnly": self.is_read_only,
             "adcmMeta": {
                 "isAdvanced": self.is_advanced,
-                "isInvisible": self.is_invisible,
+                "isInvisible": is_invisible,
                 "activation": self.activation,
                 "synchronization": None,
-                "nullValue": self.null_value,
                 "isSecret": self.is_secret,
                 "stringExtra": self.string_extra,
                 "enumExtra": self.enum_extra,
@@ -374,12 +355,11 @@ class Structure(Field):
             )
 
             for item_key, item_value in kwargs["items"].items():
-                inner_data = self._get_inner(title=item_key, **self.yspec[item_value])
-
-                if item_key in data["required"]:
-                    data["properties"][item_key] = inner_data
-                else:
-                    data["properties"][item_key] = {"oneOf": [inner_data, {"type": "null"}]}
+                is_invisible = item_key in kwargs.get("invisible_items", [])
+                is_invisible = self.is_invisible if self.is_invisible else is_invisible
+                data["properties"][item_key] = self._get_inner(
+                    title=item_key, is_invisible=is_invisible, **self.yspec[item_value]
+                )
 
         return data
 
@@ -406,15 +386,13 @@ class Structure(Field):
             items = self.yspec["root"]["items"]
 
             for item_key, item_value in items.items():
-                inner_data = self._get_inner(**self.yspec[item_value])
+                is_invisible = item_key in self.yspec["root"].get("invisible_items", [])
+                is_invisible = self.is_invisible if self.is_invisible else is_invisible
 
-                if item_key in data["required"]:
-                    data["properties"][item_key] = inner_data
-                else:
-                    data["properties"][item_key] = {"oneOf": [inner_data, {"type": "null"}]}
+                data["properties"][item_key] = self._get_inner(is_invisible=is_invisible, **self.yspec[item_value])
 
-            if not self.required:
-                data = {"oneOf": [data, {"type": "null"}]}
+        if not self.required:
+            data = {"oneOf": [data, {"type": "null"}]}
 
         return data
 
@@ -467,10 +445,6 @@ class Group(Field):
 
 class List(Field):
     type = "array"
-
-    @property
-    def null_value(self) -> list | dict | None:
-        return []
 
     @property
     def default(self) -> Any:
@@ -540,8 +514,8 @@ class Variant(Field):
         )
         values = get_variant(obj=self.object_, conf=config, limits=self.limits)
 
-        if not values:
-            return [None]
+        if values is None:
+            return []
 
         return values
 
@@ -559,10 +533,15 @@ class Variant(Field):
 
         if self.limits["source"]["strict"]:
             data.pop("type")
-            data.update({"enum": self._get_variant()})
+            data.update({"enum": self._get_variant() or [None]})
 
-        if self.required:
-            data.update({"minLength": 1})
+            if not self.required and None not in data["enum"]:
+                data["enum"].append(None)
+        else:
+            if self.required:
+                data.update({"minLength": 1})
+            else:
+                data = {"oneOf": [data, {"type": "null"}]}
 
         return data
 
@@ -688,11 +667,11 @@ def convert_attr_to_adcm_meta(attr: dict) -> dict:
     for key, value in group_keys.items():
         if isinstance(value, dict):
             if isinstance(value["value"], bool):
-                adcm_meta[f"/{key}"].update({"isSynchronized": value["value"]})
+                adcm_meta[f"/{key}"].update({"isSynchronized": not value["value"]})
             for sub_key, sub_value in value["fields"].items():
-                adcm_meta[f"/{key}/{sub_key}"].update({"isSynchronized": sub_value})
+                adcm_meta[f"/{key}/{sub_key}"].update({"isSynchronized": not sub_value})
         else:
-            adcm_meta[f"/{key}"].update({"isSynchronized": value})
+            adcm_meta[f"/{key}"].update({"isSynchronized": not value})
 
     return adcm_meta
 
@@ -709,18 +688,18 @@ def convert_adcm_meta_to_attr(adcm_meta: dict) -> dict:
                 if key not in attr["group_keys"]:
                     attr["group_keys"].update({key: {"value": None, "fields": {}}})
 
-                attr["group_keys"][key]["fields"].update({sub_key: value["isSynchronized"]})
+                attr["group_keys"][key]["fields"].update({sub_key: not value["isSynchronized"]})
             else:
                 if "isSynchronized" in value and "isActive" in value:
                     # activatable group in config-group
                     attr[key].update({"active": value["isActive"]})
-                    attr["group_keys"].update({key: {"value": value["isSynchronized"], "fields": {}}})
+                    attr["group_keys"].update({key: {"value": not value["isSynchronized"], "fields": {}}})
                 elif "isActive" in value:
                     # activatable group not in config-group
                     attr[key].update({"active": value["isActive"]})
                 else:
                     # non-group root field in config-group
-                    attr["group_keys"].update({key: value["isSynchronized"]})
+                    attr["group_keys"].update({key: not value["isSynchronized"]})
     except (KeyError, ValueError):
         return adcm_meta
 

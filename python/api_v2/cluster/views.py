@@ -11,7 +11,11 @@
 # limitations under the License.
 
 
-from api_v2.cluster.filters import ClusterFilter
+from api_v2.cluster.filters import (
+    ClusterFilter,
+    ClusterHostFilter,
+    ClusterServiceFilter,
+)
 from api_v2.cluster.permissions import ClusterPermissions
 from api_v2.cluster.serializers import (
     ClusterCreateSerializer,
@@ -27,11 +31,14 @@ from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.host.serializers import HostMappingSerializer
 from api_v2.views import CamelCaseModelViewSet
 from audit.utils import audit
-from cm.api import add_cluster, retrieve_host_component_objects, set_host_component
-from cm.errors import AdcmEx
+from cm.api import (
+    add_cluster,
+    delete_cluster,
+    retrieve_host_component_objects,
+    set_host_component,
+)
 from cm.issue import update_hierarchy_issues
 from cm.models import (
-    ADCMEntityStatus,
     Cluster,
     ClusterObject,
     Host,
@@ -40,9 +47,6 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
-from cm.status_api import get_obj_status
-from django.db.models import QuerySet
-from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
@@ -52,8 +56,8 @@ from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
     HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
 )
 
 from adcm.permissions import (
@@ -70,10 +74,13 @@ class ClusterViewSet(
     ConfigSchemaMixin,
     CamelCaseModelViewSet,
 ):  # pylint:disable=too-many-ancestors
-    queryset = Cluster.objects.prefetch_related("prototype", "concerns").order_by("name")
+    queryset = (
+        Cluster.objects.prefetch_related("prototype", "concerns")
+        .prefetch_related("clusterobject_set__prototype")
+        .order_by("name")
+    )
     permission_required = [VIEW_CLUSTER_PERM]
     filterset_class = ClusterFilter
-    filter_backends = (DjangoFilterBackend,)
     permission_classes = [ClusterPermissions]
 
     def get_serializer_class(self):  # pylint: disable=too-many-return-statements
@@ -82,7 +89,7 @@ class ClusterViewSet(
                 return ClusterCreateSerializer
             case "update" | "partial_update":
                 return ClusterUpdateSerializer
-            case "service_prototypes":
+            case "service_prototypes" | "service_candidates":
                 return ServicePrototypeSerializer
             case "mapping":
                 return MappingSerializer
@@ -94,10 +101,6 @@ class ClusterViewSet(
                 return ClusterSerializer
 
     @audit
-    def destroy(self, request, *args, **kwargs) -> Response:
-        return super().destroy(request=request, *args, **kwargs)
-
-    @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -106,17 +109,17 @@ class ClusterViewSet(
         cluster = add_cluster(
             prototype=Prototype.objects.get(pk=valid["prototype_id"], type=ObjectType.CLUSTER),
             name=valid["name"],
-            description=valid.get("description", ""),
+            description=valid["description"],
         )
 
         return Response(data=ClusterSerializer(cluster).data, status=HTTP_201_CREATED)
 
     @audit
     def update(self, request, *args, **kwargs):
+        instance = self.get_object()
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         valid_data = serializer.validated_data
-        instance = self.get_object()
 
         if valid_data.get("name") and valid_data.get("name") != instance.name and instance.state != "created":
             raise ValidationError("Name change is available only in the 'created' state")
@@ -127,12 +130,16 @@ class ClusterViewSet(
 
         return Response(status=HTTP_200_OK, data=ClusterSerializer(instance).data)
 
+    @audit
+    def destroy(self, request, *args, **kwargs):
+        cluster = self.get_object()
+        delete_cluster(cluster=cluster)
+
+        return Response(status=HTTP_204_NO_CONTENT)
+
     @action(methods=["get"], detail=True, url_path="service-prototypes")
     def service_prototypes(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        cluster = Cluster.objects.filter(pk=kwargs["pk"]).first()
-        if not cluster:
-            return Response(data=f'Cluster with pk "{kwargs["pk"]}" not found', status=HTTP_404_NOT_FOUND)
-
+        cluster = self.get_object()
         prototypes = Prototype.objects.filter(type=ObjectType.SERVICE, bundle=cluster.prototype.bundle).order_by(
             "display_name"
         )
@@ -140,48 +147,50 @@ class ClusterViewSet(
 
         return Response(data=serializer.data)
 
-    @action(methods=["get"], detail=True, url_path="statuses/services")
+    @action(methods=["get"], detail=True, url_path="service-candidates")
+    def service_candidates(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+        cluster = self.get_object()
+        prototypes = (
+            Prototype.objects.filter(type=ObjectType.SERVICE, bundle=cluster.prototype.bundle)
+            .exclude(id__in=cluster.clusterobject_set.all().values_list("prototype", flat=True))
+            .order_by("display_name")
+        )
+        serializer = self.get_serializer_class()(instance=prototypes, many=True)
+
+        return Response(data=serializer.data)
+
+    @action(
+        methods=["get"],
+        detail=True,
+        url_path="statuses/services",
+        queryset=ClusterObject.objects.order_by("prototype__display_name"),
+        permission_required=[VIEW_SERVICE_PERM],
+        filterset_class=ClusterServiceFilter,
+    )
     def services_statuses(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
-        queryset = get_objects_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject).filter(
-            cluster=cluster
-        )
-        queryset = self.filter_queryset(queryset=queryset, request=request)
+        queryset = self.filter_queryset(queryset=self.get_queryset().filter(cluster=cluster))
 
         return self.get_paginated_response(
             data=RelatedServicesStatusesSerializer(instance=self.paginate_queryset(queryset=queryset), many=True).data
         )
 
-    @action(methods=["get"], detail=True, url_path="statuses/hosts")
+    @action(
+        methods=["get"],
+        detail=True,
+        url_path="statuses/hosts",
+        queryset=Host.objects.order_by("fqdn"),
+        permission_required=[VIEW_HOST_PERM],
+        filterset_class=ClusterHostFilter,
+    )
     def hosts_statuses(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
-        queryset = get_objects_for_user(user=request.user, perms=VIEW_HOST_PERM, klass=Host).filter(cluster=cluster)
-        queryset = self.filter_queryset(queryset=queryset, request=request)
+        queryset = self.filter_queryset(queryset=self.get_queryset().filter(cluster=cluster))
 
         return self.get_paginated_response(
             data=RelatedHostsStatusesSerializer(instance=self.paginate_queryset(queryset=queryset), many=True).data
         )
 
-    def filter_queryset(self, queryset: QuerySet, **kwargs) -> QuerySet | list:
-        if self.action in {"services_statuses", "hosts_statuses"}:
-            return self._filter_by_status(queryset=queryset, **kwargs)
-
-        return super().filter_queryset(queryset=queryset)
-
-    @staticmethod
-    def _filter_by_status(request: Request, queryset: QuerySet) -> QuerySet | list:
-        status_value = request.query_params.get("status", default=None)
-        if status_value is None:
-            return queryset
-
-        status_choices = {choice[0] for choice in ADCMEntityStatus.choices}
-        if status_value not in status_choices:
-            status_choices_repr = ", ".join(status_choices)
-            raise AdcmEx(code="BAD_REQUEST", msg=f"Status choices: {status_choices_repr}")
-
-        return [obj for obj in queryset if get_obj_status(obj=obj) == status_value]
-
-    @audit
     @action(
         methods=["get", "post"],
         detail=True,

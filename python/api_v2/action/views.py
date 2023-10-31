@@ -39,36 +39,31 @@ from cm.models import ADCM, Action, ConcernType, Host, HostComponent, PrototypeC
 from django.conf import settings
 from django.db.models import Q
 from django_filters.rest_framework.backends import DjangoFilterBackend
-from guardian.mixins import PermissionListMixin
+from guardian.shortcuts import get_objects_for_user
 from jinja_config import get_jinja_config
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
+from rest_framework.status import HTTP_200_OK
 
 from adcm.mixins import GetParentObjectMixin
-from adcm.permissions import (
-    VIEW_ACTION_PERM,
-    DjangoModelPermissionsAudit,
-    get_object_for_user,
-)
 
 
 class ActionViewSet(  # pylint: disable=too-many-ancestors
-    PermissionListMixin, ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, CamelCaseGenericViewSet
+    ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, CamelCaseGenericViewSet
 ):
-    permission_classes = [DjangoModelPermissionsAudit]
-    permission_required = [VIEW_ACTION_PERM]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ActionFilter
 
-    def get_queryset(self, *args, **kwargs):
+    def get_queryset(self, *args, **kwargs):  # pylint: disable=unused-argument
         self.parent_object = self.get_parent_object()  # pylint: disable=attribute-defined-outside-init
 
-        if self.parent_object is None:
-            raise NotFound("Can't find action's parent object")
+        if self.parent_object is None or not self.request.user.has_perm(
+            f"cm.view_{self.parent_object.__class__.__name__.lower()}", self.parent_object
+        ):
+            raise NotFound()
 
         if self.parent_object.concerns.filter(type=ConcernType.LOCK).exists():
             return Action.objects.none()
@@ -85,7 +80,8 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
                 self.prototype_objects[hc_item.component.prototype] = hc_item.component
 
         actions = (
-            Action.objects.select_related("prototype")
+            get_objects_for_user(user=self.request.user, perms=["cm.view_action"])
+            .select_related("prototype")
             .exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET)
             .filter(upgrade__isnull=True)
             .filter(
@@ -123,9 +119,6 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
     def retrieve(self, request, *args, **kwargs):
         action_ = self.get_object()
 
-        # check permissions
-        get_object_for_user(user=request.user, perms=VIEW_ACTION_PERM, klass=Action, pk=action_.pk)
-
         if action_.config_jinja:
             prototype_configs, attr = get_jinja_config(action=action_, obj=self.parent_object)
         else:
@@ -150,17 +143,13 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
     @audit
     @action(methods=["post"], detail=True, url_path="run")
     def run(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        parent_object = self.get_parent_object()
-        if parent_object is None:
-            raise NotFound("Can't find action's parent object")
+        target_action = self.get_object()
 
-        target_action = get_object_for_user(user=request.user, perms=VIEW_ACTION_PERM, klass=Action, pk=kwargs["pk"])
-
-        if reason := target_action.get_start_impossible_reason(parent_object):
+        if reason := target_action.get_start_impossible_reason(self.parent_object):
             raise AdcmEx("ACTION_ERROR", msg=reason)
 
-        if not check_run_perms(user=request.user, action=target_action, obj=parent_object):
-            return Response(data="Run action forbidden", status=HTTP_403_FORBIDDEN)
+        if not check_run_perms(user=request.user, action=target_action, obj=self.parent_object):
+            raise NotFound()
 
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -174,7 +163,7 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
             adcm_meta = configuration["adcm_meta"]
 
         if target_action.config_jinja:
-            prototype_configs, _ = get_jinja_config(action=target_action, obj=parent_object)
+            prototype_configs, _ = get_jinja_config(action=target_action, obj=self.parent_object)
             prototype_configs = [
                 prototype_config for prototype_config in prototype_configs if prototype_config.type == "json"
             ]
@@ -188,7 +177,7 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
 
         task = start_task(
             action=target_action,
-            obj=parent_object,
+            obj=self.parent_object,
             conf=config,
             attr=attr,
             hostcomponent=insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),

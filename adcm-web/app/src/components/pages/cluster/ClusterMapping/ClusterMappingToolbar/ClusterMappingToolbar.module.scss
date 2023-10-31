@@ -1,0 +1,15 @@
+:global {
+  body.theme-dark {
+    --cluster-mapping-toolbar-background: var(--color-xdark-new-20);
+  }
+
+  body.theme-light {
+    --cluster-mapping-toolbar-background: var(--color-xgray-alt-30);
+  }
+}
+
+.clusterMappingToolbar {
+  border-radius: 12px;
+  background: var(--cluster-mapping-toolbar-background);
+  padding: 8px;
+}

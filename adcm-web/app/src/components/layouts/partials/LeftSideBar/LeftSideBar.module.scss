@@ -1,0 +1,27 @@
+.leftSideBar {
+  padding: 20px 0;
+  box-sizing: border-box;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  &__logo {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 57px;
+  }
+
+  &__menu {
+    margin-top: 20px;
+
+    &_main {
+      margin-bottom: auto;
+    }
+  }
+  &__menu &__userName {
+    max-width: 150px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+}

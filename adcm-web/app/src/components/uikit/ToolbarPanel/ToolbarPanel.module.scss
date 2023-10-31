@@ -1,0 +1,29 @@
+:global {
+  body.theme-dark {
+    --toolbar-panel-background: var(--color-xdark-new-20);
+  }
+
+  body.theme-light {
+    --toolbar-panel-background: var(--color-xgray-alt-30);
+  }
+}
+
+.toolbarPanel {
+  display: flex;
+  gap: 20px;
+  border-radius: 12px;
+  padding: 8px;
+  background: var(--toolbar-panel-background);
+
+  &_start {
+    justify-content: center;
+  }
+
+  &_end {
+    justify-content: end;
+  }
+
+  &_justify {
+    justify-content: space-between;
+  }
+}

@@ -1,0 +1,15 @@
+.clusterOverviewDiagram {
+  &__wrapper {
+    width: 199px ;
+    display: flex;
+    margin: 0 12px;
+  }
+
+  &_up {
+    color: var(--color-xgreen);
+  }
+
+  &_down {
+    color: var(--color-yellow-light);
+  }
+}

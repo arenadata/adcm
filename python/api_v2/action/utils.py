@@ -18,7 +18,7 @@ from cm.models import Action, ADCMEntity, ServiceComponent
 from django.conf import settings
 from rbac.models import User
 
-from adcm.permissions import ADD_TASK_PERM, RUN_ACTION_PERM_PREFIX
+from adcm.permissions import RUN_ACTION_PERM_PREFIX
 
 
 def get_str_hash(value: str) -> str:
@@ -36,10 +36,7 @@ def filter_actions_by_user_perm(user: User, obj: ADCMEntity, actions: Iterable[A
 
 
 def check_run_perms(user: User, action: Action, obj: ADCMEntity) -> bool:
-    if user.has_perm(perm=ADD_TASK_PERM):
-        return True
-
-    return user.has_perm(perm=get_run_actions_permissions(actions=[action])[0], obj=obj)
+    return user.has_perm(perm=f"{RUN_ACTION_PERM_PREFIX}{get_str_hash(value=action.name)}", obj=obj)
 
 
 def insert_service_ids(

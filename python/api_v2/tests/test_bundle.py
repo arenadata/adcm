@@ -35,11 +35,14 @@ class TestBundle(BaseAPITestCase):
         cluster_new_bundle_path = self.test_bundles_dir / "cluster_two"
         self.new_bundle_file = self.prepare_bundle_file(source_dir=cluster_new_bundle_path)
 
+        same_names_bundle_path = self.test_bundles_dir / "cluster_identical_cluster_and_service_names"
+        self.same_names_bundle = self.add_bundle(source_dir=same_names_bundle_path)
+
     def test_list_success(self):
         response = self.client.get(path=reverse(viewname="v2:bundle-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["count"], 2)
 
     def test_upload_success(self):
         with open(settings.DOWNLOAD_DIR / self.new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
@@ -87,9 +90,10 @@ class TestBundle(BaseAPITestCase):
         self.assertEqual(response.json()["id"], self.bundle_1.pk)
 
     def test_retrieve_not_found_fail(self):
-        response = self.client.get(path=reverse(viewname="v2:bundle-detail", kwargs={"pk": self.bundle_1.pk + 1}))
+        response = self.client.get(
+            path=reverse(viewname="v2:bundle-detail", kwargs={"pk": self.get_non_existent_pk(model=Bundle)})
+        )
 
-        self.assertEqual(Bundle.objects.filter(pk=self.bundle_1.pk + 1).exists(), False)
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_delete_success(self):
@@ -99,6 +103,38 @@ class TestBundle(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
     def test_delete_not_found_fail(self):
-        response = self.client.delete(path=reverse(viewname="v2:bundle-detail", kwargs={"pk": self.bundle_1.pk + 1}))
+        response = self.client.delete(
+            path=reverse(viewname="v2:bundle-detail", kwargs={"pk": self.get_non_existent_pk(model=Bundle)})
+        )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_filter_by_display_name_success(self):
+        response = self.client.get(path=reverse(viewname="v2:bundle-list"), data={"displayName": "product"})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+
+    def test_filter_by_product_success(self):
+        response = self.client.get(path=reverse(viewname="v2:bundle-list"), data={"product": "product"})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+
+    def test_ordering_asc_success(self):
+        response = self.client.get(path=reverse(viewname="v2:bundle-list"))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertListEqual(
+            [item["displayName"] for item in response.json()["results"]],
+            ["cluster_one", "product"],
+        )
+
+    def test_ordering_desc_success(self):
+        response = self.client.get(path=reverse(viewname="v2:bundle-list"), data={"ordering": "-displayName"})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertListEqual(
+            [item["displayName"] for item in response.json()["results"]],
+            ["product", "cluster_one"],
+        )

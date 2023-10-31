@@ -1,0 +1,72 @@
+:global {
+  body.theme-dark {
+    --bell-popover-panel-background-color: #212121;
+    --bell-popover-panel-border-color: var(--color-xdark);
+  }
+
+  body.theme-light {
+    --bell-popover-panel-background-color: var(--color-popup-light);
+    --bell-popover-panel-border-color: var(--color-stroke-light);
+  }
+}
+
+.headerNotifications {
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0;
+
+  &:hover {
+    color: var(--color-xgreen-saturated);
+  }
+
+  &:active {
+    color: #FFFFFF !important;
+  }
+
+  :global(.bell__marker) {
+    color: var(--bell-marker-color, transparent);
+  }
+
+  :global(.bell__holePatch) {
+    color: var(--bell-hole-patch, currentColor);
+  }
+
+  &_done {
+    --bell-marker-color: transparent;
+  }
+
+  &_failed {
+    --bell-marker-color: var(--color-xred);
+
+    &:hover {
+      color: var(--color-xred);
+    }
+  }
+
+  &_success {
+    --bell-marker-color: var(--icon-button-color-active-primary);
+  }
+
+  &_locked {
+    --bell-marker-color: var(--color-xgray-light);
+  }
+
+  &_running {
+    --bell-marker-color: var(--color-xblue);
+  }
+}
+
+.bellPopoverPanel {
+  width: 315px;
+  min-height: 25px;
+  border-radius: 6px;
+  border: 1px solid var(--bell-popover-panel-border-color);
+  background-color: var(--bell-popover-panel-background-color);
+  padding: 16px;
+  position: relative;
+
+  &__spinner {
+    text-align: center;
+  }
+}

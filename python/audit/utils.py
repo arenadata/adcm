@@ -410,6 +410,7 @@ def audit(func):
                 if getattr(exc, "msg", None) and (  # pylint: disable=too-many-boolean-expressions
                     "There is host" in exc.msg
                     or "belong to cluster" in exc.msg
+                    or "host associated with a cluster" in exc.msg
                     or "of bundle" in exc.msg
                     or ("host doesn't exist" in exc.msg and not isinstance(deleted_obj, Host))
                 ):

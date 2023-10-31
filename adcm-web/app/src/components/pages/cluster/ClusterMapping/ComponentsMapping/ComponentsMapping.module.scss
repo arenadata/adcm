@@ -1,0 +1,47 @@
+.serviceMapping {
+
+  &__title {
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--component-container-valid-color);
+
+    &_error {
+      color: var(--component-container-error-color);
+    }
+  }
+
+  &:not(:last-child) {
+    margin-bottom: 24px;
+  }
+}
+
+.componentsMapping {
+  &__toolbar {
+    margin-bottom: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  &__toolbarButtonsAndSwitch {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  &__toolbarButtons {
+    display: flex;
+    justify-content: flex-end;
+
+    &>*:not(:last-child) {
+      margin-right: 12px;
+    }
+  }
+
+  &__content {
+    display: grid;
+    grid-template-columns: 4fr 1fr;
+    gap: 20px;
+  }
+}

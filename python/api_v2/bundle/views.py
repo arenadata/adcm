@@ -38,19 +38,24 @@ class BundleViewSet(  # pylint: disable=too-many-ancestors
         .filter(type__in=[ObjectType.CLUSTER, ObjectType.PROVIDER])
         .order_by(F("prototype__display_name").asc())
     )
-    serializer_class = BundleListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     filterset_class = BundleFilter
     filter_backends = (DjangoFilterBackend,)
 
+    def get_serializer_class(self):
+        if self.action == "create":
+            return UploadBundleSerializer
+
+        return BundleListSerializer
+
     @audit
     def create(self, request, *args, **kwargs) -> Response:
-        serializer = self.get_serializer_class()(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         file_path = upload_file(file=request.data["file"])
         bundle = load_bundle(bundle_file=str(file_path))
 
-        return Response(status=HTTP_201_CREATED, data=self.serializer_class(bundle).data)
+        return Response(status=HTTP_201_CREATED, data=BundleListSerializer(instance=bundle).data)
 
     @audit
     def destroy(self, request, *args, **kwargs) -> Response:
@@ -58,8 +63,3 @@ class BundleViewSet(  # pylint: disable=too-many-ancestors
         delete_bundle(bundle=bundle)
 
         return Response(status=HTTP_204_NO_CONTENT)
-
-    def get_serializer_class(self):
-        if self.action == "create":
-            return UploadBundleSerializer
-        return super().get_serializer_class()

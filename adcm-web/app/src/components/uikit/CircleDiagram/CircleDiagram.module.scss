@@ -1,0 +1,37 @@
+:global {
+  body.theme-dark {
+    --circle-diagram-empty-color: var(--color-xdark-new-50);
+    --circle-diagram-counter-color: var(--color-xwhite-off);
+
+  }
+  body.theme-light {
+    --circle-diagram-empty-color: var(--color-xgray-alt);
+    --circle-diagram-counter-color: var(--color-xdark);
+  }
+}
+
+.circleDiagram {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 18px;
+  position: relative;
+  height: 199px;
+  width: 199px;
+  --circle-diagram-fill-color: currentColor;
+
+  svg {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+
+  circle {
+    transition: stroke-dashoffset 1s;
+  }
+
+  &__counter {
+    color: var(--circle-diagram-counter-color);
+  }
+}

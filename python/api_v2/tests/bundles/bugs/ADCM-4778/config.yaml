@@ -1,0 +1,81 @@
+- config:
+  - name: list_field
+    type: list
+    required: false
+    default: []
+  - name: variant_from_config
+    required: false
+    source:
+      name: list_field
+      type: config
+    type: variant
+  - name: variant_inline_strict
+    required: false
+    source:
+      strict: true
+      type: inline
+      value: &id001
+      - a
+      - b
+      - C
+    type: variant
+  - name: variant_inline_nonstrict
+    required: false
+    source:
+      strict: false
+      type: inline
+      value: *id001
+    type: variant
+  - name: variant_host_in_cluster
+    required: false
+    source:
+      name: host_in_cluster
+      type: builtin
+    type: variant
+  - name: variant_host_not_in_clusters
+    required: false
+    source:
+      name: host_not_in_clusters
+      type: builtin
+    type: variant
+  - name: variant_service_in_cluster
+    required: false
+    source:
+      name: service_in_cluster
+      type: builtin
+    type: variant
+  - name: variant_service_to_add
+    required: false
+    source:
+      name: service_to_add
+      type: builtin
+    type: variant
+  -
+    name: variant_host
+    required: false
+    source:
+      args:
+        args:
+        - args:
+            service: with_config
+          predicate: in_service
+        - args:
+            component: with_config
+            service: no_config
+          predicate: not_in_component
+        predicate: and
+      name: host
+      type: builtin
+    type: variant
+
+  name: with_config
+  type: cluster
+  version: 2
+
+- name: with_config
+  type: service
+  version: 1
+
+- name: no_config
+  type: service
+  version: 1

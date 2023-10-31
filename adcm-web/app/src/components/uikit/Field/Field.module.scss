@@ -1,0 +1,158 @@
+:global {
+  body.theme-dark {
+    // primary:
+    --field-placeholder-primary: var(--color-xgray-light);
+
+    --field-border-primary: var(--color-xdark);
+    --field-background-primary: transparent;
+    --field-color-primary: var(--color-xgray-lighter);
+
+    // hover
+    --field-border-hover-primary: var(--color-xdark);
+    --field-background-hover-primary: var(--color-xdark-new-50);
+
+    // focus
+    --field-border-focus-primary: var(--color-xgreen-saturated);
+    --field-color-focus-primary: var(--color-xwhite-off);
+
+    // error
+    --field-border-error-primary: var(--color-xred);
+    --field-background-error-hover-primary: var(--color-red-10);
+
+    // disabled
+    --field-border-disabled-primary: var(--color-xdark-plate10);
+    --field-background-disabled-primary: var(--color-xdark-plate10);
+    --field-color-disabled-primary: var(--color-xgray-reading);
+    --field-placeholder-disabled-primary: var(--color-xgray-reading);
+  }
+
+  body.theme-light {
+    // primary:
+    --field-placeholder-primary: var(--color-xgray-light);
+
+    --field-border-primary: var(--color-xgray-lighter);
+    --field-background-primary: transparent;
+    --field-color-primary: var(--color-added-text);
+
+    // hover
+    --field-border-hover-primary: var(--color-xgray-lighter);
+    --field-background-hover-primary: var(--color-xgray-alt-60);
+
+    // focus
+    --field-border-focus-primary: var(--color-xgreen-saturated);
+    --field-color-focus-primary: var(--color-xdark);
+
+    // error
+    --field-border-error-primary: var(--color-xred);
+    --field-background-error-hover-primary: var(--color-red-10);
+
+    // disabled
+    --field-border-disabled-primary: var(--color-xdark-plate10);
+    --field-background-disabled-primary: var(--color-xdark-plate10);
+    --field-color-disabled-primary: var(--color-xgray-lighter);
+    --field-placeholder-disabled-primary: var(--color-xgray-lighter);
+  }
+}
+.field {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--field-border);
+  background: var(--field-background);
+  color: var(--field-color);
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition: background-color 250ms, border-color 250ms, color 250ms;
+
+  input,
+  textarea {
+    &:-webkit-autofill,
+    &:-webkit-autofill:focus {
+      transition: background-color 600000s 0s, color 600000s 0s;
+    }
+
+    &:autofill {
+      background: transparent;
+    }
+  }
+
+  &__mainContent {
+    border: none;
+    border-radius: 0;
+    padding: 5px 8px;
+    background: none;
+    outline: none;
+    color: inherit;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    flex: 1;
+    width: 100%;
+    box-sizing: border-box;
+    cursor: inherit;
+
+    &::placeholder {
+      // https://developer.mozilla.org/en-US/docs/Web/CSS/::placeholder#opaque_text
+      opacity: 1;
+      color: var(--field-placeholder)
+    }
+
+    // if input are empty then colors of icons should be equal to placeholder
+    &:placeholder-shown ~ * {
+      color: var(--field-placeholder);
+    }
+  }
+
+  & > button:first-child {
+    margin: auto 0 auto 8px;
+  }
+
+  & > button:last-child {
+    margin: auto 8px auto 0;
+  }
+
+  &:hover {
+    --field-border: var(--field-border-hover);
+    --field-background: var(--field-background-hover);
+  }
+
+  &:focus-within,
+  &:global(.is-active) {
+    --field-border: var(--field-border-focus);
+    --field-color: var(--field-color-focus);
+
+    box-shadow: inset 0 0 0 1px var(--field-border);
+  }
+
+  &.field_error {
+    --field-border: var(--field-border-error);
+    &:hover {
+      --field-background: var(--field-background-error-hover);
+    }
+  }
+
+  &.field_disabled {
+    cursor: not-allowed !important;
+    --field-border: var(--field-border-disabled-primary);
+    --field-background: var(--field-background-disabled-primary);
+    --field-color: var(--field-color-disabled-primary);
+    --field-placeholder: var(--field-placeholder-disabled-primary);
+  }
+
+  &_primary {
+    --field-placeholder: var(--field-placeholder-primary);
+    --field-border: var(--field-border-primary);
+    --field-background: var(--field-background-primary);
+    --field-color: var(--field-color-primary);
+
+    --field-border-hover: var(--field-border-hover-primary);
+    --field-background-hover: var(--field-background-hover-primary);
+    --field-color-hover: var(--field-color-hover-primary);
+
+    --field-border-focus: var(--field-border-focus-primary);
+    --field-background-focus: var(--field-background-focus-primary);
+    --field-color-focus: var(--field-color-focus-primary);
+
+    --field-border-error: var(--field-border-error-primary);
+    --field-background-error-hover: var(--field-background-error-hover-primary);
+  }
+}

@@ -1,0 +1,32 @@
+:global {
+  body.theme-dark {
+    --breadcrumbs-slash-color: var(--color-xgreen-saturated);
+  }
+
+  body.theme-light {
+    --breadcrumbs-slash-color: var(--color-xgreen);
+  }
+}
+
+.breadcrumbs ul {
+  list-style: none;
+  min-height: 1.2em;
+  color: var(--text-default-color, inherit);
+}
+.breadcrumbs li {
+  display: inline-block;
+}
+.breadcrumbs li:not(:first-child)::before {
+  content: '/';
+  margin-inline-end: 5px;
+  color: var(--breadcrumbs-slash-color);
+}
+.breadcrumbs li:not(:last-child) {
+  margin-inline-end: 5px;
+}
+.breadcrumbs a {
+  transition: color 250ms;
+}
+.breadcrumbs a:hover {
+  color: var(--color-xblue);
+}

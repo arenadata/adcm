@@ -20,3 +20,5 @@ urlpatterns = [
     path("api/v2/", include(("api_v2.urls", "api_v2"), namespace="v2")),
     path("api/ui/", include("api_ui.urls")),
 ]
+
+handler500 = "rest_framework.exceptions.server_error"  # pylint: disable=invalid-name
