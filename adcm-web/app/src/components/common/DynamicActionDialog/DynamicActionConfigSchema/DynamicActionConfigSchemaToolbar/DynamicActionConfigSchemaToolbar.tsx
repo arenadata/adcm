@@ -1,6 +1,6 @@
 import React from 'react';
 import s from '@commonComponents/DynamicActionDialog/DynamicActionDialog.module.scss';
-import { Button, ButtonGroup, SearchInput } from '@uikit';
+import { Button, ButtonGroup, SearchInput, Switch } from '@uikit';
 import ToolbarPanel from '@uikit/ToolbarPanel/ToolbarPanel';
 import { useConfigurationFormContext } from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContext.context';
 
@@ -23,9 +23,15 @@ const DynamicActionConfigSchemaToolbar: React.FC<DynamicActionConfigSchemaToolba
     onFilterChange({ title: e.target.value });
   };
 
+  const handleShowAdvanced = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onFilterChange({ showAdvanced: e.target.checked });
+  };
+
   return (
     <ToolbarPanel className={s.dynamicActionDialog__toolbar}>
       <SearchInput placeholder="Search input" value={filter.title} onChange={handleSearch} />
+
+      <Switch isToggled={filter.showAdvanced} variant="blue" onChange={handleShowAdvanced} label="Show advanced" />
 
       <ButtonGroup>
         <Button variant="secondary" iconLeft="g1-return" onClick={onReset} />
