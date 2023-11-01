@@ -1,31 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, FocusEvent } from 'react';
 import Input, { InputProps } from '@uikit/Input/Input';
 import IconButton from '@uikit/IconButton/IconButton';
 
-type InputPasswordProps = Omit<InputProps, 'type' | 'endAdornment' | 'startAdornment'>;
+interface InputPasswordProps extends Omit<InputProps, 'type' | 'endAdornment' | 'startAdornment'> {
+  areAsterisksShown?: boolean;
+}
 
-const InputPassword = React.forwardRef<HTMLInputElement, InputPasswordProps>((props, ref) => {
-  const [showPassword, setShowPassword] = useState(false);
-  const toggleShowPassword = () => {
-    setShowPassword((prev) => !prev);
-  };
+const dummyPasswordValue = '******';
 
-  return (
-    <Input
-      {...props}
-      type={showPassword ? 'text' : 'password'}
-      ref={ref}
-      endAdornment={
-        <IconButton
-          type="button"
-          icon={showPassword ? 'eye' : 'eye-crossed'}
-          size={20}
-          onClick={toggleShowPassword}
-          disabled={props.disabled}
-        />
+const InputPassword = React.forwardRef<HTMLInputElement, InputPasswordProps>(
+  ({ areAsterisksShown = false, placeholder, ...props }, ref) => {
+    const [isPasswordShown, setIsPasswordShown] = useState(false);
+    const [passwordPlaceholder, setPasswordPlaceholder] = useState(dummyPasswordValue);
+
+    const toggleShowPassword = () => {
+      setIsPasswordShown((prev) => !prev);
+    };
+
+    const focusHandler = (e: FocusEvent<HTMLInputElement>) => {
+      if (areAsterisksShown) {
+        setPasswordPlaceholder('');
       }
-    />
-  );
-});
+
+      props.onFocus?.(e);
+    };
+
+    const blurHandler = (e: FocusEvent<HTMLInputElement>) => {
+      if (areAsterisksShown) {
+        setPasswordPlaceholder(dummyPasswordValue);
+      }
+
+      props.onBlur?.(e);
+    };
+
+    return (
+      <Input
+        {...props}
+        type={isPasswordShown ? 'text' : 'password'}
+        ref={ref}
+        placeholder={!areAsterisksShown ? placeholder : passwordPlaceholder}
+        onFocus={focusHandler}
+        onBlur={blurHandler}
+        endAdornment={
+          <IconButton
+            type="button"
+            icon={isPasswordShown ? 'eye' : 'eye-crossed'}
+            size={20}
+            onClick={toggleShowPassword}
+            disabled={props.disabled}
+          />
+        }
+      />
+    );
+  },
+);
 InputPassword.displayName = 'InputPassword';
 export default InputPassword;
