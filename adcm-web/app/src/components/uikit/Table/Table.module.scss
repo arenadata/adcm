@@ -100,7 +100,7 @@
 
     // quaternary
     --table-tr-border-quaternary: var(--color-stroke-light);
-    --table-tr-background-quaternary: var(--color-xwhite-50);
+    --table-tr-background-quaternary: #EEF2F5;
     --table-td-color-quaternary: var(--color-xgray-darker);
   }
 }
@@ -326,6 +326,8 @@
 
     tr {
       background: var(--table-tr-background-quaternary);
+    }
+    tbody > tr {
       border-top: 1px solid var(--table-tr-border-quaternary);
     }
   }

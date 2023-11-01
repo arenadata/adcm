@@ -1,9 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmJob, AdcmJobLog, AdcmJobStatus, AdcmTask } from '@models/adcm';
+import { AdcmJob, AdcmJobLogItem, AdcmJobStatus, AdcmTask } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmJobsApi } from '@api/adcm/jobs';
+import { updateIfExists } from '@utils/objectUtils';
 
 interface AdcmJobsState {
   jobs: AdcmJob[];
@@ -11,7 +12,7 @@ interface AdcmJobsState {
   isLoading: boolean;
   job: AdcmJob | null;
   task: AdcmTask;
-  logs: AdcmJobLog[];
+  logs: AdcmJobLogItem[];
 }
 
 const loadFromBackend = createAsyncThunk('adcm/jobs/loadFromBackend', async (arg, thunkAPI) => {
@@ -127,10 +128,13 @@ const jobsSlice = createSlice({
         state.task.childJobs = [];
       })
       .addCase(getJobLog.fulfilled, (state, action) => {
-        const childJob = state.task.childJobs.find((job) => job.id === action.meta.arg);
-        if (childJob) {
-          childJob.logs = action.payload;
-        }
+        state.task.childJobs = updateIfExists(
+          state.task.childJobs,
+          (job) => job.id === action.meta.arg,
+          () => ({
+            logs: action.payload,
+          }),
+        );
       })
       .addCase(getJobLog.rejected, (state) => {
         state.logs = [];

@@ -6,6 +6,9 @@ import { useRequestJobLogPage } from './useRequestJobLogPage';
 import s from './JobPageLog.module.scss';
 import { useParams } from 'react-router-dom';
 import { apiHost } from '@constants';
+import JobLogCheck from '@commonComponents/job/JobLog/JobLogCheck/JobLogCheck';
+import { AdcmJobLogItemCheck, AdcmJobLogItemStd } from '@models/adcm';
+import { getStatusLabel } from '@utils/humanizationUtils';
 
 interface JobPageLogProps {
   id: number;
@@ -35,13 +38,25 @@ const JobPageLog: React.FC<JobPageLogProps> = ({ id, isLinkEmpty = false }) => {
     <>
       <TabsBlock variant="secondary" className={s.jobLog}>
         <Tab to={isLinkEmpty ? '' : 'stdout'} onClick={getHandleTabClick('stdout')} isActive={logName === 'stdout'}>
-          Ansible [stdout]
+          {getStatusLabel(logs[0]?.name ?? '')} [stdout]
         </Tab>
         <Tab to={isLinkEmpty ? '' : 'stderr'} onClick={getHandleTabClick('stderr')} isActive={logName === 'stderr'}>
-          Ansible [stderr]
+          {getStatusLabel(logs[1]?.name ?? '')} [stderr]
         </Tab>
+        {logs[2] && (
+          <Tab to={isLinkEmpty ? '' : 'check'} onClick={getHandleTabClick('check')} isActive={logName === 'check'}>
+            {getStatusLabel(logs[2]?.name ?? '')} [check]
+          </Tab>
+        )}
       </TabsBlock>
-      <CodeHighlighter code={log?.content.trim() || ''} language="javascript" className={s.codeHighlighter} />
+      {logName === 'check' && !!log && <JobLogCheck log={log as AdcmJobLogItemCheck} />}
+      {logName !== 'check' && (
+        <CodeHighlighter
+          code={(log as AdcmJobLogItemStd)?.content.trim() || ''}
+          language="accesslog"
+          className={s.codeHighlighter}
+        />
+      )}
       {log?.content && (
         <a href={downloadLink} download="download" target="_blank">
           <Button variant="secondary" className={s.jobLogDownloadButton} children="Download" />
