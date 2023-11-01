@@ -38,16 +38,38 @@ export interface AdcmJob {
   endTime: string;
   isTerminatable: boolean;
   childJobs?: AdcmJob[];
-  logs?: AdcmJobLog[];
+  logs?: AdcmJobLogItem[];
 }
 
-export interface AdcmJobLog {
+export type AdcmJobLogCheckContentItem = {
+  message: string;
+  result: boolean;
+  title: string;
+  type: 'group' | 'check';
+  content?: AdcmJobLogCheckContentItem[];
+};
+
+export enum AdcmJobLogType {
+  Stdout = 'stdout',
+  Stderr = 'stderr',
+  Check = 'check',
+}
+
+interface AdcmJobLogItemCommon {
   id: number;
-  name: string;
-  type: string;
+  name: 'ansible' | 'python';
   format: string;
+}
+export interface AdcmJobLogItemCheck extends AdcmJobLogItemCommon {
+  type: AdcmJobLogType.Check;
+  content: AdcmJobLogCheckContentItem[];
+}
+export interface AdcmJobLogItemStd extends AdcmJobLogItemCommon {
+  type: AdcmJobLogType.Stdout | AdcmJobLogType.Stderr;
   content: string;
 }
+
+export type AdcmJobLogItem = AdcmJobLogItemCheck | AdcmJobLogItemStd;
 
 export interface AdcmJobsFilter {
   jobName?: string;

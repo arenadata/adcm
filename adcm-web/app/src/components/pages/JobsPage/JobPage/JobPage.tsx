@@ -38,7 +38,7 @@ const JobPage: React.FC = () => {
       <TableContainer variant="easy">
         <JobPageTable />
       </TableContainer>
-      {task.childJobs?.length === 1 && <JobPageLog id={task.childJobs?.[0]?.id} />}
+      {task.childJobs?.length === 1 && <JobPageLog id={task.childJobs[0].id} />}
       {task.childJobs && task.childJobs.length > 1 && (
         <TableContainer variant="easy">
           <JobPageChildJobsTable />

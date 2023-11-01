@@ -8,6 +8,7 @@ import CommonSelectSearchFilter from '@uikit/Select/CommonSelect/CommonSelectSea
 import ConditionalWrapper from './ConditionalWrapper/ConditionalWrapper';
 import CodeEditor from './CodeEditor/CodeEditor';
 import ConfigurationEditor from './ConfigurationEditor/ConfigurationEditor';
+import Collapse from './Collapse/Collapse';
 import DatePicker from '@uikit/DatePicker/DatePicker';
 import Dialog from '@uikit/Dialog/Dialog';
 import DialogDefaultControls from '@uikit/Dialog/DialogDefaultControls';
@@ -65,6 +66,7 @@ export {
   CommonSelectSearchFilter,
   ConfigurationEditor,
   ConditionalWrapper,
+  Collapse,
   DatePicker,
   Dialog,
   DialogDefaultControls,

@@ -26,9 +26,11 @@
       {
         "skipWords": [
           "acc",
+          "accesslog",
           "accessor",
           "adcm",
           "administrator’s",
+          "ansible",
           "api",
           "arenadata",
           "authed",
