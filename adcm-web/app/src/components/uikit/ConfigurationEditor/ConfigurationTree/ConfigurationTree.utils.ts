@@ -69,19 +69,20 @@ const getNodeProps = (
   fieldAttributes: FieldAttributes,
   parentNode: ConfigurationNode,
 ) => {
-  const isParentSynchronized = parentNode.data.fieldAttributes?.isSynchronized === true;
+  const parentNodeData = parentNode.data as ConfigurationObject | ConfigurationArray;
+  const isParentSynchronized = parentNodeData.fieldAttributes?.isSynchronized === true;
   const isSynchronized = fieldAttributes?.isSynchronized === true;
 
-  const isArrayItem = parentNode.data.fieldSchema.type === 'array';
-  const title = isArrayItem ? `${parentNode.data.title} [${fieldName}]` : getTitle(fieldName, fieldSchema);
+  const isArrayItem = parentNodeData.fieldSchema.type === 'array';
+  const title = isArrayItem ? `${parentNodeData.title} [${fieldName}]` : getTitle(fieldName, fieldSchema);
 
   let isRequiredField = false;
-  if (parentNode.data.fieldSchema.type === 'object') {
-    const requiredFields = parentNode.data.fieldSchema.required ?? [];
+  if (parentNodeData.fieldSchema.type === 'object') {
+    const requiredFields = parentNodeData.fieldSchema.required ?? [];
     isRequiredField = requiredFields.includes(fieldName);
   }
 
-  const isReadonly = fieldSchema.readOnly || isSynchronized || isParentSynchronized;
+  const isReadonly = fieldSchema.readOnly || parentNodeData.isReadonly || isSynchronized || isParentSynchronized;
   const isCleanable = !isReadonly && isNullable;
   const isDeletable = !isReadonly && (!isRequiredField || isArrayItem);
 
@@ -238,7 +239,7 @@ const buildObjectNode = (
     }
 
     if (!nodeData.isReadonly) {
-      if (nodeData.objectType === 'map' && nodeData.fieldSchema.additionalProperties) {
+      if (nodeData.objectType === 'map') {
         children.push(buildAddFieldNode(path, node));
       }
       if (nodeData.objectType === 'structure' && objectValue === null) {
