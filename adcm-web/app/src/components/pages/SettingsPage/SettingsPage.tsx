@@ -2,6 +2,7 @@ import React from 'react';
 import SettingsHeader from './SettingsHeader/SettingsHeader';
 import SettingsConfiguration from './SettingsConfiguration/SettingsConfiguration';
 import { useRequestAdcmSettings } from '@pages/SettingsPage/useRequestAdcmSettings';
+import SettingsDynamicActionDialog from '@pages/SettingsPage/SettingsDynamicActionDialog/SettingsDynamicActionDialog';
 
 const SettingsPage: React.FC = () => {
   useRequestAdcmSettings();
@@ -10,6 +11,7 @@ const SettingsPage: React.FC = () => {
     <div>
       <SettingsHeader />
       <SettingsConfiguration />
+      <SettingsDynamicActionDialog />
     </div>
   );
 };
