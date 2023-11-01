@@ -94,8 +94,8 @@ def get_audit_operation_and_object(  # pylint: disable=too-many-branches
         )
     elif "adcm" in path or "profile" in path:
         audit_operation, audit_object = adcm_case(path=path, view=view, response=response, api_version=api_version)
-    elif "task" in path or "job" in path:
-        audit_operation, audit_object = task_job_case(path=path)
+    elif "task" in path or "tasks" in path or "job" in path or "jobs" in path:
+        audit_operation, audit_object = task_job_case(path=path, version=api_version)
     elif "bundles" in path:
         audit_operation, audit_object = bundle_case(
             path=path,

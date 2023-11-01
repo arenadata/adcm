@@ -13,23 +13,31 @@
 # pylint: disable=too-many-lines
 
 from datetime import timedelta
+from unittest.mock import patch
 
 from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditLogOperationType, AuditObject, AuditSession
 from cm.models import (
     ADCM,
     Action,
+    ActionType,
     Bundle,
     Cluster,
     ClusterObject,
     Host,
     HostProvider,
+    JobLog,
+    JobStatus,
     ObjectType,
     Prototype,
     ServiceComponent,
+    SubAction,
+    TaskLog,
     Upgrade,
 )
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
 from rbac.models import User
 from rbac.services.user import create_user
 from rest_framework.response import Response
@@ -1779,7 +1787,7 @@ class TestADCMAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-    def test_adcm_run_action_access_denied_fail_success(self):
+    def test_adcm_run_action_denied(self):
         adcm_action_pk = Action.objects.filter(name="test_ldap_connection").first().pk
         self.client.login(**self.test_user_credentials)
 
@@ -2166,7 +2174,7 @@ class TestBundleAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-    def test_audit_delete_access_denied_fail(self):
+    def test_audit_delete_denied(self):
         bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_actions")
         self.client.login(**self.test_user_credentials)
         response = self.client.delete(path=reverse(viewname="v2:bundle-detail", kwargs={"pk": bundle.pk}))
@@ -2519,7 +2527,7 @@ class TestHostAudit(AuditBaseTestCase):  # pylint: disable=too-many-ancestors,to
             user__username="admin",
         )
 
-    def test_create_access_denied_fail(self):
+    def test_create_denied(self):
         self.client.login(**self.test_user_credentials)
         response: Response = self.client.post(
             path=reverse(viewname="v2:host-list"),
@@ -2569,7 +2577,7 @@ class TestHostAudit(AuditBaseTestCase):  # pylint: disable=too-many-ancestors,to
             user__username="admin",
         )
 
-    def test_update_access_denied_fail(self):
+    def test_update_denied(self):
         self.client.login(**self.test_user_credentials)
         response: Response = self.client.patch(
             path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
@@ -2615,7 +2623,7 @@ class TestHostAudit(AuditBaseTestCase):  # pylint: disable=too-many-ancestors,to
             user__username="admin",
         )
 
-    def test_delete_access_denied_fail(self):
+    def test_delete_denied(self):
         self.client.login(**self.test_user_credentials)
         response: Response = self.client.delete(
             path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
@@ -2667,7 +2675,7 @@ class TestHostAudit(AuditBaseTestCase):  # pylint: disable=too-many-ancestors,to
             user__username="admin",
         )
 
-    def test_remove_from_cluster_access_denied_fail(self):
+    def test_remove_from_cluster_denied(self):
         self.client.login(**self.test_user_credentials)
         response: Response = self.client.delete(
             path=reverse(
@@ -2722,7 +2730,7 @@ class TestHostAudit(AuditBaseTestCase):  # pylint: disable=too-many-ancestors,to
             user__username="admin",
         )
 
-    def test_switch_maintenance_mode_access_denied_fail(self):
+    def test_switch_maintenance_mode_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(
@@ -2778,7 +2786,7 @@ class TestHostAudit(AuditBaseTestCase):  # pylint: disable=too-many-ancestors,to
             user__username="admin",
         )
 
-    def test_switch_maintenance_mode_cluster_access_denied_fail(self):
+    def test_switch_maintenance_mode_cluster_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(
@@ -2842,10 +2850,10 @@ class TestHostAudit(AuditBaseTestCase):  # pylint: disable=too-many-ancestors,to
             user__username="admin",
         )
 
-    def test_update_host_config_access_denied_fail(self):
+    def test_update_host_config_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
-            path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": 1000}),
+            path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host_1.pk}),
             data={},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -2856,3 +2864,138 @@ class TestHostAudit(AuditBaseTestCase):  # pylint: disable=too-many-ancestors,to
             operation_result="fail",
             user__username=self.test_user.username,
         )
+
+
+class TestTaskJobAudit(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = create_user(**self.test_user_credentials)
+
+        self.adcm = ADCM.objects.first()
+        self.action = Action.objects.create(
+            display_name="test_adcm_action",
+            prototype=self.adcm.prototype,
+            type=ActionType.JOB,
+            state_available="any",
+        )
+        self.task_for_job = TaskLog.objects.create(
+            object_id=self.adcm.pk,
+            object_type=ContentType.objects.get(app_label="cm", model="adcm"),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+            action=self.action,
+        )
+        self.job = JobLog.objects.create(
+            status=JobStatus.RUNNING,
+            start_date=timezone.now() + timedelta(days=1),
+            finish_date=timezone.now() + timedelta(days=2),
+            action=self.action,
+            task=self.task_for_job,
+            pid=9999,
+            sub_action=SubAction.objects.create(
+                action=self.action,
+                allow_to_terminate=True,
+            ),
+        )
+        self.task = TaskLog.objects.create(
+            object_id=self.adcm.pk,
+            object_type=ContentType.objects.get(app_label="cm", model="adcm"),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+        )
+
+    def test_job_terminate_success(self):
+        with patch("cm.models.os.kill"):
+            response: Response = self.client.post(
+                path=reverse(viewname="v2:joblog-terminate", kwargs={"pk": self.job.pk}), data={}
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            self.check_last_audit_log(
+                operation_name="Job terminated",
+                operation_type="update",
+                operation_result="success",
+                audit_object__object_id=1,
+                audit_object__object_name="ADCM",
+                audit_object__object_type="adcm",
+                audit_object__is_deleted=False,
+                object_changes={},
+                user__username="admin",
+            )
+
+    def test_job_terminate_not_found_fail(self):
+        with patch("cm.models.os.kill"):
+            response: Response = self.client.post(
+                path=reverse(viewname="v2:joblog-terminate", kwargs={"pk": 100}), data={}
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            self.check_last_audit_log(
+                operation_name="Job terminated",
+                operation_type="update",
+                operation_result="fail",
+                object_changes={},
+                user__username="admin",
+            )
+
+    def test_job_terminate_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with patch("cm.models.os.kill"):
+            response: Response = self.client.post(
+                path=reverse(viewname="v2:joblog-terminate", kwargs={"pk": self.job.pk}), data={}
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            self.check_last_audit_log(
+                operation_name="Job terminated",
+                operation_type="update",
+                operation_result="denied",
+                object_changes={},
+                user__username=self.test_user.username,
+            )
+
+    def test_task_cancel_success(self):
+        with patch("cm.models.TaskLog.cancel"):
+            response = self.client.post(path=reverse(viewname="v2:tasklog-terminate", kwargs={"pk": self.task.pk}))
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            self.check_last_audit_log(
+                operation_name="Task cancelled",
+                operation_type="update",
+                operation_result="success",
+                audit_object__object_id=1,
+                audit_object__object_name="ADCM",
+                audit_object__object_type="adcm",
+                audit_object__is_deleted=False,
+                object_changes={},
+                user__username="admin",
+            )
+
+    def test_task_cancel_not_found_fail(self):
+        with patch("cm.models.TaskLog.cancel"):
+            response = self.client.post(path=reverse(viewname="v2:tasklog-terminate", kwargs={"pk": 1000}))
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            self.check_last_audit_log(
+                operation_name="Task cancelled",
+                operation_type="update",
+                operation_result="fail",
+                object_changes={},
+                user__username="admin",
+            )
+
+    def test_task_cancel_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with patch("cm.models.TaskLog.cancel"):
+            response = self.client.post(path=reverse(viewname="v2:tasklog-terminate", kwargs={"pk": self.task.pk}))
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            self.check_last_audit_log(
+                operation_name="Task cancelled",
+                operation_type="update",
+                operation_result="denied",
+                object_changes={},
+                user__username=self.test_user.username,
+            )

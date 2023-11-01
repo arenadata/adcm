@@ -18,6 +18,7 @@ from api_v2.task.filters import TaskFilter
 from api_v2.task.permissions import TaskPermissions
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
+from audit.utils import audit
 from cm.models import TaskLog
 from django.http import HttpResponse
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -41,6 +42,7 @@ class TaskViewSet(
     permission_classes = [TaskPermissions]
     permission_required = [VIEW_TASKLOG_PERMISSION]
 
+    @audit
     @action(methods=["post"], detail=True)
     def terminate(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         task = self.get_object()

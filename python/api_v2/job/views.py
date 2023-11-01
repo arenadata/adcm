@@ -14,6 +14,7 @@ from api_v2.job.permissions import JobPermissions
 from api_v2.job.serializers import JobRetrieveSerializer
 from api_v2.task.serializers import JobListSerializer
 from api_v2.views import CamelCaseGenericViewSet
+from audit.utils import audit
 from cm.models import JobLog
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
@@ -43,6 +44,7 @@ class JobViewSet(
 
         return JobListSerializer
 
+    @audit
     @action(methods=["post"], detail=True)
     def terminate(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         job = self.get_object()

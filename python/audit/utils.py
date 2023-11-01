@@ -47,6 +47,7 @@ from cm.models import (
     HostProvider,
     ServiceComponent,
     TaskLog,
+    get_model_by_type,
 )
 from django.contrib.auth.models import User as DjangoUser
 from django.db.models import Model, ObjectDoesNotExist
@@ -410,12 +411,19 @@ def audit(func):
                         if action_perm_denied or task_perm_denied:
                             status_code = HTTP_403_FORBIDDEN
 
-                    if api_version == 2:
+                    if api_version == 2:  # pylint: disable=too-many-boolean-expressions
                         if (
                             view.__class__.__name__ in ["ActionViewSet", "AdcmActionViewSet"]
                             and view.action == "run"
                             and "pk" in view.kwargs
                             and Action.objects.filter(pk=view.kwargs["pk"]).exists()
+                        ) or (
+                            view.__class__.__name__ in ["TaskViewSet", "JobViewSet"]
+                            and view.action == "terminate"
+                            and "pk" in view.kwargs
+                            and get_model_by_type(view.__class__.__name__.strip("ViewSet"))
+                            .objects.filter(pk=view.kwargs["pk"])
+                            .exists()
                         ):
                             status_code = HTTP_403_FORBIDDEN
 
