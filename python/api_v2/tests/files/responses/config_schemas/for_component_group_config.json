@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Configuration",
+  "description": "",
+  "readOnly": false,
+  "adcmMeta": {
+    "isAdvanced": false,
+    "isInvisible": false,
+    "activation": null,
+    "synchronization": null,
+    "nullValue": null,
+    "isSecret": false,
+    "stringExtra": null,
+    "enumExtra": null
+  },
+  "type": "object",
+  "properties": {
+    "secrettext": {
+      "title": "secrettext",
+      "type": "string",
+      "description": "",
+      "default": "secrettext",
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": {
+          "isAllowChange": true
+        },
+        "isSecret": true,
+        "stringExtra": {
+          "isMultiline": true
+        },
+        "enumExtra": null
+      },
+      "minLength": 1
+    },
+    "group": {
+      "title": "group",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "oneOf": [
+            {
+              "title": "file",
+              "type": "string",
+              "description": "",
+              "default": "content",
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": {
+                  "isAllowChange": true
+                },
+                "isSecret": false,
+                "stringExtra": {
+                  "isMultiline": true
+                },
+                "enumExtra": null
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "file"
+      ]
+    },
+    "activatable_group": {
+      "title": "activatable_group",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": {
+          "isAllowChange": true
+        },
+        "synchronization": {
+          "isAllowChange": true
+        },
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "secretfile": {
+          "title": "secretfile",
+          "type": "string",
+          "description": "",
+          "default": "content",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": {
+              "isAllowChange": true
+            },
+            "isSecret": true,
+            "stringExtra": {
+              "isMultiline": true
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        }
+      },
+      "required": [
+        "secretfile"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "secrettext",
+    "group",
+    "activatable_group"
+  ]
+}

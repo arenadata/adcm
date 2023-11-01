@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Configuration",
+  "description": "",
+  "readOnly": false,
+  "adcmMeta": {
+    "isAdvanced": false,
+    "isInvisible": false,
+    "activation": null,
+    "synchronization": null,
+    "nullValue": null,
+    "isSecret": false,
+    "stringExtra": null,
+    "enumExtra": null
+  },
+  "type": "object",
+  "properties": {
+    "structure": {
+      "oneOf": [
+        {
+          "title": "structure",
+          "type": "array",
+          "description": "",
+          "default": [
+            {
+              "integer": 1,
+              "string": "string1"
+            },
+            {
+              "integer": 2,
+              "string": "string2"
+            }
+          ],
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          },
+          "items": {
+            "type": "object",
+            "title": "",
+            "description": "",
+            "default": {},
+            "readOnly": false,
+            "adcmMeta": {
+              "isAdvanced": false,
+              "isInvisible": false,
+              "activation": null,
+              "synchronization": null,
+              "isSecret": false,
+              "stringExtra": null,
+              "enumExtra": null
+            },
+            "additionalProperties": false,
+            "properties": {
+              "string": {
+                "type": "string",
+                "title": "string",
+                "description": "",
+                "default": null,
+                "readOnly": false,
+                "adcmMeta": {
+                  "isAdvanced": false,
+                  "isInvisible": false,
+                  "activation": null,
+                  "synchronization": null,
+                  "isSecret": false,
+                  "stringExtra": null,
+                  "enumExtra": null
+                }
+              },
+              "integer": {
+                "type": "integer",
+                "title": "integer",
+                "description": "",
+                "readOnly": false,
+                "adcmMeta": {
+                  "isAdvanced": false,
+                  "isInvisible": false,
+                  "activation": null,
+                  "synchronization": null,
+                  "isSecret": false,
+                  "stringExtra": null,
+                  "enumExtra": null
+                }
+              }
+            },
+            "required": [
+              "string"
+            ]
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "variant": {
+      "title": "variant",
+      "description": "",
+      "default": "value1",
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": {
+          "isMultiline": false
+        },
+        "enumExtra": null
+      },
+      "enum": [
+        "value1",
+        "value2",
+        "value3"
+      ]
+    },
+    "group": {
+      "title": "group",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "list": {
+          "oneOf": [
+            {
+              "title": "list",
+              "type": "array",
+              "description": "",
+              "default": [
+                "value1",
+                "value2",
+                "value3"
+              ],
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": false,
+                "stringExtra": null,
+                "enumExtra": null
+              },
+              "items": {
+                "type": "string",
+                "title": "",
+                "description": "",
+                "default": null,
+                "readOnly": false,
+                "adcmMeta": {
+                  "isAdvanced": false,
+                  "isInvisible": false,
+                  "activation": null,
+                  "synchronization": null,
+                  "nullValue": null,
+                  "isSecret": false,
+                  "stringExtra": null,
+                  "enumExtra": null
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "list"
+      ]
+    },
+    "activatable_group": {
+      "title": "activatable_group",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": {
+          "isAllowChange": true
+        },
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "option": {
+          "title": "option",
+          "description": "",
+          "default": "string1",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": {
+              "labels": [
+                "string1",
+                "string2"
+              ]
+            }
+          },
+          "enum": [
+            "string1",
+            "string2"
+          ]
+        }
+      },
+      "required": [
+        "option"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "structure",
+    "variant",
+    "group",
+    "activatable_group"
+  ]
+}
