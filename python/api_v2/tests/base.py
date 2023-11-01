@@ -63,6 +63,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
         super().setUpClass()
 
         cls.test_bundles_dir = Path(__file__).parent / "bundles"
+        cls.test_files_dir = Path(__file__).parent / "files"
 
         init_roles()
         init()

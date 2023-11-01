@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Configuration",
+  "description": "",
+  "readOnly": false,
+  "adcmMeta": {
+    "isAdvanced": false,
+    "isInvisible": false,
+    "activation": null,
+    "synchronization": null,
+    "nullValue": null,
+    "isSecret": false,
+    "stringExtra": null,
+    "enumExtra": null
+  },
+  "type": "object",
+  "properties": {
+    "json": {
+      "oneOf": [
+        {
+          "title": "json",
+          "type": "string",
+          "description": "",
+          "default": "{\"key\": \"value\"}",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": {
+              "isAllowChange": true
+            },
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": true
+            },
+            "enumExtra": null
+          },
+          "format": "json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "group": {
+      "title": "group",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "map": {
+          "oneOf": [
+            {
+              "title": "map",
+              "type": "object",
+              "description": "",
+              "default": {
+                "integer_key": "10",
+                "string_key": "string"
+              },
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": {
+                  "isAllowChange": true
+                },
+                "isSecret": false,
+                "stringExtra": null,
+                "enumExtra": null
+              },
+              "additionalProperties": true,
+              "properties": {}
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "map"
+      ]
+    },
+    "activatable_group": {
+      "title": "activatable_group",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": {
+          "isAllowChange": true
+        },
+        "synchronization": {
+          "isAllowChange": true
+        },
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "secretmap": {
+          "oneOf": [
+            {
+              "title": "secretmap",
+              "type": "object",
+              "description": "",
+              "default": {
+                "integer_key": "10",
+                "string_key": "string"
+              },
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": {
+                  "isAllowChange": true
+                },
+                "isSecret": true,
+                "stringExtra": null,
+                "enumExtra": null
+              },
+              "additionalProperties": true,
+              "properties": {}
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "secretmap"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "json",
+    "group",
+    "activatable_group"
+  ]
+}

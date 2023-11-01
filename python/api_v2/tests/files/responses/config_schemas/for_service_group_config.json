@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Configuration",
+  "description": "",
+  "readOnly": false,
+  "adcmMeta": {
+    "isAdvanced": false,
+    "isInvisible": false,
+    "activation": null,
+    "synchronization": null,
+    "nullValue": null,
+    "isSecret": false,
+    "stringExtra": null,
+    "enumExtra": null
+  },
+  "type": "object",
+  "properties": {
+    "string": {
+      "oneOf": [
+        {
+          "title": "string",
+          "type": "string",
+          "description": "",
+          "default": "string",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": {
+              "isAllowChange": true
+            },
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "group": {
+      "title": "group",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "password": {
+          "title": "password",
+          "type": "string",
+          "description": "",
+          "default": "password",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": {
+              "isAllowChange": true
+            },
+            "isSecret": true,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        }
+      },
+      "required": [
+        "password"
+      ]
+    },
+    "activatable_group": {
+      "title": "activatable_group",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": {
+          "isAllowChange": true
+        },
+        "synchronization": {
+          "isAllowChange": true
+        },
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "oneOf": [
+            {
+              "title": "text",
+              "type": "string",
+              "description": "",
+              "default": "text",
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": {
+                  "isAllowChange": true
+                },
+                "isSecret": false,
+                "stringExtra": {
+                  "isMultiline": true
+                },
+                "enumExtra": null
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "text"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "string",
+    "group",
+    "activatable_group"
+  ]
+}

@@ -321,8 +321,8 @@ class Structure(Field):
 
         return default
 
-    def _get_inner(self, title: str = "", is_invisible: bool = False, **kwargs) -> dict:
-        type_ = self._get_schema_type(type_=kwargs["match"])
+    def _get_inner(self, match: str, title: str = "", is_invisible: bool = False, **kwargs) -> dict:
+        type_ = self._get_schema_type(type_=match)
 
         data = {
             "type": type_,
@@ -345,21 +345,27 @@ class Structure(Field):
             data.update({"items": self._get_inner(**self.yspec[kwargs["item"]]), "default": []})
 
         elif type_ == "object":
+            required_items: list[str] = kwargs.get("required_items", [])
+
             data.update(
                 {
                     "additionalProperties": False,
                     "properties": {},
-                    "required": kwargs.get("required_items", []),
+                    "required": required_items,
                     "default": {},
                 }
             )
 
+            invisible_items = kwargs.get("invisible_items", [])
+
             for item_key, item_value in kwargs["items"].items():
-                is_invisible = item_key in kwargs.get("invisible_items", [])
+                is_invisible = item_key in invisible_items
                 is_invisible = self.is_invisible if self.is_invisible else is_invisible
-                data["properties"][item_key] = self._get_inner(
-                    title=item_key, is_invisible=is_invisible, **self.yspec[item_value]
-                )
+                entry_data = self._get_inner(title=item_key, is_invisible=is_invisible, **self.yspec[item_value])
+                if entry_data["title"] not in required_items and entry_data["type"] not in ("array", "object"):
+                    entry_data.pop("default", None)
+
+                data["properties"][item_key] = entry_data
 
         return data
 
