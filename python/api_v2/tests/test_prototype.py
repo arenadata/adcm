@@ -9,11 +9,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from operator import itemgetter
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import ObjectType, Prototype
+from cm.models import Bundle, ObjectType, ProductCategory, Prototype
 from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_400_BAD_REQUEST,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
 
 class TestPrototype(BaseAPITestCase):
@@ -84,3 +90,135 @@ class TestPrototype(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["count"], 1)
+
+
+class TestPrototypeVersion(BaseAPITestCase):
+    def setUp(self):
+        super().setUp()
+
+        for version in ("1", "2"):
+            name = "ServFirst"
+            bundle = Bundle.objects.create(
+                name=name, version=version, hash="q", category=ProductCategory.objects.get_or_create(value=name)[0]
+            )
+            for proto_type, display_name in [
+                ("service", name),
+                ("service", "another"),
+                ("cluster", name),
+                ("component", name),
+                ("component", "another"),
+            ]:
+                Prototype.objects.create(
+                    bundle=bundle, type=proto_type, name=display_name, display_name=display_name, version=version
+                )
+
+            name = "ClustFirst"
+            bundle = Bundle.objects.create(
+                name=name, version=version, hash="c", category=ProductCategory.objects.get_or_create(value=name)[0]
+            )
+            for proto_type, display_name in [
+                ("cluster", name),
+                ("service", name),
+                ("service", "another"),
+                ("component", name),
+                ("component", "another"),
+            ]:
+                Prototype.objects.create(
+                    bundle=bundle, type=proto_type, name=display_name, display_name=display_name, version=version
+                )
+
+            name = "CompFirst"
+            bundle = Bundle.objects.create(
+                name=name, version=version, hash="co", category=ProductCategory.objects.get_or_create(value=name)[0]
+            )
+            for proto_type, display_name in [
+                ("component", name),
+                ("component", "another"),
+                ("cluster", name),
+                ("service", name),
+                ("service", "another"),
+            ]:
+                Prototype.objects.create(
+                    bundle=bundle, type=proto_type, name=display_name, display_name=display_name, version=version
+                )
+
+            name = "HostFirst"
+            bundle = Bundle.objects.create(
+                name=name, version=version, hash="h", category=ProductCategory.objects.get_or_create(value=name)[0]
+            )
+            for proto_type, display_name in [("host", name), ("provider", name)]:
+                Prototype.objects.create(
+                    bundle=bundle, type=proto_type, name=display_name, display_name=display_name, version=version
+                )
+
+            name = "HostProviderFirst"
+            bundle = Bundle.objects.create(
+                name=name, version=version, hash="hp", category=ProductCategory.objects.get_or_create(value=name)[0]
+            )
+            for proto_type, display_name in [
+                ("provider", name),
+                ("host", name),
+            ]:
+                Prototype.objects.create(
+                    bundle=bundle, type=proto_type, name=display_name, display_name=display_name, version=version
+                )
+
+    def test_absent_cluster_candidate_bug_4851(self):
+        response = self.client.get(
+            path=reverse(viewname="v2:prototype-versions"), data={"type": ObjectType.CLUSTER.value}
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertListEqual(
+            sorted(map(itemgetter("name"), response.json())),
+            sorted(["ServFirst", "ClustFirst", "CompFirst", self.bundle_1.name, self.bundle_2.name]),
+        )
+
+    def test_absent_hostprovider_candidate_bug_4851(self):
+        response = self.client.get(
+            path=reverse(viewname="v2:prototype-versions"), data={"type": ObjectType.PROVIDER.value}
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertListEqual(
+            sorted(map(itemgetter("name"), response.json())),
+            sorted(["HostProviderFirst", "HostFirst", self.provider_bundle.name]),
+        )
+
+    def test_child_filters_disallowed_failed(self):
+        for disallowed_type in (ObjectType.ADCM, ObjectType.SERVICE, ObjectType.COMPONENT, ObjectType.HOST):
+            with self.subTest(msg=disallowed_type.value):
+                response = self.client.get(
+                    path=reverse(viewname="v2:prototype-versions"), data={"type": disallowed_type.value}
+                )
+
+                self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+                self.assertIn(f"{disallowed_type.value} is not one of the available choices", response.json()["desc"])
+
+    def test_no_filter_success(self):
+        # provider mocking cluster name
+        name = "ClustFirst"
+        bundle = Bundle.objects.create(
+            name=name, version="3", hash="c", category=ProductCategory.objects.get_or_create(value=name)[0]
+        )
+        Prototype.objects.create(bundle=bundle, type="provider", name=name, display_name=name, version="3")
+
+        response = self.client.get(path=reverse(viewname="v2:prototype-versions"))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertListEqual(
+            sorted(map(itemgetter("name"), response.json())),
+            sorted(
+                [
+                    "ServFirst",
+                    "ClustFirst",
+                    "ClustFirst",
+                    "CompFirst",
+                    self.bundle_1.name,
+                    self.bundle_2.name,
+                    "HostProviderFirst",
+                    "HostFirst",
+                    self.provider_bundle.name,
+                ]
+            ),
+        )
