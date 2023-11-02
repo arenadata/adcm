@@ -22,6 +22,8 @@ import {
   nullableFieldSchema,
   fieldSchemaWithTitle,
   readonlyFieldSchema,
+  // validate schemas
+  validateInactiveGroupSchema,
 } from './ConfigurationTree.utils.test.constants';
 import { buildTreeNodes, filterTreeNodes, validate } from './ConfigurationTree.utils';
 import { ConfigurationArray, ConfigurationField, ConfigurationObject } from '../ConfigurationEditor.types';
@@ -335,28 +337,24 @@ describe('validate', () => {
   });
 
   test('Do not validate inactive groups', () => {
-    const clusterConfigAttributes = { isActive: false, isSynchronized: false };
+    const structureAttributes = { isActive: false, isSynchronized: false };
 
     const attributes = {
-      '/cluster_config': clusterConfigAttributes,
+      '/structure': structureAttributes,
     };
 
     const configuration = {
-      cluster_config: {
-        cluster: {
-          cluster_name: null, // <-- must be ignored
-          shard: [],
-        },
-        auth: {
-          token: 'test',
-          expire: 10,
-        },
+      structure: {
+        someField1: null, // <-- must be ignored
+      },
+      structure_2: {
+        someField1: null,
       },
     };
 
-    const { isValid, errorsPaths } = validate(clusterConfigurationSchema, configuration, attributes);
-    expect(isValid).toBe(true);
-    expect(Object.keys(errorsPaths).length).toBe(0);
+    const { isValid, errorsPaths } = validate(validateInactiveGroupSchema, configuration, attributes);
+    expect(isValid).toBe(false);
+    expect(errorsPaths).toStrictEqual({ '/structure_2': true, '/structure_2/someField1': 'must be string' });
   });
 });
 

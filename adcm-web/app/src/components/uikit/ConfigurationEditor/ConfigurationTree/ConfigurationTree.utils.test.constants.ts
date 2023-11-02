@@ -466,3 +466,26 @@ export const fieldSchemaWithTitle: ConfigurationSchema = {
     },
   },
 };
+
+export const validateInactiveGroupSchema: ConfigurationSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  type: 'object',
+  required: ['structure', 'structure_2'],
+  ...defaultProps,
+  properties: {
+    structure: {
+      type: 'object',
+      ...defaultProps,
+      properties: {
+        someField1: { type: 'string', ...defaultProps },
+      },
+    },
+    structure_2: {
+      type: 'object',
+      ...defaultProps,
+      properties: {
+        someField1: { type: 'string', ...defaultProps },
+      },
+    },
+  },
+};
