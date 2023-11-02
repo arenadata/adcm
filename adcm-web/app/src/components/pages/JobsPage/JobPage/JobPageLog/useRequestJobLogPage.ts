@@ -18,10 +18,7 @@ export const useRequestJobLogPage = (id: number | undefined) => {
     dispatch(getJobLog(id));
   }, defaultDebounceDelay);
 
-  useRequestTimer(
-    debounceGetData,
-    debounceRefreshData,
-    task.status === AdcmJobStatus.Running ? requestFrequency : 0,
-    [],
-  );
+  useRequestTimer(debounceGetData, debounceRefreshData, task.status === AdcmJobStatus.Running ? requestFrequency : 0, [
+    id,
+  ]);
 };
