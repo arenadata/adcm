@@ -2,7 +2,6 @@ import { AdcmClusterServiceComponentsApi, RequestError } from '@api';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { getServiceComponents } from './serviceComponentsSlice';
 import { AdcmMaintenanceMode } from '@models/adcm';
 
 interface AdcmServiceComponentsActionsState {
@@ -18,16 +17,22 @@ interface toggleMaintenanceModePayload {
   maintenanceMode: AdcmMaintenanceMode;
 }
 
-const toggleMaintenanceModeWithUpdate = createAsyncThunk(
-  'adcm/cluster/services/serviceComponents/serviceComponentsActions/toggleMaintenanceModeWithUpdate',
+const toggleMaintenanceMode = createAsyncThunk(
+  'adcm/cluster/services/serviceComponents/serviceComponentsActions/toggleMaintenanceMode',
   async ({ clusterId, serviceId, componentId, maintenanceMode }: toggleMaintenanceModePayload, thunkAPI) => {
     try {
-      await AdcmClusterServiceComponentsApi.toggleMaintenanceMode(clusterId, serviceId, componentId, maintenanceMode);
-      await thunkAPI.dispatch(getServiceComponents({ clusterId, serviceId }));
+      const data = await AdcmClusterServiceComponentsApi.toggleMaintenanceMode(
+        clusterId,
+        serviceId,
+        componentId,
+        maintenanceMode,
+      );
       const maintenanceModeStatus = maintenanceMode === AdcmMaintenanceMode.Off ? 'disabled' : 'enabled';
       thunkAPI.dispatch(showInfo({ message: `The maintenance mode has been ${maintenanceModeStatus}` }));
+      return data;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
     }
   },
 );
@@ -53,12 +58,12 @@ const AdcmServiceComponentsActionsSlice = createSlice({
     },
   },
   extraReducers(builder) {
-    builder.addCase(toggleMaintenanceModeWithUpdate.pending, (state) => {
+    builder.addCase(toggleMaintenanceMode.pending, (state) => {
       AdcmServiceComponentsActionsSlice.caseReducers.closeMaintenanceModeDialog(state);
     });
   },
 });
 
 const { openMaintenanceModeDialog, closeMaintenanceModeDialog } = AdcmServiceComponentsActionsSlice.actions;
-export { toggleMaintenanceModeWithUpdate, openMaintenanceModeDialog, closeMaintenanceModeDialog };
+export { toggleMaintenanceMode, openMaintenanceModeDialog, closeMaintenanceModeDialog };
 export default AdcmServiceComponentsActionsSlice.reducer;

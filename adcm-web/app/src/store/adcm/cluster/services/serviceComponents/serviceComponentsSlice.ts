@@ -8,6 +8,7 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { updateIfExists } from '@utils/objectUtils';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { toggleMaintenanceMode } from '@store/adcm/cluster/services/serviceComponents/serviceComponentsActionsSlice';
 
 interface AdcmServiceComponentsState {
   serviceComponents: AdcmServiceComponent[];
@@ -88,6 +89,12 @@ const serviceComponentsSlice = createSlice({
     });
     builder.addCase(loadClusterServiceComponentsFromBackend.rejected, (state) => {
       state.serviceComponents = [];
+    });
+    builder.addCase(toggleMaintenanceMode.fulfilled, (state, action) => {
+      const changedComponent = state.serviceComponents.find(({ id }) => id === action.meta.arg.componentId);
+      if (changedComponent) {
+        changedComponent.maintenanceMode = action.payload.maintenanceMode;
+      }
     });
     builder.addCase(wsActions.update_component, (state, action) => {
       const { id, changes } = action.payload.object;

@@ -55,16 +55,22 @@ interface toggleMaintenanceModePayload extends LoadClusterServiceComponentPayloa
   maintenanceMode: AdcmMaintenanceMode;
 }
 
-const toggleMaintenanceModeWithUpdate = createAsyncThunk(
-  'adcm/cluster/services/serviceComponents/serviceComponent/toggleMaintenanceModeWithUpdate',
+const toggleMaintenanceMode = createAsyncThunk(
+  'adcm/cluster/services/serviceComponents/serviceComponent/toggleMaintenanceMode',
   async ({ clusterId, serviceId, componentId, maintenanceMode }: toggleMaintenanceModePayload, thunkAPI) => {
     try {
-      await AdcmClusterServiceComponentsApi.toggleMaintenanceMode(clusterId, serviceId, componentId, maintenanceMode);
-      await thunkAPI.dispatch(getServiceComponent({ clusterId, serviceId, componentId }));
+      const data = await AdcmClusterServiceComponentsApi.toggleMaintenanceMode(
+        clusterId,
+        serviceId,
+        componentId,
+        maintenanceMode,
+      );
       const maintenanceModeStatus = maintenanceMode === AdcmMaintenanceMode.Off ? 'disabled' : 'enabled';
       thunkAPI.dispatch(showInfo({ message: `The maintenance mode has been ${maintenanceModeStatus}` }));
+      return data;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
     }
   },
 );
@@ -91,6 +97,11 @@ const serviceComponentSlice = createSlice({
     });
     builder.addCase(loadClusterServiceComponentFromBackend.rejected, (state) => {
       state.serviceComponent = undefined;
+    });
+    builder.addCase(toggleMaintenanceMode.fulfilled, (state, action) => {
+      if (state.serviceComponent) {
+        state.serviceComponent.maintenanceMode = action.payload.maintenanceMode;
+      }
     });
     builder.addCase(wsActions.update_component, (state, action) => {
       const { id, changes } = action.payload.object;
@@ -126,10 +137,5 @@ const serviceComponentSlice = createSlice({
 });
 
 const { cleanupServiceComponent, setIsLoading } = serviceComponentSlice.actions;
-export {
-  cleanupServiceComponent,
-  loadClusterServiceComponentFromBackend,
-  getServiceComponent,
-  toggleMaintenanceModeWithUpdate,
-};
+export { cleanupServiceComponent, loadClusterServiceComponentFromBackend, getServiceComponent, toggleMaintenanceMode };
 export default serviceComponentSlice.reducer;

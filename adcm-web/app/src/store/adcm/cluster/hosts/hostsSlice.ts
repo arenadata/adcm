@@ -6,6 +6,7 @@ import { defaultSpinnerDelay } from '@constants';
 import { AdcmClusterHost } from '@models/adcm/clusterHosts';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { updateIfExists } from '@utils/objectUtils';
+import { toggleMaintenanceMode } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 
 type AdcmClusterHostsState = {
   hosts: AdcmClusterHost[];
@@ -77,6 +78,12 @@ const clusterHostsSlice = createSlice({
     });
     builder.addCase(loadClusterHostsFromBackend.rejected, (state) => {
       state.hosts = [];
+    });
+    builder.addCase(toggleMaintenanceMode.fulfilled, (state, action) => {
+      const changedHost = state.hosts.find(({ id }) => id === action.meta.arg.hostId);
+      if (changedHost) {
+        changedHost.maintenanceMode = action.payload.maintenanceMode;
+      }
     });
     builder.addCase(wsActions.update_host, (state, action) => {
       const { id, changes } = action.payload.object;

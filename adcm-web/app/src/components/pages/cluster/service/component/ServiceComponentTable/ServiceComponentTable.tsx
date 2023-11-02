@@ -19,9 +19,7 @@ const ServiceComponentTable: React.FC = () => {
       {serviceComponent && (
         <TableRow>
           <StatusableCell status={serviceComponentStatusMap[serviceComponent.status]}>
-            <Link className="text-link" to="#">
-              {serviceComponent?.displayName}
-            </Link>
+            {serviceComponent?.displayName}
           </StatusableCell>
           <TableCell>
             <Link className="text-link" to={`/clusters/${serviceComponent.cluster.id}/hosts/`}>

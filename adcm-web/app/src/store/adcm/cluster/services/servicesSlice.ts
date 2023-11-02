@@ -9,6 +9,7 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { updateIfExists } from '@utils/objectUtils';
 import { AdcmPrototypesApi, RequestError } from '@api';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { toggleMaintenanceMode } from '@store/adcm/cluster/services/servicesActionsSlice';
 
 type AdcmServicesState = {
   services: AdcmService[];
@@ -100,6 +101,12 @@ const servicesSlice = createSlice({
     });
     builder.addCase(loadClusterServiceFromBackend.rejected, (state) => {
       state.services = [];
+    });
+    builder.addCase(toggleMaintenanceMode.fulfilled, (state, action) => {
+      const changedService = state.services.find(({ id }) => id === action.meta.arg.serviceId);
+      if (changedService) {
+        changedService.maintenanceMode = action.payload.maintenanceMode;
+      }
     });
     builder.addCase(acceptServiceLicense.fulfilled, (state, action) => {
       const serviceId = action.meta.arg;

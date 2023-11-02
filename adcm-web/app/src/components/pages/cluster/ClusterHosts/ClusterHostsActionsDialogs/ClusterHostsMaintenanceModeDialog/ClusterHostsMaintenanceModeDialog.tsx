@@ -2,10 +2,7 @@ import React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import MaintenanceModeDialog from '@commonComponents/MaintenanceModeDialog/MaintenanceModeDialog';
 import { getRevertedMaintenanceModeStatus } from '@commonComponents/MaintenanceModeDialog/MaintenanceModeDialog.utils';
-import {
-  closeMaintenanceModeDialog,
-  toggleMaintenanceModeWithUpdate,
-} from '@store/adcm/cluster/hosts/hostsActionsSlice';
+import { closeMaintenanceModeDialog, toggleMaintenanceMode } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 
 const ClusterHostsMaintenanceModeDialog: React.FC = () => {
   const dispatch = useDispatch();
@@ -27,9 +24,7 @@ const ClusterHostsMaintenanceModeDialog: React.FC = () => {
   const onConfirmDialog = () => {
     if (clusterHostId && clusterId) {
       const newMaintenanceMode = getRevertedMaintenanceModeStatus(clusterHost);
-      dispatch(
-        toggleMaintenanceModeWithUpdate({ clusterId, hostId: clusterHostId, maintenanceMode: newMaintenanceMode }),
-      );
+      dispatch(toggleMaintenanceMode({ clusterId, hostId: clusterHostId, maintenanceMode: newMaintenanceMode }));
     }
   };
 

@@ -5,7 +5,7 @@ import { getRevertedMaintenanceModeStatus } from '@commonComponents/MaintenanceM
 import { useParams } from 'react-router-dom';
 import {
   closeMaintenanceModeDialog,
-  toggleMaintenanceModeWithUpdate,
+  toggleMaintenanceMode,
 } from '@store/adcm/cluster/services/serviceComponents/serviceComponentsActionsSlice';
 
 const ServiceComponentsMaintenanceModeDialog: React.FC = () => {
@@ -32,9 +32,7 @@ const ServiceComponentsMaintenanceModeDialog: React.FC = () => {
   const onConfirmDialog = () => {
     if (componentId) {
       const newMaintenanceMode = getRevertedMaintenanceModeStatus(serviceComponent);
-      dispatch(
-        toggleMaintenanceModeWithUpdate({ clusterId, serviceId, componentId, maintenanceMode: newMaintenanceMode }),
-      );
+      dispatch(toggleMaintenanceMode({ clusterId, serviceId, componentId, maintenanceMode: newMaintenanceMode }));
     }
   };
 

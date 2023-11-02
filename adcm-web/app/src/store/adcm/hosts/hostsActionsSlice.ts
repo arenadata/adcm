@@ -110,14 +110,14 @@ interface toggleMaintenanceModePayload {
   maintenanceMode: AdcmMaintenanceMode;
 }
 
-const toggleMaintenanceModeWithUpdate = createAsyncThunk(
+const toggleMaintenanceMode = createAsyncThunk(
   'adcm/hostsActions/toggleMaintenanceMode',
   async ({ hostId, maintenanceMode }: toggleMaintenanceModePayload, thunkAPI) => {
     try {
-      await AdcmHostsApi.toggleMaintenanceMode(hostId, maintenanceMode);
-      await thunkAPI.dispatch(getHosts());
+      const data = await AdcmHostsApi.toggleMaintenanceMode(hostId, maintenanceMode);
       const maintenanceModeStatus = maintenanceMode === AdcmMaintenanceMode.Off ? 'disabled' : 'enabled';
       thunkAPI.dispatch(showInfo({ message: `The maintenance mode has been ${maintenanceModeStatus}` }));
+      return data;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -249,7 +249,7 @@ const hostsActionsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(toggleMaintenanceModeWithUpdate.pending, (state) => {
+    builder.addCase(toggleMaintenanceMode.pending, (state) => {
       hostsActionsSlice.caseReducers.closeMaintenanceModeDialog(state);
     });
     builder.addCase(unlinkHost.pending, (state) => {
@@ -307,7 +307,7 @@ export {
   createHostWithUpdate,
   deleteHost,
   deleteHostWithUpdate,
-  toggleMaintenanceModeWithUpdate,
+  toggleMaintenanceMode,
   updateHost,
 };
 
