@@ -5,11 +5,11 @@ import iconButtonStyles from '@uikit/IconButton/IconButton.module.scss';
 import cn from 'classnames';
 import { Popover } from '@uikit';
 import { useDebounce, useDispatch, useRequestTimer, useStore } from '@hooks';
-import JobInfo from '@layouts/partials/HeaderNotifications/JobInfo/JobInfo';
 import { AdcmJobStatus } from '@models/adcm';
 import { getJobs, refreshJobs } from '@store/adcm/bell/bellSlice';
-import Spinner from '@uikit/Spinner/Spinner';
 import { defaultDebounceDelay } from '@constants';
+import JobInfo from '@layouts/partials/HeaderNotifications/JobInfo/JobInfo';
+import Spinner from '@uikit/Spinner/Spinner';
 
 const HeaderNotifications: React.FC = () => {
   const dispatch = useDispatch();
@@ -33,6 +33,7 @@ const HeaderNotifications: React.FC = () => {
       [s.headerNotifications_success]: status === AdcmJobStatus.Success,
       [s.headerNotifications_running]: status === AdcmJobStatus.Running,
       [s.headerNotifications_locked]: status === AdcmJobStatus.Locked,
+      [s.headerNotifications_aborted]: status === AdcmJobStatus.Aborted,
     },
   );
 

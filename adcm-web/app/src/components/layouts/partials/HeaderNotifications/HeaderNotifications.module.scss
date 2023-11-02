@@ -2,11 +2,13 @@
   body.theme-dark {
     --bell-popover-panel-background-color: #212121;
     --bell-popover-panel-border-color: var(--color-xdark);
+    --bell-popover-panel-content-background-color: var(--color-xdark-new-50);
   }
 
   body.theme-light {
     --bell-popover-panel-background-color: var(--color-popup-light);
     --bell-popover-panel-border-color: var(--color-stroke-light);
+    --bell-popover-panel-content-background-color: var(--color-xwhite-50);
   }
 }
 
@@ -45,6 +47,7 @@
   }
 
   &_success {
+    --bell-hole-patch: transparent;
     --bell-marker-color: var(--icon-button-color-active-primary);
   }
 
@@ -54,6 +57,10 @@
 
   &_running {
     --bell-marker-color: var(--color-xblue);
+  }
+
+  &_aborted {
+    --bell-marker-color: var(--color-xgray-light);
   }
 }
 
@@ -69,4 +76,8 @@
   &__spinner {
     text-align: center;
   }
+}
+
+.acknowledgeButton {
+  color: var(--color-xblue);
 }
