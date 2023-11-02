@@ -4,7 +4,6 @@ import { AdcmJob, AdcmJobLogItem, AdcmJobStatus, AdcmTask } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmJobsApi } from '@api/adcm/jobs';
-import { updateIfExists } from '@utils/objectUtils';
 
 interface AdcmJobsState {
   jobs: AdcmJob[];
@@ -12,7 +11,7 @@ interface AdcmJobsState {
   isLoading: boolean;
   job: AdcmJob | null;
   task: AdcmTask;
-  logs: AdcmJobLogItem[];
+  jobLogs: Record<number, AdcmJobLogItem[]>;
 }
 
 const loadFromBackend = createAsyncThunk('adcm/jobs/loadFromBackend', async (arg, thunkAPI) => {
@@ -90,7 +89,7 @@ const createInitialState = (): AdcmJobsState => ({
     isTerminatable: false,
     childJobs: [],
   },
-  logs: [],
+  jobLogs: {},
 });
 
 const jobsSlice = createSlice({
@@ -120,24 +119,14 @@ const jobsSlice = createSlice({
         state.job = null;
       })
       .addCase(getTask.fulfilled, (state, action) => {
-        const logs = state.task.childJobs[0]?.logs || [];
         state.task = action.payload;
-        state.task.childJobs[0].logs = logs;
       })
       .addCase(getTask.rejected, (state) => {
         state.task.childJobs = [];
       })
       .addCase(getJobLog.fulfilled, (state, action) => {
-        state.task.childJobs = updateIfExists(
-          state.task.childJobs,
-          (job) => job.id === action.meta.arg,
-          () => ({
-            logs: action.payload,
-          }),
-        );
-      })
-      .addCase(getJobLog.rejected, (state) => {
-        state.logs = [];
+        const taskId = action.meta.arg;
+        state.jobLogs[taskId] = action.payload;
       });
   },
 });
