@@ -91,16 +91,17 @@ const getServiceCandidates = createAsyncThunk(
   },
 );
 
-const toggleMaintenanceModeWithUpdate = createAsyncThunk(
-  'adcm/servicesActions/toggleMaintenanceModeWithUpdate',
+const toggleMaintenanceMode = createAsyncThunk(
+  'adcm/servicesActions/toggleMaintenanceMode',
   async ({ clusterId, serviceId, maintenanceMode }: toggleMaintenanceModePayload, thunkAPI) => {
     try {
-      await AdcmClusterServicesApi.toggleMaintenanceMode(clusterId, serviceId, maintenanceMode);
-      await thunkAPI.dispatch(getServices({ clusterId }));
+      const data = await AdcmClusterServicesApi.toggleMaintenanceMode(clusterId, serviceId, maintenanceMode);
       const maintenanceModeStatus = maintenanceMode === AdcmMaintenanceMode.Off ? 'disabled' : 'enabled';
       thunkAPI.dispatch(showInfo({ message: `The maintenance mode has been ${maintenanceModeStatus}` }));
+      return data;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
     }
   },
 );
@@ -179,7 +180,7 @@ const servicesActionsSlice = createSlice({
     builder.addCase(getServiceCandidates.rejected, (state) => {
       state.relatedData.serviceCandidates = [];
     });
-    builder.addCase(toggleMaintenanceModeWithUpdate.pending, (state) => {
+    builder.addCase(toggleMaintenanceMode.pending, (state) => {
       servicesActionsSlice.caseReducers.closeMaintenanceModeDialog(state);
     });
   },
@@ -201,7 +202,7 @@ export {
   addServices,
   deleteService,
   getServiceCandidates,
-  toggleMaintenanceModeWithUpdate,
+  toggleMaintenanceMode,
   openAddServicesDialog,
   closeAddServicesDialog,
   openDeleteDialog,

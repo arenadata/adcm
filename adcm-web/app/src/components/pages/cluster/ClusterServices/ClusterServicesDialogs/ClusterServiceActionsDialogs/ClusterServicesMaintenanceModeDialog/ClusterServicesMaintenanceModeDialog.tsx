@@ -2,10 +2,7 @@ import React from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { getRevertedMaintenanceModeStatus } from '@commonComponents/MaintenanceModeDialog/MaintenanceModeDialog.utils';
 import MaintenanceModeDialog from '@commonComponents/MaintenanceModeDialog/MaintenanceModeDialog';
-import {
-  toggleMaintenanceModeWithUpdate,
-  closeMaintenanceModeDialog,
-} from '@store/adcm/cluster/services/servicesActionsSlice';
+import { toggleMaintenanceMode, closeMaintenanceModeDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
 
 const ClusterServicesMaintenanceModeDialog: React.FC = () => {
   const dispatch = useDispatch();
@@ -27,7 +24,7 @@ const ClusterServicesMaintenanceModeDialog: React.FC = () => {
     if (clusterServiceId && clusterId) {
       const newMaintenanceMode = getRevertedMaintenanceModeStatus(clusterService);
       dispatch(
-        toggleMaintenanceModeWithUpdate({
+        toggleMaintenanceMode({
           clusterId,
           serviceId: clusterServiceId,
           maintenanceMode: newMaintenanceMode,

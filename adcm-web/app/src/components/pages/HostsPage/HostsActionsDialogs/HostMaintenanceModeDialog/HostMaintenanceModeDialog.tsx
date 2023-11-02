@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { closeMaintenanceModeDialog, toggleMaintenanceModeWithUpdate } from '@store/adcm/hosts/hostsActionsSlice';
+import { closeMaintenanceModeDialog, toggleMaintenanceMode } from '@store/adcm/hosts/hostsActionsSlice';
 import MaintenanceModeDialog from '@commonComponents/MaintenanceModeDialog/MaintenanceModeDialog';
 import { getRevertedMaintenanceModeStatus } from '@commonComponents/MaintenanceModeDialog/MaintenanceModeDialog.utils';
 
@@ -20,7 +20,7 @@ const HostsMaintenanceModeDialog: React.FC = () => {
   const onConfirmDialog = () => {
     if (hostId) {
       const newMaintenanceMode = getRevertedMaintenanceModeStatus(host);
-      dispatch(toggleMaintenanceModeWithUpdate({ hostId, maintenanceMode: newMaintenanceMode }));
+      dispatch(toggleMaintenanceMode({ hostId, maintenanceMode: newMaintenanceMode }));
     }
   };
 

@@ -6,6 +6,7 @@ import {
   AdcmClusterHost,
   AdcmClusterHostComponentsStates,
   AdcmClusterHostsFilter,
+  AdcmSetMaintenanceModeResponse,
 } from '@models/adcm';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { PaginationParams, SortParams } from '@models/table';
@@ -32,9 +33,12 @@ export class AdcmClusterHostsApi {
   }
 
   public static async toggleMaintenanceMode(clusterId: number, hostId: number, maintenanceMode: AdcmMaintenanceMode) {
-    const response = await httpClient.post(`/api/v2/clusters/${clusterId}/hosts/${hostId}/maintenance-mode/`, {
-      maintenanceMode,
-    });
+    const response = await httpClient.post<AdcmSetMaintenanceModeResponse>(
+      `/api/v2/clusters/${clusterId}/hosts/${hostId}/maintenance-mode/`,
+      {
+        maintenanceMode,
+      },
+    );
 
     return response.data;
   }
