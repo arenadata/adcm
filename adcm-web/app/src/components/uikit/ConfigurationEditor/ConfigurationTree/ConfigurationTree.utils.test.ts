@@ -25,6 +25,7 @@ import {
 } from './ConfigurationTree.utils.test.constants';
 import { buildTreeNodes, filterTreeNodes, validate } from './ConfigurationTree.utils';
 import { ConfigurationArray, ConfigurationField, ConfigurationObject } from '../ConfigurationEditor.types';
+import { rootNodeKey } from './ConfigurationTree.constants';
 
 describe('structure node tests', () => {
   test('structure', () => {
@@ -366,7 +367,7 @@ describe('filter', () => {
     const rootNode = filteredTree;
 
     expect(rootNode).not.toBe(undefined);
-    expect(rootNode.key).toBe('root-node');
+    expect(rootNode.key).toBe(rootNodeKey);
     expect(rootNode.children?.length).toBe(1);
 
     const clusterConfigNode = filteredTree.children?.[0]!;
