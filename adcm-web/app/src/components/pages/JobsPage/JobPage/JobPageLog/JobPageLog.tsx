@@ -19,7 +19,7 @@ const JobPageLog: React.FC<JobPageLogProps> = ({ id, isLinkEmpty = false }) => {
   useRequestJobLogPage(id);
 
   const childJob = useStore(({ adcm }) => adcm.jobs.task.childJobs.find((job) => job.id === id));
-  const logs = childJob?.logs ?? [];
+  const logs = useStore(({ adcm }) => adcm.jobs.jobLogs[id]) ?? [];
 
   const params = useParams();
   const logNamePartPath = params['*'] || 'stdout';
