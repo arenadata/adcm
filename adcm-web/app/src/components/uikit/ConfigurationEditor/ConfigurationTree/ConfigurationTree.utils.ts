@@ -21,11 +21,12 @@ import { primitiveFieldTypes, rootNodeKey, rootNodeTitle } from './Configuration
 export const validate = (schema: SchemaDefinition, configuration: JSONObject, attributes: ConfigurationAttributes) => {
   const { errorsPaths } = validateJsonSchema(schema, configuration);
 
+  // TODO: Optimize (get rid nested loop)
   // ignore errors for not active groups
   for (const [path, value] of Object.entries(attributes)) {
     if (!value.isActive) {
       for (const [errorPath] of Object.entries(errorsPaths)) {
-        if (errorPath.startsWith(path)) {
+        if (errorPath === path || errorPath.startsWith(`${path}/`)) {
           delete errorsPaths[errorPath];
         }
       }
