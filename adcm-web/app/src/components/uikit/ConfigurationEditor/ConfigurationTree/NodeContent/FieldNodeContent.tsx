@@ -8,6 +8,7 @@ import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
 import SynchronizedAttribute from './SyncronizedAttribute/SynchronizedAttribute';
 import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
+import { isPrimitiveValueSet } from '@models/json';
 
 interface FieldNodeContentProps {
   node: ConfigurationNode;
@@ -66,6 +67,10 @@ const FieldNodeContent = ({
   });
 
   const value: string | number | boolean = useMemo(() => {
+    if (!isPrimitiveValueSet(fieldNodeData.value)) {
+      return nullStub;
+    }
+
     if (fieldNodeData.fieldSchema.enum) {
       if (fieldNodeData.fieldSchema.adcmMeta.enumExtra?.labels) {
         const valueIndex = fieldNodeData.fieldSchema.enum?.indexOf(fieldNodeData.value);
@@ -77,10 +82,6 @@ const FieldNodeContent = ({
 
     if (fieldNodeData.value === '') {
       return emptyStringStub;
-    }
-
-    if (fieldNodeData.value === null) {
-      return nullStub;
     }
 
     if (adcmMeta.isSecret) {
@@ -104,7 +105,7 @@ const FieldNodeContent = ({
           onToggle={handleIsActiveChange}
         />
       )}
-      {fieldNodeData.isCleanable && fieldNodeData.value !== null && (
+      {fieldNodeData.isCleanable && isPrimitiveValueSet(fieldNodeData.value) && (
         <IconButton size={14} icon="g3-clear" onClick={handleClearClick} data-test="clear-btn" />
       )}
       {fieldNodeData.isDeletable && (

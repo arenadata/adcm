@@ -20,8 +20,10 @@ ajvWithDefaults.addFormat('yaml', true);
 
 export const validate = <T>(schema: Schema, data: T) => {
   const validate = ajv.compile<T>(schema, true);
+  const isValid = validate(data);
+
   return {
-    isValid: validate(data),
+    isValid,
     errors: validate.errors,
     errorsPaths: getAllErrorInstancePaths(validate.errors),
     evaluated: validate.evaluated,
@@ -38,7 +40,16 @@ const getAllErrorInstancePaths = (errors: ErrorObject[] | undefined | null) => {
   }
 
   for (const error of errors) {
-    const parts = error.instancePath.split('/');
+    let instancePath = error.instancePath;
+    let errorMessage = error.message;
+
+    // extend error from structure to field
+    if (error.keyword === 'required') {
+      instancePath += `/${error.params.missingProperty}`;
+      errorMessage = 'required';
+    }
+
+    const parts = instancePath.split('/');
     let path = '';
     for (const part of parts) {
       if (part) {
@@ -46,7 +57,7 @@ const getAllErrorInstancePaths = (errors: ErrorObject[] | undefined | null) => {
         result[path] = true;
       }
     }
-    result[error.instancePath] = error.message ?? '';
+    result[instancePath] = errorMessage ?? '';
   }
 
   return result;

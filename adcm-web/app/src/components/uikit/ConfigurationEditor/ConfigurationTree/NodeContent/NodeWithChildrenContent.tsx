@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
-import { IconButton } from '@uikit';
-
+import { IconButton, MarkerIcon, Tooltip } from '@uikit';
+import { isValueSet } from '@models/json';
 import { ConfigurationArray, ConfigurationObject, ConfigurationNode } from '../../ConfigurationEditor.types';
 import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
 import s from '../ConfigurationTree.module.scss';
@@ -85,10 +85,15 @@ const NodeWithChildrenContent = ({
         />
       )}
 
-      {fieldNodeData.isCleanable && fieldNodeData.value !== null && (
+      {fieldNodeData.isCleanable && isValueSet(fieldNodeData.value) && (
         <IconButton size={14} icon="g3-clear" onClick={handleClearClick} data-test="clear-btn" />
       )}
       {isDeletable && <IconButton size={14} icon="g3-delete" onClick={handleDeleteClick} data-test="delete-btn" />}
+      {error && (
+        <Tooltip label={error}>
+          <MarkerIcon variant="round" type="alert" size={16} data-test="error" />
+        </Tooltip>
+      )}
       <span className={s.nodeContent__title} data-test="node-name">
         {node.data.title}
       </span>
@@ -99,7 +104,7 @@ const NodeWithChildrenContent = ({
           onToggle={handleIsSynchronizedChange}
         />
       )}
-      {fieldNodeData.value === null && (
+      {!isValueSet(fieldNodeData.value) && (
         <span className={s.nodeContent__value} data-test="null-stub">
           {nullStub}
         </span>

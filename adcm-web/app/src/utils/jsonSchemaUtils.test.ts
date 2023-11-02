@@ -145,6 +145,44 @@ describe('validate', () => {
     const result3 = validate(schema, object3);
     expect(result3.isValid).toBe(false);
   });
+
+  test('test required fields', () => {
+    const schema: Schema = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['structure'],
+      properties: {
+        structure: {
+          type: 'object',
+          required: ['field1', 'field2'],
+          properties: {
+            field1: { type: 'string' },
+            field2: { type: 'string' },
+          },
+        },
+      },
+    };
+
+    const object1 = {
+      structure: {
+        field1: 'value1',
+      },
+    };
+
+    const object2 = {
+      structure: {
+        field1: 'value1',
+        field2: 'value2',
+      },
+    };
+
+    const result1 = validate(schema, object1);
+    expect(result1.isValid).toBe(false);
+    expect(result1.errorsPaths).toStrictEqual({ '/structure': true, '/structure/field2': 'required' });
+
+    const result2 = validate(schema, object2);
+    expect(result2.isValid).toBe(true);
+  });
 });
 
 describe('generateFromSchema', () => {
