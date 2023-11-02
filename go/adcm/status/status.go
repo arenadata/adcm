@@ -91,10 +91,10 @@ func changeStatusMessage(objectType string, objectId int, status int) eventMessa
 
 func buildStatusPayload(status int) *statusChangePayload {
 	if status == 0 {
-		return &statusChangePayload{Status: "UP"}
+		return &statusChangePayload{Status: "up"}
 	}
 
-	return &statusChangePayload{Status: "DOWN"}
+	return &statusChangePayload{Status: "down"}
 }
 
 func getServiceStatus(h Hub, cluster int, service int) (Status, []hostCompStatus) {
