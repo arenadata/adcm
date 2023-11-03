@@ -73,26 +73,25 @@ def save_definition(
     obj_list: dict,
     bundle_hash: str,
     adcm_: bool = False,
-) -> None:
+) -> tuple[list[StagePrototype], list[StageUpgrade]]:
+    prototypes = []
+    stage_upgrades = []
+
     if isinstance(conf, dict):
-        save_object_definition(
-            path=path,
-            fname=fname,
-            conf=conf,
-            obj_list=obj_list,
-            bundle_hash=bundle_hash,
-            adcm_=adcm_,
+        prototype, upgrades = save_object_definition(
+            path=path, fname=fname, conf=conf, obj_list=obj_list, bundle_hash=bundle_hash, adcm_=adcm_
         )
+        prototypes.append(prototype)
+        stage_upgrades.extend(upgrades)
     else:
         for obj_def in conf:
-            save_object_definition(
-                path=path,
-                fname=fname,
-                conf=obj_def,
-                obj_list=obj_list,
-                bundle_hash=bundle_hash,
-                adcm_=adcm_,
+            prototype, upgrades = save_object_definition(
+                path=path, fname=fname, conf=obj_def, obj_list=obj_list, bundle_hash=bundle_hash, adcm_=adcm_
             )
+            prototypes.append(prototype)
+            stage_upgrades.extend(upgrades)
+
+    return prototypes, stage_upgrades
 
 
 def cook_obj_id(conf):
@@ -106,20 +105,20 @@ def save_object_definition(
     obj_list: dict,
     bundle_hash: str,
     adcm_: bool = False,
-) -> StagePrototype:
+) -> tuple[StagePrototype, list[StageUpgrade]]:
     def_type = conf["type"]
     if def_type == "adcm" and not adcm_:
-        return raise_adcm_ex(
+        raise AdcmEx(
             code="INVALID_OBJECT_DEFINITION",
             msg=f'Invalid type "{def_type}" in object definition: {fname}',
         )
 
     check_object_definition(fname=fname, conf=conf, def_type=def_type, obj_list=obj_list, bundle_hash=bundle_hash)
-    obj = save_prototype(path=path, conf=conf, def_type=def_type, bundle_hash=bundle_hash)
+    prototype, upgrades = save_prototype(path=path, conf=conf, def_type=def_type, bundle_hash=bundle_hash)
     logger.info('Save definition of %s "%s" %s to stage', def_type, conf["name"], conf["version"])
     obj_list[cook_obj_id(conf)] = fname
 
-    return obj
+    return prototype, upgrades
 
 
 def check_actions_definition(def_type: str, actions: dict, bundle_hash: str) -> None:
@@ -259,48 +258,52 @@ def process_config_group_customization(actual_config: dict, obj: StagePrototype)
             actual_config["config_group_customization"] = stage_prototype.config_group_customization
 
 
-def save_prototype(path: Path, conf: dict, def_type: str, bundle_hash: str) -> StagePrototype:
-    proto = StagePrototype(name=conf["name"], type=def_type, path=path, version=conf["version"])
+def save_prototype(
+    path: Path, conf: dict, def_type: str, bundle_hash: str
+) -> tuple[StagePrototype, list[StageUpgrade]]:
+    prototype = StagePrototype(name=conf["name"], type=def_type, path=path, version=conf["version"])
 
-    dict_to_obj(dictionary=conf, key="required", obj=proto)
-    dict_to_obj(dictionary=conf, key="requires", obj=proto)
-    dict_to_obj(dictionary=conf, key="shared", obj=proto)
-    dict_to_obj(dictionary=conf, key="monitoring", obj=proto)
-    dict_to_obj(dictionary=conf, key="display_name", obj=proto)
-    dict_to_obj(dictionary=conf, key="description", obj=proto)
-    dict_to_obj(dictionary=conf, key="adcm_min_version", obj=proto)
-    dict_to_obj(dictionary=conf, key="venv", obj=proto)
-    dict_to_obj(dictionary=conf, key="edition", obj=proto)
+    dict_to_obj(dictionary=conf, key="required", obj=prototype)
+    dict_to_obj(dictionary=conf, key="requires", obj=prototype)
+    dict_to_obj(dictionary=conf, key="shared", obj=prototype)
+    dict_to_obj(dictionary=conf, key="monitoring", obj=prototype)
+    dict_to_obj(dictionary=conf, key="display_name", obj=prototype)
+    dict_to_obj(dictionary=conf, key="description", obj=prototype)
+    dict_to_obj(dictionary=conf, key="adcm_min_version", obj=prototype)
+    dict_to_obj(dictionary=conf, key="venv", obj=prototype)
+    dict_to_obj(dictionary=conf, key="edition", obj=prototype)
 
-    process_config_group_customization(actual_config=conf, obj=proto)
+    process_config_group_customization(actual_config=conf, obj=prototype)
 
-    dict_to_obj(dictionary=conf, key="config_group_customization", obj=proto)
-    dict_to_obj(dictionary=conf, key="allow_maintenance_mode", obj=proto)
-    dict_to_obj(dictionary=conf, key="allow_flags", obj=proto)
+    dict_to_obj(dictionary=conf, key="config_group_customization", obj=prototype)
+    dict_to_obj(dictionary=conf, key="allow_maintenance_mode", obj=prototype)
+    dict_to_obj(dictionary=conf, key="allow_flags", obj=prototype)
 
-    fix_display_name(conf=conf, obj=proto)
-    license_hash = get_license_hash(proto=proto, conf=conf, bundle_hash=bundle_hash)
+    fix_display_name(conf=conf, obj=prototype)
+    license_hash = get_license_hash(proto=prototype, conf=conf, bundle_hash=bundle_hash)
     if license_hash:
         if def_type not in {"cluster", "service", "provider"}:
-            raise_adcm_ex(
+            raise AdcmEx(
                 code="INVALID_OBJECT_DEFINITION",
-                msg=f"Invalid license definition in {proto_ref(prototype=proto)}. "
-                f"License can be placed in cluster, service or provider",
+                msg=(
+                    f"Invalid license definition in {proto_ref(prototype=prototype)}. "
+                    f"License can be placed in cluster, service or provider"
+                ),
             )
 
-        proto.license_path = conf["license"]
-        proto.license_hash = license_hash
+        prototype.license_path = conf["license"]
+        prototype.license_hash = license_hash
 
-    proto.save()
+    prototype.save()
 
-    save_actions(prototype=proto, config=conf, bundle_hash=bundle_hash)
-    save_upgrade(prototype=proto, config=conf, bundle_hash=bundle_hash)
-    save_components(proto=proto, conf=conf, bundle_hash=bundle_hash)
-    save_prototype_config(prototype=proto, proto_conf=conf, bundle_hash=bundle_hash)
-    save_export(proto=proto, conf=conf)
-    save_import(proto=proto, conf=conf)
+    save_actions(prototype=prototype, config=conf, bundle_hash=bundle_hash)
+    upgrades = save_upgrade(prototype=prototype, config=conf, bundle_hash=bundle_hash)
+    save_components(proto=prototype, conf=conf, bundle_hash=bundle_hash)
+    save_prototype_config(prototype=prototype, proto_conf=conf, bundle_hash=bundle_hash)
+    save_export(proto=prototype, conf=conf)
+    save_import(proto=prototype, conf=conf)
 
-    return proto
+    return prototype, upgrades
 
 
 def check_component_constraint(proto, name, conf):
@@ -458,9 +461,11 @@ def set_version(obj, conf):
         obj.max_strict = True
 
 
-def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> None:
+def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> list[StageUpgrade]:
     if not in_dict(dictionary=config, key="upgrade"):
-        return
+        return []
+
+    upgrades = []
 
     for item in config["upgrade"]:
         check_upgrade(prototype=prototype, config=item)
@@ -486,6 +491,9 @@ def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> N
             )
 
         upgrade.save()
+        upgrades.append(upgrade)
+
+    return upgrades
 
 
 def save_export(proto: StagePrototype, conf: dict) -> None:

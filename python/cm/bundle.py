@@ -50,6 +50,7 @@ from cm.models import (
 from cm.stack import get_config_files, read_definition, save_definition
 from django.conf import settings
 from django.db import IntegrityError, transaction
+from django.db.transaction import atomic
 from gnupg import GPG, ImportResult
 from rbac.models import Role
 from rbac.upgrade.role import prepare_action_roles
@@ -70,26 +71,30 @@ def prepare_bundle(
 ) -> Bundle:
     try:
         check_stage()
-        process_bundle(path=path, bundle_hash=bundle_hash)
-        bundle_proto = get_stage_bundle(bundle_file=bundle_file)
-        second_pass()
-    except Exception:
-        clear_stage()
-        shutil.rmtree(path)
-        raise
+        prototypes, upgrades = process_bundle(path=path, bundle_hash=bundle_hash)
+        bundle_prototype = get_stage_bundle(bundle_file=bundle_file)
+        check_services_requires()
+        re_check_actions()
+        re_check_components()
+        re_check_config()
 
-    try:
-        bundle = copy_stage(bundle_hash=bundle_hash, bundle_proto=bundle_proto, verification_status=verification_status)
+        bundle = copy_stage(
+            bundle_hash=bundle_hash, bundle_proto=bundle_prototype, verification_status=verification_status
+        )
         order_versions()
-        clear_stage()
+
         ProductCategory.re_collect()
         bundle.refresh_from_db()
         prepare_action_roles(bundle=bundle)
 
+        StagePrototype.objects.filter(id__in=[prototype.id for prototype in prototypes]).delete()
+        StageUpgrade.objects.filter(id__in=[upgrade.id for upgrade in upgrades]).delete()
+
         return bundle
-    except Exception:
-        clear_stage()
-        raise
+
+    except Exception as error:
+        shutil.rmtree(path)
+        raise error
 
 
 def load_bundle(bundle_file: str) -> Bundle:
@@ -100,9 +105,11 @@ def load_bundle(bundle_file: str) -> Bundle:
     verification_status = get_verification_status(bundle_archive=bundle_archive, signature_file=signature_file)
     untar_and_cleanup(bundle_archive=bundle_archive, signature_file=signature_file, bundle_hash=bundle_hash)
 
-    return prepare_bundle(
-        bundle_file=bundle_file, bundle_hash=bundle_hash, path=path, verification_status=verification_status
-    )
+    with atomic():
+        bundle = prepare_bundle(
+            bundle_file=bundle_file, bundle_hash=bundle_hash, path=path, verification_status=verification_status
+        )
+    return bundle
 
 
 def get_bundle_and_signature_paths(path: Path) -> tuple[Path | None, Path | None]:
@@ -276,19 +283,17 @@ def get_hash(bundle_file: str) -> str:
 def load_adcm(adcm_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.yaml")):
     check_stage()
     conf = read_definition(conf_file=adcm_file)
+
     if not conf:
         logger.warning("Empty adcm config (%s)", adcm_file)
         return
 
-    try:
-        save_definition(path=Path(""), fname=adcm_file, conf=conf, obj_list={}, bundle_hash="adcm", adcm_=True)
+    with atomic():
+        prototypes, _ = save_definition(
+            path=Path(""), fname=adcm_file, conf=conf, obj_list={}, bundle_hash="adcm", adcm_=True
+        )
         process_adcm()
-    except Exception:
-        clear_stage()
-
-        raise
-
-    clear_stage()
+        StagePrototype.objects.filter(id__in=[prototype.id for prototype in prototypes]).delete()
 
 
 def process_adcm():
@@ -303,10 +308,12 @@ def process_adcm():
             bundle = copy_stage("adcm", adcm_stage_proto)
             upgrade_adcm(adcm[0], bundle)
         else:
-            raise_adcm_ex(
+            raise AdcmEx(
                 code="UPGRADE_ERROR",
-                msg=f"Current adcm version {old_proto.version} is more than "
-                f"or equal to upgrade version {new_proto.version}",
+                msg=(
+                    f"Current adcm version {old_proto.version} is more than "
+                    f"or equal to upgrade version {new_proto.version}"
+                ),
             )
     else:
         bundle = copy_stage("adcm", adcm_stage_proto)
@@ -383,7 +390,9 @@ def upgrade_adcm(adcm, bundle):
     return adcm
 
 
-def process_bundle(path: Path, bundle_hash: str) -> None:
+def process_bundle(path: Path, bundle_hash: str) -> tuple[list[StagePrototype], list[StageUpgrade]]:
+    all_prototypes = []
+    all_upgrades = []
     obj_list = {}
     for conf_path, conf_file in get_config_files(path=path):
         conf = read_definition(conf_file=conf_file)
@@ -392,12 +401,16 @@ def process_bundle(path: Path, bundle_hash: str) -> None:
 
         adcm_min_version = [item["adcm_min_version"] for item in conf if item.get("adcm_min_version")]
         if adcm_min_version and rpm.compare_versions(adcm_min_version[0], settings.ADCM_VERSION) > 0:
-            raise_adcm_ex(
+            raise AdcmEx(
                 code="BUNDLE_VERSION_ERROR",
                 msg=f"This bundle required ADCM version equal to {adcm_min_version} or newer.",
             )
 
-        save_definition(conf_path, conf_file, conf, obj_list, bundle_hash)
+        prototypes, upgrades = save_definition(conf_path, conf_file, conf, obj_list, bundle_hash)
+        all_prototypes.extend(prototypes)
+        all_upgrades.extend(upgrades)
+
+    return all_prototypes, all_upgrades
 
 
 def check_stage():

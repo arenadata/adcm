@@ -26,7 +26,6 @@ from cm.tests.test_upgrade import (
 )
 from django.conf import settings
 from django.db import IntegrityError
-from django.db.transaction import TransactionManagementError
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -46,13 +45,8 @@ class TestBundle(BaseTestCase):
         self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
 
     def test_bundle_upload_duplicate_upgrade_fail(self):
-        with self.assertRaises(TransactionManagementError) as raises_context:
+        with self.assertRaises(IntegrityError):
             self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_duplicated.tar"))
-
-        # we expect here IntegrityError, but unittest do not raise it directly,
-        # so check context of TransactionManagementError
-
-        self.assertIsInstance(raises_context.exception.__context__, IntegrityError)
 
     def test_bundle_upload_upgrade_different_upgrade_name_success(self):
         self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_different_name.tar"))
