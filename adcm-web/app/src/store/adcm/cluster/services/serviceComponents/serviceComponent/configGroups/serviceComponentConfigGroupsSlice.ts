@@ -16,7 +16,7 @@ const loadServiceComponentConfigGroups = createAsyncThunk(
   async ({ clusterId, serviceId, componentId }: loadServiceComponentConfigGroupsPayload, thunkAPI) => {
     const {
       adcm: {
-        serviceConfigGroupsTable: { filter, sortParams, paginationParams },
+        serviceComponentConfigGroupsTable: { filter, sortParams, paginationParams },
       },
     } = thunkAPI.getState();
     try {
