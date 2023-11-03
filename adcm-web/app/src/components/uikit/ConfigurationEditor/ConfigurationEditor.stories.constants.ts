@@ -3710,3 +3710,139 @@ export const nullableConfig = {
     my_map: null,
   },
 };
+
+export const readOnlySchema: ConfigurationSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  title: 'Configuration',
+  description: '',
+  readOnly: false,
+  adcmMeta: {
+    isAdvanced: false,
+    isInvisible: false,
+    activation: null,
+    synchronization: null,
+
+    isSecret: false,
+    stringExtra: null,
+    enumExtra: null,
+  },
+  type: 'object',
+  properties: {
+    some_field: {
+      type: 'string',
+      adcmMeta: {
+        isAdvanced: false,
+        isInvisible: false,
+        activation: null,
+        synchronization: null,
+        isSecret: false,
+        stringExtra: null,
+        enumExtra: null,
+      },
+      readOnly: true,
+    },
+    some_structure: {
+      type: 'object',
+      default: {},
+      readOnly: true,
+      adcmMeta: {
+        isAdvanced: false,
+        isInvisible: false,
+        activation: null,
+        synchronization: null,
+
+        isSecret: false,
+        stringExtra: null,
+        enumExtra: null,
+      },
+      additionalProperties: false,
+      properties: {
+        field: {
+          type: 'string',
+          adcmMeta: {
+            isAdvanced: false,
+            isInvisible: false,
+            activation: null,
+            synchronization: null,
+            isSecret: false,
+            stringExtra: null,
+            enumExtra: null,
+          },
+          readOnly: true,
+        },
+      },
+    },
+    some_map: {
+      type: 'object',
+      default: {},
+      readOnly: true,
+      adcmMeta: {
+        isAdvanced: false,
+        isInvisible: false,
+        activation: null,
+        synchronization: null,
+        isSecret: false,
+        stringExtra: null,
+        enumExtra: null,
+      },
+      additionalProperties: true,
+      properties: {},
+    },
+    some_array: {
+      type: 'array',
+      default: [],
+      readOnly: true,
+      adcmMeta: {
+        isAdvanced: false,
+        isInvisible: false,
+        activation: null,
+        synchronization: null,
+
+        isSecret: false,
+        stringExtra: null,
+        enumExtra: null,
+      },
+      items: {
+        type: 'object',
+        adcmMeta: {
+          isAdvanced: false,
+          isInvisible: false,
+          activation: null,
+          synchronization: null,
+          isSecret: false,
+          stringExtra: null,
+          enumExtra: null,
+        },
+        readOnly: true,
+        properties: {
+          field: {
+            type: 'string',
+            adcmMeta: {
+              isAdvanced: false,
+              isInvisible: false,
+              activation: null,
+              synchronization: null,
+              isSecret: false,
+              stringExtra: null,
+              enumExtra: null,
+            },
+            readOnly: false,
+          },
+        },
+      },
+    },
+  },
+  required: ['some_field', 'some_structure', 'some_map', 'some_array'],
+};
+
+export const readOnlyConfig = {
+  some_field: 'value',
+  some_structure: {
+    field: 'value',
+  },
+  some_map: {
+    mapEntry1: '123',
+    mapEntry2: '456',
+  },
+  some_array: [{ field: 'value' }],
+};

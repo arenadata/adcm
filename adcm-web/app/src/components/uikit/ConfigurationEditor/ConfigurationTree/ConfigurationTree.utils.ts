@@ -63,6 +63,31 @@ const getDefaultFieldSchema = (parentFieldSchema: SingleSchemaDefinition | null)
   return fieldSchema;
 };
 
+const getIsReadonly = (
+  fieldSchema: SingleSchemaDefinition,
+  fieldAttributes: FieldAttributes,
+  parentNode: ConfigurationNode,
+) => {
+  const parentNodeData = parentNode.data as ConfigurationObject | ConfigurationArray;
+
+  const isArrayItem = parentNodeData.fieldSchema.type === 'array';
+  const isMapProperty = parentNode.data.type === 'object' && parentNode.data.objectType === 'map';
+
+  if ((isArrayItem || isMapProperty) && parentNodeData.isReadonly) {
+    return true;
+  }
+
+  if (fieldAttributes?.isSynchronized !== undefined) {
+    return fieldAttributes.isSynchronized;
+  }
+
+  if (parentNodeData.fieldAttributes?.isSynchronized !== undefined) {
+    return parentNodeData.fieldAttributes?.isSynchronized;
+  }
+
+  return fieldSchema.readOnly || parentNodeData.isReadonly;
+};
+
 const getNodeProps = (
   fieldName: string,
   fieldSchema: SingleSchemaDefinition,
@@ -70,9 +95,7 @@ const getNodeProps = (
   fieldAttributes: FieldAttributes,
   parentNode: ConfigurationNode,
 ) => {
-  const parentNodeData = parentNode.data as ConfigurationObject | ConfigurationArray;
-  const isParentSynchronized = parentNodeData.fieldAttributes?.isSynchronized === true;
-  const isSynchronized = fieldAttributes?.isSynchronized === true;
+  const parentNodeData = parentNode.data;
 
   const isArrayItem = parentNodeData.fieldSchema.type === 'array';
   const title = isArrayItem ? `${parentNodeData.title} [${fieldName}]` : getTitle(fieldName, fieldSchema);
@@ -83,7 +106,7 @@ const getNodeProps = (
     isRequiredField = requiredFields.includes(fieldName);
   }
 
-  const isReadonly = fieldSchema.readOnly || parentNodeData.isReadonly || isSynchronized || isParentSynchronized;
+  const isReadonly = getIsReadonly(fieldSchema, fieldAttributes, parentNode);
   const isCleanable = !isReadonly && isNullable;
   const isDeletable = !isReadonly && (!isRequiredField || isArrayItem);
 

@@ -5,6 +5,8 @@ import {
   clusterConfigurationSchema,
   initialClusterConfiguration,
   complexSchema,
+  readOnlyConfig,
+  readOnlySchema,
   nullableConfig,
   nullableSchema,
 } from './ConfigurationEditor.stories.constants';
@@ -142,6 +144,16 @@ export const ConfigurationEditorWithNullableMapStory: Story = {
     <ConfigurationEditorStoryWithHooks
       schema={nullableSchema}
       initialConfigurationData={nullableConfig}
+      initialAttributes={null}
+    />
+  ),
+};
+
+export const ConfigurationEditorReadonlyStory: Story = {
+  render: () => (
+    <ConfigurationEditorStoryWithHooks
+      schema={readOnlySchema}
+      initialConfigurationData={readOnlyConfig}
       initialAttributes={null}
     />
   ),
