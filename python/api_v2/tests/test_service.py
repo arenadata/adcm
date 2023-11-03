@@ -200,10 +200,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
-        with patch(
-            "api_v2.action.views.start_task",
-            return_value=self.create_task_log(object_=self.service_2, action=self.action),
-        ):
+        with patch("cm.job.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:service-action-run",

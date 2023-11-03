@@ -69,7 +69,14 @@
           default:
             - "1"
             - "woohoo"
-
+        - name: activatable_group
+          type: group
+          activatable: True
+          active: True
+          subs:
+            - name: text
+              type: text
+              default: text
     with_hc:
       <<: *action
       hc_acl:
