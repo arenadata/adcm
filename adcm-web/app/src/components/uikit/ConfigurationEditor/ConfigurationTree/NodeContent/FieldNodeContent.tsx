@@ -1,4 +1,4 @@
-import { useCallback, useRef, useMemo } from 'react';
+import { useCallback, useRef, useMemo, useState } from 'react';
 import { IconButton, Tooltip } from '@uikit';
 import { ConfigurationField, ConfigurationNode } from '../../ConfigurationEditor.types';
 import { emptyStringStub, nullStub, secretStub } from '../ConfigurationTree.constants';
@@ -32,6 +32,8 @@ const FieldNodeContent = ({
   const adcmMeta = fieldNodeData.fieldSchema.adcmMeta;
   const fieldAttributes = node.data.fieldAttributes;
 
+  const [initialIsActive] = useState(fieldAttributes?.isActive);
+
   const handleIsActiveChange = useCallback(
     (isActive: boolean) => {
       if (fieldAttributes) {
@@ -44,10 +46,14 @@ const FieldNodeContent = ({
   const handleIsSynchronizedChange = useCallback(
     (isSynchronized: boolean) => {
       if (fieldAttributes) {
-        onFieldAttributeChange(node.key, { ...fieldAttributes, isSynchronized });
+        if (isSynchronized) {
+          onFieldAttributeChange(node.key, { isActive: initialIsActive, isSynchronized });
+        } else {
+          onFieldAttributeChange(node.key, { ...fieldAttributes, isSynchronized });
+        }
       }
     },
-    [fieldAttributes, node.key, onFieldAttributeChange],
+    [fieldAttributes, initialIsActive, node.key, onFieldAttributeChange],
   );
 
   const handleClick = () => {
@@ -98,10 +104,10 @@ const FieldNodeContent = ({
 
   return (
     <div ref={ref} className={className}>
-      {adcmMeta.activation && fieldAttributes && (
+      {adcmMeta.activation && fieldAttributes?.isActive !== undefined && (
         <ActivationAttribute
           isActive={fieldAttributes.isActive}
-          {...adcmMeta.activation}
+          isAllowChange={adcmMeta.activation.isAllowChange && fieldAttributes.isSynchronized !== true}
           onToggle={handleIsActiveChange}
         />
       )}
@@ -119,7 +125,7 @@ const FieldNodeContent = ({
       <span className={s.nodeContent__title} data-test="node-name">
         {`${fieldNodeData.title}: `}
       </span>
-      {adcmMeta.synchronization && fieldAttributes && (
+      {adcmMeta.synchronization && fieldAttributes?.isSynchronized !== undefined && (
         <SynchronizedAttribute
           isSynchronized={fieldAttributes.isSynchronized}
           {...adcmMeta.synchronization}
