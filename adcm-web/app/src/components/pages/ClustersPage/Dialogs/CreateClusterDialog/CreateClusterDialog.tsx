@@ -15,7 +15,10 @@ const CreateClusterDialog = () => {
   );
 
   const productVersionsOptions = useMemo(
-    () => (formData.product ? formData.product.versions.map((item) => ({ label: item.version, value: item })) : []),
+    () =>
+      formData.product
+        ? formData.product.versions.map((item) => ({ label: `${item.version} (${item.bundle.edition})`, value: item }))
+        : [],
     [formData.product],
   );
 
