@@ -27,7 +27,7 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ list, className = '' }) => {
     <nav className={cn(s.breadcrumbs, className)} data-test="breadcrumbs-container">
       <ul>
         {list.map(({ label, href }) => (
-          <BreadcrumbItem label={label} href={href} key={label} />
+          <BreadcrumbItem label={label} href={href} key={label + href} />
         ))}
       </ul>
     </nav>

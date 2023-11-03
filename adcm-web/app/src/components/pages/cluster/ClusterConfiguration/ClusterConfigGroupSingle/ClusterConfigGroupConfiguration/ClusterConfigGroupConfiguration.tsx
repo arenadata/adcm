@@ -32,8 +32,9 @@ const ClusterConfigGroupConfiguration: React.FC = () => {
         setBreadcrumbs([
           { href: '/clusters', label: 'Clusters' },
           { href: `/clusters/${cluster.id}`, label: cluster.name },
-          { href: `/clusters/${cluster.id}/config-groups/${clusterConfigGroup.id}/`, label: clusterConfigGroup.name },
           { label: 'Configuration' },
+          { href: `/clusters/${cluster.id}/configuration/config-groups/`, label: 'Configuration groups' },
+          { label: clusterConfigGroup.name },
         ]),
       );
     }
