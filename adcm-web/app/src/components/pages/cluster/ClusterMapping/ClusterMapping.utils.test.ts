@@ -239,11 +239,11 @@ describe('Cluster mapping utils', () => {
     // Check all hosts constraints
     expect(validateConstraints(['+'], 2, 0)).toEqual({
       isValid: false,
-      error: 'Component should be installed on all hosts of cluster.',
+      errors: ['Component should be installed on all hosts of cluster.'],
     });
     expect(validateConstraints(['+'], 2, 1)).toEqual({
       isValid: false,
-      error: 'Component should be installed on all hosts of cluster.',
+      errors: ['Component should be installed on all hosts of cluster.'],
     });
     expect(validateConstraints(['+'], 2, 2)).toEqual({ isValid: true });
 
@@ -252,30 +252,30 @@ describe('Cluster mapping utils', () => {
     expect(validateConstraints([0, 1], 2, 1)).toEqual({ isValid: true });
     expect(validateConstraints([0, 1], 2, 2)).toEqual({
       isValid: false,
-      error: 'From 0 to 1 components should be installed.',
+      errors: ['From 0 to 1 components should be installed.'],
     });
     expect(validateConstraints([3, 10], 5, 5)).toEqual({ isValid: true });
 
     expect(validateConstraints([0, '+'], 5, 0)).toEqual({ isValid: true });
     expect(validateConstraints([1, '+'], 5, 0)).toEqual({
       isValid: false,
-      error: '1 or more components should be installed.',
+      errors: ['1 or more components should be installed.'],
     });
     expect(validateConstraints([2, '+'], 5, 1)).toEqual({
       isValid: false,
-      error: '2 or more components should be installed.',
+      errors: ['2 or more components should be installed.'],
     });
 
     // Check exact constraints
     expect(validateConstraints([1], 2, 0)).toEqual({
       isValid: false,
-      error: 'Exactly 1 component should be installed.',
+      errors: ['Exactly 1 component should be installed.'],
     });
     expect(validateConstraints([1], 2, 1)).toEqual({ isValid: true });
     expect(validateConstraints([2], 2, 2)).toEqual({ isValid: true });
     expect(validateConstraints([1], 2, 2)).toEqual({
       isValid: false,
-      error: 'Exactly 1 component should be installed.',
+      errors: ['Exactly 1 component should be installed.'],
     });
 
     // Check odd constraints
@@ -283,7 +283,7 @@ describe('Cluster mapping utils', () => {
     expect(validateConstraints([1, 'odd'], 4, 3)).toEqual({ isValid: true });
     expect(validateConstraints([1, 'odd'], 4, 2)).toEqual({
       isValid: false,
-      error: '1 or more components should be installed. Total amount should be odd.',
+      errors: ['1 or more components should be installed. Total amount should be odd.'],
     });
   });
 });
