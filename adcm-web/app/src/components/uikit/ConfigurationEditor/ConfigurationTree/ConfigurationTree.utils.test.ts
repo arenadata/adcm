@@ -354,7 +354,7 @@ describe('validate', () => {
 
     const { isValid, errorsPaths } = validate(validateInactiveGroupSchema, configuration, attributes);
     expect(isValid).toBe(false);
-    expect(errorsPaths).toStrictEqual({ '/structure_2': true, '/structure_2/someField1': 'must be string' });
+    expect(errorsPaths).toStrictEqual({ '/': true, '/structure_2': true, '/structure_2/someField1': 'must be string' });
   });
 });
 

@@ -87,6 +87,7 @@ describe('validate', () => {
     const result = validate(schema, object);
     expect(result.isValid).toBe(false);
     expect(result.errorsPaths).toStrictEqual({
+      '/': true,
       '/clusterConfiguration': true,
       '/clusterConfiguration/cluster_config': true,
       '/clusterConfiguration/cluster_config/cluster': true,
@@ -178,7 +179,7 @@ describe('validate', () => {
 
     const result1 = validate(schema, object1);
     expect(result1.isValid).toBe(false);
-    expect(result1.errorsPaths).toStrictEqual({ '/structure': true, '/structure/field2': 'required' });
+    expect(result1.errorsPaths).toStrictEqual({ '/': true, '/structure': true, '/structure/field2': 'required' });
 
     const result2 = validate(schema, object2);
     expect(result2.isValid).toBe(true);

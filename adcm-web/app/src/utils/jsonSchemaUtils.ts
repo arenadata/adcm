@@ -35,9 +35,12 @@ export const validate = <T>(schema: Schema, data: T) => {
 
 const getAllErrorInstancePaths = (errors: ErrorObject[] | undefined | null) => {
   const result: Record<string, string | true> = {}; // key - path, value - message or true (true means that child node has error)
-  if (!errors) {
+  if (!errors || errors.length === 0) {
     return result;
   }
+
+  // root always has children with errors
+  result['/'] = true;
 
   for (const error of errors) {
     let instancePath = error.instancePath;
