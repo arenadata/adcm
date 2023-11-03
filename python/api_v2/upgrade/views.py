@@ -10,17 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from api_v2.action.serializers import ActionRunSerializer
-from api_v2.action.utils import insert_service_ids
-from api_v2.config.utils import (
-    convert_adcm_meta_to_attr,
-    convert_attr_to_adcm_meta,
-    get_config_schema,
-    represent_string_as_json_type,
-)
+from api_v2.action.utils import get_action_configuration, insert_service_ids
+from api_v2.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
 from api_v2.views import CamelCaseGenericViewSet
-from cm.adcm_config.config import get_prototype_config
 from cm.errors import AdcmEx
 from cm.models import Cluster, HostProvider, PrototypeConfig, TaskLog, Upgrade
 from cm.upgrade import check_upgrade, do_upgrade, get_upgrade
@@ -134,20 +128,16 @@ class UpgradeViewSet(  # pylint: disable=too-many-ancestors
 
         upgrade = self.get_upgrade(parent=parent)
 
-        schema = None
+        config_schema = None
+        config = None
         adcm_meta = None
 
         if upgrade.action:
-            prototype_configs = PrototypeConfig.objects.filter(
-                prototype=upgrade.action.prototype, action=upgrade.action
-            ).order_by("pk")
-            if len(prototype_configs):
-                schema = get_config_schema(object_=parent, prototype_configs=prototype_configs)
-                _, _, _, attr = get_prototype_config(prototype=upgrade.action.prototype, action=upgrade.action)
-                adcm_meta = convert_attr_to_adcm_meta(attr=attr)
+            config_schema, config, adcm_meta = get_action_configuration(action_=upgrade.action, object_=parent)
 
         serializer = self.get_serializer_class()(
-            instance=upgrade, context={"parent": parent, "config_schema": schema, "adcm_meta": adcm_meta}
+            instance=upgrade,
+            context={"parent": parent, "config_schema": config_schema, "config": config, "adcm_meta": adcm_meta},
         )
 
         return Response(serializer.data)

@@ -10,12 +10,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from hashlib import sha256
 from itertools import compress
 from typing import Iterable, Iterator, List, Literal
 
-from cm.models import Action, ADCMEntity, ServiceComponent
+from api_v2.config.utils import convert_attr_to_adcm_meta, get_config_schema
+from cm.adcm_config.config import get_default
+from cm.models import (
+    Action,
+    ADCMEntity,
+    Cluster,
+    ClusterObject,
+    Host,
+    HostProvider,
+    PrototypeConfig,
+    ServiceComponent,
+)
 from django.conf import settings
+from jinja_config import get_jinja_config
 from rbac.models import User
 
 from adcm.permissions import RUN_ACTION_PERM_PREFIX
@@ -51,3 +64,38 @@ def insert_service_ids(
         single_hc["service_id"] = component_service_map[single_hc["component_id"]]
 
     return hc_create_data
+
+
+def get_action_configuration(
+    action_: Action, object_: Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+) -> tuple[dict | None, dict | None, dict | None]:
+    if action_.config_jinja:
+        prototype_configs, _ = get_jinja_config(action=action_, obj=object_)
+    else:
+        prototype_configs = PrototypeConfig.objects.filter(prototype=action_.prototype, action=action_).order_by("id")
+
+    if not prototype_configs:
+        return None, None, None
+
+    config = defaultdict(dict)
+    attr = {}
+
+    for prototype_config in prototype_configs:
+        name = prototype_config.name
+        sub_name = prototype_config.subname
+
+        if prototype_config.type == "group":
+            if "activatable" in prototype_config.limits:
+                attr[name] = {"active": prototype_config.limits["active"]}
+
+            continue
+
+        if sub_name:
+            config[name][sub_name] = get_default(conf=prototype_config, prototype=action_.prototype)
+        else:
+            config[name] = get_default(conf=prototype_config, prototype=action_.prototype)
+
+    config_schema = get_config_schema(object_=object_, prototype_configs=prototype_configs)
+    adcm_meta = convert_attr_to_adcm_meta(attr=attr)
+
+    return config_schema, config, adcm_meta

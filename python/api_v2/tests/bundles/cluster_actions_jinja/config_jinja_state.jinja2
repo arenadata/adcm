@@ -7,6 +7,14 @@
   type: float
   required: false
   default: 2.0
+- name: activatable_group
+  type: group
+  activatable: true
+  active: true
+  subs:
+    - name: text
+      type: text
+      default: text
 {% elif cluster.state == 'installed' %}
 - name: integer
   type: integer
