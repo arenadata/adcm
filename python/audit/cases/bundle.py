@@ -19,13 +19,11 @@ from audit.models import (
 )
 from cm.models import Bundle
 from django.views import View
-from rest_framework.response import Response
 
 
 def bundle_case(
     path: list[str],
     view: View,
-    response: Response | None,
     deleted_obj: Bundle,
 ) -> tuple[AuditOperation | None, AuditObject | None]:
     audit_operation = None
@@ -63,7 +61,7 @@ def bundle_case(
                 audit_object = None
 
         case (["bundles"]):
-            if view.request.method == "POST" and response and response.status_code == 201:
+            if view.request.method == "POST":
                 audit_operation = AuditOperation(
                     name="Bundle uploaded",
                     operation_type=AuditLogOperationType.CREATE,

@@ -101,7 +101,6 @@ def get_audit_operation_and_object(  # pylint: disable=too-many-branches
         audit_operation, audit_object = bundle_case(
             path=path,
             view=view,
-            response=response,
             deleted_obj=deleted_obj,
         )
     elif "accept" in path:

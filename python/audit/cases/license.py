@@ -44,7 +44,7 @@ def license_case(
                     object_type=AuditObjectType.BUNDLE,
                 )
         case (["prototypes", prototype_pk, "license", "accept"]):
-            if view.request.method == "POST" and response and response.status_code == 200:
+            if view.request.method == "POST":
                 prototype = Prototype.objects.filter(pk=prototype_pk).first()
                 audit_operation = AuditOperation(
                     name="Bundle license accepted",
