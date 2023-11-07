@@ -32,7 +32,7 @@ export const isHostNameValid = (hostName: string) => {
 };
 
 export const isHostProviderNameValid = (hostName: string) => {
-  return /^[A-Za-z0-9]{1}[A-Za-z0-9.-\s]*$/.test(hostName);
+  return /^[A-Za-z0-9]{1}[A-Za-z0-9._-\s]*[A-Za-z0-9]{1}$/.test(hostName);
 };
 
 interface Named {
