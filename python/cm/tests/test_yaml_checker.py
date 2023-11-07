@@ -115,3 +115,25 @@ class TestYAMLChecker(TestCase):
             rules["root"]["invisible_items"] = ["something"]
             with self.assertRaises(FormatError):
                 process_rule(data=test_data, rules=rules, name="root")
+
+    def test_pass_integer_and_float_in_match_float_success(self):
+        schema = {
+            "clusters": {"match": "list", "item": "fdict"},
+            "fdict": {"match": "dict", "items": {"fval": "float_rule"}},
+            "float_rule": {"match": "float"},
+        }
+        data = [{"fval": 4}, {"fval": 4.0}]
+        process_rule(data=data, rules=schema, name="clusters")
+
+    def test_pass_string_in_match_float_fail(self):
+        schema = {
+            "clusters": {"match": "list", "item": "fdict"},
+            "fdict": {"match": "dict", "items": {"fval": "float_rule"}},
+            "float_rule": {"match": "float"},
+        }
+        data = [{"fval": 4}, {"fval": 4.0}, {"fval": "also-string"}]
+        with self.assertRaises(FormatError) as err:
+            process_rule(data=data, rules=schema, name="clusters")
+
+        self.assertIn("float", err.exception.message)
+        self.assertIn("int", err.exception.message)
