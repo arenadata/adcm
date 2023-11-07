@@ -14,7 +14,15 @@ type ActionMenuProps<T> = Omit<SingleSelectOptions<T>, 'noneLabel'> &
     renderItem?: (model: SelectOption<T>) => ReactNode;
   };
 
-const ActionMenu = <T,>({ children, onChange, placement, offset, value, ...props }: ActionMenuProps<T>) => {
+const ActionMenu = <T,>({
+  children,
+  onChange,
+  placement,
+  offset,
+  value,
+  maxHeight = 300,
+  ...props
+}: ActionMenuProps<T>) => {
   const [isOpen, setIsOpen] = useState(false);
   const localRef = useRef(null);
   const reference = useForwardRef(localRef, children.ref);
@@ -44,6 +52,7 @@ const ActionMenu = <T,>({ children, onChange, placement, offset, value, ...props
             {...props}
             value={value}
             onChange={handleChange}
+            maxHeight={maxHeight}
           />
         </PopoverPanelDefault>
       </Popover>
