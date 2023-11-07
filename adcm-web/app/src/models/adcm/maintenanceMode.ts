@@ -4,3 +4,7 @@ export enum AdcmMaintenanceMode {
   Pending = 'pending',
   Changing = 'changing',
 }
+
+export interface AdcmSetMaintenanceModeResponse {
+  maintenanceMode: AdcmMaintenanceMode;
+}

@@ -16,18 +16,18 @@ const BreadcrumbItem: React.FC<BreadcrumbsItemConfig> = ({ label, href }) => {
 };
 
 const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ list, className = '' }) => {
-  const location = useLocation();
+  const { pathname } = useLocation();
   const dispatch = useDispatch();
 
   useEffect(() => {
     dispatch(cleanupBreadcrumbs());
-  }, [location, dispatch]);
+  }, [pathname, dispatch]);
 
   return (
     <nav className={cn(s.breadcrumbs, className)} data-test="breadcrumbs-container">
       <ul>
         {list.map(({ label, href }) => (
-          <BreadcrumbItem label={label} href={href} key={label} />
+          <BreadcrumbItem label={label} href={href} key={label + href} />
         ))}
       </ul>
     </nav>

@@ -81,6 +81,7 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
           onChange={handlePasswordChange}
           placeholder="Enter password"
           autoComplete="new-password"
+          areAsterisksShown={!isCreate}
         />
       </FormField>
       <FormField label="Confirm password" error={errors.confirmPassword} className={s.rbacUserForm__confirmPassword}>
@@ -88,6 +89,7 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
           value={formData.confirmPassword}
           onChange={handleConfirmPasswordChange}
           placeholder="Enter password"
+          areAsterisksShown={!isCreate}
         />
       </FormField>
 

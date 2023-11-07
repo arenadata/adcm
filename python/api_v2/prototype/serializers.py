@@ -59,7 +59,11 @@ class PrototypeTypeSerializer(EmptySerializer):
 
     @staticmethod
     def get_versions(obj: Prototype) -> str | None:
-        queryset = Prototype.objects.filter(type=obj.type, name=obj.name).order_by("-version")
+        queryset = (
+            Prototype.objects.select_related("bundle")
+            .filter(type=obj.type, name=obj.name)
+            .order_by("-version", "-bundle__edition")
+        )
         serializer = PrototypeVersionSerializer(instance=queryset, many=True)
 
         return serializer.data

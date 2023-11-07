@@ -3,7 +3,7 @@ import { useDispatch, useStore } from '@hooks';
 import MaintenanceModeDialog from '@commonComponents/MaintenanceModeDialog/MaintenanceModeDialog';
 import { getRevertedMaintenanceModeStatus } from '@commonComponents/MaintenanceModeDialog/MaintenanceModeDialog.utils';
 import { useParams } from 'react-router-dom';
-import { toggleMaintenanceModeWithUpdate } from '@store/adcm/cluster/services/serviceComponents/serviceComponent/serviceComponentSlice';
+import { toggleMaintenanceMode } from '@store/adcm/cluster/services/serviceComponents/serviceComponent/serviceComponentSlice';
 import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
 
 const ServiceComponentMaintenanceModeButton: React.FC = () => {
@@ -31,13 +31,14 @@ const ServiceComponentMaintenanceModeButton: React.FC = () => {
     if (serviceComponent) {
       const newMaintenanceMode = getRevertedMaintenanceModeStatus(serviceComponent);
       dispatch(
-        toggleMaintenanceModeWithUpdate({
+        toggleMaintenanceMode({
           clusterId,
           serviceId,
           componentId: serviceComponent.id,
           maintenanceMode: newMaintenanceMode,
         }),
       );
+      onCloseDialog();
     }
   };
 

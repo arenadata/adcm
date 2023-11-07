@@ -340,7 +340,7 @@ _issue_check_map = {
     ConcernCause.REQUIREMENT: check_requires,
 }
 _prototype_issue_map = {
-    ObjectType.ADCM: (),
+    ObjectType.ADCM: (ConcernCause.CONFIG,),
     ObjectType.CLUSTER: (
         ConcernCause.CONFIG,
         ConcernCause.IMPORT,

@@ -20,7 +20,7 @@ from adcm.serializers import EmptySerializer
 class BundleRelatedSerializer(ModelSerializer):
     class Meta:
         model = Bundle
-        fields = ["id"]
+        fields = ["id", "edition"]
 
 
 class BundleListSerializer(ModelSerializer):

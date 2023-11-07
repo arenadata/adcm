@@ -21,18 +21,13 @@ from api_v2.action.serializers import (
 from api_v2.action.utils import (
     check_run_perms,
     filter_actions_by_user_perm,
+    get_action_configuration,
     insert_service_ids,
 )
-from api_v2.config.utils import (
-    convert_adcm_meta_to_attr,
-    convert_attr_to_adcm_meta,
-    get_config_schema,
-    represent_string_as_json_type,
-)
+from api_v2.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
 from audit.utils import audit
-from cm.adcm_config.config import get_prototype_config
 from cm.errors import AdcmEx
 from cm.job import start_task
 from cm.models import ADCM, Action, ConcernType, Host, HostComponent, PrototypeConfig
@@ -119,23 +114,16 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
     def retrieve(self, request, *args, **kwargs):
         action_ = self.get_object()
 
-        if action_.config_jinja:
-            prototype_configs, attr = get_jinja_config(action=action_, obj=self.parent_object)
-        else:
-            prototype_configs = PrototypeConfig.objects.filter(prototype=action_.prototype, action=action_).order_by(
-                "pk"
-            )
-            _, _, _, attr = get_prototype_config(prototype=action_.prototype, action=action_)
-
-        if prototype_configs:
-            schema = get_config_schema(object_=self.parent_object, prototype_configs=prototype_configs)
-            adcm_meta = convert_attr_to_adcm_meta(attr=attr)
-        else:
-            schema = None
-            adcm_meta = None
+        config_schema, config, adcm_meta = get_action_configuration(action_=action_, object_=self.parent_object)
 
         serializer = self.get_serializer_class()(
-            instance=action_, context={"obj": self.parent_object, "config_schema": schema, "adcm_meta": adcm_meta}
+            instance=action_,
+            context={
+                "obj": self.parent_object,
+                "config_schema": config_schema,
+                "config": config,
+                "adcm_meta": adcm_meta,
+            },
         )
 
         return Response(data=serializer.data)

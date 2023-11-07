@@ -507,12 +507,14 @@ def accept_license(proto: Prototype) -> None:
 
 
 def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, description: str = "") -> ConfigLog:
-    if not isinstance(attr, dict):
-        raise_adcm_ex("INVALID_CONFIG_UPDATE", "attr should be a map")
+    if not isinstance(config, dict) or not isinstance(attr, dict):
+        message = f"Both `config` and `attr` should be of `dict` type, not {type(config)} and {type(attr)} respectively"
+        raise TypeError(message)
 
     obj: ADCMEntity = obj_conf.object
     if obj is None:
-        raise_adcm_ex("INVALID_CONFIG_UPDATE", f'unknown object type "{obj_conf}"')
+        message = "Can't update configuration that have no linked object"
+        raise ValueError(message)
 
     group = None
     if isinstance(obj, GroupConfig):
@@ -531,6 +533,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
         new_attr=attr,
         current_attr=old_conf.attr,
     )
+
     with atomic():
         config_log = save_obj_config(obj_conf=obj_conf, conf=new_conf, attr=attr, desc=description)
         update_hierarchy_issues(obj=obj)

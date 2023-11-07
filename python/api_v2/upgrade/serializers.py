@@ -65,7 +65,15 @@ class UpgradeRetrieveSerializer(UpgradeListSerializer):
         return []
 
     def get_configuration(self, _: Upgrade):
-        if self.context["config_schema"] is None and self.context["adcm_meta"] is None:
+        if (
+            self.context["config_schema"] is None
+            and self.context["config"] is None
+            and self.context["adcm_meta"] is None
+        ):
             return None
 
-        return {"config_schema": self.context["config_schema"], "adcm_meta": self.context["adcm_meta"]}
+        return {
+            "config_schema": self.context["config_schema"],
+            "config": self.context["config"],
+            "adcm_meta": self.context["adcm_meta"],
+        }

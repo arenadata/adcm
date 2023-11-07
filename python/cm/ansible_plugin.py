@@ -277,7 +277,7 @@ def get_service_by_name(cluster_id, service_name):
 
 def _set_object_state(obj: ADCMEntity, state: str) -> ADCMEntity:
     obj.set_state(state)
-    update_event(object_=obj, update=(UpdateEventType.STATE, state))
+    update_event(object_=obj, update=[(UpdateEventType.STATE, state)])
     return obj
 
 
@@ -522,7 +522,7 @@ def check_missing_ok(obj: ADCMEntity, multi_state: str, missing_ok):
 def _unset_object_multi_state(obj: ADCMEntity, multi_state: str, missing_ok) -> ADCMEntity:
     check_missing_ok(obj, multi_state, missing_ok)
     obj.unset_multi_state(multi_state)
-    update_event(object_=obj, update=(UpdateEventType.STATE, multi_state))
+    update_event(object_=obj, update=[(UpdateEventType.STATE, multi_state)])
     return obj
 
 

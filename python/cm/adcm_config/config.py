@@ -462,9 +462,9 @@ def process_json_config(
     prototype: Prototype,
     obj: ADCMEntity | Action,
     new_config: dict,
-    current_config: dict = None,
-    new_attr=None,
-    current_attr=None,
+    current_config: dict | None = None,
+    new_attr: dict | None = None,
+    current_attr: dict | None = None,
 ) -> dict:
     spec, flat_spec, _, _ = get_prototype_config(prototype=prototype)
     check_attr(prototype, obj, new_attr, flat_spec, current_attr)
@@ -492,7 +492,7 @@ def process_json_config(
     return new_config
 
 
-def check_config_spec(
+def check_config_spec(  # pylint: disable=too-many-branches
     proto: Prototype,
     obj: ADCMEntity | Action,
     spec: dict,
@@ -500,70 +500,87 @@ def check_config_spec(
     conf: dict,
     attr: dict = None,
 ) -> None:
-    # pylint: disable=too-many-branches
+    if not isinstance(conf, dict):
+        # AdcmEx is left here instead of TypeError, because of existing usages
+        # and most likely existence of reliable code on exactly AdcmEx.
+        # Replace during major refactoring.
+        raise AdcmEx(code="JSON_ERROR", msg="config should be a mapping-like entity")
+
     ref = proto_ref(proto)
-    if isinstance(conf, (float, int)):
-        raise_adcm_ex(code="JSON_ERROR", msg="config should not be just one int or float")
 
-    if isinstance(conf, str):
-        raise_adcm_ex(code="JSON_ERROR", msg="config should not be just one string")
+    unknown_keys = set(conf.keys()).difference(spec.keys())
+    if unknown_keys:
+        raise AdcmEx(
+            code="CONFIG_KEY_ERROR",
+            msg=f"There is unknown keys in input config ({ref}): {', '.join(sorted(unknown_keys))}",
+        )
 
-    for key in conf:
-        if key not in spec:
-            raise_adcm_ex(code="CONFIG_KEY_ERROR", msg=f'There is unknown key "{key}" in input config ({ref})')
+    for key in spec:
+        # From discussion with colleagues: most likely type is absent for groups,
+        # because spec for their children is in their value
+        if spec[key].get("type", "group") != "group":
+            if key not in conf:
+                if key_is_required(obj=obj, key=key, subkey="", spec=spec):
+                    raise AdcmEx(
+                        code="CONFIG_KEY_ERROR", msg=f'There is no required key "{key}" in input config ({ref})'
+                    )
 
-        if "type" in spec[key] and spec[key]["type"] != "group":
-            if isinstance(conf[key], dict) and spec[key]["type"] not in settings.STACK_COMPLEX_FIELD_TYPES:
-                raise_adcm_ex(
+                continue
+
+            config_value = conf[key]
+            if isinstance(config_value, dict) and spec[key]["type"] not in settings.STACK_COMPLEX_FIELD_TYPES:
+                raise AdcmEx(
                     code="CONFIG_KEY_ERROR",
                     msg=f'Key "{key}" in input config should not have any subkeys ({ref})',
                 )
 
-    for key in spec:
-        if "type" in spec[key] and spec[key]["type"] != "group":
-            if key in conf:
-                check_config_type(prototype=proto, key=key, subkey="", spec=spec[key], value=conf[key])
-            elif key_is_required(obj=obj, key=key, subkey="", spec=spec):
-                raise_adcm_ex(code="CONFIG_KEY_ERROR", msg=f'There is no required key "{key}" in input config ({ref})')
+            check_config_type(prototype=proto, key=key, subkey="", spec=spec[key], value=config_value)
 
-        else:
-            if key not in conf:
-                if sub_key_is_required(key=key, attr=attr, flat_spec=flat_spec, spec=spec, obj=obj):
-                    raise_adcm_ex(code="CONFIG_KEY_ERROR", msg=f'There are no required key "{key}" in input config')
+            continue
 
-            else:
-                if not isinstance(conf[key], dict):
-                    raise_adcm_ex(code="CONFIG_KEY_ERROR", msg=f'There are not any subkeys for key "{key}" ({ref})')
+        # Processing group
+        if key not in conf:
+            if sub_key_is_required(key=key, attr=attr, flat_spec=flat_spec, spec=spec, obj=obj):
+                raise AdcmEx(code="CONFIG_KEY_ERROR", msg=f'There is no required key "{key}" in input config')
 
-                if not conf[key]:
-                    raise_adcm_ex(
+            continue
+
+        config_value = conf[key]
+        if not isinstance(config_value, dict):
+            raise AdcmEx(code="CONFIG_KEY_ERROR", msg=f'There are not any subkeys for key "{key}" ({ref})')
+
+        if not config_value:
+            raise AdcmEx(
+                code="CONFIG_KEY_ERROR",
+                msg=f'Key "{key}" should contain subkeys ({ref}): {list(spec[key].keys())}',
+            )
+
+        for subkey in config_value:
+            if subkey not in spec[key]:
+                raise AdcmEx(
+                    code="CONFIG_KEY_ERROR",
+                    msg=f'There is unknown subkey "{subkey}" for key "{key}" in input config ({ref})',
+                )
+
+        for subkey in spec[key]:
+            if subkey not in config_value:
+                if key_is_required(obj=obj, key=key, subkey=subkey, spec=spec):
+                    raise AdcmEx(
                         code="CONFIG_KEY_ERROR",
-                        msg=f'Key "{key}" should contains some subkeys ({ref}): {list(spec[key].keys())}',
+                        msg=f'There is no required subkey "{subkey}" for key "{key}" ({ref})',
                     )
 
-                for subkey in conf[key]:
-                    if subkey not in spec[key]:
-                        raise_adcm_ex(
-                            code="CONFIG_KEY_ERROR",
-                            msg=f'There is unknown subkey "{subkey}" for key "{key}" in input config ({ref})',
-                        )
+                continue
 
-                for subkey in spec[key]:
-                    if subkey in conf[key]:
-                        check_config_type(
-                            prototype=proto,
-                            key=key,
-                            subkey=subkey,
-                            spec=spec[key][subkey],
-                            value=conf[key][subkey],
-                            default=False,
-                            inactive=is_inactive(key, attr, flat_spec),
-                        )
-                    elif key_is_required(obj=obj, key=key, subkey=subkey, spec=spec):
-                        raise_adcm_ex(
-                            code="CONFIG_KEY_ERROR",
-                            msg=f'There is no required subkey "{subkey}" for key "{key}" ({ref})',
-                        )
+            check_config_type(
+                prototype=proto,
+                key=key,
+                subkey=subkey,
+                spec=spec[key][subkey],
+                value=config_value[subkey],
+                default=False,
+                inactive=is_inactive(key, attr, flat_spec),
+            )
 
 
 def _process_secretfile(obj: ADCMEntity, key: str, subkey: str, value: Any) -> None:
@@ -626,10 +643,7 @@ def _process_secretmap(conf: dict, key: str, subkey: str) -> None:
                 conf[key][secretmap_key] = ansible_encrypt_and_format(msg=secretmap_value)
 
 
-def process_config_spec(obj: ADCMEntity, spec: dict, new_config: dict, current_config: dict = None) -> dict:
-    if current_config:
-        new_config = restore_read_only(obj=obj, spec=spec, conf=new_config, old_conf=current_config)
-
+def process_config_spec(obj: ADCMEntity, spec: dict, new_config: dict) -> dict:
     for cfg_key, cfg_value in new_config.items():
         spec_type = spec[cfg_key].get("type")
 

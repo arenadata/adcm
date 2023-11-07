@@ -78,16 +78,17 @@ const addClusterHostsWithUpdate = createAsyncThunk(
   },
 );
 
-const toggleMaintenanceModeWithUpdate = createAsyncThunk(
-  'adcm/clusterHostsActions/toggleMaintenanceModeWithUpdate',
+const toggleMaintenanceMode = createAsyncThunk(
+  'adcm/clusterHostsActions/toggleMaintenanceMode',
   async ({ clusterId, hostId, maintenanceMode }: toggleMaintenanceModePayload, thunkAPI) => {
     try {
-      await AdcmClusterHostsApi.toggleMaintenanceMode(clusterId, hostId, maintenanceMode);
-      await thunkAPI.dispatch(loadHosts());
+      const data = await AdcmClusterHostsApi.toggleMaintenanceMode(clusterId, hostId, maintenanceMode);
       const maintenanceModeStatus = maintenanceMode === AdcmMaintenanceMode.Off ? 'disabled' : 'enabled';
       thunkAPI.dispatch(showInfo({ message: `The maintenance mode has been ${maintenanceModeStatus}` }));
+      return data;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(error);
     }
   },
 );
@@ -170,7 +171,7 @@ const clusterHostsActionsSlice = createSlice({
     builder.addCase(loadHosts.rejected, (state) => {
       state.relatedData.hosts = [];
     });
-    builder.addCase(toggleMaintenanceModeWithUpdate.pending, (state) => {
+    builder.addCase(toggleMaintenanceMode.pending, (state) => {
       clusterHostsActionsSlice.caseReducers.closeMaintenanceModeDialog(state);
     });
   },
@@ -185,6 +186,6 @@ export const {
   closeMaintenanceModeDialog,
 } = clusterHostsActionsSlice.actions;
 
-export { unlinkHostWithUpdate, loadHosts, addClusterHostsWithUpdate, toggleMaintenanceModeWithUpdate };
+export { unlinkHostWithUpdate, loadHosts, addClusterHostsWithUpdate, toggleMaintenanceMode };
 
 export default clusterHostsActionsSlice.reducer;

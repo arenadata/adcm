@@ -23,3 +23,11 @@ class PrototypeFilter(FilterSet):
     class Meta:
         model = Prototype
         fields = ["id", "type", "bundle_id"]
+
+
+class PrototypeVersionFilter(FilterSet):
+    type = ChoiceFilter(choices=(("cluster", "cluster"), ("provider", "provider")), label="Type")
+
+    class Meta:
+        model = Prototype
+        fields = ["type"]

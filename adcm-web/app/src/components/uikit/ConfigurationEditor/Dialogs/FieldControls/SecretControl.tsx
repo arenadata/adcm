@@ -44,7 +44,6 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
       <ConfigurationField
         label={fieldName}
         fieldSchema={fieldSchema}
-        error={error}
         disabled={isReadonly}
         onResetToDefault={handleResetToDefault}
       >

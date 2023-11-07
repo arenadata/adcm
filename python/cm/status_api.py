@@ -74,15 +74,17 @@ def api_request(method: str, url: str, data: dict = None) -> Response | None:
 
 
 def post_event(
-    event: str, object_id: int | None, update: tuple[UpdateEventType, str] | None = None, concern: dict | None = None
+    event: str,
+    object_id: int | None,
+    update: list[tuple[UpdateEventType, str]] | None = None,
+    concern: dict | None = None,
 ) -> Response | None:
     if object_id is None:
         return None
 
     changes = {}
 
-    if update:
-        event_type, value = update
+    for event_type, value in update or []:
         changes[event_type.value.lower()] = value
 
     if concern:
@@ -129,7 +131,7 @@ def create_config_event(object_: ADCMEntity):
     )
 
 
-def update_event(object_: ADCMEntity | TaskLog, update: tuple[UpdateEventType, str]):
+def update_event(object_: ADCMEntity | TaskLog, update: list[tuple[UpdateEventType, str]]):
     if isinstance(object_, ADCMEntity):
         object_id, object_type = object_.pk, object_.prototype.type
     else:

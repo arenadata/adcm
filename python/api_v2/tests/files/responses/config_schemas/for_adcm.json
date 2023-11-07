@@ -1,0 +1,955 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Configuration",
+  "description": "",
+  "readOnly": false,
+  "adcmMeta": {
+    "isAdvanced": false,
+    "isInvisible": false,
+    "activation": null,
+    "synchronization": null,
+    "nullValue": null,
+    "isSecret": false,
+    "stringExtra": null,
+    "enumExtra": null
+  },
+  "type": "object",
+  "properties": {
+    "global": {
+      "title": "Global Options",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "adcm_url": {
+          "title": "ADCM's URL",
+          "type": "string",
+          "description": "We have to know ADCM's Url to send information from host. We try to guess that information from url you enter in browser.\nBut if your network has more complicated structure and we guess wrong, please fix that here.\n",
+          "default": null,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        },
+        "verification_public_key": {
+          "title": "Bundle verification public key",
+          "type": "string",
+          "description": "Bundle verification GPG public key to verify the signature of the bundle (*.sig file) when uploading the bundle to ADCM.\n",
+          "default": "\n",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": true
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        }
+      },
+      "required": [
+        "adcm_url",
+        "verification_public_key"
+      ]
+    },
+    "statistics_collection": {
+      "title": "Statistics Collection",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": true,
+        "isInvisible": false,
+        "activation": {
+          "isAllowChange": true
+        },
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "title": "url",
+          "type": "string",
+          "description": "URL to send collected statistic",
+          "default": "adcm-usage-ss.arenadata.io",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": true,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        }
+      },
+      "required": [
+        "url"
+      ]
+    },
+    "google_oauth": {
+      "title": "Google Auth",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": true,
+        "activation": null,
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "client_id": {
+          "oneOf": [
+            {
+              "title": "client_id",
+              "type": "string",
+              "description": "",
+              "default": null,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": false,
+                "stringExtra": {
+                  "isMultiline": false
+                },
+                "enumExtra": null
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "secret": {
+          "oneOf": [
+            {
+              "title": "secret",
+              "type": "string",
+              "description": "",
+              "default": null,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": true,
+                "stringExtra": {
+                  "isMultiline": false
+                },
+                "enumExtra": null
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "client_id",
+        "secret"
+      ]
+    },
+    "yandex_oauth": {
+      "title": "Yandex Auth",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": true,
+        "activation": null,
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "client_id": {
+          "oneOf": [
+            {
+              "title": "client_id",
+              "type": "string",
+              "description": "",
+              "default": null,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": false,
+                "stringExtra": {
+                  "isMultiline": false
+                },
+                "enumExtra": null
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "secret": {
+          "oneOf": [
+            {
+              "title": "secret",
+              "type": "string",
+              "description": "",
+              "default": null,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": true,
+                "stringExtra": {
+                  "isMultiline": false
+                },
+                "enumExtra": null
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "client_id",
+        "secret"
+      ]
+    },
+    "ansible_settings": {
+      "title": "Ansible Settings",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "forks": {
+          "title": "Forks",
+          "type": "integer",
+          "description": "This is the default number of parallel processes to spawn when communicating with remote hosts.\n",
+          "default": 5,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          },
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "forks"
+      ]
+    },
+    "logrotate": {
+      "title": "Nginx Server Logrotate",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": true,
+        "activation": {
+          "isAllowChange": true
+        },
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "size": {
+          "title": "Max file size",
+          "type": "string",
+          "description": "Specifies the allowed size the log file can reach before it is archived\n",
+          "default": "10M",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        },
+        "max_history": {
+          "title": "Max files history",
+          "type": "integer",
+          "description": "Controls the maximum number of archive files to keep\n",
+          "default": 10,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          },
+          "minimum": 1
+        },
+        "compress": {
+          "title": "Enable compression",
+          "type": "boolean",
+          "description": "Compress the rotated files\n",
+          "default": false,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          }
+        }
+      },
+      "required": [
+        "size",
+        "max_history",
+        "compress"
+      ]
+    },
+    "audit_data_retention": {
+      "title": "Data retention policy",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "log_rotation_on_fs": {
+          "oneOf": [
+            {
+              "title": "Job log retention period from file system",
+              "type": "integer",
+              "description": "You can set the time (number of days) after which the logs will be deleted from the file system.\n",
+              "default": 365,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": false,
+                "stringExtra": null,
+                "enumExtra": null
+              },
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "log_rotation_in_db": {
+          "oneOf": [
+            {
+              "title": "Job log retention period from database",
+              "type": "integer",
+              "description": "You can set the time (number of days) after which the logs will be deleted from the database.\n",
+              "default": 365,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": false,
+                "stringExtra": null,
+                "enumExtra": null
+              },
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "config_rotation_in_db": {
+          "oneOf": [
+            {
+              "title": "Objects configurations retention period",
+              "type": "integer",
+              "description": "You can set the time (number of days) after which the Objects configuration will be deleted from the database. 0 is infinite storing.\n",
+              "default": 0,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": false,
+                "stringExtra": null,
+                "enumExtra": null
+              },
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retention_period": {
+          "title": "Audit data retention period",
+          "type": "integer",
+          "description": "Data storage period (in days) for operations and authorizations in ADCM.\n",
+          "default": 1825,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          }
+        },
+        "data_archiving": {
+          "oneOf": [
+            {
+              "title": "Enable audit data archiving",
+              "type": "boolean",
+              "description": "Enable/disable archiving of data on operations and authorizations after the period specified in \"Audit data retention period\".\n",
+              "default": false,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": false,
+                "stringExtra": null,
+                "enumExtra": null
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "log_rotation_on_fs",
+        "log_rotation_in_db",
+        "config_rotation_in_db",
+        "retention_period",
+        "data_archiving"
+      ]
+    },
+    "ldap_integration": {
+      "title": "LDAP integration",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": {
+          "isAllowChange": true
+        },
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "ldap_uri": {
+          "title": "LDAP URI",
+          "type": "string",
+          "description": "The URI of the LDAP server.\n",
+          "default": null,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        },
+        "ldap_user": {
+          "title": "Bind DN",
+          "type": "string",
+          "description": "The distinguished name (DN) of the user that is used to connect to the LDAP server. For example: \"cn=admin,dc=ad,dc=ranger-test\".\n",
+          "default": null,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        },
+        "ldap_password": {
+          "title": "Bind Password",
+          "type": "string",
+          "description": "Password for access to the LDAP server of the user specified in the \"LDAP User\" field.\n",
+          "default": null,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": true,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        },
+        "user_search_base": {
+          "title": "User search base",
+          "type": "string",
+          "description": "The distinguished name (DN) of the directory object from which to search for entries. For example: \"ou=Peoples,dc=ad,dc=ranger-test\".\n",
+          "default": null,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        },
+        "user_search_filter": {
+          "oneOf": [
+            {
+              "title": "User search filter",
+              "type": "string",
+              "description": "Additional filter constraining the users selected for syncing.\n",
+              "default": null,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": false,
+                "stringExtra": {
+                  "isMultiline": false
+                },
+                "enumExtra": null
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "user_object_class": {
+          "title": "User object class",
+          "type": "string",
+          "description": "Object class to identify user entries.\n",
+          "default": "user",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        },
+        "user_name_attribute": {
+          "title": "User name attribute",
+          "type": "string",
+          "description": "Attribute from user entry that would be treated as user name.\n",
+          "default": "sAMAccountName",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        },
+        "group_search_base": {
+          "oneOf": [
+            {
+              "title": "Group search base",
+              "type": "string",
+              "description": "The distinguished name (DN) of the directory object from which to search for entries. For example: \"ou=Groups,dc=ad,dc=ranger-test\".\n",
+              "default": null,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": false,
+                "stringExtra": {
+                  "isMultiline": false
+                },
+                "enumExtra": null
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "group_search_filter": {
+          "oneOf": [
+            {
+              "title": "Group search filter",
+              "type": "string",
+              "description": "Additional filter constraining the groups selected for syncing.\n",
+              "default": null,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": false,
+                "stringExtra": {
+                  "isMultiline": false
+                },
+                "enumExtra": null
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "group_object_class": {
+          "title": "Group object class",
+          "type": "string",
+          "description": "Object class to identify group entries.\n",
+          "default": "group",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        },
+        "group_name_attribute": {
+          "title": "Group name attribute",
+          "type": "string",
+          "description": "Attribute from group entry that would be treated as group name.\n",
+          "default": "cn",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        },
+        "group_member_attribute_name": {
+          "title": "Group member attribute name",
+          "type": "string",
+          "description": "Attribute from group entry that is list of members.\n",
+          "default": "member",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        },
+        "sync_interval": {
+          "title": "Sync interval",
+          "type": "integer",
+          "description": "Amount of time in minutes that group memberships and user distinguished names are synchronized between AD and ADCM.\n",
+          "default": 60,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          }
+        },
+        "tls_ca_cert_file": {
+          "oneOf": [
+            {
+              "title": "TLS CA certificate file path",
+              "type": "string",
+              "description": "CA certificate path in ADCM container volume.\n",
+              "default": null,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": false,
+                "stringExtra": {
+                  "isMultiline": false
+                },
+                "enumExtra": null
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "ldap_uri",
+        "ldap_user",
+        "ldap_password",
+        "user_search_base",
+        "user_search_filter",
+        "user_object_class",
+        "user_name_attribute",
+        "group_search_base",
+        "group_search_filter",
+        "group_object_class",
+        "group_name_attribute",
+        "group_member_attribute_name",
+        "sync_interval",
+        "tls_ca_cert_file"
+      ]
+    },
+    "auth_policy": {
+      "title": "Authentication policy",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "min_password_length": {
+          "title": "Minimum password length",
+          "type": "integer",
+          "description": "",
+          "default": 12,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          },
+          "minimum": 1,
+          "maximum": 128
+        },
+        "max_password_length": {
+          "title": "Maximum password length",
+          "type": "integer",
+          "description": "",
+          "default": 128,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          },
+          "minimum": 1,
+          "maximum": 128
+        },
+        "login_attempt_limit": {
+          "title": "Login attempt limit",
+          "type": "integer",
+          "description": "The number of login attempts allowed before user account is locked out",
+          "default": 5,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          },
+          "minimum": 1
+        },
+        "block_time": {
+          "title": "Blocking time period",
+          "type": "integer",
+          "description": "Defines a period (in min) of inactivity after which old failed login attempts will be cleared",
+          "default": 5,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          },
+          "minimum": 1
+        }
+      },
+      "required": [
+        "min_password_length",
+        "max_password_length",
+        "login_attempt_limit",
+        "block_time"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "global",
+    "statistics_collection",
+    "google_oauth",
+    "yandex_oauth",
+    "ansible_settings",
+    "logrotate",
+    "audit_data_retention",
+    "ldap_integration",
+    "auth_policy"
+  ]
+}

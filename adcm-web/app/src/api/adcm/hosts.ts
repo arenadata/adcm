@@ -5,6 +5,7 @@ import { httpClient } from '@api/httpClient';
 import { AdcmHost, AdcmHostsFilter, AdcmUpdatePayload } from '@models/adcm/host';
 import { prepareQueryParams } from '@utils/apiUtils';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
+import { AdcmSetMaintenanceModeResponse } from '@models/adcm';
 
 export class AdcmHostsApi {
   public static async getHosts(filter?: AdcmHostsFilter, sortParams?: SortParams, paginationParams?: PaginationParams) {
@@ -21,7 +22,13 @@ export class AdcmHostsApi {
   }
 
   public static async toggleMaintenanceMode(hostId: number, maintenanceMode: AdcmMaintenanceMode) {
-    await httpClient.post(`/api/v2/hosts/${hostId}/maintenance-mode/`, { maintenanceMode });
+    const response = await httpClient.post<AdcmSetMaintenanceModeResponse>(
+      `/api/v2/hosts/${hostId}/maintenance-mode/`,
+      {
+        maintenanceMode,
+      },
+    );
+    return response.data;
   }
 
   public static async deleteHost(id: number) {

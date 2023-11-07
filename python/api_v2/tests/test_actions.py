@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 from functools import partial
 from operator import itemgetter
 from typing import TypeAlias
@@ -27,7 +28,6 @@ from cm.models import (
     ServiceComponent,
 )
 from django.urls import reverse
-from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 
 ObjectWithActions: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
@@ -244,10 +244,7 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
         self.host_1.maintenance_mode = MaintenanceMode.ON
         self.host_1.save(update_fields=["maintenance_mode"])
 
-        with patch(
-            "api_v2.action.views.start_task",
-            return_value=self.create_task_log(object_=self.host_1, action=disallowed_action),
-        ):
+        with patch("cm.job.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:host-action-run",
@@ -270,17 +267,20 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:host-action-run",
-                kwargs={"host_pk": self.host_1.pk, "pk": allowed_action.pk},
-            ),
-            data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
-        )
+        with patch("cm.job.run_task", return_value=None):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:host-action-run",
+                    kwargs={"host_pk": self.host_1.pk, "pk": allowed_action.pk},
+                ),
+                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+            )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         job = JobLog.objects.filter(action__name="cluster_host_action_allowed").first()
+
         response = self.client.post(path=reverse(viewname="v2:joblog-terminate", kwargs={"pk": job.pk}), data={})
+
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertDictEqual(
             response.json(),
@@ -292,7 +292,7 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
         )
 
     def check_object_action_list(self, viewname: str, object_kwargs: dict, expected_actions: list[str]) -> None:
-        response: Response = self.client.get(path=reverse(viewname=viewname, kwargs=object_kwargs))
+        response = self.client.get(path=reverse(viewname=viewname, kwargs=object_kwargs))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
@@ -314,6 +314,28 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
             service=self.service_1, prototype__name="first_component"
         )
 
+    def test_retrieve_jinja_config(self):
+        action = Action.objects.filter(name="check_state", prototype=self.cluster.prototype).first()
+
+        response = self.client.get(
+            path=reverse(viewname="v2:cluster-action-detail", kwargs={"cluster_pk": self.cluster.pk, "pk": action.pk})
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        configuration = response.json()["configuration"]
+        self.assertSetEqual(set(configuration.keys()), {"configSchema", "config", "adcmMeta"})
+        expected_schema = json.loads(
+            (self.test_files_dir / "responses" / "config_schemas" / "for_action_with_jinja_config.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertDictEqual(configuration["configSchema"], expected_schema)
+        self.assertDictEqual(
+            configuration["config"],
+            {"activatable_group": {"text": "text"}, "boolean": True, "boolean1": False, "float": 2.0},
+        )
+        self.assertDictEqual(configuration["adcmMeta"], {"/activatable_group": {"isActive": True}})
+
     def test_adcm_4703_action_retrieve_returns_500(self) -> None:
         for object_ in (self.cluster, self.service_1, self.component_1):
             with self.subTest(object_.__class__.__name__):
@@ -326,3 +348,38 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
                         path=reverse(viewname=viewname.replace("-list", "-detail"), kwargs={**kwargs, "pk": action_id})
                     )
                     self.assertEqual(response.status_code, HTTP_200_OK)
+
+
+class TestAction(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.action_with_config = Action.objects.filter(name="with_config", prototype=self.cluster_1.prototype).first()
+
+    def test_retrieve_with_config(self):
+        response = self.client.get(
+            path=reverse(
+                viewname="v2:cluster-action-detail",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.action_with_config.pk},
+            )
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        configuration = response.json()["configuration"]
+        self.assertSetEqual(set(configuration.keys()), {"configSchema", "config", "adcmMeta"})
+        expected_schema = json.loads(
+            (self.test_files_dir / "responses" / "config_schemas" / "for_action_with_config.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertDictEqual(configuration["configSchema"], expected_schema)
+        self.assertDictEqual(
+            configuration["config"],
+            {
+                "activatable_group": {"text": "text"},
+                "after": ["1", "woohoo"],
+                "grouped": {"second": 4.3, "simple": 4},
+                "simple": None,
+            },
+        )
+        self.assertDictEqual(configuration["adcmMeta"], {"/activatable_group": {"isActive": True}})

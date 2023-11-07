@@ -73,7 +73,9 @@ const getConcernPath = (concern: AdcmConcerns, placeHolderProps: AdcmConcernPlac
 
   switch (concern.cause) {
     case AdcmConcernCause.Config:
-      return `${getConcernObjectPath(placeHolderProps)}/primary-configuration`;
+      return placeHolderProps.type === 'cluster'
+        ? `${clusterPath}/configuration`
+        : `${getConcernObjectPath(placeHolderProps)}/primary-configuration`;
     case AdcmConcernCause.HostComponent:
       return `${clusterPath}/mapping`;
     case AdcmConcernCause.Import:

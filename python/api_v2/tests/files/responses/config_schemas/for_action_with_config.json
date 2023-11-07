@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Configuration",
+  "description": "",
+  "readOnly": false,
+  "adcmMeta": {
+    "isAdvanced": false,
+    "isInvisible": false,
+    "activation": null,
+    "synchronization": null,
+    "nullValue": null,
+    "isSecret": false,
+    "stringExtra": null,
+    "enumExtra": null
+  },
+  "type": "object",
+  "properties": {
+    "simple": {
+      "oneOf": [
+        {
+          "title": "simple",
+          "type": "string",
+          "description": "",
+          "default": null,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": false
+            },
+            "enumExtra": null
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "grouped": {
+      "title": "grouped",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "simple": {
+          "title": "simple",
+          "type": "integer",
+          "description": "",
+          "default": 4,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          }
+        },
+        "second": {
+          "title": "second",
+          "type": "number",
+          "description": "",
+          "default": 4.3,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          }
+        }
+      },
+      "required": [
+        "simple",
+        "second"
+      ]
+    },
+    "after": {
+      "title": "after",
+      "type": "array",
+      "description": "",
+      "default": [
+        "1",
+        "woohoo"
+      ],
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "items": {
+        "type": "string",
+        "title": "",
+        "description": "",
+        "default": null,
+        "readOnly": false,
+        "adcmMeta": {
+          "isAdvanced": false,
+          "isInvisible": false,
+          "activation": null,
+          "synchronization": null,
+          "nullValue": null,
+          "isSecret": false,
+          "stringExtra": null,
+          "enumExtra": null
+        }
+      },
+      "minItems": 1
+    },
+    "activatable_group": {
+      "title": "activatable_group",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": {
+          "isAllowChange": true
+        },
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "title": "text",
+          "type": "string",
+          "description": "",
+          "default": "text",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": true
+            },
+            "enumExtra": null
+          },
+          "minLength": 1
+        }
+      },
+      "required": [
+        "text"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "simple",
+    "grouped",
+    "after",
+    "activatable_group"
+  ]
+}

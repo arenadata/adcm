@@ -1,6 +1,6 @@
-import { useCallback, useRef } from 'react';
-import { IconButton } from '@uikit';
-
+import { useCallback, useRef, useState } from 'react';
+import { IconButton, MarkerIcon, Tooltip } from '@uikit';
+import { isValueSet } from '@models/json';
 import { ConfigurationArray, ConfigurationObject, ConfigurationNode } from '../../ConfigurationEditor.types';
 import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
 import s from '../ConfigurationTree.module.scss';
@@ -32,8 +32,9 @@ const NodeWithChildrenContent = ({
   const fieldNodeData = node.data as ConfigurationObject | ConfigurationArray;
   const adcmMeta = node.data.fieldSchema.adcmMeta;
   const fieldAttributes = node.data.fieldAttributes;
-  // const isDeletable = node.data.type === 'object' && node.data.isDeletable;
   const isDeletable = (node.data.type === 'object' || node.data.type === 'array') && node.data.isDeletable;
+
+  const [initialIsActive] = useState(fieldAttributes?.isActive);
 
   const handleIsActiveChange = useCallback(
     (isActive: boolean) => {
@@ -49,10 +50,14 @@ const NodeWithChildrenContent = ({
   const handleIsSynchronizedChange = useCallback(
     (isSynchronized: boolean) => {
       if (fieldAttributes) {
-        onFieldAttributeChange(node.key, { ...fieldAttributes, isSynchronized });
+        if (isSynchronized) {
+          onFieldAttributeChange(node.key, { isActive: initialIsActive, isSynchronized });
+        } else {
+          onFieldAttributeChange(node.key, { ...fieldAttributes, isSynchronized });
+        }
       }
     },
-    [fieldAttributes, node.key, onFieldAttributeChange],
+    [fieldAttributes, initialIsActive, node.key, onFieldAttributeChange],
   );
 
   const handleClearClick = () => {
@@ -73,33 +78,38 @@ const NodeWithChildrenContent = ({
   });
 
   const hasChildren = Boolean(node.children?.length);
-  const isExpandable = fieldAttributes?.isActive === undefined ? hasChildren : Boolean(fieldAttributes.isActive);
+  const isExpandable = fieldAttributes?.isActive === undefined ? hasChildren : fieldAttributes.isActive;
 
   return (
     <div className={className} ref={ref}>
-      {adcmMeta.activation && fieldAttributes && (
+      {adcmMeta.activation && fieldAttributes?.isActive !== undefined && (
         <ActivationAttribute
           isActive={fieldAttributes.isActive}
-          {...adcmMeta.activation}
+          isAllowChange={adcmMeta.activation.isAllowChange && fieldAttributes.isSynchronized !== true}
           onToggle={handleIsActiveChange}
         />
       )}
 
-      {fieldNodeData.isCleanable && fieldNodeData.value !== null && (
+      {fieldNodeData.isCleanable && isValueSet(fieldNodeData.value) && (
         <IconButton size={14} icon="g3-clear" onClick={handleClearClick} data-test="clear-btn" />
       )}
       {isDeletable && <IconButton size={14} icon="g3-delete" onClick={handleDeleteClick} data-test="delete-btn" />}
+      {error && (
+        <Tooltip label={error}>
+          <MarkerIcon variant="round" type="alert" size={16} data-test="error" />
+        </Tooltip>
+      )}
       <span className={s.nodeContent__title} data-test="node-name">
         {node.data.title}
       </span>
-      {adcmMeta.synchronization && fieldAttributes && (
+      {adcmMeta.synchronization && fieldAttributes?.isSynchronized !== undefined && (
         <SynchronizedAttribute
           isSynchronized={fieldAttributes.isSynchronized}
           {...adcmMeta.synchronization}
           onToggle={handleIsSynchronizedChange}
         />
       )}
-      {fieldNodeData.value === null && (
+      {!isValueSet(fieldNodeData.value) && (
         <span className={s.nodeContent__value} data-test="null-stub">
           {nullStub}
         </span>

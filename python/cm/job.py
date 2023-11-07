@@ -189,7 +189,7 @@ def prepare_task(
             task.config = new_conf
             task.save()
 
-        on_commit(func=partial(update_event, object_=task, update=(UpdateEventType.STATE, JobStatus.CREATED)))
+        on_commit(func=partial(update_event, object_=task, update=[(UpdateEventType.STATE, JobStatus.CREATED)]))
 
     re_apply_policy_for_jobs(action_object=obj, task=task)
 
@@ -807,7 +807,7 @@ def set_action_state(
 
     if state:
         obj.set_state(state)
-        update_event(object_=obj, update=(UpdateEventType.STATE, state))
+        update_event(object_=obj, update=[(UpdateEventType.STATE, state)])
 
     for m_state in multi_state_set or []:
         obj.set_multi_state(m_state)
@@ -912,7 +912,7 @@ def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:
 
     set_task_final_status(task=task, status=status)
 
-    update_event(object_=task, update=(UpdateEventType.STATUS, status))
+    update_event(object_=task, update=[(UpdateEventType.STATUS, status)])
 
     try:
         load_mm_objects()

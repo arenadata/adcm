@@ -6,6 +6,7 @@ export interface AdcmPrototypeVersion {
   licenseStatus: AdcmLicenseStatus;
   bundle: {
     id: number;
+    edition: string;
   };
 }
 

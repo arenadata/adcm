@@ -21,11 +21,12 @@ import { primitiveFieldTypes, rootNodeKey, rootNodeTitle } from './Configuration
 export const validate = (schema: SchemaDefinition, configuration: JSONObject, attributes: ConfigurationAttributes) => {
   const { errorsPaths } = validateJsonSchema(schema, configuration);
 
+  // TODO: Optimize (get rid nested loop)
   // ignore errors for not active groups
   for (const [path, value] of Object.entries(attributes)) {
-    if (!value.isActive) {
+    if (value.isActive === false) {
       for (const [errorPath] of Object.entries(errorsPaths)) {
-        if (errorPath.startsWith(path)) {
+        if (errorPath === path || errorPath.startsWith(`${path}/`)) {
           delete errorsPaths[errorPath];
         }
       }
@@ -62,6 +63,31 @@ const getDefaultFieldSchema = (parentFieldSchema: SingleSchemaDefinition | null)
   return fieldSchema;
 };
 
+const getIsReadonly = (
+  fieldSchema: SingleSchemaDefinition,
+  fieldAttributes: FieldAttributes,
+  parentNode: ConfigurationNode,
+) => {
+  const parentNodeData = parentNode.data as ConfigurationObject | ConfigurationArray;
+
+  const isArrayItem = parentNodeData.fieldSchema.type === 'array';
+  const isMapProperty = parentNode.data.type === 'object' && parentNode.data.objectType === 'map';
+
+  if ((isArrayItem || isMapProperty) && parentNodeData.isReadonly) {
+    return true;
+  }
+
+  if (fieldAttributes?.isSynchronized !== undefined) {
+    return fieldAttributes.isSynchronized;
+  }
+
+  if (parentNodeData.fieldAttributes?.isSynchronized !== undefined) {
+    return parentNodeData.fieldAttributes?.isSynchronized;
+  }
+
+  return fieldSchema.readOnly || parentNodeData.isReadonly;
+};
+
 const getNodeProps = (
   fieldName: string,
   fieldSchema: SingleSchemaDefinition,
@@ -69,19 +95,18 @@ const getNodeProps = (
   fieldAttributes: FieldAttributes,
   parentNode: ConfigurationNode,
 ) => {
-  const isParentSynchronized = parentNode.data.fieldAttributes?.isSynchronized === true;
-  const isSynchronized = fieldAttributes?.isSynchronized === true;
+  const parentNodeData = parentNode.data;
 
-  const isArrayItem = parentNode.data.fieldSchema.type === 'array';
-  const title = isArrayItem ? `${parentNode.data.title} [${fieldName}]` : getTitle(fieldName, fieldSchema);
+  const isArrayItem = parentNodeData.fieldSchema.type === 'array';
+  const title = isArrayItem ? `${parentNodeData.title} [${fieldName}]` : getTitle(fieldName, fieldSchema);
 
   let isRequiredField = false;
-  if (parentNode.data.fieldSchema.type === 'object') {
-    const requiredFields = parentNode.data.fieldSchema.required ?? [];
+  if (parentNodeData.fieldSchema.type === 'object') {
+    const requiredFields = parentNodeData.fieldSchema.required ?? [];
     isRequiredField = requiredFields.includes(fieldName);
   }
 
-  const isReadonly = fieldSchema.readOnly || isSynchronized || isParentSynchronized;
+  const isReadonly = getIsReadonly(fieldSchema, fieldAttributes, parentNode);
   const isCleanable = !isReadonly && isNullable;
   const isDeletable = !isReadonly && (!isRequiredField || isArrayItem);
 
@@ -238,7 +263,7 @@ const buildObjectNode = (
     }
 
     if (!nodeData.isReadonly) {
-      if (nodeData.objectType === 'map' && nodeData.fieldSchema.additionalProperties) {
+      if (nodeData.objectType === 'map') {
         children.push(buildAddFieldNode(path, node));
       }
       if (nodeData.objectType === 'structure' && objectValue === null) {

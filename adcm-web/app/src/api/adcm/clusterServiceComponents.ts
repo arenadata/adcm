@@ -1,5 +1,5 @@
 import { httpClient } from '@api/httpClient';
-import { AdcmMaintenanceMode, AdcmServiceComponent, Batch } from '@models/adcm';
+import { AdcmMaintenanceMode, AdcmServiceComponent, AdcmSetMaintenanceModeResponse, Batch } from '@models/adcm';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { SortParams } from '@models/table';
 import { prepareSorting } from '@utils/apiUtils';
@@ -31,7 +31,7 @@ export class AdcmClusterServiceComponentsApi {
     componentId: number,
     maintenanceMode: AdcmMaintenanceMode,
   ) {
-    const response = await httpClient.post(
+    const response = await httpClient.post<AdcmSetMaintenanceModeResponse>(
       `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/maintenance-mode/`,
       { maintenanceMode },
     );

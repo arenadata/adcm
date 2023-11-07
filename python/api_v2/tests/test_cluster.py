@@ -320,10 +320,7 @@ class TestClusterActions(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_run_cluster_action_success(self):
-        with patch(
-            "api_v2.action.views.start_task",
-            return_value=self.create_task_log(object_=self.cluster_1, action=self.cluster_action),
-        ):
+        with patch("cm.job.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:cluster-action-run",
@@ -335,27 +332,27 @@ class TestClusterActions(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_run_action_with_config_success(self):
-        config = {"simple": "kuku", "grouped": {"simple": 5, "second": 4.3}, "after": ["something"]}
+        config = {
+            "simple": "kuku",
+            "grouped": {"simple": 5, "second": 4.3},
+            "after": ["something"],
+            "activatable_group": {"text": "text"},
+        }
+        adcm_meta = {"/activatable_group": {"isActive": True}}
 
-        with patch(
-            "api_v2.action.views.start_task",
-            return_value=self.create_task_log(object_=self.cluster_1, action=self.cluster_action_with_config),
-        ):
+        with patch("cm.job.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:cluster-action-run",
                     kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action_with_config.pk},
                 ),
-                data={"configuration": {"config": config, "adcmMeta": {}}},
+                data={"configuration": {"config": config, "adcmMeta": adcm_meta}},
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_run_action_with_config_wrong_configuration_fail(self):
-        with patch(
-            "api_v2.action.views.start_task",
-            return_value=self.create_task_log(object_=self.cluster_1, action=self.cluster_action_with_config),
-        ):
+        with patch("cm.job.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:cluster-action-run",
@@ -377,10 +374,7 @@ class TestClusterActions(BaseAPITestCase):
     def test_run_action_with_config_required_adcm_meta_fail(self):
         config = {"simple": "kuku", "grouped": {"simple": 5, "second": 4.3}, "after": ["something"]}
 
-        with patch(
-            "api_v2.action.views.start_task",
-            return_value=self.create_task_log(object_=self.cluster_1, action=self.cluster_action_with_config),
-        ):
+        with patch("cm.job.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:cluster-action-run",
@@ -395,10 +389,7 @@ class TestClusterActions(BaseAPITestCase):
         )
 
     def test_run_action_with_config_required_config_fail(self):
-        with patch(
-            "api_v2.action.views.start_task",
-            return_value=self.create_task_log(object_=self.cluster_1, action=self.cluster_action_with_config),
-        ):
+        with patch("cm.job.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:cluster-action-run",

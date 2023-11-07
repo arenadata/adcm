@@ -747,7 +747,7 @@ class TestAPI(BaseTestCase):
         response: Response = self.client.post(config_history_url, {"config": 42})
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["desc"], "config should not be just one int or float")
+        self.assertEqual(response.json()["desc"], "Fields `config` and `attr` should be objects when specified")
 
         config["zoo.cfg"]["autopurge.purgeInterval"] = 42
         config["zoo.cfg"]["port"] = 80

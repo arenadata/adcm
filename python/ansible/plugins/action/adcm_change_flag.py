@@ -192,9 +192,9 @@ class ActionModule(ActionBase):
         for obj in objects:
             if self._task.args["operation"] == "up":
                 update_object_flag(obj=obj, msg=msg)
-                update_event(object_=obj, update=(UpdateEventType.STATUS, ADCMEntityStatus.UP))
+                update_event(object_=obj, update=[(UpdateEventType.STATUS, ADCMEntityStatus.UP)])
             elif self._task.args["operation"] == "down":
                 remove_flag(obj=obj, msg=msg)
-                update_event(object_=obj, update=(UpdateEventType.STATUS, ADCMEntityStatus.DOWN))
+                update_event(object_=obj, update=[(UpdateEventType.STATUS, ADCMEntityStatus.DOWN)])
 
         return {"failed": False, "changed": True}

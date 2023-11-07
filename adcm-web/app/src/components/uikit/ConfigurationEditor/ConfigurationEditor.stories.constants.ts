@@ -1,7 +1,7 @@
 /* eslint-disable spellcheck/spell-checker */
 import { ConfigurationSchema } from '@models/adcm';
 
-export const schema: ConfigurationSchema = {
+export const clusterConfigurationSchema: ConfigurationSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   type: 'object',
   title: 'Primary configuration',
@@ -184,576 +184,20 @@ export const schema: ConfigurationSchema = {
         },
       },
     },
-    readonly_props: {
-      type: 'object',
-      default: {},
-      readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: null,
-        synchronization: null,
-        isSecret: false,
-        stringExtra: null,
+  },
+};
+
+export const initialClusterConfiguration = {
+  cluster_config: {
+    cluster: [
+      {
+        cluster_name: 'Lorem ipsum cluster',
+        shard: [
+          { internal_replica: 1, replicas: [{ host: 'host111' }], weight: 11 },
+          { internal_replica: 2, replicas: [{ host: 'host111' }], weight: 110 },
+        ],
       },
-      required: [
-        'someBoolean',
-        'someString',
-        'someNumber',
-        'someStringWithSuggestions',
-        'someEnum',
-        'someSecretField',
-        'someMultilineField',
-        'someJsonField',
-        'someYamlField',
-        'someAnyOfField',
-        'someInvisibleField',
-        'someAdvancedField',
-        'someMap',
-        'someSecretMap',
-        'someSyncString',
-        'someSyncMap',
-      ],
-      properties: {
-        someBoolean: {
-          type: 'boolean',
-          description: 'someBoolean description',
-          readOnly: true,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: null,
-          },
-        },
-        someString: {
-          type: 'string',
-          readOnly: true,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: null,
-          },
-        },
-        someNumber: {
-          type: 'number',
-          readOnly: true,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: null,
-          },
-        },
-        someStringWithSuggestions: {
-          type: 'string',
-          default: 'custom value',
-          readOnly: true,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: {
-              suggestions: ['One', 'Two', 'Three'],
-            },
-          },
-        },
-        someEnum: {
-          default: 2,
-          enum: ['__one__', 2, '!!!three!!!'],
-          readOnly: true,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            enumExtra: {
-              labels: ['One', 'Two', 'Three'],
-            },
-          },
-        },
-        someSecretField: {
-          type: 'string',
-          readOnly: true,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: true,
-            stringExtra: null,
-          },
-        },
-        someMultilineField: {
-          type: 'string',
-          readOnly: true,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: {
-              isMultiline: true,
-            },
-          },
-        },
-        someJsonField: {
-          type: 'string',
-          format: 'json',
-          default: '{ "default": null, "test": "ddd" }',
-          readOnly: true,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: {
-              isMultiline: true,
-            },
-          },
-        },
-        someYamlField: {
-          type: 'string',
-          format: 'yaml',
-          readOnly: true,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            stringExtra: {
-              isMultiline: true,
-            },
-          },
-        },
-        someAnyOfField: {
-          oneOf: [
-            {
-              type: 'string',
-              readOnly: true,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-                isSecret: false,
-                stringExtra: null,
-              },
-            },
-            {
-              type: 'null',
-            },
-          ],
-        },
-        someInvisibleField: {
-          type: 'string',
-          readOnly: true,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: true,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: null,
-          },
-        },
-        someAdvancedField: {
-          type: 'string',
-          readOnly: true,
-          adcmMeta: {
-            isAdvanced: true,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: null,
-          },
-        },
-        someMap: {
-          type: 'object',
-          required: ['key1'],
-          default: {},
-          readOnly: true,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: null,
-          },
-          additionalProperties: true,
-          properties: {
-            key1: {
-              type: 'string',
-              default: 'some default',
-              readOnly: true,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-                isSecret: false,
-                stringExtra: null,
-              },
-            },
-          },
-        },
-        someSecretMap: {
-          type: 'object',
-          required: [],
-          default: {},
-          readOnly: true,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: true,
-            stringExtra: null,
-          },
-          additionalProperties: true,
-          properties: {},
-        },
-        someSyncString: {
-          type: 'string',
-          default: 'some default',
-          readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: {
-              isAllowChange: true,
-            },
-            synchronization: {
-              isAllowChange: true,
-            },
-            isSecret: false,
-            stringExtra: null,
-          },
-        },
-        someSyncMap: {
-          type: 'object',
-          required: ['key1'],
-          default: {},
-          readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: {
-              isAllowChange: true,
-            },
-            synchronization: {
-              isAllowChange: true,
-            },
-            isSecret: false,
-            stringExtra: null,
-          },
-          additionalProperties: true,
-          properties: {
-            key1: {
-              type: 'string',
-              default: 'some default',
-              readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-                isSecret: false,
-                stringExtra: null,
-              },
-            },
-          },
-        },
-      },
-    },
-    test_config: {
-      type: 'object',
-      default: {},
-      readOnly: false,
-      adcmMeta: {
-        isAdvanced: false,
-        isInvisible: false,
-        activation: {
-          isAllowChange: true,
-        },
-        synchronization: {
-          isAllowChange: true,
-        },
-        isSecret: false,
-        stringExtra: null,
-      },
-      required: [
-        'someBoolean',
-        'someStringWithDefaultValue',
-        'someStringWithSuggestions',
-        'someEnum',
-        'someSecretField',
-        'someMultilineField',
-        'someJsonField',
-        'someYamlField',
-        'someAnyOfField',
-        'someInvisibleField',
-        'someAdvancedField',
-        'someMap',
-        'someSecretMap',
-        'someMapWithAttributes',
-      ],
-      properties: {
-        someBoolean: {
-          type: 'boolean',
-          description: 'someBoolean description',
-          readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: null,
-          },
-        },
-        someStringWithDefaultValue: {
-          type: 'string',
-          default: 'default value',
-          readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: null,
-          },
-        },
-        someStringWithSuggestions: {
-          type: 'string',
-          default: 'custom value',
-          readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: {
-              suggestions: ['One', 'Two', 'Three'],
-            },
-          },
-        },
-        someEnum: {
-          default: 2,
-          enum: ['__one__', 2, '!!!three!!!', null],
-          readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            enumExtra: {
-              labels: ['One', 'Two', 'Three', '---null---'],
-            },
-          },
-        },
-        someSecretField: {
-          type: 'string',
-          readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: true,
-            stringExtra: null,
-          },
-        },
-        someMultilineField: {
-          type: 'string',
-          readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: {
-              isMultiline: true,
-            },
-          },
-        },
-        someJsonField: {
-          type: 'string',
-          format: 'json',
-          default: '{ "default": null, "test": "ddd" }',
-          readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: {
-              isMultiline: true,
-            },
-          },
-        },
-        someYamlField: {
-          type: 'string',
-          format: 'yaml',
-          readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: true,
-            stringExtra: {
-              isMultiline: true,
-            },
-          },
-        },
-        someAnyOfField: {
-          oneOf: [
-            {
-              type: 'string',
-              readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-                isSecret: false,
-                stringExtra: null,
-              },
-            },
-            {
-              type: 'null',
-            },
-          ],
-        },
-        someInvisibleField: {
-          type: 'string',
-          readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: true,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: null,
-          },
-        },
-        someAdvancedField: {
-          type: 'string',
-          readOnly: false,
-          adcmMeta: {
-            isAdvanced: true,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: null,
-          },
-        },
-        someMap: {
-          type: 'object',
-          required: ['key1'],
-          default: {},
-          readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: false,
-            stringExtra: null,
-          },
-          additionalProperties: true,
-          properties: {
-            key1: {
-              type: 'string',
-              default: 'some default',
-              readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: null,
-                synchronization: null,
-                isSecret: false,
-                stringExtra: null,
-              },
-            },
-          },
-        },
-        someSecretMap: {
-          type: 'object',
-          required: [],
-          default: {},
-          readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: null,
-            synchronization: null,
-            isSecret: true,
-            stringExtra: null,
-          },
-          additionalProperties: true,
-          properties: {},
-        },
-        someMapWithAttributes: {
-          type: 'object',
-          required: [],
-          default: {},
-          readOnly: false,
-          adcmMeta: {
-            isAdvanced: false,
-            isInvisible: false,
-            activation: {
-              isAllowChange: true,
-            },
-            synchronization: {
-              isAllowChange: true,
-            },
-            stringExtra: null,
-          },
-          additionalProperties: true,
-          properties: {
-            key1: {
-              type: 'string',
-              default: 'some default',
-              readOnly: false,
-              adcmMeta: {
-                isAdvanced: false,
-                isInvisible: false,
-                activation: {
-                  isAllowChange: true,
-                },
-                synchronization: {
-                  isAllowChange: true,
-                },
-                isSecret: false,
-                stringExtra: null,
-              },
-            },
-          },
-        },
-      },
-    },
+    ],
   },
 };
 
@@ -4265,4 +3709,140 @@ export const nullableConfig = {
   my_group_with_not_required_parameters: {
     my_map: null,
   },
+};
+
+export const readOnlySchema: ConfigurationSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  title: 'Configuration',
+  description: '',
+  readOnly: false,
+  adcmMeta: {
+    isAdvanced: false,
+    isInvisible: false,
+    activation: null,
+    synchronization: null,
+
+    isSecret: false,
+    stringExtra: null,
+    enumExtra: null,
+  },
+  type: 'object',
+  properties: {
+    some_field: {
+      type: 'string',
+      adcmMeta: {
+        isAdvanced: false,
+        isInvisible: false,
+        activation: null,
+        synchronization: null,
+        isSecret: false,
+        stringExtra: null,
+        enumExtra: null,
+      },
+      readOnly: true,
+    },
+    some_structure: {
+      type: 'object',
+      default: {},
+      readOnly: true,
+      adcmMeta: {
+        isAdvanced: false,
+        isInvisible: false,
+        activation: null,
+        synchronization: null,
+
+        isSecret: false,
+        stringExtra: null,
+        enumExtra: null,
+      },
+      additionalProperties: false,
+      properties: {
+        field: {
+          type: 'string',
+          adcmMeta: {
+            isAdvanced: false,
+            isInvisible: false,
+            activation: null,
+            synchronization: null,
+            isSecret: false,
+            stringExtra: null,
+            enumExtra: null,
+          },
+          readOnly: true,
+        },
+      },
+    },
+    some_map: {
+      type: 'object',
+      default: {},
+      readOnly: true,
+      adcmMeta: {
+        isAdvanced: false,
+        isInvisible: false,
+        activation: null,
+        synchronization: null,
+        isSecret: false,
+        stringExtra: null,
+        enumExtra: null,
+      },
+      additionalProperties: true,
+      properties: {},
+    },
+    some_array: {
+      type: 'array',
+      default: [],
+      readOnly: true,
+      adcmMeta: {
+        isAdvanced: false,
+        isInvisible: false,
+        activation: null,
+        synchronization: null,
+
+        isSecret: false,
+        stringExtra: null,
+        enumExtra: null,
+      },
+      items: {
+        type: 'object',
+        adcmMeta: {
+          isAdvanced: false,
+          isInvisible: false,
+          activation: null,
+          synchronization: null,
+          isSecret: false,
+          stringExtra: null,
+          enumExtra: null,
+        },
+        readOnly: true,
+        properties: {
+          field: {
+            type: 'string',
+            adcmMeta: {
+              isAdvanced: false,
+              isInvisible: false,
+              activation: null,
+              synchronization: null,
+              isSecret: false,
+              stringExtra: null,
+              enumExtra: null,
+            },
+            readOnly: false,
+          },
+        },
+      },
+    },
+  },
+  required: ['some_field', 'some_structure', 'some_map', 'some_array'],
+};
+
+export const readOnlyConfig = {
+  some_field: 'value',
+  some_structure: {
+    field: 'value',
+  },
+  some_map: {
+    mapEntry1: '123',
+    mapEntry2: '456',
+  },
+  some_array: [{ field: 'value' }],
 };

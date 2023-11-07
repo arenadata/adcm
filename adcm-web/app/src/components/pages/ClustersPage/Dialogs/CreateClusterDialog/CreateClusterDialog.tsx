@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { Checkbox, Dialog, FormField, FormFieldsContainer, Input, Select } from '@uikit';
-import { getOptionsFromArray } from '@uikit/Select/Select.utils';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
 import { AdcmPrototypeVersion, AdcmPrototypeVersions, AdcmLicenseStatus } from '@models/adcm';
 import { useCreateClusterDialog } from './useCreateClusterDialog';
@@ -11,12 +10,15 @@ const CreateClusterDialog = () => {
     useCreateClusterDialog();
 
   const productsOptions = useMemo(
-    () => getOptionsFromArray(relatedData.prototypeVersions, (x) => x.name),
+    () => relatedData.prototypeVersions.map((item) => ({ label: item.displayName, value: item })),
     [relatedData.prototypeVersions],
   );
 
   const productVersionsOptions = useMemo(
-    () => (formData.product ? getOptionsFromArray(formData.product.versions, (x) => x.version) : []),
+    () =>
+      formData.product
+        ? formData.product.versions.map((item) => ({ label: `${item.version} (${item.bundle.edition})`, value: item }))
+        : [],
     [formData.product],
   );
 

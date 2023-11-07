@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { Dialog, FormFieldsContainer, FormField, Input, Select, Checkbox } from '@uikit';
-import { getOptionsFromArray } from '@uikit/Select/Select.utils';
 import { AdcmPrototypeVersions, AdcmPrototypeVersion, AdcmLicenseStatus } from '@models/adcm';
 import { useCreateHostProviderDialog } from './useCreateHostProviderDialog';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
@@ -11,12 +10,12 @@ const CreateHostProviderDialog = () => {
     useCreateHostProviderDialog();
 
   const prototypeOptions = useMemo(
-    () => getOptionsFromArray(relatedData.prototypeVersions, (x) => x.name),
+    () => relatedData.prototypeVersions.map((item) => ({ label: item.displayName, value: item })),
     [relatedData.prototypeVersions],
   );
 
   const prototypeVersionsOptions = useMemo(
-    () => (formData.prototype ? getOptionsFromArray(formData.prototype.versions, (x) => x.version) : []),
+    () => (formData.prototype ? formData.prototype.versions.map((item) => ({ label: item.version, value: item })) : []),
     [formData.prototype],
   );
 

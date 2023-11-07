@@ -7,7 +7,9 @@ import { AdcmJobStatus } from '@models/adcm';
 
 export const useRequestJobPage = () => {
   const dispatch = useDispatch();
-  const { jobId } = useParams();
+  const params = useParams();
+  const jobId = params.jobId;
+  const logNamePartPath = params['*'] || 'stdout';
   const task = useStore(({ adcm }) => adcm.jobs.task);
   const requestFrequency = useStore(({ adcm }) => adcm.jobsTable.requestFrequency);
 
@@ -27,10 +29,13 @@ export const useRequestJobPage = () => {
     dispatch(getTask(+jobId));
   }, defaultDebounceDelay);
 
-  useRequestTimer(
-    debounceGetData,
-    debounceRefreshData,
-    task.status === AdcmJobStatus.Running ? requestFrequency : 0,
-    [],
-  );
+  useRequestTimer(debounceGetData, debounceRefreshData, task.status === AdcmJobStatus.Running ? requestFrequency : 0, [
+    jobId,
+  ]);
+
+  return {
+    logNamePartPath,
+    task,
+    dispatch,
+  };
 };

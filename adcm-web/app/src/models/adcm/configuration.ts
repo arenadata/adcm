@@ -47,8 +47,8 @@ export type ConfigurationSchema = SchemaDefinition;
 export type ConfigurationData = JSONObject;
 
 export type FieldAttributes = {
-  isActive: boolean;
-  isSynchronized: boolean;
+  isActive?: boolean;
+  isSynchronized?: boolean;
 };
 
 export type ConfigurationAttributes = Record<string, FieldAttributes>; // key - path, value: attributes
