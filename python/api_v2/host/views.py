@@ -29,6 +29,7 @@ from cm.models import Cluster, GroupConfig, Host, HostProvider
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -38,6 +39,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
 )
 
+from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HOST_PERM,
@@ -191,7 +193,8 @@ class HostClusterViewSet(  # pylint:disable=too-many-ancestors
         return Response(data=ClusterHostStatusSerializer(instance=host).data)
 
 
-class HostGroupConfigViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+# pylint: disable=too-many-ancestors
+class HostGroupConfigViewSet(PermissionListMixin, GetParentObjectMixin, CamelCaseReadOnlyModelViewSet):
     queryset = (
         Host.objects.select_related("provider", "cluster")
         .prefetch_related("concerns", "hostcomponent_set")
@@ -210,8 +213,13 @@ class HostGroupConfigViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet)
         return HostGroupConfigSerializer
 
     def get_queryset(self, *args, **kwargs):
+        parent_object = self.get_parent_object()
+        parent_view_perm = f"cm.view_{parent_object.__class__.__name__.lower()}"
+        if parent_object is None or not self.request.user.has_perm(perm=parent_view_perm, obj=parent_object):
+            raise NotFound
         return self.queryset.filter(group_config__id=self.kwargs["group_config_pk"])
 
+    @audit
     def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         group_config = GroupConfig.objects.filter(id=self.kwargs["group_config_pk"]).first()
 
@@ -226,6 +234,7 @@ class HostGroupConfigViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet)
 
         return Response(status=HTTP_201_CREATED, data=HostGroupConfigSerializer(instance=host).data)
 
+    @audit
     def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         group_config = GroupConfig.objects.filter(id=self.kwargs["group_config_pk"]).first()
 

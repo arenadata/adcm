@@ -84,7 +84,7 @@ def get_model_by_type(object_type):  # pylint: disable=too-many-return-statement
         return ADCM
     if object_type == "cluster":
         return Cluster
-    elif object_type == "provider":
+    elif object_type in ("provider", "hostprovider"):
         return HostProvider
     elif object_type == "service":
         return ClusterObject
@@ -92,6 +92,8 @@ def get_model_by_type(object_type):  # pylint: disable=too-many-return-statement
         return ServiceComponent
     elif object_type == "host":
         return Host
+    elif object_type == "group_config":
+        return GroupConfig
     else:
         # This function should return a Model, this is necessary for the correct
         # construction of the schema.
