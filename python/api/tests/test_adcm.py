@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ADCM
+from cm.models import ADCM, ConcernItem
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
@@ -19,14 +19,19 @@ from adcm.tests.base import BaseTestCase
 
 
 class TestADCM(BaseTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.adcm = ADCM.objects.select_related("prototype").last()
+        self.concern = ConcernItem.objects.last()
+
     def test_list(self):
-        adcm = ADCM.objects.select_related("prototype").last()
         test_data = {
-            "id": adcm.id,
-            "name": adcm.name,
-            "prototype_id": adcm.prototype.id,
-            "state": adcm.state,
-            "url": f"http://testserver/api/v1/adcm/{adcm.id}/",
+            "id": self.adcm.id,
+            "name": self.adcm.name,
+            "prototype_id": self.adcm.prototype.id,
+            "state": self.adcm.state,
+            "url": f"http://testserver/api/v1/adcm/{self.adcm.id}/",
         }
 
         response: Response = self.client.get(reverse(viewname="v1:adcm-list"))
@@ -36,20 +41,19 @@ class TestADCM(BaseTestCase):
         self.assertDictEqual(response.json()["results"][0], test_data)
 
     def test_list_interface(self):
-        adcm = ADCM.objects.select_related("prototype").last()
         test_data = {
-            "id": adcm.id,
-            "name": adcm.name,
-            "prototype_id": adcm.prototype.id,
-            "state": adcm.state,
-            "url": f"http://testserver/api/v1/adcm/{adcm.id}/",
-            "prototype_version": adcm.prototype.version,
-            "bundle_id": adcm.prototype.bundle_id,
-            "config": f"http://testserver/api/v1/adcm/{adcm.id}/config/",
-            "action": f"http://testserver/api/v1/adcm/{adcm.id}/action/",
+            "id": self.adcm.id,
+            "name": self.adcm.name,
+            "prototype_id": self.adcm.prototype.id,
+            "state": self.adcm.state,
+            "url": f"http://testserver/api/v1/adcm/{self.adcm.id}/",
+            "prototype_version": self.adcm.prototype.version,
+            "bundle_id": self.adcm.prototype.bundle_id,
+            "config": f"http://testserver/api/v1/adcm/{self.adcm.id}/config/",
+            "action": f"http://testserver/api/v1/adcm/{self.adcm.id}/action/",
             "multi_state": [],
-            "concerns": [],
-            "locked": adcm.locked,
+            "concerns": [{"id": self.concern.id, "url": f"http://testserver/api/v1/concern/{self.concern.id}/"}],
+            "locked": self.adcm.locked,
             "main_info": None,
         }
 
@@ -60,47 +64,45 @@ class TestADCM(BaseTestCase):
         self.assertDictEqual(response.json()["results"][0], test_data)
 
     def test_retrieve(self):
-        adcm = ADCM.objects.select_related("prototype").last()
         test_data = {
-            "id": adcm.id,
-            "name": adcm.name,
-            "prototype_id": adcm.prototype.id,
-            "state": adcm.state,
-            "url": f"http://testserver/api/v1/adcm/{adcm.id}/",
-            "prototype_version": adcm.prototype.version,
-            "bundle_id": adcm.prototype.bundle_id,
-            "config": f"http://testserver/api/v1/adcm/{adcm.id}/config/",
-            "action": f"http://testserver/api/v1/adcm/{adcm.id}/action/",
+            "id": self.adcm.id,
+            "name": self.adcm.name,
+            "prototype_id": self.adcm.prototype.id,
+            "state": self.adcm.state,
+            "url": f"http://testserver/api/v1/adcm/{self.adcm.id}/",
+            "prototype_version": self.adcm.prototype.version,
+            "bundle_id": self.adcm.prototype.bundle_id,
+            "config": f"http://testserver/api/v1/adcm/{self.adcm.id}/config/",
+            "action": f"http://testserver/api/v1/adcm/{self.adcm.id}/action/",
             "multi_state": [],
-            "concerns": [],
-            "locked": adcm.locked,
+            "concerns": [{"id": self.concern.id, "url": f"http://testserver/api/v1/concern/{self.concern.id}/"}],
+            "locked": self.adcm.locked,
         }
 
-        response: Response = self.client.get(reverse(viewname="v1:adcm-detail", kwargs={"adcm_pk": adcm.id}))
+        response: Response = self.client.get(reverse(viewname="v1:adcm-detail", kwargs={"adcm_pk": self.adcm.id}))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertDictEqual(response.json(), test_data)
 
     def test_retrieve_interface(self):
-        adcm = ADCM.objects.select_related("prototype").last()
         test_data = {
-            "id": adcm.id,
-            "name": adcm.name,
-            "prototype_id": adcm.prototype.id,
+            "id": self.adcm.id,
+            "name": self.adcm.name,
+            "prototype_id": self.adcm.prototype.id,
             "state": "created",
-            "url": f"http://testserver/api/v1/adcm/{adcm.id}/",
-            "prototype_version": adcm.prototype.version,
-            "bundle_id": adcm.prototype.bundle_id,
-            "config": f"http://testserver/api/v1/adcm/{adcm.id}/config/",
-            "action": f"http://testserver/api/v1/adcm/{adcm.id}/action/",
+            "url": f"http://testserver/api/v1/adcm/{self.adcm.id}/",
+            "prototype_version": self.adcm.prototype.version,
+            "bundle_id": self.adcm.prototype.bundle_id,
+            "config": f"http://testserver/api/v1/adcm/{self.adcm.id}/config/",
+            "action": f"http://testserver/api/v1/adcm/{self.adcm.id}/action/",
             "multi_state": [],
-            "concerns": [],
-            "locked": adcm.locked,
+            "concerns": [{"id": self.concern.id, "url": f"http://testserver/api/v1/concern/{self.concern.id}/"}],
+            "locked": self.adcm.locked,
             "main_info": None,
         }
 
         response: Response = self.client.get(
-            f"{reverse(viewname='v1:adcm-detail', kwargs={'adcm_pk': adcm.id})}?view=interface"
+            f"{reverse(viewname='v1:adcm-detail', kwargs={'adcm_pk': self.adcm.id})}?view=interface"
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

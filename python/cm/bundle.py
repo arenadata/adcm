@@ -298,15 +298,17 @@ def load_adcm(adcm_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.
 
 def process_adcm():
     adcm_stage_proto = StagePrototype.objects.get(type="adcm")
-    adcm = ADCM.objects.filter()
+    adcm = ADCM.objects.first()
+
     if adcm:
-        old_proto = adcm[0].prototype
+        old_proto = adcm.prototype
         new_proto = adcm_stage_proto
+
         if old_proto.version == new_proto.version:
             logger.debug("adcm version %s, skip upgrade", old_proto.version)
         elif rpm.compare_versions(old_proto.version, new_proto.version) < 0:
             bundle = copy_stage("adcm", adcm_stage_proto)
-            upgrade_adcm(adcm[0], bundle)
+            upgrade_adcm(adcm, bundle)
         else:
             raise AdcmEx(
                 code="UPGRADE_ERROR",
