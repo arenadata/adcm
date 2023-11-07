@@ -9,10 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Callable
+
+import ruyaml
 
 # pylint: disable=W0212
 
-import ruyaml
 
 MATCH_DICT_RESERVED_DIRECTIVES = ("invisible_items",)
 
@@ -181,7 +183,7 @@ def match_set(data, rules, rule, path, parent=None):
         raise FormatError(path, msg, data, rule, parent=parent)
 
 
-def match_simple_type(obj_type):
+def match_simple_type(obj_type: type | tuple[type, ...]) -> Callable:
     def match(data, rules, rule, path, parent=None):
         _check_match_dict_reserved(data=data, rules=rules, rule=rule, path=path, parent=parent)
         check_type(data, obj_type, path, rule, parent=parent)
@@ -198,7 +200,7 @@ MATCH = {
     "string": match_simple_type(str),
     "bool": match_simple_type(bool),
     "int": match_simple_type(int),
-    "float": match_simple_type(float),
+    "float": match_simple_type((float, int)),
     "none": match_none,
     "any": match_any,
 }

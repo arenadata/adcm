@@ -16,7 +16,7 @@ from api.utils import CommonAPIURL, get_api_url_kwargs
 from cm.adcm_config.config import get_default, restore_cluster_config, ui_config
 from cm.adcm_config.utils import group_is_activatable
 from cm.api import update_obj_config
-from cm.errors import raise_adcm_ex
+from cm.errors import AdcmEx, raise_adcm_ex
 from cm.models import ConfigLog, PrototypeConfig
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.reverse import reverse
@@ -29,6 +29,7 @@ from rest_framework.serializers import (
     JSONField,
     SerializerMethodField,
 )
+from rest_framework.status import HTTP_400_BAD_REQUEST
 
 from adcm.serializers import EmptySerializer
 
@@ -83,7 +84,13 @@ class ObjectConfigUpdateSerializer(ConfigObjectConfigSerializer):
         conf = validated_data.get("config")
         attr = validated_data.get("attr", {})
         desc = validated_data.get("description", "")
+
+        if not isinstance(conf, dict) or not isinstance(attr, dict):
+            message = "Fields `config` and `attr` should be objects when specified"
+            raise AdcmEx(code="INVALID_CONFIG_UPDATE", http_code=HTTP_400_BAD_REQUEST, msg=message)
+
         config_log = update_obj_config(instance.obj_ref, conf, attr, desc)
+
         if validated_data.get("ui"):
             config_log.config = ui_config(validated_data.get("obj"), config_log)
 
