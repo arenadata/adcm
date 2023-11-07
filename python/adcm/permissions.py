@@ -79,6 +79,7 @@ class CustomModelPermissionsByMethod(DjangoModelPermissionsAudit):
         # "get": [("app_label.permission", ErrorToRaise), ...]
     }
 
+    @audit
     def has_permission(self, request, view):
         for permission, error in view.method_permissions_map.get(request.method.lower(), []):
             if not request.user.has_perm(perm=permission):

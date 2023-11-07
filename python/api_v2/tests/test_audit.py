@@ -44,7 +44,10 @@ from cm.models import (
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
-from rbac.models import User
+from rbac.models import Group, Policy, Role, User
+from rbac.services.group import create as create_group
+from rbac.services.policy import policy_create
+from rbac.services.role import role_create
 from rbac.services.user import create_user
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -2599,19 +2602,29 @@ class TestHostAudit(AuditBaseTestCase):  # pylint: disable=too-many-ancestors,to
         )
 
     def test_delete_success(self):
+        AuditObject.objects.get_or_create(
+            object_id=self.host_2.pk,
+            object_name=self.host_2.name,
+            object_type="host",
+            is_deleted=False,
+        )
+        expected_audit_object_kwargs = {
+            "audit_object__object_id": self.host_2.pk,
+            "audit_object__object_name": self.host_2.name,
+            "audit_object__object_type": "host",
+            "audit_object__is_deleted": True,
+        }
+
         response: Response = self.client.delete(
             path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
         )
-        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.check_last_audit_log(
             operation_name="Host deleted",
             operation_type="delete",
             operation_result="success",
-            audit_object__object_id=self.host_2.pk,
-            audit_object__object_name=self.host_2.name,
-            audit_object__object_type="host",
-            audit_object__is_deleted=False,
+            **expected_audit_object_kwargs,
             user__username="admin",
         )
 
@@ -4199,4 +4212,827 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_result="denied",
             object_changes={},
             user__username=self.test_user.username,
+        )
+
+
+# pylint: disable-next=too-many-ancestors,too-many-instance-attributes, too-many-public-methods
+class TestRBACAudit(AuditBaseTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.blocked_user = create_user(username="blocked_user", password="blocked_user_pswd")
+        self.blocked_user.blocked_at = timezone.now()
+        self.blocked_user.save(update_fields=["blocked_at"])
+
+        self.user_create_data = {
+            "username": "newuser",
+            "password": "newusernewuser",
+            "firstName": "newuser",
+            "lastName": "newuser",
+            "email": "newuser@newuser.newuser",
+            "isSuperUser": False,
+        }
+        self.user_update_data = {"lastName": "new_last_name"}
+        self.role_create_data = {
+            "displayName": "Custom `view cluster configurations` role",
+            "children": [Role.objects.get(name="View cluster configurations").pk],
+        }
+        self.group_update_data = {
+            "displayName": "new display name",
+            "description": "new description",
+            "users": [self.blocked_user.pk],
+        }
+        self.custom_role = role_create(
+            display_name="Custom `view service configurations` role",
+            child=[Role.objects.get(name="View service configurations")],
+        )
+        self.custom_role_name = "Custom role name"
+        custom_role_2 = role_create(
+            display_name=self.custom_role_name,
+            child=[Role.objects.get(name="View cluster configurations")],
+        )
+        self.group = create_group(name_to_display="Some group")
+        self.policy_create_data = {
+            "name": "New Policy",
+            "role": {"id": custom_role_2.pk},
+            "objects": [{"id": self.cluster_1.pk, "type": "cluster"}],
+            "groups": [self.group.pk],
+        }
+        self.policy_update_data = {"name": "Updated name"}
+        self.policy = policy_create(
+            name="Test policy",
+            role=Role.objects.get(name="View provider configurations"),
+            group=[create_group(name_to_display="Other group")],
+            object=[self.provider],
+        )
+
+    def test_user_create_success(self):
+        response: Response = self.client.post(path=reverse(viewname="v2:rbac:user-list"), data=self.user_create_data)
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.check_last_audit_log(
+            operation_name="User created",
+            operation_type="create",
+            operation_result="success",
+            audit_object__object_id=response.json()["id"],
+            audit_object__object_name=self.user_create_data["username"],
+            audit_object__object_type="user",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_user_create_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response: Response = self.client.post(path=reverse(viewname="v2:rbac:user-list"), data={"wrong": "data"})
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_last_audit_log(
+            operation_name="User created",
+            operation_type="create",
+            operation_result="denied",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_user_create_wrong_data_fail(self):
+        response: Response = self.client.post(path=reverse(viewname="v2:rbac:user-list"), data={"wrong": "data"})
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.check_last_audit_log(
+            operation_name="User created",
+            operation_type="create",
+            operation_result="fail",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_user_update_success(self):
+        response: Response = self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.test_user.pk}), data=self.user_update_data
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.check_last_audit_log(
+            operation_name="User updated",
+            operation_type="update",
+            operation_result="success",
+            audit_object__object_id=self.test_user.pk,
+            audit_object__object_name=self.test_user.username,
+            audit_object__object_type="user",
+            audit_object__is_deleted=False,
+            object_changes={"current": {"last_name": "new_last_name"}, "previous": {"last_name": ""}},
+            user__username="admin",
+        )
+
+    def test_user_update_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View users"):
+            response: Response = self.client.patch(
+                path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.blocked_user.pk}),
+                data=self.user_update_data,
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_last_audit_log(
+            operation_name="User updated",
+            operation_type="update",
+            operation_result="denied",
+            audit_object__object_id=self.blocked_user.pk,
+            audit_object__object_name=self.blocked_user.username,
+            audit_object__object_type="user",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_user_update_no_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response: Response = self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.blocked_user.pk}),
+            data=self.user_update_data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_last_audit_log(
+            operation_name="User updated",
+            operation_type="update",
+            operation_result="denied",
+            audit_object__object_id=self.blocked_user.pk,
+            audit_object__object_name=self.blocked_user.username,
+            audit_object__object_type="user",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_user_update_not_exists_fail(self):
+        response: Response = self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.get_non_existent_pk(model=User)}),
+            data=self.user_update_data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_last_audit_log(
+            operation_name="User updated",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_user_delete_success(self):
+        AuditObject.objects.get_or_create(
+            object_id=self.blocked_user.pk,
+            object_name=self.blocked_user.name,
+            object_type="user",
+            is_deleted=False,
+        )
+        expected_audit_object_kwargs = {
+            "audit_object__object_id": self.blocked_user.pk,
+            "audit_object__object_name": self.blocked_user.name,
+            "audit_object__object_type": "user",
+            "audit_object__is_deleted": True,
+        }
+
+        response: Response = self.client.delete(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.blocked_user.pk})
+        )
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.check_last_audit_log(
+            operation_name="User deleted",
+            operation_type="delete",
+            operation_result="success",
+            **expected_audit_object_kwargs,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_user_delete_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View users"):
+            response: Response = self.client.delete(
+                path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.blocked_user.pk})
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_last_audit_log(
+            operation_name="User deleted",
+            operation_type="delete",
+            operation_result="denied",
+            audit_object__object_id=self.blocked_user.pk,
+            audit_object__object_name=self.blocked_user.username,
+            audit_object__object_type="user",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_user_delete_non_existent_fail(self):
+        response: Response = self.client.delete(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.get_non_existent_pk(model=User)})
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_last_audit_log(
+            operation_name="User deleted",
+            operation_type="delete",
+            operation_result="fail",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_user_unblock_success(self):
+        response: Response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": self.blocked_user.pk})
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.check_last_audit_log(
+            operation_name=f"{self.blocked_user.username} user unblocked",
+            operation_type="update",
+            operation_result="success",
+            audit_object__object_id=self.blocked_user.pk,
+            audit_object__object_name=self.blocked_user.username,
+            audit_object__object_type="user",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_user_unblock_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View users"):
+            response: Response = self.client.post(
+                path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": self.blocked_user.pk})
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_last_audit_log(
+            operation_name=f"{self.blocked_user.username} user unblocked",
+            operation_type="update",
+            operation_result="denied",
+            audit_object__object_id=self.blocked_user.pk,
+            audit_object__object_name=self.blocked_user.username,
+            audit_object__object_type="user",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_user_unblock_not_exists_fail(self):
+        response: Response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": self.get_non_existent_pk(model=User)})
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_last_audit_log(
+            operation_name="user unblocked",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_role_create_success(self):
+        response = self.client.post(path=reverse(viewname="v2:rbac:role-list"), data=self.role_create_data)
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.check_last_audit_log(
+            operation_name="Role created",
+            operation_type="create",
+            operation_result="success",
+            audit_object__object_id=response.json()["id"],
+            audit_object__object_name=self.role_create_data["displayName"],
+            audit_object__object_type="role",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_role_create_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.post(path=reverse(viewname="v2:rbac:role-list"), data=self.role_create_data)
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_last_audit_log(
+            operation_name="Role created",
+            operation_type="create",
+            operation_result="denied",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_role_create_wrong_data_fail(self):
+        response = self.client.post(path=reverse(viewname="v2:rbac:role-list"), data={"displayName": "Some role"})
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.check_last_audit_log(
+            operation_name="Role created",
+            operation_type="create",
+            operation_result="fail",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_role_update_success(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
+            data=self.role_create_data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.check_last_audit_log(
+            operation_name="Role updated",
+            operation_type="update",
+            operation_result="success",
+            audit_object__object_id=self.custom_role.pk,
+            audit_object__object_name=self.custom_role.name,
+            audit_object__object_type="role",
+            audit_object__is_deleted=False,
+            object_changes={
+                "current": {
+                    "display_name": "Custom `view cluster configurations` role",
+                    "child": ["View cluster configurations"],
+                },
+                "previous": {
+                    "display_name": "Custom `view service configurations` role",
+                    "child": ["View service configurations"],
+                },
+            },
+            user__username="admin",
+        )
+
+    def test_role_update_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View roles"):
+            response = self.client.patch(
+                path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
+                data=self.role_create_data,
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_last_audit_log(
+            operation_name="Role updated",
+            operation_type="update",
+            operation_result="denied",
+            audit_object__object_id=self.custom_role.pk,
+            audit_object__object_name=self.custom_role.name,
+            audit_object__object_type="role",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_role_update_duplicate_name_fail(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
+            data={"display_name": self.custom_role_name},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.check_last_audit_log(
+            operation_name="Role updated",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__object_id=self.custom_role.pk,
+            audit_object__object_name=self.custom_role.name,
+            audit_object__object_type="role",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_role_delete_success(self):
+        AuditObject.objects.get_or_create(
+            object_id=self.custom_role.pk,
+            object_name=self.custom_role.name,
+            object_type="role",
+            is_deleted=False,
+        )
+        expected_audit_object_kwargs = {
+            "audit_object__object_id": self.custom_role.pk,
+            "audit_object__object_name": self.custom_role.name,
+            "audit_object__object_type": "role",
+            "audit_object__is_deleted": True,
+        }
+        response = self.client.delete(path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}))
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.check_last_audit_log(
+            operation_name="Role deleted",
+            operation_type="delete",
+            operation_result="success",
+            **expected_audit_object_kwargs,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_role_delete_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View roles"):
+            response = self.client.delete(
+                path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk})
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_last_audit_log(
+            operation_name="Role deleted",
+            operation_type="delete",
+            operation_result="denied",
+            audit_object__object_id=self.custom_role.pk,
+            audit_object__object_name=self.custom_role.name,
+            audit_object__object_type="role",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_role_delete_not_exists_fail(self):
+        response = self.client.delete(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.get_non_existent_pk(model=Role)})
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_last_audit_log(
+            operation_name="Role deleted",
+            operation_type="delete",
+            operation_result="fail",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_group_create_success(self):
+        response: Response = self.client.post(
+            path=reverse(viewname="v2:rbac:group-list"),
+            data={"displayName": "New test group"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.check_last_audit_log(
+            operation_name="Group created",
+            operation_type="create",
+            operation_result="success",
+            audit_object__object_id=response.json()["id"],
+            audit_object__object_name=response.json()["name"],
+            audit_object__object_type="group",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_group_create_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View group"):
+            response: Response = self.client.post(
+                path=reverse(viewname="v2:rbac:group-list"),
+                data={"displayName": "New test group"},
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_last_audit_log(
+            operation_name="Group created",
+            operation_type="create",
+            operation_result="denied",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_group_create_wrong_data_fail(self):
+        response: Response = self.client.post(
+            path=reverse(viewname="v2:rbac:group-list"),
+            data={"description": "dscr"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.check_last_audit_log(
+            operation_name="Group created",
+            operation_type="create",
+            operation_result="fail",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_group_update_success(self):
+        expected_object_changes = {
+            "current": {
+                "description": "new description",
+                "name": "new display name",
+                "user": [self.blocked_user.username],
+            },
+            "previous": {"description": None, "name": "Some group", "user": []},
+        }
+
+        response: Response = self.client.patch(
+            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
+            data=self.group_update_data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        last_audit_log = self.check_last_audit_log(
+            operation_name="Group updated",
+            operation_type="update",
+            operation_result="success",
+            audit_object__object_id=self.group.pk,
+            audit_object__object_name=f"{self.group_update_data['displayName']} [{self.group.type}]",
+            audit_object__object_type="group",
+            audit_object__is_deleted=False,
+            user__username="admin",
+        )
+        self.assertDictEqual(last_audit_log.object_changes, expected_object_changes)
+
+    def test_group_update_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View group"):
+            response: Response = self.client.patch(
+                path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
+                data=self.group_update_data,
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_last_audit_log(
+            operation_name="Group updated",
+            operation_type="update",
+            operation_result="denied",
+            audit_object__object_id=self.group.pk,
+            audit_object__object_name=self.group.name,
+            audit_object__object_type="group",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_group_update_not_exists_fail(self):
+        response: Response = self.client.patch(
+            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.get_non_existent_pk(model=Group)}),
+            data=self.group_update_data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_last_audit_log(
+            operation_name="Group updated",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_group_delete_success(self):
+        AuditObject.objects.get_or_create(
+            object_id=self.group.pk,
+            object_name=self.group.name,
+            object_type="group",
+            is_deleted=False,
+        )
+        expected_audit_object_kwargs = {
+            "audit_object__object_id": self.group.pk,
+            "audit_object__object_name": self.group.name,
+            "audit_object__object_type": "group",
+            "audit_object__is_deleted": True,
+        }
+
+        response: Response = self.client.delete(
+            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.check_last_audit_log(
+            operation_name="Group deleted",
+            operation_type="delete",
+            operation_result="success",
+            object_changes={},
+            **expected_audit_object_kwargs,
+            user__username="admin",
+        )
+
+    def test_group_delete_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View group"):
+            response: Response = self.client.delete(
+                path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_last_audit_log(
+            operation_name="Group deleted",
+            operation_type="delete",
+            operation_result="denied",
+            object_changes={},
+            audit_object__object_id=self.group.pk,
+            audit_object__object_name=self.group.name,
+            audit_object__object_type="group",
+            audit_object__is_deleted=False,
+            user__username=self.test_user.username,
+        )
+
+    def test_group_delete_not_exists_fail(self):
+        response: Response = self.client.delete(
+            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.get_non_existent_pk(model=Group)}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_last_audit_log(
+            operation_name="Group deleted",
+            operation_type="delete",
+            operation_result="fail",
+            object_changes={},
+            audit_object__isnull=True,
+            user__username="admin",
+        )
+
+    def test_policy_create_success(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:policy-list"),
+            data=self.policy_create_data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.check_last_audit_log(
+            operation_name="Policy created",
+            operation_type="create",
+            operation_result="success",
+            audit_object__object_id=response.json()["id"],
+            audit_object__object_name=response.json()["name"],
+            audit_object__object_type="policy",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_policy_create_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View policy"):
+            response = self.client.post(
+                path=reverse(viewname="v2:rbac:policy-list"),
+                data=self.policy_create_data,
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_last_audit_log(
+            operation_name="Policy created",
+            operation_type="create",
+            operation_result="denied",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_policy_create_wrong_data_fail(self):
+        wrong_data = self.policy_create_data.copy()
+        wrong_data["objects"] = [{"id": self.provider.pk, "type": "provider"}]
+
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:policy-list"),
+            data=wrong_data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.check_last_audit_log(
+            operation_name="Policy created",
+            operation_type="create",
+            operation_result="fail",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_policy_edit_success(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}),
+            data=self.policy_update_data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.check_last_audit_log(
+            operation_name="Policy updated",
+            operation_type="update",
+            operation_result="success",
+            audit_object__object_id=self.policy.pk,
+            audit_object__object_name=self.policy_update_data["name"],
+            audit_object__object_type="policy",
+            audit_object__is_deleted=False,
+            object_changes={"current": {"name": "Updated name"}, "previous": {"name": "Test policy"}},
+            user__username="admin",
+        )
+
+    def test_policy_edit_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View policy"):
+            response = self.client.patch(
+                path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}),
+                data=self.policy_update_data,
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_last_audit_log(
+            operation_name="Policy updated",
+            operation_type="update",
+            operation_result="denied",
+            audit_object__object_id=self.policy.pk,
+            audit_object__object_name=self.policy.name,
+            audit_object__object_type="policy",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_policy_edit_not_exists_fail(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.get_non_existent_pk(model=Policy)}),
+            data=self.policy_update_data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_last_audit_log(
+            operation_name="Policy updated",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_policy_delete_success(self):
+        AuditObject.objects.get_or_create(
+            object_id=self.policy.pk,
+            object_name=self.policy.name,
+            object_type="policy",
+            is_deleted=False,
+        )
+        expected_audit_object_kwargs = {
+            "audit_object__object_id": self.policy.pk,
+            "audit_object__object_name": self.policy.name,
+            "audit_object__object_type": "policy",
+            "audit_object__is_deleted": True,
+        }
+
+        response = self.client.delete(path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}))
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.check_last_audit_log(
+            operation_name="Policy deleted",
+            operation_type="delete",
+            operation_result="success",
+            **expected_audit_object_kwargs,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_policy_delete_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View policy"):
+            response = self.client.delete(path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}))
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_last_audit_log(
+            operation_name="Policy deleted",
+            operation_type="delete",
+            operation_result="denied",
+            audit_object__object_id=self.policy.pk,
+            audit_object__object_name=self.policy.name,
+            audit_object__object_type="policy",
+            audit_object__is_deleted=False,
+            object_changes={},
+            user__username=self.test_user.username,
+        )
+
+    def test_policy_delete_not_exists_fail(self):
+        response = self.client.delete(
+            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.get_non_existent_pk(model=Policy)})
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_last_audit_log(
+            operation_name="Policy deleted",
+            operation_type="delete",
+            operation_result="fail",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
         )

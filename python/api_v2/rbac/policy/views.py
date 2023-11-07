@@ -13,6 +13,7 @@
 from api_v2.rbac.policy.filters import PolicyFilter
 from api_v2.rbac.policy.serializers import PolicyCreateSerializer, PolicySerializer
 from api_v2.views import CamelCaseModelViewSet
+from audit.utils import audit
 from cm.errors import AdcmEx, raise_adcm_ex
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
@@ -43,12 +44,14 @@ class PolicyViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disa
 
         return PolicySerializer
 
+    @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
         policy = policy_create(**serializer.validated_data)
         return Response(data=PolicySerializer(policy).data, status=HTTP_201_CREATED)
 
+    @audit
     def update(self, request, *args, **kwargs):
         policy = self.get_object()
 
@@ -60,6 +63,7 @@ class PolicyViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disa
         policy = policy_update(policy, **serializer.validated_data)
         return Response(data=PolicySerializer(policy).data)
 
+    @audit
     def destroy(self, request, *args, **kwargs):
         policy = self.get_object()
         if policy.built_in:

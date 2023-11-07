@@ -18,6 +18,7 @@ from api_v2.rbac.user.serializers import (
 )
 from api_v2.rbac.user.utils import unblock_user
 from api_v2.views import CamelCaseModelViewSet
+from audit.utils import audit
 from cm.errors import AdcmEx
 from django.contrib.auth.models import Group as AuthGroup
 from django.db.models import Prefetch
@@ -56,6 +57,7 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
 
         return UserSerializer
 
+    @audit
     def create(self, request: Request, *args, **kwargs) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -65,6 +67,7 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
 
         return Response(data=UserSerializer(instance=user).data, status=HTTP_201_CREATED)
 
+    @audit
     def partial_update(self, request: Request, *args, **kwargs) -> Response:
         instance: User = self.get_object()
         serializer = self.get_serializer(instance=instance, data=request.data)
@@ -82,6 +85,7 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
 
         return Response(data=UserSerializer(instance=user).data, status=HTTP_200_OK)
 
+    @audit
     @action(methods=["post"], detail=True)
     def unblock(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         if not request.user.is_superuser:
@@ -91,6 +95,7 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
 
         return Response(status=HTTP_200_OK)
 
+    @audit
     def destroy(self, request: Request, *args, **kwargs) -> Response:
         user = self.get_object()
         if user.built_in:
