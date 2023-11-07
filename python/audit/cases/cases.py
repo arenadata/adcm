@@ -50,6 +50,7 @@ def get_audit_operation_and_object(  # pylint: disable=too-many-branches
     elif (
         "cluster" in path  # pylint: disable=too-many-boolean-expressions
         or "clusters" in path
+        and "config-groups" not in path
         or "component" in path
         or ("host" in path and "config" in path)
         or ("service" in path and "import" in path)
@@ -65,7 +66,7 @@ def get_audit_operation_and_object(  # pylint: disable=too-many-branches
             response=response,
             deleted_obj=deleted_obj,
         )
-    elif "group-config" in path or "config-log" in path:
+    elif "group-config" in path or "config-log" in path or "config-groups" in path:
         audit_operation, audit_object, operation_name = config_case(
             path=path,
             view=view,

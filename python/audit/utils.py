@@ -43,6 +43,7 @@ from cm.models import (
     Cluster,
     ClusterBind,
     ClusterObject,
+    GroupConfig,
     Host,
     HostProvider,
     ServiceComponent,
@@ -70,6 +71,14 @@ from rest_framework.status import (
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 URL_PATH_PATTERN = re.compile(r".*/api/v(?P<api_version>\d+)/(?P<target_path>.*?)/?$")
+
+
+def _are_all_parents_in_path_exist(view: GenericAPIView) -> bool:
+    for pk, val in view.kwargs.items():
+        model = get_model_by_type(pk.rstrip("_pk"))
+        if not model.objects.filter(pk=val).exists():
+            return False
+    return True
 
 
 def _get_view_and_request(args) -> tuple[GenericAPIView, Request]:
@@ -413,17 +422,31 @@ def audit(func):
 
                     if api_version == 2:  # pylint: disable=too-many-boolean-expressions
                         if (
-                            view.__class__.__name__ in ["ActionViewSet", "AdcmActionViewSet"]
-                            and view.action == "run"
-                            and "pk" in view.kwargs
-                            and Action.objects.filter(pk=view.kwargs["pk"]).exists()
-                        ) or (
-                            view.__class__.__name__ in ["TaskViewSet", "JobViewSet"]
-                            and view.action == "terminate"
-                            and "pk" in view.kwargs
-                            and get_model_by_type(view.__class__.__name__.strip("ViewSet"))
-                            .objects.filter(pk=view.kwargs["pk"])
-                            .exists()
+                            (
+                                view.__class__.__name__ in ["ActionViewSet", "AdcmActionViewSet"]
+                                and view.action == "run"
+                                and "pk" in view.kwargs
+                                and Action.objects.filter(pk=view.kwargs["pk"]).exists()
+                            )
+                            or (
+                                view.__class__.__name__ in ["TaskViewSet", "JobViewSet"]
+                                and view.action == "terminate"
+                                and "pk" in view.kwargs
+                                and get_model_by_type(view.__class__.__name__.strip("ViewSet"))
+                                .objects.filter(pk=view.kwargs["pk"])
+                                .exists()
+                            )
+                            or (
+                                view.__class__.__name__ == "GroupConfigViewSet"
+                                and view.action in ("destroy", "update", "partial_update")
+                                and "pk" in view.kwargs
+                                and GroupConfig.objects.filter(pk=view.kwargs["pk"]).exists()
+                            )
+                            or (
+                                view.__class__.__name__
+                                in ("GroupConfigViewSet", "ConfigLogViewSet", "HostGroupConfigViewSet")
+                                and _are_all_parents_in_path_exist(view)
+                            )
                         ):
                             status_code = HTTP_403_FORBIDDEN
 
