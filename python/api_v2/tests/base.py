@@ -45,7 +45,7 @@ from cm.models import (
 from django.conf import settings
 from django.utils import timezone
 from init_db import init
-from rbac.models import Role, User
+from rbac.models import Group, Policy, Role, User
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
@@ -157,7 +157,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
         return add_hc(cluster=cluster, hc_in=hc_map)
 
     @staticmethod
-    def get_non_existent_pk(model: type[ADCMEntity] | type[ADCMModel] | type[User]):
+    def get_non_existent_pk(model: type[ADCMEntity | ADCMModel | User | Role | Group | Policy]):
         try:
             return model.objects.order_by("-pk").first().pk + 1
         except model.DoesNotExist:
@@ -176,13 +176,15 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
 
         return create_user(**user_data)
 
-    def check_last_audit_log(self, **kwargs) -> None:
-        audit_log = AuditLog.objects.order_by("-pk").first()
-        self.assertIsNotNone(audit_log)
+    def check_last_audit_log(self, **kwargs) -> AuditLog:
+        last_audit_log = AuditLog.objects.order_by("pk").last()
+        self.assertIsNotNone(last_audit_log, "AuditLog table is empty")
 
-        expected_log = AuditLog.objects.filter(**kwargs)
-        self.assertEqual(expected_log.count(), 1)
-        self.assertEqual(audit_log.pk, expected_log.get().pk)
+        expected_log = AuditLog.objects.filter(**kwargs).order_by("pk").last()
+        self.assertIsNotNone(expected_log, "Can't find audit log")
+        self.assertEqual(last_audit_log.pk, expected_log.pk, "Expected audit log is not last")
+
+        return last_audit_log
 
     @contextmanager
     def grant_permissions(self, to: User, on: list[ADCMEntity] | ADCMEntity, role_name: str):

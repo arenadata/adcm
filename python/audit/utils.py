@@ -27,6 +27,7 @@ from api_v2.host.serializers import HostAuditSerializer as HostAuditSerializerV2
 from api_v2.service.serializers import (
     ServiceAuditSerializer as ServiceAuditSerializerV2,
 )
+from api_v2.views import CamelCaseModelViewSet
 from audit.cases.cases import get_audit_operation_and_object
 from audit.cef_logger import cef_logger
 from audit.models import (
@@ -255,7 +256,11 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
     serializer_class = None
     pk = None
 
-    if isinstance(view, ModelViewSet) and view.action in {"update", "partial_update"} and view.kwargs.get("pk"):
+    if (
+        isinstance(view, (ModelViewSet, CamelCaseModelViewSet))
+        and view.action in {"update", "partial_update"}
+        and view.kwargs.get("pk")
+    ):
         pk = view.kwargs["pk"]
         if view.__class__.__name__ == "GroupViewSet":
             serializer_class = GroupAuditSerializer
@@ -265,6 +270,8 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
             serializer_class = UserAuditSerializer
         elif view.__class__.__name__ == "PolicyViewSet":
             serializer_class = PolicyAuditSerializer
+        elif view.__class__.__name__ == "ClusterViewSet":
+            serializer_class = ClusterAuditSerializerV2
     elif view.request.method in {"PATCH", "PUT"}:
         if view.__class__.__name__ == "ClusterDetail":
             serializer_class = ClusterAuditSerializer
@@ -272,9 +279,6 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
         elif view.__class__.__name__ == "HostDetail":
             serializer_class = HostAuditSerializer
             pk = view.kwargs["host_id"]
-        elif view.__class__.__name__ == "ClusterViewSet":
-            serializer_class = ClusterAuditSerializerV2
-            pk = view.kwargs["pk"]
     elif view.request.method == "POST":
         if view.__class__.__name__ == "ServiceMaintenanceModeView":
             serializer_class = ServiceAuditSerializer
@@ -446,6 +450,12 @@ def audit(func):
                                 view.__class__.__name__
                                 in ("GroupConfigViewSet", "ConfigLogViewSet", "HostGroupConfigViewSet")
                                 and _are_all_parents_in_path_exist(view)
+                            )
+                            or (
+                                view.__class__.__name__ in ["UserViewSet"]
+                                and view.action in ["update", "partial_update"]
+                                and "pk" in view.kwargs
+                                and User.objects.filter(pk=view.kwargs["pk"]).exists()
                             )
                         ):
                             status_code = HTTP_403_FORBIDDEN
