@@ -36,7 +36,7 @@
           "title": "ADCM's URL",
           "type": "string",
           "description": "We have to know ADCM's Url to send information from host. We try to guess that information from url you enter in browser.\nBut if your network has more complicated structure and we guess wrong, please fix that here.\n",
-          "default": "http://127.0.0.1:8000/",
+          "default": null,
           "readOnly": false,
           "adcmMeta": {
             "isAdvanced": false,
