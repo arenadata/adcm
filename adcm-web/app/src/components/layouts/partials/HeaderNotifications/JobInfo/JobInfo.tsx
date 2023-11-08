@@ -31,7 +31,7 @@ const JobInfo: React.FC<JobInfoProps> = ({ jobs }) => {
                 placement={'bottom-start'}
               >
                 <Link className="text-link" to={`/jobs/${job.id}`}>
-                  {job.name}
+                  {job.displayName}
                 </Link>
               </ConditionalWrapper>
             )}
