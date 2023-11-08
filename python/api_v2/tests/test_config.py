@@ -310,6 +310,26 @@ class TestClusterGroupConfig(BaseAPITestCase):
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
 
+    def test_adcm_4894_duplicate_name_fail(self):
+        self.client.post(
+            path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"name": "group-config-new", "description": "group-config-new"},
+        )
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"name": "group-config-new", "description": "group-config-new"},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "BAD_REQUEST",
+                "desc": f"name - Group config with name group-config-new "
+                f"already exists for cm | cluster {self.cluster_1.name};",
+                "level": "error",
+            },
+        )
+
     def test_create_bad_attr_fail(self):
         data = {
             "config": {
