@@ -33,6 +33,24 @@ body {
   }
 }
 
+ul.marked-list {
+  padding-left: 18px;
+
+  li {
+    &:not(:first-child) {
+      margin-top: 4px;
+    }
+    &:not(:last-child) {
+      margin-top: 4px;
+    }
+
+    list-style-type: square;
+    &::marker {
+      margin-right: 0;
+    }
+  }
+}
+
 .green-text {
   color: var(--text-green-color);
 }

@@ -13,6 +13,10 @@
   border-radius: 15px;
   background: var(--mainInfoPanel-background-color);
 
+  :global(.marked-list) {
+    margin-left: 18px;
+  }
+
   p {
     margin: 0;
 
