@@ -21,4 +21,6 @@ urlpatterns = [
     path("api/ui/", include("api_ui.urls")),
 ]
 
-handler500 = "rest_framework.exceptions.server_error"  # pylint: disable=invalid-name
+# pylint: disable=invalid-name
+handler500 = "adcm.views.server_error"
+handler404 = "adcm.views.page_not_found"
