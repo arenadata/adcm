@@ -19,7 +19,7 @@ export interface AdcmDynamicAction {
   startImpossibleReason: string;
 }
 
-export type AdcmDynamicActionConfiguration = Pick<AdcmConfig, 'adcmMeta'> & {
+export type AdcmDynamicActionConfiguration = Pick<AdcmConfig, 'config' | 'adcmMeta'> & {
   configSchema: ConfigurationSchema;
 };
 
