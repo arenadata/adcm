@@ -4,6 +4,7 @@ import { AdcmCluster, AdcmService } from '@models/adcm';
 import { DynamicActionsButton, DynamicActionsIcon } from '@commonComponents/DynamicActionsButton/DynamicActionsButton';
 import { IconProps } from '@uikit/Icon/Icon';
 import { openClusterServiceDynamicActionDialog } from '@store/adcm/cluster/services/servicesDynamicActionsSlice';
+import { isBlockingConcernPresent } from '@utils/concernUtils';
 
 interface ClusterServiceDynamicActionsButtonProps {
   cluster: AdcmCluster;
@@ -20,10 +21,11 @@ const ClusterServiceDynamicActionsButton: React.FC<ClusterServiceDynamicActionsB
 }) => {
   const dispatch = useDispatch();
 
+  const idDisabled = useMemo(() => isBlockingConcernPresent(service.concerns), [service.concerns]);
+
   const serviceDynamicActions = useStore(
     (s) => s.adcm.servicesDynamicActions.serviceDynamicActions[service.id] ?? null,
   );
-  const isDisabled = useMemo(() => service.concerns.some(({ isBlocking }) => isBlocking), [service]);
 
   const handleSelectAction = (actionId: number) => {
     dispatch(openClusterServiceDynamicActionDialog({ cluster, service, actionId }));
@@ -35,7 +37,7 @@ const ClusterServiceDynamicActionsButton: React.FC<ClusterServiceDynamicActionsB
     <DynamicActionsTrigger
       actions={serviceDynamicActions}
       onSelectAction={handleSelectAction}
-      disabled={isDisabled}
+      disabled={idDisabled}
       size={size}
     />
   );

@@ -6,6 +6,7 @@ import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 
 interface AdcmHostState {
   host?: AdcmHost;
@@ -110,6 +111,30 @@ const hostSlice = createSlice({
     builder.addCase(getHostComponentStates.rejected, (state) => {
       state.hostComponentsCounters.successfulHostComponentsCount = 0;
       state.hostComponentsCounters.totalHostComponentsCount = 0;
+    });
+    builder.addCase(wsActions.update_host, (state, action) => {
+      const { id: hostId, changes } = action.payload.object;
+      if (state.host?.id == hostId) {
+        state.host = { ...state.host, ...changes };
+      }
+    });
+    builder.addCase(wsActions.create_host_concern, (state, action) => {
+      const { id: hostId, changes: newConcern } = action.payload.object;
+      if (state.host?.id === hostId && state.host.concerns.every((concern) => concern.id !== newConcern.id)) {
+        state.host = {
+          ...state.host,
+          concerns: [...state.host.concerns, newConcern],
+        };
+      }
+    });
+    builder.addCase(wsActions.delete_host_concern, (state, action) => {
+      const { id: hostId, changes } = action.payload.object;
+      if (state.host?.id === hostId) {
+        state.host = {
+          ...state.host,
+          concerns: state.host.concerns.filter((concern) => concern.id !== changes.id),
+        };
+      }
     });
   },
 });

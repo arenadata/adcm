@@ -113,6 +113,15 @@ const serviceSlice = createSlice({
       state.relatedData.successfulComponentsCount = 0;
       state.relatedData.totalComponentsCount = 0;
     });
+    builder.addCase(wsActions.create_service_concern, (state, action) => {
+      const { id: serviceId, changes: newConcern } = action.payload.object;
+      if (state.service?.id === serviceId && state.service.concerns.every((concern) => concern.id !== newConcern.id)) {
+        state.service = {
+          ...state.service,
+          concerns: [...state.service.concerns, newConcern],
+        };
+      }
+    });
     builder.addCase(wsActions.update_service, (state, action) => {
       const { id, changes } = action.payload.object;
       if (state.service?.id == id) {

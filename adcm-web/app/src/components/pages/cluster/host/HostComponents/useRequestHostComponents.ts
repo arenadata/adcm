@@ -6,6 +6,7 @@ import {
   loadClusterHostComponentsDynamicActions,
 } from '@store/adcm/cluster/hosts/host/hostComponentsDynamicActionsSlice';
 import { loadRelatedClusterHostComponents } from '@store/adcm/cluster/hosts/host/clusterHostSlice';
+import { isBlockingConcernPresent } from '@utils/concernUtils';
 
 export const useRequestHostComponents = () => {
   const dispatch = useDispatch();
@@ -22,7 +23,7 @@ export const useRequestHostComponents = () => {
   }, [dispatch, host]);
 
   useEffect(() => {
-    if (components.length > 0 && host) {
+    if (components.length > 0 && host && !isBlockingConcernPresent(host.concerns)) {
       const componentsPrototypesIds = components.map(({ prototype }) => prototype.id);
       dispatch(
         loadClusterHostComponentsDynamicActions({
@@ -32,7 +33,7 @@ export const useRequestHostComponents = () => {
         }),
       );
     }
-  }, [dispatch, components, host]);
+  }, [dispatch, components, host, host?.concerns]);
 
   useEffect(() => {
     return () => {

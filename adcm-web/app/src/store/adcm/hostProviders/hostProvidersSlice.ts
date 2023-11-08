@@ -80,6 +80,17 @@ const hostProvidersSlice = createSlice({
         () => changes,
       );
     });
+    builder.addCase(wsActions.create_hostprovider_concern, (state, action) => {
+      const { id: hostProviderId, changes: newConcern } = action.payload.object;
+      state.hostProviders = updateIfExists<AdcmHostProvider>(
+        state.hostProviders,
+        (hostProvider) =>
+          hostProvider.id === hostProviderId && hostProvider.concerns.every((concern) => concern.id !== newConcern.id),
+        (hostProvider) => ({
+          concerns: [...hostProvider.concerns, newConcern],
+        }),
+      );
+    });
     builder.addCase(wsActions.delete_hostprovider_concern, (state, action) => {
       const { id, changes } = action.payload.object;
       state.hostProviders = updateIfExists<AdcmHostProvider>(
