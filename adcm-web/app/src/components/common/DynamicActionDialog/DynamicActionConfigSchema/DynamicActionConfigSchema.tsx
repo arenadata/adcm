@@ -27,7 +27,10 @@ const DynamicActionConfigSchema: React.FC<DynamicActionConfigSchemaProps> = ({
 
     const { adcmMeta } = getDefaultConfigurationRunConfig().configuration ?? {};
     const configuration = {
-      configurationData: generateFromSchema<ConfigurationData>(actionDetails.configuration.configSchema) ?? {},
+      configurationData:
+        actionDetails.configuration.config ??
+        generateFromSchema<ConfigurationData>(actionDetails.configuration.configSchema) ??
+        {},
       attributes: actionDetails.configuration.adcmMeta ?? adcmMeta ?? {},
       schema: actionDetails.configuration.configSchema,
     };
