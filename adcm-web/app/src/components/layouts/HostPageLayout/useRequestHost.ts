@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { cleanupHost, getHost } from '@store/adcm/host/hostSlice';
 import { cleanupHostDynamicActions, loadHostsDynamicActions } from '@store/adcm/hosts/hostsDynamicActionsSlice';
 import { cleanupBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
+import { isBlockingConcernPresent } from '@utils/concernUtils';
 
 export const useRequestHost = () => {
   const dispatch = useDispatch();
@@ -13,10 +14,10 @@ export const useRequestHost = () => {
   const host = useStore(({ adcm }) => adcm.host.host);
 
   useEffect(() => {
-    if (host) {
+    if (host && !isBlockingConcernPresent(host.concerns)) {
       dispatch(loadHostsDynamicActions([host]));
     }
-  }, [host, dispatch, hostId]);
+  }, [host, dispatch, hostId, host?.concerns]);
 
   useEffect(() => {
     return () => {

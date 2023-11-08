@@ -9,6 +9,7 @@ import {
 } from '@store/adcm/cluster/hosts/host/clusterHostSlice';
 import { getClusterHost } from '@store/adcm/cluster/hosts/host/clusterHostSlice';
 import { loadClusterHostsDynamicActions } from '@store/adcm/cluster/hosts/hostsDynamicActionsSlice';
+import { isBlockingConcernPresent } from '@utils/concernUtils';
 
 export const useRequestClusterHost = () => {
   const dispatch = useDispatch();
@@ -24,10 +25,10 @@ export const useRequestClusterHost = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (clusterHost) {
+    if (clusterHost && !isBlockingConcernPresent(clusterHost.concerns)) {
       dispatch(loadClusterHostsDynamicActions({ clusterId, hosts: [clusterHost] }));
     }
-  }, [dispatch, clusterId, clusterHost]);
+  }, [dispatch, clusterId, clusterHost, clusterHost?.concerns]);
 
   const debounceGetClusterHostData = useDebounce(() => {
     if (clusterId && hostId) {

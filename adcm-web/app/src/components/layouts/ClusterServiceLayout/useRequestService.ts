@@ -1,4 +1,4 @@
-import { useDispatch, useRequestTimer, useDebounce } from '@hooks';
+import { useDispatch, useRequestTimer, useDebounce, useStore } from '@hooks';
 import { defaultDebounceDelay } from '@constants';
 import { useParams } from 'react-router-dom';
 import { cleanupService, getService } from '@store/adcm/services/serviceSlice';
@@ -8,9 +8,11 @@ import {
   cleanupClusterServiceDynamicActions,
   loadClusterServicesDynamicActions,
 } from '@store/adcm/cluster/services/servicesDynamicActionsSlice';
+import { isBlockingConcernPresent } from '@utils/concernUtils';
 
 export const useRequestService = () => {
   const dispatch = useDispatch();
+  const service = useStore(({ adcm }) => adcm.service.service);
   const { clusterId: clusterIdFromUrl, serviceId: serviceIdFromUrl } = useParams();
   const clusterId = Number(clusterIdFromUrl);
   const serviceId = Number(serviceIdFromUrl);
@@ -23,10 +25,10 @@ export const useRequestService = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (!Number.isNaN(clusterId) && !Number.isNaN(serviceId)) {
+    if (!Number.isNaN(clusterId) && !Number.isNaN(serviceId) && !isBlockingConcernPresent(service?.concerns ?? [])) {
       dispatch(loadClusterServicesDynamicActions({ clusterId, servicesIds: [serviceId] }));
     }
-  }, [dispatch, clusterId, serviceId]);
+  }, [dispatch, clusterId, serviceId, service?.concerns]);
 
   const debounceGetCluster = useDebounce(() => {
     if (clusterId && serviceId) {

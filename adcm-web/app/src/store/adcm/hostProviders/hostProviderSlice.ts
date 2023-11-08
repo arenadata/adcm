@@ -65,6 +65,18 @@ const hostProviderSlice = createSlice({
         };
       }
     });
+    builder.addCase(wsActions.create_hostprovider_concern, (state, action) => {
+      const { id: hostProviderId, changes: newConcern } = action.payload.object;
+      if (
+        state.hostProvider?.id === hostProviderId &&
+        state.hostProvider.concerns.every((concern) => concern.id !== newConcern.id)
+      ) {
+        state.hostProvider = {
+          ...state.hostProvider,
+          concerns: [...state.hostProvider.concerns, newConcern],
+        };
+      }
+    });
     builder.addCase(wsActions.delete_hostprovider_concern, (state, action) => {
       const { id, changes } = action.payload.object;
       if (state.hostProvider?.id === id) {

@@ -93,3 +93,7 @@ const getConcernPath = (concern: AdcmConcerns, placeHolderProps: AdcmConcernPlac
       return '';
   }
 };
+
+export const isBlockingConcernPresent = (concerns: AdcmConcerns[]) => {
+  return concerns.some(({ isBlocking }) => isBlocking);
+};

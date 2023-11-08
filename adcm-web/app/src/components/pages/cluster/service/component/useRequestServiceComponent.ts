@@ -10,6 +10,7 @@ import {
 } from '@store/adcm/cluster/services/serviceComponents/serviceComponentsDynamicActionsSlice';
 import { useEffect } from 'react';
 import { useServiceComponentParams } from '@pages/cluster/service/component/useServiceComponentParams';
+import { isBlockingConcernPresent } from '@utils/concernUtils';
 
 export const useRequestServiceComponent = () => {
   const dispatch = useDispatch();
@@ -24,10 +25,10 @@ export const useRequestServiceComponent = () => {
   }, [dispatch, clusterId, serviceId, componentId]);
 
   useEffect(() => {
-    if (component) {
+    if (component && !isBlockingConcernPresent(component.concerns)) {
       dispatch(loadClusterServiceComponentsDynamicActions({ components: [component] }));
     }
-  }, [dispatch, component]);
+  }, [dispatch, component, component?.concerns]);
 
   const debounceGetServiceComponent = useDebounce(() => {
     dispatch(getServiceComponent({ clusterId, serviceId, componentId }));

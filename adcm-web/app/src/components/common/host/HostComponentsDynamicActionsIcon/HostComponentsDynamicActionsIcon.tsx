@@ -4,6 +4,7 @@ import { AdcmServiceComponent } from '@models/adcm';
 import { DynamicActionsButton, DynamicActionsIcon } from '@commonComponents/DynamicActionsButton/DynamicActionsButton';
 import { IconProps } from '@uikit/Icon/Icon';
 import { openClusterHostComponentDynamicActionDialog } from '@store/adcm/cluster/hosts/host/hostComponentsDynamicActionsSlice';
+import { isBlockingConcernPresent } from '@utils/concernUtils';
 
 interface ClusterHostComponentsDynamicActionsIconProps {
   hostId: number;
@@ -19,11 +20,11 @@ const HostComponentsDynamicActionsIcon: React.FC<ClusterHostComponentsDynamicAct
   size,
 }) => {
   const dispatch = useDispatch();
+  const isDisabled = useMemo(() => isBlockingConcernPresent(component.concerns), [component.concerns]);
 
   const clusterHostComponentsDynamicActions = useStore(
     (s) => s.adcm.hostComponentsDynamicActions.hostComponentDynamicActions[component.prototype.id] ?? null,
   );
-  const isDisabled = useMemo(() => component.concerns.some(({ isBlocking }) => isBlocking), [component]);
 
   const handleSelectAction = (actionId: number) => {
     dispatch(

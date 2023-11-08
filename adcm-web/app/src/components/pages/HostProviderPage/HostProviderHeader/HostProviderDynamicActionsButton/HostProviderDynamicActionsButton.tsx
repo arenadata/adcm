@@ -4,6 +4,7 @@ import { AdcmHostProvider } from '@models/adcm';
 import { DynamicActionsButton, DynamicActionsIcon } from '@commonComponents/DynamicActionsButton/DynamicActionsButton';
 import { IconProps } from '@uikit/Icon/Icon';
 import { openHostProviderDynamicActionDialog } from '@store/adcm/hostProviders/hostProvidersDynamicActionsSlice';
+import { isBlockingConcernPresent } from '@utils/concernUtils';
 
 interface HostProviderDynamicActionsButtonProps {
   hostProvider: AdcmHostProvider;
@@ -18,10 +19,11 @@ const HostProviderDynamicActionsButton: React.FC<HostProviderDynamicActionsButto
 }) => {
   const dispatch = useDispatch();
 
+  const idDisabled = useMemo(() => isBlockingConcernPresent(hostProvider.concerns), [hostProvider.concerns]);
+
   const dynamicActions = useStore(
     (s) => s.adcm.hostProvidersDynamicActions.hostProviderDynamicActions[hostProvider.id] ?? null,
   );
-  const isDisabled = useMemo(() => hostProvider.concerns.some(({ isBlocking }) => isBlocking), [hostProvider]);
 
   const handleSelectAction = (actionId: number) => {
     dispatch(openHostProviderDynamicActionDialog({ hostProvider, actionId }));
@@ -33,7 +35,7 @@ const HostProviderDynamicActionsButton: React.FC<HostProviderDynamicActionsButto
     <DynamicActionsTrigger
       actions={dynamicActions}
       onSelectAction={handleSelectAction}
-      disabled={isDisabled}
+      disabled={idDisabled}
       size={size}
     />
   );
