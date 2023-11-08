@@ -33,6 +33,10 @@ export const validate = (schema: SchemaDefinition, configuration: JSONObject, at
     }
   }
 
+  if (Object.keys(errorsPaths).length === 1 && errorsPaths['/'] === true) {
+    delete errorsPaths['/'];
+  }
+
   const isValid = Object.keys(errorsPaths).length === 0;
 
   return { isValid, errorsPaths };
