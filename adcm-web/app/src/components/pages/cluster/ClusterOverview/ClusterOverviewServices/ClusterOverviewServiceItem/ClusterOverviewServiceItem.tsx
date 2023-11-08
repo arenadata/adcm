@@ -18,7 +18,7 @@ const ClusterOverviewServiceItem = ({ service, clusterId }: ClusterOverviewServi
     <div className={s.clusterOverviewServiceItem}>
       <Tooltip label={service.displayName}>
         <Statusable className={s.clusterOverviewServiceItem__title} status={serviceStatus} size="medium">
-          <Link to={`/clusters/${clusterId}/services/${service.id}/primary-configuration`} className="text-link">
+          <Link to={`/clusters/${clusterId}/services/${service.id}/components`} className="text-link">
             {service.displayName}
           </Link>
         </Statusable>
