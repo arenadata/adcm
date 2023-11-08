@@ -1,5 +1,4 @@
 import React from 'react';
-import s from './MarkedList.module.scss';
 
 interface MarkedListProps<T> {
   list: T[];
@@ -11,13 +10,9 @@ const MarkedList = <T,>({ list, getItemKey, renderItem }: MarkedListProps<T>) =>
   if (list.length === 0) return null;
 
   return (
-    <ul className={s.markedList}>
+    <ul className={'marked-list'}>
       {list.map((item) => {
-        return (
-          <li className={s.markedList__item} key={getItemKey(item)}>
-            {renderItem(item)}
-          </li>
-        );
+        return <li key={getItemKey(item)}>{renderItem(item)}</li>;
       })}
     </ul>
   );

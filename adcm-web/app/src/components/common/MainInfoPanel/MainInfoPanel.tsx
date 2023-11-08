@@ -8,18 +8,25 @@ interface MainInfoPanelProps {
   mainInfo?: string;
 }
 
+const parseOptions: HTMLReactParserOptions = {
+  replace: (domNode) => {
+    if (domNode instanceof Element && domNode.attribs) {
+      if (domNode.name === 'a') {
+        domNode.attribs.class = [domNode.attribs.class, 'text-link'].join(' ');
+      }
+
+      if (domNode.name === 'ul') {
+        domNode.attribs.class = [domNode.attribs.class, 'marked-list'].join(' ');
+      }
+    }
+
+    return domNode;
+  },
+};
+
 const MainInfoPanel = ({ mainInfo, className }: MainInfoPanelProps) => {
   const parsedMainInfo = useMemo(() => {
     if (!mainInfo) return null;
-
-    const parseOptions: HTMLReactParserOptions = {
-      replace: (domNode) => {
-        if (domNode instanceof Element && domNode.attribs && domNode.name === 'a') {
-          domNode.attribs.class = [domNode.attribs.class, 'text-link'].join(' ');
-        }
-        return domNode;
-      },
-    };
 
     return parse(mainInfo, parseOptions);
   }, [mainInfo]);
