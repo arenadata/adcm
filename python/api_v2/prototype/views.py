@@ -17,6 +17,7 @@ from api_v2.prototype.serializers import (
 )
 from api_v2.prototype.utils import accept_license
 from api_v2.views import CamelCaseReadOnlyModelViewSet
+from audit.utils import audit
 from cm.models import ObjectType, Prototype
 from django.db.models import QuerySet
 from rest_framework.decorators import action
@@ -44,6 +45,7 @@ class PrototypeViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-ma
         queryset = self.get_filtered_prototypes_unique_by_display_name()
         return Response(data=self.get_serializer(queryset, many=True).data)
 
+    @audit
     @action(methods=["post"], detail=True, url_path="license/accept", url_name="accept-license")
     def accept(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         prototype = self.get_object()

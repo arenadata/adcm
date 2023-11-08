@@ -121,6 +121,11 @@
   actions:
     action: *action
     service_on_host: *host_action
+  import:
+    service:
+      versions:
+        min: 0.9
+        max: 1.1
 
   components:
     component_1:

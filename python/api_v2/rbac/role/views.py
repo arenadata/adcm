@@ -14,6 +14,7 @@ from collections import defaultdict
 from api_v2.rbac.role.filters import RoleFilter
 from api_v2.rbac.role.serializers import RoleCreateUpdateSerializer, RoleSerializer
 from api_v2.views import CamelCaseModelViewSet
+from audit.utils import audit
 from cm.errors import raise_adcm_ex
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ProductCategory
 from guardian.mixins import PermissionListMixin
@@ -48,6 +49,7 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
 
         return RoleSerializer
 
+    @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -55,6 +57,7 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
 
         return Response(data=RoleSerializer(instance=role).data, status=HTTP_201_CREATED)
 
+    @audit
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
@@ -68,6 +71,7 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
 
         return Response(data=RoleSerializer(instance=role).data, status=HTTP_200_OK)
 
+    @audit
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
 

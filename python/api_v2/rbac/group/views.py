@@ -17,6 +17,7 @@ from api_v2.rbac.group.serializers import (
     GroupUpdateSerializer,
 )
 from api_v2.views import CamelCaseModelViewSet
+from audit.utils import audit
 from cm.errors import AdcmEx
 from guardian.mixins import PermissionListMixin
 from rbac.models import Group
@@ -49,6 +50,7 @@ class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disabl
 
         return GroupSerializer
 
+    @audit
     def create(self, request: Request, *args, **kwargs) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -62,6 +64,7 @@ class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disabl
 
         return Response(data=GroupSerializer(instance=group).data, status=HTTP_201_CREATED)
 
+    @audit
     def update(self, request: Request, *args, **kwargs) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -79,6 +82,7 @@ class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disabl
 
         return Response(data=GroupSerializer(instance=group).data, status=HTTP_200_OK)
 
+    @audit
     def destroy(self, request: Request, *args, **kwargs) -> Response:
         instance: Group = self.get_object()
 

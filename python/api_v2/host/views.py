@@ -22,12 +22,14 @@ from api_v2.host.serializers import (
 )
 from api_v2.host.utils import add_new_host_and_map_it, maintenance_mode
 from api_v2.views import CamelCaseModelViewSet, CamelCaseReadOnlyModelViewSet
+from audit.utils import audit
 from cm.api import add_host_to_cluster, delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.models import Cluster, GroupConfig, Host, HostProvider
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -37,6 +39,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
 )
 
+from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HOST_PERM,
@@ -69,6 +72,7 @@ class HostViewSet(ModelObjectPermissionsByActionMixin, PermissionListMixin, Conf
 
         return HostSerializer
 
+    @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -91,12 +95,14 @@ class HostViewSet(ModelObjectPermissionsByActionMixin, PermissionListMixin, Conf
 
         return Response(data=HostSerializer(instance=host).data, status=HTTP_201_CREATED)
 
+    @audit
     def destroy(self, request, *args, **kwargs):
         host = self.get_object()
         check_custom_perm(request.user, "remove", "host", host)
         delete_host(host=host)
         return Response(status=HTTP_204_NO_CONTENT)
 
+    @audit
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
 
@@ -118,6 +124,7 @@ class HostViewSet(ModelObjectPermissionsByActionMixin, PermissionListMixin, Conf
 
         return Response(status=HTTP_200_OK, data=HostSerializer(instance=instance).data)
 
+    @audit
     @action(methods=["post"], detail=True, url_path="maintenance-mode")
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         return maintenance_mode(request=request, **kwargs)
@@ -129,6 +136,7 @@ class HostClusterViewSet(  # pylint:disable=too-many-ancestors
     object_actions = ["destroy"]
     permission_required = [VIEW_HOST_PERM]
     filterset_class = HostClusterFilter
+    audit_model_hint = Host
 
     def get_serializer_class(self):
         if self.action == "maintenance_mode":
@@ -145,6 +153,7 @@ class HostClusterViewSet(  # pylint:disable=too-many-ancestors
 
         return Host.objects.filter(cluster=cluster).select_related("cluster").prefetch_related("hostcomponent_set")
 
+    @audit
     def create(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["cluster_pk"]
@@ -161,6 +170,7 @@ class HostClusterViewSet(  # pylint:disable=too-many-ancestors
 
         return Response(status=HTTP_201_CREATED, data=HostSerializer(instance=host).data)
 
+    @audit
     def destroy(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         host = self.get_object()
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
@@ -168,6 +178,7 @@ class HostClusterViewSet(  # pylint:disable=too-many-ancestors
         remove_host_from_cluster(host=host)
         return Response(status=HTTP_204_NO_CONTENT)
 
+    @audit
     @action(methods=["post"], detail=True, url_path="maintenance-mode")
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         return maintenance_mode(request=request, **kwargs)
@@ -182,7 +193,8 @@ class HostClusterViewSet(  # pylint:disable=too-many-ancestors
         return Response(data=ClusterHostStatusSerializer(instance=host).data)
 
 
-class HostGroupConfigViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+# pylint: disable=too-many-ancestors
+class HostGroupConfigViewSet(PermissionListMixin, GetParentObjectMixin, CamelCaseReadOnlyModelViewSet):
     queryset = (
         Host.objects.select_related("provider", "cluster")
         .prefetch_related("concerns", "hostcomponent_set")
@@ -201,8 +213,13 @@ class HostGroupConfigViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet)
         return HostGroupConfigSerializer
 
     def get_queryset(self, *args, **kwargs):
+        parent_object = self.get_parent_object()
+        parent_view_perm = f"cm.view_{parent_object.__class__.__name__.lower()}"
+        if parent_object is None or not self.request.user.has_perm(perm=parent_view_perm, obj=parent_object):
+            raise NotFound
         return self.queryset.filter(group_config__id=self.kwargs["group_config_pk"])
 
+    @audit
     def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         group_config = GroupConfig.objects.filter(id=self.kwargs["group_config_pk"]).first()
 
@@ -217,6 +234,7 @@ class HostGroupConfigViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet)
 
         return Response(status=HTTP_201_CREATED, data=HostGroupConfigSerializer(instance=host).data)
 
+    @audit
     def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         group_config = GroupConfig.objects.filter(id=self.kwargs["group_config_pk"]).first()
 

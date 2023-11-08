@@ -27,6 +27,7 @@ from api_v2.action.utils import (
 from api_v2.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
+from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.job import start_task
 from cm.models import ADCM, Action, ConcernType, Host, HostComponent, PrototypeConfig
@@ -127,6 +128,7 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
 
         return Response(data=serializer.data)
 
+    @audit
     @action(methods=["post"], detail=True, url_path="run")
     def run(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         target_action = self.get_object()

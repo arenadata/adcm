@@ -10,12 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 from functools import wraps
 
 from api.cluster.serializers import ClusterAuditSerializer
 from api.component.serializers import ComponentAuditSerializer
 from api.host.serializers import HostAuditSerializer
 from api.service.serializers import ServiceAuditSerializer
+from api_v2.cluster.serializers import (
+    ClusterAuditSerializer as ClusterAuditSerializerV2,
+)
+from api_v2.component.serializers import (
+    ComponentAuditSerializer as ComponentAuditSerializerV2,
+)
+from api_v2.host.serializers import HostAuditSerializer as HostAuditSerializerV2
+from api_v2.service.serializers import (
+    ServiceAuditSerializer as ServiceAuditSerializerV2,
+)
+from api_v2.views import CamelCaseModelViewSet
 from audit.cases.cases import get_audit_operation_and_object
 from audit.cef_logger import cef_logger
 from audit.models import (
@@ -32,10 +44,12 @@ from cm.models import (
     Cluster,
     ClusterBind,
     ClusterObject,
+    GroupConfig,
     Host,
     HostProvider,
     ServiceComponent,
     TaskLog,
+    get_model_by_type,
 )
 from django.contrib.auth.models import User as DjangoUser
 from django.db.models import Model, ObjectDoesNotExist
@@ -46,7 +60,7 @@ from rbac.endpoints.policy.serializers import PolicyAuditSerializer
 from rbac.endpoints.role.serializers import RoleAuditSerializer
 from rbac.endpoints.user.serializers import UserAuditSerializer
 from rbac.models import Group, Policy, Role, User
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
 from rest_framework.status import (
@@ -55,7 +69,17 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     is_success,
 )
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
+
+URL_PATH_PATTERN = re.compile(r".*/api/v(?P<api_version>\d+)/(?P<target_path>.*?)/?$")
+
+
+def _are_all_parents_in_path_exist(view: GenericAPIView) -> bool:
+    for pk, val in view.kwargs.items():
+        model = get_model_by_type(pk.rstrip("_pk"))
+        if not model.objects.filter(pk=val).exists():
+            return False
+    return True
 
 
 def _get_view_and_request(args) -> tuple[GenericAPIView, Request]:
@@ -69,8 +93,8 @@ def _get_view_and_request(args) -> tuple[GenericAPIView, Request]:
     return view, request
 
 
-def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs) -> Model | None:
-    # pylint: disable=too-many-branches
+def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs: dict, api_version: int) -> Model | None:
+    # pylint: disable=too-many-branches, too-many-statements
 
     try:
         deleted_obj = view.get_object()
@@ -85,42 +109,94 @@ def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs) -> Model | 
         except AttributeError:
             deleted_obj = None
     except (AdcmEx, Http404) as e:  # when denied returns 404 from PermissionListMixin
-        try:
-            if getattr(view, "queryset") is None:
-                raise TypeError from e
+        if api_version == 1:
+            try:
+                if getattr(view, "queryset") is None:
+                    raise TypeError from e
 
-            if view.queryset.count() == 1:
-                deleted_obj = view.queryset.all()[0]
-            elif "pk" in view.kwargs:
-                try:
-                    deleted_obj = view.queryset.get(pk=int(view.kwargs["pk"]))
-                except ValueError:
+                if view.queryset.count() == 1:
+                    deleted_obj = view.queryset.all()[0]
+                elif "pk" in view.kwargs:
+                    try:
+                        deleted_obj = view.queryset.get(pk=int(view.kwargs["pk"]))
+                    except ValueError:
+                        deleted_obj = None
+                else:
                     deleted_obj = None
-            else:
+            except TypeError:
+                if "role" in request.path:
+                    deleted_obj = Role.objects.filter(pk=view.kwargs["pk"]).first()
+                else:
+                    deleted_obj = None
+            except (IndexError, ObjectDoesNotExist):
                 deleted_obj = None
-        except TypeError:
-            if "role" in request.path:
-                deleted_obj = Role.objects.filter(pk=view.kwargs["pk"]).first()
-            else:
-                deleted_obj = None
-        except (IndexError, ObjectDoesNotExist):
-            deleted_obj = None
+        elif api_version == 2:
+            deleted_obj = _get_target_object_by_view(view=view)
+        else:
+            raise ValueError(f"Unexpected api version: `{api_version}`") from e
     except (KeyError, ValueError):
         deleted_obj = None
-    except PermissionDenied:
-        if "cluster_id" in kwargs:
-            deleted_obj = Cluster.objects.filter(pk=kwargs["cluster_id"]).first()
-        elif "service_id" in kwargs:
-            deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
-        elif "provider_id" in kwargs:
-            deleted_obj = HostProvider.objects.filter(pk=kwargs["provider_id"]).first()
+    except PermissionDenied as e:
+        deleted_obj = None
+
+        if api_version == 1:
+            if "cluster_id" in kwargs:
+                deleted_obj = Cluster.objects.filter(pk=kwargs["cluster_id"]).first()
+            elif "service_id" in kwargs:
+                deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
+            elif "provider_id" in kwargs:
+                deleted_obj = HostProvider.objects.filter(pk=kwargs["provider_id"]).first()
+
+        elif api_version == 2:
+            deleted_obj = _get_target_object_by_view(view=view)
+
         else:
-            deleted_obj = None
+            raise ValueError(f"Unexpected api version: `{api_version}`") from e
 
     return deleted_obj
 
 
-def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
+def _get_target_object_by_view(
+    view: GenericViewSet,
+) -> Host | HostProvider | Cluster | ClusterObject | ServiceComponent | None:
+    """
+    Here we consider the final object only.
+    E.g.:
+        for request path `.../clusters/-8/hosts/3/`
+        `Host #3` will be returned, though `Cluster #-8` does not exist
+    """
+
+    match (view.__class__.__name__, view.action, view.kwargs):
+        case ("HostClusterViewSet", "destroy" | "maintenance_mode", {"cluster_pk": _, "pk": host_pk}):
+            target_object = Host.objects.filter(pk=host_pk).first()
+        case ("ServiceViewSet", _, {"cluster_pk": _, "pk": service_pk}) | (
+            "ImportViewSet",
+            _,
+            {"cluster_pk": _, "service_pk": service_pk},
+        ):
+            target_object = ClusterObject.objects.filter(pk=service_pk).first()
+        case ("ClusterViewSet", _, {"pk": cluster_pk}) | (
+            "ImportViewSet" | "HostClusterViewSet" | "ServiceViewSet",
+            _,
+            {"cluster_pk": cluster_pk},
+        ):
+            target_object = Cluster.objects.filter(pk=cluster_pk).first()
+        case ("HostProviderViewSet", _, {"pk": hostprovider_pk}):
+            target_object = HostProvider.objects.filter(pk=hostprovider_pk).first()
+        case ("ConfigLogViewSet", _, {"cluster_pk": _, "service_pk": _, "component_pk": component_pk}):
+            target_object = ServiceComponent.objects.filter(pk=component_pk).first()
+        case ("ConfigLogViewSet", _, {"cluster_pk": _, "service_pk": service_pk}):
+            target_object = ClusterObject.objects.filter(pk=service_pk).first()
+        case ("ConfigLogViewSet", _, {"cluster_pk": cluster_pk}):
+            target_object = Cluster.objects.filter(pk=cluster_pk).first()
+        case _:
+            target_object = None
+
+    return target_object
+
+
+# pylint: disable=too-many-branches
+def _get_object_changes(prev_data: dict, current_obj: Model, api_version: int) -> dict:
     serializer_class = None
     if isinstance(current_obj, Group):
         serializer_class = GroupAuditSerializer
@@ -131,13 +207,25 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
     elif isinstance(current_obj, Policy):
         serializer_class = PolicyAuditSerializer
     elif isinstance(current_obj, Cluster):
-        serializer_class = ClusterAuditSerializer
+        if api_version == 1:
+            serializer_class = ClusterAuditSerializer
+        elif api_version == 2:
+            serializer_class = ClusterAuditSerializerV2
     elif isinstance(current_obj, Host):
-        serializer_class = HostAuditSerializer
+        if api_version == 1:
+            serializer_class = HostAuditSerializer
+        elif api_version == 2:
+            serializer_class = HostAuditSerializerV2
     elif isinstance(current_obj, ClusterObject):
-        serializer_class = ServiceAuditSerializer
+        if api_version == 1:
+            serializer_class = ServiceAuditSerializer
+        elif api_version == 2:
+            serializer_class = ServiceAuditSerializerV2
     elif isinstance(current_obj, ServiceComponent):
-        serializer_class = ComponentAuditSerializer
+        if api_version == 1:
+            serializer_class = ComponentAuditSerializer
+        elif api_version == 2:
+            serializer_class = ComponentAuditSerializerV2
 
     if not serializer_class:
         return {}
@@ -161,14 +249,18 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
 
 
 def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | None, Model | None]:
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches,too-many-statements
 
     prev_data = None
     current_obj = None
     serializer_class = None
     pk = None
 
-    if isinstance(view, ModelViewSet) and view.action in {"update", "partial_update"} and view.kwargs.get("pk"):
+    if (
+        isinstance(view, (ModelViewSet, CamelCaseModelViewSet))
+        and view.action in {"update", "partial_update"}
+        and view.kwargs.get("pk")
+    ):
         pk = view.kwargs["pk"]
         if view.__class__.__name__ == "GroupViewSet":
             serializer_class = GroupAuditSerializer
@@ -178,6 +270,8 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
             serializer_class = UserAuditSerializer
         elif view.__class__.__name__ == "PolicyViewSet":
             serializer_class = PolicyAuditSerializer
+        elif view.__class__.__name__ == "ClusterViewSet":
+            serializer_class = ClusterAuditSerializerV2
     elif view.request.method in {"PATCH", "PUT"}:
         if view.__class__.__name__ == "ClusterDetail":
             serializer_class = ClusterAuditSerializer
@@ -195,9 +289,22 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
         elif view.__class__.__name__ == "ComponentMaintenanceModeView":
             serializer_class = ComponentAuditSerializer
             pk = view.kwargs["component_id"]
+        elif view.__class__.__name__ == "HostClusterViewSet" and view.action == "maintenance_mode":
+            serializer_class = HostAuditSerializerV2
+            pk = view.kwargs["pk"]
+        elif view.__class__.__name__ == "ServiceViewSet" and view.action == "maintenance_mode":
+            serializer_class = ServiceAuditSerializerV2
+            pk = view.kwargs["pk"]
+        elif view.__class__.__name__ == "ComponentViewSet" and view.action == "maintenance_mode":
+            serializer_class = ComponentAuditSerializerV2
+            pk = view.kwargs["pk"]
 
     if serializer_class:
-        model = view.get_queryset().model
+        if hasattr(view, "audit_model_hint"):  # for cases when get_queryset() raises error
+            model = view.audit_model_hint
+        else:
+            model = view.get_queryset().model
+
         try:
             current_obj = model.objects.filter(pk=pk).first()
             prev_data = serializer_class(model.objects.filter(pk=pk).first()).data
@@ -209,6 +316,14 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
             prev_data = serializer_class(current_obj).data
 
     return prev_data, current_obj
+
+
+def _parse_path(path: str) -> tuple[int, list[str]]:
+    match = URL_PATH_PATTERN.match(string=path)
+    if match is None:
+        return -1, []
+
+    return int(match.group("api_version")), match.group("target_path").split(sep="/")
 
 
 def audit(func):
@@ -226,20 +341,22 @@ def audit(func):
 
         error = None
         view, request = _get_view_and_request(args=args)
+        api_version, path = _parse_path(path=view.request.path)
+        if api_version == -1:
+            return func(*args, **kwargs)
 
+        deleted_obj = None
         if request.method == "DELETE":
-            deleted_obj = _get_deleted_obj(view=view, request=request, kwargs=kwargs)
-            if "bind_id" in kwargs:
+            deleted_obj = _get_deleted_obj(view=view, request=request, kwargs=kwargs, api_version=api_version)
+            if "bind_id" in kwargs and api_version == 1:
                 deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
-        else:
+        elif api_version == 1:
             if "host_id" in kwargs and "maintenance-mode" in request.path:
                 deleted_obj = Host.objects.filter(pk=kwargs["host_id"]).first()
             elif "service_id" in kwargs and "maintenance-mode" in request.path:
                 deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
             elif "component_id" in kwargs and "maintenance-mode" in request.path:
                 deleted_obj = ServiceComponent.objects.filter(pk=kwargs["component_id"]).first()
-            else:
-                deleted_obj = None
 
         prev_data, current_obj = _get_obj_changes_data(view=view)
 
@@ -252,12 +369,16 @@ def audit(func):
                 status_code = res.status_code
             else:
                 status_code = HTTP_403_FORBIDDEN
-        except (AdcmEx, ValidationError) as exc:
+        except (AdcmEx, ValidationError, Http404, NotFound) as exc:
             error = exc
             res = None
 
-            if getattr(exc, "msg", None) and (
-                "doesn't exist" in exc.msg or "service is not installed in specified cluster" in exc.msg
+            if api_version == 2 and isinstance(view, GenericViewSet):
+                deleted_obj = _get_target_object_by_view(view=view)
+
+            elif api_version == 1 and (
+                getattr(exc, "msg", None)
+                and ("doesn't exist" in exc.msg or "service is not installed in specified cluster" in exc.msg)
             ):
                 _kwargs = None
                 if "cluster_id" in kwargs:
@@ -279,7 +400,7 @@ def audit(func):
                 if "bind_id" in kwargs:
                     deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
 
-            if (
+            if api_version == 1 and (
                 getattr(exc, "msg", None)
                 and "django model doesn't has __error_code__ attribute" in exc.msg
                 and "task_id" in kwargs
@@ -287,14 +408,58 @@ def audit(func):
                 deleted_obj = TaskLog.objects.filter(pk=kwargs["task_id"]).first()
 
             if not deleted_obj:
-                status_code = exc.status_code
+                if isinstance(exc, Http404):
+                    status_code = HTTP_404_NOT_FOUND
+                else:
+                    status_code = exc.status_code
+
                 if status_code == HTTP_404_NOT_FOUND:
-                    action_perm_denied = (
-                        kwargs.get("action_id") and Action.objects.filter(pk=kwargs["action_id"]).exists()
-                    )
-                    task_perm_denied = kwargs.get("task_pk") and TaskLog.objects.filter(pk=kwargs["task_pk"]).exists()
-                    if action_perm_denied or task_perm_denied:
-                        status_code = HTTP_403_FORBIDDEN
+                    if api_version == 1:
+                        action_perm_denied = (
+                            kwargs.get("action_id") and Action.objects.filter(pk=kwargs["action_id"]).exists()
+                        )
+                        task_perm_denied = (
+                            kwargs.get("task_pk") and TaskLog.objects.filter(pk=kwargs["task_pk"]).exists()
+                        )
+                        if action_perm_denied or task_perm_denied:
+                            status_code = HTTP_403_FORBIDDEN
+
+                    if api_version == 2:  # pylint: disable=too-many-boolean-expressions
+                        if (
+                            (
+                                view.__class__.__name__ in ["ActionViewSet", "AdcmActionViewSet"]
+                                and view.action == "run"
+                                and "pk" in view.kwargs
+                                and Action.objects.filter(pk=view.kwargs["pk"]).exists()
+                            )
+                            or (
+                                view.__class__.__name__ in ["TaskViewSet", "JobViewSet"]
+                                and view.action == "terminate"
+                                and "pk" in view.kwargs
+                                and get_model_by_type(view.__class__.__name__.strip("ViewSet"))
+                                .objects.filter(pk=view.kwargs["pk"])
+                                .exists()
+                            )
+                            or (
+                                view.__class__.__name__ == "GroupConfigViewSet"
+                                and view.action in ("destroy", "update", "partial_update")
+                                and "pk" in view.kwargs
+                                and GroupConfig.objects.filter(pk=view.kwargs["pk"]).exists()
+                            )
+                            or (
+                                view.__class__.__name__
+                                in ("GroupConfigViewSet", "ConfigLogViewSet", "HostGroupConfigViewSet")
+                                and _are_all_parents_in_path_exist(view)
+                            )
+                            or (
+                                view.__class__.__name__ in ["UserViewSet"]
+                                and view.action in ["update", "partial_update"]
+                                and "pk" in view.kwargs
+                                and User.objects.filter(pk=view.kwargs["pk"]).exists()
+                            )
+                        ):
+                            status_code = HTTP_403_FORBIDDEN
+
             else:  # when denied returns 404 from PermissionListMixin
                 if getattr(exc, "msg", None) and (  # pylint: disable=too-many-boolean-expressions
                     "There is host" in exc.msg
@@ -308,24 +473,26 @@ def audit(func):
                     status_code = error.status_code
                 else:
                     status_code = HTTP_403_FORBIDDEN
+
         except PermissionDenied as exc:
             status_code = HTTP_403_FORBIDDEN
             error = exc
             res = None
+
         except KeyError as exc:
             status_code = HTTP_400_BAD_REQUEST
             error = exc
             res = None
 
         audit_operation, audit_object, operation_name = get_audit_operation_and_object(
-            view,
-            res,
-            deleted_obj,
+            view=view, response=res, deleted_obj=deleted_obj, path=path, api_version=api_version
         )
         if audit_operation:
             if is_success(status_code) and prev_data:
                 current_obj.refresh_from_db()
-                object_changes = _get_object_changes(prev_data=prev_data, current_obj=current_obj)
+                object_changes = _get_object_changes(
+                    prev_data=prev_data, current_obj=current_obj, api_version=api_version
+                )
             else:
                 object_changes = {}
 

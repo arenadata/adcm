@@ -15,12 +15,11 @@ from datetime import timedelta
 from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditSession
 from rbac.models import User
-from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 
 
-class TestAudit(BaseAPITestCase):
+class TestAuthorizationAudit(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
         self.username = self.password = "user"
@@ -33,7 +32,7 @@ class TestAudit(BaseAPITestCase):
         self.time_to = (current_datetime + timedelta(minutes=1)).isoformat()
 
     def login_for_audit(self, username="admin", password="admin"):
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v1:rbac:token"),
             data={"username": username, "password": password},
         )

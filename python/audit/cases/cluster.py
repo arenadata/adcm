@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from audit.cases.common import (
     get_obj_name,
     get_or_create_audit_obj,
@@ -23,8 +22,8 @@ from audit.models import (
     AuditObjectType,
     AuditOperation,
 )
-from cm.models import Cluster, ClusterBind, ClusterObject, Host
-from django.db.models import Model
+from cm.models import Cluster, ClusterBind, ClusterObject, Host, Prototype
+from django.views import View
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
@@ -71,23 +70,24 @@ def make_export_name(cluster_name: str, service_name: str) -> str:
 
 # pylint: disable-next=too-many-locals,too-many-branches,too-many-statements
 def cluster_case(
-    path: list[str, ...],
-    view: GenericAPIView,
+    path: list[str],
+    view: GenericAPIView | View,
     response: Response,
-    deleted_obj: Model,
+    deleted_obj: Cluster,
+    api_version: int = 1,
 ) -> tuple[AuditOperation, AuditObject | None]:
     audit_operation = None
     audit_object = None
 
     match path:
-        case ["cluster"]:
+        case ["cluster"] | ["clusters"]:
             audit_operation, audit_object = response_case(
                 obj_type=AuditObjectType.CLUSTER,
                 operation_type=AuditLogOperationType.CREATE,
                 response=response,
             )
 
-        case ["cluster", cluster_pk]:
+        case ["cluster", cluster_pk] | ["clusters", cluster_pk]:
             if view.request.method == "DELETE":
                 deleted_obj: Cluster
                 operation_type = AuditLogOperationType.DELETE
@@ -109,36 +109,44 @@ def cluster_case(
             else:
                 audit_object = None
 
-        case ["cluster", cluster_pk, "host"]:
+        case ["cluster", cluster_pk, "host"] | ["clusters", cluster_pk, "hosts"]:
             host_fqdn = ""
+
             if response and response.data:
-                host_fqdn = response.data["fqdn"]
+                if api_version == 1:
+                    host_fqdn = response.data["fqdn"]
+                else:
+                    host_fqdn = response.data["name"]
 
             if "host_id" in view.request.data:
                 host = Host.objects.filter(pk=view.request.data["host_id"]).first()
                 if host:
                     host_fqdn = host.fqdn
 
+            operation_name = f"{host_fqdn} host added".strip()
+
             audit_operation = AuditOperation(
-                name=f"{host_fqdn} host added".strip(),
+                name=operation_name,
                 operation_type=AuditLogOperationType.UPDATE,
             )
-            obj = Cluster.objects.get(pk=cluster_pk)
-            audit_object = get_or_create_audit_obj(
-                object_id=cluster_pk,
-                object_name=obj.name,
-                object_type=AuditObjectType.CLUSTER,
-            )
+            obj = Cluster.objects.filter(pk=cluster_pk).first()
+            if obj is not None:
+                audit_object = get_or_create_audit_obj(
+                    object_id=cluster_pk,
+                    object_name=obj.name,
+                    object_type=AuditObjectType.CLUSTER,
+                )
 
-        case ["cluster", cluster_pk, "host", host_pk] | [
+        case ["cluster", cluster_pk, "host", host_pk] | ["clusters", cluster_pk, "hosts", host_pk] | [
             "cluster",
             cluster_pk,
             "host",
             host_pk,
             "maintenance-mode",
-        ]:
+        ] | ["clusters", cluster_pk, "hosts", host_pk, "maintenance-mode"]:
             if view.request.method == "DELETE":
-                name = "host removed"
+                name = "Host removed"
+                operation_type = AuditLogOperationType.UPDATE
                 if not isinstance(deleted_obj, Host):
                     deleted_obj = Host.objects.filter(pk=host_pk).first()
 
@@ -157,6 +165,7 @@ def cluster_case(
             else:
                 obj = Host.objects.filter(pk=host_pk).first()
                 name = f"{AuditObjectType.HOST.capitalize()} updated"
+                operation_type = AuditLogOperationType.UPDATE
                 if obj:
                     audit_object = get_or_create_audit_obj(
                         object_id=host_pk,
@@ -166,22 +175,23 @@ def cluster_case(
 
             audit_operation = AuditOperation(
                 name=name,
-                operation_type=AuditLogOperationType.UPDATE,
+                operation_type=operation_type,
             )
 
-        case ["cluster", cluster_pk, "hostcomponent"]:
+        case ["cluster", cluster_pk, "hostcomponent"] | ["clusters", cluster_pk, "mapping"]:
             audit_operation = AuditOperation(
                 name="Host-Component map updated",
                 operation_type=AuditLogOperationType.UPDATE,
             )
-            obj = Cluster.objects.get(pk=cluster_pk)
-            audit_object = get_or_create_audit_obj(
-                object_id=cluster_pk,
-                object_name=obj.name,
-                object_type=AuditObjectType.CLUSTER,
-            )
+            obj = Cluster.objects.filter(pk=cluster_pk).first()
+            if obj is not None:
+                audit_object = get_or_create_audit_obj(
+                    object_id=cluster_pk,
+                    object_name=obj.name,
+                    object_type=AuditObjectType.CLUSTER,
+                )
 
-        case ["cluster", cluster_pk, "import"]:
+        case ["cluster", cluster_pk, "import"] | ["clusters", cluster_pk, "imports"]:
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.CLUSTER,
                 operation_type=AuditLogOperationType.UPDATE,
@@ -189,32 +199,52 @@ def cluster_case(
                 operation_aux_str="import ",
             )
 
-        case ["cluster", cluster_pk, "service"]:
+        case ["cluster", cluster_pk, "service"] | ["clusters", cluster_pk, "services"]:
+            service_display_name = ""
+
+            if api_version == 1:
+                if response and response.data and response.data.get("display_name"):
+                    service_display_name = response.data["display_name"]
+
+                if "service_id" in view.request.data:
+                    service = ClusterObject.objects.filter(pk=view.request.data["service_id"]).first()
+                    if service:
+                        service_display_name = get_service_name(service)
+
+                operation_name = f"{service_display_name} service added".strip()
+
+            elif api_version == 2:
+                if response and response.data:
+                    service_display_name = [data["display_name"] for data in response.data]
+                else:
+                    service_display_name = (
+                        Prototype.objects.filter(
+                            pk__in=[data["prototype_id"] for data in view.request.data if "prototype_id" in data]
+                        )
+                        .order_by("pk")
+                        .values_list("display_name", flat=True)
+                    )
+
+                service_display_name = f"[{', '.join(service_display_name)}]"
+                operation_name = f"{service_display_name} service(s) added"
+
+            else:
+                raise ValueError("Unexpected api version")
+
             audit_operation = AuditOperation(
-                name="service added",
+                name=operation_name,
                 operation_type=AuditLogOperationType.UPDATE,
             )
 
-            service_display_name = None
-            if response and response.data and response.data.get("display_name"):
-                service_display_name = response.data["display_name"]
+            obj = Cluster.objects.filter(pk=cluster_pk).first()
+            if obj is not None:
+                audit_object = get_or_create_audit_obj(
+                    object_id=cluster_pk,
+                    object_name=obj.name,
+                    object_type=AuditObjectType.CLUSTER,
+                )
 
-            if "service_id" in view.request.data:
-                service = ClusterObject.objects.filter(pk=view.request.data["service_id"]).first()
-                if service:
-                    service_display_name = get_service_name(service)
-
-            if service_display_name:
-                audit_operation.name = f"{service_display_name} {audit_operation.name}"
-
-            obj = Cluster.objects.get(pk=cluster_pk)
-            audit_object = get_or_create_audit_obj(
-                object_id=cluster_pk,
-                object_name=obj.name,
-                object_type=AuditObjectType.CLUSTER,
-            )
-
-        case ["cluster", cluster_pk, "service", service_pk]:
+        case ["cluster", cluster_pk, "service", service_pk] | ["clusters", cluster_pk, "services", service_pk]:
             audit_operation = AuditOperation(
                 name="service removed",
                 operation_type=AuditLogOperationType.UPDATE,
@@ -233,12 +263,13 @@ def cluster_case(
             if service_display_name:
                 audit_operation.name = f"{service_display_name} {audit_operation.name}"
 
-            obj = Cluster.objects.get(pk=cluster_pk)
-            audit_object = get_or_create_audit_obj(
-                object_id=cluster_pk,
-                object_name=obj.name,
-                object_type=AuditObjectType.CLUSTER,
-            )
+            obj = Cluster.objects.filter(pk=cluster_pk).first()
+            if obj is not None:
+                audit_object = get_or_create_audit_obj(
+                    object_id=cluster_pk,
+                    object_name=obj.name,
+                    object_type=AuditObjectType.CLUSTER,
+                )
 
         case ["cluster", _, "service", service_pk, "bind"]:
             service = ClusterObject.objects.get(pk=service_pk)
@@ -278,6 +309,7 @@ def cluster_case(
             | ["cluster", _, "service", service_pk, "config", "history", _, "restore"]
             | ["service", service_pk, "config", "history"]
             | ["service", service_pk, "config", "history", _, "restore"]
+            | ["clusters", _, "services", service_pk, "configs"]
         ):
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.SERVICE,
@@ -286,7 +318,10 @@ def cluster_case(
                 operation_aux_str=CONFIGURATION_STR,
             )
 
-        case (["cluster", _, "service", service_pk, "import"] | ["service", service_pk, "import"]):
+        case (
+            ["cluster" | "clusters", _, "service" | "services", service_pk, "import" | "imports"]
+            | ["service", service_pk, "import"]
+        ):
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.SERVICE,
                 operation_type=AuditLogOperationType.UPDATE,
@@ -294,7 +329,7 @@ def cluster_case(
                 operation_aux_str="import ",
             )
 
-        case ["cluster", _, "service", service_pk, "maintenance-mode"]:
+        case ["cluster" | "clusters", _, "service" | "services", service_pk, "maintenance-mode"]:
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.SERVICE,
                 operation_type=AuditLogOperationType.UPDATE,
@@ -319,6 +354,7 @@ def cluster_case(
             | ["service", _, "component", component_pk, "config", "history", _, "restore"]
             | ["component", component_pk, "config", "history"]
             | ["component", component_pk, "config", "history", _, "restore"]
+            | ["clusters", _, "services", _, "components", component_pk, "configs"]
         ):
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.COMPONENT,
@@ -364,7 +400,9 @@ def cluster_case(
             )
 
         case (
-            ["cluster", cluster_pk, "config", "history"] | ["cluster", cluster_pk, "config", "history", _, "restore"]
+            ["cluster", cluster_pk, "config", "history"]
+            | ["cluster", cluster_pk, "config", "history", _, "restore"]
+            | ["clusters", cluster_pk, "configs"]
         ):
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.CLUSTER,
@@ -391,7 +429,15 @@ def cluster_case(
         case (
             ["component", component_pk]
             | ["component", component_pk, _]
-            | ["cluster", _, "service", _, "component", component_pk, "maintenance-mode"]
+            | [
+                "cluster" | "clusters",
+                _,
+                "service" | "services",
+                _,
+                "component" | "components",
+                component_pk,
+                "maintenance-mode",
+            ]
             | ["service", _, "component", component_pk, "maintenance-mode"]
         ):
             audit_operation, audit_object = obj_pk_case(

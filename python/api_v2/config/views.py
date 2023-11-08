@@ -18,6 +18,7 @@ from api_v2.config.utils import (
     represent_string_as_json_type,
 )
 from api_v2.views import CamelCaseGenericViewSet
+from audit.utils import audit
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, PrototypeConfig
@@ -66,6 +67,7 @@ class ConfigLogViewSet(
 
         return ConfigLogSerializer
 
+    @audit
     def create(self, request, *args, **kwargs) -> Response:
         parent_object = self.get_parent_object()
 
@@ -75,7 +77,8 @@ class ConfigLogViewSet(
             or request.user.has_perm(perm=parent_view_perm)
         ):
             raise NotFound("Can't find config's parent object")
-
+        if "group_config_pk" in kwargs and not ConfigLog.objects.filter(pk=kwargs["group_config_pk"]):
+            raise NotFound("Can't find group config")
         if parent_object.config is None:
             raise AdcmEx(code="CONFIG_NOT_FOUND", msg="This object has no config")
 

@@ -18,6 +18,7 @@ from api_v2.service.serializers import (
     ServiceStatusSerializer,
 )
 from api_v2.views import CamelCaseReadOnlyModelViewSet
+from audit.utils import audit
 from cm.api import add_service_to_cluster, update_mm_objects
 from cm.models import Cluster, ClusterObject, ObjectType, Prototype
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -65,6 +66,7 @@ class ServiceViewSet(  # pylint: disable=too-many-ancestors
 
         return self.serializer_class
 
+    @audit
     def create(self, request: Request, *args, **kwargs):  # pylint:disable=unused-argument
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, pk=kwargs["cluster_pk"]
@@ -92,10 +94,12 @@ class ServiceViewSet(  # pylint: disable=too-many-ancestors
             status=HTTP_201_CREATED, data=ServiceRetrieveSerializer(instance=added_services, many=True).data
         )
 
+    @audit
     def destroy(self, request: Request, *args, **kwargs):  # pylint:disable=unused-argument
         instance = self.get_object()
         return delete_service_from_api(service=instance)
 
+    @audit
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode")
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument

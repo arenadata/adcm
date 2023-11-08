@@ -13,6 +13,7 @@
 from api_v2.imports.serializers import ImportPostSerializer
 from api_v2.imports.utils import cook_data_for_multibind, get_imports
 from api_v2.views import CamelCaseGenericViewSet
+from audit.utils import audit
 from cm.api import multi_bind
 from cm.models import Cluster, ClusterObject, PrototypeImport
 from rest_framework.mixins import CreateModelMixin, ListModelMixin
@@ -70,6 +71,7 @@ class ImportViewSet(ListModelMixin, CreateModelMixin, CamelCaseGenericViewSet): 
         obj = self.get_object_and_check_perm(request=request)
         return self.get_paginated_response(data=self.paginate_queryset(queryset=get_imports(obj=obj)))
 
+    @audit
     def create(self, request, *args, **kwargs):
         obj = self.get_object_and_check_perm(request=request)
         serializer = self.get_serializer(data=request.data, many=True, context={"request": request, "cluster": obj})

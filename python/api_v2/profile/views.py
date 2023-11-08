@@ -9,8 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from api_v2.profile.serializers import ProfileSerializer, ProfileUpdateSerializer
+from audit.utils import audit
 from djangorestframework_camel_case.parser import (
     CamelCaseFormParser,
     CamelCaseJSONParser,
@@ -23,12 +23,14 @@ from djangorestframework_camel_case.render import (
 from rbac.models import User
 from rbac.services.user import update_user
 from rest_framework.generics import RetrieveUpdateAPIView
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from adcm.permissions import DjangoModelPermissionsAudit
 
 
 class ProfileView(RetrieveUpdateAPIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (DjangoModelPermissionsAudit,)
+    permission_required = ["rbac.view_user"]
     queryset = User.objects.all()
     serializer_class = ProfileSerializer
     renderer_classes = [CamelCaseJSONRenderer, CamelCaseBrowsableAPIRenderer]
@@ -43,6 +45,7 @@ class ProfileView(RetrieveUpdateAPIView):
 
         return super().get_serializer_class()
 
+    @audit
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)

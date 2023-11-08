@@ -19,6 +19,7 @@ from api_v2.component.serializers import (
 )
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.views import CamelCaseGenericViewSet, CamelCaseReadOnlyModelViewSet
+from audit.utils import audit
 from cm.api import update_mm_objects
 from cm.models import Cluster, ClusterObject, Host, ServiceComponent
 from guardian.mixins import PermissionListMixin
@@ -67,6 +68,7 @@ class ComponentViewSet(
 
         return self.serializer_class
 
+    @audit
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode")
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument

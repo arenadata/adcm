@@ -30,6 +30,7 @@ from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.host.serializers import HostMappingSerializer
 from api_v2.views import CamelCaseModelViewSet
+from audit.utils import audit
 from cm.api import (
     add_cluster,
     delete_cluster,
@@ -99,6 +100,7 @@ class ClusterViewSet(
             case _:
                 return ClusterSerializer
 
+    @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -112,6 +114,7 @@ class ClusterViewSet(
 
         return Response(data=ClusterSerializer(cluster).data, status=HTTP_201_CREATED)
 
+    @audit
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(data=request.data)
@@ -127,6 +130,7 @@ class ClusterViewSet(
 
         return Response(status=HTTP_200_OK, data=ClusterSerializer(instance).data)
 
+    @audit
     def destroy(self, request, *args, **kwargs):
         cluster = self.get_object()
         delete_cluster(cluster=cluster)
@@ -187,6 +191,7 @@ class ClusterViewSet(
             data=RelatedHostsStatusesSerializer(instance=self.paginate_queryset(queryset=queryset), many=True).data
         )
 
+    @audit
     @action(
         methods=["get", "post"],
         detail=True,

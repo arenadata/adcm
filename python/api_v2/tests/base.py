@@ -10,11 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import tarfile
+from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
 from typing import TypedDict
 
 from api_v2.prototype.utils import accept_license
+from audit.models import AuditLog
 from cm.api import (
     add_cluster,
     add_hc,
@@ -40,7 +42,10 @@ from cm.models import (
 )
 from django.conf import settings
 from init_db import init
-from rbac.models import User
+from rbac.models import Group, Policy, Role, User
+from rbac.services.group import create as create_group
+from rbac.services.policy import policy_create
+from rbac.services.role import role_create
 from rbac.services.user import create_user
 from rbac.upgrade.role import init_roles
 from rest_framework.test import APITestCase
@@ -150,7 +155,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
         return add_hc(cluster=cluster, hc_in=hc_map)
 
     @staticmethod
-    def get_non_existent_pk(model: type[ADCMEntity] | type[ADCMModel] | type[User]):
+    def get_non_existent_pk(model: type[ADCMEntity | ADCMModel | User | Role | Group | Policy]):
         try:
             return model.objects.order_by("-pk").first().pk + 1
         except model.DoesNotExist:
@@ -168,3 +173,27 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
             }
 
         return create_user(**user_data)
+
+    def check_last_audit_log(self, **kwargs) -> AuditLog:
+        last_audit_log = AuditLog.objects.order_by("pk").last()
+        self.assertIsNotNone(last_audit_log, "AuditLog table is empty")
+
+        expected_log = AuditLog.objects.filter(**kwargs).order_by("pk").last()
+        self.assertIsNotNone(expected_log, "Can't find audit log")
+        self.assertEqual(last_audit_log.pk, expected_log.pk, "Expected audit log is not last")
+
+        return last_audit_log
+
+    @contextmanager
+    def grant_permissions(self, to: User, on: list[ADCMEntity] | ADCMEntity, role_name: str):
+        if not isinstance(on, list):
+            on = [on]
+        group = create_group(name_to_display=f"Group for role `{role_name}`", user_set=[{"id": to.pk}])
+        custom_role = role_create(display_name=f"Custom `{role_name}` role", child=[Role.objects.get(name=role_name)])
+        policy = policy_create(name=f"Policy for role `{role_name}`", role=custom_role, group=[group], object=on)
+
+        yield
+
+        policy.delete()
+        custom_role.delete()
+        group.delete()

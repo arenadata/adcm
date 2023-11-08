@@ -627,7 +627,11 @@ class TestHostProviderGroupConfig(BaseAPITestCase):
         response = self.client.delete(
             path=reverse(
                 viewname="v2:hostprovider-group-config-hosts-detail",
-                kwargs={"hostprovider_pk": self.provider, "group_config_pk": self.group_config.pk, "pk": self.host.pk},
+                kwargs={
+                    "hostprovider_pk": self.provider.pk,
+                    "group_config_pk": self.group_config.pk,
+                    "pk": self.host.pk,
+                },
             )
         )
 
