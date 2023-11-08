@@ -28,7 +28,7 @@ const notificationsSlice = createSlice({
         model: {
           message,
         },
-        ttl: ttl ?? 30000,
+        ttl: ttl ?? 5000,
       };
       state.notifications = [...state.notifications, notification];
     },
@@ -41,7 +41,7 @@ const notificationsSlice = createSlice({
         model: {
           message,
         },
-        ttl: ttl ?? 30000,
+        ttl: ttl ?? 5000,
       };
       state.notifications = [...state.notifications, notification];
     },
