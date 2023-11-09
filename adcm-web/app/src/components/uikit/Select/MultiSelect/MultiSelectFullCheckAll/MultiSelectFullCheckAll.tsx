@@ -9,8 +9,18 @@ const MultiSelectFullCheckAll = <T,>() => {
     return originalOptions.map(({ value }) => value);
   }, [originalOptions]);
 
+  const isDisabledCheckAll = useMemo(() => {
+    return originalOptions.every(({ disabled }) => disabled);
+  }, [originalOptions]);
+
   return (
-    <CheckAll allList={allOptionsList} selectedValues={selectedValues} onChange={onChange} label={checkAllLabel} />
+    <CheckAll
+      allList={allOptionsList}
+      selectedValues={selectedValues}
+      onChange={onChange}
+      label={checkAllLabel}
+      disabled={isDisabledCheckAll}
+    />
   );
 };
 
