@@ -5,6 +5,7 @@ import { defaultSpinnerDelay } from '@constants';
 import { AdcmCluster } from '@models/adcm';
 import { createSlice } from '@reduxjs/toolkit';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { showError } from '@store/notificationsSlice';
 
 interface AdcmClusterState {
   cluster?: AdcmCluster;
@@ -18,6 +19,7 @@ const loadClusterFromBackend = createAsyncThunk(
       const cluster = await AdcmClustersApi.getCluster(arg);
       return cluster;
     } catch (error) {
+      thunkAPI.dispatch(showError({ message: `Cluster with id = ${arg} not found` }));
       return thunkAPI.rejectWithValue(error);
     }
   },

@@ -4,6 +4,7 @@ import { AdcmJob, AdcmJobLogItem, AdcmJobStatus, AdcmTask } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmJobsApi } from '@api/adcm/jobs';
+import { showError } from '@store/notificationsSlice';
 
 interface AdcmJobsState {
   jobs: AdcmJob[];
@@ -68,6 +69,7 @@ const getTask = createAsyncThunk('adcm/jobs/getTask', async (id: number, thunkAP
   try {
     return await AdcmJobsApi.getTask(id);
   } catch (error) {
+    thunkAPI.dispatch(showError({ message: `Task with id = ${id} not found` }));
     return thunkAPI.rejectWithValue(error);
   }
 });
