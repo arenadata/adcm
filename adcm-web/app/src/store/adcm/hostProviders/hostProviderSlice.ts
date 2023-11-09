@@ -3,6 +3,7 @@ import { AdcmHostProvider } from '@models/adcm/hostProvider';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmHostProvidersApi, AdcmHostsApi } from '@api';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { showError } from '@store/notificationsSlice';
 
 interface AdcmHostProviderState {
   hostProvider: AdcmHostProvider | null;
@@ -29,6 +30,7 @@ const getHostProvider = createAsyncThunk('adcm/hostProvider/getHostProvider', as
   try {
     return await AdcmHostProvidersApi.getHostProvider(id);
   } catch (error) {
+    thunkAPI.dispatch(showError({ message: `Hostprovider with id = ${id} not found` }));
     return thunkAPI.rejectWithValue(error);
   }
 });
