@@ -19,11 +19,11 @@ const DynamicActionDialog: React.FC<DynamicActionDialogProps> = ({ clusterId, ac
   const [localActionRunConfig, setLocalActionRunConfig] = useState<AdcmDynamicActionRunConfig>(() => {
     return getDefaultRunConfig();
   });
-  const [isShowDisclaimer, setIsShowDisclaimer] = useState(false);
 
   const dynamicActionTypes = useMemo(() => {
     return getDynamicActionTypes(actionDetails);
   }, [actionDetails]);
+  const [isShowDisclaimer, setIsShowDisclaimer] = useState(dynamicActionTypes.includes(DynamicActionType.Confirm));
 
   useEffect(() => {
     setIsShowDisclaimer(dynamicActionTypes.includes(DynamicActionType.Confirm));
