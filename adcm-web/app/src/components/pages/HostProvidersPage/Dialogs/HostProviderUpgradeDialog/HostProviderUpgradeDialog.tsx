@@ -66,7 +66,7 @@ const HostProviderUpgradeDialog: React.FC = () => {
     <Dialog
       width="auto"
       minWidth="584px"
-      title="Upgrade HostProvider"
+      title="Upgrade Hostprovider"
       isOpen={true}
       onOpenChange={onClose}
       dialogControls={dialogControls}

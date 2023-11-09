@@ -21,7 +21,7 @@ const SelectUpgradeStep: React.FC<UpgradeStepFormProps> = ({ formData, onChange 
 
   return (
     <FormFieldsContainer>
-      <FormField label="HostProvider">
+      <FormField label="Hostprovider">
         <TextFormField>{hostProvider?.name}</TextFormField>
       </FormField>
       <FormField label="Upgrade to version">
