@@ -48,7 +48,7 @@ from cm.models import (
     ServiceComponent,
     Upgrade,
 )
-from cm.status_api import UpdateEventType, update_event
+from cm.status_api import send_prototype_and_state_update_event
 from cm.utils import obj_ref
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
@@ -412,11 +412,6 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-m
             old_host_proto = Prototype.objects.get(bundle=old_bundle, type="host", name=host.prototype.name)
             revert_object(obj=host, old_proto=old_host_proto)
 
-    obj.refresh_from_db()
-    update_event(
-        object_=obj, update=[(UpdateEventType.STATE, obj.state), (UpdateEventType.VERSION, obj.prototype.version)]
-    )
-
 
 def set_before_upgrade(obj: ADCMEntity) -> None:
     obj.before_upgrade["state"] = obj.state
@@ -486,17 +481,14 @@ def do_upgrade(
     obj.before_upgrade["bundle_id"] = obj.prototype.bundle.pk
     update_before_upgrade(obj=obj)
 
-    update = []
     if not upgrade.action:
         bundle_switch(obj=obj, upgrade=upgrade)
+
         if upgrade.state_on_success:
             obj.state = upgrade.state_on_success
             obj.save(update_fields=["state"])
-            update.append((UpdateEventType.STATE, upgrade.state_on_success))
 
-        obj.refresh_from_db()
-        update.append((UpdateEventType.VERSION, obj.prototype.version))
-        update_event(object_=obj, update=update)
+        send_prototype_and_state_update_event(object_=obj)
     else:
         task = start_task(
             action=upgrade.action,

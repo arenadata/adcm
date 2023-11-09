@@ -38,6 +38,13 @@ type eventMessage struct {
 	} `json:"object"`
 }
 
+type statusChangePrototype struct {
+	Id          int    `json:"id,omitempty"`
+	Name        string `json:"name,omitempty"`
+	DisplayName string `json:"displayName,omitempty"`
+	Version     string `json:"version,omitempty"`
+}
+
 type statusChangePayload struct {
 	Id         int                        `json:"id,omitempty"`
 	Reason     *statusChangeReasonPayload `json:"reason,omitempty"`
@@ -45,7 +52,7 @@ type statusChangePayload struct {
 	Cause      string                     `json:"cause,omitempty"`
 	Status     string                     `json:"status,omitempty"`
 	State      string                     `json:"state,omitempty"`
-	Version    string                     `json:"version,omitempty"`
+	Prototype  *statusChangePrototype     `json:"prototype,omitempty"`
 }
 
 type statusChangeReasonPayload struct {

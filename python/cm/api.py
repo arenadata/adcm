@@ -56,7 +56,11 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from cm.status_api import api_request, create_config_event, update_hostcomponent_event
+from cm.status_api import (
+    api_request,
+    send_config_creation_event,
+    send_host_component_map_update_event,
+)
 from cm.utils import build_id_object_mapping, obj_ref
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
@@ -540,7 +544,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
         update_object_flag(obj=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
-    create_config_event(object_=obj)
+    send_config_creation_event(object_=obj)
 
     return config_log
 
@@ -769,7 +773,7 @@ def save_hc(
         ):
             policy.apply()
 
-    update_hostcomponent_event(cluster=cluster)
+    send_host_component_map_update_event(cluster=cluster)
     return host_component_list
 
 

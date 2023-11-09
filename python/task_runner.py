@@ -25,7 +25,7 @@ from cm.errors import AdcmEx
 from cm.job import finish_task, re_prepare_job
 from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
-from cm.status_api import UpdateEventType, update_event
+from cm.status_api import send_task_status_update_event
 from cm.utils import get_env_with_venv_path
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -119,7 +119,7 @@ def run_task(task_id: int, args: str | None = None) -> None:  # pylint: disable=
     task.status = JobStatus.RUNNING
     task.save(update_fields=["pid", "restore_hc_on_fail", "start_date", "status"])
 
-    update_event(object_=task, update=[(UpdateEventType.STATUS, JobStatus.RUNNING)])
+    send_task_status_update_event(object_=task, status=JobStatus.RUNNING.value)
 
     jobs = JobLog.objects.filter(task_id=task.id).order_by("id")
     if not jobs:

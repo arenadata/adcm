@@ -39,7 +39,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from cm.status_api import create_concern_event, delete_concern_event
+from cm.status_api import send_concern_creation_event, send_concern_delete_event
 from cm.utils import obj_ref
 from django.db.transaction import on_commit
 from djangorestframework_camel_case.util import camelize
@@ -475,7 +475,7 @@ def add_concern_to_object(object_: ADCMEntity, concern: ConcernItem | None) -> N
     object_.concerns.add(concern)
 
     concern_data = camelize(data=ConcernSerializer(instance=concern).data)
-    on_commit(func=partial(create_concern_event, object_=object_, concern=concern_data))
+    on_commit(func=partial(send_concern_creation_event, object_=object_, concern=concern_data))
 
 
 def remove_concern_from_object(object_: ADCMEntity, concern: ConcernItem | None) -> None:
@@ -488,7 +488,7 @@ def remove_concern_from_object(object_: ADCMEntity, concern: ConcernItem | None)
         return
 
     object_.concerns.remove(concern)
-    on_commit(func=partial(delete_concern_event, object_=object_, concern_id=concern_id))
+    on_commit(func=partial(send_concern_delete_event, object_=object_, concern_id=concern_id))
 
 
 def lock_affected_objects(task: TaskLog, objects: Iterable[ADCMEntity]) -> None:
