@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SearchInput from '@uikit/SearchInput/SearchInput';
 import { getFilteredOptions } from './CommonSelectSearchFilter.utils';
 import { SelectOption } from '@uikit/Select/Select.types';
@@ -22,9 +22,12 @@ const CommonSelectSearchFilter = <T,>({
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchStr = e.target.value;
     setSearch(searchStr);
-    setOptions(getFilteredOptions(originalOptions, searchStr));
     onSearch?.(searchStr);
   };
+
+  useEffect(() => {
+    setOptions(getFilteredOptions(originalOptions, search));
+  }, [originalOptions, search, setOptions]);
 
   return <SearchInput className={className} placeholder={searchPlaceholder} value={search} onChange={handleSearch} />;
 };

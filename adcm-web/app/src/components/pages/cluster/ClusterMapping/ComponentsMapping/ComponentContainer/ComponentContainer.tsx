@@ -50,15 +50,21 @@ const ComponentContainer = ({
 
   const isDisabled = !allowActions?.length;
 
+  const isDenyAdd = !allowActions.includes(AdcmHostComponentMapRuleAction.Add);
+  const isDenyRemove = !allowActions.includes(AdcmHostComponentMapRuleAction.Remove);
+
   const hostsOptions = useMemo<SelectOption<AdcmHostShortView>[]>(
     () =>
-      allHosts.map((host) => ({
-        label: host.name,
-        value: host,
-        disabled: host.maintenanceMode === AdcmMaintenanceMode.On,
-        title: 'You can not choose a host with maintenance mode is On',
-      })),
-    [allHosts],
+      allHosts.map((host) => {
+        const isMaintenanceModeOn = host.maintenanceMode === AdcmMaintenanceMode.On;
+        return {
+          label: host.name,
+          value: host,
+          disabled: (isDenyRemove && hosts.includes(host)) || isMaintenanceModeOn,
+          title: isMaintenanceModeOn ? 'You can not choose a host with maintenance mode is On' : undefined,
+        };
+      }),
+    [allHosts, isDenyRemove, hosts],
   );
 
   const visibleHosts = useMemo(
@@ -128,7 +134,7 @@ const ComponentContainer = ({
             label="Add hosts"
             onAddClick={handleAddClick}
             denyAddHostReason={denyAddHostReason}
-            isDisabled={!allowActions.includes(AdcmHostComponentMapRuleAction.Add)}
+            isDisabled={isDenyAdd}
           />
         </div>
         {visibleHosts.length > 0 && (
@@ -139,7 +145,7 @@ const ComponentContainer = ({
                 id={host.id}
                 label={host.name}
                 onDeleteClick={handleDelete}
-                isDisabled={!allowActions.includes(AdcmHostComponentMapRuleAction.Remove)}
+                isDisabled={isDenyRemove}
                 denyRemoveHostReason={denyRemoveHostReason}
               />
             ))}

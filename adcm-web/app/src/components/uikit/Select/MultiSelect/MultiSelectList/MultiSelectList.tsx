@@ -3,6 +3,7 @@ import { useMultiSelectContext } from '../MultiSelectContext/MultiSelect.context
 import Checkbox from '@uikit/Checkbox/Checkbox';
 import s from './MultiSelectList.module.scss';
 import cn from 'classnames';
+import { ConditionalWrapper, Tooltip } from '@uikit';
 
 const MultiSelectList = <T,>() => {
   const {
@@ -28,16 +29,18 @@ const MultiSelectList = <T,>() => {
 
   return (
     <ul className={cn(s.multiSelectList, 'scroll')} style={{ maxHeight }} data-test="options">
-      {options.map(({ value, label, disabled }) => (
-        <li key={label?.toString()} className={s.multiSelectList__item}>
-          <Checkbox
-            label={label}
-            disabled={disabled}
-            checked={selectedValues.includes(value)}
-            onChange={getHandleChange(value)}
-            className={s.multiSelectList__checkbox}
-          />
-        </li>
+      {options.map(({ value, label, disabled, title }) => (
+        <ConditionalWrapper Component={Tooltip} isWrap={!!title} label={title} placement="bottom-start">
+          <li key={label?.toString()} className={s.multiSelectList__item}>
+            <Checkbox
+              label={label}
+              disabled={disabled}
+              checked={selectedValues.includes(value)}
+              onChange={getHandleChange(value)}
+              className={s.multiSelectList__checkbox}
+            />
+          </li>
+        </ConditionalWrapper>
       ))}
     </ul>
   );

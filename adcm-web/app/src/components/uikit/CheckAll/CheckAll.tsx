@@ -7,9 +7,10 @@ export interface CheckAllProps<T> {
   onChange: (value: T[]) => void;
   label?: string;
   className?: string;
+  disabled?: boolean;
 }
 
-export const CheckAll = <T,>({ label, allList, selectedValues, onChange, className }: CheckAllProps<T>) => {
+export const CheckAll = <T,>({ label, allList, selectedValues, onChange, className, disabled }: CheckAllProps<T>) => {
   const isAllChecked = useMemo(() => {
     if (!selectedValues?.length) return false;
 
@@ -20,7 +21,15 @@ export const CheckAll = <T,>({ label, allList, selectedValues, onChange, classNa
     onChange?.(event.target.checked ? allList.map((item) => item) : []);
   };
 
-  return <Checkbox label={label} className={className} checked={isAllChecked} onChange={handlerAllChanged} />;
+  return (
+    <Checkbox
+      label={label}
+      className={className}
+      checked={isAllChecked}
+      onChange={handlerAllChanged}
+      disabled={disabled}
+    />
+  );
 };
 
 export default CheckAll;
