@@ -1,10 +1,10 @@
 import React from 'react';
-import { BaseStatus, Statusable } from '@uikit';
 import EntityHeader from '@commonComponents/EntityHeader/EntityHeader';
 import SettingsDynamicActionsIcon from './SettingsDynamicActionsIcon/SettingsDynamicActionsIcon';
 import Concern from '@commonComponents/Concern/Concern';
 import s from './SettingsHeader.module.scss';
 import { useStore } from '@hooks';
+import { Text } from '@uikit';
 
 const SettingsHeader: React.FC = () => {
   const adcmSettings = useStore((s) => s.adcm.adcmSettings.adcmSettings);
@@ -15,7 +15,7 @@ const SettingsHeader: React.FC = () => {
         <div className={s.settingsHeader}>
           <SettingsDynamicActionsIcon />
           <Concern concerns={adcmSettings?.concerns ?? []} />
-          <Statusable status={'unknown' as BaseStatus}>ADCM</Statusable>
+          <Text variant="h3">ADCM</Text>
         </div>
       }
     />

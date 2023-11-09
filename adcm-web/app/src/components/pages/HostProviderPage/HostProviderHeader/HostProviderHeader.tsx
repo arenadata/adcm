@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BaseStatus, ButtonGroup, Statusable } from '@uikit';
+import { ButtonGroup, Text } from '@uikit';
 import EntityHeader from '@commonComponents/EntityHeader/EntityHeader';
 import { useDispatch, useStore } from '@hooks';
 import { orElseGet } from '@utils/checkUtils';
@@ -22,7 +22,7 @@ const HostProviderHeader: React.FC = () => {
   return (
     <EntityHeader
       title={orElseGet(hostProvider, (hostProvider) => (
-        <Statusable status={hostProvider.state as BaseStatus}>{hostProvider.name}</Statusable>
+        <Text variant="h3">{hostProvider.name}</Text>
       ))}
       central={orElseGet(hostProvider, (hostProvider) => (
         <>
