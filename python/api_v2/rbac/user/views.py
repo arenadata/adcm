@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from api_v2.rbac.user.filters import UserFilterSet
 from api_v2.rbac.user.serializers import (
     UserCreateSerializer,
@@ -20,6 +19,7 @@ from api_v2.rbac.user.utils import unblock_user
 from api_v2.views import CamelCaseModelViewSet
 from audit.utils import audit
 from cm.errors import AdcmEx
+from django.conf import settings
 from django.contrib.auth.models import Group as AuthGroup
 from django.db.models import Prefetch
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -36,9 +36,11 @@ from adcm.permissions import VIEW_USER_PERMISSION, CustomModelPermissionsByMetho
 
 
 class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = User.objects.prefetch_related(
-        Prefetch(lookup="groups", queryset=AuthGroup.objects.select_related("group"))
-    ).order_by("username")
+    queryset = (
+        User.objects.prefetch_related(Prefetch(lookup="groups", queryset=AuthGroup.objects.select_related("group")))
+        .exclude(username__in=settings.ADCM_HIDDEN_USERS)
+        .order_by("username")
+    )
     filter_backends = (DjangoFilterBackend,)
     filterset_class = UserFilterSet
     permission_required = [VIEW_USER_PERMISSION]
