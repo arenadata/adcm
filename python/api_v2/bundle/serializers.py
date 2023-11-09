@@ -26,15 +26,31 @@ class BundleRelatedSerializer(ModelSerializer):
 class BundleListSerializer(ModelSerializer):
     upload_time = DateTimeField(read_only=True, source="date")
     display_name = SerializerMethodField()
+    license = SerializerMethodField()
 
     class Meta:
         model = Bundle
-        fields = ("id", "name", "display_name", "version", "edition", "upload_time", "category", "signature_status")
+        fields = (
+            "id",
+            "name",
+            "display_name",
+            "version",
+            "edition",
+            "license",
+            "upload_time",
+            "category",
+            "signature_status",
+        )
 
     @staticmethod
     def get_display_name(bundle: Bundle) -> str:
-        proto = bundle.prototype_set.filter(type__in=[ObjectType.CLUSTER, ObjectType.PROVIDER]).first()
-        return proto.display_name
+        prototype = bundle.prototype_set.filter(type__in=[ObjectType.CLUSTER, ObjectType.PROVIDER]).first()
+        return prototype.display_name
+
+    @staticmethod
+    def get_license(bundle: Bundle) -> dict:
+        prototype = bundle.prototype_set.filter(type__in=[ObjectType.CLUSTER, ObjectType.PROVIDER]).first()
+        return {"status": prototype.license, "text": get_license_text(prototype)}
 
 
 class UploadBundleSerializer(EmptySerializer):
