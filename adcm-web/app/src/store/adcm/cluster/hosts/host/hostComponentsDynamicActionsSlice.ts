@@ -121,6 +121,8 @@ const hostComponentsDynamicActionsSlice = createSlice({
       return createInitialState();
     },
     closeClusterHostComponentsDynamicActionDialog(state) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       state.dialog = createInitialState().dialog;
     },
   },
@@ -133,6 +135,8 @@ const hostComponentsDynamicActionsSlice = createSlice({
     });
     builder.addCase(openClusterHostComponentDynamicActionDialog.fulfilled, (state, action) => {
       state.dialog.actionDetails = action.payload;
+      state.dialog.clusterId = action.meta.arg.clusterId;
+      state.dialog.hostId = action.meta.arg.hostId;
     });
     builder.addCase(openClusterHostComponentDynamicActionDialog.rejected, (state) => {
       hostComponentsDynamicActionsSlice.caseReducers.closeClusterHostComponentsDynamicActionDialog(state);
