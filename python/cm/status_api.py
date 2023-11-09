@@ -13,7 +13,6 @@
 import json
 from collections import defaultdict
 from collections.abc import Iterable
-from enum import Enum
 from urllib.parse import urljoin
 
 import requests
@@ -39,12 +38,6 @@ class EventTypes:
     UPDATE_HOSTCOMPONENTMAP = "update_hostcomponentmap"
     CREATE_CONFIG = "create_{}_config"
     UPDATE = "update_{}"
-
-
-class UpdateEventType(Enum):
-    STATE = "state"
-    STATUS = "status"
-    VERSION = "version"
 
 
 def api_request(method: str, url: str, data: dict = None) -> Response | None:
@@ -73,22 +66,9 @@ def api_request(method: str, url: str, data: dict = None) -> Response | None:
         return None
 
 
-def post_event(
-    event: str,
-    object_id: int | None,
-    update: list[tuple[UpdateEventType, str]] | None = None,
-    concern: dict | None = None,
-) -> Response | None:
+def post_event(event: str, object_id: int | None, changes: dict | None = None) -> Response | None:
     if object_id is None:
         return None
-
-    changes = {}
-
-    for event_type, value in update or []:
-        changes[event_type.value.lower()] = value
-
-    if concern:
-        changes.update(concern)
 
     data = {
         "event": event,
@@ -105,39 +85,52 @@ def fix_object_type(type_: str) -> str:
     return type_
 
 
-def create_concern_event(object_: ADCMEntity, concern: dict):
-    return post_event(
+def send_concern_creation_event(object_: ADCMEntity, concern: dict) -> None:
+    post_event(
         event=EventTypes.CREATE_CONCERN.format(fix_object_type(type_=object_.prototype.type)),
         object_id=object_.pk,
-        concern=concern,
+        changes=concern,
     )
 
 
-def delete_concern_event(object_: ADCMEntity, concern_id: int) -> Response | None:
-    return post_event(
+def send_concern_delete_event(object_: ADCMEntity, concern_id: int) -> None:
+    post_event(
         event=EventTypes.DELETE_CONCERN.format(fix_object_type(type_=object_.prototype.type)),
         object_id=object_.pk,
-        concern={"id": concern_id},
+        changes={"id": concern_id},
     )
 
 
-def update_hostcomponent_event(cluster: Cluster):
-    return post_event(event=EventTypes.UPDATE_HOSTCOMPONENTMAP, object_id=cluster.pk)
+def send_host_component_map_update_event(cluster: Cluster) -> None:
+    post_event(event=EventTypes.UPDATE_HOSTCOMPONENTMAP, object_id=cluster.pk)
 
 
-def create_config_event(object_: ADCMEntity):
-    return post_event(
+def send_config_creation_event(object_: ADCMEntity) -> None:
+    post_event(
         event=EventTypes.CREATE_CONFIG.format(fix_object_type(type_=object_.prototype.type)), object_id=object_.pk
     )
 
 
-def update_event(object_: ADCMEntity | TaskLog, update: list[tuple[UpdateEventType, str]]):
-    if isinstance(object_, ADCMEntity):
-        object_id, object_type = object_.pk, object_.prototype.type
-    else:
-        object_id, object_type = object_.pk, "task"
+def send_object_update_event(object_: ADCMEntity, changes: dict) -> None:
+    post_event(event=EventTypes.UPDATE.format(object_.prototype.type), object_id=object_.pk, changes=changes)
 
-    return post_event(event=EventTypes.UPDATE.format(object_type), object_id=object_id, update=update)
+
+def send_task_status_update_event(object_: TaskLog, status: str) -> None:
+    post_event(event=EventTypes.UPDATE.format("task"), object_id=object_.pk, changes={"status": status})
+
+
+def send_prototype_and_state_update_event(object_: ADCMEntity) -> None:
+    changes = {
+        "state": object_.state,
+        "prototype": {
+            "id": object_.prototype.pk,
+            "name": object_.prototype.name,
+            "displayName": object_.prototype.display_name,
+            "version": object_.prototype.version,
+        },
+    }
+
+    post_event(event=EventTypes.UPDATE.format(object_.prototype.type), object_id=object_.pk, changes=changes)
 
 
 def get_raw_status(url: str) -> int:

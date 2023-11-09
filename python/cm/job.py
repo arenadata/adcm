@@ -87,7 +87,11 @@ from cm.models import (
     Upgrade,
     get_object_cluster,
 )
-from cm.status_api import UpdateEventType, update_event
+from cm.status_api import (
+    send_object_update_event,
+    send_prototype_and_state_update_event,
+    send_task_status_update_event,
+)
 from cm.utils import get_env_with_venv_path
 from cm.variant import process_variant
 from django.conf import settings
@@ -189,7 +193,7 @@ def prepare_task(
             task.config = new_conf
             task.save()
 
-        on_commit(func=partial(update_event, object_=task, update=[(UpdateEventType.STATE, JobStatus.CREATED)]))
+        on_commit(func=partial(send_task_status_update_event, object_=task, status=JobStatus.CREATED.value))
 
     re_apply_policy_for_jobs(action_object=obj, task=task)
 
@@ -807,7 +811,10 @@ def set_action_state(
 
     if state:
         obj.set_state(state)
-        update_event(object_=obj, update=[(UpdateEventType.STATE, state)])
+        if hasattr(action, "upgrade"):
+            send_prototype_and_state_update_event(object_=obj)
+        else:
+            send_object_update_event(object_=obj, changes={"state": state})
 
     for m_state in multi_state_set or []:
         obj.set_multi_state(m_state)
@@ -912,7 +919,7 @@ def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:
 
     set_task_final_status(task=task, status=status)
 
-    update_event(object_=task, update=[(UpdateEventType.STATUS, status)])
+    send_task_status_update_event(object_=task, status=status)
 
     try:
         load_mm_objects()

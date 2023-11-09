@@ -46,7 +46,7 @@ from cm.models import (
     ServiceComponent,
     get_model_by_type,
 )
-from cm.status_api import update_event, UpdateEventType, create_config_event
+from cm.status_api import send_object_update_event, send_config_creation_event
 from rbac.models import Policy, Role
 from rbac.roles import assign_group_perm
 
@@ -277,7 +277,7 @@ def get_service_by_name(cluster_id, service_name):
 
 def _set_object_state(obj: ADCMEntity, state: str) -> ADCMEntity:
     obj.set_state(state)
-    update_event(object_=obj, update=[(UpdateEventType.STATE, state)])
+    send_object_update_event(object_=obj, changes={"state": state})
     return obj
 
 
@@ -456,7 +456,7 @@ def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> dict | int | str:
                 new_config[key][subkey] = value
 
     set_object_config_with_plugin(obj=obj, config=new_config, attr=new_attr)
-    create_config_event(object_=obj)
+    send_config_creation_event(object_=obj)
 
     if len(conf) == 1:
         return list(conf.values())[0]
@@ -522,7 +522,7 @@ def check_missing_ok(obj: ADCMEntity, multi_state: str, missing_ok):
 def _unset_object_multi_state(obj: ADCMEntity, multi_state: str, missing_ok) -> ADCMEntity:
     check_missing_ok(obj, multi_state, missing_ok)
     obj.unset_multi_state(multi_state)
-    update_event(object_=obj, update=[(UpdateEventType.STATE, multi_state)])
+    send_object_update_event(object_=obj, changes={"state": multi_state})
     return obj
 
 

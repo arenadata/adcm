@@ -26,7 +26,7 @@ from cm.errors import AdcmEx
 from cm.job import check_hostcomponentmap, set_job_final_status, set_job_start_status
 from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, Prototype, ServiceComponent
-from cm.status_api import update_event, UpdateEventType
+from cm.status_api import send_prototype_and_state_update_event
 from cm.upgrade import bundle_revert, bundle_switch
 from cm.utils import get_env_with_venv_path
 from django.conf import settings
@@ -161,16 +161,16 @@ def run_internal(job: JobLog) -> None:
     set_job_start_status(job_id=job.id, pid=0)
     out_file, err_file = process_err_out_file(job_id=job.id, job_type="internal")
     script = job.sub_action.script if job.sub_action else job.action.script
+    return_code = 0
+    status = JobStatus.SUCCESS
 
     try:
         with atomic():
+            object_ = job.task.task_object
             if script == "bundle_switch":
-                obj = job.task.task_object
-                bundle_switch(obj=obj, upgrade=job.action.upgrade)
-                obj.refresh_from_db()
-                update_event(object_=obj, update=[(UpdateEventType.VERSION, obj.prototype.version)])
+                bundle_switch(obj=object_, upgrade=job.action.upgrade)
             elif script == "bundle_revert":
-                bundle_revert(obj=job.task.task_object)
+                bundle_revert(obj=object_)
             elif script == "hc_apply":
                 job.task.restore_hc_on_fail = False
                 job.task.save(update_fields=["restore_hc_on_fail"])
@@ -178,18 +178,19 @@ def run_internal(job: JobLog) -> None:
             if script != "hc_apply":
                 switch_hc(task=job.task, action=job.action)
 
-            re_apply_policy_for_jobs(action_object=job.task.task_object, task=job.task)
+            re_apply_policy_for_jobs(action_object=object_, task=job.task)
     except AdcmEx as e:
         err_file.write(e.msg)
-        set_job_final_status(job_id=job.id, status=JobStatus.FAILED)
+        return_code = 1
+        status = JobStatus.FAILED
+    finally:
+        if script == "bundle_revert":
+            send_prototype_and_state_update_event(object_=object_)
+
+        set_job_final_status(job_id=job.id, status=status)
         out_file.close()
         err_file.close()
-        sys.exit(1)
-
-    set_job_final_status(job_id=job.id, status=JobStatus.SUCCESS)
-    out_file.close()
-    err_file.close()
-    sys.exit(0)
+        sys.exit(return_code)
 
 
 def run_python(job: JobLog) -> None:
