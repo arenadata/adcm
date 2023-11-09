@@ -8,6 +8,7 @@ export enum AdcmConcernCause {
 }
 
 export enum AdcmConcernType {
+  Adcm = 'adcm',
   Cluster = 'cluster',
   Service = 'service',
   Component = 'component',
@@ -73,7 +74,15 @@ export interface AdcmConcernPrototypePlaceholder extends AdcmConcernCommonPlaceh
   };
 }
 
+export interface AdcmPrototypePlaceholder extends AdcmConcernCommonPlaceholder {
+  type: AdcmConcernType.Adcm;
+  params: {
+    adcmId: number;
+  };
+}
+
 export type AdcmConcernPlaceholder =
+  | AdcmPrototypePlaceholder
   | AdcmConcernClusterPlaceholder
   | AdcmConcernServicePlaceholder
   | AdcmConcernComponentPlaceholder

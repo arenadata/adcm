@@ -59,13 +59,14 @@ export const getConcernObjectPath = (placeHolderProps: AdcmConcernPlaceholder): 
     case AdcmConcernType.Job:
       return `/jobs/${placeHolderProps.params.jobId}`;
     case AdcmConcernType.Prototype:
+    case AdcmConcernType.Adcm:
     default:
       return '';
   }
 };
 
 const getConcernPath = (concern: AdcmConcerns, placeHolderProps: AdcmConcernPlaceholder): string => {
-  if (placeHolderProps.type === AdcmConcernType.Prototype) {
+  if (placeHolderProps.type === AdcmConcernType.Prototype || placeHolderProps.type === AdcmConcernType.Adcm) {
     return '';
   }
 
