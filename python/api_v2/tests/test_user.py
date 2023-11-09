@@ -9,10 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 from api_v2.rbac.user.constants import UserTypeChoices
 from api_v2.tests.base import BaseAPITestCase
+from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
@@ -50,7 +49,7 @@ class TestUserAPI(BaseAPITestCase):
         response = self.client.get(path=reverse(viewname="v2:rbac:user-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 3)
+        self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
             sorted(response.json()["results"][0].keys()),
             sorted(
@@ -358,7 +357,11 @@ class TestUserAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response_usernames = [user["username"] for user in response.json()["results"]]
-        db_usernames = list(User.objects.order_by("-username").values_list("username", flat=True))
+        db_usernames = list(
+            User.objects.order_by("-username")
+            .exclude(username__in=settings.ADCM_HIDDEN_USERS)
+            .values_list("username", flat=True)
+        )
         self.assertListEqual(response_usernames, db_usernames)
 
     def test_ordering_wrong_params_fail(self):

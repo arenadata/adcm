@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from django.conf import settings
 from rbac.models import Group, User
 from rest_framework.fields import IntegerField
 from rest_framework.serializers import (
@@ -45,7 +46,9 @@ class GroupRelatedSerializer(EmptySerializer):
 
 class GroupCreateSerializer(ModelSerializer):
     users = ManyRelatedField(
-        child_relation=PrimaryKeyRelatedField(queryset=User.objects.all()), source="user_set", required=False
+        child_relation=PrimaryKeyRelatedField(queryset=User.objects.exclude(username__in=settings.ADCM_HIDDEN_USERS)),
+        source="user_set",
+        required=False,
     )
 
     class Meta:
