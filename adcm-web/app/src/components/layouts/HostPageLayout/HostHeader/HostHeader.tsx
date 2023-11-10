@@ -24,7 +24,7 @@ const HostHeader: React.FC = () => {
       central={orElseGet(host, (host) => (
         <>
           <Link className="text-link" to={`/hostproviders/${host.hostprovider.id}`}>
-            {host.prototype.displayName}
+            {host.hostprovider.name}
           </Link>
           <span>
             {successfulHostComponentsCount} / {totalHostComponentsCount} successful components

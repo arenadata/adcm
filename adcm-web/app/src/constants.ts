@@ -18,3 +18,7 @@ export const defaultSpinnerDelay = 300;
 export const queryParamSortBy = 'ordering';
 
 export const emailRegexp = new RegExp(/^[^@ ]+@[^@ ]+\.[a-zA-Z]+$/);
+
+export enum ActionStatuses {
+  Launched = 'Action was launched successfully',
+}

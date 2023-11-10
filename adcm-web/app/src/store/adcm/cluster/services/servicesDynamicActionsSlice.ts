@@ -7,6 +7,7 @@ import { showError, showInfo } from '@store/notificationsSlice';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
+import { ActionStatuses } from '@constants';
 
 type LoadServiceDynamicActionsPayload = {
   clusterId: number;
@@ -84,7 +85,7 @@ const runClusterServiceDynamicAction = createAsyncThunk(
       // TODO: run***Action get big response with information about action, but wiki say that this should empty response
       await AdcmClusterServicesApi.runClusterServiceAction(cluster.id, service.id, actionId, actionRunConfig);
 
-      thunkAPI.dispatch(showInfo({ message: 'Action was running successfully' }));
+      thunkAPI.dispatch(showInfo({ message: ActionStatuses.Launched }));
 
       return null;
     } catch (error) {

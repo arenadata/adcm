@@ -6,6 +6,7 @@ import { showError, showInfo } from '@store/notificationsSlice';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmHostProvider } from '@models/adcm';
+import { ActionStatuses } from '@constants';
 
 const loadHostProvidersDynamicActions = createAsyncThunk(
   'adcm/hostProvidersDynamicActions/loadHostProvidersDynamicActions',
@@ -71,7 +72,7 @@ const runHostProviderDynamicAction = createAsyncThunk(
       // TODO: run***Action get big response with information about action, but wiki say that this should empty response
       await AdcmHostProvidersApi.runHostProviderAction(hostProvider.id, actionId, actionRunConfig);
 
-      thunkAPI.dispatch(showInfo({ message: 'Action was running successfully' }));
+      thunkAPI.dispatch(showInfo({ message: ActionStatuses.Launched }));
 
       return null;
     } catch (error) {

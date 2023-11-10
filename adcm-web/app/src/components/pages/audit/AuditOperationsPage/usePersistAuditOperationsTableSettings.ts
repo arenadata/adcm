@@ -49,7 +49,9 @@ export const usePersistAuditOperationsTableSettings = () => {
       isReadyToLoad: true,
       onSettingsLoaded: (settings) => {
         const mergedFilter = mergeFilters(settings.filter, filter);
-        dispatch(setFilter(mergedFilter));
+        const { timeFrom, timeTo, ...filterForLocalStorage } = mergedFilter;
+
+        dispatch(setFilter(filterForLocalStorage));
         dispatch(setSortParams(settings.sortParams));
         dispatch(setRequestFrequency(settings.requestFrequency));
         dispatch(setPaginationParams(mergePaginationParams(settings.perPage, paginationParams)));

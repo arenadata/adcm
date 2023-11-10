@@ -4,6 +4,7 @@ import { AdcmSettingsApi, RequestError } from '@api';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { getErrorMessage } from '@utils/httpResponseUtils';
+import { ActionStatuses } from '@constants';
 
 const loadAdcmSettingsDynamicActions = createAsyncThunk(
   'adcm/clustersDynamicActions/loadAdcmSettingsDynamicActions',
@@ -45,7 +46,7 @@ const runAdcmSettingsDynamicAction = createAsyncThunk(
       // TODO: runAdcmSettingsAction get big response with information about action, but wiki say that this should empty response
       await AdcmSettingsApi.runAdcmSettingsAction(actionId, actionRunConfig);
 
-      thunkAPI.dispatch(showInfo({ message: 'Action was running successfully' }));
+      thunkAPI.dispatch(showInfo({ message: ActionStatuses.Launched }));
 
       return null;
     } catch (error) {
