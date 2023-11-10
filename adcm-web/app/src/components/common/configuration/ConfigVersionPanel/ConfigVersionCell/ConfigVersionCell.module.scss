@@ -58,4 +58,8 @@
   &:hover {
     background-color: var(--config-version-cell-background-hover);
   }
+
+  &__description {
+    word-wrap: break-word;
+  }
 }
