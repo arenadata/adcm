@@ -28,7 +28,8 @@ const initFormData: FormData = {
   mappedHostsKeys: new Set(),
 };
 
-const transferOptions = {
+const srcOptions = {
+  title: 'All available hosts',
   searchPlaceholder: 'Search hosts',
 };
 
@@ -42,7 +43,7 @@ const ConfigGroupMappingDialog: React.FC<ConfigGroupMappingDialogProps> = ({
   const isOpen = configGroup !== null;
   const { isValid, setErrors, errors, formData, setFormData } = useForm<FormData, FormErrors>(initFormData);
 
-  const srcOptions = useMemo(() => {
+  const srcList = useMemo(() => {
     // we should concat both hosts lists. We should show mapped hosts in SRC side as selected items
     // if user deselected host in DEST side, then he should be able to select this host in SRC once more
     return candidatesHosts.concat(configGroup?.hosts ?? []).map(({ id, name }) => ({ key: id, label: name }));
@@ -61,7 +62,7 @@ const ConfigGroupMappingDialog: React.FC<ConfigGroupMappingDialogProps> = ({
   useEffect(() => {
     if (configGroup) {
       setErrors({
-        srcErrorMessage: srcOptions.length > 0 ? undefined : 'The cluster should have some hosts linked',
+        srcErrorMessage: srcList.length > 0 ? undefined : 'The cluster should have some hosts linked',
         destErrorMessage:
           // if configGroup.hosts.length > 0 then user can add hosts or full clear, it will be acceptable
           // if configGroup.hosts.length === 0 then user can only add few hosts
@@ -70,7 +71,7 @@ const ConfigGroupMappingDialog: React.FC<ConfigGroupMappingDialogProps> = ({
             : 'Can not set mapping without selected hosts',
       });
     }
-  }, [formData.mappedHostsKeys, configGroup, srcOptions, setErrors]);
+  }, [formData.mappedHostsKeys, configGroup, srcList, setErrors]);
 
   const handleChangeMapping = (hostKeys: MappedHostsKeys) => {
     setFormData({
@@ -81,6 +82,13 @@ const ConfigGroupMappingDialog: React.FC<ConfigGroupMappingDialogProps> = ({
   const handleSubmit = () => {
     configGroup && onSubmit(configGroup.id, [...formData.mappedHostsKeys]);
   };
+
+  const destOptions = useMemo(() => {
+    return {
+      title: configGroup?.name,
+      searchPlaceholder: 'Search hosts',
+    };
+  }, [configGroup?.name]);
 
   return (
     <Dialog
@@ -93,11 +101,11 @@ const ConfigGroupMappingDialog: React.FC<ConfigGroupMappingDialogProps> = ({
       width="860px"
     >
       <ListTransfer
-        srcList={srcOptions}
+        srcList={srcList}
         destKeys={formData.mappedHostsKeys}
         onChangeDest={handleChangeMapping}
-        srcOptions={transferOptions}
-        destOptions={transferOptions}
+        srcOptions={srcOptions}
+        destOptions={destOptions}
         srcError={errors.srcErrorMessage}
         destError={errors.destErrorMessage}
       />
