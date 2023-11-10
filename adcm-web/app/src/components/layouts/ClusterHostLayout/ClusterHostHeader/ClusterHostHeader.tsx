@@ -26,7 +26,7 @@ const ClusterHostHeader: React.FC = () => {
       central={orElseGet(clusterHost, (clusterHost) => (
         <>
           <Link className="text-link" to={`/hostproviders/${clusterHost.hostprovider.id}`}>
-            {clusterHost.prototype.displayName} {clusterHost.prototype.version}
+            {clusterHost.hostprovider.name}
           </Link>
           <span>
             {successfulHostComponentsCount} / {totalHostComponentsCount} successful components

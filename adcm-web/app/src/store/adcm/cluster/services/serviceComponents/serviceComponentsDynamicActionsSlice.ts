@@ -6,6 +6,7 @@ import { fulfilledFilter } from '@utils/promiseUtils';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { getErrorMessage } from '@utils/httpResponseUtils';
+import { ActionStatuses } from '@constants';
 
 interface LoadClusterServiceComponentsDynamicActions {
   components: AdcmServiceComponent[];
@@ -98,7 +99,7 @@ const runClusterServiceComponentDynamicAction = createAsyncThunk(
         actionRunConfig,
       );
 
-      thunkAPI.dispatch(showInfo({ message: 'Action was running successfully' }));
+      thunkAPI.dispatch(showInfo({ message: ActionStatuses.Launched }));
 
       return null;
     } catch (error) {
