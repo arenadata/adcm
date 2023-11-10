@@ -12,8 +12,7 @@ const BundleOverviewPage: React.FC = () => {
   useRequestBundle();
   const dispatch = useDispatch();
   const bundle = useStore(({ adcm }) => adcm.bundle.bundle);
-  const prototype = useStore(({ adcm }) => adcm.bundle.relatedData.prototype);
-  const isBundleLicensePresent = prototype?.license?.text !== null;
+  const isBundleLicensePresent = bundle?.mainPrototype.license?.text !== null;
   const isLicenseLoading = useStore(({ adcm }) => adcm.bundle.isLicenseLoading);
 
   useEffect(() => {

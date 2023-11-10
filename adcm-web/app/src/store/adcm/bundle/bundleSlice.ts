@@ -1,6 +1,5 @@
 import { AdcmBundlesApi, AdcmPrototypesApi, RequestError } from '@api';
 import { defaultSpinnerDelay } from '@constants';
-import { AdcmPrototype, AdcmPrototypeType } from '@models/adcm';
 import { AdcmBundle } from '@models/adcm/bundle';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { showError, showInfo } from '@store/notificationsSlice';
@@ -10,9 +9,6 @@ import { executeWithMinDelay } from '@utils/requestUtils';
 interface AdcmBundleState {
   bundle?: AdcmBundle;
   isLicenseLoading: boolean;
-  relatedData: {
-    prototype?: AdcmPrototype;
-  };
 }
 
 interface AcceptBundleLicensePayload {
@@ -20,7 +16,7 @@ interface AcceptBundleLicensePayload {
   prototypeId: number;
 }
 
-const loadBundle = createAsyncThunk('adcm/bundle/loadBundle', async (bundleId: number, thunkAPI) => {
+const loadBundleFromBackend = createAsyncThunk('adcm/bundle/loadBundle', async (bundleId: number, thunkAPI) => {
   try {
     const bundle = await AdcmBundlesApi.getBundle(bundleId);
     return bundle;
@@ -29,23 +25,11 @@ const loadBundle = createAsyncThunk('adcm/bundle/loadBundle', async (bundleId: n
   }
 });
 
-const loadRelatedPrototype = createAsyncThunk('adcm/bundle/loadPrototype', async (bundleId: number, thunkAPI) => {
-  try {
-    let prototype = await AdcmPrototypesApi.getPrototypes({ bundleId, type: AdcmPrototypeType.Cluster });
-    if (!prototype.results.length) {
-      prototype = await AdcmPrototypesApi.getPrototypes({ bundleId, type: AdcmPrototypeType.Provider });
-    }
-    return prototype.results;
-  } catch (error) {
-    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-  }
-});
-
-const getRelatedPrototype = createAsyncThunk('adcm/bundle/getRelatedPrototype', async (arg: number, thunkAPI) => {
+const getBundle = createAsyncThunk('adcm/bundle/getBundle', async (arg: number, thunkAPI) => {
   thunkAPI.dispatch(setIsLicenseLoading(true));
   const startDate = new Date();
 
-  await thunkAPI.dispatch(loadRelatedPrototype(arg));
+  await thunkAPI.dispatch(loadBundleFromBackend(arg));
 
   executeWithMinDelay({
     startDate,
@@ -56,16 +40,23 @@ const getRelatedPrototype = createAsyncThunk('adcm/bundle/getRelatedPrototype', 
   });
 });
 
-const acceptBundleLicenseWithUpdate = createAsyncThunk(
+const acceptBundleLicense = createAsyncThunk(
   'adcm/bundle/acceptBundleLicense',
-  async ({ bundleId, prototypeId }: AcceptBundleLicensePayload, thunkAPI) => {
+  async (prototypeId: number, thunkAPI) => {
     try {
       await AdcmPrototypesApi.postAcceptLicense(prototypeId);
-      await thunkAPI.dispatch(loadRelatedPrototype(bundleId));
       thunkAPI.dispatch(showInfo({ message: 'The license has been accepted' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
     }
+  },
+);
+
+const acceptBundleLicenseWithUpdate = createAsyncThunk(
+  'adcm/bundle/acceptBundleLicenseWithUpdate',
+  async ({ bundleId, prototypeId }: AcceptBundleLicensePayload, thunkAPI) => {
+    await thunkAPI.dispatch(acceptBundleLicense(prototypeId)).unwrap();
+    thunkAPI.dispatch(loadBundleFromBackend(bundleId));
   },
 );
 
@@ -80,9 +71,6 @@ const deleteBundle = createAsyncThunk('adcm/bundle/deleteBundle', async (bundleI
 
 const createInitialState = (): AdcmBundleState => ({
   bundle: undefined,
-  relatedData: {
-    prototype: undefined,
-  },
   isLicenseLoading: false,
 });
 
@@ -98,28 +86,15 @@ const bundleSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(loadBundle.fulfilled, (state, action) => {
+    builder.addCase(loadBundleFromBackend.fulfilled, (state, action) => {
       state.bundle = action.payload;
     });
-    builder.addCase(loadBundle.rejected, (state) => {
+    builder.addCase(loadBundleFromBackend.rejected, (state) => {
       state.bundle = undefined;
-    });
-    builder.addCase(loadRelatedPrototype.fulfilled, (state, action) => {
-      state.relatedData.prototype = action.payload?.[0];
-    });
-    builder.addCase(loadRelatedPrototype.rejected, (state) => {
-      state.relatedData.prototype = undefined;
     });
   },
 });
 
 const { cleanupBundle, setIsLicenseLoading } = bundleSlice.actions;
-export {
-  loadBundle,
-  loadRelatedPrototype,
-  acceptBundleLicenseWithUpdate,
-  cleanupBundle,
-  deleteBundle,
-  getRelatedPrototype,
-};
+export { getBundle, acceptBundleLicenseWithUpdate, cleanupBundle, deleteBundle };
 export default bundleSlice.reducer;
