@@ -30,7 +30,7 @@ export const useAccessManagerRoleUpdateDialog = () => {
 
   useEffect(() => {
     setErrors({
-      displayName: required(formData.displayName) ? undefined : 'Username field is required',
+      displayName: required(formData.displayName) ? undefined : 'Role name field is required',
       children: formData.children.size > 0 ? undefined : 'Can not create Role without permission',
     });
   }, [formData, setErrors]);
