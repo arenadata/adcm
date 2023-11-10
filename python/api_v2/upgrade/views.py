@@ -18,6 +18,7 @@ from api_v2.views import CamelCaseGenericViewSet
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import Cluster, HostProvider, PrototypeConfig, TaskLog, Upgrade
+from cm.stack import check_hostcomponents_objects_exist
 from cm.upgrade import check_upgrade, do_upgrade, get_upgrade
 from rbac.models import User
 from rest_framework.decorators import action
@@ -167,6 +168,8 @@ class UpgradeViewSet(  # pylint: disable=too-many-ancestors
             config = represent_string_as_json_type(prototype_configs=prototype_configs, value=config)
 
         attr = convert_adcm_meta_to_attr(adcm_meta=adcm_meta)
+
+        check_hostcomponents_objects_exist(serializer.validated_data["host_component_map"])
 
         result = do_upgrade(
             obj=parent,

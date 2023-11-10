@@ -28,7 +28,7 @@ from cm.models import (
     ServiceComponent,
 )
 from django.urls import reverse
-from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
+from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
 ObjectWithActions: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
 
@@ -58,6 +58,9 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
         self.service_1 = self.add_service_to_cluster("service_1", self.cluster)
         self.component_1: ServiceComponent = ServiceComponent.objects.get(
             service=self.service_1, prototype__name="component_1"
+        )
+        self.component_2: ServiceComponent = ServiceComponent.objects.get(
+            service=self.service_1, prototype__name="component_2"
         )
         self.add_service_to_cluster("service_2", self.cluster)
 
@@ -290,6 +293,95 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
                 "level": "error",
             },
         )
+
+    def test_adcm_4856_action_with_non_existing_component_fail(self) -> None:
+        self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
+        allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
+
+        with patch("cm.job.run_task", return_value=None):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:host-action-run",
+                    kwargs={"host_pk": self.host_1.pk, "pk": allowed_action.pk},
+                ),
+                data={
+                    "hostComponentMap": [{"hostId": self.host_1.pk, "componentId": 1000}],
+                    "config": {},
+                    "adcmMeta": {},
+                    "isVerbose": False,
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertDictEqual(response.json(), {"detail": "Components with ids 1000 do not exist"})
+
+    def test_adcm_4856_action_with_non_existing_host_fail(self) -> None:
+        self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
+        allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
+
+        with patch("cm.job.run_task", return_value=None):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:host-action-run",
+                    kwargs={"host_pk": self.host_1.pk, "pk": allowed_action.pk},
+                ),
+                data={
+                    "hostComponentMap": [{"hostId": 1000, "componentId": self.component_1.pk}],
+                    "config": {},
+                    "adcmMeta": {},
+                    "isVerbose": False,
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertDictEqual(response.json(), {"detail": "Hosts with ids 1000 do not exist"})
+
+    def test_adcm_4856_action_with_duplicated_hc_success(self) -> None:
+        self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
+        allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
+
+        with patch("cm.job.run_task", return_value=None):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:host-action-run",
+                    kwargs={"host_pk": self.host_1.pk, "pk": allowed_action.pk},
+                ),
+                data={
+                    "hostComponentMap": [
+                        {"hostId": self.host_1.pk, "componentId": self.component_1.pk},
+                        {"hostId": self.host_1.pk, "componentId": self.component_1.pk},
+                    ],
+                    "config": {},
+                    "adcmMeta": {},
+                    "isVerbose": False,
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_adcm_4856_action_with_several_entries_hc_success(self) -> None:
+        self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
+        allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
+
+        with patch("cm.job.run_task", return_value=None):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:host-action-run",
+                    kwargs={"host_pk": self.host_1.pk, "pk": allowed_action.pk},
+                ),
+                data={
+                    "hostComponentMap": [
+                        {"hostId": self.host_1.pk, "componentId": self.component_1.pk},
+                        {"hostId": self.host_2.pk, "componentId": self.component_1.pk},
+                        {"hostId": self.host_1.pk, "componentId": self.component_2.pk},
+                    ],
+                    "config": {},
+                    "adcmMeta": {},
+                    "isVerbose": False,
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
     def check_object_action_list(self, viewname: str, object_kwargs: dict, expected_actions: list[str]) -> None:
         response = self.client.get(path=reverse(viewname=viewname, kwargs=object_kwargs))

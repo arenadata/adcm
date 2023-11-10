@@ -31,6 +31,7 @@ from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.job import start_task
 from cm.models import ADCM, Action, ConcernType, Host, HostComponent, PrototypeConfig
+from cm.stack import check_hostcomponents_objects_exist
 from django.conf import settings
 from django.db.models import Q
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -162,6 +163,8 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
 
         config = represent_string_as_json_type(prototype_configs=prototype_configs, value=config)
         attr = convert_adcm_meta_to_attr(adcm_meta=adcm_meta)
+
+        check_hostcomponents_objects_exist(serializer.validated_data["host_component_map"])
 
         task = start_task(
             action=target_action,
