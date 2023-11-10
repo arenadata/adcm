@@ -53,6 +53,7 @@
 
   display: inline-flex;
   align-items: center;
+
   &::after {
     flex-shrink: 0;
     margin-inline-start: 8px;
@@ -62,5 +63,14 @@
     height: var(--statusable-circle-size);
     border-radius: 50%;
     background: var(--statusable-circle-background);
+  }
+
+  &_right::after {
+    margin-left: 8px;
+  }
+
+  &_left::after {
+    order: -1;
+    margin-right: 8px;
   }
 }
