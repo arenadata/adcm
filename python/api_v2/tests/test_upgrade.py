@@ -217,6 +217,140 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
         self.assertTrue(set(data.keys()).issuperset({"id", "childJobs", "startTime"}))
         self.assertEqual(data["id"], tasklog.id)
 
+    def test_adcm_4856_cluster_upgrade_run_complex_no_component_fail(self):
+        tasklog = TaskLog.objects.create(
+            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+            action=self.upgrade_cluster_via_action_simple.action,
+        )
+
+        host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
+        self.add_host_to_cluster(cluster=self.cluster_1, host=host)
+
+        with patch("cm.upgrade.start_task", return_value=tasklog):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="v2:upgrade-run",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.upgrade_cluster_via_action_complex.pk},
+                ),
+                data={
+                    "hostComponentMap": [{"hostId": host.pk, "componentId": 1000}],
+                    "configuration": {
+                        "config": {},
+                        "adcmMeta": {},
+                    },
+                    "isVerbose": True,
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertDictEqual(response.json(), {"detail": "Components with ids 1000 do not exist"})
+
+    def test_adcm_4856_cluster_upgrade_run_complex_no_host_fail(self):
+        tasklog = TaskLog.objects.create(
+            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+            action=self.upgrade_cluster_via_action_simple.action,
+        )
+
+        component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
+
+        with patch("cm.upgrade.start_task", return_value=tasklog):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="v2:upgrade-run",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.upgrade_cluster_via_action_complex.pk},
+                ),
+                data={
+                    "hostComponentMap": [{"hostId": 1000, "componentId": component_1.pk}],
+                    "configuration": {
+                        "config": {},
+                        "adcmMeta": {},
+                    },
+                    "isVerbose": True,
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertDictEqual(response.json(), {"detail": "Hosts with ids 1000 do not exist"})
+
+    def test_adcm_4856_cluster_upgrade_run_complex_duplicated_hc_success(self):
+        tasklog = TaskLog.objects.create(
+            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+            action=self.upgrade_cluster_via_action_simple.action,
+        )
+        host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
+        self.add_host_to_cluster(cluster=self.cluster_1, host=host)
+
+        component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
+
+        with patch("cm.upgrade.start_task", return_value=tasklog):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="v2:upgrade-run",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.upgrade_cluster_via_action_complex.pk},
+                ),
+                data={
+                    "hostComponentMap": [
+                        {"hostId": host.pk, "componentId": component_1.pk},
+                        {"hostId": host.pk, "componentId": component_1.pk},
+                    ],
+                    "configuration": {
+                        "config": {},
+                        "adcmMeta": {},
+                    },
+                    "isVerbose": True,
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_adcm_4856_cluster_upgrade_run_complex_several_entries_hc_success(self):
+        tasklog = TaskLog.objects.create(
+            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+            action=self.upgrade_cluster_via_action_simple.action,
+        )
+        host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
+        self.add_host_to_cluster(cluster=self.cluster_1, host=host_1)
+
+        host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second_host")
+        self.add_host_to_cluster(cluster=self.cluster_1, host=host_2)
+
+        component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
+        component_2 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_2")
+
+        with patch("cm.upgrade.start_task", return_value=tasklog):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="v2:upgrade-run",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.upgrade_cluster_via_action_complex.pk},
+                ),
+                data={
+                    "hostComponentMap": [
+                        {"hostId": host_1.pk, "componentId": component_1.pk},
+                        {"hostId": host_1.pk, "componentId": component_2.pk},
+                        {"hostId": host_2.pk, "componentId": component_2.pk},
+                    ],
+                    "configuration": {
+                        "config": {},
+                        "adcmMeta": {},
+                    },
+                    "isVerbose": True,
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
     def test_provider_list_upgrades_success(self):
         response: Response = self.client.get(
             path=reverse(viewname="v2:upgrade-list", kwargs={"hostprovider_pk": self.provider.pk}),

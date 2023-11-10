@@ -18,7 +18,7 @@ import re
 import warnings
 from copy import copy, deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, List, Literal
 
 import ruyaml
 import yaml
@@ -29,7 +29,9 @@ from cm.checker import FormatError, check, check_rule, round_trip_load
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.logger import logger
 from cm.models import (
+    Host,
     Prototype,
+    ServiceComponent,
     StageAction,
     StagePrototype,
     StagePrototypeConfig,
@@ -43,6 +45,7 @@ from django.db import IntegrityError
 from jinja2 import Template
 from jinja2.exceptions import TemplateError
 from rest_framework import status
+from rest_framework.exceptions import NotFound
 from ruyaml.composer import ComposerError
 from ruyaml.constructor import DuplicateKeyError
 from ruyaml.error import ReusedAnchorWarning
@@ -1066,3 +1069,17 @@ def _deep_get(deep_dict: dict, *nested_keys: str, default: Any) -> Any:
             return default
 
     return val
+
+
+def check_hostcomponents_objects_exist(hostcomponent_map: List[dict[Literal["host_id", "component_id"], int]]):
+    host_ids = {hc["host_id"] for hc in hostcomponent_map}
+    component_ids = {hc["component_id"] for hc in hostcomponent_map}
+
+    host_queryset_ids = Host.objects.filter(id__in=host_ids).values_list("pk", flat=True)
+    component_queryset_ids = ServiceComponent.objects.filter(id__in=component_ids).values_list("pk", flat=True)
+    if len(diff := host_ids - set(host_queryset_ids)) != 0:
+        missing_ids = ", ".join(str(h_id) for h_id in diff)
+        raise NotFound(f"Hosts with ids {missing_ids} do not exist")
+    if len(diff := component_ids - set(component_queryset_ids)) != 0:
+        missing_ids = ", ".join(str(h_id) for h_id in diff)
+        raise NotFound(f"Components with ids {missing_ids} do not exist")
