@@ -93,10 +93,10 @@ def send_concern_creation_event(object_: ADCMEntity, concern: dict) -> None:
     )
 
 
-def send_concern_delete_event(object_: ADCMEntity, concern_id: int) -> None:
+def send_concern_delete_event(object_id: int, object_type: str, concern_id: int) -> None:
     post_event(
-        event=EventTypes.DELETE_CONCERN.format(fix_object_type(type_=object_.prototype.type)),
-        object_id=object_.pk,
+        event=EventTypes.DELETE_CONCERN.format(fix_object_type(type_=object_type)),
+        object_id=object_id,
         changes={"id": concern_id},
     )
 

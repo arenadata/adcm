@@ -10,10 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
+
 from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP, AuditObject
 from cm.models import Cluster, ConcernItem, Host
 from cm.status_api import send_concern_delete_event
 from django.db.models.signals import pre_delete, pre_save
+from django.db.transaction import on_commit
 from django.dispatch import receiver
 from rbac.models import Group, Policy
 
@@ -61,4 +64,11 @@ def rename_audit_object_host(sender, instance, **kwargs) -> None:
 @receiver(signal=pre_delete, sender=ConcernItem)
 def send_delete_event(sender, instance, **kwargs):  # pylint: disable=unused-argument
     for object_ in instance.related_objects:
-        send_concern_delete_event(object_=object_, concern_id=instance.pk)
+        on_commit(
+            func=partial(
+                send_concern_delete_event,
+                object_id=object_.pk,
+                object_type=object_.prototype.type,
+                concern_id=instance.pk,
+            )
+        )
