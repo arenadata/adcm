@@ -129,11 +129,19 @@ const policiesActionsSlice = createSlice({
     builder.addCase(createPolicy.fulfilled, (state) => {
       state.isCreating = false;
     });
+    builder.addCase(createPolicy.rejected, (state) => {
+      state.isCreating = false;
+    });
     builder.addCase(updatePolicy.pending, (state) => {
       state.isAddPolicyDialogOpen = false;
       state.isCreating = true;
     });
     builder.addCase(updatePolicy.fulfilled, (state) => {
+      state.editDialog.policy = null;
+      state.editDialog.roleId = null;
+      state.isCreating = false;
+    });
+    builder.addCase(updatePolicy.rejected, (state) => {
       state.editDialog.policy = null;
       state.editDialog.roleId = null;
       state.isCreating = false;
