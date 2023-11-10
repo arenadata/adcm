@@ -19,7 +19,7 @@ const loadClusterFromBackend = createAsyncThunk(
       const cluster = await AdcmClustersApi.getCluster(arg);
       return cluster;
     } catch (error) {
-      thunkAPI.dispatch(showError({ message: `Cluster with id = ${arg} not found` }));
+      thunkAPI.dispatch(showError({ message: 'Cluster not found' }));
       return thunkAPI.rejectWithValue(error);
     }
   },
