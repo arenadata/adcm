@@ -11,7 +11,13 @@
 # limitations under the License.
 from api_v2.prototype.utils import get_license_text
 from cm.models import Bundle, HostProvider, ObjectType, Prototype
-from rest_framework.fields import DateTimeField, FileField, SerializerMethodField
+from rest_framework.fields import (
+    CharField,
+    DateTimeField,
+    FileField,
+    IntegerField,
+    SerializerMethodField,
+)
 from rest_framework.serializers import ModelSerializer
 
 from adcm.serializers import EmptySerializer
@@ -23,10 +29,37 @@ class BundleRelatedSerializer(ModelSerializer):
         fields = ["id", "edition"]
 
 
+class MainPrototypeLicenseSerializer(EmptySerializer):
+    status = CharField(source="main_prototype_license")
+    text = SerializerMethodField()
+
+    @staticmethod
+    def get_text(bundle: Bundle):
+        return get_license_text(
+            license_path=bundle.main_prototype_license_path,  # This is the magic of annotations, see queryset
+            path=bundle.main_prototype_path,
+            bundle_hash=bundle.hash,
+        )
+
+
+class MainPrototypeSerializer(EmptySerializer):
+    id = IntegerField(source="main_prototype_id")
+    name = CharField(source="main_prototype_name")
+    display_name = CharField()
+    description = CharField(source="main_prototype_description")
+    type = CharField()
+    license = SerializerMethodField()
+    version = CharField()
+
+    @staticmethod
+    def get_license(bundle: Bundle) -> dict:
+        return MainPrototypeLicenseSerializer(instance=bundle).data
+
+
 class BundleListSerializer(ModelSerializer):
     upload_time = DateTimeField(read_only=True, source="date")
-    display_name = SerializerMethodField()
-    license = SerializerMethodField()
+    display_name = CharField(read_only=True)
+    main_prototype = SerializerMethodField()
 
     class Meta:
         model = Bundle
@@ -36,21 +69,15 @@ class BundleListSerializer(ModelSerializer):
             "display_name",
             "version",
             "edition",
-            "license",
+            "main_prototype",
             "upload_time",
             "category",
             "signature_status",
         )
 
     @staticmethod
-    def get_display_name(bundle: Bundle) -> str:
-        prototype = bundle.prototype_set.filter(type__in=[ObjectType.CLUSTER, ObjectType.PROVIDER]).first()
-        return prototype.display_name
-
-    @staticmethod
-    def get_license(bundle: Bundle) -> dict:
-        prototype = bundle.prototype_set.filter(type__in=[ObjectType.CLUSTER, ObjectType.PROVIDER]).first()
-        return {"status": prototype.license, "text": get_license_text(prototype)}
+    def get_main_prototype(bundle: Bundle) -> dict:
+        return MainPrototypeSerializer(instance=bundle).data
 
 
 class UploadBundleSerializer(EmptySerializer):
@@ -66,7 +93,14 @@ class UpgradeServicePrototypeSerializer(ModelSerializer):
 
     @staticmethod
     def get_license(prototype: Prototype) -> dict:
-        return {"status": prototype.license, "text": get_license_text(prototype=prototype)}
+        return {
+            "status": prototype.license,
+            "text": get_license_text(
+                license_path=prototype.license_path,
+                path=prototype.path,
+                bundle_hash=prototype.bundle.hash,
+            ),
+        }
 
 
 class UpgradeBundleSerializer(ModelSerializer):
