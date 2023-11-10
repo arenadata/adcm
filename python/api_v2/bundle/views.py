@@ -34,7 +34,16 @@ class BundleViewSet(  # pylint: disable=too-many-ancestors
 ):
     queryset = (
         Bundle.objects.exclude(name="ADCM")
-        .annotate(type=F("prototype__type"))
+        .annotate(
+            type=F("prototype__type"),
+            display_name=F("prototype__display_name"),
+            main_prototype_id=F("prototype"),
+            main_prototype_name=F("prototype__name"),
+            main_prototype_description=F("prototype__description"),
+            main_prototype_path=F("prototype__path"),
+            main_prototype_license=F("prototype__license"),
+            main_prototype_license_path=F("prototype__license_path"),
+        )
         .filter(type__in=[ObjectType.CLUSTER, ObjectType.PROVIDER])
         .order_by(F("prototype__display_name").asc())
     )
@@ -55,7 +64,9 @@ class BundleViewSet(  # pylint: disable=too-many-ancestors
         file_path = upload_file(file=request.data["file"])
         bundle = load_bundle(bundle_file=str(file_path))
 
-        return Response(status=HTTP_201_CREATED, data=BundleListSerializer(instance=bundle).data)
+        return Response(
+            status=HTTP_201_CREATED, data=BundleListSerializer(instance=self.get_queryset().get(id=bundle.pk)).data
+        )
 
     @audit
     def destroy(self, request, *args, **kwargs) -> Response:

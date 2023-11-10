@@ -26,6 +26,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
 from adcm.permissions import VIEW_CLUSTER_PERM, DjangoModelPermissionsAudit
+from adcm.serializers import EmptySerializer
 
 
 class PrototypeViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
@@ -37,6 +38,9 @@ class PrototypeViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-ma
     def get_serializer_class(self):
         if self.action == "versions":
             return PrototypeTypeSerializer
+
+        if self.action == "accept":
+            return EmptySerializer
 
         return PrototypeListSerializer
 

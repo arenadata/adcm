@@ -9,28 +9,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from cm.adcm_config.config import read_bundle_file
-from cm.errors import raise_adcm_ex
+from pathlib import Path
+
+from cm.errors import AdcmEx
 from cm.models import Prototype
+from django.conf import settings
 
 
 def accept_license(prototype: Prototype) -> None:
-    if not prototype.license_path:
-        raise_adcm_ex("LICENSE_ERROR", "This bundle has no license")
-
-    if prototype.license == "absent":
-        raise_adcm_ex("LICENSE_ERROR", "This bundle has no license")
+    if not prototype.license_path or prototype.license == "absent":
+        raise AdcmEx(code="LICENSE_ERROR", msg="This bundle has no license")
 
     Prototype.objects.filter(license_hash=prototype.license_hash, license="unaccepted").update(license="accepted")
 
 
-def get_license_text(prototype: Prototype) -> str | None:
-    if not prototype.license_path:
+def get_license_text(license_path: str | None, path: str, bundle_hash: str) -> str | None:
+    if license_path is None:
         return None
 
-    if not isinstance(prototype, Prototype):
-        raise_adcm_ex("LICENSE_ERROR")
+    if license_path.startswith("./"):
+        path = Path(settings.BUNDLE_DIR, bundle_hash, path, license_path)
+    else:
+        path = Path(settings.BUNDLE_DIR, bundle_hash, license_path)
 
-    return read_bundle_file(
-        proto=prototype, fname=prototype.license_path, bundle_hash=prototype.bundle.hash, ref="license file"
-    )
+    try:
+        return path.read_text(encoding=settings.ENCODING_UTF_8)
+    except FileNotFoundError as error:
+        raise AdcmEx(code="LICENSE_ERROR", msg=f'{bundle_hash} "{path}" is not found') from error

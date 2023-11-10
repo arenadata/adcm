@@ -38,7 +38,14 @@ class PrototypeListSerializer(ModelSerializer):
 
     @staticmethod
     def get_license(prototype: Prototype) -> dict:
-        return {"status": prototype.license, "text": get_license_text(prototype=prototype)}
+        return {
+            "status": prototype.license,
+            "text": get_license_text(
+                license_path=prototype.license_path,
+                path=prototype.path,
+                bundle_hash=prototype.bundle.hash,
+            ),
+        }
 
 
 class PrototypeVersionSerializer(ModelSerializer):
