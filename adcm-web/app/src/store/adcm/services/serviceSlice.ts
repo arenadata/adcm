@@ -29,7 +29,7 @@ const loadService = createAsyncThunk(
       const service = await AdcmServicesApi.getService(clusterId, serviceId);
       return service;
     } catch (error) {
-      thunkAPI.dispatch(showError({ message: `Service with id = ${serviceId} not found` }));
+      thunkAPI.dispatch(showError({ message: 'Service not found' }));
       return thunkAPI.rejectWithValue(error);
     }
   },

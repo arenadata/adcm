@@ -30,7 +30,7 @@ const getHostProvider = createAsyncThunk('adcm/hostProvider/getHostProvider', as
   try {
     return await AdcmHostProvidersApi.getHostProvider(id);
   } catch (error) {
-    thunkAPI.dispatch(showError({ message: `Hostprovider with id = ${id} not found` }));
+    thunkAPI.dispatch(showError({ message: 'Hostprovider not found' }));
     return thunkAPI.rejectWithValue(error);
   }
 });

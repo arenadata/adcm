@@ -69,7 +69,7 @@ const getTask = createAsyncThunk('adcm/jobs/getTask', async (id: number, thunkAP
   try {
     return await AdcmJobsApi.getTask(id);
   } catch (error) {
-    thunkAPI.dispatch(showError({ message: `Task with id = ${id} not found` }));
+    thunkAPI.dispatch(showError({ message: 'Task not found' }));
     return thunkAPI.rejectWithValue(error);
   }
 });
