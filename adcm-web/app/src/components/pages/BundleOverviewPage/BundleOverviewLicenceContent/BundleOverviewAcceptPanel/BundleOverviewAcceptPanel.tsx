@@ -27,7 +27,12 @@ const BundleOverviewAcceptPanel = ({ prototypeId, bundleId, isLicenseAccepted }:
 
   return (
     <div className={s.acceptPanel}>
-      <Checkbox onClick={checkboxHandler} label="I've read text of License Agreement" disabled={isLicenseAccepted} />
+      <Checkbox
+        onClick={checkboxHandler}
+        label="I've read text of License Agreement"
+        disabled={isLicenseAccepted}
+        checked={isLicenseAccepted}
+      />
       <Button onClick={acceptLicenseHandler} disabled={isDisabled || isLicenseAccepted}>
         Accept
       </Button>

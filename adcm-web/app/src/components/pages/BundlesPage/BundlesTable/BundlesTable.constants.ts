@@ -25,6 +25,10 @@ export const columns: TableColumn[] = [
     isSortable: true,
   },
   {
+    label: 'License',
+    name: 'license',
+  },
+  {
     label: 'Signature',
     name: 'signatureStatus',
   },

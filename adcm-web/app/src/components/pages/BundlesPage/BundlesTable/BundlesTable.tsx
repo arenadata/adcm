@@ -7,7 +7,6 @@ import { orElseGet } from '@utils/checkUtils';
 import { useSelectedItems } from '@uikit/hooks/useSelectedItems';
 import { AdcmBundle } from '@models/adcm/bundle';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
-import { getStatusLabel } from '@utils/humanizationUtils';
 import { setDeletableId, setSelectedItemsIds as setSelectedBundlesIds } from '@store/adcm/bundles/bundlesSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { setSortParams } from '@store/adcm/bundles/bundlesTableSlice';
@@ -69,8 +68,9 @@ const BundlesTable: React.FC = () => {
             <TableCell>{bundle.version}</TableCell>
             <TableCell>{orElseGet(bundle.edition)}</TableCell>
             <DateTimeCell value={bundle.uploadTime} />
+            <TableCell>{bundle.mainPrototype.license.status}</TableCell>
             <StatusableCell status={bundleSignatureStatusesMap[bundle.signatureStatus]}>
-              {getStatusLabel(bundle.signatureStatus)}
+              {bundle.signatureStatus}
             </StatusableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(bundle.id)} title="Delete" />
