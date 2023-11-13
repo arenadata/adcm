@@ -41,6 +41,11 @@ const AccessManagerPolicyAddDialog: React.FC = () => {
     onChangeFormData({
       roleId: roleId,
       objectTypes: roles.find((role) => role.id === roleId)?.parametrizedByType,
+      clusterIds: [],
+      serviceClusterIds: [],
+      serviceName: '',
+      hostIds: [],
+      hostproviderIds: [],
     });
     if (roleId) {
       dispatch(getObjectCandidates(roleId));
