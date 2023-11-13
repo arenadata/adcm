@@ -21,7 +21,7 @@ const loadBundleFromBackend = createAsyncThunk('adcm/bundle/loadBundle', async (
     const bundle = await AdcmBundlesApi.getBundle(bundleId);
     return bundle;
   } catch (error) {
-    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+    thunkAPI.dispatch(showError({ message: 'Bundle not found' }));
   }
 });
 

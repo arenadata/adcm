@@ -26,7 +26,7 @@ const loadClusterServiceComponentFromBackend = createAsyncThunk(
       const component = await AdcmClusterServiceComponentsApi.getServiceComponent(clusterId, serviceId, componentId);
       return component;
     } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      thunkAPI.dispatch(showError({ message: 'Component not found' }));
       return thunkAPI.rejectWithValue(error);
     }
   },

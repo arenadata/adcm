@@ -33,7 +33,7 @@ const loadClusterHost = createAsyncThunk(
       const host = await AdcmClusterHostsApi.getHost(clusterId, hostId);
       return host;
     } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      thunkAPI.dispatch(showError({ message: 'Host not found' }));
       return thunkAPI.rejectWithValue(error);
     }
   },

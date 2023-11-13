@@ -22,7 +22,7 @@ const loadHost = createAsyncThunk('adcm/host/loadHost', async (hostId: number, t
     const host = await AdcmHostsApi.getHost(hostId);
     return host;
   } catch (error) {
-    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+    thunkAPI.dispatch(showError({ message: 'Host not found' }));
     return thunkAPI.rejectWithValue(error);
   }
 });
