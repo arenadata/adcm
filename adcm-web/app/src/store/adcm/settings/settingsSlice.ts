@@ -13,6 +13,7 @@ interface AdcmSettingsState {
 const getAdcmSettings = createAsyncThunk('adcm/adcmSettings/getAdcmSettings', async (arg: void, thunkAPI) => {
   try {
     const adcmSettings = await AdcmSettingsApi.getSettings();
+
     return adcmSettings;
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
