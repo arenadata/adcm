@@ -46,13 +46,14 @@ type statusChangePrototype struct {
 }
 
 type statusChangePayload struct {
-	Id         int                        `json:"id,omitempty"`
-	Reason     *statusChangeReasonPayload `json:"reason,omitempty"`
-	IsBlocking bool                       `json:"isBlocking,omitempty"`
-	Cause      string                     `json:"cause,omitempty"`
-	Status     string                     `json:"status,omitempty"`
-	State      string                     `json:"state,omitempty"`
-	Prototype  *statusChangePrototype     `json:"prototype,omitempty"`
+	Id              int                        `json:"id,omitempty"`
+	Reason          *statusChangeReasonPayload `json:"reason,omitempty"`
+	IsBlocking      bool                       `json:"isBlocking,omitempty"`
+	Cause           string                     `json:"cause,omitempty"`
+	Status          string                     `json:"status,omitempty"`
+	State           string                     `json:"state,omitempty"`
+	Prototype       *statusChangePrototype     `json:"prototype,omitempty"`
+	MaintenanceMode string                     `json:"maintenanceMode,omitempty"`
 }
 
 type statusChangeReasonPayload struct {

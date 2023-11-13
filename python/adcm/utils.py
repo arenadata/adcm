@@ -35,6 +35,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.status_api import send_object_update_event
 from django.conf import settings
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
@@ -284,6 +285,7 @@ def get_maintenance_mode_response(
 
         serializer.save()
         _update_mm_hierarchy_issues(obj=obj)
+        send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
 
         return Response()
 
@@ -311,6 +313,7 @@ def get_maintenance_mode_response(
 
         serializer.save()
         _update_mm_hierarchy_issues(obj=obj)
+        send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
 
         return Response()
 
