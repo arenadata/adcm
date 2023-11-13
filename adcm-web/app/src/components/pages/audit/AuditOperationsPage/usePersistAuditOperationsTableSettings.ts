@@ -49,7 +49,6 @@ export const usePersistAuditOperationsTableSettings = () => {
       isReadyToLoad: true,
       onSettingsLoaded: (settings) => {
         const mergedFilter = mergeFilters(settings.filter, filter);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { timeFrom, timeTo, ...filterForLocalStorage } = mergedFilter;
 
         dispatch(setFilter(filterForLocalStorage));

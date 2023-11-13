@@ -24,7 +24,7 @@ export const isEmailValid = (email: string) => {
 };
 
 export const isClusterNameValid = (clusterName: string) => {
-  return /^[a-z|A-Z]+([a-zA-Z.-_])*[a-z|A-Z|0-9]{1}$/.test(clusterName);
+  return /^[a-z|A-Z]+([a-zA-Z._-\s])*[a-z|A-Z|0-9]{1}$/.test(clusterName);
 };
 
 export const isHostNameValid = (hostName: string) => {
