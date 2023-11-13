@@ -3,12 +3,16 @@
     --left-menu-item-color-default: var(--text-default-color);
     --left-menu-item-color-active: var(--color-xgreen-saturated);
     --left-menu-item-color-hover: var(--color-xwhite-off);
+    --left-menu-item-color-active-alert: var(--color-xred-light);
+    --left-menu-item-color-alert: var(--color-xred);
   }
 
   body.theme-light {
     --left-menu-item-color-default: var(--text-default-color);
     --left-menu-item-color-active: var(--color-xgreen);
     --left-menu-item-color-hover: var(--color-xblack);
+    --left-menu-item-color-active-alert: var(--color-xred-light);
+    --left-menu-item-color-alert: var(--color-xred);
   }
 }
 
@@ -24,6 +28,14 @@
 
   &:hover {
     --left-menu-item-color: var(--left-menu-item-color-hover);
+  }
+
+  &__alert {
+    --left-menu-item-color: var(--left-menu-item-color-alert) !important;
+
+    &:global(.is-active) {
+      --left-menu-item-color: var(--left-menu-item-color-active-alert) !important;
+    }
   }
 
   &:global(.is-active) {
