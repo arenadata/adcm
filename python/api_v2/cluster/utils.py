@@ -10,25 +10,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
+
 from api_v2.prototype.utils import get_license_text
 from cm.models import ObjectType, Prototype
 
 
+def get_requires(requires: list[dict]) -> dict:
+    new_requires = defaultdict(list)
+
+    for require in requires:
+        if "component" in require:
+            new_requires[require["service"]].append(require["component"])
+        elif require["service"] not in new_requires:
+            new_requires[require["service"]] = []
+
+    return new_requires
+
+
 def get_depend_on(
-    prototype: Prototype, depend_on: list[dict] | None = None, checked_objects: list[Prototype] | None = None
+    prototype: Prototype, depend_on: list[dict] | None = None, checked_objects: set[Prototype] | None = None
 ) -> list[dict]:
     if depend_on is None:
         depend_on = []
 
     if checked_objects is None:
-        checked_objects = []
+        checked_objects = set()
 
-    checked_objects.append(prototype)
+    checked_objects.add(prototype)
 
-    for require in prototype.requires:
-        required_service = Prototype.objects.get(
-            type=ObjectType.SERVICE, name=require["service"], bundle=prototype.bundle
-        )
+    for service_name, component_names in get_requires(requires=prototype.requires).items():
+        required_service = Prototype.objects.get(type=ObjectType.SERVICE, name=service_name, bundle=prototype.bundle)
+        checked_objects.add(required_service)
         service_prototype = {
             "id": required_service.pk,
             "name": required_service.name,
@@ -45,12 +58,11 @@ def get_depend_on(
             "component_prototypes": [],
         }
 
-        required_component = None
-
-        if "component" in require:
+        for component_name in component_names:
             required_component = Prototype.objects.get(
-                type=ObjectType.COMPONENT, name=require["component"], bundle=prototype.bundle, parent=required_service
+                type=ObjectType.COMPONENT, name=component_name, bundle=prototype.bundle, parent=required_service
             )
+            checked_objects.add(required_component)
             service_prototype["component_prototypes"].append(
                 {
                     "id": required_component.pk,
@@ -60,12 +72,12 @@ def get_depend_on(
                 }
             )
 
+            if required_component.requires and required_component not in checked_objects:
+                get_depend_on(prototype=required_component, depend_on=depend_on, checked_objects=checked_objects)
+
         depend_on.append({"service_prototype": service_prototype})
 
         if required_service.requires and required_service not in checked_objects:
             get_depend_on(prototype=required_service, depend_on=depend_on, checked_objects=checked_objects)
-
-        if required_component and required_component.requires and required_component not in checked_objects:
-            get_depend_on(prototype=required_component, depend_on=depend_on, checked_objects=checked_objects)
 
     return depend_on
