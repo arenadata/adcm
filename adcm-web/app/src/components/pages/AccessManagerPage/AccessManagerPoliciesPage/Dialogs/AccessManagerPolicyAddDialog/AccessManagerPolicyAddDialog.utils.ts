@@ -71,5 +71,9 @@ export const generateDialogData = (policy: AdcmPolicy, objectTypes: string[]) =>
 };
 
 export const isValidSecondStep = (formData: AccessManagerPolicyAddDialogFormData) => {
-  return formData.objectTypes.some((object) => isValidStepItem(object, formData));
+  if (formData.objectTypes.length > 0) {
+    return formData.objectTypes.some((object) => isValidStepItem(object, formData));
+  }
+
+  return true;
 };
