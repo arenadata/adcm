@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 import PaginationNumButton from './PaginationButtons/PaginationNumButton';
 import PaginationStepButton from './PaginationButtons/PaginationStepButton';
 import PaginationDots from './PaginationButtons/PaginationDots';
@@ -64,12 +64,15 @@ const Pagination = ({
   });
   const paginationWrapperClasses = cn(s.paginationWrapper, className || '');
 
-  const setPageNumber = (newPageNumber: number) => {
-    onChangeData({
-      perPage,
-      pageNumber: newPageNumber,
-    });
-  };
+  const setPageNumber = useCallback(
+    (newPageNumber: number) => {
+      onChangeData({
+        perPage,
+        pageNumber: newPageNumber,
+      });
+    },
+    [perPage, onChangeData],
+  );
 
   const setPerPage = (newPerPage: number | null) => {
     onChangeData({
@@ -77,6 +80,12 @@ const Pagination = ({
       pageNumber: 0,
     });
   };
+
+  useEffect(() => {
+    if (totalItems > 0 && totalItems <= pageNumber * perPage) {
+      setPageNumber(Math.ceil(totalItems / perPage) - 1);
+    }
+  }, [totalItems, pageNumber, perPage, setPageNumber]);
 
   return (
     <div className={paginationWrapperClasses} data-test={dataTest}>
