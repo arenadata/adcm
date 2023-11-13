@@ -488,7 +488,11 @@ def remove_concern_from_object(object_: ADCMEntity, concern: ConcernItem | None)
         return
 
     object_.concerns.remove(concern)
-    on_commit(func=partial(send_concern_delete_event, object_=object_, concern_id=concern_id))
+    on_commit(
+        func=partial(
+            send_concern_delete_event, object_id=object_.pk, object_type=object_.prototype.type, concern_id=concern_id
+        )
+    )
 
 
 def lock_affected_objects(task: TaskLog, objects: Iterable[ADCMEntity]) -> None:
