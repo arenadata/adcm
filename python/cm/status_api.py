@@ -35,6 +35,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 class EventTypes:
     CREATE_CONCERN = "create_{}_concern"
     DELETE_CONCERN = "delete_{}_concern"
+    DELETE_SERVICE = "delete_service"
     UPDATE_HOSTCOMPONENTMAP = "update_hostcomponentmap"
     CREATE_CONFIG = "create_{}_config"
     UPDATE = "update_{}"
@@ -98,6 +99,13 @@ def send_concern_delete_event(object_: ADCMEntity, concern_id: int) -> None:
         event=EventTypes.DELETE_CONCERN.format(fix_object_type(type_=object_.prototype.type)),
         object_id=object_.pk,
         changes={"id": concern_id},
+    )
+
+
+def send_delete_service_event(service_id: int) -> Response | None:
+    return post_event(
+        event=EventTypes.DELETE_SERVICE,
+        object_id=service_id,
     )
 
 

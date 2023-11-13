@@ -12,7 +12,7 @@
 # pylint: disable=too-many-lines
 
 import json
-from functools import wraps
+from functools import partial, wraps
 from typing import Literal
 
 from cm.adcm_config.config import (
@@ -59,12 +59,13 @@ from cm.models import (
 from cm.status_api import (
     api_request,
     send_config_creation_event,
+    send_delete_service_event,
     send_host_component_map_update_event,
 )
 from cm.utils import build_id_object_mapping, obj_ref
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
-from django.db.transaction import atomic
+from django.db.transaction import atomic, on_commit
 from rbac.models import Policy, re_apply_object_policy
 from rbac.roles import apply_policy_for_new_config
 from version_utils import rpm
@@ -384,6 +385,7 @@ def delete_service(service: ClusterObject) -> None:
     update_hierarchy_issues(service.cluster)
     re_apply_object_policy(service.cluster)
     load_service_map()
+    on_commit(func=partial(send_delete_service_event, service_id=service_pk))
     logger.info("service #%s is deleted", service_pk)
 
 
