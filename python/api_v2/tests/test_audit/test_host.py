@@ -119,7 +119,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         self.check_last_audit_log(
             operation_name="Host updated",
             operation_type="update",
-            operation_result="fail",
+            operation_result="denied",
             user__username=self.test_user.username,
         )
 
@@ -174,7 +174,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         self.check_last_audit_log(
             operation_name="Host deleted",
             operation_type="delete",
-            operation_result="fail",
+            operation_result="denied",
             user__username=self.test_user.username,
         )
 
@@ -206,7 +206,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name="Host removed",
+            operation_name="host removed",
             operation_type="update",
             operation_result="fail",
             audit_object__object_id=self.cluster_1.pk,
@@ -307,6 +307,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             audit_object__object_name=self.host_1.name,
             audit_object__object_type="host",
             audit_object__is_deleted=False,
+            object_changes={"current": {"maintenance_mode": "on"}, "previous": {"maintenance_mode": "off"}},
             user__username="admin",
         )
 

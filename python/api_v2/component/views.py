@@ -51,6 +51,8 @@ class ComponentViewSet(
     permission_required = [VIEW_COMPONENT_PERM]
     filterset_class = ComponentFilter
 
+    audit_model_hint = ServiceComponent
+
     def get_queryset(self, *args, **kwargs):
         cluster = get_object_for_user(
             user=self.request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, pk=self.kwargs["cluster_pk"]

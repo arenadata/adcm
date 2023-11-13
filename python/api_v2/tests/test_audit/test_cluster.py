@@ -13,7 +13,6 @@
 # pylint: disable=too-many-lines
 
 from api_v2.tests.base import BaseAPITestCase
-from audit.models import AuditObject
 from cm.models import (
     Action,
     Cluster,
@@ -84,8 +83,8 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         self.component_action = Action.objects.get(name="action_1_comp_1", prototype=self.component_1.prototype)
         self.host_action = Action.objects.get(name="cluster_on_host", prototype=self.cluster_1.prototype)
 
-        upgrade_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_one_upgrade")
-        self.cluster_upgrade = Upgrade.objects.get(bundle=upgrade_bundle, name="upgrade_via_action_simple")
+        self.upgrade_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_one_upgrade")
+        self.cluster_upgrade = Upgrade.objects.get(bundle=self.upgrade_bundle, name="upgrade_via_action_simple")
 
     def test_create_success(self):
         response = self.client.post(
@@ -94,14 +93,13 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
+        cluster = Cluster.objects.get(pk=response.json()["id"])
+
         self.check_last_audit_log(
             operation_name="Cluster created",
             operation_type="create",
             operation_result="success",
-            audit_object__object_id=response.json()["id"],
-            audit_object__object_name="audit_test_cluster",
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
+            **self.prepare_audit_object_arguments(expected_object=cluster),
             user__username="admin",
         )
 
@@ -118,7 +116,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Cluster created",
             operation_type="create",
             operation_result="denied",
-            audit_object__isnull=True,
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username=self.test_user.username,
         )
 
@@ -133,7 +131,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Cluster created",
             operation_type="create",
             operation_result="fail",
-            audit_object__isnull=True,
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
@@ -145,14 +143,13 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
+        self.cluster_1.refresh_from_db()
+
         self.check_last_audit_log(
             operation_name="Cluster updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name="new_cluster_name",
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             object_changes={"current": {"name": "new_cluster_name"}, "previous": {"name": old_name}},
             user__username="admin",
         )
@@ -170,15 +167,26 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Cluster updated",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
         )
 
-    def test_edit_fail(self):
+    def test_edit_incorrect_body_fail(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+            data={"name": "new , cluster_name"},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="Cluster updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
+        )
+
+    def test_edit_not_found_fail(self):
         response = self.client.patch(
             path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.get_non_existent_pk(model=Cluster)}),
             data={"name": "new_cluster_name"},
@@ -189,19 +197,11 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Cluster updated",
             operation_type="update",
             operation_result="fail",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
     def test_delete_success(self):
-        AuditObject.objects.get_or_create(
-            object_id=self.cluster_1.pk,
-            object_name=self.cluster_1.name,
-            object_type="cluster",
-            is_deleted=False,
-        )
-
         response = self.client.delete(
             path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
         )
@@ -211,11 +211,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Cluster deleted",
             operation_type="delete",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1, is_deleted=True),
             user__username="admin",
         )
 
@@ -231,11 +227,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Cluster deleted",
             operation_type="delete",
             operation_result="denied",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
         )
 
@@ -249,8 +241,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Cluster deleted",
             operation_type="delete",
             operation_result="fail",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
@@ -265,12 +256,26 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Host-Component map updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
+        )
+
+    def test_create_mapping_only_view_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View host-components"):
+            response = self.client.post(
+                path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
+                data=[{"hostId": self.host_1.pk, "componentId": self.component_1.pk}],
+            )
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name="Host-Component map updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username=self.test_user.username,
         )
 
     def test_create_mapping_denied(self):
@@ -286,15 +291,26 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Host-Component map updated",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
         )
 
-    def test_create_mapping_fail(self):
+    def test_create_mapping_incorrect_body_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
+            data=[{"host_id": 4}],
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="Host-Component map updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
+        )
+
+    def test_create_mapping_not_found_fail(self):
         response = self.client.post(
             path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.get_non_existent_pk(model=Cluster)}),
             data=[{"hostId": self.host_1.pk, "componentId": self.component_1.pk}],
@@ -305,8 +321,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Host-Component map updated",
             operation_type="update",
             operation_result="fail",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
@@ -321,11 +336,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Cluster import updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.import_cluster.pk,
-            audit_object__object_name=self.import_cluster.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.import_cluster),
             user__username="admin",
         )
 
@@ -342,12 +353,23 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Cluster import updated",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.import_cluster.pk,
-            audit_object__object_name=self.import_cluster.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.import_cluster),
             user__username=self.test_user.username,
+        )
+
+    def test_create_import_incorrect_body_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
+            data=[{}],
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="Cluster import updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.import_cluster),
+            user__username="admin",
         )
 
     def test_create_import_fail(self):
@@ -363,8 +385,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Cluster import updated",
             operation_type="update",
             operation_result="fail",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
@@ -379,15 +400,29 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Cluster configuration updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
-    def test_update_config_denied(self):
+    def test_update_config_view_only_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
+            response = self.client.post(
+                path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+                data=self.cluster_1_config_post_data,
+            )
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name="Cluster configuration updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_update_config_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
         response = self.client.post(
@@ -400,15 +435,26 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Cluster configuration updated",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
         )
 
-    def test_update_config_fail(self):
+    def test_update_config_incorrect_body_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="Cluster configuration updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
+        )
+
+    def test_update_config_not_found_fail(self):
         response = self.client.post(
             path=reverse(
                 viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.get_non_existent_pk(model=Cluster)}
@@ -421,8 +467,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Cluster configuration updated",
             operation_type="update",
             operation_result="fail",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
@@ -438,10 +483,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name=f"{self.host_1.name} host removed",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             object_changes={},
             user__username="admin",
         )
@@ -460,11 +502,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name=f"{self.host_1.name} host removed",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
         )
 
@@ -478,14 +516,10 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name="Host removed",
+            operation_name="host removed",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
@@ -500,15 +534,11 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name=f"{self.host_2.name} host added",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
-    def test_add_host_denied(self):
+    def test_add_host_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
         response = self.client.post(
@@ -521,12 +551,38 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name=f"{self.host_2.name} host added",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
+        )
+
+    def test_add_host_incorrect_body_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="host added",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
+        )
+
+    def test_add_non_existing_host_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"hostId": self.get_non_existent_pk(Host)},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="host added",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
         )
 
     def test_add_host_fail(self):
@@ -542,8 +598,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name=f"{self.host_2.name} host added",
             operation_type="update",
             operation_result="fail",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
@@ -558,11 +613,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="host added",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
@@ -580,10 +631,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Host updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.host_1.pk,
-            audit_object__object_name=self.host_1.name,
-            audit_object__object_type="host",
-            audit_object__is_deleted=False,
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
             object_changes={"current": {"maintenance_mode": "on"}, "previous": {"maintenance_mode": "off"}},
             user__username="admin",
         )
@@ -604,11 +652,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Host updated",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.host_1.pk,
-            audit_object__object_name=self.host_1.name,
-            audit_object__object_type="host",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
             user__username=self.test_user.username,
         )
 
@@ -630,11 +674,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Host updated",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.host_1.pk,
-            audit_object__object_name=self.host_1.name,
-            audit_object__object_type="host",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
             user__username="admin",
         )
 
@@ -654,11 +694,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             ),
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
@@ -676,11 +712,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="[] service(s) added",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
@@ -702,11 +734,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             ),
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
         )
 
@@ -726,8 +754,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             ),
             operation_type="update",
             operation_result="fail",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
@@ -743,11 +770,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name=f"{self.service_1.display_name} service removed",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
@@ -765,11 +788,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name=f"{self.service_1.display_name} service removed",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
         )
 
@@ -780,17 +799,13 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.get_non_existent_pk(model=ClusterObject)},
             ),
         )
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_last_audit_log(
             operation_name="service removed",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
@@ -801,14 +816,13 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
                 kwargs={"cluster_pk": self.get_non_existent_pk(model=Cluster), "pk": self.service_1.pk},
             ),
         )
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_last_audit_log(
             operation_name=f"{self.service_1.display_name} service removed",
             operation_type="update",
             operation_result="denied",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
@@ -824,11 +838,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name=f"{self.cluster_action.display_name} action launched",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
@@ -848,12 +858,29 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name=f"{self.cluster_action.display_name} action launched",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
+        )
+
+    def test_run_cluster_action_incorrect_body_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:cluster-action-run",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "pk": Action.objects.get(name="with_config", prototype=self.cluster_1.prototype).pk,
+                },
+            ),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+        self.check_last_audit_log(
+            operation_name="with_config action launched",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
         )
 
     def test_run_non_existent_cluster_action_fail(self):
@@ -866,14 +893,10 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name="{action_display_name} action launched",
+            operation_name="action launched",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
@@ -894,11 +917,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name=f"{self.host_action.display_name} action launched",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.host_1.pk,
-            audit_object__object_name=self.host_1.name,
-            audit_object__object_type="host",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
             user__username="admin",
         )
 
@@ -925,11 +944,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name=f"{self.host_action.display_name} action launched",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.host_1.pk,
-            audit_object__object_name=self.host_1.name,
-            audit_object__object_type="host",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
             user__username=self.test_user.username,
         )
 
@@ -947,14 +962,10 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name="{action_display_name} action launched",
+            operation_name="action launched",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.host_1.pk,
-            audit_object__object_name=self.host_1.name,
-            audit_object__object_type="host",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
             user__username="admin",
         )
 
@@ -974,11 +985,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name=f"{self.cluster_upgrade.action.display_name} upgrade launched",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
@@ -995,18 +1002,35 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
                     },
                 ),
             )
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_log(
             operation_name=f"{self.cluster_upgrade.action.display_name} upgrade launched",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
+        )
+
+    def test_upgrade_cluster_incorrect_data_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:upgrade-run",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "pk": Upgrade.objects.get(bundle=self.upgrade_bundle, name="upgrade_via_action_complex").pk,
+                },
+            ),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+        self.check_last_audit_log(
+            operation_name="Upgrade: upgrade_via_action_complex upgrade launched",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
         )
 
     def test_upgrade_cluster_fail(self):
@@ -1025,10 +1049,6 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name="Upgraded to",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )

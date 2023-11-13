@@ -120,6 +120,7 @@ class TestClusterAudit(BaseTestCase):
         operation_result: AuditLogOperationResult = AuditLogOperationResult.SUCCESS,
         user: User | None = None,
         object_changes: dict | None = None,
+        object_is_deleted: bool = False,
     ) -> None:
         if object_changes is None:
             object_changes = {}
@@ -129,7 +130,7 @@ class TestClusterAudit(BaseTestCase):
         self.assertEqual(log.audit_object.object_id, obj.pk)
         self.assertEqual(log.audit_object.object_name, obj_name)
         self.assertEqual(log.audit_object.object_type, obj_type)
-        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.audit_object.is_deleted, object_is_deleted)
         self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, operation_type)
         self.assertEqual(log.operation_result, operation_result)
@@ -184,7 +185,7 @@ class TestClusterAudit(BaseTestCase):
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.object_changes, {})
 
-    def get_sc(self) -> HostComponent:
+    def get_sc(self) -> ServiceComponent:
         service_component_prototype = Prototype.objects.create(bundle=self.bundle, type="component")
 
         return ServiceComponent.objects.create(
@@ -381,6 +382,7 @@ class TestClusterAudit(BaseTestCase):
             obj_type=AuditObjectType.CLUSTER,
             operation_name=self.cluster_deleted_str,
             operation_type=AuditLogOperationType.DELETE,
+            object_is_deleted=True,
         )
 
         response: Response = self.client.delete(
@@ -728,6 +730,22 @@ class TestClusterAudit(BaseTestCase):
             operation_name=f"{self.host.fqdn} host added",
             operation_type=AuditLogOperationType.UPDATE,
         )
+
+    def test_remove_host_fail(self):
+        response = self.client.delete(
+            path=reverse(viewname="v1:host-details", kwargs={"cluster_id": self.cluster.pk, "host_id": 10000}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(log.audit_object.object_id, self.cluster.pk)
+        self.assertEqual(log.audit_object.object_name, self.cluster.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.CLUSTER)
+        self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.FAIL)
+        self.assertEqual(log.operation_name, "host removed")
 
     def test_update_host_config(self):
         self.client.post(

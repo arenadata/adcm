@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.group_config.permissions import GroupConfigPermissions
 from api_v2.group_config.serializers import GroupConfigSerializer
 from api_v2.host.serializers import HostGroupConfigSerializer
 from api_v2.views import CamelCaseModelViewSet
@@ -17,6 +18,7 @@ from audit.utils import audit
 from cm.models import GroupConfig
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
+from rbac.models import re_apply_object_policy
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
@@ -32,6 +34,7 @@ class GroupConfigViewSet(
 ):  # pylint: disable=too-many-ancestors
     queryset = GroupConfig.objects.order_by("name")
     serializer_class = GroupConfigSerializer
+    permission_classes = [GroupConfigPermissions]
     permission_required = [VIEW_GROUP_CONFIG_PERM]
     filter_backends = []
 
@@ -70,6 +73,8 @@ class GroupConfigViewSet(
             object_id=parent_object.pk,
             **serializer.validated_data,
         )
+
+        re_apply_object_policy(apply_object=parent_object)
 
         return Response(data=self.get_serializer(group_config).data, status=HTTP_201_CREATED)
 

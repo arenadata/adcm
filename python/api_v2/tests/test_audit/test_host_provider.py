@@ -312,7 +312,7 @@ class TestHostProviderAudit(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name="{action_display_name} action launched",
+            operation_name="action launched",
             operation_type="update",
             operation_result="fail",
             audit_object__object_id=self.provider.pk,

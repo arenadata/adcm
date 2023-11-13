@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from audit.cases.common import get_obj_name, get_or_create_audit_obj
 from audit.models import (
     MODEL_TO_AUDIT_OBJECT_TYPE_MAP,
@@ -18,7 +17,7 @@ from audit.models import (
     AuditObject,
     AuditOperation,
 )
-from cm.models import GroupConfig, Host, ObjectConfig
+from cm.models import GroupConfig, Host, ObjectConfig, get_cm_model_by_type
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
@@ -104,15 +103,47 @@ def config_case(
             else:
                 audit_object = None
 
-        case [*_, "group-config"] | [*_, "config-groups"] | [*_, "config-groups", _]:
-            is_deleted = False
+        case [*_, owner_type, owner_pk, "config-groups"]:
+            audit_object = get_audit_object_from_path_info(
+                object_type_from_path=owner_type, object_pk_from_path=owner_pk
+            )
+            audit_operation = AuditOperation(
+                name="configuration group created",
+                operation_type=AuditLogOperationType.CREATE,
+            )
+
+            if response and (new_object_pk := response.data.get("id", None)):
+                name = GroupConfig.objects.values("name").get(pk=new_object_pk)["name"]
+                audit_operation.name = f"{name} configuration group created"
+
+        case [*_, owner_type, owner_pk, "config-groups", group_config_pk]:
+            audit_object = get_audit_object_from_path_info(
+                object_type_from_path=owner_type, object_pk_from_path=owner_pk
+            )
+            if deleted_obj:
+                group_name = deleted_obj.name
+            else:
+                group_config = GroupConfig.objects.values("name").filter(pk=group_config_pk).first()
+                group_name = group_config["name"] if group_config else ""
+
+            if view.action in {"update", "partial_update"}:
+                audit_operation = AuditOperation(
+                    name=f"{group_name} configuration group updated".strip(),
+                    operation_type=AuditLogOperationType.UPDATE,
+                )
+            else:
+                audit_operation = AuditOperation(
+                    name=f"{group_name} configuration group deleted".strip(),
+                    operation_type=AuditLogOperationType.DELETE,
+                )
+
+        case [*_, "group-config"]:
             if view.action == "create":
                 operation_type = AuditLogOperationType.CREATE
             elif view.action in {"update", "partial_update"}:
                 operation_type = AuditLogOperationType.UPDATE
             else:
                 operation_type = AuditLogOperationType.DELETE
-                is_deleted = True
 
             audit_operation = AuditOperation(
                 name=f"configuration group {operation_type}d",
@@ -132,13 +163,11 @@ def config_case(
                     object_name=object_name,
                     object_type=object_type,
                 )
-                audit_object.is_deleted = is_deleted
-                audit_object.save()
                 operation_name = f"{obj.name} {audit_operation.name}"
             else:
                 audit_object = None
 
-        case ["group-config", group_config_pk] | ["config-groups", group_config_pk]:
+        case ["group-config", group_config_pk]:
             if view.action in {"update", "partial_update"}:
                 operation_type = AuditLogOperationType.UPDATE
             else:
@@ -169,7 +198,7 @@ def config_case(
             else:
                 audit_object = None
 
-        case ["group-config", config_group_pk, "host"] | ["config-groups", config_group_pk, "hosts"]:
+        case ["group-config", config_group_pk, "host"]:
             config_group = GroupConfig.objects.get(pk=config_group_pk)
             audit_operation = AuditOperation(
                 name=f"host added to {config_group.name} configuration group",
@@ -194,31 +223,24 @@ def config_case(
             if fqdn:
                 audit_operation.name = f"{fqdn} {audit_operation.name}"
 
-        case [*_, obj_type, obj_pk, "config-groups", config_group_pk, "hosts"]:
+        case [*_, owner_type, owner_pk, "config-groups", config_group_pk, "hosts"]:
             config_group = GroupConfig.objects.filter(pk=config_group_pk).first()
             config_group_name = config_group.name if config_group else ""
+            name_suffix = f"{config_group_name} configuration group".strip()
             audit_operation = AuditOperation(
-                name=f"host added to {config_group_name} configuration group",
+                name=f"host added to {name_suffix}",
                 operation_type=AuditLogOperationType.UPDATE,
             )
-            obj = PATH_STR_TO_OBJ_CLASS_MAP[obj_type].objects.filter(pk=obj_pk).first()
-            if obj:
-                object_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP[PATH_STR_TO_OBJ_CLASS_MAP[obj_type]]
-                audit_object = get_or_create_audit_obj(
-                    object_id=obj_pk,
-                    object_name=get_obj_name(obj=obj, obj_type=object_type),
-                    object_type=object_type,
-                )
-            fqdn = None
+            audit_object = get_audit_object_from_path_info(
+                object_type_from_path=owner_type, object_pk_from_path=owner_pk
+            )
+
             if "host_id" in view.request.data:
-                host = Host.objects.filter(pk=view.request.data["host_id"]).first()
+                host = Host.objects.filter(pk=view.request.data["host_id"]).values("fqdn").first()
                 if host:
-                    fqdn = host.fqdn
+                    audit_operation.name = f"{host['fqdn']} {audit_operation.name}"
 
-            if fqdn:
-                audit_operation.name = f"{fqdn} {audit_operation.name}"
-
-        case ["group-config", config_group_pk, "host", host_pk] | ["config-groups", config_group_pk, "hosts", host_pk]:
+        case ["group-config", config_group_pk, "host", host_pk]:
             config_group = GroupConfig.objects.get(pk=config_group_pk)
             obj = Host.objects.get(pk=host_pk)
             audit_operation = AuditOperation(
@@ -250,3 +272,29 @@ def config_case(
                 )
 
     return audit_operation, audit_object, operation_name
+
+
+def get_audit_object_from_path_info(object_type_from_path: str, object_pk_from_path: str) -> AuditObject | None:
+    try:
+        model = get_cm_model_by_type(object_type=object_type_from_path)
+    except KeyError:
+        return None
+
+    try:
+        object_ = model.objects.filter(pk=int(object_pk_from_path)).first()
+    except ValueError:
+        return None
+
+    if not object_:
+        return None
+
+    if object_type_from_path.startswith("hostprovider"):
+        single_form_of_type = "provider"
+    else:
+        # to convert clusters -> cluster, etc.
+        single_form_of_type = object_type_from_path.rstrip("s")
+    return get_or_create_audit_obj(
+        object_id=object_.pk,
+        object_name=get_obj_name(obj=object_, obj_type=single_form_of_type),
+        object_type=single_form_of_type,
+    )

@@ -12,7 +12,6 @@
 
 
 from api_v2.tests.base import BaseAPITestCase
-from audit.models import AuditObject
 from django.utils import timezone
 from rbac.models import Group
 from rbac.services.group import create as create_group
@@ -57,30 +56,24 @@ class TestGroupAudit(BaseAPITestCase):
             operation_name="Group created",
             operation_type="create",
             operation_result="success",
-            audit_object__object_id=response.json()["id"],
-            audit_object__object_name=response.json()["name"],
-            audit_object__object_type="group",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(Group.objects.get(pk=response.json()["id"])),
             user__username="admin",
         )
 
     def test_group_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        with self.grant_permissions(to=self.test_user, on=[], role_name="View group"):
-            response = self.client.post(
-                path=reverse(viewname="v2:rbac:group-list"),
-                data={"displayName": "New test group"},
-            )
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:group-list"),
+            data={"displayName": "New test group"},
+        )
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_last_audit_log(
             operation_name="Group created",
             operation_type="create",
             operation_result="denied",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username=self.test_user.username,
         )
 
@@ -95,8 +88,7 @@ class TestGroupAudit(BaseAPITestCase):
             operation_name="Group created",
             operation_type="create",
             operation_result="fail",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
@@ -116,19 +108,37 @@ class TestGroupAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.group.refresh_from_db()
+
         last_audit_log = self.check_last_audit_log(
             operation_name="Group updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.group.pk,
-            audit_object__object_name=f"{self.group_update_data['displayName']} [{self.group.type}]",
-            audit_object__object_type="group",
-            audit_object__is_deleted=False,
+            **self.prepare_audit_object_arguments(expected_object=self.group),
             user__username="admin",
+            expect_object_changes_=False,
         )
         self.assertDictEqual(last_audit_log.object_changes, expected_object_changes)
 
     def test_group_update_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
+            data=self.group_update_data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_last_audit_log(
+            operation_name="Group updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.group),
+            user__username=self.test_user.username,
+        )
+
+    def test_group_update_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View group"):
@@ -142,12 +152,23 @@ class TestGroupAudit(BaseAPITestCase):
             operation_name="Group updated",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.group.pk,
-            audit_object__object_name=self.group.name,
-            audit_object__object_type="group",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.group),
             user__username=self.test_user.username,
+        )
+
+    def test_group_update_incorrect_data_fail(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
+            data={"displayName": []},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.check_last_audit_log(
+            operation_name="Group updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.group),
+            user__username="admin",
         )
 
     def test_group_update_not_exists_fail(self):
@@ -167,19 +188,6 @@ class TestGroupAudit(BaseAPITestCase):
         )
 
     def test_group_delete_success(self):
-        AuditObject.objects.get_or_create(
-            object_id=self.group.pk,
-            object_name=self.group.name,
-            object_type="group",
-            is_deleted=False,
-        )
-        expected_audit_object_kwargs = {
-            "audit_object__object_id": self.group.pk,
-            "audit_object__object_name": self.group.name,
-            "audit_object__object_type": "group",
-            "audit_object__is_deleted": True,
-        }
-
         response = self.client.delete(
             path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
         )
@@ -189,12 +197,27 @@ class TestGroupAudit(BaseAPITestCase):
             operation_name="Group deleted",
             operation_type="delete",
             operation_result="success",
-            object_changes={},
-            **expected_audit_object_kwargs,
+            **self.prepare_audit_object_arguments(expected_object=self.group, is_deleted=True),
             user__username="admin",
         )
 
     def test_group_delete_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.delete(
+            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_last_audit_log(
+            operation_name="Group deleted",
+            operation_type="delete",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.group),
+            user__username=self.test_user.username,
+        )
+
+    def test_group_delete_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View group"):
@@ -207,11 +230,7 @@ class TestGroupAudit(BaseAPITestCase):
             operation_name="Group deleted",
             operation_type="delete",
             operation_result="denied",
-            object_changes={},
-            audit_object__object_id=self.group.pk,
-            audit_object__object_name=self.group.name,
-            audit_object__object_type="group",
-            audit_object__is_deleted=False,
+            **self.prepare_audit_object_arguments(expected_object=self.group),
             user__username=self.test_user.username,
         )
 
@@ -225,7 +244,6 @@ class TestGroupAudit(BaseAPITestCase):
             operation_name="Group deleted",
             operation_type="delete",
             operation_result="fail",
-            object_changes={},
-            audit_object__isnull=True,
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )

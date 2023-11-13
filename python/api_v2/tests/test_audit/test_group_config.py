@@ -13,7 +13,6 @@
 # pylint: disable=too-many-lines
 
 from api_v2.tests.base import BaseAPITestCase
-from audit.models import AuditObjectType
 from cm.models import GroupConfig, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
 from rbac.services.user import create_user
@@ -22,6 +21,8 @@ from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
 )
 
@@ -155,11 +156,22 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="group-config-new configuration group created",
             operation_type="create",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type=AuditObjectType.CLUSTER,
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
+        )
+
+    def test_cluster_create_incorrect_body_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="configuration group created",
+            operation_type="create",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
@@ -174,12 +186,28 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="configuration group created",
             operation_type="create",
             operation_result="fail",
-            object_changes={},
-            audit_object__isnull=True,
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
-    def test_cluster_create_denied(self):
+    def test_cluster_create_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.cluster_1], role_name="View cluster configurations"):
+            response = self.client.post(
+                path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+                data={"name": "group-config-new", "description": "group-config-new"},
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name="configuration group created",
+            operation_type="create",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_cluster_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
@@ -191,7 +219,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="configuration group created",
             operation_type="create",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
         )
 
@@ -206,11 +234,22 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="group-config-new configuration group created",
             operation_type="create",
             operation_result="success",
-            audit_object__object_id=self.provider.pk,
-            audit_object__object_name=self.provider.name,
-            audit_object__object_type=AuditObjectType.PROVIDER,
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
+            user__username="admin",
+        )
+
+    def test_provider_create_incorrect_body_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:hostprovider-group-config-list", kwargs={"hostprovider_pk": self.provider.pk}),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="configuration group created",
+            operation_type="create",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username="admin",
         )
 
@@ -225,11 +264,30 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="configuration group created",
             operation_type="create",
             operation_result="fail",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
-    def test_provider_create_denied(self):
+    def test_provider_create_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.provider], role_name="View provider configurations"):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:hostprovider-group-config-list", kwargs={"hostprovider_pk": self.provider.pk}
+                ),
+                data={"name": "group-config-new", "description": "group-config-new"},
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name="configuration group created",
+            operation_type="create",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
+            user__username=self.test_user.username,
+        )
+
+    def test_provider_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(viewname="v2:hostprovider-group-config-list", kwargs={"hostprovider_pk": self.provider.pk}),
@@ -241,7 +299,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="configuration group created",
             operation_type="create",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username=self.test_user.username,
         )
 
@@ -263,11 +321,29 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="group-config-new configuration group created",
             operation_type="create",
             operation_result="success",
-            audit_object__object_id=self.component_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
-            audit_object__object_type=AuditObjectType.COMPONENT,
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
+            user__username="admin",
+        )
+
+    def test_component_create_incorrect_data_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:component-group-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                },
+            ),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="configuration group created",
+            operation_type="create",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username="admin",
         )
 
@@ -293,7 +369,33 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             user__username="admin",
         )
 
-    def test_component_create_denied(self):
+    def test_component_create_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(
+            to=self.test_user, on=[self.component_1], role_name="View component configurations"
+        ):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:component-group-config-list",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                    },
+                ),
+                data={"name": "group-config-new", "description": "group-config-new"},
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name="configuration group created",
+            operation_type="create",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_component_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(
@@ -312,7 +414,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="configuration group created",
             operation_type="create",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username=self.test_user.username,
         )
 
@@ -330,11 +432,25 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="group-config-new configuration group created",
             operation_type="create",
             operation_result="success",
-            audit_object__object_id=self.service_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
-            audit_object__object_type=AuditObjectType.SERVICE,
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
+            user__username="admin",
+        )
+
+    def test_service_create_incorrect_data_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-group-config-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
+            ),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="configuration group created",
+            operation_type="create",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
             user__username="admin",
         )
 
@@ -352,11 +468,31 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="configuration group created",
             operation_type="create",
             operation_result="fail",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
-    def test_service_create_denied(self):
+    def test_service_create_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.service_1], role_name="View service configurations"):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:service-group-config-list",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
+                ),
+                data={"name": "group-config-new", "description": "group-config-new"},
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name="configuration group created",
+            operation_type="create",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_service_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(
@@ -371,7 +507,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="configuration group created",
             operation_type="create",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
             user__username=self.test_user.username,
         )
 
@@ -388,11 +524,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.cluster_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type=AuditObjectType.CLUSTER,
-            audit_object__is_deleted=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
@@ -409,11 +541,30 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="configuration group deleted",
             operation_type="delete",
             operation_result="fail",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
-    def test_cluster_delete_denied(self):
+    def test_cluster_delete_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.cluster_1], role_name="View cluster configurations"):
+            response = self.client.delete(
+                path=reverse(
+                    viewname="v2:cluster-group-config-detail",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
+                ),
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.cluster_1_group_config.name} configuration group deleted",
+            operation_type="delete",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_cluster_delete_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.delete(
             path=reverse(
@@ -424,10 +575,10 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name="configuration group deleted",
+            operation_name=f"{self.cluster_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
         )
 
@@ -444,11 +595,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.provider_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="success",
-            audit_object__object_id=self.provider.pk,
-            audit_object__object_name=self.provider.name,
-            audit_object__object_type=AuditObjectType.PROVIDER,
-            audit_object__is_deleted=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username="admin",
         )
 
@@ -456,7 +603,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         response = self.client.delete(
             path=reverse(
                 viewname="v2:hostprovider-group-config-detail",
-                kwargs={"hostprovider_pk": self.cluster_1.pk, "pk": 1000},
+                kwargs={"hostprovider_pk": self.provider.pk, "pk": 1000},
             ),
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -465,11 +612,30 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="configuration group deleted",
             operation_type="delete",
             operation_result="fail",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username="admin",
         )
 
-    def test_provider_delete_denied(self):
+    def test_provider_delete_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.provider], role_name="View provider configurations"):
+            response = self.client.delete(
+                path=reverse(
+                    viewname="v2:hostprovider-group-config-detail",
+                    kwargs={"hostprovider_pk": self.provider.pk, "pk": self.provider_group_config.pk},
+                ),
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.cluster_1_group_config.name} configuration group deleted",
+            operation_type="delete",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
+            user__username=self.test_user.username,
+        )
+
+    def test_provider_delete_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.delete(
             path=reverse(
@@ -480,10 +646,10 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name="configuration group deleted",
+            operation_name=f"{self.cluster_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username=self.test_user.username,
         )
 
@@ -504,11 +670,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.service_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="success",
-            audit_object__object_id=self.service_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
-            audit_object__object_type=AuditObjectType.SERVICE,
-            audit_object__is_deleted=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
             user__username="admin",
         )
 
@@ -525,11 +687,34 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="configuration group deleted",
             operation_type="delete",
             operation_result="fail",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
             user__username="admin",
         )
 
-    def test_service_delete_denied(self):
+    def test_service_delete_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.service_1], role_name="View service configurations"):
+            response = self.client.delete(
+                path=reverse(
+                    viewname="v2:service-group-config-detail",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "pk": self.service_1_group_config.pk,
+                    },
+                ),
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.service_1_group_config.name} configuration group deleted",
+            operation_type="delete",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_service_delete_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.delete(
             path=reverse(
@@ -544,10 +729,10 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name="configuration group deleted",
+            operation_name=f"{self.service_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
             user__username=self.test_user.username,
         )
 
@@ -569,11 +754,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.component_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="success",
-            audit_object__object_id=self.component_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
-            audit_object__object_type=AuditObjectType.COMPONENT,
-            audit_object__is_deleted=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username="admin",
         )
 
@@ -595,11 +776,37 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="configuration group deleted",
             operation_type="delete",
             operation_result="fail",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username="admin",
         )
 
-    def test_component_delete_denied(self):
+    def test_component_delete_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(
+            to=self.test_user, on=[self.component_1], role_name="View component configurations"
+        ):
+            response = self.client.delete(
+                path=reverse(
+                    viewname="v2:component-group-config-detail",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                        "pk": self.component_1_group_config.pk,
+                    },
+                ),
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.component_1_group_config.name} configuration group deleted",
+            operation_type="delete",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_component_delete_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.delete(
             path=reverse(
@@ -615,10 +822,10 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name="configuration group deleted",
+            operation_name=f"{self.component_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username=self.test_user.username,
         )
 
@@ -635,11 +842,25 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type=AuditObjectType.CLUSTER,
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
+        )
+
+    def test_cluster_update_incorrect_body_fail(self):
+        response = self.client.patch(
+            path=reverse(
+                viewname="v2:cluster-group-config-detail",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
+            ),
+            data={"name": {}},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
@@ -656,10 +877,30 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name="configuration group updated",
             operation_type="update",
             operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
-    def test_cluster_update_denied(self):
+    def test_cluster_update_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.cluster_1], role_name="View cluster configurations"):
+            response = self.client.patch(
+                path=reverse(
+                    viewname="v2:cluster-group-config-detail",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
+                ),
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_cluster_update_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.patch(
             path=reverse(
@@ -670,10 +911,10 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name="configuration group updated",
+            operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
         )
 
@@ -691,11 +932,25 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type=AuditObjectType.CLUSTER,
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
+        )
+
+    def test_cluster_config_create_incorrect_data_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:cluster-group-config-config-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
+            ),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
@@ -713,11 +968,31 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="fail",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
-    def test_cluster_config_create_denied(self):
+    def test_cluster_config_create_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.cluster_1], role_name="View cluster configurations"):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:cluster-group-config-config-list",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
+                ),
+                data=self.cluster_config_data,
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_cluster_config_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(
@@ -732,7 +1007,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
         )
 
@@ -754,11 +1029,29 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.service_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.service_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
-            audit_object__object_type=AuditObjectType.SERVICE,
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
+            user__username="admin",
+        )
+
+    def test_service_config_create_incorrect_data_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-group-config-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "group_config_pk": self.service_1_group_config.pk,
+                },
+            ),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.service_1_group_config.name} configuration group updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
             user__username="admin",
         )
 
@@ -780,11 +1073,35 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.service_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="fail",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
-    def test_service_config_create_denied(self):
+    def test_service_config_create_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.service_1], role_name="View service configurations"):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:service-group-config-config-list",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "group_config_pk": self.service_1_group_config.pk,
+                    },
+                ),
+                data=self.service_config_data,
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.service_1_group_config.name} configuration group updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_service_config_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(
@@ -803,7 +1120,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.service_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
             user__username=self.test_user.username,
         )
 
@@ -827,11 +1144,31 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.component_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.component_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
-            audit_object__object_type=AuditObjectType.COMPONENT,
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
+            user__username="admin",
+        )
+
+    def test_component_config_create_incorrect_data_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:component-group-config-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                    "group_config_pk": self.component_1_group_config.pk,
+                },
+            ),
+            data={"config": {}, "adcmMeta": {}},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.component_1_group_config.name} configuration group updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username="admin",
         )
 
@@ -843,7 +1180,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
                     "component_pk": 1000,
-                    "group_config_pk": self.service_1_group_config.pk,
+                    "group_config_pk": self.component_1_group_config.pk,
                 },
             ),
             data=self.component_config_data,
@@ -852,14 +1189,41 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name=f"{self.service_1_group_config.name} configuration group updated",
+            operation_name=f"{self.component_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="fail",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
-    def test_component_config_create_denied(self):
+    def test_component_config_create_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(
+            to=self.test_user, on=[self.component_1], role_name="View component configurations"
+        ):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:component-group-config-config-list",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                        "group_config_pk": self.component_1_group_config.pk,
+                    },
+                ),
+                data=self.component_config_data,
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.component_1_group_config.name} configuration group updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_component_config_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(
@@ -879,7 +1243,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.component_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username=self.test_user.username,
         )
 
@@ -900,11 +1264,28 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.provider_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.provider.pk,
-            audit_object__object_name=self.provider.name,
-            audit_object__object_type=AuditObjectType.PROVIDER,
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
+            user__username="admin",
+        )
+
+    def test_hostprovider_config_create_incorrect_data_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:hostprovider-group-config-config-list",
+                kwargs={
+                    "hostprovider_pk": self.provider.pk,
+                    "group_config_pk": self.provider_group_config.pk,
+                },
+            ),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.provider_group_config.name} configuration group updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username="admin",
         )
 
@@ -925,11 +1306,34 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.provider_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="fail",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
-    def test_hostprovider_config_create_denied(self):
+    def test_hostprovider_config_create_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.provider], role_name="View provider configurations"):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:hostprovider-group-config-config-list",
+                    kwargs={
+                        "hostprovider_pk": self.provider.pk,
+                        "group_config_pk": self.provider_group_config.pk,
+                    },
+                ),
+                data=self.provider_config_data,
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.provider_group_config.name} configuration group updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
+            user__username=self.test_user.username,
+        )
+
+    def test_hostprovider_config_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(
@@ -947,7 +1351,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.provider_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username=self.test_user.username,
         )
 
@@ -965,11 +1369,25 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.new_host.fqdn} host added to {self.provider_group_config.name} configuration group",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.provider.pk,
-            audit_object__object_name=self.provider.name,
-            audit_object__object_type=AuditObjectType.PROVIDER,
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
+            user__username="admin",
+        )
+
+    def test_provider_add_host_incorrect_data_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:hostprovider-group-config-hosts-list",
+                kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": self.provider_group_config.pk},
+            ),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name=f"host added to {self.provider_group_config.name} configuration group",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username="admin",
         )
 
@@ -977,21 +1395,41 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         response = self.client.post(
             path=reverse(
                 viewname="v2:hostprovider-group-config-hosts-list",
-                kwargs={"hostprovider_pk": 1000, "group_config_pk": self.provider_group_config.pk},
+                kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": 10000},
             ),
             data={"hostId": self.new_host.pk},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name=f"{self.new_host.fqdn} host added to {self.provider_group_config.name} configuration group",
+            operation_name=f"{self.new_host.fqdn} host added to configuration group",
             operation_type="update",
             operation_result="fail",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username="admin",
         )
 
-    def test_provider_add_host_denied(self):
+    def test_provider_add_host_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.provider], role_name="View provider configurations"):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:hostprovider-group-config-hosts-list",
+                    kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": self.provider_group_config.pk},
+                ),
+                data={"hostId": self.new_host.pk},
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.new_host.fqdn} host added to {self.provider_group_config.name} configuration group",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
+            user__username=self.test_user.username,
+        )
+
+    def test_provider_add_host_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(
@@ -1006,7 +1444,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.new_host.fqdn} host added to {self.provider_group_config.name} configuration group",
             operation_type="update",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username=self.test_user.username,
         )
 
@@ -1029,11 +1467,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             f"added to {self.service_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.service_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
-            audit_object__object_type=AuditObjectType.SERVICE,
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
             user__username="admin",
         )
 
@@ -1056,11 +1490,37 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             f"added to {self.service_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="fail",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
-    def test_service_add_host_denied(self):
+    def test_service_add_host_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=[self.service_1], role_name="View service configurations"):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:service-group-config-hosts-list",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "group_config_pk": self.service_1_group_config.pk,
+                    },
+                ),
+                data={"hostId": self.host_for_service.pk},
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.host_for_service.fqdn} host "
+            f"added to {self.service_1_group_config.name} configuration group",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_service_add_host_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(
@@ -1080,7 +1540,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             f"added to {self.service_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
             user__username=self.test_user.username,
         )
 
@@ -1098,11 +1558,25 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.new_host.fqdn} host added to {self.cluster_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type=AuditObjectType.CLUSTER,
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
+        )
+
+    def test_cluster_add_host_incorrect_data_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:cluster-group-config-hosts-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
+            ),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name=f"host added to {self.cluster_1_group_config.name} configuration group",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
 
@@ -1120,11 +1594,32 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.new_host.fqdn} host added to {self.cluster_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="fail",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
-    def test_cluster_add_host_denied(self):
+    def test_cluster_add_host_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=[self.cluster_1], role_name="View cluster configurations"):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:cluster-group-config-hosts-list",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
+                ),
+                data={"hostId": self.new_host.pk},
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.new_host.fqdn} host added to {self.cluster_1_group_config.name} configuration group",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_cluster_add_host_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(
@@ -1139,7 +1634,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             operation_name=f"{self.new_host.fqdn} host added to {self.cluster_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
         )
 
@@ -1163,11 +1658,30 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             f"added to {self.component_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.component_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
-            audit_object__object_type=AuditObjectType.COMPONENT,
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
+            user__username="admin",
+        )
+
+    def test_component_add_host_incorrect_data_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:component-group-config-hosts-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                    "group_config_pk": self.component_1_group_config.pk,
+                },
+            ),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name=f"host added to {self.component_1_group_config.name} configuration group",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username="admin",
         )
 
@@ -1177,8 +1691,8 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
                 viewname="v2:component-group-config-hosts-list",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
-                    "service_pk": 1000,
-                    "component_pk": self.component_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": 1000,
                     "group_config_pk": self.component_1_group_config.pk,
                 },
             ),
@@ -1191,11 +1705,39 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             f"added to {self.component_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="fail",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
-    def test_component_add_host_denied(self):
+    def test_component_add_host_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(
+            to=self.test_user, on=[self.component_1], role_name="View component configurations"
+        ):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:component-group-config-hosts-list",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                        "group_config_pk": self.component_1_group_config.pk,
+                    },
+                ),
+                data={"hostId": self.host_for_service.pk},
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.host_for_service.fqdn} host "
+            f"added to {self.component_1_group_config.name} configuration group",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_component_add_host_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(
@@ -1216,6 +1758,6 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             f"added to {self.component_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username=self.test_user.username,
         )

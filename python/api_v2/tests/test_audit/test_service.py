@@ -108,11 +108,7 @@ class TestServiceAudit(BaseAPITestCase):
             operation_name="Service configuration updated",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.service_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
-            audit_object__object_type="service",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(self.service_1),
             user__username="admin",
         )
 
@@ -264,7 +260,7 @@ class TestServiceAudit(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name="{action_display_name} action launched",
+            operation_name="action launched",
             operation_type="update",
             operation_result="fail",
             audit_object__object_id=self.service_1.pk,

@@ -221,7 +221,7 @@ def obj_pk_case(
     return audit_operation, audit_object
 
 
-def action_case(path: list[str]) -> tuple[AuditOperation, AuditObject | None]:
+def action_case(path: list[str], api_version: int) -> tuple[AuditOperation, AuditObject | None]:
     audit_operation = None
     audit_object = None
 
@@ -239,6 +239,8 @@ def action_case(path: list[str]) -> tuple[AuditOperation, AuditObject | None]:
             action = Action.objects.filter(pk=action_pk).first()
             if action:
                 audit_operation.name = audit_operation.name.format(action_display_name=action.display_name)
+            elif api_version != 1:
+                audit_operation.name = "action launched"
 
             obj = PATH_STR_TO_OBJ_CLASS_MAP[obj_type].objects.filter(pk=obj_pk).first()
             if obj:
@@ -260,6 +262,8 @@ def action_case(path: list[str]) -> tuple[AuditOperation, AuditObject | None]:
             action = Action.objects.filter(pk=action_pk).first()
             if action:
                 audit_operation.name = audit_operation.name.format(action_display_name=action.display_name)
+            elif api_version != 1:
+                audit_operation.name = "action launched"
 
             obj, object_type = ADCM.objects.first(), AuditObjectType.ADCM
             audit_object = get_or_create_audit_obj(

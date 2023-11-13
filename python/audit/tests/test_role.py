@@ -51,12 +51,13 @@ class TestRoleAudit(BaseTestCase):
         operation_result: AuditLogOperationResult,
         user: User,
         object_changes: dict | None = None,
+        object_is_deleted: bool = False,
     ) -> None:
         if obj:
             self.assertEqual(log.audit_object.object_id, obj.pk)
             self.assertEqual(log.audit_object.object_name, obj.name)
             self.assertEqual(log.audit_object.object_type, AuditObjectType.ROLE)
-            self.assertFalse(log.audit_object.is_deleted)
+            self.assertEqual(log.audit_object.is_deleted, object_is_deleted)
         else:
             self.assertFalse(log.audit_object)
 
@@ -171,6 +172,7 @@ class TestRoleAudit(BaseTestCase):
             operation_type=AuditLogOperationType.DELETE,
             operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
+            object_is_deleted=True,
         )
 
     def test_delete_denied(self):

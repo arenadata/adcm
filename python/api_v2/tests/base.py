@@ -13,7 +13,7 @@ import tarfile
 from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
-from typing import TypedDict
+from typing import Any, TypeAlias, TypedDict
 
 from api_v2.prototype.utils import accept_license
 from audit.models import AuditLog
@@ -39,6 +39,7 @@ from cm.models import (
     HostProvider,
     ObjectType,
     Prototype,
+    ServiceComponent,
 )
 from django.conf import settings
 from init_db import init
@@ -51,6 +52,10 @@ from rbac.upgrade.role import init_roles
 from rest_framework.test import APITestCase
 
 from adcm.tests.base import ParallelReadyTestCase
+
+AuditTarget: TypeAlias = (
+    Bundle | Cluster | ClusterObject | ServiceComponent | HostProvider | Host | User | Group | Role | Policy
+)
 
 
 class HostComponentMapDictType(TypedDict):
@@ -174,15 +179,62 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
 
         return create_user(**user_data)
 
-    def check_last_audit_log(self, **kwargs) -> AuditLog:
+    def check_last_audit_log(self, *, expect_object_changes_: bool = True, **kwargs) -> AuditLog:
         last_audit_log = AuditLog.objects.order_by("pk").last()
         self.assertIsNotNone(last_audit_log, "AuditLog table is empty")
+
+        # Object changes are {} for most cases,
+        # we always want to check it, but providing it each time is redundant.
+        # But sometimes structure is too complex for sqlite/ORM to handle,
+        # so we have to check changes separately.
+        if expect_object_changes_:
+            kwargs.setdefault("object_changes", {})
 
         expected_log = AuditLog.objects.filter(**kwargs).order_by("pk").last()
         self.assertIsNotNone(expected_log, "Can't find audit log")
         self.assertEqual(last_audit_log.pk, expected_log.pk, "Expected audit log is not last")
 
         return last_audit_log
+
+    @staticmethod
+    def get_most_recent_audit_log() -> AuditLog | None:
+        """Mostly for debug purposes"""
+        return AuditLog.objects.order_by("pk").last()
+
+    @staticmethod
+    def prepare_audit_object_arguments(
+        expected_object: AuditTarget | None,
+        *,
+        is_deleted: bool = False,
+    ) -> dict[str, Any]:
+        if expected_object is None:
+            return {"audit_object__isnull": True}
+
+        if isinstance(expected_object, ServiceComponent):
+            name = (
+                f"{expected_object.cluster.name}/{expected_object.service.display_name}/{expected_object.display_name}"
+            )
+            type_ = "component"
+        elif isinstance(expected_object, ClusterObject):
+            name = f"{expected_object.cluster.name}/{expected_object.display_name}"
+            type_ = "service"
+        elif isinstance(expected_object, Host):
+            name = expected_object.fqdn
+            type_ = "host"
+        elif isinstance(expected_object, Group):
+            name = expected_object.name
+            type_ = "group"
+        else:
+            name = getattr(expected_object, "display_name", expected_object.name)
+            # replace for hostprovider
+            type_ = expected_object.__class__.__name__.lower().replace("hostp", "p")
+
+        return {
+            "audit_object__object_id": expected_object.pk,
+            "audit_object__object_name": name,
+            "audit_object__object_type": type_,
+            "audit_object__is_deleted": is_deleted,
+        }
 
     @contextmanager
     def grant_permissions(self, to: User, on: list[ADCMEntity] | ADCMEntity, role_name: str):
