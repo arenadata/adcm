@@ -10,10 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api_v2.cluster.utils import get_requires
 from api_v2.tests.base import BaseAPITestCase
 from cm.models import HostComponent, ServiceComponent
 from django.urls import reverse
-from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 
@@ -41,7 +41,7 @@ class TestMapping(BaseAPITestCase):
         )
 
     def test_list_mapping_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
         )
 
@@ -60,14 +60,14 @@ class TestMapping(BaseAPITestCase):
             {"hostId": self.host_1.pk, "componentId": self.component_1.pk},
         ]
 
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}), data=data
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(HostComponent.objects.count(), 2)
 
     def test_create_empty_mapping_success(self):
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
             data=[],
         )
@@ -75,7 +75,7 @@ class TestMapping(BaseAPITestCase):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_mapping_hosts_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:cluster-mapping-hosts", kwargs={"pk": self.cluster_1.pk}),
         )
 
@@ -84,10 +84,64 @@ class TestMapping(BaseAPITestCase):
         self.assertEqual({host["id"] for host in response.json()}, {self.host_1.pk, self.host_2.pk})
 
     def test_mapping_components_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:cluster-mapping-components", kwargs={"pk": self.cluster_1.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 2)
         self.assertEqual({component["id"] for component in response.json()}, {self.component_1.pk, self.component_2.pk})
+
+    def test_mapping_components_with_requires_success(self):
+        bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_requires_component")
+        cluster = self.add_cluster(bundle=bundle, name="cluster_requires")
+        self.add_service_to_cluster(service_name="hbase", cluster=cluster)
+        self.add_service_to_cluster(service_name="zookeeper", cluster=cluster)
+        self.add_service_to_cluster(service_name="hdfs", cluster=cluster)
+
+        response = self.client.get(path=reverse(viewname="v2:cluster-mapping-components", kwargs={"pk": cluster.pk}))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(len(data), 3)
+
+        for component_data in data:
+            component = ServiceComponent.objects.filter(prototype__name=component_data["name"], cluster=cluster).first()
+
+            if not component.prototype.requires:
+                self.assertIsNone(component_data["dependOn"])
+                continue
+
+            self.assertEqual(len(component.prototype.requires), len(component_data["dependOn"]))
+
+    def test_mapping_components_with_cyclic_dependencies_success(self):
+        bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_cyclic_dependencies")
+        cluster = self.add_cluster(bundle=bundle, name="cluster_cyclic_dependencies")
+        self.add_service_to_cluster(service_name="serviceA", cluster=cluster)
+        self.add_service_to_cluster(service_name="serviceB", cluster=cluster)
+        self.add_service_to_cluster(service_name="serviceC", cluster=cluster)
+        self.add_service_to_cluster(service_name="serviceD", cluster=cluster)
+        self.add_service_to_cluster(service_name="serviceE", cluster=cluster)
+
+        response = self.client.get(path=reverse(viewname="v2:cluster-mapping-components", kwargs={"pk": cluster.pk}))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(len(data), 5)
+
+        for component_data in data:
+            component = ServiceComponent.objects.filter(prototype__name=component_data["name"], cluster=cluster).first()
+            requires = component.prototype.requires[0]
+            expected_service_name = component_data["dependOn"][0]["servicePrototype"]["name"]
+            expected_component_name = component_data["dependOn"][0]["servicePrototype"]["componentPrototypes"][0][
+                "name"
+            ]
+            self.assertEqual(requires["service"], expected_service_name)
+            self.assertEqual(requires["component"], expected_component_name)
+
+    def test_get_requires(self):
+        requires = [{"service": "service1", "component": "component1"}, {"service": "service1"}]
+
+        new_requires = get_requires(requires=requires)
+
+        self.assertDictEqual(new_requires, {"service1": ["component1"]})

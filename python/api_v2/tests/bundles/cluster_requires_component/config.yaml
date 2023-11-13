@@ -1,0 +1,40 @@
+---
+- type: cluster
+  name: cluster_requires_component
+  version: '1.0'
+  edition: community
+
+- type: service
+  name: hbase
+  display_name: HBase
+  version: "2.2.7"
+  components:
+    master:
+      display_name: "HBase Master Server"
+      requires:
+        - service: zookeeper
+          component: SERVER
+        - service: hdfs
+          component: namenode
+      constraint: [ 1,+ ]
+
+- type: service
+  name: zookeeper
+  display_name: Zookeeper
+  version: 3.5.10
+  components:
+    SERVER:
+      display_name: Zookeeper Server
+      constraint: [ odd ]
+
+- type: service
+  name: hdfs
+  display_name: HDFS
+  version: "3.1.2"
+  components:
+    namenode:
+      display_name: "HDFS NameNode"
+      requires:
+        - service: zookeeper
+          component: SERVER
+      constraint: [ 2,+ ]

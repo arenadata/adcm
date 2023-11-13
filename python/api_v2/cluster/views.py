@@ -232,6 +232,8 @@ class ClusterViewSet(
     @action(methods=["get"], detail=True, url_path="mapping/components", url_name="mapping-components")
     def mapping_components(self, request: Request, *args, **kwargs):  # pylint: disable=unused-argument
         cluster = self.get_object()
-        serializer = self.get_serializer(instance=ServiceComponent.objects.filter(cluster=cluster), many=True)
+        serializer = self.get_serializer(
+            instance=ServiceComponent.objects.filter(cluster=cluster).order_by("pk"), many=True
+        )
 
         return Response(status=HTTP_200_OK, data=serializer.data)
