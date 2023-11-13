@@ -234,11 +234,15 @@ class Json(Field):
     def string_extra(self) -> dict | None:
         return {"isMultiline": True}
 
+    @property
+    def default(self) -> Any:
+        value = super().default
+
+        return json.dumps(value) if value is not None else None
+
     def to_dict(self) -> dict:
         data = super().to_dict()
-
-        default = json.dumps(data["default"]) if data["default"] is not None else None
-        data.update({"format": "json", "default": default})
+        data.update({"format": "json"})
 
         if self.required:
             data.update({"minLength": 1})

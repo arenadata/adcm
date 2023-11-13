@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import json
 from collections import defaultdict
 from hashlib import sha256
 from itertools import compress
@@ -90,10 +90,15 @@ def get_action_configuration(
 
             continue
 
+        value = get_default(conf=prototype_config, prototype=action_.prototype)
+
+        if prototype_config.type == "json":
+            value = json.dumps(value) if value is not None else None
+
         if sub_name:
-            config[name][sub_name] = get_default(conf=prototype_config, prototype=action_.prototype)
+            config[name][sub_name] = value
         else:
-            config[name] = get_default(conf=prototype_config, prototype=action_.prototype)
+            config[name] = value
 
     config_schema = get_config_schema(object_=object_, prototype_configs=prototype_configs)
     adcm_meta = convert_attr_to_adcm_meta(attr=attr)
