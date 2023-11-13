@@ -24,7 +24,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rbac.models import User
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -53,13 +53,11 @@ class TestADCMAudit(BaseTestCase):
         self.adcm_conf_updated_str = "ADCM configuration updated"
 
     def check_adcm_updated(self, log: AuditLog, operation_name: str, operation_result: str, user: User | None = None):
-        if log.audit_object:
-            self.assertEqual(log.audit_object.object_id, self.adcm.pk)
-            self.assertEqual(log.audit_object.object_name, self.adcm.name)
-            self.assertEqual(log.audit_object.object_type, AuditObjectType.ADCM)
-            self.assertFalse(log.audit_object.is_deleted)
-        else:
-            self.assertFalse(log.audit_object)
+        self.assertIsNotNone(log.audit_object)
+        self.assertEqual(log.audit_object.object_id, self.adcm.pk)
+        self.assertEqual(log.audit_object.object_name, self.adcm.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.ADCM)
+        self.assertFalse(log.audit_object.is_deleted)
 
         self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, AuditLogOperationType.UPDATE)
@@ -130,4 +128,23 @@ class TestADCMAudit(BaseTestCase):
             operation_name=self.adcm_conf_updated_str,
             operation_result=AuditLogOperationResult.DENIED,
             user=self.no_rights_user,
+        )
+
+    def test_create_config_fail(self) -> None:
+        response = self.client.post(
+            path=reverse(viewname="v1:config-history", kwargs={"adcm_pk": self.adcm.pk}),
+            data={"config": self.config_log.config, "attr": "kuku"},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        # self.assertIsNotNone(log.audit_object)
+        self.check_adcm_updated(
+            log=log,
+            operation_name=self.adcm_conf_updated_str,
+            operation_result=AuditLogOperationResult.FAIL,
+            user=self.test_user,
         )

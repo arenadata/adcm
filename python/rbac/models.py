@@ -376,3 +376,19 @@ def re_apply_object_policy(apply_object):
     for obj, content_type in obj_type_map.items():
         for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=content_type):
             policy.apply()
+
+
+RBAC_MODEL_MAP: dict[str, type[User | Group | Role | Policy]] = {
+    "user": User,
+    "users": User,
+    "group": Group,
+    "groups": Group,
+    "role": Role,
+    "roles": Role,
+    "policy": Policy,
+    "policies": Policy,
+}
+
+
+def get_rbac_model_by_type(rbac_type: str) -> type[User | Group | Role | Policy]:
+    return RBAC_MODEL_MAP[rbac_type]

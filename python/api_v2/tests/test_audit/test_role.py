@@ -144,7 +144,7 @@ class TestRoleAudit(BaseAPITestCase):
 
         response = self.client.patch(
             path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
-            data={"display_name": "Custom role name"},
+            data={"displayName": "Custom role name"},
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)

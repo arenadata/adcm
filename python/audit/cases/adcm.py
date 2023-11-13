@@ -34,15 +34,6 @@ def adcm_case(
     if api_version == 1:
         match path:
             case (["adcm", adcm_pk, "config", "history"] | ["adcm", adcm_pk, "config", "history", _, "restore"]):
-                if not response:
-                    return (
-                        _get_audit_operation(
-                            obj_type=AuditObjectType.ADCM,
-                            operation_type=AuditLogOperationType.UPDATE,
-                            operation_aux_str="configuration ",
-                        ),
-                        audit_object,
-                    )
                 audit_operation, audit_object = obj_pk_case(
                     obj_type=AuditObjectType.ADCM,
                     operation_type=AuditLogOperationType.UPDATE,

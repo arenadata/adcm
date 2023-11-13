@@ -72,7 +72,7 @@ def make_export_name(cluster_name: str, service_name: str) -> str:
 def cluster_case(
     path: list[str],
     view: GenericAPIView | View,
-    response: Response,
+    response: Response | None,
     deleted_obj: Cluster,
     api_version: int = 1,
 ) -> tuple[AuditOperation, AuditObject | None]:
@@ -106,8 +106,9 @@ def cluster_case(
                     object_name=obj.name,
                     object_type=AuditObjectType.CLUSTER,
                 )
-            else:
-                audit_object = None
+                if view.request.method == "DELETE" and bool(response):
+                    audit_object.is_deleted = True
+                    audit_object.save(update_fields=["is_deleted"])
 
         case ["cluster", cluster_pk, "host"] | ["clusters", cluster_pk, "hosts"]:
             host_fqdn = ""
@@ -145,13 +146,13 @@ def cluster_case(
             "maintenance-mode",
         ] | ["clusters", cluster_pk, "hosts", host_pk, "maintenance-mode"]:
             if view.request.method == "DELETE":
-                name = "Host removed"
+                name = "host removed"
                 operation_type = AuditLogOperationType.UPDATE
                 if not isinstance(deleted_obj, Host):
                     deleted_obj = Host.objects.filter(pk=host_pk).first()
 
                 if deleted_obj:
-                    name = f"{deleted_obj.fqdn} host removed"
+                    name = f"{deleted_obj.fqdn} {name}"
 
                 obj = Cluster.objects.filter(pk=cluster_pk).first()
                 if obj:
@@ -439,6 +440,7 @@ def cluster_case(
                 "maintenance-mode",
             ]
             | ["service", _, "component", component_pk, "maintenance-mode"]
+            | [*_, "components", component_pk]
         ):
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.COMPONENT,

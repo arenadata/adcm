@@ -19,11 +19,13 @@ from audit.models import (
 )
 from cm.models import Bundle
 from django.views import View
+from rest_framework.response import Response
 
 
 def bundle_case(
     path: list[str],
     view: View,
+    response: Response | None,
     deleted_obj: Bundle,
 ) -> tuple[AuditOperation | None, AuditObject | None]:
     audit_operation = None
@@ -33,10 +35,10 @@ def bundle_case(
         case (["bundles", bundle_pk]):
             if view.request.method != "DELETE":
                 return audit_operation, audit_object
+
             operation_type = AuditLogOperationType.DELETE
             operation_name = f"{AuditObjectType.BUNDLE.capitalize()} {operation_type}d"
 
-            object_name = None
             audit_operation = AuditOperation(
                 name=operation_name,
                 operation_type=operation_type,
@@ -45,9 +47,7 @@ def bundle_case(
             if isinstance(deleted_obj, Bundle):
                 object_name = deleted_obj.name
             else:
-                bundle = Bundle.objects.filter(pk=bundle_pk).first()
-                if bundle:
-                    object_name = bundle.name
+                object_name, *_ = Bundle.objects.filter(pk=bundle_pk).values_list("name", flat=True) or [None]
 
             if object_name:
                 audit_object = get_or_create_audit_obj(
@@ -55,10 +55,11 @@ def bundle_case(
                     object_name=object_name,
                     object_type=AuditObjectType.BUNDLE,
                 )
-                audit_object.is_deleted = True
-                audit_object.save()
-            else:
-                audit_object = None
+
+                if bool(response):
+                    # here we consider that request finished successfully
+                    audit_object.is_deleted = True
+                    audit_object.save(update_fields=["is_deleted"])
 
         case (["bundles"]):
             if view.request.method == "POST":

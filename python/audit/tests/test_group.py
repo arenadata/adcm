@@ -46,6 +46,7 @@ class TestGroupAudit(BaseTestCase):
         operation_result: AuditLogOperationResult,
         user: User,
         object_changes: dict | None = None,
+        object_is_deleted: bool = False,
     ) -> None:
         if object_changes is None:
             object_changes = {}
@@ -53,7 +54,7 @@ class TestGroupAudit(BaseTestCase):
         self.assertEqual(log.audit_object.object_id, self.group.pk)
         self.assertEqual(log.audit_object.object_name, self.group.name)
         self.assertEqual(log.audit_object.object_type, AuditObjectType.GROUP)
-        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.audit_object.is_deleted, object_is_deleted)
         self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, operation_type)
         self.assertEqual(log.operation_result, operation_result)
@@ -128,6 +129,7 @@ class TestGroupAudit(BaseTestCase):
             operation_type=AuditLogOperationType.DELETE,
             operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
+            object_is_deleted=True,
         )
 
     def test_delete_denied(self):

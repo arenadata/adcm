@@ -49,7 +49,6 @@ class TestBundleAudit(BaseAPITestCase):
             operation_result="success",
             operation_type=AuditLogOperationType.CREATE,
             audit_object__isnull=True,
-            object_changes={},
             user__username="admin",
         )
 
@@ -70,7 +69,6 @@ class TestBundleAudit(BaseAPITestCase):
             operation_result="fail",
             operation_type=AuditLogOperationType.CREATE,
             audit_object__isnull=True,
-            object_changes={},
             user__username="admin",
         )
 
@@ -91,7 +89,6 @@ class TestBundleAudit(BaseAPITestCase):
             operation_result="denied",
             operation_type=AuditLogOperationType.CREATE,
             audit_object__isnull=True,
-            object_changes={},
             user__username="test_user_username",
         )
 
@@ -105,11 +102,7 @@ class TestBundleAudit(BaseAPITestCase):
             operation_name="Bundle deleted",
             operation_type="delete",
             operation_result="success",
-            audit_object__object_id=bundle.pk,
-            audit_object__object_name=bundle.name,
-            audit_object__object_type="bundle",
-            audit_object__is_deleted=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=bundle, is_deleted=True),
             user__username="admin",
         )
 
@@ -123,7 +116,7 @@ class TestBundleAudit(BaseAPITestCase):
             operation_name="Bundle deleted",
             operation_type="delete",
             operation_result="fail",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
@@ -138,7 +131,7 @@ class TestBundleAudit(BaseAPITestCase):
             operation_name="Bundle deleted",
             operation_type="delete",
             operation_result="denied",
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=bundle),
             user__username=self.test_user_credentials["username"],
         )
 
@@ -155,9 +148,7 @@ class TestBundleAudit(BaseAPITestCase):
             operation_name="Bundle license accepted",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=bundle.pk,
-            audit_object__object_name=bundle.name,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=bundle),
             user__username="admin",
         )
 
@@ -175,8 +166,18 @@ class TestBundleAudit(BaseAPITestCase):
             operation_name="Bundle license accepted",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=bundle.pk,
-            audit_object__object_name=bundle.name,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=bundle),
             user__username="test_user_username",
+        )
+
+    def test_audit_accept_license_fail(self):
+        response = self.client.post(path=reverse(viewname="v2:prototype-accept-license", kwargs={"pk": 1000}))
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_last_audit_log(
+            operation_name="Bundle license accepted",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=None),
+            user__username="admin",
         )

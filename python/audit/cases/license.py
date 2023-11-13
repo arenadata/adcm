@@ -50,10 +50,11 @@ def license_case(
                     name="Bundle license accepted",
                     operation_type=AuditLogOperationType.UPDATE,
                 )
-                audit_object = get_or_create_audit_obj(
-                    object_id=prototype.bundle.pk,
-                    object_name=prototype.bundle.name,
-                    object_type=AuditObjectType.BUNDLE,
-                )
+                if prototype:
+                    audit_object = get_or_create_audit_obj(
+                        object_id=prototype.bundle.pk,
+                        object_name=prototype.bundle.name,
+                        object_type=AuditObjectType.BUNDLE,
+                    )
 
     return audit_operation, audit_object

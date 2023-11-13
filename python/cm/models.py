@@ -22,7 +22,7 @@ from collections.abc import Iterable, Mapping
 from copy import deepcopy
 from enum import Enum
 from itertools import chain
-from typing import Optional
+from typing import Optional, TypeAlias
 from uuid import uuid4
 
 from cm.errors import AdcmEx
@@ -77,27 +77,6 @@ LICENSE_STATE = (
     ("accepted", "accepted"),
     ("unaccepted", "unaccepted"),
 )
-
-
-def get_model_by_type(object_type):  # pylint: disable=too-many-return-statements
-    if object_type == "adcm":
-        return ADCM
-    if object_type == "cluster":
-        return Cluster
-    elif object_type in ("provider", "hostprovider"):
-        return HostProvider
-    elif object_type == "service":
-        return ClusterObject
-    elif object_type == "component":
-        return ServiceComponent
-    elif object_type == "host":
-        return Host
-    elif object_type == "group_config":
-        return GroupConfig
-    else:
-        # This function should return a Model, this is necessary for the correct
-        # construction of the schema.
-        return Cluster
 
 
 def get_object_cluster(obj):
@@ -1944,3 +1923,40 @@ class ConcernItem(ADCMModel):
 class ADCMEntityStatus(models.TextChoices):
     UP = "up", "up"
     DOWN = "down", "down"
+
+
+MainObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+
+CM_MODEL_MAP: dict[str, type[ADCM | MainObject | ConfigLog | GroupConfig | Action]] = {
+    "adcm": ADCM,
+    "cluster": Cluster,
+    "clusters": Cluster,
+    "service": ClusterObject,
+    "services": ClusterObject,
+    "component": ServiceComponent,
+    "components": ServiceComponent,
+    "provider": HostProvider,
+    "providers": HostProvider,
+    "hostprovider": HostProvider,
+    "hostproviders": HostProvider,
+    "host": Host,
+    "hosts": Host,
+    "config": ConfigLog,
+    "action": Action,
+    "group_config": GroupConfig,
+    "config-group": GroupConfig,
+    "config-groups": GroupConfig,
+}
+
+
+def get_cm_model_by_type(object_type: str) -> type[ADCM | MainObject | ConfigLog | GroupConfig | Action]:
+    return CM_MODEL_MAP[object_type]
+
+
+def get_model_by_type(object_type):
+    try:
+        return get_cm_model_by_type(object_type=object_type)
+    except KeyError:
+        # This function should return a Model, this is necessary for the correct
+        # construction of the schema.
+        return Cluster

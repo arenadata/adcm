@@ -63,11 +63,7 @@ class TestComponentAudit(BaseAPITestCase):
             operation_name=f"{self.component_action.display_name} action launched",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.component_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
-            audit_object__object_type="component",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username="admin",
         )
 
@@ -92,11 +88,7 @@ class TestComponentAudit(BaseAPITestCase):
             operation_name=f"{self.component_action.display_name} action launched",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.component_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
-            audit_object__object_type="component",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username=self.test_user.username,
         )
 
@@ -115,14 +107,10 @@ class TestComponentAudit(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
-            operation_name="{action_display_name} action launched",
+            operation_name="action launched",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.component_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
-            audit_object__object_type="component",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username="admin",
         )
 
@@ -144,15 +132,35 @@ class TestComponentAudit(BaseAPITestCase):
             operation_name="Component configuration updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.component_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
-            audit_object__object_type="component",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username="admin",
         )
 
     def test_update_config_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:component-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                },
+            ),
+            data=self.config_post_data,
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="Component configuration updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_update_config_only_view_denied(self):
         self.client.login(**self.test_user_credentials)
 
         with (
@@ -177,11 +185,7 @@ class TestComponentAudit(BaseAPITestCase):
             operation_name="Component configuration updated",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.component_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
-            audit_object__object_type="component",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username=self.test_user.username,
         )
 
@@ -203,11 +207,7 @@ class TestComponentAudit(BaseAPITestCase):
             operation_name="Component configuration updated",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.component_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
-            audit_object__object_type="component",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username="admin",
         )
 
@@ -229,8 +229,7 @@ class TestComponentAudit(BaseAPITestCase):
             operation_name="Component configuration updated",
             operation_type="update",
             operation_result="fail",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
@@ -248,12 +247,33 @@ class TestComponentAudit(BaseAPITestCase):
             operation_name="Component updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.component_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
-            audit_object__object_type="component",
-            audit_object__is_deleted=False,
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             object_changes={"current": {"maintenance_mode": "on"}, "previous": {"maintenance_mode": "off"}},
             user__username="admin",
+        )
+
+    def test_change_mm_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:component-maintenance-mode",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "pk": self.component_1.pk,
+                },
+            ),
+            data={"maintenanceMode": "on"},
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="Component updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
+            user__username=self.test_user.username,
         )
 
     def test_change_mm_denied(self):
@@ -281,15 +301,33 @@ class TestComponentAudit(BaseAPITestCase):
             operation_name="Component updated",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.component_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}/{self.component_1.name}",
-            audit_object__object_type="component",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username=self.test_user.username,
         )
 
-    def test_change_mm_fail(self):
+    def test_change_mm_incorrect_body_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:component-maintenance-mode",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "pk": self.component_1.pk,
+                },
+            ),
+            data={"maintenanceMode": "cough"},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="Component updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
+            user__username="admin",
+        )
+
+    def test_change_mm_not_found_fail(self):
         response = self.client.post(
             path=reverse(
                 viewname="v2:component-maintenance-mode",
@@ -307,7 +345,6 @@ class TestComponentAudit(BaseAPITestCase):
             operation_name="Component updated",
             operation_type="update",
             operation_result="fail",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )

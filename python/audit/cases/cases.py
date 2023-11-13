@@ -29,7 +29,7 @@ from rest_framework.response import Response
 
 def get_audit_operation_and_object(  # pylint: disable=too-many-branches
     view: View | GenericAPIView,
-    response: Response,
+    response: Response | None,
     deleted_obj: Model,
     path: list[str],
     api_version: int = 1,
@@ -38,7 +38,7 @@ def get_audit_operation_and_object(  # pylint: disable=too-many-branches
 
     # Order of if elif is important, do not change it please
     if "action" in path or "actions" in path:
-        audit_operation, audit_object = action_case(path=path)
+        audit_operation, audit_object = action_case(path=path, api_version=api_version)
     elif "upgrade" in path or "upgrades" in path:
         audit_operation, audit_object = upgrade_case(path=path)
     elif "stack" in path:
@@ -49,12 +49,10 @@ def get_audit_operation_and_object(  # pylint: disable=too-many-branches
         )
     elif (
         "cluster" in path  # pylint: disable=too-many-boolean-expressions
-        or "clusters" in path
-        and "config-groups" not in path
+        or ("clusters" in path and "config-groups" not in path)
         or "component" in path
         or ("host" in path and "config" in path)
-        or ("service" in path and "import" in path)
-        or ("service" in path and "config" in path)
+        or ("service" in path and ("import" in path or "config" in path))
     ):
         audit_operation, audit_object = cluster_case(
             path=path, view=view, response=response, deleted_obj=deleted_obj, api_version=api_version
@@ -101,6 +99,7 @@ def get_audit_operation_and_object(  # pylint: disable=too-many-branches
         audit_operation, audit_object = bundle_case(
             path=path,
             view=view,
+            response=response,
             deleted_obj=deleted_obj,
         )
     elif "accept" in path:

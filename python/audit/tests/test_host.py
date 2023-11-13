@@ -316,7 +316,7 @@ class TestHostAudit(BaseTestCase):
             obj=self.cluster,
             operation_result=AuditLogOperationResult.FAIL,
             user=self.test_user,
-            operation_name="Host removed",
+            operation_name="host removed",
         )
 
     def test_delete_denied(self):
