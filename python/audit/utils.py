@@ -72,6 +72,8 @@ from rest_framework.status import (
 )
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
+AUDITED_HTTP_METHODS = frozenset(("POST", "DELETE", "PUT", "PATCH"))
+
 URL_PATH_PATTERN = re.compile(r".*/api/v(?P<api_version>\d+)/(?P<target_path>.*?)/?$")
 
 
@@ -353,7 +355,7 @@ def audit(func):
         error = None
         view, request = _get_view_and_request(args=args)
         api_version, path = _parse_path(path=view.request.path)
-        if api_version == -1:
+        if request.method not in AUDITED_HTTP_METHODS or api_version == -1:
             return func(*args, **kwargs)
 
         deleted_obj = None
