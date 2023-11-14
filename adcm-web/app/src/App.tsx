@@ -189,7 +189,7 @@ function App() {
               </Route>
               <Route path="/hosts" element={<HostsPage />} />
               <Route path="/hosts/:hostId" element={<HostLayout />}>
-                <Route index element={<Navigate to="host-components" replace />} />
+                <Route index element={<Navigate to="primary-configuration" replace />} />
                 <Route path="/hosts/:hostId/host-components" element={<HostComponents />} />
                 <Route path="/hosts/:hostId/primary-configuration" element={<HostPrimaryConfiguration />} />
               </Route>
