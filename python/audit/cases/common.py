@@ -136,8 +136,8 @@ def get_obj_name(obj: ClusterObject | ServiceComponent | ADCMEntity, obj_type: s
 
 
 def get_or_create_audit_obj(
-    object_id: str,
-    object_name: str,
+    object_id: str | None,
+    object_name: str | None,
     object_type: str,
 ) -> AuditObject:
     audit_object = AuditObject.objects.filter(
@@ -145,7 +145,7 @@ def get_or_create_audit_obj(
         object_type=object_type,
     ).first()
 
-    if not audit_object and object_name is not None:
+    if not audit_object and (object_name is not None and object_id is not None):
         audit_object = AuditObject.objects.create(
             object_id=object_id,
             object_name=object_name,
