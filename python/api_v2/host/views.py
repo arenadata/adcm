@@ -11,6 +11,7 @@
 # limitations under the License.
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.host.filters import HostClusterFilter, HostFilter
+from api_v2.host.permissions import GroupConfigHostsPermissions
 from api_v2.host.serializers import (
     ClusterHostStatusSerializer,
     HostChangeMaintenanceModeSerializer,
@@ -44,8 +45,8 @@ from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HOST_PERM,
     VIEW_PROVIDER_PERM,
-    DjangoModelPermissionsAudit,
     ModelObjectPermissionsByActionMixin,
+    check_config_perm,
     check_custom_perm,
     get_object_for_user,
 )
@@ -200,7 +201,7 @@ class HostGroupConfigViewSet(PermissionListMixin, GetParentObjectMixin, CamelCas
         .prefetch_related("concerns", "hostcomponent_set")
         .order_by("fqdn")
     )
-    permission_classes = [DjangoModelPermissionsAudit]
+    permission_classes = [GroupConfigHostsPermissions]
     permission_required = [VIEW_HOST_PERM]
     filterset_class = HostClusterFilter
     filter_backends = (DjangoFilterBackend,)
@@ -213,18 +214,32 @@ class HostGroupConfigViewSet(PermissionListMixin, GetParentObjectMixin, CamelCas
         return HostGroupConfigSerializer
 
     def get_queryset(self, *args, **kwargs):
-        parent_object = self.get_parent_object()
-        parent_view_perm = f"cm.view_{parent_object.__class__.__name__.lower()}"
-        if parent_object is None or not self.request.user.has_perm(perm=parent_view_perm, obj=parent_object):
-            raise NotFound
         return self.queryset.filter(group_config__id=self.kwargs["group_config_pk"])
 
-    @audit
-    def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
-        group_config = GroupConfig.objects.filter(id=self.kwargs["group_config_pk"]).first()
+    def get_group_for_change(self) -> GroupConfig:
+        config_group = super().get_parent_object()
+        if config_group is None or not isinstance(config_group, GroupConfig):
+            raise NotFound
 
-        if not group_config:
-            raise AdcmEx(code="HOST_GROUP_CONFIG_NOT_FOUND")
+        parent_view_perm = f"cm.view_{config_group.object.__class__.__name__.lower()}"
+        if not (
+            self.request.user.has_perm(perm=parent_view_perm, obj=config_group.object)
+            or self.request.user.has_perm(perm=parent_view_perm)
+        ):
+            raise NotFound
+
+        check_config_perm(
+            user=self.request.user,
+            action_type="change",
+            model=config_group.object.content_type.model,
+            obj=config_group.object,
+        )
+
+        return config_group
+
+    @audit
+    def create(self, request, *_, **__):
+        group_config = self.get_group_for_change()
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -235,12 +250,12 @@ class HostGroupConfigViewSet(PermissionListMixin, GetParentObjectMixin, CamelCas
         return Response(status=HTTP_201_CREATED, data=HostGroupConfigSerializer(instance=host).data)
 
     @audit
-    def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
-        group_config = GroupConfig.objects.filter(id=self.kwargs["group_config_pk"]).first()
+    def destroy(self, request, *_, **kwargs):  # pylint: disable=unused-argument
+        group_config = self.get_group_for_change()
 
-        if not group_config:
-            raise AdcmEx(code="HOST_GROUP_CONFIG_NOT_FOUND")
+        host = group_config.hosts.filter(pk=kwargs["pk"]).first()
+        if not host:
+            raise NotFound
 
-        host = self.get_object()
         group_config.hosts.remove(host)
         return Response(status=HTTP_204_NO_CONTENT)

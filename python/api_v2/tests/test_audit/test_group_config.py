@@ -1761,3 +1761,104 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             **self.prepare_audit_object_arguments(expected_object=self.component_1),
             user__username=self.test_user.username,
         )
+
+    def test_component_remove_host_success(self):
+        self.component_1_group_config.hosts.add(self.host_for_service)
+
+        response = self.client.delete(
+            path=reverse(
+                viewname="v2:component-group-config-hosts-detail",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                    "group_config_pk": self.component_1_group_config.pk,
+                    "pk": self.host_for_service.pk,
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.host_for_service.fqdn} host "
+            f"removed from {self.component_1_group_config.name} configuration group",
+            operation_type="update",
+            operation_result="success",
+            **self.prepare_audit_object_arguments(expected_object=self.component_1),
+            user__username="admin",
+        )
+
+    def test_service_remove_host_not_found_fail(self):
+        self.service_1_group_config.hosts.add(self.host_for_service)
+
+        response = self.client.delete(
+            path=reverse(
+                viewname="v2:service-group-config-hosts-detail",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "group_config_pk": self.service_1_group_config.pk,
+                    "pk": 100,
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name=f"host removed from {self.service_1_group_config.name} configuration group",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
+            user__username="admin",
+        )
+
+    def test_cluster_remove_host_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        self.cluster_1_group_config.hosts.add(self.host_for_service)
+
+        response = self.client.delete(
+            path=reverse(
+                viewname="v2:cluster-group-config-hosts-detail",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "group_config_pk": self.cluster_1_group_config.pk,
+                    "pk": self.host_for_service.pk,
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.host_for_service.fqdn} host removed "
+            f"from {self.cluster_1_group_config.name} configuration group",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_hostprovider_remove_host_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        self.provider_group_config.hosts.add(self.host_for_service)
+
+        with self.grant_permissions(to=self.test_user, on=[self.provider], role_name="View provider configurations"):
+            response = self.client.delete(
+                path=reverse(
+                    viewname="v2:hostprovider-group-config-hosts-detail",
+                    kwargs={
+                        "hostprovider_pk": self.provider.pk,
+                        "group_config_pk": self.provider_group_config.pk,
+                        "pk": self.host_for_service.pk,
+                    },
+                ),
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.host_for_service.fqdn} host removed "
+            f"from {self.cluster_1_group_config.name} configuration group",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
+            user__username=self.test_user.username,
+        )
