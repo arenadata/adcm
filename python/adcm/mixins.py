@@ -63,7 +63,7 @@ class GetParentObjectMixin:
             elif "hostprovider_pk" in self.kwargs:
                 parent_object = HostProvider.objects.select_related("prototype").get(pk=self.kwargs["hostprovider_pk"])
 
-            if "group_config_pk" in self.kwargs:
+            if "group_config_pk" in self.kwargs and parent_object:
                 parent_object = GroupConfig.objects.get(
                     pk=self.kwargs["group_config_pk"],
                     object_id=parent_object.pk,

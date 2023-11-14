@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from contextlib import suppress
+
 from audit.cases.common import get_obj_name, get_or_create_audit_obj
 from audit.models import (
     MODEL_TO_AUDIT_OBJECT_TYPE_MAP,
@@ -225,8 +227,7 @@ def config_case(
 
         case [*_, owner_type, owner_pk, "config-groups", config_group_pk, "hosts"]:
             config_group = GroupConfig.objects.filter(pk=config_group_pk).first()
-            config_group_name = config_group.name if config_group else ""
-            name_suffix = f"{config_group_name} configuration group".strip()
+            name_suffix = f"{config_group.name if config_group else ''} configuration group".strip()
             audit_operation = AuditOperation(
                 name=f"host added to {name_suffix}",
                 operation_type=AuditLogOperationType.UPDATE,
@@ -237,6 +238,22 @@ def config_case(
 
             if "host_id" in view.request.data:
                 host = Host.objects.filter(pk=view.request.data["host_id"]).values("fqdn").first()
+                if host:
+                    audit_operation.name = f"{host['fqdn']} {audit_operation.name}"
+
+        case [*_, owner_type, owner_pk, "config-groups", config_group_pk, "hosts", host_pk]:
+            config_group = GroupConfig.objects.filter(pk=config_group_pk).first()
+            name_suffix = f"{config_group.name if config_group else ''} configuration group".strip()
+            audit_operation = AuditOperation(
+                name=f"host removed from {name_suffix}",
+                operation_type=AuditLogOperationType.UPDATE,
+            )
+            audit_object = get_audit_object_from_path_info(
+                object_type_from_path=owner_type, object_pk_from_path=owner_pk
+            )
+
+            with suppress(ValueError):
+                host = Host.objects.filter(pk=int(host_pk)).values("fqdn").first()
                 if host:
                     audit_operation.name = f"{host['fqdn']} {audit_operation.name}"
 
