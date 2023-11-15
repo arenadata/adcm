@@ -24,7 +24,7 @@ from rest_framework.response import Response
 def host_case(
     path: list[str],
     view: View,
-    response: Response,
+    response: Response | None,
     deleted_obj: Host,
 ) -> tuple[AuditOperation, AuditObject | None]:
     audit_operation = None

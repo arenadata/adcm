@@ -12,6 +12,7 @@
 
 
 from api_v2.tests.base import BaseAPITestCase
+from audit.models import AuditObject
 from django.utils import timezone
 from rbac.models import Group
 from rbac.services.group import create as create_group
@@ -188,11 +189,21 @@ class TestGroupAudit(BaseAPITestCase):
         )
 
     def test_group_delete_success(self):
+        # audit object should exist before successful DELETE request
+        # to have `is_deleted` updated
+        # for now we've agreed that's ok tradeoff
+        AuditObject.objects.get_or_create(
+            object_id=self.group.pk,
+            object_name=self.group.name,
+            object_type="group",
+            is_deleted=False,
+        )
+
         response = self.client.delete(
             path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
         )
-
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
         self.check_last_audit_log(
             operation_name="Group deleted",
             operation_type="delete",

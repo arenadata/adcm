@@ -27,7 +27,7 @@ from rest_framework.status import (
 )
 
 
-class TestHostProviderAudit(BaseAPITestCase):
+class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public-methods
     def setUp(self) -> None:
         super().setUp()
 
@@ -64,11 +64,7 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name="Provider created",
             operation_type="create",
             operation_result="success",
-            audit_object__object_id=response.json()["id"],
-            audit_object__object_name="test_provider",
-            audit_object__object_type="provider",
-            audit_object__is_deleted=False,
-            user__username="admin",
+            **self.prepare_audit_object_arguments(expected_object=HostProvider.objects.get(pk=response.json()["id"])),
         )
 
     def test_create_no_perms_denied(self):
@@ -84,7 +80,7 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name="Provider created",
             operation_type="create",
             operation_result="denied",
-            audit_object__isnull=True,
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username=self.test_user.username,
         )
 
@@ -99,8 +95,7 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name="Provider created",
             operation_type="create",
             operation_result="fail",
-            audit_object__isnull=True,
-            user__username="admin",
+            **self.prepare_audit_object_arguments(expected_object=None),
         )
 
     def test_create_non_existent_proto_fail(self):
@@ -108,14 +103,13 @@ class TestHostProviderAudit(BaseAPITestCase):
             path=reverse(viewname="v2:hostprovider-list"),
             data={"prototypeId": self.get_non_existent_pk(model=Prototype), "name": "test_provider"},
         )
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
         self.check_last_audit_log(
             operation_name="Provider created",
             operation_type="create",
             operation_result="fail",
-            audit_object__isnull=True,
-            user__username="admin",
+            **self.prepare_audit_object_arguments(expected_object=None),
         )
 
     def test_delete_success(self):
@@ -135,14 +129,26 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name="Provider deleted",
             operation_type="delete",
             operation_result="success",
-            audit_object__object_id=self.provider.pk,
-            audit_object__object_name=self.provider.name,
-            audit_object__object_type="provider",
-            audit_object__is_deleted=True,
-            user__username="admin",
+            **self.prepare_audit_object_arguments(expected_object=self.provider, is_deleted=True),
         )
 
     def test_delete_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.delete(
+            path=reverse(viewname="v2:hostprovider-detail", kwargs={"pk": self.provider.pk}),
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="Provider deleted",
+            operation_type="delete",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
+            user__username=self.test_user.username,
+        )
+
+    def test_delete_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=self.provider, role_name="View provider configurations"):
@@ -155,10 +161,7 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name="Provider deleted",
             operation_type="delete",
             operation_result="denied",
-            audit_object__object_id=self.provider.pk,
-            audit_object__object_name=self.provider.name,
-            audit_object__object_type="provider",
-            audit_object__is_deleted=False,
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username=self.test_user.username,
         )
 
@@ -189,12 +192,25 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name="Provider configuration updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.provider.pk,
-            audit_object__object_name=self.provider.name,
-            audit_object__object_type="provider",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username="admin",
+        )
+
+    def test_update_config_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.post(
+            path=reverse(viewname="v2:provider-config-list", kwargs={"hostprovider_pk": self.provider.pk}),
+            data=self.config_post_data,
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="Provider configuration updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
+            user__username=self.test_user.username,
         )
 
     def test_update_config_denied(self):
@@ -211,11 +227,7 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name="Provider configuration updated",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.provider.pk,
-            audit_object__object_name=self.provider.name,
-            audit_object__object_type="provider",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username=self.test_user.username,
         )
 
@@ -230,11 +242,7 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name="Provider configuration updated",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.provider.pk,
-            audit_object__object_name=self.provider.name,
-            audit_object__object_type="provider",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username="admin",
         )
 
@@ -252,8 +260,7 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name="Provider configuration updated",
             operation_type="update",
             operation_result="fail",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
@@ -270,11 +277,7 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name=f"{self.provider_action.display_name} action launched",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.provider.pk,
-            audit_object__object_name=self.provider.name,
-            audit_object__object_type="provider",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username="admin",
         )
 
@@ -294,11 +297,7 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name=f"{self.provider_action.display_name} action launched",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.provider.pk,
-            audit_object__object_name=self.provider.name,
-            audit_object__object_type="provider",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username=self.test_user.username,
         )
 
@@ -315,11 +314,7 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name="action launched",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.provider.pk,
-            audit_object__object_name=self.provider.name,
-            audit_object__object_type="provider",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username="admin",
         )
 
@@ -339,12 +334,30 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name=f"Upgraded to {self.provider_upgrade.name}",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.provider.pk,
-            audit_object__object_name=self.provider.name,
-            audit_object__object_type="provider",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username="admin",
+        )
+
+    def test_upgrade_provider_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:upgrade-run",
+                kwargs={
+                    "hostprovider_pk": self.provider.pk,
+                    "pk": self.provider_upgrade.pk,
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name=f"Upgraded to {self.provider_upgrade.name}",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
+            user__username=self.test_user.username,
         )
 
     def test_upgrade_provider_denied(self):
@@ -366,11 +379,7 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name=f"Upgraded to {self.provider_upgrade.name}",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.provider.pk,
-            audit_object__object_name=self.provider.name,
-            audit_object__object_type="provider",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username=self.test_user.username,
         )
 
@@ -390,10 +399,6 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name="Upgraded to",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.provider.pk,
-            audit_object__object_name=self.provider.name,
-            audit_object__object_type="provider",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.provider),
             user__username="admin",
         )

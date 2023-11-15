@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import unittest
 
 from api_v2.tests.base import BaseAPITestCase
 from cm.models import Action, ClusterObject, ObjectType
@@ -61,15 +61,31 @@ class TestServiceAudit(BaseAPITestCase):
             operation_name="Service configuration updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.service_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
-            audit_object__object_type="service",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
             user__username="admin",
         )
 
     def test_update_config_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-config-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
+            ),
+            data=self.config_post_data,
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="Service configuration updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_update_config_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="View service configurations"):
@@ -86,11 +102,7 @@ class TestServiceAudit(BaseAPITestCase):
             operation_name="Service configuration updated",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.service_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
-            audit_object__object_type="service",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
             user__username=self.test_user.username,
         )
 
@@ -145,15 +157,33 @@ class TestServiceAudit(BaseAPITestCase):
             operation_name="Service updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.service_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
-            audit_object__object_type="service",
-            audit_object__is_deleted=False,
+            **self.prepare_audit_object_arguments(self.service_1),
             object_changes={"current": {"maintenance_mode": "on"}, "previous": {"maintenance_mode": "off"}},
             user__username="admin",
         )
 
-    def test_change_mm_denied(self):
+    @unittest.skip("Skip until RBAC issues are fixed")
+    def test_change_mm_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-maintenance-mode",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk},
+            ),
+            data={"maintenanceMode": "on"},
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="Service updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(self.service_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_change_mm_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="View service configurations"):
@@ -170,15 +200,29 @@ class TestServiceAudit(BaseAPITestCase):
             operation_name="Service updated",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.service_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
-            audit_object__object_type="service",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(self.service_1),
             user__username=self.test_user.username,
         )
 
-    def test_change_mm_fail(self):
+    def test_change_mm_incorrect_data_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-maintenance-mode",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk},
+            ),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="Service updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(self.service_1),
+            user__username="admin",
+        )
+
+    def test_change_mm_not_exist_fail(self):
         response = self.client.post(
             path=reverse(
                 viewname="v2:service-maintenance-mode",
@@ -193,7 +237,6 @@ class TestServiceAudit(BaseAPITestCase):
             operation_type="update",
             operation_result="fail",
             audit_object__isnull=True,
-            object_changes={},
             user__username="admin",
         )
 
@@ -210,11 +253,7 @@ class TestServiceAudit(BaseAPITestCase):
             operation_name=f"{self.service_action.display_name} action launched",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.service_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
-            audit_object__object_type="service",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(self.service_1),
             user__username="admin",
         )
 
@@ -238,15 +277,11 @@ class TestServiceAudit(BaseAPITestCase):
             operation_name=f"{self.service_action.display_name} action launched",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.service_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
-            audit_object__object_type="service",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(self.service_1),
             user__username=self.test_user.username,
         )
 
-    def test_run_action_fail(self):
+    def test_run_action_not_found_fail(self):
         response = self.client.post(
             path=reverse(
                 viewname="v2:service-action-run",
@@ -263,11 +298,7 @@ class TestServiceAudit(BaseAPITestCase):
             operation_name="action launched",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.service_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
-            audit_object__object_type="service",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(self.service_1),
             user__username="admin",
         )
 
@@ -286,15 +317,31 @@ class TestServiceAudit(BaseAPITestCase):
             operation_name="Service import updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.service_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
-            audit_object__object_type="service",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(self.service_1),
             user__username="admin",
         )
 
-    def test_create_import_denied(self):
+    def test_create_import_no_perm_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-import-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
+            ),
+            data=[{"source": {"id": self.export_service.pk, "type": ObjectType.SERVICE}}],
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="Service import updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(self.service_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_create_import_view_perm_denied(self):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(
@@ -313,15 +360,29 @@ class TestServiceAudit(BaseAPITestCase):
             operation_name="Service import updated",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.service_1.pk,
-            audit_object__object_name=f"{self.cluster_1.name}/{self.service_1.name}",
-            audit_object__object_type="service",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(self.service_1),
             user__username=self.test_user.username,
         )
 
-    def test_create_import_fail(self):
+    def test_create_import_incorrect_data_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-import-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
+            ),
+            data=[{"source": {"id": self.export_service.pk, "type": "cool"}}],
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="Service import updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(self.service_1),
+            user__username="admin",
+        )
+
+    def test_create_import_not_found_fail(self):
         response = self.client.post(
             path=reverse(
                 viewname="v2:service-import-list",
