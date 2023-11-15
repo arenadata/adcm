@@ -1,0 +1,141 @@
+body.theme-dark {
+  --c-json-key: var(--color-xgray-light);
+  --c-json-pt: var(--color-xwhite-off);
+  --c-json-number: var(--color-xblue);
+  --c-json-string: var(--color-xgreen-saturated);
+
+  --c-json-comma: var(--color-xgray-light);
+
+  --c-json-mark: var(--color-xgray-light);
+  --c-json-mark-del: rgba(173, 79, 206, 1);
+  --c-json-mark-add: var(--color-xgreen-saturated);
+
+  --c-line-del: rgba(173, 79, 206, 0.15);
+  --c-line-add: rgba(0, 210, 160, 0.1);
+}
+
+body.theme-light {
+  --c-json-key: var(--color-adcmx);
+  --c-json-pt: var(--color-xdark);
+  --c-json-number: var(--color-xblue);
+  --c-json-string: var(--color-xgreen);
+
+  --c-json-comma: var(--color-xdark);
+
+  --c-json-mark: var(--color-adcmx);
+  --c-json-mark-del: rgba(173, 79, 206, 1);
+  --c-json-mark-add: var(--color-xgreen-saturated);
+
+  --c-line-del: rgba(173, 79, 206, 0.15);
+  --c-line-add: rgba(0, 210, 160, 0.1);
+}
+
+.c-json-outter {
+  display: none !important;
+}
+
+.c-json-view {
+  padding: 0 0 0 40px !important;
+  margin: 0 !important;
+  background-color: transparent !important;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.c-line-del {
+  background-color: var(--c-line-del) !important;
+  --c-json-mark: var(--c-json-mark-del);
+}
+
+.c-line-add {
+  background-color: var(--c-line-add) !important;
+  --c-json-mark: var(--c-json-mark-add);
+}
+
+.c-line-none {}
+
+.c-of-del:after {
+  color: var(--c-json-mark-del) !important;
+}
+
+.c-of-add:after {
+  color: var(--c-json-mark-add) !important;
+}
+
+.c-json-mark {
+  color: var(--c-json-mark) !important;
+}
+
+.c-json-content .c-json-key {
+  color: var(--c-json-key) !important;
+}
+
+.c-json-items {
+  color: #b1b1b1;
+}
+
+.c-json-comma {
+  color: var(--c-json-comma) !important;
+}
+
+.c-json-pt {
+  color: var(--c-json-pt) !important;
+}
+
+.c-json-number {
+  color: var(--c-json-number) !important;
+}
+
+.c-json-string {
+  color: var(--c-json-string) !important;
+}
+
+.c-json-null,
+.c-json-boolean,
+.c-json-undefined,
+.c-json-regexp,
+.c-json-date,
+.c-json-set,
+.c-json-map,
+.c-json-error,
+.c-json-symbol,
+.c-json-function {
+  background-color: transparent !important;
+  border: none !important;
+}
+
+.c-json-boolean {
+  color: #6f73ff;
+}
+
+.c-json-null {
+  color: #66d9ef;
+}
+
+.c-json-undefined {
+  color: #f92672;
+}
+
+.c-json-date {
+  color: #09d3ac;
+}
+
+.c-json-regexp {
+  color: #2ea021;
+}
+
+.c-json-function {
+  color: #a2af3d;
+}
+
+.c-json-symbol {
+  color: #fd3db8;
+}
+
+.c-json-error {
+  color: #afafaf;
+}
+
+.c-json-set,
+.c-json-map {
+  color: #f56847;
+}

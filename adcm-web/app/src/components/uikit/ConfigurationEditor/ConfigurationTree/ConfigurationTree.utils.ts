@@ -42,7 +42,7 @@ export const validate = (schema: SchemaDefinition, configuration: JSONObject, at
   return { isValid, errorsPaths };
 };
 
-const getTitle = (keyName: string, fieldSchema: SingleSchemaDefinition) =>
+export const getTitle = (keyName: string, fieldSchema: SingleSchemaDefinition) =>
   fieldSchema.title?.length ? fieldSchema.title : keyName;
 
 const getDefaultFieldSchema = (parentFieldSchema: SingleSchemaDefinition | null): SingleSchemaDefinition => {
@@ -498,7 +498,7 @@ const isSingleSchemaDefinition = (fieldSchema: SchemaDefinition): fieldSchema is
   return (fieldSchema as MultipleSchemaDefinitions).oneOf === undefined;
 };
 
-const determineFieldSchema = (
+export const determineFieldSchema = (
   fieldSchema: SchemaDefinition,
 ): { isNullable: boolean; fieldSchema: SingleSchemaDefinition } => {
   if (isSingleSchemaDefinition(fieldSchema)) {

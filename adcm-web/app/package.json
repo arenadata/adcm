@@ -29,6 +29,7 @@
     "react-collapsed": "4.0.2",
     "react-copy-to-clipboard": "5.1.0",
     "react-dom": "18.2.0",
+    "react-json-view-compare": "^2.0.2",
     "react-merge-refs": "2.0.2",
     "react-redux": "8.1.1",
     "react-router-dom": "6.11.2",

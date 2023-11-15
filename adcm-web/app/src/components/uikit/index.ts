@@ -5,6 +5,7 @@ import ButtonGroup from './ButtonGroup/ButtonGroup';
 import CheckAll from '@uikit/CheckAll/CheckAll';
 import Checkbox from './Checkbox/Checkbox';
 import CommonSelectSearchFilter from '@uikit/Select/CommonSelect/CommonSelectSearchFilter/CommonSelectSearchFilter';
+import CompareJson from '@uikit/CompareJson/CompareJson';
 import ConditionalWrapper from './ConditionalWrapper/ConditionalWrapper';
 import CodeEditor from './CodeEditor/CodeEditor';
 import ConfigurationEditor from './ConfigurationEditor/ConfigurationEditor';
@@ -64,6 +65,7 @@ export {
   CheckAll,
   Checkbox,
   CommonSelectSearchFilter,
+  CompareJson,
   ConfigurationEditor,
   ConditionalWrapper,
   Collapse,
