@@ -17,7 +17,16 @@ const AccessManagerRolesTableExpandedContent = ({ children }: AccessManagerRoles
 
   const childrenFiltered = useMemo(() => {
     return children
-      .filter((child) => child.categories.find((cat) => productsSelected.includes(cat)) || child.isAnyCategory)
+      .filter((child) => {
+        // when selected some products
+        if (productsSelected.length > 0) {
+          // show roles for products
+          return child.isAnyCategory || child.categories.some((cat) => productsSelected.includes(cat));
+        }
+
+        // in this case show not products roles
+        return !child.isAnyCategory && child.categories.length === 0;
+      })
       .filter((child) => child.displayName.toLowerCase().includes(textEntered.toLowerCase()));
   }, [children, productsSelected, textEntered]);
 
