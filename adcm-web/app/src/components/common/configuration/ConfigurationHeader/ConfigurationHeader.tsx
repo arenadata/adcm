@@ -39,6 +39,7 @@ const ConfigurationHeader: React.FC<ConfigurationHeaderProps> = ({
         draftConfiguration={draftConfiguration}
         compareOptions={compareOptions}
         onClose={() => setComparedConfigId(null)}
+        configVersions={configVersions}
       />
       <ConfigurationVersions
         configVersions={configVersions}

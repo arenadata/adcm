@@ -5059,6 +5059,7 @@ __metadata:
     react-collapsed: 4.0.2
     react-copy-to-clipboard: 5.1.0
     react-dom: 18.2.0
+    react-json-view-compare: ^2.0.2
     react-merge-refs: 2.0.2
     react-redux: 8.1.1
     react-router-dom: 6.11.2
@@ -12319,6 +12320,28 @@ __metadata:
   version: 18.2.0
   resolution: "react-is@npm:18.2.0"
   checksum: e72d0ba81b5922759e4aff17e0252bd29988f9642ed817f56b25a3e217e13eea8a7f2322af99a06edb779da12d5d636e9fda473d620df9a3da0df2a74141d53e
+  languageName: node
+  linkType: hard
+
+"react-json-view-compare@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "react-json-view-compare@npm:2.0.2"
+  dependencies:
+    react-json-viewer-cool: ^2.0.0
+  peerDependencies:
+    react: ^16.14.0  || ^17.0.0 || ^18.0.0
+    react-dom: ^16.14.0 || ^17.0.0 || ^18.0.0
+  checksum: 8f411d6dbdac8b902e4e3f33063b9956b4dbdbab344085c1758864e62c45603f3f971de2ca20016100b55b040e284b3653e186961bd12d10bdbfdf1f2a409dee
+  languageName: node
+  linkType: hard
+
+"react-json-viewer-cool@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "react-json-viewer-cool@npm:2.0.0"
+  peerDependencies:
+    react: ^16.14.0  || ^17.0.0
+    react-dom: ^16.14.0 || ^17.0.0
+  checksum: a62d3e3afaa9fb103a0f5927c909ccfa7b95cadcc9ca648daefec261c6876d1e1af1831dbcb5128a3f27f1a99143acc2899a994cefb5271ef0a0d91c1f303016
   languageName: node
   linkType: hard
 
