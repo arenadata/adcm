@@ -35,6 +35,8 @@ const addServices = createAsyncThunk(
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue([]);
+    } finally {
+      thunkAPI.dispatch(setIsAddingServices(false));
     }
   },
 );
