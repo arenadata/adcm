@@ -53,11 +53,7 @@ class TestRoleAudit(BaseAPITestCase):
             operation_name="Role created",
             operation_type="create",
             operation_result="success",
-            audit_object__object_id=response.json()["id"],
-            audit_object__object_name=self.role_create_data["displayName"],
-            audit_object__object_type="role",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=Role.objects.get(pk=response.json()["id"])),
             user__username="admin",
         )
 
@@ -71,8 +67,7 @@ class TestRoleAudit(BaseAPITestCase):
             operation_name="Role created",
             operation_type="create",
             operation_result="denied",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username=self.test_user.username,
         )
 
@@ -84,8 +79,7 @@ class TestRoleAudit(BaseAPITestCase):
             operation_name="Role created",
             operation_type="create",
             operation_result="fail",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
@@ -94,16 +88,15 @@ class TestRoleAudit(BaseAPITestCase):
             path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
             data=self.role_create_data,
         )
-
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.custom_role.refresh_from_db()
+
         self.check_last_audit_log(
             operation_name="Role updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.custom_role.pk,
-            audit_object__object_name=self.custom_role.name,
-            audit_object__object_type="role",
-            audit_object__is_deleted=False,
+            **self.prepare_audit_object_arguments(expected_object=self.custom_role),
             object_changes={
                 "current": {
                     "display_name": "Custom `view cluster configurations` role",
@@ -120,23 +113,51 @@ class TestRoleAudit(BaseAPITestCase):
     def test_role_update_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
+            data=self.role_create_data,
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="Role updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.custom_role),
+            user__username=self.test_user.username,
+        )
+
+    def test_role_update_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
         with self.grant_permissions(to=self.test_user, on=[], role_name="View roles"):
             response = self.client.patch(
                 path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
                 data=self.role_create_data,
             )
-
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
         self.check_last_audit_log(
             operation_name="Role updated",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.custom_role.pk,
-            audit_object__object_name=self.custom_role.name,
-            audit_object__object_type="role",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.custom_role),
             user__username=self.test_user.username,
+        )
+
+    def test_role_update_not_found_fail(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": 1000}),
+            data={"displayName": "Custom role name"},
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="Role updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=None),
+            user__username="admin",
         )
 
     def test_role_update_duplicate_name_fail(self):
@@ -146,46 +167,53 @@ class TestRoleAudit(BaseAPITestCase):
             path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
             data={"displayName": "Custom role name"},
         )
-
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
         self.check_last_audit_log(
             operation_name="Role updated",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.custom_role.pk,
-            audit_object__object_name=self.custom_role.name,
-            audit_object__object_type="role",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.custom_role),
             user__username="admin",
         )
 
     def test_role_delete_success(self):
+        # audit object should exist before successful DELETE request
+        # to have `is_deleted` updated
+        # for now we've agreed that's ok tradeoff
         AuditObject.objects.get_or_create(
             object_id=self.custom_role.pk,
             object_name=self.custom_role.name,
             object_type="role",
             is_deleted=False,
         )
-        expected_audit_object_kwargs = {
-            "audit_object__object_id": self.custom_role.pk,
-            "audit_object__object_name": self.custom_role.name,
-            "audit_object__object_type": "role",
-            "audit_object__is_deleted": True,
-        }
-        response = self.client.delete(path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}))
 
+        response = self.client.delete(path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}))
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
         self.check_last_audit_log(
             operation_name="Role deleted",
             operation_type="delete",
             operation_result="success",
-            **expected_audit_object_kwargs,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.custom_role, is_deleted=True),
             user__username="admin",
         )
 
     def test_role_delete_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.delete(path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}))
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="Role deleted",
+            operation_type="delete",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.custom_role),
+            user__username=self.test_user.username,
+        )
+
+    def test_role_delete_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View roles"):
@@ -198,11 +226,7 @@ class TestRoleAudit(BaseAPITestCase):
             operation_name="Role deleted",
             operation_type="delete",
             operation_result="denied",
-            audit_object__object_id=self.custom_role.pk,
-            audit_object__object_name=self.custom_role.name,
-            audit_object__object_type="role",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.custom_role),
             user__username=self.test_user.username,
         )
 

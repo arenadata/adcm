@@ -382,7 +382,6 @@ class TestClusterAudit(BaseTestCase):
             obj_type=AuditObjectType.CLUSTER,
             operation_name=self.cluster_deleted_str,
             operation_type=AuditLogOperationType.DELETE,
-            object_is_deleted=True,
         )
 
         response: Response = self.client.delete(

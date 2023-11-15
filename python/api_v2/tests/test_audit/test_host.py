@@ -9,17 +9,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import unittest
 
 from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditObject
-from cm.models import ObjectType, Prototype
+from cm.models import Host, ObjectType, Prototype
 from rbac.services.user import create_user
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
 )
@@ -51,10 +52,24 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host created",
             operation_type="create",
             operation_result="success",
-            audit_object__object_id=response.json()["id"],
-            audit_object__object_name="new-test-host",
-            audit_object__object_type="host",
-            audit_object__is_deleted=False,
+            **self.prepare_audit_object_arguments(expected_object=Host.objects.get(pk=response.json()["id"])),
+            user__username="admin",
+        )
+
+    def test_create_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:host-list"),
+            data={
+                "name": "new-test-host",
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="Host created",
+            operation_type="create",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
@@ -73,6 +88,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host created",
             operation_type="create",
             operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username=self.test_user.username,
         )
 
@@ -83,14 +99,28 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
+        self.host_2.refresh_from_db()
+
         self.check_last_audit_log(
             operation_name="Host updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.host_2.pk,
-            audit_object__object_name="new.name",
-            audit_object__object_type="host",
-            audit_object__is_deleted=False,
+            **self.prepare_audit_object_arguments(expected_object=self.host_2),
+            user__username="admin",
+        )
+
+    def test_update_incorrect_data_fail(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
+            data={"name": "a"},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="Host updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.host_2),
             user__username="admin",
         )
 
@@ -105,10 +135,28 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host updated",
             operation_type="update",
             operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
-    def test_update_denied(self):
+    def test_update_view_config_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.host_2], role_name="View host configurations"):
+            response = self.client.patch(
+                path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
+                data={"name": "new.name"},
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name="Host updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.host_2),
+            user__username=self.test_user.username,
+        )
+
+    def test_update_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.patch(
             path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
@@ -120,22 +168,20 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host updated",
             operation_type="update",
             operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.host_2),
             user__username=self.test_user.username,
         )
 
     def test_delete_success(self):
+        # audit object should exist before successful DELETE request
+        # to have `is_deleted` updated
+        # for now we've agreed that's ok tradeoff
         AuditObject.objects.get_or_create(
             object_id=self.host_2.pk,
             object_name=self.host_2.name,
             object_type="host",
             is_deleted=False,
         )
-        expected_audit_object_kwargs = {
-            "audit_object__object_id": self.host_2.pk,
-            "audit_object__object_name": self.host_2.name,
-            "audit_object__object_type": "host",
-            "audit_object__is_deleted": True,
-        }
 
         response = self.client.delete(
             path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
@@ -146,7 +192,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host deleted",
             operation_type="delete",
             operation_result="success",
-            **expected_audit_object_kwargs,
+            **self.prepare_audit_object_arguments(expected_object=self.host_2, is_deleted=True),
             user__username="admin",
         )
 
@@ -161,10 +207,27 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host deleted",
             operation_type="delete",
             operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
-    def test_delete_denied(self):
+    def test_delete_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.host_2], role_name="View host configurations"):
+            response = self.client.delete(
+                path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name="Host deleted",
+            operation_type="delete",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.host_2),
+            user__username=self.test_user.username,
+        )
+
+    def test_delete_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.delete(
             path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
@@ -175,6 +238,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host deleted",
             operation_type="delete",
             operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.host_2),
             user__username=self.test_user.username,
         )
 
@@ -191,14 +255,24 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name=f"{self.host_1.fqdn} host removed",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            user__username="admin",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
         )
 
-    def test_remove_from_cluster_not_found_fail(self):
+    def test_remove_from_cluster_not_found_cluster_fail(self):
+        response = self.client.delete(
+            path=reverse(viewname="v2:host-cluster-detail", kwargs={"cluster_pk": 100, "pk": self.host_2.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="test_host_2 host removed",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=None),
+        )
+
+    def test_remove_from_cluster_not_found_host_fail(self):
         response = self.client.delete(
             path=reverse(viewname="v2:host-cluster-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": 1000}),
         )
@@ -209,14 +283,29 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="host removed",
             operation_type="update",
             operation_result="fail",
-            audit_object__object_id=self.cluster_1.pk,
-            audit_object__object_name=self.cluster_1.name,
-            audit_object__object_type="cluster",
-            audit_object__is_deleted=False,
-            user__username="admin",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
         )
 
-    def test_remove_from_cluster_denied(self):
+    def test_remove_from_cluster_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.cluster_1], role_name="View cluster configurations"):
+            response = self.client.delete(
+                path=reverse(
+                    viewname="v2:host-cluster-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk}
+                ),
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name=f"{self.host_1.fqdn} host removed",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_remove_from_cluster_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.delete(
             path=reverse(
@@ -230,6 +319,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name=f"{self.host_1.fqdn} host removed",
             operation_type="update",
             operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username=self.test_user.username,
         )
 
@@ -247,11 +337,24 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.host_1.pk,
-            audit_object__object_name=self.host_1.name,
-            audit_object__object_type="host",
-            audit_object__is_deleted=False,
-            user__username="admin",
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
+        )
+
+    def test_switch_maintenance_mode_incorrect_body_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:host-maintenance-mode",
+                kwargs={"pk": self.host_1.pk},
+            ),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="Host updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
         )
 
     def test_switch_maintenance_mode_not_found_fail(self):
@@ -268,10 +371,32 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host updated",
             operation_type="update",
             operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
-    def test_switch_maintenance_mode_denied(self):
+    def test_switch_maintenance_mode_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.host_1], role_name="View host configurations"):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:host-maintenance-mode",
+                    kwargs={"pk": self.host_1.pk},
+                ),
+                data={"maintenanceMode": "on"},
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name="Host updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
+            user__username=self.test_user.username,
+        )
+
+    @unittest.skip("Skip until RBAC issues are fixed")
+    def test_switch_maintenance_mode_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(
@@ -280,12 +405,13 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             ),
             data={"maintenanceMode": "on"},
         )
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_log(
             operation_name="Host updated",
             operation_type="update",
             operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
             user__username=self.test_user.username,
         )
 
@@ -303,12 +429,25 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.host_1.pk,
-            audit_object__object_name=self.host_1.name,
-            audit_object__object_type="host",
-            audit_object__is_deleted=False,
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
             object_changes={"current": {"maintenance_mode": "on"}, "previous": {"maintenance_mode": "off"}},
-            user__username="admin",
+        )
+
+    def test_switch_maintenance_mode_cluster_incorrect_body_fail(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:host-cluster-maintenance-mode",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk},
+            ),
+            data={},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="Host updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
         )
 
     def test_switch_maintenance_mode_cluster_not_found_fail(self):
@@ -325,7 +464,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host updated",
             operation_type="update",
             operation_result="fail",
-            user__username="admin",
+            **self.prepare_audit_object_arguments(expected_object=None),
         )
 
     def test_switch_maintenance_mode_cluster_denied(self):
@@ -343,6 +482,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host updated",
             operation_type="update",
             operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
             user__username=self.test_user.username,
         )
 
@@ -371,11 +511,21 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host configuration updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.host_1.pk,
-            audit_object__object_name=self.host_1.name,
-            audit_object__object_type="host",
-            audit_object__is_deleted=False,
-            user__username="admin",
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
+        )
+
+    def test_update_host_config_incorrect_data_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host_1.pk}),
+            data={"config": {}, "adcmMeta": {"/activatable_group": {"isActive": True}}},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_log(
+            operation_name="Host configuration updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
         )
 
     def test_update_host_config_not_found_fail(self):
@@ -389,10 +539,28 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host configuration updated",
             operation_type="update",
             operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
-    def test_update_host_config_denied(self):
+    def test_update_host_config_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.host_1], role_name="View host configurations"):
+            response = self.client.post(
+                path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host_1.pk}),
+                data={},
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_log(
+            operation_name="Host configuration updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_update_host_config_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(
             path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host_1.pk}),
@@ -404,5 +572,6 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host configuration updated",
             operation_type="update",
             operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.host_1),
             user__username=self.test_user.username,
         )

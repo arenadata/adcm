@@ -13,9 +13,9 @@
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from cm.adcm_config.config import get_main_info
+from cm.errors import AdcmEx
 from cm.models import HostProvider, ObjectType, Prototype
 from cm.upgrade import get_upgrade
-from rest_framework.exceptions import NotFound
 from rest_framework.serializers import (
     CharField,
     IntegerField,
@@ -65,7 +65,7 @@ class HostProviderCreateSerializer(EmptySerializer):
     @staticmethod
     def validate_prototype_id(value: int) -> int:
         if not Prototype.objects.filter(pk=value, type=ObjectType.PROVIDER).exists():
-            raise NotFound(f"Can't find hostprovider prototype with id `{value}`")
+            raise AdcmEx(code="HOSTPROVIDER_CREATE_ERROR", msg=f"Can't find hostprovider prototype with id `{value}`")
 
         return value
 

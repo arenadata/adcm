@@ -12,7 +12,7 @@
 
 
 from api_v2.tests.base import BaseAPITestCase
-from audit.models import AuditLogOperationType
+from audit.models import AuditLogOperationType, AuditObject
 from cm.models import Bundle, Prototype
 from django.conf import settings
 from rbac.services.user import create_user
@@ -95,9 +95,19 @@ class TestBundleAudit(BaseAPITestCase):
     def test_audit_delete_success(self):
         bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_one")
 
-        response = self.client.delete(path=reverse(viewname="v2:bundle-detail", kwargs={"pk": bundle.pk}))
+        # audit object should exist before successful DELETE request
+        # to have `is_deleted` updated
+        # for now we've agreed that's ok tradeoff
+        AuditObject.objects.get_or_create(
+            object_id=bundle.pk,
+            object_name=bundle.name,
+            object_type="bundle",
+            is_deleted=False,
+        )
 
+        response = self.client.delete(path=reverse(viewname="v2:bundle-detail", kwargs={"pk": bundle.pk}))
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
         self.check_last_audit_log(
             operation_name="Bundle deleted",
             operation_type="delete",
@@ -110,8 +120,8 @@ class TestBundleAudit(BaseAPITestCase):
         response = self.client.delete(
             path=reverse(viewname="v2:bundle-detail", kwargs={"pk": self.get_non_existent_pk(Bundle)})
         )
-
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
         self.check_last_audit_log(
             operation_name="Bundle deleted",
             operation_type="delete",
@@ -160,8 +170,8 @@ class TestBundleAudit(BaseAPITestCase):
         response = self.client.post(
             path=reverse(viewname="v2:prototype-accept-license", kwargs={"pk": bundle_prototype.pk})
         )
-
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
         self.check_last_audit_log(
             operation_name="Bundle license accepted",
             operation_type="update",
@@ -172,8 +182,8 @@ class TestBundleAudit(BaseAPITestCase):
 
     def test_audit_accept_license_fail(self):
         response = self.client.post(path=reverse(viewname="v2:prototype-accept-license", kwargs={"pk": 1000}))
-
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
         self.check_last_audit_log(
             operation_name="Bundle license accepted",
             operation_type="update",

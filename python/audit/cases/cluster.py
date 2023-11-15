@@ -106,9 +106,6 @@ def cluster_case(
                     object_name=obj.name,
                     object_type=AuditObjectType.CLUSTER,
                 )
-                if view.request.method == "DELETE" and bool(response):
-                    audit_object.is_deleted = True
-                    audit_object.save(update_fields=["is_deleted"])
 
         case ["cluster", cluster_pk, "host"] | ["clusters", cluster_pk, "hosts"]:
             host_fqdn = ""

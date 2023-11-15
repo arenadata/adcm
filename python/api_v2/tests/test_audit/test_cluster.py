@@ -13,6 +13,7 @@
 # pylint: disable=too-many-lines
 
 from api_v2.tests.base import BaseAPITestCase
+from audit.models import AuditObject
 from cm.models import (
     Action,
     Cluster,
@@ -202,6 +203,16 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
 
     def test_delete_success(self):
+        # audit object should exist before successful DELETE request
+        # to have `is_deleted` updated
+        # for now we've agreed that's ok tradeoff
+        AuditObject.objects.get_or_create(
+            object_id=self.cluster_1.pk,
+            object_name=self.cluster_1.name,
+            object_type="cluster",
+            is_deleted=False,
+        )
+
         response = self.client.delete(
             path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
         )
@@ -809,19 +820,19 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             user__username="admin",
         )
 
-    def test_delete_service_from_non_existent_cluster_denied(self):
+    def test_delete_service_from_non_existent_cluster_fail(self):
         response = self.client.delete(
             path=reverse(
                 viewname="v2:service-detail",
                 kwargs={"cluster_pk": self.get_non_existent_pk(model=Cluster), "pk": self.service_1.pk},
             ),
         )
-
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
         self.check_last_audit_log(
             operation_name=f"{self.service_1.display_name} service removed",
             operation_type="update",
-            operation_result="denied",
+            operation_result="fail",
             **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )

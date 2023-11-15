@@ -129,7 +129,6 @@ class TestGroupAudit(BaseTestCase):
             operation_type=AuditLogOperationType.DELETE,
             operation_result=AuditLogOperationResult.SUCCESS,
             user=self.test_user,
-            object_is_deleted=True,
         )
 
     def test_delete_denied(self):

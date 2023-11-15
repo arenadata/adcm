@@ -70,10 +70,6 @@ def _rbac_case(
         operation_type=operation_type,
     )
 
-    if operation_type == AuditLogOperationType.DELETE and audit_object and bool(response):
-        audit_object.is_deleted = True
-        audit_object.save(update_fields=["is_deleted"])
-
     return audit_operation, audit_object
 
 

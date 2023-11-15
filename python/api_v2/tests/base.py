@@ -183,6 +183,9 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
         last_audit_log = AuditLog.objects.order_by("pk").last()
         self.assertIsNotNone(last_audit_log, "AuditLog table is empty")
 
+        # we always want to check who performed the audited action
+        kwargs.setdefault("user__username", "admin")
+
         # Object changes are {} for most cases,
         # we always want to check it, but providing it each time is redundant.
         # But sometimes structure is too complex for sqlite/ORM to handle,
@@ -224,6 +227,9 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
         elif isinstance(expected_object, Group):
             name = expected_object.name
             type_ = "group"
+        elif isinstance(expected_object, Role):
+            name = expected_object.name
+            type_ = "role"
         else:
             name = getattr(expected_object, "display_name", expected_object.name)
             # replace for hostprovider

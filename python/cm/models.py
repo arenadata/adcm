@@ -1927,7 +1927,9 @@ class ADCMEntityStatus(models.TextChoices):
 
 MainObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
 
-CM_MODEL_MAP: dict[str, type[ADCM | MainObject | ConfigLog | GroupConfig | Action]] = {
+_CMObjects = ADCM | MainObject | Bundle | Prototype | ConfigLog | GroupConfig | Action | Upgrade | TaskLog | JobLog
+
+CM_MODEL_MAP: dict[str, type[_CMObjects]] = {
     "adcm": ADCM,
     "cluster": Cluster,
     "clusters": Cluster,
@@ -1943,13 +1945,20 @@ CM_MODEL_MAP: dict[str, type[ADCM | MainObject | ConfigLog | GroupConfig | Actio
     "hosts": Host,
     "config": ConfigLog,
     "action": Action,
+    "upgrade": Upgrade,
+    "task": TaskLog,
+    "job": JobLog,
     "group_config": GroupConfig,
     "config-group": GroupConfig,
     "config-groups": GroupConfig,
+    "prototype": Prototype,
+    "prototypes": Prototype,
+    "bundle": Bundle,
+    "bundles": Bundle,
 }
 
 
-def get_cm_model_by_type(object_type: str) -> type[ADCM | MainObject | ConfigLog | GroupConfig | Action]:
+def get_cm_model_by_type(object_type: str) -> type[_CMObjects]:
     return CM_MODEL_MAP[object_type]
 
 

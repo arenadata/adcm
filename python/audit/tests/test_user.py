@@ -166,7 +166,7 @@ class TestUserAudit(BaseTestCase):
         self.assertEqual(log.audit_object.object_id, self.no_rights_user.pk)
         self.assertEqual(log.audit_object.object_name, self.no_rights_user.username)
         self.assertEqual(log.audit_object.object_type, AuditObjectType.USER)
-        self.assertEqual(log.audit_object.is_deleted, True)
+        self.assertEqual(log.audit_object.is_deleted, False)
         self.assertEqual(log.operation_name, "User deleted")
         self.assertEqual(log.operation_type, AuditLogOperationType.DELETE)
         self.assertEqual(log.operation_result, AuditLogOperationResult.SUCCESS)

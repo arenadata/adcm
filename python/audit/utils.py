@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import re
+from contextlib import suppress
 from functools import wraps
 
 from api.cluster.serializers import ClusterAuditSerializer
@@ -44,11 +45,11 @@ from cm.models import (
     Cluster,
     ClusterBind,
     ClusterObject,
-    GroupConfig,
     Host,
     HostProvider,
     ServiceComponent,
     TaskLog,
+    Upgrade,
     get_cm_model_by_type,
     get_model_by_type,
 )
@@ -70,7 +71,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     is_success,
 )
-from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework.viewsets import ModelViewSet
 
 AUDITED_HTTP_METHODS = frozenset(("POST", "DELETE", "PUT", "PATCH"))
 
@@ -187,6 +188,8 @@ def get_target_model_and_id_by_path(  # pylint: disable=too-many-return-statemen
             return None
         case [*_, "actions", pk, "run"]:
             return Action, pk
+        case [*_, "upgrades", pk, "run"]:
+            return Upgrade, pk
         case (
             ["clusters" | "hostproviders" | "hosts", pk]
             | ["clusters" | "hosts", pk, _]  # here will be actions on objects like mapping, mm, adding services, etc.
@@ -198,7 +201,10 @@ def get_target_model_and_id_by_path(  # pylint: disable=too-many-return-statemen
         case [*_, "hosts", pk] | [*_, "hosts", pk, _]:
             # also for mm on hosts and update of nested host entries in cluster
             return Host, pk
-        case ["clusters" | "hosts" | "hostproviders", _, *_, cm_type, pk]:
+        case (
+            [*_, cm_type, pk, "mapping" | "imports" | "maintenance-mode" | "configs" | "config-groups" | "terminate"]
+            | ["clusters" | "hosts" | "hostproviders", _, *_, cm_type, pk]
+        ):
             try:
                 # here will be also config, config groups, basic actions, etc.
                 return get_cm_model_by_type(cm_type.rstrip("s")), pk
@@ -339,6 +345,121 @@ def _parse_path(path: str) -> tuple[int, list[str]]:
     return int(match.group("api_version")), match.group("target_path").split(sep="/")
 
 
+def _detect_deleted_object_for_v1(
+    error: AdcmEx | ValidationError | Http404 | NotFound, view, request, previously_detected_object, kwargs
+):
+    deleted_obj = previously_detected_object
+    if getattr(error, "msg", None) and (
+        "doesn't exist" in error.msg or "service is not installed in specified cluster" in error.msg
+    ):
+        _kwargs = None
+        if "cluster_id" in kwargs:
+            _kwargs = kwargs
+        elif "cluster_id" in view.kwargs:
+            _kwargs = view.kwargs
+
+        if _kwargs and "maintenance-mode" not in request.path:
+            deleted_obj = Cluster.objects.filter(pk=_kwargs["cluster_id"]).first()
+
+        if "provider_id" in kwargs and "host_id" in kwargs:
+            deleted_obj = Host.objects.filter(pk=kwargs["host_id"]).first()
+        elif "provider_id" in view.kwargs:
+            deleted_obj = HostProvider.objects.filter(pk=view.kwargs["provider_id"]).first()
+
+        if "service_id" in kwargs:
+            deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
+
+        if "bind_id" in kwargs:
+            deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
+
+    if (
+        getattr(error, "msg", None)
+        and "django model doesn't has __error_code__ attribute" in error.msg
+        and "task_id" in kwargs
+    ):
+        deleted_obj = TaskLog.objects.filter(pk=kwargs["task_id"]).first()
+
+    return deleted_obj
+
+
+def _detect_status_code_and_deleted_object_for_v1(
+    error: AdcmEx | ValidationError | Http404 | NotFound, deleted_obj, kwargs
+) -> int:
+    if not deleted_obj:
+        if isinstance(error, Http404):
+            status_code = HTTP_404_NOT_FOUND
+        else:
+            status_code = error.status_code
+
+        if status_code != HTTP_404_NOT_FOUND:
+            return status_code
+
+        action_perm_denied = kwargs.get("action_id") and Action.objects.filter(pk=kwargs["action_id"]).exists()
+        task_perm_denied = kwargs.get("task_pk") and TaskLog.objects.filter(pk=kwargs["task_pk"]).exists()
+        if action_perm_denied or task_perm_denied:
+            return HTTP_403_FORBIDDEN
+
+        return status_code
+
+    # when denied returns 404 from PermissionListMixin
+    if getattr(error, "msg", None) and (  # pylint: disable=too-many-boolean-expressions
+        "There is host" in error.msg
+        or "belong to cluster" in error.msg
+        or "host associated with a cluster" in error.msg
+        or "of bundle" in error.msg
+        or ("host doesn't exist" in error.msg and not isinstance(deleted_obj, Host))
+    ):
+        return error.status_code
+
+    if isinstance(error, ValidationError):
+        return error.status_code
+
+    return HTTP_403_FORBIDDEN
+
+
+def _cm_object_exists(path_type: str, pk: str) -> bool:
+    try:
+        model = get_cm_model_by_type(object_type=path_type.rstrip("s"))
+    except KeyError:
+        return False
+
+    try:
+        return model.objects.filter(pk=int(pk)).exists()
+    except ValueError:
+        return False
+
+
+def _all_child_objects_exist(path: list[str]) -> bool:
+    match path:
+        case ["configs", pk]:
+            return _cm_object_exists(path_type="configs", pk=pk)
+        case ["services" | "components" | "hosts" | "config-groups" | "actions" | "upgrades", pk, *rest]:
+            if not _cm_object_exists(path_type=path[0], pk=pk):
+                return False
+            return _all_child_objects_exist(path=rest)
+        case _:
+            return True
+
+
+def _all_objects_in_path_exist(path: list[str]) -> bool:  # pylint: disable=too-many-return-statements
+    match path:
+        case ["rbac", rbac_type, pk, *_]:
+            with suppress(KeyError, ValueError):
+                model = get_rbac_model_by_type(rbac_type)
+                return model.objects.filter(pk=pk).exists()
+            return False
+        case ["clusters" | "hostproviders" | "hosts" | "bundles" | "prototypes", pk, *rest]:
+            if not _cm_object_exists(path_type=path[0], pk=pk):
+                return False
+            return _all_child_objects_exist(path=rest)
+        case ["tasks" | "jobs", pk, *_]:
+            return _cm_object_exists(path_type=path[0], pk=pk)
+        case ["adcm", *rest]:
+            return _all_child_objects_exist(path=rest)
+        case _:
+            return True
+
+
 def audit(func):
     # pylint: disable=too-many-statements
     @wraps(func)
@@ -358,6 +479,8 @@ def audit(func):
         if request.method not in AUDITED_HTTP_METHODS or api_version == -1:
             return func(*args, **kwargs)
 
+        # If request should be audited, here comes the preparation part
+
         deleted_obj = None
         if request.method == "DELETE":
             deleted_obj = _get_deleted_obj(
@@ -375,11 +498,14 @@ def audit(func):
 
         prev_data, current_obj = _get_obj_changes_data(view=view)
 
+        # Now we process audited function
+
         try:
             res = func(*args, **kwargs)
             if res is True:
                 return res
 
+            # Correctly finished request (when will be `bool(res) is False`?)
             if res:
                 status_code = res.status_code
             else:
@@ -388,124 +514,24 @@ def audit(func):
             error = exc
             res = None
 
-            if api_version == 2 and (not deleted_obj) and isinstance(view, GenericViewSet):
-                deleted_obj = get_target_object_by_path(path=path)
-
-            elif api_version == 1 and (
-                getattr(exc, "msg", None)
-                and ("doesn't exist" in exc.msg or "service is not installed in specified cluster" in exc.msg)
-            ):
-                _kwargs = None
-                if "cluster_id" in kwargs:
-                    _kwargs = kwargs
-                elif "cluster_id" in view.kwargs:
-                    _kwargs = view.kwargs
-
-                if _kwargs and "maintenance-mode" not in request.path:
-                    deleted_obj = Cluster.objects.filter(pk=_kwargs["cluster_id"]).first()
-
-                if "provider_id" in kwargs and "host_id" in kwargs:
-                    deleted_obj = Host.objects.filter(pk=kwargs["host_id"]).first()
-                elif "provider_id" in view.kwargs:
-                    deleted_obj = HostProvider.objects.filter(pk=view.kwargs["provider_id"]).first()
-
-                if "service_id" in kwargs:
-                    deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
-
-                if "bind_id" in kwargs:
-                    deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
-
-            if api_version == 1 and (
-                getattr(exc, "msg", None)
-                and "django model doesn't has __error_code__ attribute" in exc.msg
-                and "task_id" in kwargs
-            ):
-                deleted_obj = TaskLog.objects.filter(pk=kwargs["task_id"]).first()
-
-            if not deleted_obj:
-                if isinstance(exc, Http404):
+            if api_version == 2:
+                if isinstance(error, Http404):
                     status_code = HTTP_404_NOT_FOUND
                 else:
-                    status_code = exc.status_code
-
-                if status_code == HTTP_404_NOT_FOUND:
-                    if api_version == 1:
-                        action_perm_denied = (
-                            kwargs.get("action_id") and Action.objects.filter(pk=kwargs["action_id"]).exists()
-                        )
-                        task_perm_denied = (
-                            kwargs.get("task_pk") and TaskLog.objects.filter(pk=kwargs["task_pk"]).exists()
-                        )
-                        if action_perm_denied or task_perm_denied:
-                            status_code = HTTP_403_FORBIDDEN
-
-                    if api_version == 2:  # pylint: disable=too-many-boolean-expressions
-                        # generally what we want here is to get object itself,
-                        # so this surely can be refactored without bind to view names
-                        if (
-                            (
-                                view.__class__.__name__ in ["ActionViewSet", "AdcmActionViewSet"]
-                                and view.action == "run"
-                                and "pk" in view.kwargs
-                                and Action.objects.filter(pk=view.kwargs["pk"]).exists()
-                            )
-                            or (
-                                view.__class__.__name__ in ["TaskViewSet", "JobViewSet"]
-                                and view.action == "terminate"
-                                and "pk" in view.kwargs
-                                and get_model_by_type(view.__class__.__name__.strip("ViewSet"))
-                                .objects.filter(pk=view.kwargs["pk"])
-                                .exists()
-                            )
-                            or (
-                                view.__class__.__name__ == "GroupConfigViewSet"
-                                and view.action in ("destroy", "update", "partial_update")
-                                and "pk" in view.kwargs
-                                and GroupConfig.objects.filter(pk=view.kwargs["pk"]).exists()
-                            )
-                            or (
-                                view.__class__.__name__
-                                in (
-                                    "GroupConfigViewSet",
-                                    "ConfigLogViewSet",
-                                    "HostGroupConfigViewSet",
-                                )
-                                and _are_all_parents_in_path_exist(view)
-                            )
-                            or (
-                                view.__class__.__name__ == "ComponentViewSet"
-                                and view.action == "maintenance_mode"
-                                and "pk" in view.kwargs
-                                and _are_all_parents_in_path_exist(view)
-                            )
-                            or (
-                                view.__class__.__name__ in ["UserViewSet"]
-                                and view.action in ["update", "partial_update"]
-                                and "pk" in view.kwargs
-                                and User.objects.filter(pk=view.kwargs["pk"]).exists()
-                            )
-                        ):
-                            status_code = HTTP_403_FORBIDDEN
-
-            else:  # when denied returns 404 from PermissionListMixin
-                if getattr(exc, "msg", None) and (  # pylint: disable=too-many-boolean-expressions
-                    "There is host" in exc.msg
-                    or "belong to cluster" in exc.msg
-                    or "host associated with a cluster" in exc.msg
-                    or "of bundle" in exc.msg
-                    or ("host doesn't exist" in exc.msg and not isinstance(deleted_obj, Host))
-                ):
                     status_code = error.status_code
-                elif isinstance(exc, ValidationError):
-                    status_code = error.status_code
-                elif (
-                    api_version == 2
-                    and isinstance(exc, AdcmEx)
-                    and exc.status_code not in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)
-                ):
-                    status_code = exc.status_code
-                else:
+
+                if status_code == HTTP_404_NOT_FOUND and _all_objects_in_path_exist(path=path):
                     status_code = HTTP_403_FORBIDDEN
+
+            else:
+                deleted_obj = _detect_deleted_object_for_v1(
+                    error=error, view=view, request=request, previously_detected_object=deleted_obj, kwargs=kwargs
+                )
+                status_code = _detect_status_code_and_deleted_object_for_v1(
+                    error=error,
+                    deleted_obj=deleted_obj,
+                    kwargs=kwargs,
+                )
 
         except PermissionDenied as exc:
             status_code = HTTP_403_FORBIDDEN

@@ -66,15 +66,11 @@ class TestPolicyAudit(BaseAPITestCase):
             operation_name="Policy created",
             operation_type="create",
             operation_result="success",
-            audit_object__object_id=response.json()["id"],
-            audit_object__object_name=response.json()["name"],
-            audit_object__object_type="policy",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=Policy.objects.get(pk=response.json()["id"])),
             user__username="admin",
         )
 
-    def test_policy_create_no_perms_denied(self):
+    def test_policy_create_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View policy"):
@@ -88,8 +84,7 @@ class TestPolicyAudit(BaseAPITestCase):
             operation_name="Policy created",
             operation_type="create",
             operation_result="denied",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username=self.test_user.username,
         )
 
@@ -107,8 +102,7 @@ class TestPolicyAudit(BaseAPITestCase):
             operation_name="Policy created",
             operation_type="create",
             operation_result="fail",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
@@ -118,20 +112,36 @@ class TestPolicyAudit(BaseAPITestCase):
             data=self.policy_update_data,
         )
 
+        self.policy.refresh_from_db()
+
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_last_audit_log(
             operation_name="Policy updated",
             operation_type="update",
             operation_result="success",
-            audit_object__object_id=self.policy.pk,
-            audit_object__object_name=self.policy_update_data["name"],
-            audit_object__object_type="policy",
-            audit_object__is_deleted=False,
+            **self.prepare_audit_object_arguments(expected_object=self.policy),
             object_changes={"current": {"name": "Updated name"}, "previous": {"name": "Test policy"}},
             user__username="admin",
         )
 
     def test_policy_edit_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}),
+            data=self.policy_update_data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_last_audit_log(
+            operation_name="Policy updated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.policy),
+            user__username=self.test_user.username,
+        )
+
+    def test_policy_edit_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View policy"):
@@ -145,12 +155,23 @@ class TestPolicyAudit(BaseAPITestCase):
             operation_name="Policy updated",
             operation_type="update",
             operation_result="denied",
-            audit_object__object_id=self.policy.pk,
-            audit_object__object_name=self.policy.name,
-            audit_object__object_type="policy",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.policy),
             user__username=self.test_user.username,
+        )
+
+    def test_policy_edit_incorrect_data_fail(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}),
+            data={"name": ""},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.check_last_audit_log(
+            operation_name="Policy updated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.policy),
+            user__username="admin",
         )
 
     def test_policy_edit_not_exists_fail(self):
@@ -164,38 +185,47 @@ class TestPolicyAudit(BaseAPITestCase):
             operation_name="Policy updated",
             operation_type="update",
             operation_result="fail",
-            audit_object__isnull=True,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=None),
             user__username="admin",
         )
 
     def test_policy_delete_success(self):
+        # audit object should exist before successful DELETE request
+        # to have `is_deleted` updated
+        # for now we've agreed that's ok tradeoff
         AuditObject.objects.get_or_create(
             object_id=self.policy.pk,
             object_name=self.policy.name,
             object_type="policy",
             is_deleted=False,
         )
-        expected_audit_object_kwargs = {
-            "audit_object__object_id": self.policy.pk,
-            "audit_object__object_name": self.policy.name,
-            "audit_object__object_type": "policy",
-            "audit_object__is_deleted": True,
-        }
 
         response = self.client.delete(path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}))
-
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
         self.check_last_audit_log(
             operation_name="Policy deleted",
             operation_type="delete",
             operation_result="success",
-            **expected_audit_object_kwargs,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.policy, is_deleted=True),
             user__username="admin",
         )
 
     def test_policy_delete_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.delete(path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}))
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_log(
+            operation_name="Policy deleted",
+            operation_type="delete",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.policy),
+            user__username=self.test_user.username,
+        )
+
+    def test_policy_delete_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View policy"):
@@ -206,11 +236,7 @@ class TestPolicyAudit(BaseAPITestCase):
             operation_name="Policy deleted",
             operation_type="delete",
             operation_result="denied",
-            audit_object__object_id=self.policy.pk,
-            audit_object__object_name=self.policy.name,
-            audit_object__object_type="policy",
-            audit_object__is_deleted=False,
-            object_changes={},
+            **self.prepare_audit_object_arguments(expected_object=self.policy),
             user__username=self.test_user.username,
         )
 

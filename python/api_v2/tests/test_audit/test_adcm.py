@@ -106,16 +106,16 @@ class TestADCMAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-    def test_adcm_config_change_access_fail(self):
+    def test_adcm_config_change_access_denied(self):
         self.client.login(**self.test_user_credentials)
 
         response = self.client.post(path=reverse(viewname="v2:adcm-config-list"), data=self.data)
-
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
         self.check_last_audit_log(
             operation_name="ADCM configuration updated",
             operation_type="update",
-            operation_result="fail",
+            operation_result="denied",
             user__username=self.test_user_credentials["username"],
         )
 
