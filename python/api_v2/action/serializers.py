@@ -13,6 +13,7 @@ from cm.models import Action
 from rest_framework.fields import IntegerField
 from rest_framework.serializers import (
     BooleanField,
+    DictField,
     JSONField,
     ListSerializer,
     ModelSerializer,
@@ -77,8 +78,8 @@ class HostComponentEntry(EmptySerializer):
 
 
 class ActionConfiguration(EmptySerializer):
-    config = JSONField(required=True)
-    adcm_meta = JSONField(required=True)
+    config = DictField(allow_empty=True)
+    adcm_meta = DictField(allow_empty=True)
 
 
 class ActionRunSerializer(EmptySerializer):

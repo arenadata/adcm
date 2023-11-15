@@ -386,14 +386,8 @@ def process_variant(obj, spec, conf) -> None:
     for key in spec:
         if "type" in spec[key]:
             if spec[key]["type"] == "variant":
-                if key not in conf:
-                    return
-
                 spec[key]["limits"] = set_variant(spec[key])
         else:
             for subkey in spec[key]:
                 if spec[key][subkey]["type"] == "variant":
-                    if key not in conf or subkey not in conf[key]:
-                        return
-
                     spec[key][subkey]["limits"] = set_variant(spec[key][subkey])
