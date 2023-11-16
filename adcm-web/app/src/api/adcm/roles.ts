@@ -18,7 +18,7 @@ export class AdcmRolesApi {
     await httpClient.delete(`/api/v2/rbac/roles/${id}/`);
   }
 
-  public static async getRoles(filter: AdcmRolesFilter, sortParams?: SortParams, paginationParams?: PaginationParams) {
+  public static async getRoles(filter?: AdcmRolesFilter, sortParams?: SortParams, paginationParams?: PaginationParams) {
     const queryParams = prepareQueryParams(filter, sortParams, paginationParams);
     const query = qs.stringify(queryParams);
     const response = await httpClient.get<Batch<AdcmRole>>(`/api/v2/rbac/roles/?${query}`);

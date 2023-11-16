@@ -78,6 +78,7 @@ const AccessManagerRoleDialogForm: React.FC<AccessManagerRoleDialogFormProps> = 
             onChange={handleNameChange}
             placeholder="Enter name"
             autoComplete="off"
+            autoFocus
           />
         </FormField>
         <FormField label="Description" className={s.roleDialogForm__description}>

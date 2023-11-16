@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
 import { AdcmUpdateRolePayload } from '@models/adcm';
 import { updateRole, closeEditDialog } from '@store/adcm/roles/rolesActionsSlice';
-import { required } from '@utils/validationsUtils';
+import { isNameUniq, required } from '@utils/validationsUtils';
 
 interface AdcmUpdateRoleFormData extends Omit<AdcmUpdateRolePayload, 'children'> {
   children: Set<number>;
@@ -18,6 +18,7 @@ export const useAccessManagerRoleUpdateDialog = () => {
   const dispatch = useDispatch();
   const role = useStore((s) => s.adcm.rolesActions.updateDialog.role);
   const isOpen = !!role;
+  const roles = useStore((s) => s.adcm.roles.roles);
 
   const { formData, handleChangeFormData, setFormData, errors, setErrors, isValid } =
     useForm<AdcmUpdateRoleFormData>(initialFormData);
@@ -30,10 +31,17 @@ export const useAccessManagerRoleUpdateDialog = () => {
 
   useEffect(() => {
     setErrors({
-      displayName: required(formData.displayName) ? undefined : 'Role name field is required',
+      displayName:
+        (required(formData.displayName) ? undefined : 'Role name field is required') ||
+        (isNameUniq(
+          formData.displayName,
+          roles.filter(({ id }) => role?.id !== id).map((role) => ({ ...role, name: role.displayName })),
+        )
+          ? undefined
+          : 'Role with the same name already exists'),
       children: formData.children.size > 0 ? undefined : 'Can not create Role without permission',
     });
-  }, [formData, setErrors]);
+  }, [formData, roles, role, setErrors]);
 
   useEffect(() => {
     if (role) {

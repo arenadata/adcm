@@ -28,8 +28,8 @@ export const useAccessManagerPolicyAddDialog = () => {
 
   const isOpen = useStore(({ adcm }) => adcm.policiesActions.isAddPolicyDialogOpen);
   const { policy, roleId } = useStore(({ adcm }) => adcm.policiesActions.editDialog);
-  const roles = useStore(({ adcm }) => adcm.roles.roles);
-  const groups = useStore(({ adcm }) => adcm.groups.groups);
+  const roles = useStore(({ adcm }) => adcm.policiesActions.relatedData.roles);
+  const groups = useStore(({ adcm }) => adcm.policiesActions.relatedData.groups);
 
   const [formData, setFormData] = useState(initialDialogData);
   const [currentStep, setCurrentStep] = useState<string>(Steps.MainInfo);

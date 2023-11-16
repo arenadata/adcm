@@ -1,9 +1,10 @@
-import { AdcmGroupsApi, RequestError } from '@api';
+import { AdcmGroupsApi, AdcmUsersApi, RequestError } from '@api';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { getGroups } from './groupsSlice';
-import { AdcmGroup, AdcmUpdateGroupPayload, AdcmCreateGroupPayload } from '@models/adcm';
+import { AdcmGroup, AdcmUpdateGroupPayload, AdcmCreateGroupPayload, AdcmUser } from '@models/adcm';
+import { PaginationParams, SortParams } from '@models/table';
 
 const createGroup = createAsyncThunk(
   'adcm/groupActions/createGroup',
@@ -40,6 +41,25 @@ const updateGroup = createAsyncThunk(
   },
 );
 
+const loadUsers = createAsyncThunk('adcm/groupActions/loadUsers', async (arg, thunkAPI) => {
+  try {
+    const sortParams: SortParams = {
+      sortBy: '',
+      sortDirection: 'asc',
+    };
+    const paginationParams: PaginationParams = {
+      pageNumber: 0,
+      perPage: 1,
+    };
+    const batch = await AdcmUsersApi.getUsers({}, sortParams, paginationParams);
+    sortParams.sortBy = 'username';
+    paginationParams.perPage = batch.count;
+    return await AdcmUsersApi.getUsers({}, sortParams, paginationParams);
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error);
+  }
+});
+
 interface AdcmGroupsActionsState {
   createDialog: {
     isOpen: boolean;
@@ -47,6 +67,9 @@ interface AdcmGroupsActionsState {
   updateDialog: {
     group: AdcmGroup | null;
     isUpdating: boolean;
+  };
+  relatedData: {
+    users: AdcmUser[];
   };
 }
 
@@ -57,6 +80,9 @@ const createInitialState = (): AdcmGroupsActionsState => ({
   updateDialog: {
     group: null,
     isUpdating: false,
+  },
+  relatedData: {
+    users: [],
   },
 });
 
@@ -94,11 +120,17 @@ const groupsActionsSlice = createSlice({
       })
       .addCase(updateGroup.rejected, (state) => {
         state.updateDialog.isUpdating = false;
+      })
+      .addCase(loadUsers.fulfilled, (state, action) => {
+        state.relatedData.users = action.payload.results;
+      })
+      .addCase(loadUsers.rejected, (state) => {
+        state.relatedData.users = [];
       });
   },
 });
 
 export const { openCreateDialog, closeCreateDialog, openUpdateDialog, closeUpdateDialog } = groupsActionsSlice.actions;
-export { createGroup, updateGroup };
+export { createGroup, updateGroup, loadUsers };
 
 export default groupsActionsSlice.reducer;

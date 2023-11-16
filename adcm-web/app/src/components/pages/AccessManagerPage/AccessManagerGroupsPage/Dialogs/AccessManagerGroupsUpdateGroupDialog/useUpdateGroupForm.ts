@@ -1,7 +1,6 @@
 import { useMemo, useCallback, useEffect } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
-import { getUsers } from '@store/adcm/users/usersSlice';
-import { updateGroup } from '@store/adcm/groups/groupActionsSlice';
+import { loadUsers, updateGroup } from '@store/adcm/groups/groupActionsSlice';
 import { isNameUniq, required } from '@utils/validationsUtils';
 
 interface UpdateGroupFormData {
@@ -21,7 +20,7 @@ export const useUpdateGroupForm = () => {
 
   const updatedGroup = useStore((s) => s.adcm.groupsActions.updateDialog.group);
 
-  const users = useStore(({ adcm }) => adcm.users.users);
+  const users = useStore(({ adcm }) => adcm.groupsActions.relatedData.users);
   const groups = useStore((s) => s.adcm.groups.groups);
 
   const usersOptions = useMemo(() => {
@@ -71,7 +70,7 @@ export const useUpdateGroupForm = () => {
   }, [formData, updatedGroup, groups, setErrors]);
 
   const loadRelatedData = useCallback(() => {
-    dispatch(getUsers());
+    dispatch(loadUsers());
   }, [dispatch]);
 
   return {
