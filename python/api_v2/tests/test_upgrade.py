@@ -44,6 +44,7 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
         provider_bundle_upgrade_path = self.test_bundles_dir / "provider_upgrade"
         cluster_bundle_upgrade = self.add_bundle(source_dir=cluster_bundle_1_upgrade_path)
         provider_bundle_upgrade = self.add_bundle(source_dir=provider_bundle_upgrade_path)
+        self.add_bundle(source_dir=self.test_bundles_dir / "cluster_two_upgrade_from_any")
 
         self.cluster_upgrade = Upgrade.objects.get(
             name="upgrade",
@@ -77,6 +78,16 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 3)
+
+    def test_upgrade_visibility_from_edition_any_success(self):
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:upgrade-list", kwargs={"cluster_pk": self.cluster_2.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        response_upgrades = [upgrade["name"] for upgrade in response.json()]
+        self.assertListEqual(response_upgrades, ["Upgrade 99.0"])
 
     def test_cluster_upgrade_retrieve_success(self):
         response: Response = self.client.get(

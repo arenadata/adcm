@@ -136,6 +136,9 @@ def check_upgrade_version(prototype: Prototype, upgrade: Upgrade) -> tuple[bool,
 
 
 def check_upgrade_edition(prototype: Prototype, upgrade: Upgrade) -> tuple[bool, str]:
+    if upgrade.from_edition == "any":
+        return True, ""
+
     if upgrade.from_edition and prototype.bundle.edition not in upgrade.from_edition:
         return False, f'bundle edition "{prototype.bundle.edition}" is not in upgrade list: {upgrade.from_edition}'
 
