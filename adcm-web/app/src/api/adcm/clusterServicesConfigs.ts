@@ -11,7 +11,7 @@ import {
 export class AdcmClusterServicesConfigsApi {
   public static async getConfigs(clusterId: number, serviceId: number) {
     const response = await httpClient.get<Batch<AdcmConfigShortView>>(
-      `/api/v2/clusters/${clusterId}/services/${serviceId}/configs/`,
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/configs/?offset=0&limit=1000`,
     );
     return response.data;
   }

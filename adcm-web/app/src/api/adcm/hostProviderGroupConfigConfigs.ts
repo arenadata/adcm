@@ -11,7 +11,7 @@ import {
 export class AdcmHostProviderGroupConfigsConfigsApi {
   public static async getConfigs(hostProviderId: number, configGroupId: number) {
     const response = await httpClient.get<Batch<AdcmConfigShortView>>(
-      `/api/v2/hostproviders/${hostProviderId}/config-groups/${configGroupId}/configs/`,
+      `/api/v2/hostproviders/${hostProviderId}/config-groups/${configGroupId}/configs/?offset=0&limit=1000`,
     );
     return response.data;
   }
