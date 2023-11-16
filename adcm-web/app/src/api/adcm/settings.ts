@@ -19,7 +19,7 @@ export class AdcmSettingsApi {
   }
 
   public static async getConfigs() {
-    const response = await httpClient.get<Batch<AdcmConfigShortView>>('/api/v2/adcm/configs/');
+    const response = await httpClient.get<Batch<AdcmConfigShortView>>('/api/v2/adcm/configs/?offset=0&limit=1000');
     return response.data;
   }
 

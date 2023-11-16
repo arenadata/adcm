@@ -10,7 +10,9 @@ import {
 
 export class AdcmHostConfigsApi {
   public static async getConfigs(hostId: number) {
-    const response = await httpClient.get<Batch<AdcmConfigShortView>>(`/api/v2/hosts/${hostId}/configs/`);
+    const response = await httpClient.get<Batch<AdcmConfigShortView>>(
+      `/api/v2/hosts/${hostId}/configs/?offset=0&limit=1000`,
+    );
     return response.data;
   }
 

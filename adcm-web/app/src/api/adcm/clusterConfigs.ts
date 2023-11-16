@@ -10,7 +10,9 @@ import {
 
 export class AdcmClusterConfigsApi {
   public static async getConfigs(clusterId: number) {
-    const response = await httpClient.get<Batch<AdcmConfigShortView>>(`/api/v2/clusters/${clusterId}/configs/`);
+    const response = await httpClient.get<Batch<AdcmConfigShortView>>(
+      `/api/v2/clusters/${clusterId}/configs/?offset=0&limit=1000`,
+    );
     return response.data;
   }
 
