@@ -72,7 +72,7 @@ const hostProvidersSlice = createSlice({
     builder.addCase(loadHostProviders.rejected, (state) => {
       state.hostProviders = [];
     });
-    builder.addCase(wsActions.update_hostprovider, (state, action) => {
+    builder.addCase(wsActions.update_provider, (state, action) => {
       const { id, changes } = action.payload.object;
       state.hostProviders = updateIfExists<AdcmHostProvider>(
         state.hostProviders,

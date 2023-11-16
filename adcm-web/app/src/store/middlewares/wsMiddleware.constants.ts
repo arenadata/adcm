@@ -37,7 +37,7 @@ export const wsActions = {
   update_cluster: createAction<UpdateClusterEvent>('adcm/ws/update_cluster'),
   update_service: createAction<UpdateServiceEvent>('adcm/ws/update_service'),
   update_component: createAction<UpdateComponentEvent>('adcm/ws/update_component'),
-  update_hostprovider: createAction<UpdateHostProviderEvent>('adcm/ws/update_hostprovider'),
+  update_provider: createAction<UpdateHostProviderEvent>('adcm/ws/update_hostprovider'),
   update_host: createAction<UpdateHostEvent>('adcm/ws/update_host'),
   update_task: createAction<UpdateTaskEvent>('adcm/ws/update_task'),
   update_hostcomponentmap: createAction<UpdateHostComponentMapEvent>('adcm/ws/update_hostcomponentmap'),
