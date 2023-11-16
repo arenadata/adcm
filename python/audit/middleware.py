@@ -14,6 +14,7 @@ from json.decoder import JSONDecodeError
 
 from audit.cef_logger import cef_logger
 from audit.models import AuditSession, AuditSessionLoginResult, AuditUser
+from audit.utils import get_client_ip
 from cm.models import ADCM, ConfigLog
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
@@ -30,6 +31,7 @@ class LoginMiddleware:
     @staticmethod
     def _audit(
         request_path: str,
+        request_host: str | None,
         user: User | AnonymousUser | None = None,
         username: str = None,
     ) -> tuple[User | None, AuditSessionLoginResult]:
@@ -53,8 +55,10 @@ class LoginMiddleware:
         if user is not None:
             audit_user = AuditUser.objects.filter(username=user.username).order_by("-pk").first()
 
-        auditsession = AuditSession.objects.create(user=audit_user, login_result=result, login_details=details)
-        cef_logger(audit_instance=auditsession, signature_id=resolve(request_path).route)
+        audit_session = AuditSession.objects.create(
+            user=audit_user, login_result=result, login_details=details, address=request_host
+        )
+        cef_logger(audit_instance=audit_session, signature_id=resolve(request_path).route)
 
         return user, result
 
@@ -147,7 +151,12 @@ class LoginMiddleware:
             response = self.get_response(request)
 
             username = request.POST.get("username") or username or request.user.username
-            user, result = self._audit(request.path, user=request.user, username=username)
+            user, result = self._audit(
+                request_path=request.path,
+                request_host=get_client_ip(request=request),
+                user=request.user,
+                username=username,
+            )
 
             login_attempts_response = None
             if user:

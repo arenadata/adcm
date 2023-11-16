@@ -278,7 +278,7 @@ if not DEBUG:
             },
             "audit": {
                 "handlers": ["audit_file_handler"],
-                "level": LOG_LEVEL,
+                "level": "INFO",
                 "propagate": True,
             },
             "task_runner_err": {
