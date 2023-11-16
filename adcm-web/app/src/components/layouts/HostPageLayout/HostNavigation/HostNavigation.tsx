@@ -7,7 +7,7 @@ import { useLocation } from 'react-router-dom';
 
 const tabsNavigationDictionary: { [key: string]: string } = {
   'host-components': 'Host-Components',
-  'primary-configuration': 'Primary Configuration',
+  'primary-configuration': 'Primary configuration',
 };
 
 const ClusterHostNavigation: React.FC = () => {
@@ -33,7 +33,7 @@ const ClusterHostNavigation: React.FC = () => {
     <SubNavigationWrapper>
       <TabsBlock variant="secondary">
         <Tab to="host-components">Host-Components</Tab>
-        <Tab to="primary-configuration">Primary Configuration</Tab>
+        <Tab to="primary-configuration">Primary configuration</Tab>
       </TabsBlock>
     </SubNavigationWrapper>
   );

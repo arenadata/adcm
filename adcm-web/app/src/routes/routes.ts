@@ -395,21 +395,21 @@ const routes: RoutesConfigs = {
     ],
   },
 
-  // Access Manager
+  // Access manager
   '/access-manager': {
-    pageTitle: 'Access Manager',
+    pageTitle: 'Access manager',
     breadcrumbs: [
       {
-        label: 'Access Manager',
+        label: 'Access manager',
       },
     ],
   },
   '/access-manager/users': {
-    pageTitle: 'Access Manager',
+    pageTitle: 'Access manager',
     breadcrumbs: [
       {
         href: '/access-manager',
-        label: 'Access Manager',
+        label: 'Access manager',
       },
       {
         label: 'Users',
@@ -421,7 +421,7 @@ const routes: RoutesConfigs = {
     breadcrumbs: [
       {
         href: '/access-manager',
-        label: 'Access Manager',
+        label: 'Access manager',
       },
       {
         label: 'Groups',
@@ -433,7 +433,7 @@ const routes: RoutesConfigs = {
     breadcrumbs: [
       {
         href: '/access-manager',
-        label: 'Access Manager',
+        label: 'Access manager',
       },
       {
         label: 'Roles',
@@ -445,7 +445,7 @@ const routes: RoutesConfigs = {
     breadcrumbs: [
       {
         href: '/access-manager',
-        label: 'Access Manager',
+        label: 'Access manager',
       },
       {
         label: 'Policies',
