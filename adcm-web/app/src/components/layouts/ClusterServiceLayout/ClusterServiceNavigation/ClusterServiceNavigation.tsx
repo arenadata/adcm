@@ -6,8 +6,8 @@ import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import { useLocation } from 'react-router-dom';
 
 const tabsNavigationDictionary: { [key: string]: string } = {
-  'primary-configuration': 'Primary Configuration',
-  'configuration-groups': 'Configuration Groups',
+  'primary-configuration': 'Primary configuration',
+  'configuration-groups': 'Configuration groups',
   components: 'Components',
   info: 'Info',
 };
@@ -37,7 +37,7 @@ const ClusterServiceNavigation: React.FC = () => {
   return (
     <SubNavigationWrapper>
       <TabsBlock variant="secondary">
-        <Tab to={`/clusters/${cluster?.id}/services/${service?.id}/primary-configuration`}>Primary Configuration</Tab>
+        <Tab to={`/clusters/${cluster?.id}/services/${service?.id}/primary-configuration`}>Primary configuration</Tab>
         <Tab to={`/clusters/${cluster?.id}/services/${service?.id}/configuration-groups`}>Configuration groups</Tab>
         <Tab to="components">Components</Tab>
         <Tab to="info">Info</Tab>

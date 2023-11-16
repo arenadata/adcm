@@ -6,7 +6,7 @@ import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import { useLocation } from 'react-router-dom';
 
 const tabsNavigationDictionary: { [key: string]: string } = {
-  'primary-configuration': 'Primary Configuration',
+  'primary-configuration': 'Primary configuration',
   'configuration-groups': 'Configuration groups',
 };
 
