@@ -52,7 +52,9 @@ export const useRbacUserCreateDialog = () => {
   }, [formData, users, authSettings, setErrors]);
 
   useEffect(() => {
-    setFormData(initialFormData);
+    if (!isOpen) {
+      setFormData(initialFormData);
+    }
   }, [isOpen, setFormData]);
 
   const handleClose = () => {

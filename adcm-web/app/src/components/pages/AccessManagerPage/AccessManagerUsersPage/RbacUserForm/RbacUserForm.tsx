@@ -139,6 +139,7 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
           value={formData.groups}
           onChange={handleGroupsChange}
           options={groupsOptions}
+          maxHeight={400}
         />
       </FormField>
     </FormFieldsContainer>

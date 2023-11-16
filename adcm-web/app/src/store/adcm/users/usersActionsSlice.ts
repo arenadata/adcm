@@ -6,6 +6,7 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { arePromisesResolved } from '@utils/promiseUtils';
 import { getUsers, refreshUsers } from './usersSlice';
 import { AdcmCreateUserPayload, AdcmGroup, AdcmUser, UpdateAdcmUserPayload } from '@models/adcm';
+import { PaginationParams, SortParams } from '@models/table';
 
 interface AdcmUsersActionState {
   deleteDialog: {
@@ -118,15 +119,19 @@ const updateUser = createAsyncThunk(
 );
 
 const loadGroups = createAsyncThunk('adcm/usersActions/loadGroups', async (arg, thunkAPI) => {
-  // TODO: remove comment after backend fix
-  // const sortParams = {
-  //   sortBy: 'displayName',
-  //   sortDirection: 'asc',
-  // };
-
   try {
-    const groups = await AdcmGroupsApi.getGroups();
-    return groups;
+    const sortParams: SortParams = {
+      sortBy: '',
+      sortDirection: 'asc',
+    };
+    const paginationParams: PaginationParams = {
+      pageNumber: 0,
+      perPage: 1,
+    };
+    const batch = await AdcmGroupsApi.getGroups({}, sortParams, paginationParams);
+    sortParams.sortBy = 'displayName';
+    paginationParams.perPage = batch.count;
+    return await AdcmGroupsApi.getGroups({}, sortParams, paginationParams);
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
@@ -205,6 +210,9 @@ const usersActionsSlice = createSlice({
       })
       .addCase(loadGroups.fulfilled, (state, action) => {
         state.relatedData.groups = action.payload.results;
+      })
+      .addCase(loadGroups.rejected, (state) => {
+        state.relatedData.groups = [];
       })
       .addCase(createUser.pending, (state) => {
         state.createDialog.isCreating = true;

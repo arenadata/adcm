@@ -111,6 +111,7 @@ const AccessManagerPolicyAddDialog: React.FC = () => {
                 type="text"
                 onChange={handlePolicyNameChange}
                 placeholder="Enter unique name"
+                autoFocus
               />
             </FormField>
 
@@ -129,6 +130,7 @@ const AccessManagerPolicyAddDialog: React.FC = () => {
                 value={formData.roleId}
                 onChange={handleRoleChange}
                 options={rolesOptions}
+                maxHeight={400}
               />
             </FormField>
 
@@ -139,6 +141,7 @@ const AccessManagerPolicyAddDialog: React.FC = () => {
                 value={formData.groupIds}
                 onChange={handleGroupsChange}
                 options={groupsOptions}
+                maxHeight={310}
               />
             </FormField>
           </FormFieldsContainer>

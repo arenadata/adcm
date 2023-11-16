@@ -78,6 +78,7 @@ const AccessManagerGroupsCreateDialog = () => {
             value={formData.usersIds}
             onChange={handleGroupUsersChange}
             options={usersOptions}
+            maxHeight={400}
           />
         </FormField>
       </FormFieldsContainer>

@@ -54,7 +54,7 @@ const getPolicies = createAsyncThunk('adcm/policies/getPolicies', async (arg, th
   });
 });
 
-const refreshPolicies = createAsyncThunk('adcm/policies/refreshGroups', async (arg, thunkAPI) => {
+const refreshPolicies = createAsyncThunk('adcm/policies/refreshPolicies', async (arg, thunkAPI) => {
   thunkAPI.dispatch(loadPoliciesFromBackend());
 });
 
