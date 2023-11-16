@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { SearchInput, Tag, Tags } from '@uikit';
 import s from './AccessManagerRolesTableExpandedContent.module.scss';
-import { AdcmRole } from '@models/adcm';
+import { AdcmRole, AdcmRoleType } from '@models/adcm';
 import { useStore } from '@hooks';
 import AccessManagerRolesTableProducts from '../AccessManagerRolesTableProducts/AccessManagerRolesTableProducts';
 
@@ -18,6 +18,9 @@ const AccessManagerRolesTableExpandedContent = ({ children }: AccessManagerRoles
   const childrenFiltered = useMemo(() => {
     return children
       .filter((child) => {
+        if (child.type !== AdcmRoleType.Business) {
+          return false;
+        }
         // when selected some products
         if (productsSelected.length > 0) {
           // show roles for products
