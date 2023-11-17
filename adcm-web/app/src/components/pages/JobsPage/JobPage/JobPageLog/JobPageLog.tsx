@@ -49,7 +49,9 @@ const JobPageLog: React.FC<JobPageLogProps> = ({ id, isLinkEmpty = false }) => {
           </Tab>
         )}
       </TabsBlock>
-      {logName === 'check' && !!log && <JobLogCheck log={log as AdcmJobLogItemCheck} />}
+      {logName === 'check' && !!log && !!childJob && (
+        <JobLogCheck log={log as AdcmJobLogItemCheck} jobStatus={childJob.status} />
+      )}
       {logName !== 'check' && (
         <CodeHighlighter
           code={(log as AdcmJobLogItemStd)?.content.trim() || ''}

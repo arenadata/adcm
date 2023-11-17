@@ -49,6 +49,10 @@ export type AdcmJobLogCheckContentItem = {
   content?: AdcmJobLogCheckContentItem[];
 };
 
+export interface AdcmJobLogCheckContentItemWithJobStatus extends AdcmJobLogCheckContentItem {
+  jobStatus?: string;
+}
+
 export enum AdcmJobLogType {
   Stdout = 'stdout',
   Stderr = 'stderr',
