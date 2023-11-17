@@ -62,7 +62,8 @@ const ConfigurationTree = memo(
     const [selectedNode, setSelectedNode] = useState<ConfigurationNode | null>(null);
     const filteredTree = filterTreeNodes(tree, filter);
     const { isValid, errorsPaths } = validate(schema, configuration, attributes);
-    !isValid && console.error(errorsPaths);
+    // todo: remove commented for debugging process
+    // !isValid && console.error(errorsPaths);
 
     useEffect(() => {
       onChangeIsValid?.(isValid);

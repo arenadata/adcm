@@ -74,6 +74,7 @@ const DynamicActionSteps: React.FC<DynamicActionsStepsProps> = ({
           onSubmit={handleSubmit}
           onCancel={onCancel}
           submitLabel={isFewSteps ? 'Next' : 'Run'}
+          configuration={localActionRunConfig.configuration}
         />
       )}
       {currentStep === DynamicActionType.HostComponentMapping && clusterId && (

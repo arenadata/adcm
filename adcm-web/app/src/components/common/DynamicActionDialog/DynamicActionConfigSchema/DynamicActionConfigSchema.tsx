@@ -1,14 +1,14 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { DynamicActionCommonOptions } from '@commonComponents/DynamicActionDialog/DynamicAction.types';
-import { getDefaultConfigurationRunConfig } from '@commonComponents/DynamicActionDialog/DynamicActionDialog.utils';
-import DynamicActionConfigSchemaToolbar from '@commonComponents/DynamicActionDialog/DynamicActionConfigSchema/DynamicActionConfigSchemaToolbar/DynamicActionConfigSchemaToolbar';
+import { prepareConfigurationFromActionDetails } from '@commonComponents/DynamicActionDialog/DynamicActionDialog.utils';
+import DynamicActionConfigSchemaToolbar from './DynamicActionConfigSchemaToolbar/DynamicActionConfigSchemaToolbar';
 import ConfigurationFormContextProvider from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContextProvider';
 import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
-import { AdcmConfiguration, ConfigurationData } from '@models/adcm';
-import { generateFromSchema } from '@utils/jsonSchemaUtils';
+import { AdcmConfiguration, AdcmDynamicActionRunConfig } from '@models/adcm';
 
 interface DynamicActionConfigSchemaProps extends DynamicActionCommonOptions {
   submitLabel?: string;
+  configuration?: AdcmDynamicActionRunConfig['configuration'] | null;
 }
 
 const DynamicActionConfigSchema: React.FC<DynamicActionConfigSchemaProps> = ({
@@ -16,31 +16,23 @@ const DynamicActionConfigSchema: React.FC<DynamicActionConfigSchemaProps> = ({
   onSubmit,
   onCancel,
   submitLabel = 'Run',
+  configuration: runConfiguration,
 }) => {
-  const [localConfiguration, setLocalConfiguration] = useState<AdcmConfiguration | null>(null);
+  const [localConfiguration, setLocalConfiguration] = useState<AdcmConfiguration | null>(() => {
+    const configuration = prepareConfigurationFromActionDetails(actionDetails);
+    if (configuration === null) return null;
 
-  const handleResetClick = useCallback(() => {
-    if (actionDetails.configuration === null) {
-      setLocalConfiguration(null);
-      return;
-    }
-
-    const { adcmMeta } = getDefaultConfigurationRunConfig().configuration ?? {};
-    const configuration = {
-      configurationData:
-        actionDetails.configuration.config ??
-        generateFromSchema<ConfigurationData>(actionDetails.configuration.configSchema) ??
-        {},
-      attributes: actionDetails.configuration.adcmMeta ?? adcmMeta ?? {},
-      schema: actionDetails.configuration.configSchema,
+    return {
+      configurationData: runConfiguration?.config ?? configuration.configurationData,
+      attributes: runConfiguration?.adcmMeta ?? configuration.attributes,
+      schema: configuration.schema,
     };
+  });
 
+  const onReset = () => {
+    const configuration = prepareConfigurationFromActionDetails(actionDetails);
     setLocalConfiguration(configuration);
-  }, [actionDetails, setLocalConfiguration]);
-
-  useEffect(() => {
-    handleResetClick();
-  }, [handleResetClick]);
+  };
 
   const handleSubmit = () => {
     if (localConfiguration) {
@@ -56,7 +48,7 @@ const DynamicActionConfigSchema: React.FC<DynamicActionConfigSchemaProps> = ({
         <DynamicActionConfigSchemaToolbar
           onCancel={onCancel}
           submitLabel={submitLabel}
-          onReset={handleResetClick}
+          onReset={onReset}
           onSubmit={handleSubmit}
         />
         <ConfigurationMain configuration={localConfiguration} onChangeConfiguration={setLocalConfiguration} />

@@ -1,5 +1,7 @@
 import { DynamicActionType } from '@commonComponents/DynamicActionDialog/DynamicAction.types';
 import { AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
+import { AdcmConfiguration, ConfigurationData } from '@models/adcm';
+import { generateFromSchema } from '@utils/jsonSchemaUtils';
 
 export const getDynamicActionTypes = (actionDetails: AdcmDynamicActionDetails): DynamicActionType[] => {
   const res = [] as DynamicActionType[];
@@ -36,3 +38,23 @@ export const getDefaultRunConfig = (): AdcmDynamicActionRunConfig => ({
   ...getDefaultConfigurationRunConfig(),
   ...getDefaultVerboseRunConfig(),
 });
+
+export const prepareConfigurationFromActionDetails = (
+  actionDetails: AdcmDynamicActionDetails,
+): AdcmConfiguration | null => {
+  if (actionDetails.configuration === null) {
+    return null;
+  }
+
+  const { adcmMeta } = getDefaultConfigurationRunConfig().configuration ?? {};
+  const configuration = {
+    configurationData:
+      actionDetails.configuration.config ??
+      generateFromSchema<ConfigurationData>(actionDetails.configuration.configSchema) ??
+      {},
+    attributes: actionDetails.configuration.adcmMeta ?? adcmMeta ?? {},
+    schema: actionDetails.configuration.configSchema,
+  };
+
+  return configuration;
+};
