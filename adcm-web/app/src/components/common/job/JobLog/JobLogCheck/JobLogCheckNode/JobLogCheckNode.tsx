@@ -13,12 +13,12 @@ interface JobLogCheckNodeProps {
 }
 const JobLogCheckNode: React.FC<JobLogCheckNodeProps> = ({ logNode: { data, key }, isExpanded, onExpand }) => {
   let status: AdcmJobStatus = data.result ? AdcmJobStatus.Success : AdcmJobStatus.Failed;
+  let statusLabel = data.result ? 'success' : 'failed';
 
   if (key === 'root' && data.jobStatus === AdcmJobStatus.Running) {
     status = AdcmJobStatus.Running;
+    statusLabel = 'running';
   }
-
-  const statusLabel = data.result ? 'success' : 'failed';
 
   const hasChildren = data.type === 'group';
 
