@@ -1,5 +1,7 @@
 // Audit Operations
 
+import { JSONObject } from '@models/json';
+
 export enum AdcmAuditOperationType {
   Create = 'create',
   Update = 'update',
@@ -33,8 +35,8 @@ export interface AdcmAuditOperationObject {
 }
 
 export interface AdcmAuditOperationObjectChanges {
-  previous: { [key: string]: string };
-  current: { [key: string]: string };
+  previous: JSONObject;
+  current: JSONObject;
 }
 
 export interface AdcmAuditOperationUser {

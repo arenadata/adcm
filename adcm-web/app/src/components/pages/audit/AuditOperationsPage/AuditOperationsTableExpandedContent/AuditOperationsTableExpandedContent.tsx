@@ -3,10 +3,25 @@ import { Table, TableCell, TableRow } from '@uikit';
 import { columns } from './AuditOperationsTableExpandedContent.const';
 import { AdcmAuditOperationObjectChanges } from '@models/adcm';
 import { orElseGet } from '@utils/checkUtils';
+import { JSONValue } from '@models/json';
 
 export interface AuditOperationsTableExpandedContentProps {
   objectChanges: AdcmAuditOperationObjectChanges;
 }
+
+const prepareValue = (prepValue: JSONValue): string => {
+  return orElseGet(prepValue, (value) => {
+    if (Array.isArray(value)) {
+      return value.map((item) => prepareValue(item)).join(', ');
+    }
+
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+
+    return String(value);
+  });
+};
 
 const AuditOperationsTableExpandedContent = ({ objectChanges }: AuditOperationsTableExpandedContentProps) => {
   if (!objectChanges.previous) return null;
@@ -18,8 +33,8 @@ const AuditOperationsTableExpandedContent = ({ objectChanges }: AuditOperationsT
       {keys.map((key) => (
         <TableRow key={key}>
           <TableCell>{key}</TableCell>
-          <TableCell>{orElseGet(objectChanges.previous[key])}</TableCell>
-          <TableCell>{orElseGet(objectChanges.current[key])}</TableCell>
+          <TableCell>{prepareValue(objectChanges.previous[key])}</TableCell>
+          <TableCell>{prepareValue(objectChanges.current[key])}</TableCell>
         </TableRow>
       ))}
     </Table>
