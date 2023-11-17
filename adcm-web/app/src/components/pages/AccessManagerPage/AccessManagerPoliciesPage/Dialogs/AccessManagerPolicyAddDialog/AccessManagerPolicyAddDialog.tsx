@@ -74,7 +74,7 @@ const AccessManagerPolicyAddDialog: React.FC = () => {
       <Dialog
         isOpen={isOpen}
         onOpenChange={onClose}
-        title={'Add policies'}
+        title={'Create new policy'}
         actionButtonLabel={isCurrentStepMainInfo ? 'Next' : isEdit ? 'Update' : 'Create'}
         isActionDisabled={isCurrentStepMainInfo ? !isValidFirstStep : !isValidSecondStep(formData)}
         onAction={isCurrentStepMainInfo ? handleSwitchStep : submit}
