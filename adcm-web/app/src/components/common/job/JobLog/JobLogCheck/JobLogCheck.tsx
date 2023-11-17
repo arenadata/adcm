@@ -23,13 +23,15 @@ const checkItemToNode = ({ content, ...data }: AdcmJobLogCheckContentItem, key: 
 };
 
 interface JobLogCheckProps {
+  jobStatus: string;
   log: AdcmJobLogItemCheck;
 }
-const JobLogCheck: React.FC<JobLogCheckProps> = ({ log }) => {
+const JobLogCheck: React.FC<JobLogCheckProps> = ({ jobStatus, log }) => {
   const node = useMemo<JobLogNode>(() => {
     const isRootValid = log.content.length === 0 || log.content.every((item) => item.result);
     return {
       data: {
+        jobStatus,
         title: 'Log [check]',
         type: 'group',
         message: '',
@@ -38,7 +40,7 @@ const JobLogCheck: React.FC<JobLogCheckProps> = ({ log }) => {
       key: 'root',
       children: log.content.map((logContentItem, index) => checkItemToNode(logContentItem, index)),
     };
-  }, [log]);
+  }, [jobStatus, log]);
 
   return (
     <div className={s.jobLogCheck}>

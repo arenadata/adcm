@@ -1,4 +1,4 @@
 import { Node } from '@uikit/CollapseTree2/CollapseNode.types';
-import { AdcmJobLogCheckContentItem } from '@models/adcm';
+import { AdcmJobLogCheckContentItemWithJobStatus } from '@models/adcm';
 
-export type JobLogNode = Node<Omit<AdcmJobLogCheckContentItem, 'content'>>;
+export type JobLogNode = Node<Omit<AdcmJobLogCheckContentItemWithJobStatus, 'content'>>;
