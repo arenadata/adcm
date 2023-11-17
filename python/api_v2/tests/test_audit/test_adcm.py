@@ -19,7 +19,6 @@ from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
-    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
@@ -30,7 +29,9 @@ class TestADCMAudit(BaseAPITestCase):
         super().setUp()
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user_credentials_2 = {"username": "test_user_username_2", "password": "test_user_password"}
         self.test_user = create_user(**self.test_user_credentials)
+        self.test_user_2 = create_user(**self.test_user_credentials_2)
 
         self.adcm = ADCM.objects.first()
         self.data = {
@@ -132,16 +133,32 @@ class TestADCMAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-    def test_adcm_profile_password_change_denied(self):
+    def test_adcm_put_user_can_change_own_profile_success(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.put(
-            path=reverse(viewname="v2:profile"), data={"newPassword": "newtestpassword", "currentPassword": "admin"}
+            path=reverse(viewname="v2:profile"),
+            data={"newPassword": "newtestpassword", "currentPassword": "test_user_password"},
         )
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_last_audit_log(
             operation_name=f"{self.test_user_credentials['username']} user changed password",
             operation_type="update",
-            operation_result="denied",
+            operation_result="success",
+            audit_object__is_deleted=False,
+            user__username=self.test_user_credentials["username"],
+        )
+
+    def test_adcm_patch_user_can_change_own_profile_success(self):
+        self.client.login(**self.test_user_credentials)
+        response = self.client.patch(
+            path=reverse(viewname="v2:profile"),
+            data={"newPassword": "newtestpassword", "currentPassword": "test_user_password"},
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.check_last_audit_log(
+            operation_name=f"{self.test_user_credentials['username']} user changed password",
+            operation_type="update",
+            operation_result="success",
             audit_object__is_deleted=False,
             user__username=self.test_user_credentials["username"],
         )

@@ -26,14 +26,9 @@ from rbac.services.user import update_user
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.response import Response
 
-from adcm.permissions import DjangoModelPermissionsAudit
-
 
 class ProfileView(RetrieveUpdateAPIView):
-    permission_classes = (DjangoModelPermissionsAudit,)
-    permission_required = ["rbac.view_user"]
     queryset = User.objects.exclude(username__in=settings.ADCM_HIDDEN_USERS)
-    serializer_class = ProfileSerializer
     renderer_classes = [CamelCaseJSONRenderer, CamelCaseBrowsableAPIRenderer]
     parser_classes = [CamelCaseJSONParser, CamelCaseMultiPartParser, CamelCaseFormParser]
 
@@ -44,7 +39,7 @@ class ProfileView(RetrieveUpdateAPIView):
         if self.request.method in ("PATCH", "PUT"):
             return ProfileUpdateSerializer
 
-        return super().get_serializer_class()
+        return ProfileSerializer
 
     @audit
     def update(self, request, *args, **kwargs):
