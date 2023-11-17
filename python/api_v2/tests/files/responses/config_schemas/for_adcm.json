@@ -401,76 +401,55 @@
       "additionalProperties": false,
       "properties": {
         "log_rotation_on_fs": {
-          "oneOf": [
-            {
-              "title": "Job log retention period from file system",
-              "type": "integer",
-              "description": "You can set the time (number of days) after which the logs will be deleted from the file system.\n",
-              "default": 365,
-              "readOnly": false,
-              "adcmMeta": {
-                "isAdvanced": false,
-                "isInvisible": false,
-                "activation": null,
-                "synchronization": null,
-                "isSecret": false,
-                "stringExtra": null,
-                "enumExtra": null
-              },
-              "minimum": 0
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "title": "Job log retention period from file system",
+          "type": "integer",
+          "description": "You can set the time (number of days) after which the logs will be deleted from the file system. 0 is infinite storing.\n",
+          "default": 365,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          },
+          "minimum": 0
         },
         "log_rotation_in_db": {
-          "oneOf": [
-            {
-              "title": "Job log retention period from database",
-              "type": "integer",
-              "description": "You can set the time (number of days) after which the logs will be deleted from the database.\n",
-              "default": 365,
-              "readOnly": false,
-              "adcmMeta": {
-                "isAdvanced": false,
-                "isInvisible": false,
-                "activation": null,
-                "synchronization": null,
-                "isSecret": false,
-                "stringExtra": null,
-                "enumExtra": null
-              },
-              "minimum": 0
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "title": "Job log retention period from database",
+          "type": "integer",
+          "description": "You can set the time (number of days) after which the logs will be deleted from the database. 0 is infinite storing.\n",
+          "default": 365,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          },
+          "minimum": 0
         },
         "config_rotation_in_db": {
-          "oneOf": [
-            {
-              "title": "Objects configurations retention period",
-              "type": "integer",
-              "description": "You can set the time (number of days) after which the Objects configuration will be deleted from the database. 0 is infinite storing.\n",
-              "default": 0,
-              "readOnly": false,
-              "adcmMeta": {
-                "isAdvanced": false,
-                "isInvisible": false,
-                "activation": null,
-                "synchronization": null,
-                "isSecret": false,
-                "stringExtra": null,
-                "enumExtra": null
-              },
-              "minimum": 0
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "title": "Objects configurations retention period",
+          "type": "integer",
+          "description": "You can set the time (number of days) after which the Objects configuration will be deleted from the database. 0 is infinite storing.\n",
+          "default": 0,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          },
+          "minimum": 0
         },
         "retention_period": {
           "title": "Audit data retention period",
@@ -489,27 +468,20 @@
           }
         },
         "data_archiving": {
-          "oneOf": [
-            {
-              "title": "Enable audit data archiving",
-              "type": "boolean",
-              "description": "Enable/disable archiving of data on operations and authorizations after the period specified in \"Audit data retention period\".\n",
-              "default": false,
-              "readOnly": false,
-              "adcmMeta": {
-                "isAdvanced": false,
-                "isInvisible": false,
-                "activation": null,
-                "synchronization": null,
-                "isSecret": false,
-                "stringExtra": null,
-                "enumExtra": null
-              }
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "title": "Enable audit data archiving",
+          "type": "boolean",
+          "description": "Enable/disable archiving of data on operations and authorizations after the period specified in \"Audit data retention period\".\n",
+          "default": false,
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          }
         }
       },
       "required": [
