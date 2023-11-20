@@ -99,7 +99,7 @@ const runClusterServiceComponentDynamicAction = createAsyncThunk(
         actionRunConfig,
       );
 
-      thunkAPI.dispatch(showInfo({ message: ActionStatuses.Launched }));
+      thunkAPI.dispatch(showInfo({ message: ActionStatuses.SuccessRun }));
 
       return null;
     } catch (error) {

@@ -21,7 +21,7 @@ const ClustersTableHeader = () => {
         disabled={isAddingServices || !cluster}
         iconLeft={isAddingServices ? 'g1-load' : undefined}
       >
-        Add service
+        Add services
       </Button>
     </TableToolbar>
   );

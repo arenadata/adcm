@@ -46,7 +46,7 @@ const runAdcmSettingsDynamicAction = createAsyncThunk(
       // TODO: runAdcmSettingsAction get big response with information about action, but wiki say that this should empty response
       await AdcmSettingsApi.runAdcmSettingsAction(actionId, actionRunConfig);
 
-      thunkAPI.dispatch(showInfo({ message: ActionStatuses.Launched }));
+      thunkAPI.dispatch(showInfo({ message: ActionStatuses.SuccessRun }));
 
       return null;
     } catch (error) {

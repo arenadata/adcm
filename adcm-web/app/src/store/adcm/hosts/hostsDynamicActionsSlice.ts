@@ -74,7 +74,7 @@ const runHostDynamicAction = createAsyncThunk(
       // TODO: run***Action get big response with information about action, but wiki say that this should empty response
       await AdcmHostsApi.runHostAction(host.id, actionId, actionRunConfig);
 
-      thunkAPI.dispatch(showInfo({ message: ActionStatuses.Launched }));
+      thunkAPI.dispatch(showInfo({ message: ActionStatuses.SuccessRun }));
 
       return null;
     } catch (error) {

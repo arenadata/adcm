@@ -86,7 +86,7 @@ const runClusterHostComponentDynamicAction = createAsyncThunk(
       // TODO: run***Action get big response with information about action, but wiki say that this should empty response
       await AdcmClusterHostsApi.runClusterHostAction(clusterId, hostId, actionId, actionRunConfig);
 
-      thunkAPI.dispatch(showInfo({ message: ActionStatuses.Launched }));
+      thunkAPI.dispatch(showInfo({ message: ActionStatuses.SuccessRun }));
 
       return null;
     } catch (error) {

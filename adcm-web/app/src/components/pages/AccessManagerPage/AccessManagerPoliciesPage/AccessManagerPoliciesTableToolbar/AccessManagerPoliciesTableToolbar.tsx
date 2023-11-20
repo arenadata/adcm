@@ -17,7 +17,7 @@ const AccessManagerPoliciesTableToolbar: React.FC = () => {
     <TableToolbar>
       <AccessManagerPoliciesTableFilters />
       <Button onClick={handleAddPolicyClick} disabled={isCreating} iconLeft={isCreating ? 'g1-load' : undefined}>
-        Create Policy
+        Create policy
       </Button>
     </TableToolbar>
   );

@@ -20,8 +20,8 @@ export const columns: TableColumn[] = [
     name: 'components',
   },
   {
-    label: 'Concern',
-    name: 'concern',
+    label: 'Concerns',
+    name: 'concerns',
   },
   {
     label: 'Actions',
