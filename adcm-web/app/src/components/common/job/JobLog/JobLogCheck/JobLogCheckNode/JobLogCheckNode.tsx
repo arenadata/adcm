@@ -17,7 +17,7 @@ const JobLogCheckNode: React.FC<JobLogCheckNodeProps> = ({ logNode: { data, key 
 
   if (key === 'root' && data.jobStatus === AdcmJobStatus.Running) {
     status = AdcmJobStatus.Running;
-    statusLabel = 'running';
+    statusLabel = 'processing';
   }
 
   const hasChildren = data.type === 'group';
