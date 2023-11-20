@@ -53,14 +53,6 @@ VIEW_ROLE_PERMISSION = "rbac.view_role"
 VIEW_POLICY_PERMISSION = "rbac.view_policy"
 
 
-class DjangoObjectPermissionsV2(DjangoObjectPermissions):
-    def has_permission(self, request, view):
-        # We do not need to check permissions on model in case of deletion / update object.
-        # Instead, we should implement `get_permissions()` in view
-        # and dispatch permission classes according to current action
-        return True
-
-
 class DjangoObjectPermissionsAudit(DjangoObjectPermissions):
     @audit
     def has_permission(self, request, view):
@@ -110,19 +102,6 @@ class SuperuserOnlyMixin:
         return super().get_queryset(*args, **kwargs)
 
 
-class ModelObjectPermissionsByActionMixin:
-    action: str
-
-    # override this list to tune permission checking behavior
-    object_actions: list = ["destroy", "update", "partial_update"]
-
-    def get_permissions(self) -> list[DjangoObjectPermissionsV2 | DjangoModelPermissionsAudit]:
-        if self.action in self.object_actions:
-            return [DjangoObjectPermissionsV2()]
-
-        return [DjangoModelPermissionsAudit()]
-
-
 def get_object_for_user(user: User, perms: str | Sequence[str], klass: type[Model], **kwargs) -> Any:
     try:
         queryset = get_objects_for_user(user, perms, klass)
@@ -158,3 +137,13 @@ def check_config_perm(user: User, action_type: str, model: str, obj: ADCMEntity)
         return
 
     raise PermissionDenied()
+
+
+class ChangeMMPermissions(DjangoObjectPermissions):
+    perms_map = {
+        "POST": [],
+    }
+
+    @audit
+    def has_permission(self, request, view) -> bool:
+        return super().has_permission(request=request, view=view)

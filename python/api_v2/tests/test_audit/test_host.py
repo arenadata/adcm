@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import unittest
 
 from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditObject
@@ -75,6 +74,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
 
     def test_create_denied(self):
         self.client.login(**self.test_user_credentials)
+
         response = self.client.post(
             path=reverse(viewname="v2:host-list"),
             data={
@@ -158,6 +158,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
 
     def test_update_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
+
         response = self.client.patch(
             path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
             data={"name": "new.name"},
@@ -395,7 +396,6 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             user__username=self.test_user.username,
         )
 
-    @unittest.skip("Skip until RBAC issues are fixed")
     def test_switch_maintenance_mode_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.post(

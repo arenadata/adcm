@@ -11,7 +11,11 @@
 # limitations under the License.
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.host.filters import HostClusterFilter, HostFilter
-from api_v2.host.permissions import GroupConfigHostsPermissions
+from api_v2.host.permissions import (
+    GroupConfigHostsPermissions,
+    HostsClusterPermissions,
+    HostsPermissions,
+)
 from api_v2.host.serializers import (
     ClusterHostStatusSerializer,
     HostChangeMaintenanceModeSerializer,
@@ -45,7 +49,7 @@ from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HOST_PERM,
     VIEW_PROVIDER_PERM,
-    ModelObjectPermissionsByActionMixin,
+    ChangeMMPermissions,
     check_config_perm,
     check_custom_perm,
     get_object_for_user,
@@ -53,13 +57,14 @@ from adcm.permissions import (
 
 
 # pylint:disable-next=too-many-ancestors
-class HostViewSet(ModelObjectPermissionsByActionMixin, PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewSet):
+class HostViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewSet):
     queryset = (
         Host.objects.select_related("provider", "cluster")
         .prefetch_related("concerns", "hostcomponent_set")
         .order_by("fqdn")
     )
     permission_required = [VIEW_HOST_PERM]
+    permission_classes = [HostsPermissions]
     filterset_class = HostFilter
     filter_backends = (DjangoFilterBackend,)
 
@@ -126,16 +131,14 @@ class HostViewSet(ModelObjectPermissionsByActionMixin, PermissionListMixin, Conf
         return Response(status=HTTP_200_OK, data=HostSerializer(instance=instance).data)
 
     @audit
-    @action(methods=["post"], detail=True, url_path="maintenance-mode")
+    @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        return maintenance_mode(request=request, **kwargs)
+        return maintenance_mode(request=request, host=self.get_object(), **kwargs)
 
 
-class HostClusterViewSet(  # pylint:disable=too-many-ancestors
-    ModelObjectPermissionsByActionMixin, PermissionListMixin, CamelCaseReadOnlyModelViewSet
-):
-    object_actions = ["destroy"]
+class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pylint:disable=too-many-ancestors
     permission_required = [VIEW_HOST_PERM]
+    permission_classes = [HostsClusterPermissions]
     filterset_class = HostClusterFilter
     audit_model_hint = Host
 
@@ -180,9 +183,9 @@ class HostClusterViewSet(  # pylint:disable=too-many-ancestors
         return Response(status=HTTP_204_NO_CONTENT)
 
     @audit
-    @action(methods=["post"], detail=True, url_path="maintenance-mode")
+    @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        return maintenance_mode(request=request, **kwargs)
+        return maintenance_mode(request=request, host=self.get_object(), **kwargs)
 
     @action(methods=["get"], detail=True, url_path="statuses")
     def statuses(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
