@@ -20,7 +20,7 @@ export const columns: TableColumn[] = [
     name: 'edition',
   },
   {
-    label: 'Date upload',
+    label: 'Date uploaded',
     name: 'uploadTime',
     isSortable: true,
   },

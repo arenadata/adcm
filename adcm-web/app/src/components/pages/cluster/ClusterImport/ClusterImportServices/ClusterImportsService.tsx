@@ -46,7 +46,7 @@ const ClusterImportsService = () => {
   return (
     <>
       <ClusterImportToolbar isDisabled={!isValid} onClick={onImportHandler} hasError={hasSaveError}>
-        <LabeledField label="import to" direction="row">
+        <LabeledField label="Import to" direction="row">
           <Select
             maxHeight={200}
             placeholder="None"

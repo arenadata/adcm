@@ -20,5 +20,5 @@ export const queryParamSortBy = 'ordering';
 export const emailRegexp = new RegExp(/^[^@ ]+@[^@ ]+\.[a-zA-Z]+$/);
 
 export enum ActionStatuses {
-  Launched = 'Action was launched successfully',
+  SuccessRun = 'Action was launched successfully',
 }

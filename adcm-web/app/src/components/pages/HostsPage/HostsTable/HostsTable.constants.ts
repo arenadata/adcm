@@ -20,8 +20,8 @@ export const columns: TableColumn[] = [
     name: 'clusterName',
   },
   {
-    label: 'Concern',
-    name: 'concern',
+    label: 'Concerns',
+    name: 'concerns',
   },
   {
     label: 'Actions',
