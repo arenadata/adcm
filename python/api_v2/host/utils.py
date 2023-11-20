@@ -14,12 +14,12 @@ from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
 from cm.adcm_config.config import init_object_config
 from cm.api import check_license, load_service_map
 from cm.api_context import CTX
-from cm.errors import AdcmEx
 from cm.issue import add_concern_to_object, update_hierarchy_issues
 from cm.logger import logger
 from cm.models import Cluster, Host, HostProvider, Prototype
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 
@@ -53,12 +53,7 @@ def add_new_host_and_map_it(provider: HostProvider, fqdn: str, cluster: Cluster 
     return host
 
 
-def maintenance_mode(request, **kwargs):
-    host = Host.obj.filter(pk=kwargs["pk"]).first()
-
-    if not host:
-        raise AdcmEx(code="HOST_NOT_FOUND")
-
+def maintenance_mode(request: Request, host: Host, **kwargs) -> Response:
     check_custom_perm(user=request.user, action_type="change_maintenance_mode", model="host", obj=host)
 
     serializer = HostChangeMaintenanceModeSerializer(instance=host, data=request.data)

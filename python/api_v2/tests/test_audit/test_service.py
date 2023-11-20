@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import unittest
 
 from api_v2.tests.base import BaseAPITestCase
 from cm.models import Action, ClusterObject, ObjectType
@@ -162,7 +161,6 @@ class TestServiceAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-    @unittest.skip("Skip until RBAC issues are fixed")
     def test_change_mm_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 

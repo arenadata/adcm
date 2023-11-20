@@ -11,6 +11,7 @@
 # limitations under the License.
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.service.filters import ServiceFilter
+from api_v2.service.permissions import ServicePermissions
 from api_v2.service.serializers import (
     ServiceCreateSerializer,
     ServiceMaintenanceModeSerializer,
@@ -33,7 +34,7 @@ from adcm.permissions import (
     CHANGE_MM_PERM,
     VIEW_CLUSTER_PERM,
     VIEW_SERVICE_PERM,
-    ModelObjectPermissionsByActionMixin,
+    ChangeMMPermissions,
     check_custom_perm,
     get_object_for_user,
 )
@@ -41,14 +42,16 @@ from adcm.utils import delete_service_from_api, get_maintenance_mode_response
 
 
 class ServiceViewSet(  # pylint: disable=too-many-ancestors
-    ModelObjectPermissionsByActionMixin, PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet
+    PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet
 ):
     queryset = ClusterObject.objects.select_related("cluster").order_by("pk")
     serializer_class = ServiceRetrieveSerializer
     filterset_class = ServiceFilter
     filter_backends = (DjangoFilterBackend,)
     permission_required = [VIEW_SERVICE_PERM]
+    permission_classes = [ServicePermissions]
     http_method_names = ["get", "post", "delete"]
+    audit_model_hint = ClusterObject
 
     def get_queryset(self, *args, **kwargs):
         cluster = get_object_for_user(
@@ -101,7 +104,7 @@ class ServiceViewSet(  # pylint: disable=too-many-ancestors
 
     @audit
     @update_mm_objects
-    @action(methods=["post"], detail=True, url_path="maintenance-mode")
+    @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         service = get_object_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, pk=kwargs["pk"])
         check_custom_perm(
