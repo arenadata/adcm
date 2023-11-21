@@ -23,6 +23,7 @@ from guardian.mixins import PermissionListMixin
 from rbac.models import Group
 from rbac.services.group import create as create_group
 from rbac.services.group import update as update_group
+from rbac.utils import Empty
 from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -69,16 +70,17 @@ class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disabl
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        update_kwargs = {
-            "group": self.get_object(),
-            "partial": kwargs.pop("partial", False),
-            "description": serializer.validated_data.get("description", ""),
-            "user_set": [{"id": user.pk} for user in serializer.validated_data.pop("user_set", [])],
-        }
-        if serializer.validated_data.get("display_name") is not None:
-            update_kwargs.update({"name_to_display": serializer.validated_data["display_name"]})
+        validated_data = serializer.validated_data
 
-        group = update_group(**update_kwargs)
+        users = [{"id": user.pk} for user in validated_data.pop("user_set")] if "user_set" in validated_data else Empty
+
+        group = update_group(
+            group=self.get_object(),
+            name_to_display=validated_data.get("display_name", Empty),
+            description=validated_data.get("description", Empty),
+            user_set=users,
+            partial=kwargs.get("partial", False),
+        )
 
         return Response(data=GroupSerializer(instance=group).data, status=HTTP_200_OK)
 

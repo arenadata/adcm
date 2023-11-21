@@ -64,5 +64,5 @@ class GroupUpdateSerializer(GroupCreateSerializer):
     class Meta(GroupCreateSerializer.Meta):
         extra_kwargs = {
             "display_name": {"required": False},
-            "description": {"default": "", "allow_blank": True, "required": False},
+            "description": {"allow_blank": True, "required": False},
         }

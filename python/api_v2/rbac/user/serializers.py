@@ -66,10 +66,10 @@ class UserSerializer(ModelSerializer):
 
 class UserUpdateSerializer(ModelSerializer):
     password = CharField(trim_whitespace=False, write_only=True, required=False)
-    first_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False, default="")
-    last_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False, default="")
-    email = EmailField(allow_blank=True, required=False, default="")
-    is_super_user = BooleanField(source="is_superuser", default=False)
+    first_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False)
+    last_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False)
+    email = EmailField(allow_blank=True, required=False)
+    is_super_user = BooleanField(source="is_superuser", required=False)
 
     class Meta:
         model = User

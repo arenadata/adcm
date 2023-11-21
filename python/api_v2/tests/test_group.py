@@ -99,6 +99,17 @@ class TestGroupAPI(BaseAPITestCase):
         self.assertEqual(self.group_local.description, update_data["description"])
         self.assertListEqual(list(self.group_local.user_set.values_list("id", flat=True)), update_data["users"])
 
+        response: Response = self.client.patch(
+            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group_local.pk}),
+            data={"display_name": "new_display name"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.group_local.refresh_from_db()
+        self.assertEqual(self.group_local.display_name, "new_display name")
+        self.assertEqual(self.group_local.description, update_data["description"])
+        self.assertListEqual(list(self.group_local.user_set.values_list("id", flat=True)), update_data["users"])
+
     def test_delete_success(self):
         group_ldap_pk = self.group_ldap.pk
         response: Response = self.client.delete(
