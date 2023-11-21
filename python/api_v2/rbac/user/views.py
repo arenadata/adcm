@@ -26,6 +26,7 @@ from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rbac.models import User
 from rbac.services.user import create_user, update_user
+from rbac.utils import Empty
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
@@ -75,14 +76,15 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
         serializer = self.get_serializer(instance=instance, data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        groups = [{"id": group.pk} for group in serializer.validated_data.pop("groups", [])]
+        validated_data = serializer.validated_data
+        groups = [{"id": group.pk} for group in validated_data.pop("groups")] if "groups" in validated_data else Empty
         user: User = update_user(
             user=serializer.instance,
             context_user=request.user,
             partial=True,
             need_current_password=False,
             groups=groups,
-            **serializer.validated_data,
+            **validated_data,
         )
 
         return Response(data=UserSerializer(instance=user).data, status=HTTP_200_OK)

@@ -160,6 +160,8 @@ class TestUserAPI(BaseAPITestCase):
 
         data = response.json()
 
+        expected_group_data = {"id": group.pk, "name": group.name, "displayName": group.display_name}
+
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertFalse(user.check_password(raw_password="test_user_password"))
         self.assertTrue(user.check_password(raw_password="newtestpassword"))
@@ -168,7 +170,23 @@ class TestUserAPI(BaseAPITestCase):
         self.assertEqual(data["lastName"], "test_user_last_name")
         self.assertTrue(data["isSuperUser"])
         self.assertEqual(len(data["groups"]), 1)
-        self.assertDictEqual(data["groups"][0], {"id": group.pk, "name": group.name, "displayName": group.display_name})
+        self.assertDictEqual(data["groups"][0], expected_group_data)
+
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
+            data={"lastName": "WholeNewName"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        data = response.json()
+        user.refresh_from_db()
+        self.assertEqual(user.username, "test_user")
+        self.assertEqual(user.first_name, "test_user_first_name")
+        self.assertEqual(user.last_name, "WholeNewName")
+        self.assertListEqual(list(user.groups.values_list("id", flat=True)), [group.pk])
+        self.assertTrue(data["isSuperUser"])
+        self.assertEqual(len(data["groups"]), 1)
+        self.assertDictEqual(data["groups"][0], expected_group_data)
 
     def test_update_self_by_regular_user_success(self):
         """
