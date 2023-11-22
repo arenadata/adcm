@@ -45,7 +45,7 @@ const ClusterOverviewHosts = () => {
               {firstHostsGroup.length > 0 && <ClusterOverviewHostsTable hosts={firstHostsGroup} />}
               {secondHostsGroup.length > 0 && <ClusterOverviewHostsTable hosts={secondHostsGroup} />}
               {firstHostsGroup.length + secondHostsGroup.length === 0 && (
-                <span className={s.clusterOverviewHosts__noData}>No Data</span>
+                <span className={s.clusterOverviewHosts__noData}>No data</span>
               )}
             </div>
           )}
