@@ -77,9 +77,13 @@ const AccessManagerUsersTable = () => {
             <TableCell>{user.type}</TableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-edit" size={32} title="Edit" onClick={handleEditUserClick(user)} />
-              {user.status === AdcmUserStatus.Blocked && (
-                <IconButton icon="g1-unblock" size={32} title="Unblock" onClick={handleUnblockClick(user.id)} />
-              )}
+              <IconButton
+                disabled={user.status !== AdcmUserStatus.Blocked}
+                icon="g1-unblock"
+                size={32}
+                title="Unblock"
+                onClick={handleUnblockClick(user.id)}
+              />
               <IconButton icon="g1-delete" size={32} onClick={handleDeleteClick(user.id)} title="Delete" />
             </TableCell>
           </TableRow>
