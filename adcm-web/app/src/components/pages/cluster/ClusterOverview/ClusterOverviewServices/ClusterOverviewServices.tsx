@@ -46,7 +46,7 @@ const ClusterOverviewServices = () => {
               {servicesStatuses.map((service) => (
                 <ClusterOverviewServiceItem clusterId={clusterId} key={service.id} service={service} />
               ))}
-              {servicesStatuses.length === 0 && <span className={s.clusterOverviewServices__noData}>No Data</span>}
+              {servicesStatuses.length === 0 && <span className={s.clusterOverviewServices__noData}>No data</span>}
             </div>
           )}
           <div className={s.clusterOverviewServices__footer}>

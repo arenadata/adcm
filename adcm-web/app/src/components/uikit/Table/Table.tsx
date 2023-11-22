@@ -83,7 +83,7 @@ const TableBody: React.FC<React.HTMLProps<HTMLTableSectionElement>> = ({ childre
   return <tbody>{children}</tbody>;
 };
 
-const TableNoData = () => <span className={s.table__textNoData}>No Data</span>;
+const TableNoData = () => <span className={s.table__textNoData}>No data</span>;
 const TableSpinner = () => (
   <div className={s.table__spinnerWrapper}>
     <Spinner />

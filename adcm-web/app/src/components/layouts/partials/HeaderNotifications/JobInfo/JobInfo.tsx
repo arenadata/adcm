@@ -12,7 +12,7 @@ interface JobInfoProps {
 const symbolsNumberToShowTooltip = 16;
 
 const JobInfo: React.FC<JobInfoProps> = ({ jobs }) => {
-  if (jobs.length === 0) return null;
+  if (jobs.length === 0) return <div className={s.noData}>No data</div>;
 
   return (
     <table className={s.jobs}>
