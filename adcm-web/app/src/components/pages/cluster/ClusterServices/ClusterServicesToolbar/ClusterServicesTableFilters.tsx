@@ -25,7 +25,7 @@ const ClusterServicesTableFilters = () => {
         variant="primary"
         onChange={handleClusterNameChange}
       />
-      <Button variant="secondary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
+      <Button variant="tertiary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
     </TableFilters>
   );
 };

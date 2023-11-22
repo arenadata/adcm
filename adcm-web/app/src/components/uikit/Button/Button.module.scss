@@ -1,6 +1,5 @@
 :global {
   body.theme-dark {
-
     // primary colors:
     --button-background-primary: var(--color-xgreen);
     --button-color-primary: var(--color-xblack);
@@ -27,9 +26,22 @@
     --button-border-active-secondary: var(--color-xgreen-saturated);
     --button-color-active-secondary: var(--color-xgreen-saturated);
 
+    // tertiary
+    --button-background-tertiary: transparent;
+    --button-border-tertiary: var(--color-xdark);
+    --button-color-tertiary: var(--color-xgray-light);
+
+    --button-background-hover-tertiary: var(--color-xdark-new-50);
+    --button-border-hover-tertiary: var(--color-xdark);
+    --button-color-hover-tertiary: var(--color-xgray-light);
+
+    --button-background-active-tertiary: transparent;
+    --button-border-active-tertiary: var(--color-xgreen-saturated);
+    --button-color-active-tertiary: var(--color-xwhite-off);
+
     // common colors:
 
-    --button-background-disabled: var(--color-xdark-plate20);
+    --button-background-disabled: var(--color-xdark-plate10);
     --button-border-disabled: transparent;
     --button-color-disabled: var(--color-xgray-reading);
 
@@ -65,9 +77,22 @@
     --button-border-active-secondary: var(--color-xgreen);
     --button-color-active-secondary: var(--color-xgreen);
 
+    // tertiary
+    --button-background-tertiary: transparent;
+    --button-border-tertiary: var(--color-xgray-lighter);
+    --button-color-tertiary: var(--color-xgray-light);
+
+    --button-background-hover-tertiary: #eef2f5;
+    --button-border-hover-tertiary: var(--color-xgray-lighter);
+    --button-color-hover-tertiary: var(--color-xgray-light);
+
+    --button-background-active-tertiary: transparent;
+    --button-border-active-tertiary: var(--color-xgreen-saturated);
+    --button-color-active-tertiary: var(--color-xdark);
+
     // common colors:
 
-    --button-background-disabled: var(--color-xdark-plate20);
+    --button-background-disabled: #edeef0;
     --button-border-disabled: transparent;
     --button-color-disabled: var(--color-xgray-lighter);
 
@@ -163,6 +188,19 @@
     --button-border-active: var(--button-border-active-secondary);
     --button-color-active: var(--button-color-active-secondary);
     --button-background-active: var(--button-background-active-secondary);
+  }
+  &_ternary {
+    --button-background: var(--button-background-tertiary);
+    --button-color: var(--button-color-tertiary);
+    --button-border: var(--button-border-tertiary);
+
+    --button-background-hover: var(--button-background-hover-tertiary);
+    --button-color-hover: var(--button-color-hover-tertiary);
+    --button-border-hover: var(--button-border-hover-tertiary);
+
+    --button-border-active: var(--button-border-active-tertiary);
+    --button-color-active: var(--button-color-active-tertiary);
+    --button-background-active: var(--button-background-active-tertiary);
   }
 }
 

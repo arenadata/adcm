@@ -23,11 +23,17 @@ const HostComponentsTable: React.FC = () => {
   };
 
   return (
-    <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
+    <Table
+      isLoading={isLoading}
+      columns={columns}
+      sortParams={sortParams}
+      onSorting={handleSorting}
+      variant="secondary"
+    >
       {hostComponents.map((hostComponent) => {
         return (
           <TableRow key={hostComponent.id}>
-            <StatusableCell status={serviceComponentsStatusMap[hostComponent.status]}>
+            <StatusableCell status={serviceComponentsStatusMap[hostComponent.status]} size="medium">
               <Link
                 className="text-link"
                 to={generatePath('/clusters/:clusterId/services/:serviceId/components/:componentId', {

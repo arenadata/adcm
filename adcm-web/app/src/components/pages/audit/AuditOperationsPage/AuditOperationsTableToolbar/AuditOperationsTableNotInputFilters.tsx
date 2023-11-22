@@ -82,7 +82,7 @@ const AuditOperationsTableNotInputFilters = () => {
       <LabeledField label="to" direction="row">
         <DatePicker value={endDate} onSubmit={handleTimeTo} minDate={startDate} />
       </LabeledField>
-      <Button variant="secondary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
+      <Button variant="tertiary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
     </TableFilters>
   );
 };

@@ -15,7 +15,9 @@ const SettingsHeader: React.FC = () => {
         <div className={s.settingsHeader}>
           <SettingsDynamicActionsIcon />
           <Concern concerns={adcmSettings?.concerns ?? []} />
-          <Text variant="h3">ADCM</Text>
+          <Text className={s.settingsHeader__text} variant="h3">
+            ADCM
+          </Text>
         </div>
       }
     />

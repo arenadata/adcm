@@ -47,8 +47,6 @@ const ServiceComponentConfigGroupMappingDialog: React.FC = () => {
     }
   }, [clusterId, serviceId, componentId, configGroup, dispatch]);
 
-  console.info('configGroup', configGroup);
-
   return (
     <ConfigGroupMappingDialog
       configGroup={configGroup}

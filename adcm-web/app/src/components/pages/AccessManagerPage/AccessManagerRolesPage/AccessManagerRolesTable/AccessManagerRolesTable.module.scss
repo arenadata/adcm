@@ -1,13 +1,11 @@
 :global {
   body.theme-dark {
     --role-row-color: var(--color-xwhite-off);
-    --role-name-color: var(--color-xblue);
     --table-expandable-row-background: var(--table-tr-background-primary);
   }
 
   body.theme-light {
     --role-row-color: var(--color-xdark);
-    --role-name-color: var(--color-xdark);
     --table-expandable-row-background: var(--color-xgray-alt);
   }
 }
@@ -41,7 +39,6 @@
         font-weight: 500;
 
         &:first-child {
-          color: var(--role-name-color);
           border-bottom-left-radius: 0;
         }
 

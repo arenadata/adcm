@@ -15,7 +15,6 @@
     --table-tr-color-selected-primary: var(--color-xwhite);
     --table-tr-border-selected-primary: var(--color-xgreen);
 
-
     // secondary
     --table-thead-color-secondary: var(--color-xgray-light);
 
@@ -48,7 +47,7 @@
 
     // quaternary
     --table-tr-border-quaternary: var(--color-xdark);
-    --table-tr-background-quaternary: var(--color-xdark-new);
+    --table-tr-background-quaternary: var(--color-xdark-new-50);
     --table-td-color-quaternary: var(--color-xgray-lighter);
   }
 
@@ -100,7 +99,7 @@
 
     // quaternary
     --table-tr-border-quaternary: var(--color-stroke-light);
-    --table-tr-background-quaternary: #EEF2F5;
+    --table-tr-background-quaternary: #eef2f5;
     --table-td-color-quaternary: var(--color-xgray-darker);
   }
 }
@@ -130,7 +129,8 @@
     justify-content: center;
   }
 
-  td,th {
+  td,
+  th {
     padding: 0;
 
     font-size: 14px;
@@ -176,7 +176,6 @@
     }
   }
 
-
   &_primary,
   &_secondary {
     border: none;
@@ -205,8 +204,8 @@
         }
 
         // safari hack:
-        @media not all and (min-resolution:.001dpcm) {
-          @supports (-webkit-appearance:none) {
+        @media not all and (min-resolution: 0.001dpcm) {
+          @supports (-webkit-appearance: none) {
             /**
               Safari can't render box-shadow for <TR> (Chrome anf Mozilla can!)
               Alter way: render borders for TD
@@ -230,8 +229,6 @@
       }
     }
   }
-
-
 
   &_primary {
     --table-cell-padding: 12px 20px;
@@ -258,11 +255,11 @@
 
     --table-th-color: var(--table-thead-color-secondary);
 
-    --table-tr-border: var( --table-tr-border-secondary);
+    --table-tr-border: var(--table-tr-border-secondary);
     --table-tr-background: var(--table-tr-background-secondary);
     --table-tr-color: var(--table-tr-color-secondary);
 
-    --table-tr-border-hover: var( --table-tr-border-hover-secondary);
+    --table-tr-border-hover: var(--table-tr-border-hover-secondary);
     --table-tr-background-hover: var(--table-tr-background-hover-secondary);
     --table-tr-color-hover: var(--table-tr-color-hover-secondary);
 
@@ -275,7 +272,6 @@
     --table-cell-padding: 6px 20px;
     --table-tr-background: var(--table-tr-background-tertiary);
     --table-tr-color: var(--table-tr-color-tertiary);
-
 
     --table-th-color: var(--table-thead-color-tertiary);
 
@@ -305,7 +301,8 @@
     border-radius: 8px;
     border-bottom: 0;
 
-    th, td {
+    th,
+    td {
       --table-cell-padding: 6px 20px;
       height: 36px;
       font-weight: 400;

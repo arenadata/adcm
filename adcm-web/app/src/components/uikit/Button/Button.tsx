@@ -6,7 +6,7 @@ import Icon from '@uikit/Icon/Icon';
 import { ConditionalWrapper, Tooltip } from '@uikit';
 import { TooltipProps } from '@uikit/Tooltip/Tooltip';
 
-type ButtonVariant = 'primary' | 'secondary' | 'clear';
+type ButtonVariant = 'primary' | 'secondary' | 'clear' | 'tertiary';
 export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'title'> {
   variant?: ButtonVariant;
   hasError?: boolean;

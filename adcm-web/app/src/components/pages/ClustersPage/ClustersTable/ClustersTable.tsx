@@ -35,7 +35,13 @@ const ClustersTable = () => {
   };
 
   return (
-    <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
+    <Table
+      isLoading={isLoading}
+      columns={columns}
+      sortParams={sortParams}
+      onSorting={handleSorting}
+      variant="secondary"
+    >
       {clusters.map((cluster) => {
         return (
           <TableRow key={cluster.id}>

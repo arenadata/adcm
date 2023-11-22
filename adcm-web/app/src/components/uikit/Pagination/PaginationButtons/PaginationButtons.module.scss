@@ -28,12 +28,12 @@
   cursor: pointer;
   background: none;
   box-shadow: var(--pagination-btn-box-shadow);
-  border: 1px solid var(--pagination-btn-border-color);
+  border: 2px solid var(--pagination-btn-border-color);
   font-size: 14px;
   font-family: inherit;
   font-weight: 500;
   box-sizing: border-box;
-  border-radius: 5px;
+  border-radius: 8px;
   color: var(--pagination-btn-text-color);
   padding: 0;
   display: flex;
