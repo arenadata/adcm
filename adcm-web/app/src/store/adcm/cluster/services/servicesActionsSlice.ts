@@ -31,7 +31,9 @@ const addServices = createAsyncThunk(
   async ({ clusterId, servicesIds }: AddClusterServicePayload, thunkAPI) => {
     try {
       await AdcmClusterServicesApi.addClusterService(clusterId, servicesIds);
-      thunkAPI.dispatch(showInfo({ message: `Service${servicesIds.length > 0 ? 's' : ''} was added` }));
+
+      const message = servicesIds.length > 0 ? 'All selected services have been added' : 'The service has been added';
+      thunkAPI.dispatch(showInfo({ message }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue([]);
