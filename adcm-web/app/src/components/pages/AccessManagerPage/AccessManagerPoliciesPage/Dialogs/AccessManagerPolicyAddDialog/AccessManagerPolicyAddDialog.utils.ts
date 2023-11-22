@@ -18,21 +18,27 @@ export const isValidStepItem = (step: string, formData: AccessManagerPolicyAddDi
   }
 };
 
+const getPreparedObjectsArray = (entityIds: number[], type: string) => {
+  return entityIds.map((id) => ({ id, type }));
+};
+
 export const getObjectsForSubmit = (formData: AccessManagerPolicyAddDialogFormData) => {
+  const objectsForSubmit = [];
+
   if (formData.clusterIds.length > 0) {
-    return formData.clusterIds.map((id) => ({ id: id, type: 'cluster' }));
+    objectsForSubmit.push(...getPreparedObjectsArray(formData.clusterIds, 'cluster'));
   }
   if (formData.serviceName !== '' && formData.serviceClusterIds.length > 0) {
-    return formData.serviceClusterIds.map((id) => ({ id: id, type: 'service' }));
+    objectsForSubmit.push(...getPreparedObjectsArray(formData.serviceClusterIds, 'service'));
   }
   if (formData.hostproviderIds.length > 0) {
-    return formData.hostproviderIds.map((id) => ({ id: id, type: 'provider' }));
+    objectsForSubmit.push(...getPreparedObjectsArray(formData.hostproviderIds, 'provider'));
   }
   if (formData.hostIds.length > 0) {
-    return formData.hostIds.map((id) => ({ id: id, type: 'host' }));
+    objectsForSubmit.push(...getPreparedObjectsArray(formData.hostIds, 'host'));
   }
 
-  return [];
+  return objectsForSubmit;
 };
 
 export const generateDialogData = (policy: AdcmPolicy, objectTypes: string[]) => {
