@@ -29,7 +29,7 @@ interface AdcmServiceComponentConfigGroupState {
 
 const createInitialState = (): AdcmServiceComponentConfigGroupState => ({
   serviceComponentConfigGroup: null,
-  isLoading: false,
+  isLoading: true,
 });
 
 const serviceComponentConfigGroupSingle = createSlice({

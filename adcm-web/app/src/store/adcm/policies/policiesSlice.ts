@@ -118,7 +118,7 @@ const loadHostProviders = createAsyncThunk('adcm/policies/loadHostProviders', as
 const createInitialState = (): AdcmPoliciesState => ({
   policies: [],
   totalCount: 0,
-  isLoading: false,
+  isLoading: true,
   relatedData: {
     clusters: [],
     services: [],

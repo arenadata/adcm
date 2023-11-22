@@ -50,7 +50,7 @@ const refreshClusters = createAsyncThunk('adcm/clusters/refreshClusters', async 
 const createInitialState = (): AdcmClustersState => ({
   clusters: [],
   totalCount: 0,
-  isLoading: false,
+  isLoading: true,
 });
 
 const clustersSlice = createSlice({

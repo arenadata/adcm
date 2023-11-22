@@ -48,7 +48,7 @@ const refreshUsers = createAsyncThunk('adcm/users/refreshUsers', async (arg, thu
 const createInitialState = (): AdcmUsersState => ({
   users: [],
   totalCount: 0,
-  isLoading: false,
+  isLoading: true,
 });
 
 const usersSlice = createSlice({

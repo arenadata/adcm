@@ -77,7 +77,7 @@ const getTask = createAsyncThunk('adcm/jobs/getTask', async (id: number, thunkAP
 const createInitialState = (): AdcmJobsState => ({
   jobs: [],
   totalCount: 0,
-  isLoading: false,
+  isLoading: true,
   job: null,
   task: {
     id: 0,

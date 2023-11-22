@@ -77,7 +77,7 @@ const createInitialState = (): AdcmServicesState => ({
   services: [],
   serviceLicense: [],
   totalCount: 0,
-  isLoading: false,
+  isLoading: true,
 });
 
 const servicesSlice = createSlice({

@@ -55,7 +55,7 @@ type AdcmClusterConfigGroupsState = {
 const createInitialState = (): AdcmClusterConfigGroupsState => ({
   clusterConfigGroups: [],
   totalCount: 0,
-  isLoading: false,
+  isLoading: true,
 });
 
 const clusterConfigGroupsSlice = createSlice({

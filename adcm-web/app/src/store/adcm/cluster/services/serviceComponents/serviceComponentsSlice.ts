@@ -68,7 +68,7 @@ const refreshServiceComponents = createAsyncThunk(
 const createInitialState = (): AdcmServiceComponentsState => ({
   serviceComponents: [],
   totalCount: 0,
-  isLoading: false,
+  isLoading: true,
 });
 
 const serviceComponentsSlice = createSlice({

@@ -93,7 +93,7 @@ const getClusterServiceImports = createAsyncThunk(
 const createInitialState = (): AdcmClusterImportsState => ({
   clusterImports: [],
   hasSaveError: false,
-  isLoading: false,
+  isLoading: true,
   totalCount: 0,
 });
 

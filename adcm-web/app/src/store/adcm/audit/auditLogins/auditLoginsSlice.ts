@@ -55,7 +55,7 @@ const refreshAuditLogins = createAsyncThunk('adcm/auditLogins/refreshAuditLogins
 const createInitialState = (): AdcmAuditLoginsState => ({
   auditLogins: [],
   totalCount: 0,
-  isLoading: false,
+  isLoading: true,
 });
 
 const auditLoginsSlice = createSlice({

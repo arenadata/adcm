@@ -129,7 +129,7 @@ const unlinkClusterHost = createAsyncThunk(
 
 const createInitialState = (): AdcmClusterHostState => ({
   clusterHost: undefined,
-  isLoading: false,
+  isLoading: true,
   relatedData: {
     hostComponents: [],
   },

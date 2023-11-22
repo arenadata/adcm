@@ -75,7 +75,7 @@ const createInitialState = (): AdcmGroupsState => ({
   itemsForActions: {
     deletableId: null,
   },
-  isLoading: false,
+  isLoading: true,
   selectedItemsIds: [],
 });
 
