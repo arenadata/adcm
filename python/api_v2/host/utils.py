@@ -53,7 +53,7 @@ def add_new_host_and_map_it(provider: HostProvider, fqdn: str, cluster: Cluster 
     return host
 
 
-def maintenance_mode(request: Request, host: Host, **kwargs) -> Response:
+def maintenance_mode(request: Request, host: Host) -> Response:
     check_custom_perm(user=request.user, action_type="change_maintenance_mode", model="host", obj=host)
 
     serializer = HostChangeMaintenanceModeSerializer(instance=host, data=request.data)
@@ -68,7 +68,7 @@ def maintenance_mode(request: Request, host: Host, **kwargs) -> Response:
             status=HTTP_409_CONFLICT,
         )
 
-    response: Response = get_maintenance_mode_response(obj=host, serializer=serializer)
+    response = get_maintenance_mode_response(obj=host, serializer=serializer)
     if response.status_code == HTTP_200_OK:
         response.data = serializer.data
 

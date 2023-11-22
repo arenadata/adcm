@@ -133,7 +133,7 @@ class HostViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewSet)
     @audit
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        return maintenance_mode(request=request, host=self.get_object(), **kwargs)
+        return maintenance_mode(request=request, host=self.get_object())
 
 
 class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  # pylint:disable=too-many-ancestors
@@ -185,7 +185,7 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  #
     @audit
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        return maintenance_mode(request=request, host=self.get_object(), **kwargs)
+        return maintenance_mode(request=request, host=self.get_object())
 
     @action(methods=["get"], detail=True, url_path="statuses")
     def statuses(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
