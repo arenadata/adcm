@@ -7,7 +7,7 @@ import { ServiceId } from '@pages/cluster/ClusterMapping/ClusterMapping.types';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
 import { arrayToHash } from '@utils/arrayUtils';
 
-type MappingState = 'no-changes' | 'editing' | 'saved';
+type MappingState = 'no-changes' | 'editing' | 'saving';
 
 type GetClusterMappingArg = {
   clusterId: number;
@@ -168,13 +168,17 @@ const mappingSlice = createSlice({
     builder.addCase(loadMappingComponents.fulfilled, (state, action) => {
       state.components = action.payload;
     });
+    builder.addCase(saveMapping.pending, (state) => {
+      state.state = 'saving';
+    });
     builder.addCase(saveMapping.fulfilled, (state) => {
       state.hasSaveError = false;
-      state.state = 'saved';
+      state.state = 'no-changes';
       state.mapping = state.localMapping;
     });
     builder.addCase(saveMapping.rejected, (state) => {
       state.hasSaveError = true;
+      state.state = 'editing';
     });
     builder.addCase(getNotAddedServices.fulfilled, (state, action) => {
       state.relatedData.notAddedServicesDictionary = arrayToHash(action.payload, (s) => s.id);

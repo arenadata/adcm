@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { setLocalMapping } from '@store/adcm/cluster/mapping/mappingSlice';
+import { setLocalMapping, revertChanges } from '@store/adcm/cluster/mapping/mappingSlice';
 import { AdcmMappingComponent, AdcmHostShortView } from '@models/adcm';
 import { arrayToHash } from '@utils/arrayUtils';
 import {
@@ -23,16 +23,9 @@ import {
 export const useClusterMapping = () => {
   const dispatch = useDispatch();
 
-  const {
-    hosts,
-    components,
-    mapping: originalMapping,
-    localMapping,
-    isLoaded,
-    isLoading,
-    hasSaveError,
-    state,
-  } = useStore(({ adcm }) => adcm.clusterMapping);
+  const { hosts, components, localMapping, isLoaded, isLoading, hasSaveError, state } = useStore(
+    ({ adcm }) => adcm.clusterMapping,
+  );
   const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
 
   const hostsDictionary: HostsDictionary = useMemo(() => arrayToHash(hosts, (h) => h.id), [hosts]);
@@ -105,8 +98,8 @@ export const useClusterMapping = () => {
   };
 
   const handleRevert = useCallback(() => {
-    dispatch(setLocalMapping(originalMapping));
-  }, [dispatch, originalMapping]);
+    dispatch(revertChanges());
+  }, [dispatch]);
 
   return {
     hostComponentMapping: localMapping,
