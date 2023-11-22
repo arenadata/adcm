@@ -71,7 +71,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
       <ToolbarPanel className={s.dynamicActionDialog__toolbar}>
         <SearchInput onChange={handleFilterChange} placeholder="Search host" />
         <ButtonGroup>
-          <Button variant="secondary" iconLeft="g1-return" onClick={handleRevert} title="Reset" />
+          <Button variant="tertiary" iconLeft="g1-return" onClick={handleRevert} title="Reset" />
           <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>

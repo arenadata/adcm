@@ -69,7 +69,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--checkbox-border);
+    border: 2px solid var(--checkbox-border);
     color: var(--checkbox-mark-color, var(--checkbox-border));
     border-radius: 3px;
     transition: border-color 250ms, color 250ms;

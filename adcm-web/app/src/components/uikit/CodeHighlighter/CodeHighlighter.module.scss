@@ -1,8 +1,8 @@
 :global {
   body.theme-dark {
     --code-highlite-text: var(--color-xwhite-off);
-    --code-highlite-background: #110F12;
-    --code-highlite-background-hover:var(--color-xdark-new-50);
+    --code-highlite-background: #110f12;
+    --code-highlite-background-hover: var(--color-xdark-new-50);
     --code-highlite-border: var(--color-xdark);
     --code-highlite-shadow: unset;
     --code-highlite-numbers: var(--color-xgray-light);
@@ -98,7 +98,7 @@
 
 .highlighter_font-params {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 400;
   line-height: 20px;
   letter-spacing: 0;

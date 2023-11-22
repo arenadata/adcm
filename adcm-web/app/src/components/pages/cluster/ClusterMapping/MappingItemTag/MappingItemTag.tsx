@@ -36,7 +36,7 @@ const MappingItemTag = ({
             //
             data-id={id}
             icon="g1-remove"
-            variant="secondary"
+            variant="primary"
             size={20}
             onClick={onDeleteClick}
             title={isDisabled ? denyRemoveHostReason : 'Remove'}

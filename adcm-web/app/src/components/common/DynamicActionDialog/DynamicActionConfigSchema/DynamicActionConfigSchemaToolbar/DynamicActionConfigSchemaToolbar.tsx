@@ -35,7 +35,7 @@ const DynamicActionConfigSchemaToolbar: React.FC<DynamicActionConfigSchemaToolba
       <Switch isToggled={filter.showAdvanced} variant="blue" onChange={handleShowAdvanced} label="Show advanced" />
 
       <ButtonGroup>
-        <Button variant="secondary" iconLeft="g1-return" onClick={onReset} />
+        <Button variant="tertiary" iconLeft="g1-return" onClick={onReset} />
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>

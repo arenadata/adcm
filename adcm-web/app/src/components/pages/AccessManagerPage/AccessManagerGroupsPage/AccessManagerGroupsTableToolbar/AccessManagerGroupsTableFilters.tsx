@@ -45,7 +45,7 @@ const AccessManagerGroupsTableFilters = () => {
           noneLabel="All"
         />
       </LabeledField>
-      <Button variant="secondary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
+      <Button variant="tertiary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
     </TableFilters>
   );
 };

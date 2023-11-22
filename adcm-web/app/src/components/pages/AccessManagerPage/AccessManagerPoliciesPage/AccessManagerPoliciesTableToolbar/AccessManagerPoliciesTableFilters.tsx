@@ -25,7 +25,7 @@ const AccessManagerPoliciesTableFilters: React.FC = () => {
         variant="primary"
         onChange={handleNameChange}
       />
-      <Button variant="secondary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
+      <Button variant="tertiary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
     </TableFilters>
   );
 };

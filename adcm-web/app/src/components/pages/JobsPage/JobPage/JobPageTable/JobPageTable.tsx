@@ -19,7 +19,7 @@ const JobPageTable = () => {
         <TableCell>{secondsToDuration(task.duration)}</TableCell>
         <DateTimeCell value={task.startTime} />
         <DateTimeCell value={task.endTime} />
-        <TableCell hasIconOnly align="center">
+        <TableCell hasIconOnly>
           <a href={downloadLink} download="download">
             Download
           </a>

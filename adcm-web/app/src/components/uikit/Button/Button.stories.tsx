@@ -52,7 +52,7 @@ export const ButtonWithIconExamples: Story = {
         <Button variant="secondary" iconRight="g1-imports">
           Delete
         </Button>
-        <Button variant="secondary" iconLeft="g1-return" />
+        <Button variant="tertiary" iconLeft="g1-return" />
       </div>
     );
   },

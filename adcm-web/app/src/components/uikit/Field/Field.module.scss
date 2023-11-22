@@ -56,7 +56,7 @@
 .field {
   display: flex;
   align-items: center;
-  border: 1px solid var(--field-border);
+  border: 2px solid var(--field-border);
   background: var(--field-background);
   color: var(--field-color);
   border-radius: 8px;
@@ -78,7 +78,7 @@
   &__mainContent {
     border: none;
     border-radius: 0;
-    padding: 5px 8px;
+    padding: 4px 7px;
     background: none;
     outline: none;
     color: inherit;
@@ -93,7 +93,7 @@
     &::placeholder {
       // https://developer.mozilla.org/en-US/docs/Web/CSS/::placeholder#opaque_text
       opacity: 1;
-      color: var(--field-placeholder)
+      color: var(--field-placeholder);
     }
 
     // if input are empty then colors of icons should be equal to placeholder

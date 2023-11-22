@@ -70,7 +70,7 @@ const HostsTableFilters = () => {
           noneLabel="All"
         />
       </LabeledField>
-      <Button variant="secondary" iconLeft="g1-return" onClick={handleResetClick} />
+      <Button variant="tertiary" iconLeft="g1-return" onClick={handleResetClick} />
     </TableFilters>
   );
 };

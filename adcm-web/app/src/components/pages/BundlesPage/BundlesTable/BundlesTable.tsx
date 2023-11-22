@@ -11,6 +11,7 @@ import { setDeletableId, setSelectedItemsIds as setSelectedBundlesIds } from '@s
 import { SortParams } from '@uikit/types/list.types';
 import { setSortParams } from '@store/adcm/bundles/bundlesTableSlice';
 import { Link } from 'react-router-dom';
+import cn from 'classnames';
 
 const getBundleUniqKey = ({ id }: AdcmBundle) => id;
 
@@ -58,7 +59,7 @@ const BundlesTable: React.FC = () => {
     >
       {bundles.map((bundle) => {
         return (
-          <TableRow key={bundle.id}>
+          <TableRow key={bundle.id} className={cn({ 'is-selected': selectedItemsIds.includes(bundle.id) })}>
             <TableCell>
               <Checkbox checked={isItemSelected(bundle)} onChange={getHandlerSelectedItem(bundle)} />
             </TableCell>

@@ -61,7 +61,7 @@ const AuditLoginsTableFilters = () => {
         <DatePicker value={endDate} onSubmit={handleTimeTo} minDate={startDate} />
       </LabeledField>
       <ButtonGroup>
-        <Button variant="secondary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
+        <Button variant="tertiary" iconLeft="g1-return" onClick={handleResetFiltersClick} />
       </ButtonGroup>
     </TableFilters>
   );
