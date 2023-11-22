@@ -20,7 +20,7 @@ const getCorrectConfigurationData = (configuration: AdcmConfiguration): Configur
 };
 
 const ConfigurationMain: React.FC<ConfigurationMainProps> = ({ configuration, onChangeConfiguration }) => {
-  const { filter, onChangeIsValid } = useConfigurationFormContext();
+  const { filter, areExpandedAll, onChangeIsValid } = useConfigurationFormContext();
 
   if (configuration === null) return null;
 
@@ -48,6 +48,7 @@ const ConfigurationMain: React.FC<ConfigurationMainProps> = ({ configuration, on
       attributes={attributes}
       schema={schema}
       filter={filter}
+      areExpandedAll={areExpandedAll}
       onConfigurationChange={handleChangeConfigurationData}
       onAttributesChange={handleChangeAttributes}
       onChangeIsValid={onChangeIsValid}

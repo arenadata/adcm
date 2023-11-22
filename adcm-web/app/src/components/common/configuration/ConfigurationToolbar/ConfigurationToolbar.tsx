@@ -13,7 +13,7 @@ interface ConfigurationToolbarProps {
 }
 
 const ConfigurationToolbar: React.FC<ConfigurationToolbarProps> = ({ onSave, onRevert, isViewDraft }) => {
-  const { filter, onFilterChange, isValid } = useConfigurationFormContext();
+  const { filter, onFilterChange, isValid, areExpandedAll, handleChangeExpandedAll } = useConfigurationFormContext();
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     onFilterChange({ title: e.target.value });
@@ -31,6 +31,7 @@ const ConfigurationToolbar: React.FC<ConfigurationToolbarProps> = ({ onSave, onR
         className={s.configurationToolbar__search}
       />
 
+      <Switch isToggled={areExpandedAll} onChange={handleChangeExpandedAll} label="Expand content" />
       <Switch isToggled={filter.showAdvanced} variant="blue" onChange={handleShowAdvanced} label="Show advanced" />
 
       <ButtonGroup className={s.configurationToolbar__buttons}>

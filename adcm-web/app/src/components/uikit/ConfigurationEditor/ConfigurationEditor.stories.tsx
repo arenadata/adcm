@@ -59,6 +59,7 @@ const ConfigurationEditorStoryWithHooks = ({ initialConfigurationData, initialAt
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [configuration, setConfiguration] = useState<ConfigurationData>(safeConfigurationData as any);
   const [attributes, setAttributes] = useState<ConfigurationAttributes>(initialAttributes ?? {});
+  const [areExpandedAll, setAreExpandedAll] = useState(false);
   const [filter, setFilter] = useState<ConfigurationNodeFilter>({
     title: '',
     showAdvanced: false,
@@ -87,9 +88,14 @@ const ConfigurationEditorStoryWithHooks = ({ initialConfigurationData, initialAt
     setFilter((prevFilter) => ({ ...prevFilter, title: event.target.value }));
   };
 
+  const handleChangeExpandedAll = () => {
+    setAreExpandedAll((prev) => !prev);
+  };
+
   return (
     <>
       <Switch isToggled={filter.showAdvanced} variant="blue" onChange={handleAdvancedChange} label="Show advanced" />
+      <Switch isToggled={areExpandedAll} onChange={handleChangeExpandedAll} label="Show advanced" />
       <br />
       Show invisible:
       <Checkbox checked={filter.showInvisible} onChange={handleInvisibleChange} />
@@ -102,6 +108,7 @@ const ConfigurationEditorStoryWithHooks = ({ initialConfigurationData, initialAt
         configuration={configuration}
         attributes={attributes}
         filter={filter}
+        areExpandedAll={areExpandedAll}
         onConfigurationChange={handleConfigurationChange}
         onAttributesChange={handleAttributesChange}
       />

@@ -17,6 +17,7 @@ export interface ConfigurationEditorProps {
   attributes: ConfigurationAttributes;
   configuration: ConfigurationData;
   filter: ConfigurationNodeFilter;
+  areExpandedAll: boolean;
   onConfigurationChange: (configuration: ConfigurationData) => void;
   onAttributesChange: (attributes: ConfigurationAttributes) => void;
   onChangeIsValid?: (isValid: boolean) => void;
@@ -26,6 +27,7 @@ const ConfigurationEditor = ({
   schema,
   attributes,
   configuration,
+  areExpandedAll,
   filter,
   onConfigurationChange,
   onAttributesChange,
@@ -129,6 +131,7 @@ const ConfigurationEditor = ({
         configuration={configuration}
         attributes={attributes}
         filter={filter}
+        areExpandedAll={areExpandedAll}
         onAddEmptyObject={handleAddEmptyObject}
         onEditField={handleOpenEditFieldDialog}
         onAddField={handleOpenAddFieldDialog}

@@ -4,9 +4,10 @@ import { ConfigurationNodeFilter } from '@uikit/ConfigurationEditor/Configuratio
 export type ConfigurationFormContextOptions = {
   filter: ConfigurationNodeFilter;
   onFilterChange: (changes: Partial<ConfigurationNodeFilter>) => void;
-
+  areExpandedAll: boolean;
   isValid: boolean;
   onChangeIsValid: (isValid: boolean) => void;
+  handleChangeExpandedAll: () => void;
 };
 
 export const ConfigurationFormContextContext = React.createContext<ConfigurationFormContextOptions>(
