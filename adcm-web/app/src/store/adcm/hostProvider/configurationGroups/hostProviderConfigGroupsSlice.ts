@@ -60,7 +60,7 @@ type AdcmHostProviderConfigGroupsState = {
 const createInitialState = (): AdcmHostProviderConfigGroupsState => ({
   hostProviderConfigGroups: [],
   totalCount: 0,
-  isLoading: false,
+  isLoading: true,
 });
 
 const hostProviderConfigGroupsSlice = createSlice({

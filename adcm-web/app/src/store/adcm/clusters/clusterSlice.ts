@@ -43,7 +43,7 @@ const getCluster = createAsyncThunk('adcm/cluster/getCluster', async (arg: numbe
 
 const createInitialState = (): AdcmClusterState => ({
   cluster: undefined,
-  isLoading: false,
+  isLoading: true,
 });
 
 const clusterSlice = createSlice({

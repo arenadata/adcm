@@ -23,7 +23,7 @@ interface AdcmClusterServiceConfigGroupState {
 
 const createInitialState = (): AdcmClusterServiceConfigGroupState => ({
   serviceConfigGroup: null,
-  isLoading: false,
+  isLoading: true,
 });
 
 const serviceConfigGroupSlice = createSlice({

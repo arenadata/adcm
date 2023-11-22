@@ -77,7 +77,7 @@ const toggleMaintenanceMode = createAsyncThunk(
 
 const createInitialState = (): AdcmServiceComponentState => ({
   serviceComponent: undefined,
-  isLoading: false,
+  isLoading: true,
 });
 
 const serviceComponentSlice = createSlice({

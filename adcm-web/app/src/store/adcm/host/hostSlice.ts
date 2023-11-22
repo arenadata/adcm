@@ -77,7 +77,7 @@ const unlinkHostWithUpdate = createAsyncThunk(
 
 const createInitialState = (): AdcmHostState => ({
   host: undefined,
-  isLoading: false,
+  isLoading: true,
   hostComponentsCounters: {
     successfulHostComponentsCount: 0,
     totalHostComponentsCount: 0,

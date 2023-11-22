@@ -57,7 +57,7 @@ const refreshClusterHosts = createAsyncThunk(
 const createInitialState = (): AdcmClusterHostsState => ({
   hosts: [],
   totalCount: 0,
-  isLoading: false,
+  isLoading: true,
 });
 
 const clusterHostsSlice = createSlice({

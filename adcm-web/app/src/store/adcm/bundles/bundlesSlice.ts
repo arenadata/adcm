@@ -121,7 +121,7 @@ const uploadWithUpdateBundles = createAsyncThunk(
 const createInitialState = (): AdcmBundlesState => ({
   bundles: [],
   totalCount: 0,
-  isLoading: false,
+  isLoading: true,
   isUploading: false,
   itemsForActions: {
     deletableId: null,

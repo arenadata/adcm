@@ -59,7 +59,7 @@ const refreshRoles = createAsyncThunk('adcm/roles/refreshRoles', async (arg, thu
 const createInitialState = (): AdcmRolesState => ({
   roles: [],
   totalCount: 0,
-  isLoading: false,
+  isLoading: true,
   relatedData: {
     categories: [],
   },

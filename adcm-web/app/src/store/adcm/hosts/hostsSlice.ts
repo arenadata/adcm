@@ -51,7 +51,7 @@ const refreshHosts = createAsyncThunk('adcm/hosts/refreshHosts', async (arg, thu
 const createInitialState = (): AdcmHostsState => ({
   hosts: [],
   totalCount: 0,
-  isLoading: false,
+  isLoading: true,
 });
 
 const hostsSlice = createSlice({

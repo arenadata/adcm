@@ -85,7 +85,7 @@ const refreshClusterServicesStatuses = createAsyncThunk(
 
 const createInitialState = (): AdcmClusterOverviewServicesState => ({
   servicesStatuses: [],
-  isLoading: false,
+  isLoading: true,
   count: 0,
   allServicesCount: 0,
 });

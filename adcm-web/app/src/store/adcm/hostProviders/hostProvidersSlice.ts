@@ -50,7 +50,7 @@ const refreshHostProviders = createAsyncThunk('adcm/hostProviders/refreshHostPro
 const createInitialState = (): AdcmHostProvidersState => ({
   hostProviders: [],
   totalCount: 0,
-  isLoading: false,
+  isLoading: true,
 });
 
 const hostProvidersSlice = createSlice({

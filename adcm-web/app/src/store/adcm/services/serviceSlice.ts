@@ -79,7 +79,7 @@ const getRelatedServiceComponentsStatuses = createAsyncThunk(
 
 const createInitialState = (): AdcmServiceState => ({
   service: undefined,
-  isLoading: false,
+  isLoading: true,
   relatedData: {
     successfulComponentsCount: 0,
     totalComponentsCount: 0,
