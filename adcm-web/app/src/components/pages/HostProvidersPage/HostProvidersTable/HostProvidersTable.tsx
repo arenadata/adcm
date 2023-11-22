@@ -56,11 +56,11 @@ const HostProviderTable = () => {
           <TableCell hasIconOnly align="center">
             <HostProvidersDynamicActionsIcon hostProvider={hostProvider} />
             <IconButton
-              disabled={!hostProvider.isUpgradable}
               icon="g1-upgrade"
               size={32}
+              disabled={!hostProvider.isUpgradable}
               onClick={() => handleUpgradeClick(hostProvider)}
-              title="Upgrade"
+              title={hostProvider.isUpgradable ? 'Upgrade' : 'No upgrades'}
             />
             <IconButton icon="g1-delete" size={32} onClick={() => handleDeleteAction(hostProvider.id)} title="Delete" />
           </TableCell>

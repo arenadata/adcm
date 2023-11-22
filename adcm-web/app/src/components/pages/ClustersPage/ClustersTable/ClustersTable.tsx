@@ -77,6 +77,7 @@ const ClustersTable = () => {
                 size={32}
                 disabled={!cluster.isUpgradable}
                 onClick={() => handleUpgradeClick(cluster)}
+                title={cluster.isUpgradable ? 'Upgrade' : 'No upgrades'}
               />
               <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(cluster.id)} title="Delete" />
             </TableCell>
