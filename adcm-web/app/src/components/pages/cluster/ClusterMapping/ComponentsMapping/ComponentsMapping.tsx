@@ -69,6 +69,8 @@ const ComponentsMapping = () => {
     dispatch(saveMapping({ clusterId, mapping: hostComponentMapping }));
   };
 
+  const isButtonsDisabledByState = mappingState === 'saving' || mappingState === 'no-changes';
+
   return (
     <div className={s.componentsMapping}>
       <ClusterMappingToolbar className={s.componentsMapping__toolbar}>
@@ -80,15 +82,14 @@ const ComponentsMapping = () => {
             label="Hide empty components"
           />
           <div className={s.componentsMapping__toolbarButtons}>
-            {mappingState !== 'saved' && (
-              <Button variant="secondary" onClick={handleRevert}>
-                Reset
-              </Button>
-            )}
+            <Button disabled={isButtonsDisabledByState} variant="secondary" onClick={handleRevert}>
+              Reset
+            </Button>
             <Button
               onClick={handleSave}
-              disabled={mappingState !== 'editing' || !mappingValidation.isAllMappingValid}
+              disabled={isButtonsDisabledByState || !mappingValidation.isAllMappingValid}
               hasError={hasSaveError}
+              iconLeft={mappingState === 'saving' ? 'g1-load' : undefined}
             >
               Save
             </Button>
