@@ -22,6 +22,7 @@ export interface ConfigurationTreeProps {
   configuration: ConfigurationData;
   attributes: ConfigurationAttributes;
   filter: ConfigurationNodeFilter;
+  areExpandedAll: boolean;
   onEditField: ChangeConfigurationNodeHandler;
   onAddEmptyObject: ChangeConfigurationNodeHandler;
   onAddField: ChangeConfigurationNodeHandler;
@@ -49,6 +50,7 @@ const ConfigurationTree = memo(
     configuration,
     attributes,
     filter,
+    areExpandedAll,
     onEditField,
     onAddEmptyObject,
     onAddField,
@@ -128,6 +130,7 @@ const ConfigurationTree = memo(
       <CollapseNode
         node={filteredTree}
         isInitiallyExpanded={filteredTree.key === rootNodeKey}
+        areExpandedAll={areExpandedAll}
         getNodeClassName={handleGetNodeClassName}
         renderNodeContent={handleRenderNodeContent}
       />

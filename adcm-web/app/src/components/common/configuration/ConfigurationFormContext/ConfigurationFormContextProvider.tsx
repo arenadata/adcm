@@ -13,6 +13,7 @@ const ConfigurationFormContextProvider: React.FC<ConfigurationContextProviderPro
     showAdvanced: false,
     showInvisible: false,
   });
+  const [areExpandedAll, setAreExpandedAll] = useState(false);
 
   const handleFilterChange = useCallback(
     (changes: Partial<ConfigurationNodeFilter>) => {
@@ -21,11 +22,17 @@ const ConfigurationFormContextProvider: React.FC<ConfigurationContextProviderPro
     [setFilter],
   );
 
+  const handleChangeExpandedAll = useCallback(() => {
+    setAreExpandedAll((prev) => !prev);
+  }, [setAreExpandedAll]);
+
   const contextValue = {
     filter,
     onFilterChange: handleFilterChange,
     isValid,
     onChangeIsValid: setIsValid,
+    areExpandedAll,
+    handleChangeExpandedAll,
   };
 
   return (

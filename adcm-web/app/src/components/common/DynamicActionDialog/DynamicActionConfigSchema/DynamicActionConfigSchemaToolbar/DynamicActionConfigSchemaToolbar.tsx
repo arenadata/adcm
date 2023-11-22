@@ -17,7 +17,7 @@ const DynamicActionConfigSchemaToolbar: React.FC<DynamicActionConfigSchemaToolba
   onCancel,
   submitLabel,
 }) => {
-  const { filter, onFilterChange, isValid } = useConfigurationFormContext();
+  const { filter, onFilterChange, isValid, areExpandedAll, handleChangeExpandedAll } = useConfigurationFormContext();
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     onFilterChange({ title: e.target.value });
@@ -31,6 +31,7 @@ const DynamicActionConfigSchemaToolbar: React.FC<DynamicActionConfigSchemaToolba
     <ToolbarPanel className={s.dynamicActionDialog__toolbar}>
       <SearchInput placeholder="Search input" value={filter.title} onChange={handleSearch} />
 
+      <Switch isToggled={areExpandedAll} onChange={handleChangeExpandedAll} label="Expand content" />
       <Switch isToggled={filter.showAdvanced} variant="blue" onChange={handleShowAdvanced} label="Show advanced" />
 
       <ButtonGroup>
