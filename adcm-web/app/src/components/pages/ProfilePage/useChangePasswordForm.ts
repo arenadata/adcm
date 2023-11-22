@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useDispatch, useForm, useStore } from '@hooks';
 import { changePassword } from '@store/adcm/profile/profileSlice';
+import { required } from '@utils/validationsUtils';
 
 interface ChangePasswordFormData {
   currentPassword: string;
@@ -32,13 +33,13 @@ export const useChangePasswordForm = () => {
 
   useEffect(() => {
     setErrors({
-      currentPassword: passwordMinMaxValidator(
-        'current password',
-        formData.currentPassword,
-        minPasswordLength,
-        maxPasswordLength,
-      ),
-      newPassword: passwordMinMaxValidator('new password', formData.newPassword, minPasswordLength, maxPasswordLength),
+      currentPassword:
+        required(formData.newPassword) && !required(formData.currentPassword)
+          ? 'Current password field is required'
+          : undefined,
+      newPassword:
+        (required(formData.newPassword) ? undefined : 'New password field is required') ||
+        passwordMinMaxValidator('new password', formData.newPassword, minPasswordLength, maxPasswordLength),
       confirmNewPassword:
         formData.newPassword === formData.confirmNewPassword
           ? undefined
