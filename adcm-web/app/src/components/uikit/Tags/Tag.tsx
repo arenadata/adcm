@@ -18,7 +18,7 @@ const Tag: React.FC<TagProps> = ({
   return (
     <div className={classes} {...props}>
       {startAdornment}
-      {children}
+      <span>{children}</span>
       {endAdornment}
     </div>
   );
