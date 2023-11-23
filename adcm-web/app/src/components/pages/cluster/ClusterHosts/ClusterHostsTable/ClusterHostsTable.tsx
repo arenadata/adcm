@@ -32,7 +32,13 @@ const ClusterHostsTable: React.FC = () => {
   };
 
   return (
-    <Table isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
+    <Table
+      isLoading={isLoading}
+      columns={columns}
+      sortParams={sortParams}
+      onSorting={handleSorting}
+      variant="secondary"
+    >
       {clusterHosts.map((clusterHost: AdcmClusterHost) => {
         return (
           <TableRow key={clusterHost.id}>

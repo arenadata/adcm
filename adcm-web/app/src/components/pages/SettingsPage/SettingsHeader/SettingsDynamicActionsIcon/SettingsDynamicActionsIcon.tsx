@@ -21,6 +21,7 @@ const SettingsDynamicActionsButton: React.FC = () => {
       actions={adcmSettingsDynamicActions}
       onSelectAction={handleSelectAction}
       disabled={isDisabled}
+      size={28}
     />
   );
 };
