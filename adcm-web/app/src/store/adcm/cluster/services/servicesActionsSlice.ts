@@ -187,6 +187,9 @@ const servicesActionsSlice = createSlice({
     builder.addCase(toggleMaintenanceMode.pending, (state) => {
       servicesActionsSlice.caseReducers.closeMaintenanceModeDialog(state);
     });
+    builder.addCase(deleteService.pending, (state) => {
+      state.deleteDialog.serviceId = null;
+    });
   },
 });
 
