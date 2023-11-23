@@ -45,7 +45,7 @@ class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):  # pylint:
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.service_1_group_config = GroupConfig.objects.create(
             name="service_1_group_config",
             object_type=ContentType.objects.get_for_model(self.service_1),

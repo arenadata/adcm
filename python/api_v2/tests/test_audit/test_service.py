@@ -40,8 +40,8 @@ class TestServiceAudit(BaseAPITestCase):
             "description": "new config",
         }
 
-        self.export_service = self.add_service_to_cluster(service_name="service", cluster=self.cluster_2)
-        self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.export_service = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
+        self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1)
         self.service_1 = ClusterObject.objects.get(cluster=self.cluster_1, prototype__name="service_1")
 
         self.service_action = Action.objects.get(name="action", prototype=self.service_1.prototype)

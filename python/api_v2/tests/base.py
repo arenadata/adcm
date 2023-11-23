@@ -16,15 +16,9 @@ from shutil import rmtree
 from typing import Any, TypeAlias, TypedDict
 
 from api_v2.prototype.utils import accept_license
+from api_v2.service.utils import bulk_add_services_to_cluster
 from audit.models import AuditLog
-from cm.api import (
-    add_cluster,
-    add_hc,
-    add_host,
-    add_host_provider,
-    add_host_to_cluster,
-    add_service_to_cluster,
-)
+from cm.api import add_cluster, add_hc, add_host, add_host_provider, add_host_to_cluster
 from cm.bundle import prepare_bundle, process_file
 from cm.models import (
     ADCM,
@@ -42,6 +36,7 @@ from cm.models import (
     ServiceComponent,
 )
 from django.conf import settings
+from django.db.models import QuerySet
 from init_db import init
 from rbac.models import Group, Policy, Role, User
 from rbac.services.group import create as create_group
@@ -149,11 +144,11 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
         return add_host_to_cluster(cluster=cluster, host=host)
 
     @staticmethod
-    def add_service_to_cluster(service_name: str, cluster: Cluster) -> ClusterObject:
-        service_prototype = Prototype.objects.get(
-            type=ObjectType.SERVICE, name=service_name, bundle=cluster.prototype.bundle
+    def add_services_to_cluster(service_names: list[str], cluster: Cluster) -> QuerySet[ClusterObject]:
+        service_prototypes = Prototype.objects.filter(
+            type=ObjectType.SERVICE, name__in=service_names, bundle=cluster.prototype.bundle
         )
-        return add_service_to_cluster(cluster=cluster, proto=service_prototype)
+        return bulk_add_services_to_cluster(cluster=cluster, prototypes=service_prototypes)
 
     @staticmethod
     def add_hostcomponent_map(cluster: Cluster, hc_map: list[HostComponentMapDictType]) -> list[HostComponent]:

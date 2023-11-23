@@ -247,7 +247,7 @@ class TestCluster(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
 
     def test_service_candidates_success(self):
-        self.add_service_to_cluster(service_name="service_3_manual_add", cluster=self.cluster_1)
+        self.add_services_to_cluster(service_names=["service_3_manual_add"], cluster=self.cluster_1)
 
         response = self.client.get(
             path=reverse(viewname="v2:cluster-service-candidates", kwargs={"pk": self.cluster_1.pk}),

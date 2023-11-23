@@ -291,7 +291,7 @@ class TestHostActions(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         self.action = Action.objects.get(name="host_action", prototype=self.host.prototype)
 
-        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.component_1 = ServiceComponent.objects.get(prototype__name="component_1", service=self.service_1)
 
     def test_host_cluster_list_success(self):
@@ -488,7 +488,7 @@ class TestClusterHostComponent(BaseAPITestCase):
         self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host2")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
-        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.component_1 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )

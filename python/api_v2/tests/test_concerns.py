@@ -97,7 +97,7 @@ class TestConcernsResponse(BaseAPITestCase):
 
     def test_required_hc_concern(self):
         cluster = self.add_cluster(bundle=self.required_hc_bundle, name="required_hc_cluster")
-        self.add_service_to_cluster(service_name="service_1", cluster=cluster)
+        self.add_services_to_cluster(service_names=["service_1"], cluster=cluster)
         expected_concern_reason = {
             "message": MessageTemplate.objects.get(name=KnownNames.HOST_COMPONENT_ISSUE.value).template["message"],
             "placeholder": {"source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster"}},
@@ -130,7 +130,7 @@ class TestConcernsResponse(BaseAPITestCase):
 
     def test_service_requirements(self):
         cluster = self.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")
-        service = self.add_service_to_cluster(service_name="service_1", cluster=cluster)
+        service = self.add_services_to_cluster(service_names=["service_1"], cluster=cluster).get()
         expected_concern_reason = {
             "message": MessageTemplate.objects.get(name=KnownNames.UNSATISFIED_REQUIREMENT_ISSUE.value).template[
                 "message"

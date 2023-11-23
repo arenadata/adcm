@@ -35,7 +35,7 @@ class TestTask(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         component_1 = ServiceComponent.objects.filter(service=service_1, prototype__name="component_1").first()
         self.cluster_action = Action.objects.filter(name="action", prototype=self.cluster_1.prototype).first()
         service_1_action = Action.objects.filter(name="action", prototype=service_1.prototype).first()
@@ -141,8 +141,8 @@ class TestTaskObjects(BaseAPITestCase):  # pylint: disable=too-many-instance-att
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = self.add_service_to_cluster("service_1", self.cluster_1)
-        self.service_2 = self.add_service_to_cluster("service_2", self.cluster_1)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
 
         self.component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
 

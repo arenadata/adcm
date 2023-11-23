@@ -23,7 +23,7 @@ class TestComponentAPI(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.component_1 = ServiceComponent.objects.get(
             prototype__name="component_1", service=self.service_1, cluster=self.cluster_1
         )

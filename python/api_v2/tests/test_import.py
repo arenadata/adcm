@@ -22,11 +22,15 @@ class TestImport(BaseAPITestCase):
 
         export_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_export")
         self.export_cluster = self.add_cluster(bundle=export_bundle, name="cluster_export")
-        self.export_service = self.add_service_to_cluster(service_name="service_export", cluster=self.export_cluster)
+        self.export_service = self.add_services_to_cluster(
+            service_names=["service_export"], cluster=self.export_cluster
+        ).get()
 
         import_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_import")
         self.import_cluster = self.add_cluster(bundle=import_bundle, name="cluster_import")
-        self.import_service = self.add_service_to_cluster(service_name="service_import", cluster=self.import_cluster)
+        self.import_service = self.add_services_to_cluster(
+            service_names=["service_import"], cluster=self.import_cluster
+        ).get()
 
     def test_cluster_imports_list_success(self):
         response = self.client.get(

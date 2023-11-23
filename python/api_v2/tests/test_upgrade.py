@@ -38,7 +38,7 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
 
         cluster_bundle_1_upgrade_path = self.test_bundles_dir / "cluster_one_upgrade"
         provider_bundle_upgrade_path = self.test_bundles_dir / "provider_upgrade"
