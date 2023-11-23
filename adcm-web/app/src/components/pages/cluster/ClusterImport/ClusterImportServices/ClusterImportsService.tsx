@@ -1,5 +1,6 @@
 import ClusterImportCard, {
   ClusterImportEmptyCard,
+  ClusterImportLoading,
 } from '@pages/cluster/ClusterImport/ClusterImportCard/ClusterImportCard';
 import { useClusterImportsService } from './useClusterImportsService';
 import ClusterImportToolbar from '@pages/cluster/ClusterImport/ClusterImportToolbar/ClusterImportToolbar';
@@ -58,17 +59,21 @@ const ClusterImportsService = () => {
         </LabeledField>
       </ClusterImportToolbar>
       <div>
+        {isLoading && <ClusterImportLoading />}
         {!isLoading &&
-          clusterImports.map((item) => (
-            <ClusterImportCard
-              key={item.cluster.id}
-              clusterImport={item}
-              selectedSingleBind={selectedSingleBind}
-              selectedImports={selectedImports}
-              onCheckHandler={selectedImportsToggleHandler}
-            />
+          (clusterImports.length > 0 ? (
+            clusterImports.map((item) => (
+              <ClusterImportCard
+                key={item.cluster.id}
+                clusterImport={item}
+                selectedSingleBind={selectedSingleBind}
+                selectedImports={selectedImports}
+                onCheckHandler={selectedImportsToggleHandler}
+              />
+            ))
+          ) : (
+            <ClusterImportEmptyCard />
           ))}
-        {!clusterImports.length && <ClusterImportEmptyCard isLoading={isLoading} />}
       </div>
       <Pagination totalItems={totalCount} pageData={paginationParams} onChangeData={paginationHandler} />
     </>
