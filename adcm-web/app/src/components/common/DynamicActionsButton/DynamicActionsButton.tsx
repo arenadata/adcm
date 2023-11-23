@@ -45,7 +45,7 @@ type DynamicActionsIconProps = Omit<DynamicActionsCommonProps, 'children'> & {
 export const DynamicActionsIcon: React.FC<DynamicActionsIconProps> = ({ disabled, size = 32, ...props }) => {
   return (
     <DynamicActionsCommon {...props}>
-      <IconButton icon="g1-actions" size={size} disabled={disabled} />
+      <IconButton icon="g1-actions" size={size} disabled={disabled} title="Action" />
     </DynamicActionsCommon>
   );
 };
