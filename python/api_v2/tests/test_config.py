@@ -10,17 +10,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
+from pathlib import Path
 
 from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from api_v2.tests.base import BaseAPITestCase
-from cm.adcm_config.ansible import ansible_decrypt
+from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.inventory import get_obj_config
-from cm.models import ADCM, ConfigLog, GroupConfig, Host, HostProvider, ServiceComponent
+from cm.models import (
+    ADCM,
+    ConfigLog,
+    GroupConfig,
+    Host,
+    HostProvider,
+    ServiceComponent,
+    Upgrade,
+)
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
 )
@@ -218,18 +229,18 @@ class TestClusterGroupConfig(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.cluster_1_group_config = GroupConfig.objects.create(
+        self.group_config = GroupConfig.objects.create(
             name="group_config",
             object_type=ContentType.objects.get_for_model(self.cluster_1),
             object_id=self.cluster_1.pk,
         )
-        self.cluster_1_group_config_config = ConfigLog.objects.get(pk=self.cluster_1_group_config.config.current)
+        self.group_config_config = ConfigLog.objects.get(pk=self.group_config.config.current)
 
     def test_list_success(self):
         response = self.client.get(
             path=reverse(
                 viewname="v2:cluster-group-config-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
+                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
             )
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -245,16 +256,16 @@ class TestClusterGroupConfig(BaseAPITestCase):
                 viewname="v2:cluster-group-config-config-detail",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
-                    "group_config_pk": self.cluster_1_group_config.pk,
-                    "pk": self.cluster_1_group_config_config.pk,
+                    "group_config_pk": self.group_config.pk,
+                    "pk": self.group_config_config.pk,
                 },
             )
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = {
-            "id": self.cluster_1_group_config_config.pk,
+            "id": self.group_config_config.pk,
             "isCurrent": True,
-            "creationTime": self.cluster_1_group_config_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.group_config_config.date.isoformat().replace("+00:00", "Z"),
             "config": {
                 "activatable_group": {"integer": 10},
                 "boolean": True,
@@ -297,7 +308,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
         response = self.client.post(
             path=reverse(
                 viewname="v2:cluster-group-config-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
+                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
             ),
             data=data,
         )
@@ -309,6 +320,92 @@ class TestClusterGroupConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
+
+    def test_cancel_sync(self):
+        config = {
+            "activatable_group": {"integer": 100},
+            "boolean": False,
+            "group": {"float": 2.1},
+            "list": ["value1", "value2", "value3", "value4"],
+            "variant_not_strict": "value5",
+        }
+
+        self.group_config_config.config = config
+        self.group_config_config.attr.update(
+            {
+                "group_keys": {
+                    "activatable_group": {"fields": {"integer": True}, "value": True},
+                    "boolean": True,
+                    "group": {"fields": {"float": True}, "value": None},
+                    "list": True,
+                    "variant_not_strict": True,
+                }
+            }
+        )
+
+        self.group_config_config.save(update_fields=["config", "attr"])
+
+        data = {
+            "config": config,
+            "adcmMeta": {
+                "/activatable_group": {"isActive": True, "isSynchronized": True},
+                "/boolean": {"isSynchronized": False},
+                "/group/float": {"isSynchronized": False},
+                "/variant_not_strict": {"isSynchronized": True},
+                "/list": {"isSynchronized": True},
+                "/activatable_group/integer": {"isSynchronized": True},
+            },
+            "description": "new config",
+        }
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:cluster-group-config-config-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
+            ),
+            data=data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response_data = response.json()
+        data["config"].update(
+            {
+                "activatable_group": {"integer": 10},
+                "boolean": False,
+                "group": {"float": 2.1},
+                "list": ["value1", "value2", "value3"],
+                "variant_not_strict": "value1",
+            }
+        )
+        self.assertDictEqual(response_data["config"], data["config"])
+        self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
+        self.assertEqual(response_data["description"], data["description"])
+        self.assertEqual(response_data["isCurrent"], True)
+
+    def test_primary_config_update(self):
+        data = {
+            "config": {
+                "activatable_group": {"integer": 100},
+                "boolean": False,
+                "group": {"float": 1.1},
+                "list": ["value1", "value2", "value3", "value4"],
+                "variant_not_strict": "value5",
+            },
+            "adcmMeta": {"/activatable_group": {"isActive": False}},
+            "description": "new config",
+        }
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}), data=data
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        self.group_config.refresh_from_db()
+        config_log = ConfigLog.objects.get(id=self.group_config.config.current)
+
+        self.assertDictEqual(config_log.config, data["config"])
+        self.assertFalse(config_log.attr["activatable_group"]["active"])
 
     def test_adcm_4894_duplicate_name_fail(self):
         self.client.post(
@@ -348,7 +445,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
         response = self.client.post(
             path=reverse(
                 viewname="v2:cluster-group-config-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
+                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
             ),
             data=data,
         )
@@ -387,7 +484,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
         response = self.client.post(
             path=reverse(
                 viewname="v2:cluster-group-config-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
+                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
             ),
             data=data,
         )
@@ -402,7 +499,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
         response = self.client.get(
             path=reverse(
                 viewname="v2:cluster-group-config-config-schema",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.group_config.pk},
             )
         )
 
@@ -519,12 +616,12 @@ class TestServiceGroupConfig(BaseAPITestCase):
 
         self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
 
-        self.service_1_group_config = GroupConfig.objects.create(
+        self.group_config = GroupConfig.objects.create(
             name="group_config",
             object_type=ContentType.objects.get_for_model(self.service_1),
             object_id=self.service_1.pk,
         )
-        self.service_1_group_config_config = ConfigLog.objects.get(pk=self.service_1_group_config.config.current)
+        self.group_config_config = ConfigLog.objects.get(pk=self.group_config.config.current)
 
     def test_list_success(self):
         response = self.client.get(
@@ -533,7 +630,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "group_config_pk": self.service_1_group_config.pk,
+                    "group_config_pk": self.group_config.pk,
                 },
             )
         )
@@ -551,16 +648,16 @@ class TestServiceGroupConfig(BaseAPITestCase):
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "group_config_pk": self.service_1_group_config.pk,
-                    "pk": self.service_1_group_config_config.pk,
+                    "group_config_pk": self.group_config.pk,
+                    "pk": self.group_config_config.pk,
                 },
             )
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         expected_data = {
-            "id": self.service_1_group_config_config.pk,
+            "id": self.group_config_config.pk,
             "isCurrent": True,
-            "creationTime": self.service_1_group_config_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.group_config_config.date.isoformat().replace("+00:00", "Z"),
             "config": {
                 "group": {"password": "password"},
                 "activatable_group": {"text": "text"},
@@ -600,7 +697,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "group_config_pk": self.service_1_group_config.pk,
+                    "group_config_pk": self.group_config.pk,
                 },
             ),
             data=data,
@@ -615,6 +712,100 @@ class TestServiceGroupConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
+
+    def test_cancel_sync(self):
+        config = {
+            "group": {"password": ansible_encrypt_and_format(msg="newpassword")},
+            "activatable_group": {"text": "new text"},
+            "string": "new string",
+        }
+
+        self.group_config_config.config = config
+        self.group_config_config.attr.update(
+            {
+                "activatable_group": {"active": False},
+                "group_keys": {
+                    "activatable_group": {"fields": {"text": True}, "value": True},
+                    "group": {"fields": {"password": True}, "value": None},
+                    "string": True,
+                },
+            }
+        )
+
+        self.group_config_config.save(update_fields=["config", "attr"])
+
+        data = {
+            "config": config,
+            "adcmMeta": {
+                "/activatable_group": {"isActive": False, "isSynchronized": False},
+                "/activatable_group/text": {"isSynchronized": False},
+                "/group/password": {"isSynchronized": True},
+                "/string": {"isSynchronized": True},
+            },
+            "description": "new config",
+        }
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-group-config-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "group_config_pk": self.group_config.pk,
+                },
+            ),
+            data=data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response_data = response.json()
+        response_data["config"]["group"]["password"] = ansible_decrypt(msg=response_data["config"]["group"]["password"])
+
+        data["config"].update(
+            {
+                "group": {"password": "password"},
+                "activatable_group": {"text": "new text"},
+                "string": "string",
+            }
+        )
+
+        self.assertDictEqual(response_data["config"], data["config"])
+        self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
+        self.assertEqual(response_data["description"], data["description"])
+        self.assertEqual(response_data["isCurrent"], True)
+
+    def test_primary_config_update(self):
+        data = {
+            "config": {
+                "group": {"password": "newpassword"},
+                "activatable_group": {"text": "new text"},
+                "string": "new string",
+            },
+            "adcmMeta": {"/activatable_group": {"isActive": False}},
+            "description": "new config",
+        }
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                },
+            ),
+            data=data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        self.group_config.refresh_from_db()
+        config_log = ConfigLog.objects.get(id=self.group_config.config.current)
+        config_log.config["group"]["password"] = ansible_decrypt(msg=config_log.config["group"]["password"])
+        data["config"]["group"]["password"] = ansible_decrypt(msg=data["config"]["group"]["password"])
+
+        self.assertDictEqual(config_log.config, data["config"])
+        self.assertFalse(config_log.attr["activatable_group"]["active"])
 
     def test_create_bad_attr_fail(self):
         data = {
@@ -635,7 +826,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "group_config_pk": self.service_1_group_config.pk,
+                    "group_config_pk": self.group_config.pk,
                 },
             ),
             data=data,
@@ -674,7 +865,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "group_config_pk": self.service_1_group_config.pk,
+                    "group_config_pk": self.group_config.pk,
                 },
             ),
             data=data,
@@ -693,7 +884,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
-                    "pk": self.service_1_group_config.pk,
+                    "pk": self.group_config.pk,
                 },
             )
         )
@@ -840,12 +1031,12 @@ class TestComponentGroupConfig(BaseAPITestCase):
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )
 
-        self.component_1_group_config = GroupConfig.objects.create(
+        self.group_config = GroupConfig.objects.create(
             name="group_config",
             object_type=ContentType.objects.get_for_model(self.component_1),
             object_id=self.component_1.pk,
         )
-        self.component_1_group_config_config = ConfigLog.objects.get(pk=self.component_1_group_config.config.current)
+        self.group_config_config = ConfigLog.objects.get(pk=self.group_config.config.current)
 
     def test_list_success(self):
         response = self.client.get(
@@ -855,7 +1046,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
                     "component_pk": self.component_1.pk,
-                    "group_config_pk": self.component_1_group_config.pk,
+                    "group_config_pk": self.group_config.pk,
                 },
             )
         )
@@ -874,16 +1065,16 @@ class TestComponentGroupConfig(BaseAPITestCase):
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
                     "component_pk": self.component_1.pk,
-                    "group_config_pk": self.component_1_group_config.pk,
-                    "pk": self.component_1_group_config_config.pk,
+                    "group_config_pk": self.group_config.pk,
+                    "pk": self.group_config_config.pk,
                 },
             )
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         expected_data = {
-            "id": self.component_1_group_config_config.pk,
+            "id": self.group_config_config.pk,
             "isCurrent": True,
-            "creationTime": self.component_1_group_config_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.group_config_config.date.isoformat().replace("+00:00", "Z"),
             "config": {
                 "group": {"file": "content"},
                 "activatable_group": {"secretfile": "content"},
@@ -927,7 +1118,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
                     "component_pk": self.component_1.pk,
-                    "group_config_pk": self.component_1_group_config.pk,
+                    "group_config_pk": self.group_config.pk,
                 },
             ),
             data=data,
@@ -945,6 +1136,138 @@ class TestComponentGroupConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
+
+    def test_cancel_sync(self):
+        config = {
+            "group": {"file": "new content"},
+            "activatable_group": {"secretfile": "new content"},
+            "secrettext": "new secrettext",
+        }
+
+        self.group_config_config.config = config
+        self.group_config_config.attr.update(
+            {
+                "group_keys": {
+                    "activatable_group": {"fields": {"secretfile": True}, "value": True},
+                    "group": {"fields": {"file": True}, "value": None},
+                    "secrettext": True,
+                }
+            }
+        )
+
+        self.group_config_config.save(update_fields=["config", "attr"])
+
+        data = {
+            "config": config,
+            "adcmMeta": {
+                "/activatable_group": {"isActive": True, "isSynchronized": True},
+                "/activatable_group/secretfile": {"isSynchronized": True},
+                "/group/file": {"isSynchronized": False},
+                "/secrettext": {"isSynchronized": True},
+            },
+            "description": "new config",
+        }
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:component-group-config-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                    "group_config_pk": self.group_config.pk,
+                },
+            ),
+            data=data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response_data = response.json()
+        response_data["config"]["secrettext"] = ansible_decrypt(msg=response_data["config"]["secrettext"])
+        response_data["config"]["activatable_group"]["secretfile"] = ansible_decrypt(
+            msg=response_data["config"]["activatable_group"]["secretfile"]
+        )
+
+        data["config"].update(
+            {
+                "group": {"file": "new content"},
+                "activatable_group": {"secretfile": "content"},
+                "secrettext": "secrettext",
+            }
+        )
+
+        self.assertDictEqual(response_data["config"], data["config"])
+        self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
+        self.assertEqual(response_data["description"], data["description"])
+        self.assertEqual(response_data["isCurrent"], True)
+
+        self.assertEqual(
+            Path(
+                settings.FILE_DIR / f"component.{self.component_1.pk}.group.{self.group_config.pk}.group.file"
+            ).read_text(encoding="UTF-8"),
+            "new content",
+        )
+        self.assertEqual(
+            Path(
+                settings.FILE_DIR
+                / f"component.{self.component_1.pk}.group.{self.group_config.pk}.activatable_group.secretfile"
+            ).read_text(encoding="UTF-8"),
+            "content",
+        )
+
+    def test_primary_config_update(self):
+        data = {
+            "config": {
+                "group": {"file": "new content"},
+                "activatable_group": {"secretfile": "new content"},
+                "secrettext": "new secrettext",
+            },
+            "adcmMeta": {"/activatable_group": {"isActive": False}},
+            "description": "new config",
+        }
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:component-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                },
+            ),
+            data=data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        self.group_config.refresh_from_db()
+        config_log = ConfigLog.objects.get(id=self.group_config.config.current)
+        config_log.config["activatable_group"]["secretfile"] = ansible_decrypt(
+            msg=config_log.config["activatable_group"]["secretfile"]
+        )
+        config_log.config["secrettext"] = ansible_decrypt(msg=config_log.config["secrettext"])
+        data["config"]["activatable_group"]["secretfile"] = ansible_decrypt(
+            msg=data["config"]["activatable_group"]["secretfile"]
+        )
+        data["config"]["secrettext"] = ansible_decrypt(msg=data["config"]["secrettext"])
+
+        self.assertDictEqual(config_log.config, data["config"])
+        self.assertFalse(config_log.attr["activatable_group"]["active"])
+
+        self.assertEqual(
+            Path(
+                settings.FILE_DIR / f"component.{self.component_1.pk}.group.{self.group_config.pk}.group.file"
+            ).read_text(encoding="UTF-8"),
+            "new content",
+        )
+        self.assertEqual(
+            Path(
+                settings.FILE_DIR
+                / f"component.{self.component_1.pk}.group.{self.group_config.pk}.activatable_group.secretfile"
+            ).read_text(encoding="UTF-8"),
+            "new content",
+        )
 
     def test_create_bad_attr_fail(self):
         data = {
@@ -966,7 +1289,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
                     "component_pk": self.component_1.pk,
-                    "group_config_pk": self.component_1_group_config.pk,
+                    "group_config_pk": self.group_config.pk,
                 },
             ),
             data=data,
@@ -1006,7 +1329,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
                     "component_pk": self.component_1.pk,
-                    "group_config_pk": self.component_1_group_config.pk,
+                    "group_config_pk": self.group_config.pk,
                 },
             ),
             data=data,
@@ -1026,7 +1349,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
                     "cluster_pk": self.cluster_1.pk,
                     "service_pk": self.service_1.pk,
                     "component_pk": self.component_1.pk,
-                    "pk": self.component_1_group_config.pk,
+                    "pk": self.group_config.pk,
                 },
             )
         )
@@ -1208,18 +1531,18 @@ class TestProviderGroupConfig(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.provider_group_config = GroupConfig.objects.create(
+        self.group_config = GroupConfig.objects.create(
             name="group_config",
             object_type=ContentType.objects.get_for_model(self.provider),
             object_id=self.provider.pk,
         )
-        self.provider_group_config_config = ConfigLog.objects.get(pk=self.provider_group_config.config.current)
+        self.group_config_config = ConfigLog.objects.get(pk=self.group_config.config.current)
 
     def test_list_success(self):
         response = self.client.get(
             path=reverse(
                 viewname="v2:hostprovider-group-config-config-list",
-                kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": self.provider_group_config.pk},
+                kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": self.group_config.pk},
             )
         )
 
@@ -1236,8 +1559,8 @@ class TestProviderGroupConfig(BaseAPITestCase):
                 viewname="v2:hostprovider-group-config-config-detail",
                 kwargs={
                     "hostprovider_pk": self.provider.pk,
-                    "group_config_pk": self.provider_group_config.pk,
-                    "pk": self.provider_group_config_config.pk,
+                    "group_config_pk": self.group_config.pk,
+                    "pk": self.group_config_config.pk,
                 },
             )
         )
@@ -1260,9 +1583,9 @@ class TestProviderGroupConfig(BaseAPITestCase):
                 },
                 "json": '{"key": "value"}',
             },
-            "creationTime": self.provider_group_config_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.group_config_config.date.isoformat().replace("+00:00", "Z"),
             "description": "init",
-            "id": self.provider_group_config_config.pk,
+            "id": self.group_config_config.pk,
             "isCurrent": True,
         }
         actual_data = response.json()
@@ -1280,7 +1603,7 @@ class TestProviderGroupConfig(BaseAPITestCase):
                 viewname="v2:hostprovider-group-config-config-detail",
                 kwargs={
                     "hostprovider_pk": self.provider.pk,
-                    "group_config_pk": self.provider_group_config.pk,
+                    "group_config_pk": self.group_config.pk,
                     "pk": self.get_non_existent_pk(model=ConfigLog),
                 },
             )
@@ -1293,7 +1616,7 @@ class TestProviderGroupConfig(BaseAPITestCase):
                 viewname="v2:provider-config-detail",
                 kwargs={
                     "hostprovider_pk": self.get_non_existent_pk(model=HostProvider),
-                    "pk": self.provider_group_config.pk,
+                    "pk": self.group_config.pk,
                 },
             )
         )
@@ -1324,7 +1647,7 @@ class TestProviderGroupConfig(BaseAPITestCase):
                 viewname="v2:hostprovider-group-config-config-list",
                 kwargs={
                     "hostprovider_pk": self.provider.pk,
-                    "group_config_pk": self.provider_group_config.pk,
+                    "group_config_pk": self.group_config.pk,
                 },
             ),
             data=data,
@@ -1343,11 +1666,136 @@ class TestProviderGroupConfig(BaseAPITestCase):
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
 
+    def test_cancel_sync(self):
+        config = {
+            "group": {"map": {"integer_key": "100", "string_key": "new string"}},
+            "activatable_group": {
+                "secretmap": {
+                    "integer_key": "100",
+                    "string_key": "new string",
+                }
+            },
+            "json": '{"key": "value", "new key": "new value"}',
+        }
+
+        self.group_config_config.config = config
+        self.group_config_config.attr.update(
+            {
+                "group_keys": {
+                    "activatable_group": {"fields": {"secretmap": True}, "value": True},
+                    "group": {"fields": {"map": True}, "value": None},
+                    "json": True,
+                }
+            }
+        )
+
+        self.group_config_config.save(update_fields=["config", "attr"])
+
+        data = {
+            "config": config,
+            "adcmMeta": {
+                "/activatable_group": {"isActive": True, "isSynchronized": True},
+                "/activatable_group/secretmap": {"isSynchronized": True},
+                "/group/map": {"isSynchronized": False},
+                "/json": {"isSynchronized": True},
+            },
+            "description": "new config",
+        }
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:hostprovider-group-config-config-list",
+                kwargs={
+                    "hostprovider_pk": self.provider.pk,
+                    "group_config_pk": self.group_config.pk,
+                },
+            ),
+            data=data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response_data = response.json()
+
+        response_data["config"]["activatable_group"]["secretmap"]["integer_key"] = ansible_decrypt(
+            msg=response_data["config"]["activatable_group"]["secretmap"]["integer_key"]
+        )
+        response_data["config"]["activatable_group"]["secretmap"]["string_key"] = ansible_decrypt(
+            msg=response_data["config"]["activatable_group"]["secretmap"]["string_key"]
+        )
+
+        data["config"].update(
+            {
+                "group": {"map": {"integer_key": "100", "string_key": "new string"}},
+                "activatable_group": {
+                    "secretmap": {
+                        "integer_key": "10",
+                        "string_key": "string",
+                    }
+                },
+                "json": '{"key": "value"}',
+            }
+        )
+
+        self.assertDictEqual(response_data["config"], data["config"])
+        self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
+        self.assertEqual(response_data["description"], data["description"])
+        self.assertEqual(response_data["isCurrent"], True)
+
+    def test_primary_config_update(self):
+        data = {
+            "config": {
+                "group": {"map": {"integer_key": "100", "string_key": "new string"}},
+                "activatable_group": {
+                    "secretmap": {
+                        "integer_key": "100",
+                        "string_key": "new string",
+                    }
+                },
+                "json": '{"key": "value", "new key": "new value"}',
+            },
+            "adcmMeta": {"/activatable_group": {"isActive": False}},
+            "description": "new config",
+        }
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:provider-config-list",
+                kwargs={
+                    "hostprovider_pk": self.provider.pk,
+                },
+            ),
+            data=data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        self.group_config.refresh_from_db()
+        config_log = ConfigLog.objects.get(id=self.group_config.config.current)
+        config_log.config["activatable_group"]["secretmap"]["integer_key"] = ansible_decrypt(
+            msg=config_log.config["activatable_group"]["secretmap"]["integer_key"]
+        )
+        config_log.config["activatable_group"]["secretmap"]["string_key"] = ansible_decrypt(
+            msg=config_log.config["activatable_group"]["secretmap"]["string_key"]
+        )
+
+        data["config"]["activatable_group"]["secretmap"]["integer_key"] = ansible_decrypt(
+            msg=data["config"]["activatable_group"]["secretmap"]["integer_key"]
+        )
+        data["config"]["activatable_group"]["secretmap"]["string_key"] = ansible_decrypt(
+            msg=data["config"]["activatable_group"]["secretmap"]["string_key"]
+        )
+
+        data["config"]["json"] = json.loads(data["config"]["json"])
+
+        self.assertDictEqual(config_log.config, data["config"])
+        self.assertFalse(config_log.attr["activatable_group"]["active"])
+
     def test_schema(self):
         response = self.client.get(
             path=reverse(
                 viewname="v2:hostprovider-group-config-config-schema",
-                kwargs={"hostprovider_pk": self.provider.pk, "pk": self.provider_group_config.pk},
+                kwargs={"hostprovider_pk": self.provider.pk, "pk": self.group_config.pk},
             )
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -1677,5 +2125,246 @@ class TestConfigSchemaEnumWithoutValues(BaseAPITestCase):
                 },
                 "additionalProperties": False,
                 "required": ["variant"],
+            },
+        )
+
+
+class TestGroupConfigUpgrade(BaseAPITestCase):  # pylint: disable=too-many-instance-attributes
+    def setUp(self) -> None:
+        self.client.login(username="admin", password="admin")
+
+        cluster_bundle_1_path = self.test_bundles_dir / "cluster_group_config"
+        cluster_bundle_2_path = self.test_bundles_dir / "cluster_group_config_upgrade"
+
+        self.bundle_1 = self.add_bundle(source_dir=cluster_bundle_1_path)
+        self.bundle_2 = self.add_bundle(source_dir=cluster_bundle_2_path)
+        self.upgrade = Upgrade.objects.get(name="upgrade", bundle=self.bundle_2)
+
+        self.cluster = self.add_cluster(bundle=self.bundle_1, name="cluster_group_config")
+        self.service = self.add_service_to_cluster(service_name="service", cluster=self.cluster)
+        self.component = ServiceComponent.objects.filter(cluster=self.cluster, service=self.service).first()
+
+        self.cluster_group_config = GroupConfig.objects.create(
+            name="cluster_group_config", object_type=self.cluster.content_type, object_id=self.cluster.pk
+        )
+        config = ConfigLog.objects.get(pk=self.cluster_group_config.config.current)
+        config.config.update({"activatable_group": {"integer": 100}, "boolean": True, "group": {"float": 0.1}})
+        config.attr.update(
+            {
+                "group_keys": {
+                    "activatable_group": {"fields": {"integer": True}, "value": False},
+                    "boolean": False,
+                    "group": {"fields": {"float": False}, "value": None},
+                }
+            }
+        )
+        config.save(update_fields=["config", "attr"])
+
+        self.service_group_config = GroupConfig.objects.create(
+            name="service_group_config", object_type=self.service.content_type, object_id=self.service.pk
+        )
+        config = ConfigLog.objects.get(pk=self.service_group_config.config.current)
+        config.config.update(
+            {
+                "group": {"password": ansible_encrypt_and_format(msg="new password")},
+                "activatable_group": {"text": "text"},
+                "string": "new string",
+            }
+        )
+        config.attr.update(
+            {
+                "activatable_group": {"active": False},
+                "group_keys": {
+                    "activatable_group": {"fields": {"text": False}, "value": True},
+                    "group": {"fields": {"password": True}, "value": None},
+                    "string": True,
+                },
+            }
+        )
+        config.save(update_fields=["config", "attr"])
+
+        self.component_group_config = GroupConfig.objects.create(
+            name="component_group_config", object_type=self.component.content_type, object_id=self.component.pk
+        )
+        config = ConfigLog.objects.get(pk=self.component_group_config.config.current)
+        config.config.update(
+            {
+                "group": {"file": "content"},
+                "activatable_group": {"secretfile": ansible_encrypt_and_format(msg="new content")},
+                "secrettext": ansible_encrypt_and_format(msg="secrettext"),
+            }
+        )
+        config.attr.update(
+            {
+                "group_keys": {
+                    "activatable_group": {"fields": {"secretfile": True}, "value": True},
+                    "group": {"fields": {"file": False}, "value": None},
+                    "secrettext": False,
+                },
+            }
+        )
+        config.save(update_fields=["config", "attr"])
+
+    def test_upgrade(self):
+        config_of_cluster_group = ConfigLog.objects.get(id=self.cluster_group_config.config.current)
+        self.assertDictEqual(
+            config_of_cluster_group.config,
+            {"activatable_group": {"integer": 100}, "boolean": True, "group": {"float": 0.1}},
+        )
+        self.assertDictEqual(
+            config_of_cluster_group.attr,
+            {
+                "activatable_group": {"active": True},
+                "group_keys": {
+                    "activatable_group": {"fields": {"integer": True}, "value": False},
+                    "boolean": False,
+                    "group": {"fields": {"float": False}, "value": None},
+                },
+                "custom_group_keys": {
+                    "boolean": True,
+                    "group": {"value": True, "fields": {"float": True}},
+                    "activatable_group": {"value": True, "fields": {"integer": True}},
+                },
+            },
+        )
+
+        config_of_service_group = ConfigLog.objects.get(id=self.service_group_config.config.current)
+        config_of_service_group.config["group"]["password"] = ansible_decrypt(
+            msg=config_of_service_group.config["group"]["password"]
+        )
+        self.assertDictEqual(
+            config_of_service_group.config,
+            {
+                "group": {"password": "new password"},
+                "activatable_group": {"text": "text"},
+                "string": "new string",
+            },
+        )
+        self.assertDictEqual(
+            config_of_service_group.attr,
+            {
+                "activatable_group": {"active": False},
+                "group_keys": {
+                    "activatable_group": {"fields": {"text": False}, "value": True},
+                    "group": {"fields": {"password": True}, "value": None},
+                    "string": True,
+                },
+                "custom_group_keys": {
+                    "string": True,
+                    "group": {"value": True, "fields": {"password": True}},
+                    "activatable_group": {"value": True, "fields": {"text": True}},
+                },
+            },
+        )
+
+        config_of_component_group = ConfigLog.objects.get(id=self.component_group_config.config.current)
+        config_of_component_group.config["activatable_group"]["secretfile"] = ansible_decrypt(
+            msg=config_of_component_group.config["activatable_group"]["secretfile"]
+        )
+        config_of_component_group.config["secrettext"] = ansible_decrypt(
+            msg=config_of_component_group.config["secrettext"]
+        )
+        self.assertDictEqual(
+            config_of_component_group.config,
+            {
+                "group": {"file": "content"},
+                "activatable_group": {"secretfile": "new content"},
+                "secrettext": "secrettext",
+            },
+        )
+        self.assertDictEqual(
+            config_of_component_group.attr,
+            {
+                "activatable_group": {"active": True},
+                "group_keys": {
+                    "activatable_group": {"fields": {"secretfile": True}, "value": True},
+                    "group": {"fields": {"file": False}, "value": None},
+                    "secrettext": False,
+                },
+                "custom_group_keys": {
+                    "secrettext": True,
+                    "group": {"value": True, "fields": {"file": True}},
+                    "activatable_group": {"value": True, "fields": {"secretfile": True}},
+                },
+            },
+        )
+
+        response = self.client.post(
+            path=reverse(viewname="v2:upgrade-run", kwargs={"cluster_pk": self.cluster.pk, "pk": self.upgrade.pk})
+        )
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+        self.cluster_group_config.refresh_from_db()
+        self.service_group_config.refresh_from_db()
+        self.component_group_config.refresh_from_db()
+
+        config_of_cluster_group = ConfigLog.objects.get(id=self.cluster_group_config.config.current)
+        self.assertDictEqual(
+            config_of_cluster_group.config,
+            {"activatable_group": {"integer": 100}, "boolean": False, "json": {"key": "value"}},
+        )
+        self.assertDictEqual(
+            config_of_cluster_group.attr,
+            {
+                "activatable_group": {"active": True},
+                "group_keys": {
+                    "boolean": False,
+                    "json": False,
+                    "activatable_group": {"value": False, "fields": {"integer": True}},
+                },
+                "custom_group_keys": {
+                    "boolean": True,
+                    "json": True,
+                    "activatable_group": {"value": True, "fields": {"integer": True}},
+                },
+            },
+        )
+
+        config_of_service_group = ConfigLog.objects.get(id=self.service_group_config.config.current)
+        self.assertDictEqual(
+            config_of_service_group.config,
+            {
+                "group": {"map": {"integer_key": "10", "string_key": "string"}},
+                "string": "new string",
+                "structure": [{"integer": 1, "string": "string1"}, {"integer": 2, "string": "string2"}],
+            },
+        )
+        self.assertDictEqual(
+            config_of_service_group.attr,
+            {
+                "custom_group_keys": {
+                    "group": {"fields": {"map": True}, "value": True},
+                    "string": True,
+                    "structure": True,
+                },
+                "group_keys": {"group": {"fields": {"map": False}, "value": None}, "string": True, "structure": False},
+            },
+        )
+
+        config_of_component_group = ConfigLog.objects.get(id=self.component_group_config.config.current)
+        config_of_component_group.config["secrettext"] = ansible_decrypt(config_of_component_group.config["secrettext"])
+        self.assertDictEqual(
+            config_of_component_group.config,
+            {
+                "secrettext": "new secrettext",
+                "group": {"file": "new content"},
+                "activatable_group": {"option": "string1"},
+            },
+        )
+        self.assertDictEqual(
+            config_of_component_group.attr,
+            {
+                "activatable_group": {"active": True},
+                "group_keys": {
+                    "secrettext": False,
+                    "group": {"value": None, "fields": {"file": False}},
+                    "activatable_group": {"value": True, "fields": {"option": False}},
+                },
+                "custom_group_keys": {
+                    "secrettext": True,
+                    "group": {"value": True, "fields": {"file": True}},
+                    "activatable_group": {"value": True, "fields": {"option": True}},
+                },
             },
         )

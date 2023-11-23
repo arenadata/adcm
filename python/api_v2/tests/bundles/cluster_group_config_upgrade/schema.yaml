@@ -1,0 +1,15 @@
+---
+root:
+  match: list
+  item: variable
+variable:
+  match: dict
+  items:
+    string: string
+    integer: integer
+  required_items:
+    - string
+string:
+  match: string
+integer:
+  match: int

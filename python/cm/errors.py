@@ -162,11 +162,6 @@ ERRORS = {
         ERR,
     ),
     "LOCK_ERROR": ("lock error", HTTP_409_CONFLICT, ERR),
-    "GROUP_CONFIG_CHANGE_UNSELECTED_FIELD": (
-        "you can't change the value of an unselected field",
-        HTTP_400_BAD_REQUEST,
-        ERR,
-    ),
     "MAINTENANCE_MODE_NOT_AVAILABLE": (
         "you can't manage host maintenance mode",
         HTTP_409_CONFLICT,

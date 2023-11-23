@@ -19,7 +19,7 @@ from cm.adcm_config.config import (
     init_object_config,
     process_json_config,
     read_bundle_file,
-    save_obj_config,
+    save_object_config,
 )
 from cm.adcm_config.utils import proto_ref
 from cm.api_context import CTX
@@ -535,13 +535,12 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
         prototype=proto,
         obj=group or obj,
         new_config=config,
-        current_config=old_conf.config,
         new_attr=attr,
         current_attr=old_conf.attr,
     )
 
     with atomic():
-        config_log = save_obj_config(obj_conf=obj_conf, conf=new_conf, attr=attr, desc=description)
+        config_log = save_object_config(object_config=obj_conf, config=new_conf, attr=attr, description=description)
         update_hierarchy_issues(obj=obj)
         update_object_flag(obj=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
@@ -555,7 +554,9 @@ def set_object_config_with_plugin(obj: ADCMEntity, config: dict, attr: dict) -> 
     new_conf = process_json_config(prototype=obj.prototype, obj=obj, new_config=config, new_attr=attr)
 
     with atomic():
-        config_log = save_obj_config(obj_conf=obj.config, conf=new_conf, attr=attr, desc="ansible update")
+        config_log = save_object_config(
+            object_config=obj.config, config=new_conf, attr=attr, description="ansible update"
+        )
         update_hierarchy_issues(obj=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 

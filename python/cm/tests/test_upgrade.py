@@ -11,7 +11,7 @@
 # limitations under the License.
 # pylint: disable=wrong-import-order
 
-from cm.adcm_config.config import save_obj_config, switch_config
+from cm.adcm_config.config import save_object_config, switch_config
 from cm.api import (
     add_cluster,
     add_hc,
@@ -263,7 +263,7 @@ class TestConfigUpgrade(BaseTestCase):
         cluster = add_cluster(proto_1, "Cluster1")
         old_conf, _ = get_config(cluster)
         old_conf["port"] = 100500
-        save_obj_config(cluster.config, old_conf, {})
+        save_object_config(cluster.config, old_conf, {})
         switch_config(cluster, proto_2, proto_1)
         new_config, _ = get_config(cluster)
 

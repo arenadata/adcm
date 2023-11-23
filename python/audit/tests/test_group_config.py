@@ -190,7 +190,7 @@ class TestGroupConfigAudit(BaseTestCase):
         )
 
     def test_create_for_cluster_failed(self):
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v1:group-config-list"),
             data={
                 "name": self.name,
@@ -212,7 +212,7 @@ class TestGroupConfigAudit(BaseTestCase):
 
     def test_create_for_cluster_denied(self):
         with self.no_rights_user_logged_in:
-            response: Response = self.create_group_config(
+            response = self.create_group_config(
                 name=self.name,
                 object_id=self.cluster.pk,
                 object_type=AuditObjectType.CLUSTER,
@@ -255,7 +255,7 @@ class TestGroupConfigAudit(BaseTestCase):
     def test_create_for_service_denied(self):
         service = self.get_service()
         with self.no_rights_user_logged_in:
-            response: Response = self.create_group_config(
+            response = self.create_group_config(
                 name=self.name,
                 object_id=service.pk,
                 object_type=AuditObjectType.SERVICE,
@@ -298,7 +298,7 @@ class TestGroupConfigAudit(BaseTestCase):
     def test_create_for_component_denied(self):
         component = self.get_component()
         with self.no_rights_user_logged_in:
-            response: Response = self.create_group_config(
+            response = self.create_group_config(
                 name=self.name,
                 object_id=component.pk,
                 object_type=AuditObjectType.COMPONENT,
@@ -334,7 +334,7 @@ class TestGroupConfigAudit(BaseTestCase):
 
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
-            response: Response = self.client.delete(
+            response = self.client.delete(
                 path=reverse(viewname="v1:group-config-detail", kwargs={"pk": self.group_config.pk}),
             )
 
@@ -374,7 +374,7 @@ class TestGroupConfigAudit(BaseTestCase):
 
     def test_update_put_denied(self):
         with self.no_rights_user_logged_in:
-            response: Response = self.client.put(
+            response = self.client.put(
                 path=f"/api/v1/group-config/{self.group_config.pk}/",
                 data={
                     "name": self.group_config.name,
@@ -416,7 +416,7 @@ class TestGroupConfigAudit(BaseTestCase):
 
     def test_update_patch_denied(self):
         with self.no_rights_user_logged_in:
-            response: Response = self.client.patch(
+            response = self.client.patch(
                 path=f"/api/v1/group-config/{self.group_config.pk}/",
                 data={
                     "name": self.group_config.name,
@@ -474,7 +474,7 @@ class TestGroupConfigAudit(BaseTestCase):
 
     def test_add_host_failed(self):
         host_pks = Host.objects.all().values_list("pk", flat=True).order_by("-pk")
-        response: Response = self.client.post(
+        response = self.client.post(
             path=f"/api/v1/group-config/{self.group_config.pk}/host/",
             data={"id": host_pks[0] + 1},
         )
@@ -495,7 +495,7 @@ class TestGroupConfigAudit(BaseTestCase):
 
     def test_add_remove_host_denied(self):
         with self.no_rights_user_logged_in:
-            response: Response = self.client.post(
+            response = self.client.post(
                 path=f"/api/v1/group-config/{self.group_config.pk}/host/",
                 data={"id": self.host.id},
             )
@@ -514,7 +514,7 @@ class TestGroupConfigAudit(BaseTestCase):
             user=self.no_rights_user,
         )
 
-        response: Response = self.client.post(
+        response = self.client.post(
             path=f"/api/v1/group-config/{self.group_config.pk}/host/",
             data={"id": self.host.id},
         )
@@ -522,7 +522,7 @@ class TestGroupConfigAudit(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         with self.no_rights_user_logged_in:
-            response: Response = self.client.delete(
+            response = self.client.delete(
                 path=f"/api/v1/group-config/{self.group_config.pk}/host/{self.host.id}/",
             )
 
@@ -573,14 +573,14 @@ class TestGroupConfigOperationName(BaseTestCase):
             test_bundle_filename,
         )
         with open(test_bundle_path, encoding=settings.ENCODING_UTF_8) as f:
-            response: Response = self.client.post(
+            response = self.client.post(
                 path=reverse(viewname="v1:upload-bundle"),
                 data={"file": f},
             )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v1:load-bundle"),
             data={"bundle_file": test_bundle_filename},
         )
@@ -589,7 +589,7 @@ class TestGroupConfigOperationName(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v1:cluster"),
             data={
                 "prototype_id": prototype_id,
@@ -603,7 +603,7 @@ class TestGroupConfigOperationName(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v1:group-config-list"),
             data={"name": "groupname", "object_type": "cluster", "object_id": cluster_id},
         )
@@ -615,7 +615,7 @@ class TestGroupConfigOperationName(BaseTestCase):
 
     def test_group_config_operation_name(self):
         self.create_cluster_from_bundle()
-        response: Response = self.client.post(
+        response = self.client.post(
             path=f"/api/v1/group-config/{self.group_config_id}/config/{self.config_id}/config-log/",
             data={
                 "config": {"param_1": "aaa", "param_2": None, "param_3": None},
@@ -635,7 +635,7 @@ class TestGroupConfigOperationName(BaseTestCase):
     def test_group_config_operation_name_denied(self):
         self.create_cluster_from_bundle()
         with self.no_rights_user_logged_in:
-            response: Response = self.client.post(
+            response = self.client.post(
                 path=f"/api/v1/group-config/{self.group_config_id}" f"/config/{self.config_id}/config-log/",
                 data={
                     "config": {"param_1": "aaa", "param_2": None, "param_3": None},
@@ -654,10 +654,10 @@ class TestGroupConfigOperationName(BaseTestCase):
 
     def test_group_config_operation_name_failed(self):
         self.create_cluster_from_bundle()
-        response: Response = self.client.post(
+        response = self.client.post(
             path=f"/api/v1/group-config/{self.group_config_id}/config/{self.config_id}/config-log/",
             data={
-                "config": {"param_1": "wrong", "param_2": None, "param_3": None},
+                "config": {"param_1": "wrong", "param_2": None, "param_3": 5.0},
                 "attr": {
                     "group_keys": {"param_1": False, "param_2": False, "param_3": False},
                     "custom_group_keys": {"param_1": True, "param_2": True, "param_3": True},
@@ -666,7 +666,7 @@ class TestGroupConfigOperationName(BaseTestCase):
             content_type=APPLICATION_JSON,
         )
 
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+        log = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.check_log(log=log, operation_result=AuditLogOperationResult.FAIL, user=self.test_user)
