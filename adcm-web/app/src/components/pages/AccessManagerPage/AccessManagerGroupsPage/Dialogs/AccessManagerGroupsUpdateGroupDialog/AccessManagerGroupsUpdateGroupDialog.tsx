@@ -46,7 +46,7 @@ const AccessManagerGroupsUpdateGroupDialog = () => {
 
   return (
     <Dialog
-      title="Edit users' group"
+      title="Edit users group"
       isOpen={isOpenDialog}
       onOpenChange={handleCloseDialog}
       onAction={submitForm}

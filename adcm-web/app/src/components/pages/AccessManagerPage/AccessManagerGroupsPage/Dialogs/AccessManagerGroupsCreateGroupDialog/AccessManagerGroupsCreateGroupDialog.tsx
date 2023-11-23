@@ -46,7 +46,7 @@ const AccessManagerGroupsCreateDialog = () => {
 
   return (
     <Dialog
-      title="Create new users' group"
+      title="Create new users group"
       isOpen={isOpenDialog}
       onOpenChange={handleCloseDialog}
       onAction={submitForm}
