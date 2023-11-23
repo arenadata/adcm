@@ -26,10 +26,16 @@ export interface ClusterImportCardEmptyProps {
   isLoading: boolean;
 }
 
-export const ClusterImportEmptyCard = ({ isLoading }: ClusterImportCardEmptyProps) => {
+export const ClusterImportLoading = () => {
   return (
-    <div className={cn(s.clusterImportItem, s.clusterImportItem_empty)}>{isLoading ? <Spinner /> : 'No data'}</div>
+    <div className={cn(s.clusterImportItem, s.clusterImportItem_empty)}>
+      <Spinner />
+    </div>
   );
+};
+
+export const ClusterImportEmptyCard = () => {
+  return <div className={cn(s.clusterImportItem, s.clusterImportItem_empty)}>No data</div>;
 };
 
 const ClusterImportCard = ({
