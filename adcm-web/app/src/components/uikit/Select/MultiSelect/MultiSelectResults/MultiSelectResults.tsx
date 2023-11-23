@@ -36,7 +36,7 @@ const MultiSelectResults = <T,>({
               />
             }
           >
-            {label}
+            <div className={s.multiSelectResults__tagContent}>{label}</div>
           </Tag>
         );
       })}
