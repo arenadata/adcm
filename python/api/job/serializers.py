@@ -15,7 +15,7 @@ from pathlib import Path
 
 from api.action.serializers import ActionJobSerializer
 from api.concern.serializers import ConcernItemSerializer
-from cm.ansible_plugin import get_check_log
+from cm.ansible_plugin import get_checklogs_data_by_job_id
 from cm.job import start_task
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
 from django.conf import settings
@@ -293,7 +293,7 @@ class LogStorageRetrieveSerializer(HyperlinkedModelSerializer):
                 obj.body = self._get_ansible_content(obj)
         elif obj.type == "check":
             if obj.body is None:
-                obj.body = get_check_log(obj.job_id)
+                obj.body = get_checklogs_data_by_job_id(obj.job_id)
             if isinstance(obj.body, str):
                 obj.body = json.loads(obj.body)
         elif obj.type == "custom":

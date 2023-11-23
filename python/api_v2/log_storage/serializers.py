@@ -13,7 +13,7 @@
 # pylint: disable=duplicate-code
 import json
 
-from cm.ansible_plugin import get_check_log
+from cm.ansible_plugin import get_checklogs_data_by_job_id
 from cm.models import LogStorage
 from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer
@@ -51,7 +51,7 @@ class LogStorageSerializer(ModelSerializer):
                 obj.body = self._get_ansible_content(obj)
         elif obj.type == "check":
             if obj.body is None:
-                obj.body = get_check_log(obj.job_id)
+                obj.body = get_checklogs_data_by_job_id(obj.job_id)
             if isinstance(obj.body, str):
                 obj.body = json.loads(obj.body)
         elif obj.type == "custom":
