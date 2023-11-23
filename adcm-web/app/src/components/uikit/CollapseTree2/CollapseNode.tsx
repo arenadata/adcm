@@ -9,7 +9,7 @@ import { rootNodeKey } from '@uikit/ConfigurationEditor/ConfigurationTree/Config
 interface CollapseNodeProps<T> {
   node: Node<T>;
   isInitiallyExpanded?: boolean;
-  areExpandedAll: boolean;
+  areExpandedAll?: boolean;
   getNodeClassName: (node: Node<T>) => string;
   renderNodeContent: (node: Node<T>, isExpanded: boolean, onExpand: (isOpen: boolean) => void) => ReactNode;
 }
@@ -32,7 +32,7 @@ const CollapseNode = <T,>({
   }, [node]);
 
   useEffect(() => {
-    if (!isIgnoreExpandAll) {
+    if (!isIgnoreExpandAll && typeof areExpandedAll === 'boolean') {
       setIsExpanded(areExpandedAll);
     }
   }, [areExpandedAll, isIgnoreExpandAll]);

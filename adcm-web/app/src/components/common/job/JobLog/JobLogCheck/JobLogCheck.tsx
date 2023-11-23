@@ -49,7 +49,6 @@ const JobLogCheck: React.FC<JobLogCheckProps> = ({ jobStatus, log }) => {
         isInitiallyExpanded={true}
         getNodeClassName={handleGetNodeClassName}
         renderNodeContent={handleRenderNodeContent}
-        areExpandedAll={false}
       />
     </div>
   );
