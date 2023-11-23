@@ -15,22 +15,24 @@ from api_v2.audit.serializers import AuditLogSerializer, AuditSessionSerializer
 from api_v2.views import CamelCaseReadOnlyModelViewSet
 from audit.models import AuditLog, AuditSession
 from django_filters.rest_framework.backends import DjangoFilterBackend
-
-from adcm.permissions import SuperuserOnlyMixin
+from guardian.mixins import PermissionListMixin
+from rest_framework.permissions import DjangoObjectPermissions
 
 
 # pylint: disable=too-many-ancestors
-class AuditSessionViewSet(SuperuserOnlyMixin, CamelCaseReadOnlyModelViewSet):
-    not_superuser_error_code = "AUDIT_LOGINS_FORBIDDEN"
+class AuditSessionViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
     queryset = AuditSession.objects.select_related("user").order_by("-login_time")
     serializer_class = AuditSessionSerializer
+    permission_classes = [DjangoObjectPermissions]
+    permission_required = ["audit.view_auditsession"]
     filterset_class = AuditSessionFilterSet
     filter_backends = (DjangoFilterBackend,)
 
 
-class AuditLogViewSet(SuperuserOnlyMixin, CamelCaseReadOnlyModelViewSet):
-    not_superuser_error_code = "AUDIT_OPERATIONS_FORBIDDEN"
+class AuditLogViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
     queryset = AuditLog.objects.select_related("audit_object", "user").order_by("-operation_time")
     serializer_class = AuditLogSerializer
+    permission_classes = [DjangoObjectPermissions]
+    permission_required = ["audit.view_auditlog"]
     filterset_class = AuditLogFilterSet
     filter_backends = (DjangoFilterBackend,)
