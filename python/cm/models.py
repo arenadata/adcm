@@ -25,9 +25,9 @@ from itertools import chain
 from typing import Optional, TypeAlias
 from uuid import uuid4
 
+from cm.adcm_config.ansible import ansible_decrypt
 from cm.errors import AdcmEx
 from cm.logger import logger
-from cm.utils import deep_merge
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -295,86 +295,6 @@ class ConfigLog(ADCMModel):
     description = models.TextField(blank=True)
 
     __error_code__ = "CONFIG_NOT_FOUND"
-
-    @transaction.atomic()
-    def save(self, *args, **kwargs):  # pylint: disable=too-many-locals,too-many-statements
-        def update_config(origin: dict, renovator: dict, _group_keys: dict) -> None:
-            for key, value in _group_keys.items():
-                if key in renovator:
-                    if isinstance(value, Mapping):
-                        origin.setdefault(key, {})
-                        update_config(origin[key], renovator[key], _group_keys[key]["fields"])
-                    else:
-                        if value:
-                            origin[key] = renovator[key]
-
-        def update_attr(origin: dict, renovator: dict, _group_keys: dict) -> None:
-            for key, value in _group_keys.items():
-                if key in renovator and isinstance(value, Mapping):
-                    if value["value"] is not None and value["value"]:
-                        origin[key] = renovator[key]
-
-        def clean_attr(attrs: dict, _spec: dict) -> None:
-            extra_fields = []
-
-            for key in attrs.keys():
-                if key not in ["group_keys", "custom_group_keys"]:
-                    if key not in _spec:
-                        extra_fields.append(key)
-
-            for field in extra_fields:
-                attrs.pop(field)
-
-        def clean_group_keys(_group_keys, _spec):
-            correct_group_keys = {}
-            for field, info in _spec.items():
-                if info["type"] == "group":
-                    correct_group_keys[field] = {}
-                    correct_group_keys[field]["value"] = _group_keys[field]["value"]
-                    correct_group_keys[field]["fields"] = {}
-                    for key in info["fields"].keys():
-                        correct_group_keys[field]["fields"][key] = _group_keys[field]["fields"][key]
-                else:
-                    correct_group_keys[field] = _group_keys[field]
-            return correct_group_keys
-
-        obj = self.obj_ref.object
-        if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
-            # Sync group configs with object config
-            for conf_group in obj.group_config.order_by("id"):
-                diff_config, diff_attr = conf_group.get_diff_config_attr()
-                group_config = ConfigLog()
-                current_group_config = ConfigLog.objects.get(id=conf_group.config.current)
-                group_config.obj_ref = conf_group.config
-                config = deepcopy(self.config)
-                current_group_keys = current_group_config.attr["group_keys"]
-                update_config(config, diff_config, current_group_keys)
-                group_config.config = config
-                attr = deepcopy(self.attr)
-                update_attr(attr, diff_attr, current_group_keys)
-                spec = conf_group.get_config_spec()
-                group_keys, custom_group_keys = conf_group.create_group_keys(spec)
-                group_keys = deep_merge(group_keys, current_group_keys)
-                group_keys = clean_group_keys(group_keys, spec)
-                attr["group_keys"] = group_keys
-                attr["custom_group_keys"] = custom_group_keys
-                clean_attr(attr, spec)
-
-                group_config.attr = attr
-                group_config.description = current_group_config.description
-                group_config.save()
-                conf_group.config.previous = conf_group.config.current
-                conf_group.config.current = group_config.id
-                conf_group.config.save()
-                conf_group.preparing_file_type_field()
-        if isinstance(obj, GroupConfig):
-            # `custom_group_keys` read only field in attr,
-            # needs to be replaced when creating an object with ORM
-            # for api it is checked in /cm/adcm_config.py:check_custom_group_keys_attr()
-            _, custom_group_keys = obj.create_group_keys(obj.get_config_spec())
-            self.attr.update({"custom_group_keys": custom_group_keys})
-
-        super().save(*args, **kwargs)
 
 
 class ADCMEntity(ADCMModel):
@@ -938,42 +858,6 @@ class GroupConfig(ADCMModel):
 
         return group_keys, custom_group_keys
 
-    def get_diff_config_attr(self):
-        def get_diff(_config, _attr, _group_keys, diff_config=None, diff_attr=None):
-            if diff_config is None:
-                diff_config = {}
-
-            if diff_attr is None:
-                diff_attr = {}
-
-            for group_key, group_value in _group_keys.items():
-                if isinstance(group_value, Mapping):
-                    if group_value["value"] is not None and group_value["value"]:
-                        diff_attr[group_key] = _attr[group_key]
-
-                    diff_config.setdefault(group_key, {})
-                    get_diff(
-                        _config[group_key],
-                        _attr,
-                        _group_keys[group_key]["fields"],
-                        diff_config[group_key],
-                        diff_attr,
-                    )
-                    if not diff_config[group_key]:
-                        diff_config.pop(group_key)
-                else:
-                    if group_value:
-                        diff_config[group_key] = _config[group_key]
-
-            return diff_config, diff_attr
-
-        config_log = ConfigLog.obj.get(id=self.config.current)
-        config = config_log.config
-        attr = config_log.attr
-        group_keys = config_log.attr.get("group_keys", {})
-
-        return get_diff(config, attr, group_keys)
-
     def get_group_keys(self):
         config_log = ConfigLog.objects.get(id=self.config.current)
 
@@ -1039,7 +923,7 @@ class GroupConfig(ADCMModel):
         group_attr = self.get_config_attr()
         config = self.merge_config(object_config, group_config, group_keys)
         attr = self.merge_attr(object_attr, group_attr, group_keys)
-        self.preparing_file_type_field(config)
+        self.prepare_files_for_config(config)
 
         return config, attr
 
@@ -1064,7 +948,7 @@ class GroupConfig(ADCMModel):
         if set(host_ids).difference({host.pk for host in self.host_candidate()}):
             raise AdcmEx("GROUP_CONFIG_HOST_ERROR")
 
-    def preparing_file_type_field(self, config=None):
+    def prepare_files_for_config(self, config=None):
         """Creating file for file type field"""
 
         if self.config is None:
@@ -1076,7 +960,7 @@ class GroupConfig(ADCMModel):
         fields = PrototypeConfig.objects.filter(
             prototype=self.object.prototype,
             action__isnull=True,
-            type="file",
+            type__in={"file", "secretfile"},
         ).order_by("id")
         for field in fields:
             filename = ".".join(
@@ -1095,6 +979,9 @@ class GroupConfig(ADCMModel):
                 value = config[field.name][field.subname]
             else:
                 value = config[field.name]
+
+            if field.type == "secretfile":
+                value = ansible_decrypt(msg=value)
 
             if value is not None:
                 # See cm.adcm_config.py:313
@@ -1130,7 +1017,7 @@ class GroupConfig(ADCMModel):
                 self.config.current = config_log.pk
                 self.config.save()
         super().save(*args, **kwargs)
-        self.preparing_file_type_field()
+        self.prepare_files_for_config()
 
 
 class ActionType(models.TextChoices):

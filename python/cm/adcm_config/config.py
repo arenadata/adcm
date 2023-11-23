@@ -19,11 +19,7 @@ from typing import Any
 
 from ansible.errors import AnsibleError
 from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
-from cm.adcm_config.checks import (
-    check_attr,
-    check_config_type,
-    check_value_unselected_field,
-)
+from cm.adcm_config.checks import check_attr, check_config_type
 from cm.adcm_config.utils import (
     config_is_ro,
     cook_file_type_name,
@@ -39,15 +35,19 @@ from cm.models import (
     ADCM,
     Action,
     ADCMEntity,
+    Cluster,
+    ClusterObject,
     ConfigLog,
     GroupConfig,
+    HostProvider,
     ObjectConfig,
     ObjectType,
     Prototype,
     PrototypeConfig,
+    ServiceComponent,
     StagePrototype,
 )
-from cm.utils import dict_to_obj, obj_to_dict
+from cm.utils import deep_merge, dict_to_obj, obj_to_dict
 from cm.variant import get_variant, process_variant
 from django.conf import settings
 from django.db.models import QuerySet
@@ -90,7 +90,7 @@ def init_object_config(proto: Prototype, obj: Any) -> ObjectConfig | None:
 
     obj_conf = ObjectConfig(current=0, previous=0)
     obj_conf.save()
-    save_obj_config(obj_conf, conf, attr, "init")
+    save_object_config(obj_conf, conf, attr, "init")
     process_file_type(obj, spec, conf)
 
     return obj_conf
@@ -225,7 +225,7 @@ def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many
         if key in inactive_groups:
             attr[key] = {"active": False}
 
-    save_obj_config(obj_conf=obj.config, conf=unflat_conf, attr=attr, desc="upgrade")
+    save_object_config(object_config=obj.config, config=unflat_conf, attr=attr, description="upgrade")
     process_file_type(obj=obj, spec=new_unflat_spec, conf=unflat_conf)
 
 
@@ -243,12 +243,123 @@ def restore_cluster_config(obj_conf, version, desc=""):
     return config_log
 
 
-def save_obj_config(obj_conf, conf, attr, desc=""):
-    config_log = ConfigLog(obj_ref=obj_conf, config=conf, attr=attr, description=desc)
-    config_log.save()
-    obj_conf.previous = obj_conf.current
-    obj_conf.current = config_log.id
-    obj_conf.save()
+def _merge_config_field(origin_config_fields: dict, group_config_fields: dict, group_keys: dict, spec: dict) -> dict:
+    for field_name, info in spec.items():
+        if info["type"] == "group" and field_name in group_keys:
+            _merge_config_field(
+                origin_config_fields=origin_config_fields[field_name],
+                group_config_fields=group_config_fields[field_name],
+                group_keys=group_keys[field_name]["fields"],
+                spec=spec[field_name]["fields"],
+            )
+        elif group_keys.get(field_name, False):
+            origin_config_fields[field_name] = group_config_fields[field_name]
+
+    return origin_config_fields
+
+
+def _merge_attr_field(origin_attr_fields: dict, group_attr_fields: dict, group_keys: dict, spec: dict) -> dict:
+    for field_name, info in spec.items():
+        if info["type"] == "group" and group_keys.get(field_name, {}).get("value", False):
+            origin_attr_fields[field_name] = group_attr_fields[field_name]
+
+    return origin_attr_fields
+
+
+def _clear_group_keys(group_keys: dict, spec: dict) -> dict:
+    correct_group_keys = {}
+
+    for field, info in spec.items():
+        if info["type"] == "group":
+            correct_group_keys[field] = {}
+            correct_group_keys[field]["value"] = group_keys[field]["value"]
+            correct_group_keys[field]["fields"] = {}
+
+            for key in info["fields"].keys():
+                correct_group_keys[field]["fields"][key] = group_keys[field]["fields"][key]
+        else:
+            correct_group_keys[field] = group_keys[field]
+
+    return correct_group_keys
+
+
+def merge_config_of_group_with_primary_config(
+    group: GroupConfig,
+    primary_config: ConfigLog,
+    current_config_of_group: ConfigLog,
+) -> ConfigLog:
+    spec = group.get_config_spec()
+    current_group_keys = current_config_of_group.attr["group_keys"]
+
+    config = _merge_config_field(
+        origin_config_fields=copy.deepcopy(primary_config.config),
+        group_config_fields=current_config_of_group.config,
+        group_keys=current_group_keys,
+        spec=spec,
+    )
+    attr = _merge_attr_field(
+        origin_attr_fields=copy.deepcopy(primary_config.attr),
+        group_attr_fields=current_config_of_group.attr,
+        group_keys=current_group_keys,
+        spec=spec,
+    )
+
+    group_keys, custom_group_keys = group.create_group_keys(config_spec=spec)
+
+    attr["group_keys"] = _clear_group_keys(
+        group_keys=deep_merge(origin=group_keys, renovator=current_group_keys), spec=spec
+    )
+    attr["custom_group_keys"] = custom_group_keys
+
+    return ConfigLog.objects.create(
+        obj_ref=group.config, config=config, attr=attr, description=current_config_of_group.description
+    )
+
+
+def update_group_configs_by_primary_object(
+    object_: Cluster | ClusterObject | ServiceComponent | HostProvider, config: ConfigLog
+) -> None:
+    for config_group in object_.group_config.order_by("id"):
+        current_group_config = ConfigLog.objects.get(id=config_group.config.current)
+
+        config_log = merge_config_of_group_with_primary_config(
+            group=config_group, primary_config=config, current_config_of_group=current_group_config
+        )
+
+        config_log.save()
+
+        config_group.config.previous = config_group.config.current
+        config_group.config.current = config_log.id
+        config_group.config.save(update_fields=["previous", "current"])
+
+        config_group.prepare_files_for_config(config=config_log.config)
+
+
+def update_group_config(group_config: GroupConfig, config: ConfigLog) -> ConfigLog:
+    primary_config = ConfigLog.objects.get(id=group_config.object.config.current)
+
+    return merge_config_of_group_with_primary_config(
+        group=group_config, primary_config=primary_config, current_config_of_group=config
+    )
+
+
+def save_object_config(object_config: ObjectConfig, config: dict, attr: dict, description: str = "") -> ConfigLog:
+    config_log = ConfigLog(obj_ref=object_config, config=config, attr=attr, description=description)
+    obj = object_config.object
+
+    if isinstance(obj, GroupConfig):
+        config_log = update_group_config(group_config=obj, config=config_log)
+        config_log.save()
+        obj.prepare_files_for_config(config=config_log.config)
+    elif isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
+        config_log.save()
+        update_group_configs_by_primary_object(object_=obj, config=config_log)
+    else:
+        config_log.save()
+
+    object_config.previous = object_config.current
+    object_config.current = config_log.id
+    object_config.save(update_fields=["previous", "current"])
 
     return config_log
 
@@ -462,7 +573,6 @@ def process_json_config(
     prototype: Prototype,
     obj: ADCMEntity | Action,
     new_config: dict,
-    current_config: dict | None = None,
     new_attr: dict | None = None,
     current_attr: dict | None = None,
 ) -> dict:
@@ -471,17 +581,6 @@ def process_json_config(
     group = None
 
     if isinstance(obj, GroupConfig):
-        config_spec = obj.get_config_spec()
-        group_keys = new_attr.get("group_keys", {})
-        check_value_unselected_field(
-            current_config,
-            new_config,
-            current_attr,
-            new_attr,
-            group_keys,
-            config_spec,
-            obj.object,
-        )
         group = obj
         obj = group.object
 

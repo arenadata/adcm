@@ -15,7 +15,7 @@ import functools
 from cm.adcm_config.config import (
     init_object_config,
     make_object_config,
-    save_obj_config,
+    save_object_config,
     switch_config,
 )
 from cm.adcm_config.utils import proto_ref
@@ -342,7 +342,9 @@ def revert_object(obj: ADCMEntity, old_proto: Prototype) -> None:
     if "config_id" in obj.before_upgrade:
         config_log = ConfigLog.objects.get(id=obj.before_upgrade["config_id"])
         obj.config.current = 0
-        save_obj_config(obj_conf=obj.config, conf=config_log.config, attr=config_log.attr, desc="revert_upgrade")
+        save_object_config(
+            object_config=obj.config, config=config_log.config, attr=config_log.attr, description="revert_upgrade"
+        )
     else:
         obj.config = None
 

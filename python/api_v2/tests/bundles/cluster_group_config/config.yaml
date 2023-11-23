@@ -1,0 +1,74 @@
+---
+- type: cluster
+  name: cluster_group_config
+  version: &version '1.0'
+  edition: community
+  config_group_customization: true
+
+  config:
+    - name: boolean
+      type: boolean
+      default: true
+    - name: group
+      type: group
+      subs:
+        - name: float
+          type: float
+          required: false
+          default: 0.1
+    - name: activatable_group
+      type: group
+      activatable: True
+      active: True
+      subs:
+        - name: integer
+          type: integer
+          required: false
+          default: 10
+
+- name: service
+  type: service
+  version: *version
+  config:
+    - name: string
+      type: string
+      required: false
+      default: string
+    - name: group
+      type: group
+      subs:
+        - name: password
+          type: password
+          default: password
+    - name: activatable_group
+      type: group
+      activatable: True
+      active: True
+      subs:
+        - name: text
+          type: text
+          required: false
+          default: text
+
+  components:
+    component:
+      constraint: [ 0, + ]
+      config:
+        - name: secrettext
+          type: secrettext
+          default: new secrettext
+        - name: group
+          type: group
+          subs:
+            - name: file
+              type: file
+              required: false
+              default: ./file.txt
+        - name: activatable_group
+          type: group
+          activatable: True
+          active: True
+          subs:
+            - name: secretfile
+              type: secretfile
+              default: ./secretfile.txt
