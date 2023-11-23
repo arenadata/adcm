@@ -26,6 +26,7 @@
       "warn",
       {
         "skipWords": [
+          "100vw",
           "acc",
           "accesslog",
           "accessor",

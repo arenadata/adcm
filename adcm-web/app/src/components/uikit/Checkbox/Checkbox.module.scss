@@ -70,6 +70,7 @@
     align-items: center;
     justify-content: center;
     border: 2px solid var(--checkbox-border);
+    flex-shrink: 0;
     color: var(--checkbox-mark-color, var(--checkbox-border));
     border-radius: 3px;
     transition: border-color 250ms, color 250ms;

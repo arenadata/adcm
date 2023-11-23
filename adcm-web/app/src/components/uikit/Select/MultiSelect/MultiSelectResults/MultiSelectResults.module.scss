@@ -6,11 +6,11 @@
 
     max-width: 100%;
     box-sizing: border-box;
+  }
 
-    & > span {
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      overflow: hidden;
-    }
+  &__tagContent {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
   }
 }
