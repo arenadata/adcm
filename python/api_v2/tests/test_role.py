@@ -195,7 +195,7 @@ class TestRole(BaseAPITestCase):
         response = self.client.get(path=reverse(viewname="v2:rbac:role-list"), data={"categories": "cluster_one"})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 42)
+        self.assertEqual(response.json()["count"], 44)
 
     def test_list_object_candidates_success(self):
         response = self.client.get(
