@@ -12,6 +12,7 @@ interface AdcmJobsState {
   isLoading: boolean;
   job: AdcmJob | null;
   task: AdcmTask;
+  isTaskLoading: boolean;
   jobLogs: Record<number, AdcmJobLogItem[]>;
 }
 
@@ -65,13 +66,35 @@ const getJobLog = createAsyncThunk('adcm/jobs/getJobLog', async (id: number, thu
   }
 });
 
-const getTask = createAsyncThunk('adcm/jobs/getTask', async (id: number, thunkAPI) => {
+const loadTask = createAsyncThunk('adcm/jobs/loadTask', async (id: number, thunkAPI) => {
   try {
     return await AdcmJobsApi.getTask(id);
   } catch (error) {
-    thunkAPI.dispatch(showError({ message: 'Task not found' }));
     return thunkAPI.rejectWithValue(error);
   }
+});
+
+const getTask = createAsyncThunk('adcm/jobs/getTask', async (id: number, thunkAPI) => {
+  thunkAPI.dispatch(setIsTaskLoading(true));
+  const startDate = new Date();
+  await thunkAPI
+    .dispatch(loadTask(id))
+    .unwrap()
+    .catch(() => {
+      thunkAPI.dispatch(showError({ message: 'Task not found' }));
+    });
+
+  executeWithMinDelay({
+    startDate,
+    delay: defaultSpinnerDelay,
+    callback: () => {
+      thunkAPI.dispatch(setIsTaskLoading(false));
+    },
+  });
+});
+
+const refreshTask = createAsyncThunk('adcm/jobs/refreshTask', async (id: number, thunkAPI) => {
+  thunkAPI.dispatch(loadTask(id));
 });
 
 const createInitialState = (): AdcmJobsState => ({
@@ -91,6 +114,7 @@ const createInitialState = (): AdcmJobsState => ({
     isTerminatable: false,
     childJobs: [],
   },
+  isTaskLoading: true,
   jobLogs: {},
 });
 
@@ -100,6 +124,9 @@ const jobsSlice = createSlice({
   reducers: {
     setIsLoading(state, action) {
       state.isLoading = action.payload;
+    },
+    setIsTaskLoading(state, action) {
+      state.isTaskLoading = action.payload;
     },
     cleanupJobs() {
       return createInitialState();
@@ -120,10 +147,10 @@ const jobsSlice = createSlice({
       .addCase(getJob.rejected, (state) => {
         state.job = null;
       })
-      .addCase(getTask.fulfilled, (state, action) => {
+      .addCase(loadTask.fulfilled, (state, action) => {
         state.task = action.payload;
       })
-      .addCase(getTask.rejected, (state) => {
+      .addCase(loadTask.rejected, (state) => {
         state.task.childJobs = [];
       })
       .addCase(getJobLog.fulfilled, (state, action) => {
@@ -133,6 +160,6 @@ const jobsSlice = createSlice({
   },
 });
 
-const { setIsLoading, cleanupJobs } = jobsSlice.actions;
-export { cleanupJobs, getJob, getJobs, getJobLog, getTask, refreshJobs };
+const { setIsLoading, setIsTaskLoading, cleanupJobs } = jobsSlice.actions;
+export { cleanupJobs, getJob, getJobs, getJobLog, getTask, refreshJobs, refreshTask };
 export default jobsSlice.reducer;

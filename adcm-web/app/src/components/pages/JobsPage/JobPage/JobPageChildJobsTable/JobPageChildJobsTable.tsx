@@ -16,7 +16,7 @@ import JobsStatusCell from '@commonComponents/Table/Cells/JobsStatusCell/JobsSta
 const JobPageChildJobsTable = () => {
   const dispatch = useDispatch();
   const task = useStore((s) => s.adcm.jobs.task);
-  const isLoading = useStore((s) => s.adcm.jobs.isLoading);
+  const isTaskLoading = useStore((s) => s.adcm.jobs.isTaskLoading);
 
   const [expandableRows, setExpandableRows] = useState<Record<number, boolean>>({});
 
@@ -36,7 +36,7 @@ const JobPageChildJobsTable = () => {
   };
 
   return (
-    <Table variant="tertiary" isLoading={isLoading} columns={columns} onSorting={handleSorting}>
+    <Table variant="tertiary" isLoading={isTaskLoading} columns={columns} onSorting={handleSorting}>
       {task.childJobs?.map((job) => {
         return (
           <ExpandableRowComponent

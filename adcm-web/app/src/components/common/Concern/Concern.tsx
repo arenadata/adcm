@@ -1,7 +1,7 @@
 import React from 'react';
 import ConcernMessages from './ConcernMessages/ConcernMessages';
 import Tooltip from '@uikit/Tooltip/Tooltip';
-import Icon from '@uikit/Icon/Icon';
+import Icon, { IconProps } from '@uikit/Icon/Icon';
 import s from './Concern.module.scss';
 import { AdcmConcerns } from '@models/adcm';
 import { getConcernLinkObjectPathsDataArray } from '@utils/concernUtils';
@@ -10,9 +10,10 @@ import cn from 'classnames';
 interface ConcernProps {
   concerns: AdcmConcerns[];
   className?: string;
+  size?: IconProps['size'];
 }
 
-const Concern: React.FC<ConcernProps> = ({ concerns, className }) => {
+const Concern: React.FC<ConcernProps> = ({ concerns, className, size = 32 }) => {
   if (concerns.length === 0) {
     return null;
   }
@@ -28,7 +29,7 @@ const Concern: React.FC<ConcernProps> = ({ concerns, className }) => {
   return (
     <>
       <Tooltip label={<ConcernMessages concernsData={concernsDataArray} />} placement={'bottom-start'} closeDelay={100}>
-        <Icon name="g1-info" size={32} className={classes} />
+        <Icon name="g1-info" size={size} className={classes} />
       </Tooltip>
     </>
   );

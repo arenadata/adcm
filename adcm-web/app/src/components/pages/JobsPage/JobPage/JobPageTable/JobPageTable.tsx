@@ -8,12 +8,12 @@ import JobObjectsCell from '@commonComponents/Table/Cells/JobObjectsCell/JobObje
 
 const JobPageTable = () => {
   const task = useStore((s) => s.adcm.jobs.task);
-  const isLoading = useStore((s) => s.adcm.jobs.isLoading);
+  const isTaskLoading = useStore((s) => s.adcm.jobs.isTaskLoading);
 
   const downloadLink = `${apiHost}/api/v2/tasks/${task.id}/logs/download/`;
 
   return (
-    <Table variant="quaternary" isLoading={isLoading} columns={columns}>
+    <Table variant="quaternary" isLoading={isTaskLoading} columns={columns}>
       <TableRow>
         <JobObjectsCell objects={task.objects} />
         <TableCell>{secondsToDuration(task.duration)}</TableCell>
