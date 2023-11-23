@@ -176,9 +176,9 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service = self.add_service_to_cluster(
-            service_name="service_4_save_config_without_required_field", cluster=self.cluster_1
-        )
+        self.service = self.add_services_to_cluster(
+            service_names=["service_4_save_config_without_required_field"], cluster=self.cluster_1
+        ).get()
 
     def test_save_empty_config_success(self):
         response = self.client.post(
@@ -517,7 +517,7 @@ class TestServiceConfig(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.service_1_initial_config = ConfigLog.objects.get(pk=self.service_1.config.current)
 
     def test_list_success(self):
@@ -614,7 +614,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
 
         self.group_config = GroupConfig.objects.create(
             name="group_config",
@@ -907,7 +907,7 @@ class TestComponentConfig(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.component_1 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )
@@ -1026,7 +1026,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.component_1 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )
@@ -2076,9 +2076,9 @@ class TestConfigSchemaEnumWithoutValues(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service = self.add_service_to_cluster(
-            service_name="service_5_variant_type_without_values", cluster=self.cluster_1
-        )
+        self.service = self.add_services_to_cluster(
+            service_names=["service_5_variant_type_without_values"], cluster=self.cluster_1
+        ).get()
 
     def test_schema(self):
         response = self.client.get(

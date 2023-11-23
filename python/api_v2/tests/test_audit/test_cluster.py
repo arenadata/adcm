@@ -52,7 +52,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host2")
         self.host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host3")
 
-        self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1)
         self.service_1 = ClusterObject.objects.get(cluster=self.cluster_1, prototype__name="service_1")
         self.component_1 = ServiceComponent.objects.get(
             cluster=self.cluster_1, prototype__bundle=self.bundle_1, prototype__name="component_1"

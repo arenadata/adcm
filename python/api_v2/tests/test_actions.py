@@ -55,14 +55,14 @@ class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instanc
 
         cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions")
         self.cluster = self.add_cluster(cluster_bundle, "Cluster with Actions")
-        self.service_1 = self.add_service_to_cluster("service_1", self.cluster)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster).get()
         self.component_1: ServiceComponent = ServiceComponent.objects.get(
             service=self.service_1, prototype__name="component_1"
         )
         self.component_2: ServiceComponent = ServiceComponent.objects.get(
             service=self.service_1, prototype__name="component_2"
         )
-        self.add_service_to_cluster("service_2", self.cluster)
+        self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster)
 
         provider_bundle = self.add_bundle(self.test_bundles_dir / "provider_actions")
         self.hostprovider = self.add_provider(provider_bundle, "Provider with Actions")
@@ -401,7 +401,7 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
 
         cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions_jinja")
         self.cluster = self.add_cluster(cluster_bundle, "Cluster with Jinja Actions")
-        self.service_1 = self.add_service_to_cluster("first_service", self.cluster)
+        self.service_1 = self.add_services_to_cluster(service_names=["first_service"], cluster=self.cluster).get()
         self.component_1: ServiceComponent = ServiceComponent.objects.get(
             service=self.service_1, prototype__name="first_component"
         )

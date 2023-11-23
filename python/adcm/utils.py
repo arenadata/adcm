@@ -14,7 +14,7 @@ from typing import Any, Iterable
 
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import cancel_locking_tasks, delete_service, load_mm_objects
-from cm.errors import raise_adcm_ex
+from cm.errors import AdcmEx
 from cm.flag import update_flags
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.job import start_task
@@ -332,28 +332,28 @@ def delete_service_from_api(service: ClusterObject) -> Response:  # pylint: disa
 
     if not delete_action:
         if service.state != "created":
-            raise_adcm_ex("SERVICE_DELETE_ERROR")
+            raise AdcmEx(code="SERVICE_DELETE_ERROR")
 
         if host_components_exists:
-            raise_adcm_ex("SERVICE_CONFLICT", f"Service #{service.id} has component(s) on host(s)")
+            raise AdcmEx(code="SERVICE_CONFLICT", msg=f"Service #{service.id} has component(s) on host(s)")
 
     cluster = service.cluster
 
     if cluster.state == "upgrading" and service.prototype.name in cluster.before_upgrade["services"]:
-        return raise_adcm_ex(code="SERVICE_CONFLICT", msg="It is forbidden to delete service in upgrade mode")
+        raise AdcmEx(code="SERVICE_CONFLICT", msg="It is forbidden to delete service in upgrade mode")
 
     if ClusterBind.objects.filter(source_service=service).exists():
-        raise_adcm_ex("SERVICE_CONFLICT", f"Service #{service.id} has exports(s)")
+        raise AdcmEx(code="SERVICE_CONFLICT", msg=f"Service #{service.id} has exports(s)")
 
     if service.prototype.required:
-        raise_adcm_ex("SERVICE_CONFLICT", f"Service #{service.id} is required")
+        raise AdcmEx(code="SERVICE_CONFLICT", msg=f"Service #{service.id} is required")
 
     if TaskLog.objects.filter(action=delete_action, status=JobStatus.RUNNING).exists():
-        raise_adcm_ex("SERVICE_DELETE_ERROR", "Service is deleting now")
+        raise AdcmEx(code="SERVICE_DELETE_ERROR", msg="Service is deleting now")
 
     for component in ServiceComponent.objects.filter(cluster=service.cluster).exclude(service=service):
         if component.requires_service_name(service_name=service.name):
-            raise_adcm_ex(
+            raise AdcmEx(
                 code="SERVICE_CONFLICT",
                 msg=f"Component {component.name} of service {component.service.display_name}"
                 f" requires this service or its component",
@@ -361,7 +361,7 @@ def delete_service_from_api(service: ClusterObject) -> Response:  # pylint: disa
 
     for another_service in ClusterObject.objects.filter(cluster=service.cluster):
         if another_service.requires_service_name(service_name=service.name):
-            raise_adcm_ex(
+            raise AdcmEx(
                 code="SERVICE_CONFLICT",
                 msg=f"Service {another_service.display_name} requires this service or its component",
             )

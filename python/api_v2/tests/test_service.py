@@ -35,8 +35,8 @@ class TestServiceAPI(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
-        self.service_2 = self.add_service_to_cluster(service_name="service_2", cluster=self.cluster_1)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
         self.action = Action.objects.filter(prototype=self.service_2.prototype).first()
 
     def get_service_status_mock(self) -> Callable:
@@ -57,7 +57,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 2)
 
     def test_adcm_4544_list_service_name_ordering_success(self):
-        service_3 = self.add_service_to_cluster(service_name="service_3_manual_add", cluster=self.cluster_1)
+        service_3 = self.add_services_to_cluster(service_names=["service_3_manual_add"], cluster=self.cluster_1).get()
         service_list = [self.service_1.display_name, self.service_2.display_name, service_3.display_name]
         response = self.client.get(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),

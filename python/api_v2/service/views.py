@@ -18,10 +18,14 @@ from api_v2.service.serializers import (
     ServiceRetrieveSerializer,
     ServiceStatusSerializer,
 )
+from api_v2.service.utils import (
+    bulk_add_services_to_cluster,
+    validate_service_prototypes,
+)
 from api_v2.views import CamelCaseReadOnlyModelViewSet
 from audit.utils import audit
-from cm.api import add_service_to_cluster, update_mm_objects
-from cm.models import Cluster, ClusterObject, ObjectType, Prototype
+from cm.api import update_mm_objects
+from cm.models import Cluster, ClusterObject
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
@@ -81,17 +85,10 @@ class ServiceViewSet(  # pylint: disable=too-many-ancestors
         )
         serializer.is_valid(raise_exception=True)
 
-        added_services = []
-        for service_prototype in Prototype.objects.filter(
-            pk__in=[prototype_data["prototype_id"] for prototype_data in serializer.validated_data],
-            type=ObjectType.SERVICE,
-        ):
-            added_services.append(
-                add_service_to_cluster(
-                    cluster=cluster,
-                    proto=service_prototype,
-                )
-            )
+        service_prototypes, error = validate_service_prototypes(cluster=cluster, data=serializer.validated_data)
+        if error is not None:
+            raise error
+        added_services = bulk_add_services_to_cluster(cluster=cluster, prototypes=service_prototypes)
 
         return Response(
             status=HTTP_201_CREATED, data=ServiceRetrieveSerializer(instance=added_services, many=True).data

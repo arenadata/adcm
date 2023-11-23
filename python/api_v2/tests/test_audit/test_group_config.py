@@ -44,7 +44,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         self.new_host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="new_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.new_host)
 
-        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.service_1_group_config = GroupConfig.objects.create(
             name="service_1_group_config",
             object_type=ContentType.objects.get_for_model(self.service_1),

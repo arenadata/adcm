@@ -27,7 +27,7 @@ class TestMapping(BaseAPITestCase):
         self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.service_1 = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.component_1 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )
@@ -95,9 +95,7 @@ class TestMapping(BaseAPITestCase):
     def test_mapping_components_with_requires_success(self):
         bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_requires_component")
         cluster = self.add_cluster(bundle=bundle, name="cluster_requires")
-        self.add_service_to_cluster(service_name="hbase", cluster=cluster)
-        self.add_service_to_cluster(service_name="zookeeper", cluster=cluster)
-        self.add_service_to_cluster(service_name="hdfs", cluster=cluster)
+        self.add_services_to_cluster(service_names=["hbase", "zookeeper", "hdfs"], cluster=cluster)
 
         response = self.client.get(path=reverse(viewname="v2:cluster-mapping-components", kwargs={"pk": cluster.pk}))
 
@@ -117,11 +115,9 @@ class TestMapping(BaseAPITestCase):
     def test_mapping_components_with_cyclic_dependencies_success(self):
         bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_cyclic_dependencies")
         cluster = self.add_cluster(bundle=bundle, name="cluster_cyclic_dependencies")
-        self.add_service_to_cluster(service_name="serviceA", cluster=cluster)
-        self.add_service_to_cluster(service_name="serviceB", cluster=cluster)
-        self.add_service_to_cluster(service_name="serviceC", cluster=cluster)
-        self.add_service_to_cluster(service_name="serviceD", cluster=cluster)
-        self.add_service_to_cluster(service_name="serviceE", cluster=cluster)
+        self.add_services_to_cluster(
+            service_names=["serviceA", "serviceB", "serviceC", "serviceD", "serviceE"], cluster=cluster
+        )
 
         response = self.client.get(path=reverse(viewname="v2:cluster-mapping-components", kwargs={"pk": cluster.pk}))
 

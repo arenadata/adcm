@@ -31,7 +31,7 @@ class TestComponentAudit(BaseAPITestCase):
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = create_user(**self.test_user_credentials)
 
-        self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1)
         self.service_1 = ClusterObject.objects.get(cluster=self.cluster_1, prototype__name="service_1")
         self.component_1 = ServiceComponent.objects.get(prototype__name="component_1", service=self.service_1)
         self.component_action = Action.objects.get(name="action_1_comp_1", prototype=self.component_1.prototype)
