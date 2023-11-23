@@ -13,6 +13,7 @@
 import re
 from pathlib import Path
 
+from api_v2.log_storage.permissions import LogStoragePermissions
 from api_v2.log_storage.serializers import LogStorageSerializer
 from api_v2.views import CamelCaseGenericViewSet
 from cm.models import JobLog, LogStorage
@@ -21,11 +22,11 @@ from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-from rest_framework.permissions import DjangoObjectPermissions
 from rest_framework.request import Request
+from rest_framework.response import Response
 
 from adcm import settings
-from adcm.permissions import VIEW_JOBLOG_PERMISSION, VIEW_LOGSTORAGE_PERMISSION
+from adcm.permissions import VIEW_LOGSTORAGE_PERMISSION
 
 
 # pylint:disable-next=too-many-ancestors
@@ -34,18 +35,24 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
     serializer_class = LogStorageSerializer
     filter_backends = []
     pagination_class = None
-    permission_classes = [DjangoObjectPermissions]
+    permission_classes = [LogStoragePermissions]
     permission_required = [VIEW_LOGSTORAGE_PERMISSION]
 
     def get_queryset(self, *args, **kwargs):
-        job = JobLog.objects.filter(id=self.kwargs["job_pk"]).first()
+        queryset = super().get_queryset(*args, **kwargs)
+        return queryset.filter(job_id=self.kwargs["job_pk"])
 
-        if job is None or not self.request.user.has_perms(VIEW_JOBLOG_PERMISSION, job):
+    def list(self, request: Request, *args, **kwargs) -> Response:
+        if not JobLog.objects.filter(id=self.kwargs["job_pk"]).exists():
             raise NotFound
 
-        queryset = super().get_queryset(*args, **kwargs)
+        return super().list(request, *args, **kwargs)
 
-        return queryset.filter(job_id=self.kwargs["job_pk"])
+    def retrieve(self, request, *args, **kwargs) -> Response:
+        if not JobLog.objects.filter(id=self.kwargs["job_pk"]).exists():
+            raise NotFound
+
+        return super().retrieve(request, *args, **kwargs)
 
     @action(methods=["get"], detail=True)
     def download(self, request: Request, **kwargs) -> HttpResponse:  # pylint: disable=unused-argument

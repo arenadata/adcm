@@ -932,11 +932,6 @@ def cook_log_name(tag, level, ext="txt"):
     return f"{tag}-{level}.{ext}"
 
 
-def log_custom(job_id, name, log_format, body):
-    job = JobLog.obj.get(id=job_id)
-    LogStorage.objects.create(job=job, name=name, type="custom", format=log_format, body=body)
-
-
 def run_task(task: TaskLog, args: str = ""):
     err_file = open(  # pylint: disable=consider-using-with
         Path(settings.LOG_DIR, "task_runner.err"),
