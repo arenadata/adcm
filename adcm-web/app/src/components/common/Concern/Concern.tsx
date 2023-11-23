@@ -6,7 +6,6 @@ import s from './Concern.module.scss';
 import { AdcmConcerns } from '@models/adcm';
 import { getConcernLinkObjectPathsDataArray } from '@utils/concernUtils';
 import cn from 'classnames';
-import { ConditionalWrapper } from '@uikit';
 
 interface ConcernProps {
   concerns: AdcmConcerns[];
@@ -14,6 +13,10 @@ interface ConcernProps {
 }
 
 const Concern: React.FC<ConcernProps> = ({ concerns, className }) => {
+  if (concerns.length === 0) {
+    return null;
+  }
+
   const hasError = concerns.some(({ isBlocking }) => isBlocking);
   const classes = cn(className, {
     [s.concern_error]: hasError,
@@ -24,15 +27,9 @@ const Concern: React.FC<ConcernProps> = ({ concerns, className }) => {
 
   return (
     <>
-      <ConditionalWrapper
-        Component={Tooltip}
-        isWrap={concernsDataArray.length > 0}
-        label={<ConcernMessages concernsData={concernsDataArray} />}
-        placement={'bottom-start'}
-        closeDelay={100}
-      >
+      <Tooltip label={<ConcernMessages concernsData={concernsDataArray} />} placement={'bottom-start'} closeDelay={100}>
         <Icon name="g1-info" size={32} className={classes} />
-      </ConditionalWrapper>
+      </Tooltip>
     </>
   );
 };
