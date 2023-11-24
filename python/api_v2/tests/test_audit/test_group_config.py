@@ -152,7 +152,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="group-config-new configuration group created",
             operation_type="create",
             operation_result="success",
@@ -167,7 +167,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="fail",
@@ -182,7 +182,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="fail",
@@ -199,7 +199,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="denied",
@@ -215,7 +215,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="denied",
@@ -230,7 +230,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="group-config-new configuration group created",
             operation_type="create",
             operation_result="success",
@@ -245,7 +245,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="fail",
@@ -260,7 +260,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="fail",
@@ -279,7 +279,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="denied",
@@ -295,7 +295,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="denied",
@@ -317,7 +317,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="group-config-new configuration group created",
             operation_type="create",
             operation_result="success",
@@ -339,7 +339,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="fail",
@@ -361,7 +361,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="fail",
@@ -387,7 +387,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="denied",
@@ -410,7 +410,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="denied",
@@ -428,7 +428,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="group-config-new configuration group created",
             operation_type="create",
             operation_result="success",
@@ -446,7 +446,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="fail",
@@ -464,7 +464,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="fail",
@@ -484,7 +484,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="denied",
@@ -503,7 +503,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group created",
             operation_type="create",
             operation_result="denied",
@@ -520,7 +520,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="success",
@@ -537,7 +537,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group deleted",
             operation_type="delete",
             operation_result="fail",
@@ -556,7 +556,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="denied",
@@ -574,7 +574,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="denied",
@@ -591,7 +591,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.provider_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="success",
@@ -608,7 +608,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group deleted",
             operation_type="delete",
             operation_result="fail",
@@ -627,7 +627,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="denied",
@@ -645,7 +645,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="denied",
@@ -666,7 +666,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.service_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="success",
@@ -683,7 +683,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group deleted",
             operation_type="delete",
             operation_result="fail",
@@ -706,7 +706,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.service_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="denied",
@@ -728,7 +728,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.service_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="denied",
@@ -750,7 +750,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.component_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="success",
@@ -772,7 +772,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group deleted",
             operation_type="delete",
             operation_result="fail",
@@ -798,7 +798,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.component_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="denied",
@@ -821,7 +821,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.component_1_group_config.name} configuration group deleted",
             operation_type="delete",
             operation_result="denied",
@@ -838,7 +838,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="success",
@@ -856,7 +856,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="fail",
@@ -873,7 +873,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="configuration group updated",
             operation_type="update",
             operation_result="fail",
@@ -892,7 +892,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="denied",
@@ -910,7 +910,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="denied",
@@ -928,7 +928,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="success",
@@ -946,7 +946,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="fail",
@@ -964,7 +964,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="fail",
@@ -984,7 +984,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="denied",
@@ -1003,7 +1003,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="denied",
@@ -1025,7 +1025,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.service_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="success",
@@ -1047,7 +1047,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.service_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="fail",
@@ -1069,7 +1069,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.service_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="fail",
@@ -1093,7 +1093,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.service_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="denied",
@@ -1116,7 +1116,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.service_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="denied",
@@ -1140,7 +1140,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.component_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="success",
@@ -1164,7 +1164,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.component_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="fail",
@@ -1188,7 +1188,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.component_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="fail",
@@ -1215,7 +1215,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.component_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="denied",
@@ -1239,7 +1239,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.component_1_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="denied",
@@ -1260,7 +1260,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.provider_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="success",
@@ -1281,7 +1281,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.provider_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="fail",
@@ -1302,7 +1302,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.provider_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="fail",
@@ -1325,7 +1325,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.provider_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="denied",
@@ -1347,7 +1347,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.provider_group_config.name} configuration group updated",
             operation_type="update",
             operation_result="denied",
@@ -1365,7 +1365,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.new_host.fqdn} host added to {self.provider_group_config.name} configuration group",
             operation_type="update",
             operation_result="success",
@@ -1383,7 +1383,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"host added to {self.provider_group_config.name} configuration group",
             operation_type="update",
             operation_result="fail",
@@ -1401,7 +1401,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.new_host.fqdn} host added to configuration group",
             operation_type="update",
             operation_result="fail",
@@ -1421,7 +1421,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.new_host.fqdn} host added to {self.provider_group_config.name} configuration group",
             operation_type="update",
             operation_result="denied",
@@ -1440,7 +1440,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.new_host.fqdn} host added to {self.provider_group_config.name} configuration group",
             operation_type="update",
             operation_result="denied",
@@ -1462,7 +1462,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_for_service.fqdn} host "
             f"added to {self.service_1_group_config.name} configuration group",
             operation_type="update",
@@ -1485,7 +1485,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_for_service.fqdn} host "
             f"added to {self.service_1_group_config.name} configuration group",
             operation_type="update",
@@ -1511,7 +1511,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_for_service.fqdn} host "
             f"added to {self.service_1_group_config.name} configuration group",
             operation_type="update",
@@ -1535,7 +1535,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_for_service.fqdn} host "
             f"added to {self.service_1_group_config.name} configuration group",
             operation_type="update",
@@ -1554,7 +1554,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.new_host.fqdn} host added to {self.cluster_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="success",
@@ -1572,7 +1572,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"host added to {self.cluster_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="fail",
@@ -1590,7 +1590,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.new_host.fqdn} host added to {self.cluster_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="fail",
@@ -1611,7 +1611,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.new_host.fqdn} host added to {self.cluster_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="denied",
@@ -1630,7 +1630,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.new_host.fqdn} host added to {self.cluster_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="denied",
@@ -1653,7 +1653,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_for_service.fqdn} host "
             f"added to {self.component_1_group_config.name} configuration group",
             operation_type="update",
@@ -1677,7 +1677,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"host added to {self.component_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="fail",
@@ -1700,7 +1700,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_for_service.fqdn} host "
             f"added to {self.component_1_group_config.name} configuration group",
             operation_type="update",
@@ -1728,7 +1728,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_for_service.fqdn} host "
             f"added to {self.component_1_group_config.name} configuration group",
             operation_type="update",
@@ -1753,7 +1753,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_for_service.fqdn} host "
             f"added to {self.component_1_group_config.name} configuration group",
             operation_type="update",
@@ -1779,7 +1779,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_for_service.fqdn} host "
             f"removed from {self.component_1_group_config.name} configuration group",
             operation_type="update",
@@ -1804,7 +1804,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"host removed from {self.service_1_group_config.name} configuration group",
             operation_type="update",
             operation_result="fail",
@@ -1828,7 +1828,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_for_service.fqdn} host removed "
             f"from {self.cluster_1_group_config.name} configuration group",
             operation_type="update",
@@ -1854,7 +1854,7 @@ class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_for_service.fqdn} host removed "
             f"from {self.cluster_1_group_config.name} configuration group",
             operation_type="update",

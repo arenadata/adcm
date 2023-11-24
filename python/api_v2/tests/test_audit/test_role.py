@@ -49,7 +49,7 @@ class TestRoleAudit(BaseAPITestCase):
         response = self.client.post(path=reverse(viewname="v2:rbac:role-list"), data=self.role_create_data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Role created",
             operation_type="create",
             operation_result="success",
@@ -63,7 +63,7 @@ class TestRoleAudit(BaseAPITestCase):
         response = self.client.post(path=reverse(viewname="v2:rbac:role-list"), data=self.role_create_data)
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Role created",
             operation_type="create",
             operation_result="denied",
@@ -75,7 +75,7 @@ class TestRoleAudit(BaseAPITestCase):
         response = self.client.post(path=reverse(viewname="v2:rbac:role-list"), data={"displayName": "Some role"})
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Role created",
             operation_type="create",
             operation_result="fail",
@@ -92,7 +92,7 @@ class TestRoleAudit(BaseAPITestCase):
 
         self.custom_role.refresh_from_db()
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Role updated",
             operation_type="update",
             operation_result="success",
@@ -119,7 +119,7 @@ class TestRoleAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Role updated",
             operation_type="update",
             operation_result="denied",
@@ -137,7 +137,7 @@ class TestRoleAudit(BaseAPITestCase):
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Role updated",
             operation_type="update",
             operation_result="denied",
@@ -152,7 +152,7 @@ class TestRoleAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Role updated",
             operation_type="update",
             operation_result="fail",
@@ -169,7 +169,7 @@ class TestRoleAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Role updated",
             operation_type="update",
             operation_result="fail",
@@ -191,7 +191,7 @@ class TestRoleAudit(BaseAPITestCase):
         response = self.client.delete(path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}))
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Role deleted",
             operation_type="delete",
             operation_result="success",
@@ -205,7 +205,7 @@ class TestRoleAudit(BaseAPITestCase):
         response = self.client.delete(path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}))
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Role deleted",
             operation_type="delete",
             operation_result="denied",
@@ -222,7 +222,7 @@ class TestRoleAudit(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Role deleted",
             operation_type="delete",
             operation_result="denied",
@@ -236,7 +236,7 @@ class TestRoleAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Role deleted",
             operation_type="delete",
             operation_result="fail",

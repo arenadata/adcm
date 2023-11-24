@@ -2141,7 +2141,7 @@ class TestGroupConfigUpgrade(BaseAPITestCase):  # pylint: disable=too-many-insta
         self.upgrade = Upgrade.objects.get(name="upgrade", bundle=self.bundle_2)
 
         self.cluster = self.add_cluster(bundle=self.bundle_1, name="cluster_group_config")
-        self.service = self.add_service_to_cluster(service_name="service", cluster=self.cluster)
+        self.service = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster).get()
         self.component = ServiceComponent.objects.filter(cluster=self.cluster, service=self.service).first()
 
         self.cluster_group_config = GroupConfig.objects.create(

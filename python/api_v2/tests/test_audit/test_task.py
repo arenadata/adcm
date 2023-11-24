@@ -69,7 +69,7 @@ class TestTaskAudit(BaseAPITestCase):
             )
             self.assertEqual(response.status_code, HTTP_200_OK)
 
-            self.check_last_audit_log(
+            self.check_last_audit_record(
                 operation_name="Job terminated",
                 operation_type="update",
                 operation_result="success",
@@ -86,7 +86,7 @@ class TestTaskAudit(BaseAPITestCase):
             response = self.client.post(path=reverse(viewname="v2:joblog-terminate", kwargs={"pk": 100}), data={})
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-            self.check_last_audit_log(
+            self.check_last_audit_record(
                 operation_name="Job terminated",
                 operation_type="update",
                 operation_result="fail",
@@ -102,7 +102,7 @@ class TestTaskAudit(BaseAPITestCase):
             )
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-            self.check_last_audit_log(
+            self.check_last_audit_record(
                 operation_name="Job terminated",
                 operation_type="update",
                 operation_result="denied",
@@ -115,7 +115,7 @@ class TestTaskAudit(BaseAPITestCase):
             response = self.client.post(path=reverse(viewname="v2:tasklog-terminate", kwargs={"pk": self.task.pk}))
             self.assertEqual(response.status_code, HTTP_200_OK)
 
-            self.check_last_audit_log(
+            self.check_last_audit_record(
                 operation_name="Task cancelled",
                 operation_type="update",
                 operation_result="success",
@@ -132,7 +132,7 @@ class TestTaskAudit(BaseAPITestCase):
             response = self.client.post(path=reverse(viewname="v2:tasklog-terminate", kwargs={"pk": 1000}))
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-            self.check_last_audit_log(
+            self.check_last_audit_record(
                 operation_name="Task cancelled",
                 operation_type="update",
                 operation_result="fail",
@@ -146,7 +146,7 @@ class TestTaskAudit(BaseAPITestCase):
             response = self.client.post(path=reverse(viewname="v2:tasklog-terminate", kwargs={"pk": self.task.pk}))
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-            self.check_last_audit_log(
+            self.check_last_audit_record(
                 operation_name="Task cancelled",
                 operation_type="update",
                 operation_result="denied",

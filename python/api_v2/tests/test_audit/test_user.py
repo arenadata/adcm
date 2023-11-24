@@ -52,7 +52,7 @@ class TestUserAudit(BaseAPITestCase):
         response = self.client.post(path=reverse(viewname="v2:rbac:user-list"), data=self.user_create_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="User created",
             operation_type="create",
             operation_result="success",
@@ -66,7 +66,7 @@ class TestUserAudit(BaseAPITestCase):
         response = self.client.post(path=reverse(viewname="v2:rbac:user-list"), data={"wrong": "data"})
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="User created",
             operation_type="create",
             operation_result="denied",
@@ -79,7 +79,7 @@ class TestUserAudit(BaseAPITestCase):
         response = self.client.post(path=reverse(viewname="v2:rbac:user-list"), data={"wrong": "data"})
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="User created",
             operation_type="create",
             operation_result="fail",
@@ -94,7 +94,7 @@ class TestUserAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="User updated",
             operation_type="update",
             operation_result="success",
@@ -113,7 +113,7 @@ class TestUserAudit(BaseAPITestCase):
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="User updated",
             operation_type="update",
             operation_result="denied",
@@ -130,7 +130,7 @@ class TestUserAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="User updated",
             operation_type="update",
             operation_result="denied",
@@ -145,7 +145,7 @@ class TestUserAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="User updated",
             operation_type="update",
             operation_result="fail",
@@ -160,7 +160,7 @@ class TestUserAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="User updated",
             operation_type="update",
             operation_result="fail",
@@ -183,7 +183,7 @@ class TestUserAudit(BaseAPITestCase):
         response = self.client.delete(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.blocked_user.pk}))
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="User deleted",
             operation_type="delete",
             operation_result="success",
@@ -197,7 +197,7 @@ class TestUserAudit(BaseAPITestCase):
         response = self.client.delete(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.blocked_user.pk}))
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="User deleted",
             operation_type="delete",
             operation_result="denied",
@@ -214,7 +214,7 @@ class TestUserAudit(BaseAPITestCase):
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="User deleted",
             operation_type="delete",
             operation_result="denied",
@@ -228,7 +228,7 @@ class TestUserAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="User deleted",
             operation_type="delete",
             operation_result="fail",
@@ -241,7 +241,7 @@ class TestUserAudit(BaseAPITestCase):
         response = self.client.post(path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": self.blocked_user.pk}))
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.blocked_user.username} user unblocked",
             operation_type="update",
             operation_result="success",
@@ -256,7 +256,7 @@ class TestUserAudit(BaseAPITestCase):
         response = self.client.post(path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": self.blocked_user.pk}))
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.blocked_user.username} user unblocked",
             operation_type="update",
             operation_result="denied",
@@ -273,7 +273,7 @@ class TestUserAudit(BaseAPITestCase):
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.blocked_user.username} user unblocked",
             operation_type="update",
             operation_result="denied",
@@ -287,7 +287,7 @@ class TestUserAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="user unblocked",
             operation_type="update",
             operation_result="fail",

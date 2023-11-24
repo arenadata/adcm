@@ -96,7 +96,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
 
         cluster = Cluster.objects.get(pk=response.json()["id"])
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster created",
             operation_type="create",
             operation_result="success",
@@ -113,7 +113,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster created",
             operation_type="create",
             operation_result="denied",
@@ -128,7 +128,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster created",
             operation_type="create",
             operation_result="fail",
@@ -146,7 +146,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
 
         self.cluster_1.refresh_from_db()
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster updated",
             operation_type="update",
             operation_result="success",
@@ -164,7 +164,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster updated",
             operation_type="update",
             operation_result="denied",
@@ -179,7 +179,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster updated",
             operation_type="update",
             operation_result="fail",
@@ -194,7 +194,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster updated",
             operation_type="update",
             operation_result="fail",
@@ -218,7 +218,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster deleted",
             operation_type="delete",
             operation_result="success",
@@ -234,7 +234,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster deleted",
             operation_type="delete",
             operation_result="denied",
@@ -248,7 +248,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster deleted",
             operation_type="delete",
             operation_result="fail",
@@ -263,7 +263,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host-Component map updated",
             operation_type="update",
             operation_result="success",
@@ -281,7 +281,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             )
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host-Component map updated",
             operation_type="update",
             operation_result="denied",
@@ -298,7 +298,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host-Component map updated",
             operation_type="update",
             operation_result="denied",
@@ -313,7 +313,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host-Component map updated",
             operation_type="update",
             operation_result="fail",
@@ -328,7 +328,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host-Component map updated",
             operation_type="update",
             operation_result="fail",
@@ -343,7 +343,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster import updated",
             operation_type="update",
             operation_result="success",
@@ -360,7 +360,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster import updated",
             operation_type="update",
             operation_result="denied",
@@ -375,7 +375,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster import updated",
             operation_type="update",
             operation_result="fail",
@@ -392,7 +392,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster import updated",
             operation_type="update",
             operation_result="fail",
@@ -407,7 +407,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster configuration updated",
             operation_type="update",
             operation_result="success",
@@ -425,7 +425,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             )
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster configuration updated",
             operation_type="update",
             operation_result="denied",
@@ -442,7 +442,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster configuration updated",
             operation_type="update",
             operation_result="denied",
@@ -457,7 +457,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster configuration updated",
             operation_type="update",
             operation_result="fail",
@@ -474,7 +474,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Cluster configuration updated",
             operation_type="update",
             operation_result="fail",
@@ -490,7 +490,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_1.name} host removed",
             operation_type="update",
             operation_result="success",
@@ -509,7 +509,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_1.name} host removed",
             operation_type="update",
             operation_result="denied",
@@ -526,7 +526,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="host removed",
             operation_type="update",
             operation_result="fail",
@@ -541,7 +541,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_2.name} host added",
             operation_type="update",
             operation_result="success",
@@ -558,7 +558,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_2.name} host added",
             operation_type="update",
             operation_result="denied",
@@ -573,7 +573,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="host added",
             operation_type="update",
             operation_result="fail",
@@ -588,7 +588,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="host added",
             operation_type="update",
             operation_result="fail",
@@ -605,7 +605,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_2.name} host added",
             operation_type="update",
             operation_result="fail",
@@ -620,7 +620,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="host added",
             operation_type="update",
             operation_result="fail",
@@ -638,7 +638,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="success",
@@ -659,7 +659,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="denied",
@@ -681,7 +681,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="fail",
@@ -699,7 +699,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=(
                 f"[{', '.join(proto.display_name for proto in self.service_add_prototypes)}] service(s) added"
             ),
@@ -719,7 +719,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="[] service(s) added",
             operation_type="update",
             operation_result="fail",
@@ -739,7 +739,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=(
                 f"[{', '.join(proto.display_name for proto in self.service_add_prototypes)}] service(s) added"
             ),
@@ -759,7 +759,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=(
                 f"[{', '.join(proto.display_name for proto in self.service_add_prototypes)}] service(s) added"
             ),
@@ -777,7 +777,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.service_1.display_name} service removed",
             operation_type="update",
             operation_result="success",
@@ -795,7 +795,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.service_1.display_name} service removed",
             operation_type="update",
             operation_result="denied",
@@ -812,7 +812,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="service removed",
             operation_type="update",
             operation_result="fail",
@@ -829,7 +829,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.service_1.display_name} service removed",
             operation_type="update",
             operation_result="fail",
@@ -845,7 +845,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_action.display_name} action launched",
             operation_type="update",
             operation_result="success",
@@ -865,7 +865,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_action.display_name} action launched",
             operation_type="update",
             operation_result="denied",
@@ -886,7 +886,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="with_config action launched",
             operation_type="update",
             operation_result="fail",
@@ -903,7 +903,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="action launched",
             operation_type="update",
             operation_result="fail",
@@ -924,7 +924,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_action.display_name} action launched",
             operation_type="update",
             operation_result="success",
@@ -951,7 +951,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_action.display_name} action launched",
             operation_type="update",
             operation_result="denied",
@@ -972,7 +972,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="action launched",
             operation_type="update",
             operation_result="fail",
@@ -992,7 +992,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_upgrade.action.display_name} upgrade launched",
             operation_type="update",
             operation_result="success",
@@ -1015,7 +1015,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             )
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.cluster_upgrade.action.display_name} upgrade launched",
             operation_type="update",
             operation_result="denied",
@@ -1036,7 +1036,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Upgrade: upgrade_via_action_complex upgrade launched",
             operation_type="update",
             operation_result="fail",
@@ -1056,7 +1056,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Upgraded to",
             operation_type="update",
             operation_result="fail",

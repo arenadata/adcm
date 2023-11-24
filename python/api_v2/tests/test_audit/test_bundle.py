@@ -44,7 +44,7 @@ class TestBundleAudit(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Bundle uploaded",
             operation_result="success",
             operation_type=AuditLogOperationType.CREATE,
@@ -64,7 +64,7 @@ class TestBundleAudit(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Bundle uploaded",
             operation_result="fail",
             operation_type=AuditLogOperationType.CREATE,
@@ -84,7 +84,7 @@ class TestBundleAudit(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Bundle uploaded",
             operation_result="denied",
             operation_type=AuditLogOperationType.CREATE,
@@ -108,7 +108,7 @@ class TestBundleAudit(BaseAPITestCase):
         response = self.client.delete(path=reverse(viewname="v2:bundle-detail", kwargs={"pk": bundle.pk}))
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Bundle deleted",
             operation_type="delete",
             operation_result="success",
@@ -122,7 +122,7 @@ class TestBundleAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Bundle deleted",
             operation_type="delete",
             operation_result="fail",
@@ -137,7 +137,7 @@ class TestBundleAudit(BaseAPITestCase):
         response = self.client.delete(path=reverse(viewname="v2:bundle-detail", kwargs={"pk": bundle.pk}))
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Bundle deleted",
             operation_type="delete",
             operation_result="denied",
@@ -154,7 +154,7 @@ class TestBundleAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Bundle license accepted",
             operation_type="update",
             operation_result="success",
@@ -172,7 +172,7 @@ class TestBundleAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Bundle license accepted",
             operation_type="update",
             operation_result="denied",
@@ -184,7 +184,7 @@ class TestBundleAudit(BaseAPITestCase):
         response = self.client.post(path=reverse(viewname="v2:prototype-accept-license", kwargs={"pk": 1000}))
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Bundle license accepted",
             operation_type="update",
             operation_result="fail",

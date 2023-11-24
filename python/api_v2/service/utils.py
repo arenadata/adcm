@@ -65,9 +65,7 @@ def bulk_init_config(objects: QuerySet[ADCMEntity]) -> None:
     # SQLite support. We need ids of created objects, bulk_create on SQLite does not return ids
     cursor = connection.cursor()
     cursor.execute(
-        """INSERT INTO "cm_objectconfig" ("current", "previous") VALUES {rows} RETURNING id;""".format(
-            rows=", ".join([str((0, 0))] * objects.count())
-        )
+        f"""INSERT INTO "cm_objectconfig" ("current", "previous") VALUES {', '.join(['(0, 0)'] * objects.count())} RETURNING id;"""
     )
     object_config_ids = [item[0] for item in cursor.fetchall()]
     object_configs: QuerySet[ObjectConfig] = ObjectConfig.objects.filter(pk__in=object_config_ids)
@@ -116,7 +114,7 @@ def validate_service_prototypes(
         return None, AdcmEx(code="OBJ_TYPE_ERROR", msg=f"All prototypes must be `{ObjectType.SERVICE}` type")
 
     if "unaccepted" in set(proto.license for proto in prototypes):
-        return None, AdcmEx(code="LICENSE_ERROR", msg=f"All licenses must be accepted")
+        return None, AdcmEx(code="LICENSE_ERROR", msg="All licenses must be accepted")
 
     if ClusterObject.objects.filter(prototype__in=prototypes, cluster=cluster).exists():
         return None, AdcmEx(code="SERVICE_CONFLICT")

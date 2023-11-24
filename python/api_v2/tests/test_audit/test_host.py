@@ -47,7 +47,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host created",
             operation_type="create",
             operation_result="success",
@@ -64,7 +64,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host created",
             operation_type="create",
             operation_result="fail",
@@ -84,7 +84,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host created",
             operation_type="create",
             operation_result="denied",
@@ -101,7 +101,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
 
         self.host_2.refresh_from_db()
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="success",
@@ -116,7 +116,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="fail",
@@ -131,7 +131,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="fail",
@@ -148,7 +148,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="denied",
@@ -165,7 +165,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="denied",
@@ -189,7 +189,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host deleted",
             operation_type="delete",
             operation_result="success",
@@ -204,7 +204,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host deleted",
             operation_type="delete",
             operation_result="fail",
@@ -220,7 +220,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host deleted",
             operation_type="delete",
             operation_result="denied",
@@ -235,7 +235,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host deleted",
             operation_type="delete",
             operation_result="denied",
@@ -252,7 +252,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_1.fqdn} host removed",
             operation_type="update",
             operation_result="success",
@@ -266,7 +266,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="test_host_2 host removed",
             operation_type="update",
             operation_result="fail",
@@ -280,7 +280,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="host removed",
             operation_type="update",
             operation_result="fail",
@@ -298,7 +298,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_1.fqdn} host removed",
             operation_type="update",
             operation_result="denied",
@@ -316,7 +316,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.host_1.fqdn} host removed",
             operation_type="update",
             operation_result="denied",
@@ -334,7 +334,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="success",
@@ -351,7 +351,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="fail",
@@ -368,7 +368,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="fail",
@@ -388,7 +388,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="denied",
@@ -407,7 +407,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="denied",
@@ -425,7 +425,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="success",
@@ -443,7 +443,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="fail",
@@ -460,7 +460,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="fail",
@@ -478,7 +478,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host updated",
             operation_type="update",
             operation_result="denied",
@@ -507,7 +507,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host configuration updated",
             operation_type="update",
             operation_result="success",
@@ -521,7 +521,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host configuration updated",
             operation_type="update",
             operation_result="fail",
@@ -535,7 +535,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host configuration updated",
             operation_type="update",
             operation_result="fail",
@@ -552,7 +552,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host configuration updated",
             operation_type="update",
             operation_result="denied",
@@ -568,7 +568,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Host configuration updated",
             operation_type="update",
             operation_result="denied",

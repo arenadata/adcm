@@ -62,7 +62,7 @@ class TestPolicyAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Policy created",
             operation_type="create",
             operation_result="success",
@@ -80,7 +80,7 @@ class TestPolicyAudit(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Policy created",
             operation_type="create",
             operation_result="denied",
@@ -98,7 +98,7 @@ class TestPolicyAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Policy created",
             operation_type="create",
             operation_result="fail",
@@ -115,7 +115,7 @@ class TestPolicyAudit(BaseAPITestCase):
         self.policy.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Policy updated",
             operation_type="update",
             operation_result="success",
@@ -133,7 +133,7 @@ class TestPolicyAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Policy updated",
             operation_type="update",
             operation_result="denied",
@@ -151,7 +151,7 @@ class TestPolicyAudit(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Policy updated",
             operation_type="update",
             operation_result="denied",
@@ -166,7 +166,7 @@ class TestPolicyAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Policy updated",
             operation_type="update",
             operation_result="fail",
@@ -181,7 +181,7 @@ class TestPolicyAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Policy updated",
             operation_type="update",
             operation_result="fail",
@@ -203,7 +203,7 @@ class TestPolicyAudit(BaseAPITestCase):
         response = self.client.delete(path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}))
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Policy deleted",
             operation_type="delete",
             operation_result="success",
@@ -217,7 +217,7 @@ class TestPolicyAudit(BaseAPITestCase):
         response = self.client.delete(path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}))
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Policy deleted",
             operation_type="delete",
             operation_result="denied",
@@ -232,7 +232,7 @@ class TestPolicyAudit(BaseAPITestCase):
             response = self.client.delete(path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}))
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Policy deleted",
             operation_type="delete",
             operation_result="denied",
@@ -246,7 +246,7 @@ class TestPolicyAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Policy deleted",
             operation_type="delete",
             operation_result="fail",
