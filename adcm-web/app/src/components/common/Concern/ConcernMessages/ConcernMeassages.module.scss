@@ -2,6 +2,7 @@
   color: var(--color-xgray-light);
   font-size: 13px;
   width: 217px;
+  word-wrap: break-word;
 
   &:not(:first-of-type) {
     margin-top: 13px;
