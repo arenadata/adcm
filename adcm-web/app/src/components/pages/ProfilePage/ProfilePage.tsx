@@ -50,7 +50,7 @@ const ProfilePage = () => {
               value={formData.currentPassword}
               onChange={handleCurrentPasswordChange}
               placeholder="Password"
-              areAsterisksShown={true}
+              areAsterisksShown={!errors.currentPassword}
             />
           </FormField>
           <FormField label="New password" error={errors.newPassword}>
