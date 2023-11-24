@@ -24,7 +24,7 @@ const ClusterHostNavigation: React.FC = () => {
         setBreadcrumbs([
           { href: '/clusters', label: 'Clusters' },
           { href: `/clusters/${cluster.id}`, label: cluster.name },
-          { href: `/clusters/${clusterHost.id}/hosts`, label: 'Hosts' },
+          { href: `/clusters/${cluster.id}/hosts`, label: 'Hosts' },
           { label: clusterHost.name },
           { label: tabsNavigationDictionary[subTabId] },
         ]),
