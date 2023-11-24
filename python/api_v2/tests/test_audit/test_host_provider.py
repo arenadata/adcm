@@ -60,7 +60,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Provider created",
             operation_type="create",
             operation_result="success",
@@ -76,7 +76,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Provider created",
             operation_type="create",
             operation_result="denied",
@@ -91,7 +91,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Provider created",
             operation_type="create",
             operation_result="fail",
@@ -105,7 +105,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Provider created",
             operation_type="create",
             operation_result="fail",
@@ -125,7 +125,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Provider deleted",
             operation_type="delete",
             operation_result="success",
@@ -140,7 +140,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Provider deleted",
             operation_type="delete",
             operation_result="denied",
@@ -157,7 +157,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Provider deleted",
             operation_type="delete",
             operation_result="denied",
@@ -173,7 +173,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Provider deleted",
             operation_type="delete",
             operation_result="fail",
@@ -188,7 +188,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Provider configuration updated",
             operation_type="update",
             operation_result="success",
@@ -205,7 +205,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Provider configuration updated",
             operation_type="update",
             operation_result="denied",
@@ -223,7 +223,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Provider configuration updated",
             operation_type="update",
             operation_result="denied",
@@ -238,7 +238,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Provider configuration updated",
             operation_type="update",
             operation_result="fail",
@@ -256,7 +256,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Provider configuration updated",
             operation_type="update",
             operation_result="fail",
@@ -273,7 +273,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.provider_action.display_name} action launched",
             operation_type="update",
             operation_result="success",
@@ -293,7 +293,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
             )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.provider_action.display_name} action launched",
             operation_type="update",
             operation_result="denied",
@@ -310,7 +310,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="action launched",
             operation_type="update",
             operation_result="fail",
@@ -330,7 +330,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"Upgraded to {self.provider_upgrade.name}",
             operation_type="update",
             operation_result="success",
@@ -352,7 +352,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"Upgraded to {self.provider_upgrade.name}",
             operation_type="update",
             operation_result="denied",
@@ -375,7 +375,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"Upgraded to {self.provider_upgrade.name}",
             operation_type="update",
             operation_result="denied",
@@ -395,7 +395,7 @@ class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Upgraded to",
             operation_type="update",
             operation_result="fail",

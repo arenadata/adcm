@@ -17,7 +17,7 @@ from typing import Any, TypeAlias, TypedDict
 
 from api_v2.prototype.utils import accept_license
 from api_v2.service.utils import bulk_add_services_to_cluster
-from audit.models import AuditLog
+from audit.models import AuditLog, AuditSession
 from cm.api import add_cluster, add_hc, add_host, add_host_provider, add_host_to_cluster
 from cm.bundle import prepare_bundle, process_file
 from cm.models import (
@@ -174,25 +174,32 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
 
         return create_user(**user_data)
 
-    def check_last_audit_log(self, *, expect_object_changes_: bool = True, **kwargs) -> AuditLog:
-        last_audit_log = AuditLog.objects.order_by("pk").last()
-        self.assertIsNotNone(last_audit_log, "AuditLog table is empty")
+    def check_last_audit_record(
+        self,
+        model: type[AuditLog | AuditSession] = AuditLog,
+        *,
+        expect_object_changes_: bool = True,
+        **kwargs,
+    ) -> AuditLog:
+        last_audit_record = model.objects.order_by("pk").last()
+        self.assertIsNotNone(last_audit_record, f"{model.__name__} table is empty")
 
         # we always want to check who performed the audited action
-        kwargs.setdefault("user__username", "admin")
+        if model is AuditLog:
+            kwargs.setdefault("user__username", "admin")
 
         # Object changes are {} for most cases,
         # we always want to check it, but providing it each time is redundant.
         # But sometimes structure is too complex for sqlite/ORM to handle,
         # so we have to check changes separately.
-        if expect_object_changes_:
+        if (model is AuditLog) and expect_object_changes_:
             kwargs.setdefault("object_changes", {})
 
-        expected_log = AuditLog.objects.filter(**kwargs).order_by("pk").last()
-        self.assertIsNotNone(expected_log, "Can't find audit log")
-        self.assertEqual(last_audit_log.pk, expected_log.pk, "Expected audit log is not last")
+        expected_record = model.objects.filter(**kwargs).order_by("pk").last()
+        self.assertIsNotNone(expected_record, "Can't find audit record")
+        self.assertEqual(last_audit_record.pk, expected_record.pk, "Expected audit record is not last")
 
-        return last_audit_log
+        return last_audit_record
 
     @staticmethod
     def get_most_recent_audit_log() -> AuditLog | None:

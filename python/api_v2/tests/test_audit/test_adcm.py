@@ -85,7 +85,7 @@ class TestADCMAudit(BaseAPITestCase):
     def test_adcm_config_change_success(self):
         response = self.client.post(path=reverse(viewname="v2:adcm-config-list"), data=self.data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="ADCM configuration updated",
             operation_type="update",
             operation_result="success",
@@ -100,7 +100,7 @@ class TestADCMAudit(BaseAPITestCase):
     def test_adcm_config_change_fail(self):
         response = self.client.post(path=reverse(viewname="v2:adcm-config-list"), data={})
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="ADCM configuration updated",
             operation_type="update",
             operation_result="fail",
@@ -113,7 +113,7 @@ class TestADCMAudit(BaseAPITestCase):
         response = self.client.post(path=reverse(viewname="v2:adcm-config-list"), data=self.data)
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="ADCM configuration updated",
             operation_type="update",
             operation_result="denied",
@@ -125,7 +125,7 @@ class TestADCMAudit(BaseAPITestCase):
             path=reverse(viewname="v2:profile"), data={"newPassword": "newtestpassword", "currentPassword": "admin"}
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="admin user changed password",
             operation_type="update",
             operation_result="success",
@@ -140,7 +140,7 @@ class TestADCMAudit(BaseAPITestCase):
             data={"newPassword": "newtestpassword", "currentPassword": "test_user_password"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.test_user_credentials['username']} user changed password",
             operation_type="update",
             operation_result="success",
@@ -155,7 +155,7 @@ class TestADCMAudit(BaseAPITestCase):
             data={"newPassword": "newtestpassword", "currentPassword": "test_user_password"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.test_user_credentials['username']} user changed password",
             operation_type="update",
             operation_result="success",
@@ -169,7 +169,7 @@ class TestADCMAudit(BaseAPITestCase):
         response = self.client.post(path=reverse(viewname="v2:adcm-action-run", kwargs={"pk": adcm_action_pk}))
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Test LDAP connection action launched",
             operation_type="update",
             operation_result="fail",
@@ -184,7 +184,7 @@ class TestADCMAudit(BaseAPITestCase):
         response = self.client.post(path=reverse(viewname="v2:adcm-action-run", kwargs={"pk": adcm_action_pk}))
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Test LDAP connection action launched",
             operation_type="update",
             operation_result="denied",

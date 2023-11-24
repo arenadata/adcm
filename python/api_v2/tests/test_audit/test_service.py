@@ -56,7 +56,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Service configuration updated",
             operation_type="update",
             operation_result="success",
@@ -76,7 +76,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Service configuration updated",
             operation_type="update",
             operation_result="denied",
@@ -97,7 +97,7 @@ class TestServiceAudit(BaseAPITestCase):
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Service configuration updated",
             operation_type="update",
             operation_result="denied",
@@ -115,7 +115,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Service configuration updated",
             operation_type="update",
             operation_result="fail",
@@ -133,7 +133,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Service configuration updated",
             operation_type="update",
             operation_result="fail",
@@ -152,7 +152,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Service updated",
             operation_type="update",
             operation_result="success",
@@ -173,7 +173,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Service updated",
             operation_type="update",
             operation_result="denied",
@@ -194,7 +194,7 @@ class TestServiceAudit(BaseAPITestCase):
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Service updated",
             operation_type="update",
             operation_result="denied",
@@ -212,7 +212,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Service updated",
             operation_type="update",
             operation_result="fail",
@@ -230,7 +230,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Service updated",
             operation_type="update",
             operation_result="fail",
@@ -247,7 +247,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.service_action.display_name} action launched",
             operation_type="update",
             operation_result="success",
@@ -271,7 +271,7 @@ class TestServiceAudit(BaseAPITestCase):
             )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name=f"{self.service_action.display_name} action launched",
             operation_type="update",
             operation_result="denied",
@@ -292,7 +292,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="action launched",
             operation_type="update",
             operation_result="fail",
@@ -311,7 +311,7 @@ class TestServiceAudit(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Service import updated",
             operation_type="update",
             operation_result="success",
@@ -331,7 +331,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Service import updated",
             operation_type="update",
             operation_result="denied",
@@ -354,7 +354,7 @@ class TestServiceAudit(BaseAPITestCase):
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Service import updated",
             operation_type="update",
             operation_result="denied",
@@ -372,7 +372,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Service import updated",
             operation_type="update",
             operation_result="fail",
@@ -390,7 +390,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Service import updated",
             operation_type="update",
             operation_result="fail",

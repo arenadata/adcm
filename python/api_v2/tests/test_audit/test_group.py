@@ -53,7 +53,7 @@ class TestGroupAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Group created",
             operation_type="create",
             operation_result="success",
@@ -70,7 +70,7 @@ class TestGroupAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Group created",
             operation_type="create",
             operation_result="denied",
@@ -85,7 +85,7 @@ class TestGroupAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Group created",
             operation_type="create",
             operation_result="fail",
@@ -112,7 +112,7 @@ class TestGroupAudit(BaseAPITestCase):
 
         self.group.refresh_from_db()
 
-        last_audit_log = self.check_last_audit_log(
+        last_audit_log = self.check_last_audit_record(
             operation_name="Group updated",
             operation_type="update",
             operation_result="success",
@@ -131,7 +131,7 @@ class TestGroupAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Group updated",
             operation_type="update",
             operation_result="denied",
@@ -149,7 +149,7 @@ class TestGroupAudit(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Group updated",
             operation_type="update",
             operation_result="denied",
@@ -164,7 +164,7 @@ class TestGroupAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Group updated",
             operation_type="update",
             operation_result="fail",
@@ -179,7 +179,7 @@ class TestGroupAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Group updated",
             operation_type="update",
             operation_result="fail",
@@ -204,7 +204,7 @@ class TestGroupAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Group deleted",
             operation_type="delete",
             operation_result="success",
@@ -220,7 +220,7 @@ class TestGroupAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Group deleted",
             operation_type="delete",
             operation_result="denied",
@@ -237,7 +237,7 @@ class TestGroupAudit(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Group deleted",
             operation_type="delete",
             operation_result="denied",
@@ -251,7 +251,7 @@ class TestGroupAudit(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.check_last_audit_log(
+        self.check_last_audit_record(
             operation_name="Group deleted",
             operation_type="delete",
             operation_result="fail",
