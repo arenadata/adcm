@@ -1,5 +1,5 @@
 import React from 'react';
-import HostComponentsTable from '@commonComponents/host/HostComponentsTable/HostComponentsTable';
+import HostComponentsTable from './HostComponentsTable/HostComponentsTable';
 import HostComponentsTableToolbar from './HostComponentsTableToolbar/HostComponentsTableToolbar';
 import HostComponentsTableFooter from './HostComponentsTableFooter/HostComponentsTableFooter';
 import { useRequestHostComponents } from './useRequestHostComponents';

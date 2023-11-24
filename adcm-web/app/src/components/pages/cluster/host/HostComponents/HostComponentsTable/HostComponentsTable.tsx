@@ -7,16 +7,16 @@ import { Link, generatePath, useParams } from 'react-router-dom';
 import { columns } from './HostComponentsTable.constants';
 import { SortParams } from '@uikit/types/list.types';
 import { useDispatch, useStore } from '@hooks';
-import { setSortParams } from '@store/adcm/cluster/hosts/host/clusterHostTableSlice';
-import HostComponentsDynamicActionsIcon from '@commonComponents/host/HostComponentsDynamicActionsIcon/HostComponentsDynamicActionsIcon';
+import HostComponentsDynamicActionsIcon from './HostComponentsDynamicActionsIcon/HostComponentsDynamicActionsIcon';
+import { setSortParams } from '@store/adcm/hostComponents/hostComponentsTableSlice';
 
 const HostComponentsTable: React.FC = () => {
   const dispatch = useDispatch();
   const { hostId: hostIdFromUrl } = useParams();
   const hostId = Number(hostIdFromUrl);
-  const hostComponents = useStore((s) => s.adcm.clusterHost.relatedData.hostComponents);
-  const isLoading = useStore((s) => s.adcm.clusterHost.isLoading);
-  const sortParams = useStore((s) => s.adcm.clusterHostTable.sortParams);
+  const hostComponents = useStore((s) => s.adcm.hostComponents.hostComponents);
+  const isLoading = useStore((s) => s.adcm.hostComponents.isLoading);
+  const sortParams = useStore((s) => s.adcm.hostComponentsTable.sortParams);
 
   const handleSorting = (sortParams: SortParams) => {
     dispatch(setSortParams(sortParams));

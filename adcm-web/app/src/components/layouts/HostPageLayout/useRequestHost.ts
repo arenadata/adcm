@@ -2,7 +2,7 @@ import { useDispatch, useRequestTimer, useDebounce, useStore } from '@hooks';
 import { defaultDebounceDelay } from '@constants';
 import { useParams } from 'react-router-dom';
 import { useEffect } from 'react';
-import { cleanupHost, getHost } from '@store/adcm/host/hostSlice';
+import { cleanupHost, getHost, getHostComponentStates } from '@store/adcm/host/hostSlice';
 import { cleanupHostDynamicActions, loadHostsDynamicActions } from '@store/adcm/hosts/hostsDynamicActionsSlice';
 import { cleanupBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import { isBlockingConcernPresent } from '@utils/concernUtils';
@@ -18,6 +18,13 @@ export const useRequestHost = () => {
       dispatch(loadHostsDynamicActions([host]));
     }
   }, [host, dispatch, hostId, host?.concerns]);
+
+  useEffect(() => {
+    if (host?.cluster) {
+      const payload = { hostId: host.id, clusterId: host.cluster.id };
+      dispatch(getHostComponentStates(payload));
+    }
+  }, [dispatch, host]);
 
   useEffect(() => {
     return () => {

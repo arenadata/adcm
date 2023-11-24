@@ -15,7 +15,7 @@ const ServiceComponentTable: React.FC = () => {
   const isLoading = useStore(({ adcm }) => adcm.serviceComponent.isLoading);
 
   return (
-    <Table columns={columns} isLoading={isLoading}>
+    <Table columns={columns} isLoading={isLoading} variant="secondary">
       {serviceComponent && (
         <TableRow>
           <StatusableCell status={serviceComponentStatusMap[serviceComponent.status]}>
