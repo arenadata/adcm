@@ -1,10 +1,10 @@
 import { createListSlice } from '@store/redux';
 import { ListState } from '@models/table';
-import { AdcmClusterHostsFilter } from '@models/adcm';
+import { AdcmHostComponentsFilter } from '@models/adcm';
 
-const createInitialState = (): ListState<AdcmClusterHostsFilter> => ({
+const createInitialState = (): ListState<AdcmHostComponentsFilter> => ({
   filter: {
-    name: undefined,
+    displayName: undefined,
   },
   paginationParams: {
     perPage: 10,
@@ -12,13 +12,13 @@ const createInitialState = (): ListState<AdcmClusterHostsFilter> => ({
   },
   requestFrequency: 0,
   sortParams: {
-    sortBy: 'name',
+    sortBy: 'displayName',
     sortDirection: 'asc',
   },
 });
 
 const hostComponentsTableSlice = createListSlice({
-  name: 'adcm/cluster/hosts/host/hostComponentsTableSlice',
+  name: 'adcm/hostComponentsTable',
   createInitialState,
   reducers: {},
 });

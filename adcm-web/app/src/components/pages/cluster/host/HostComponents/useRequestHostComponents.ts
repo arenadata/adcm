@@ -1,26 +1,45 @@
-import { useDispatch, useStore } from '@hooks';
-import { getHostComponentStates } from '@store/adcm/host/hostSlice';
+import { useDebounce, useDispatch, useRequestTimer, useStore } from '@hooks';
 import { useEffect } from 'react';
 import {
   cleanupClusterHostComponentsDynamicActions,
   loadClusterHostComponentsDynamicActions,
 } from '@store/adcm/cluster/hosts/host/hostComponentsDynamicActionsSlice';
-import { loadRelatedClusterHostComponents } from '@store/adcm/cluster/hosts/host/clusterHostSlice';
 import { isBlockingConcernPresent } from '@utils/concernUtils';
+import {
+  cleanupHostComponents,
+  getHostComponents,
+  refreshHostComponents,
+} from '@store/adcm/hostComponents/hostComponentsSlice';
+import { defaultDebounceDelay } from '@constants';
+import { cleanupList } from '@store/adcm/hostComponents/hostComponentsTableSlice';
 
 export const useRequestHostComponents = () => {
   const dispatch = useDispatch();
   // TODO: it's very very ugly, rework in first queue
   const host = useStore(({ adcm }) => adcm.clusterHost.clusterHost ?? adcm.host.host);
-  const components = useStore(({ adcm }) => adcm.clusterHost.relatedData.hostComponents);
+  const components = useStore(({ adcm }) => adcm.hostComponents.hostComponents);
+
+  const filter = useStore((s) => s.adcm.hostComponentsTable.filter);
+  const sortParams = useStore((s) => s.adcm.hostComponentsTable.sortParams);
+  const paginationParams = useStore((s) => s.adcm.hostComponentsTable.paginationParams);
+  const clusters = host?.cluster;
 
   useEffect(() => {
-    if (host?.cluster) {
-      const payload = { hostId: host.id, clusterId: host.cluster.id };
-      dispatch(loadRelatedClusterHostComponents(payload));
-      dispatch(getHostComponentStates(payload));
-    }
-  }, [dispatch, host]);
+    return () => {
+      dispatch(cleanupHostComponents());
+      dispatch(cleanupList());
+    };
+  }, [dispatch]);
+
+  const debounceGetClusters = useDebounce(() => {
+    clusters && dispatch(getHostComponents({ clusterId: clusters.id, hostId: host.id }));
+  }, defaultDebounceDelay);
+
+  const debounceRefreshClusters = useDebounce(() => {
+    clusters && dispatch(refreshHostComponents({ clusterId: clusters.id, hostId: host.id }));
+  }, defaultDebounceDelay);
+
+  useRequestTimer(debounceGetClusters, debounceRefreshClusters, 0, [filter, sortParams, paginationParams, clusters]);
 
   useEffect(() => {
     if (components.length > 0 && host && !isBlockingConcernPresent(host.concerns)) {

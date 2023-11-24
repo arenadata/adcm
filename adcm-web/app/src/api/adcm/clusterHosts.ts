@@ -7,6 +7,7 @@ import {
   AdcmClusterHostComponentsStates,
   AdcmClusterHostsFilter,
   AdcmSetMaintenanceModeResponse,
+  AdcmHostComponentsFilter,
 } from '@models/adcm';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { PaginationParams, SortParams } from '@models/table';
@@ -48,7 +49,7 @@ export class AdcmClusterHostsApi {
     hostId: number,
     sortParams: SortParams,
     paginationParams: PaginationParams,
-    filter: AdcmClusterHostsFilter,
+    filter: AdcmHostComponentsFilter,
   ) {
     const queryParams = prepareQueryParams(filter, sortParams, paginationParams);
 

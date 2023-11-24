@@ -82,7 +82,8 @@ import serviceComponentConfigGroupConfigurationsCompareSlice from './adcm/cluste
 
 import clustersActionsSlice from './adcm/clusters/clustersActionsSlice';
 import clusterHostSlice from './adcm/cluster/hosts/host/clusterHostSlice';
-import clusterHostTableSlice from './adcm/cluster/hosts/host/clusterHostTableSlice';
+import hostComponentsTableSlice from './adcm/hostComponents/hostComponentsTableSlice';
+import hostComponentsSlice from './adcm/hostComponents/hostComponentsSlice';
 import profileSlice from './adcm/profile/profileSlice';
 import hostsDynamicActionsSlice from './adcm/hosts/hostsDynamicActionsSlice';
 import hostProviderSlice from './adcm/hostProviders/hostProviderSlice';
@@ -125,7 +126,6 @@ const rootReducer = combineReducers({
     clustersTable: clustersTableSlice,
     clusterHosts: clusterHostsSlice,
     clusterHost: clusterHostSlice,
-    clusterHostTable: clusterHostTableSlice,
     clusterHostsActions: clusterHostsActionsSlice,
     clusterHostsDynamicActions: clusterHostsDynamicActionsSlice,
     hostComponentsDynamicActions: hostComponentsDynamicActionsSlice,
@@ -145,6 +145,8 @@ const rootReducer = combineReducers({
     bundles: bundlesSlice,
     bundlesTable: bundlesTableSlice,
     breadcrumbs: breadcrumbsSlice,
+    hostComponents: hostComponentsSlice,
+    hostComponentsTable: hostComponentsTableSlice,
     hostProvider: hostProviderSlice,
     hostProviderConfigurationsCompare: hostProviderConfigurationsCompareSlice,
     hostProviderConfiguration: hostProviderConfigurationSlice,

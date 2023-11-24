@@ -13,7 +13,7 @@ export interface AdcmHostsFilter {
 }
 
 export interface AdcmHostComponentsFilter {
-  name?: string;
+  displayName?: string;
 }
 
 export interface AdcmHostPrototype {

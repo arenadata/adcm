@@ -6,7 +6,6 @@ import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { createAsyncThunk } from '@store/redux';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { updateIfExists } from '@utils/objectUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 
 interface AdcmClusterHostState {
@@ -46,49 +45,6 @@ const getClusterHost = createAsyncThunk(
     const startDate = new Date();
 
     await thunkAPI.dispatch(loadClusterHost(arg));
-
-    executeWithMinDelay({
-      startDate,
-      delay: defaultSpinnerDelay,
-
-      callback: () => {
-        thunkAPI.dispatch(setIsLoading(false));
-      },
-    });
-  },
-);
-
-const loadRelatedClusterHostComponents = createAsyncThunk(
-  'adcm/cluster/hosts/host/loadRelatedClusterHostComponents',
-  async ({ clusterId, hostId }: ClusterHostPayload, thunkAPI) => {
-    const {
-      adcm: {
-        clusterHostTable: { paginationParams, filter, sortParams },
-      },
-    } = thunkAPI.getState();
-    try {
-      const clusterHostComponents = await AdcmClusterHostsApi.getClusterHostComponents(
-        clusterId,
-        hostId,
-        sortParams,
-        paginationParams,
-        filter,
-      );
-      return clusterHostComponents;
-    } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
-const getRelatedClusterHostComponents = createAsyncThunk(
-  'adcm/cluster/hosts/host/getRelatedClusterHostComponents',
-  async (arg: ClusterHostPayload, thunkAPI) => {
-    thunkAPI.dispatch(setIsLoading(true));
-    const startDate = new Date();
-
-    await thunkAPI.dispatch(loadRelatedClusterHostComponents(arg));
 
     executeWithMinDelay({
       startDate,
@@ -157,12 +113,6 @@ const clusterHostSlice = createSlice({
     builder.addCase(loadClusterHost.rejected, (state) => {
       state.clusterHost = undefined;
     });
-    builder.addCase(loadRelatedClusterHostComponents.fulfilled, (state, action) => {
-      state.relatedData.hostComponents = action.payload.results;
-    });
-    builder.addCase(loadRelatedClusterHostComponents.rejected, (state) => {
-      state.relatedData.hostComponents = [];
-    });
     builder.addCase(getClusterHostComponentsStates.fulfilled, (state, action) => {
       state.hostComponentsCounters.totalHostComponentsCount = action.payload.hostComponents.length;
       state.hostComponentsCounters.successfulHostComponentsCount = action.payload.hostComponents.filter(
@@ -200,46 +150,9 @@ const clusterHostSlice = createSlice({
         };
       }
     });
-    builder.addCase(wsActions.update_component, (state, action) => {
-      const { id, changes } = action.payload.object;
-      state.relatedData.hostComponents = updateIfExists<AdcmServiceComponent>(
-        state.relatedData.hostComponents,
-        (hostComponent) => hostComponent.id === id,
-        () => changes,
-      );
-    });
-    builder.addCase(wsActions.create_component_concern, (state, action) => {
-      const { id: hostComponentId, changes: newConcern } = action.payload.object;
-      state.relatedData.hostComponents = updateIfExists<AdcmServiceComponent>(
-        state.relatedData.hostComponents,
-        (hostComponent) =>
-          hostComponent.id === hostComponentId &&
-          hostComponent.concerns.every((concern) => concern.id !== newConcern.id),
-        (hostComponent) => ({
-          concerns: [...hostComponent.concerns, newConcern],
-        }),
-      );
-    });
-    builder.addCase(wsActions.delete_component_concern, (state, action) => {
-      const { id, changes } = action.payload.object;
-      state.relatedData.hostComponents = updateIfExists<AdcmServiceComponent>(
-        state.relatedData.hostComponents,
-        (hostComponent) => hostComponent.id === id,
-        (hostComponent) => ({
-          concerns: hostComponent.concerns.filter((concern) => concern.id !== changes.id),
-        }),
-      );
-    });
   },
 });
 
 const { setIsLoading, cleanupClusterHost } = clusterHostSlice.actions;
-export {
-  getClusterHost,
-  cleanupClusterHost,
-  getRelatedClusterHostComponents,
-  loadRelatedClusterHostComponents,
-  getClusterHostComponentsStates,
-  unlinkClusterHost,
-};
+export { getClusterHost, cleanupClusterHost, getClusterHostComponentsStates, unlinkClusterHost };
 export default clusterHostSlice.reducer;

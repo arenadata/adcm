@@ -1,12 +1,12 @@
 import { useDispatch, useStore } from '@hooks';
-import { setPaginationParams } from '@store/adcm/cluster/hosts/host/clusterHostTableSlice';
+import { setPaginationParams } from '@store/adcm/hostComponents/hostComponentsTableSlice';
 import { Pagination, PaginationData } from '@uikit';
 
 const HostComponentsTableFooter: React.FC = () => {
   const dispatch = useDispatch();
 
-  const totalCount = useStore((s) => s.adcm.clusterHost.hostComponentsCounters.totalHostComponentsCount);
-  const paginationParams = useStore((s) => s.adcm.clusterHostTable.paginationParams);
+  const totalCount = useStore((s) => s.adcm.hostComponents.totalCount);
+  const paginationParams = useStore((s) => s.adcm.hostComponentsTable.paginationParams);
 
   const handlePaginationChange = (params: PaginationData) => {
     dispatch(setPaginationParams(params));

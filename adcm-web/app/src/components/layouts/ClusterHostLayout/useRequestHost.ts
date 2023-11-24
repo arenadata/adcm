@@ -2,11 +2,7 @@ import { useDispatch, useRequestTimer, useDebounce, useStore } from '@hooks';
 import { defaultDebounceDelay } from '@constants';
 import { useParams } from 'react-router-dom';
 import { useEffect } from 'react';
-import {
-  cleanupClusterHost,
-  getClusterHostComponentsStates,
-  getRelatedClusterHostComponents,
-} from '@store/adcm/cluster/hosts/host/clusterHostSlice';
+import { cleanupClusterHost, getClusterHostComponentsStates } from '@store/adcm/cluster/hosts/host/clusterHostSlice';
 import { getClusterHost } from '@store/adcm/cluster/hosts/host/clusterHostSlice';
 import { loadClusterHostsDynamicActions } from '@store/adcm/cluster/hosts/hostsDynamicActionsSlice';
 import { isBlockingConcernPresent } from '@utils/concernUtils';
@@ -34,7 +30,6 @@ export const useRequestClusterHost = () => {
     if (clusterId && hostId) {
       const payload = { clusterId, hostId };
       dispatch(getClusterHost(payload));
-      dispatch(getRelatedClusterHostComponents(payload));
       dispatch(getClusterHostComponentsStates(payload));
     }
   }, defaultDebounceDelay);
