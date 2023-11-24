@@ -584,7 +584,7 @@ def assign_view_logstorage_permissions_by_job(log_storage: LogStorage) -> None:
 
 
 def create_custom_log(job_id: int, name: str, log_format: str, body: str) -> LogStorage:
-    log = LogStorage.objects.create(job__pk=job_id, name=name, type="custom", format=log_format, body=body)
+    log = LogStorage.objects.create(job_id=job_id, name=name, type="custom", format=log_format, body=body)
     assign_view_logstorage_permissions_by_job(log_storage=log)
     return log
 
