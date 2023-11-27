@@ -40,7 +40,7 @@ const AccessManagerPoliciesTable: React.FC = () => {
           <TableRow key={policy.id}>
             <TableCell>{policy.name}</TableCell>
             <TableCell>{orElseGet(policy.description)}</TableCell>
-            <TableCell>{policy.role.displayName}</TableCell>
+            <TableCell>{orElseGet(policy.role?.displayName)}</TableCell>
             <TableCell>{policy.groups.map((group) => group.displayName).join(', ')}</TableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-edit" size={32} onClick={handleEditClick(policy)} title="Edit" />
