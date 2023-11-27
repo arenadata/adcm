@@ -25,6 +25,7 @@ from api_v2.component.serializers import (
     ComponentAuditSerializer as ComponentAuditSerializerV2,
 )
 from api_v2.host.serializers import HostAuditSerializer as HostAuditSerializerV2
+from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
 from api_v2.service.serializers import (
     ServiceAuditSerializer as ServiceAuditSerializerV2,
 )
@@ -310,6 +311,9 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
             pk = view.kwargs["component_id"]
         elif view.__class__.__name__ == "HostClusterViewSet" and view.action == "maintenance_mode":
             serializer_class = HostAuditSerializerV2
+            pk = view.kwargs["pk"]
+        elif view.__class__.__name__ == "HostViewSet" and view.action == "maintenance_mode":
+            serializer_class = HostChangeMaintenanceModeSerializer
             pk = view.kwargs["pk"]
         elif view.__class__.__name__ == "ServiceViewSet" and view.action == "maintenance_mode":
             serializer_class = ServiceAuditSerializerV2
