@@ -338,6 +338,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             operation_name="Host updated",
             operation_type="update",
             operation_result="success",
+            object_changes={"current": {"maintenance_mode": "on"}, "previous": {"maintenance_mode": "off"}},
             **self.prepare_audit_object_arguments(expected_object=self.host_1),
         )
 
