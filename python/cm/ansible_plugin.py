@@ -579,6 +579,7 @@ def assign_view_logstorage_permissions_by_job(log_storage: LogStorage) -> None:
         content_type=ContentType.objects.get_for_model(model=LogStorage),
         codename=f"view_{LogStorage.__name__.lower()}",
     )
+
     for policy in (policy for policy in Policy.objects.all() if task_role in policy.role.child.all()):
         assign_group_perm(policy=policy, permission=view_logstorage_permission, obj=log_storage)
 

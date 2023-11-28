@@ -199,6 +199,10 @@ def apply_jobs(task: TaskLog, policy: Policy) -> None:
         content_type=ContentType.objects.get_for_model(model=TaskLog),
         codename=f"change_{TaskLog.__name__.lower()}",
     )
+    change_joblog_permission, _ = Permission.objects.get_or_create(
+        content_type=ContentType.objects.get_for_model(model=JobLog),
+        codename=f"change_{JobLog.__name__.lower()}",
+    )
     assign_group_perm(policy=policy, permission=change_tasklog_permission, obj=task)
 
     view_joblog_permission, _ = Permission.objects.get_or_create(
@@ -212,6 +216,7 @@ def apply_jobs(task: TaskLog, policy: Policy) -> None:
 
     for job in JobLog.objects.filter(task=task):
         assign_group_perm(policy=policy, permission=view_joblog_permission, obj=job)
+        assign_group_perm(policy=policy, permission=change_joblog_permission, obj=job)
 
         for log in LogStorage.objects.filter(job=job):
             assign_group_perm(policy=policy, permission=view_logstorage_permission, obj=log)
