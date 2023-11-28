@@ -38,6 +38,7 @@ from cm.models import (
     TaskLog,
 )
 from django.contrib.auth.models import User as DjangoUser
+from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import Model, ObjectDoesNotExist
 from django.http.response import Http404
 from django.urls import resolve
@@ -48,7 +49,6 @@ from rbac.endpoints.user.serializers import UserAuditSerializer
 from rbac.models import Group, Policy, Role, User
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.generics import GenericAPIView
-from rest_framework.request import Request
 from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
@@ -58,18 +58,18 @@ from rest_framework.status import (
 from rest_framework.viewsets import ModelViewSet
 
 
-def _get_view_and_request(args) -> tuple[GenericAPIView, Request]:
+def _get_view_and_request(args) -> tuple[GenericAPIView, WSGIRequest]:
     if len(args) == 2:  # for audit view methods
         view: GenericAPIView = args[0]
-        request: Request = args[1]
+        request: WSGIRequest = args[1]
     else:  # for audit has_permissions method
         view: GenericAPIView = args[2]
-        request: Request = args[1]
+        request: WSGIRequest = args[1]
 
     return view, request
 
 
-def _get_deleted_obj(view: GenericAPIView, request: Request, kwargs) -> Model | None:
+def _get_deleted_obj(view: GenericAPIView, request: WSGIRequest, kwargs) -> Model | None:
     # pylint: disable=too-many-branches
 
     try:
@@ -221,7 +221,7 @@ def audit(func):
         audit_object: AuditObject
         operation_name: str
         view: GenericAPIView | ModelViewSet
-        request: Request
+        request: WSGIRequest
         object_changes: dict
 
         error = None
@@ -347,6 +347,7 @@ def audit(func):
                 operation_result=operation_result,
                 user=audit_user,
                 object_changes=object_changes,
+                address=get_client_ip(request=request),
             )
             cef_logger(audit_instance=auditlog, signature_id=resolve(request.path).route)
 
@@ -384,3 +385,15 @@ def make_audit_log(operation_type, result, operation_status):
         user=AuditUser.objects.get(username="system"),
     )
     cef_logger(audit_instance=audit_log, signature_id="Background operation", empty_resource=True)
+
+
+def get_client_ip(request: WSGIRequest) -> str | None:
+    header_fields = ["HTTP_X_FORWARDED_FOR", "HTTP_X_FORWARDED_HOST", "HTTP_X_FORWARDED_SERVER", "REMOTE_ADDR"]
+    host = None
+
+    for field in header_fields:
+        if field in request.META:
+            host = request.META[field].split(",")[-1]
+            break
+
+    return host
