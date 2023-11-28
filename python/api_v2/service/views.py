@@ -22,13 +22,19 @@ from api_v2.service.utils import (
     bulk_add_services_to_cluster,
     validate_service_prototypes,
 )
-from api_v2.views import CamelCaseReadOnlyModelViewSet
+from api_v2.views import CamelCaseGenericViewSet
 from audit.utils import audit
 from cm.api import update_mm_objects
 from cm.models import Cluster, ClusterObject
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
+from rest_framework.mixins import (
+    CreateModelMixin,
+    DestroyModelMixin,
+    ListModelMixin,
+    RetrieveModelMixin,
+)
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
@@ -46,7 +52,13 @@ from adcm.utils import delete_service_from_api, get_maintenance_mode_response
 
 
 class ServiceViewSet(  # pylint: disable=too-many-ancestors
-    PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet
+    PermissionListMixin,
+    ConfigSchemaMixin,
+    CreateModelMixin,
+    DestroyModelMixin,
+    ListModelMixin,
+    RetrieveModelMixin,
+    CamelCaseGenericViewSet,
 ):
     queryset = ClusterObject.objects.select_related("cluster").order_by("pk")
     serializer_class = ServiceRetrieveSerializer
@@ -54,7 +66,6 @@ class ServiceViewSet(  # pylint: disable=too-many-ancestors
     filter_backends = (DjangoFilterBackend,)
     permission_required = [VIEW_SERVICE_PERM]
     permission_classes = [ServicePermissions]
-    http_method_names = ["get", "post", "delete"]
     audit_model_hint = ClusterObject
 
     def get_queryset(self, *args, **kwargs):
@@ -74,7 +85,7 @@ class ServiceViewSet(  # pylint: disable=too-many-ancestors
         return self.serializer_class
 
     @audit
-    def create(self, request: Request, *args, **kwargs):  # pylint:disable=unused-argument
+    def create(self, request: Request, *args, **kwargs):
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, pk=kwargs["cluster_pk"]
         )
@@ -95,7 +106,7 @@ class ServiceViewSet(  # pylint: disable=too-many-ancestors
         )
 
     @audit
-    def destroy(self, request: Request, *args, **kwargs):  # pylint:disable=unused-argument
+    def destroy(self, request: Request, *args, **kwargs):
         instance = self.get_object()
         return delete_service_from_api(service=instance)
 

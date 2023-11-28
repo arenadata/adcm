@@ -17,13 +17,14 @@ from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
 )
 
 
-class TestServiceAudit(BaseAPITestCase):
+class TestServiceAudit(BaseAPITestCase):  # pylint: disable=too-many-public-methods
     def setUp(self) -> None:
         super().setUp()
 
@@ -397,4 +398,63 @@ class TestServiceAudit(BaseAPITestCase):
             audit_object__isnull=True,
             object_changes={},
             user__username="admin",
+        )
+
+    def test_remove_service_success(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Remove service"):
+            response = self.client.delete(
+                path=reverse(
+                    viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk}
+                )
+            )
+
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+        self.check_last_audit_record(
+            operation_name=f"{self.service_1.display_name} service removed",
+            operation_type="update",
+            operation_result="success",
+            **self.prepare_audit_object_arguments(self.cluster_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_remove_service_not_found_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.delete(
+            path=reverse(
+                viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk}
+            )
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_record(
+            operation_name=f"{self.service_1.display_name} service removed",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(self.cluster_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_remove_service_view_perm_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="View service configurations"):
+            response = self.client.delete(
+                path=reverse(
+                    viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk}
+                )
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_record(
+            operation_name=f"{self.service_1.display_name} service removed",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(self.cluster_1),
+            user__username=self.test_user.username,
         )
