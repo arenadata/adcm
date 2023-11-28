@@ -24,21 +24,16 @@ class ServicePermissions(DjangoObjectPermissions):
         "PATCH": ["%(app_label)s.change_%(model_name)s"],
         "DELETE": ["%(app_label)s.delete_%(model_name)s"],
     }
-    perms_map_mm = {
-        "POST": [],
-    }
 
     @audit
     def has_permission(self, request, view) -> bool:
-        self.perms_map = self.perms_map_default
-        if view.action == "maintenance_mode":
-            self.perms_map = self.perms_map_mm
+        if view.action in {"maintenance_mode", "destroy"}:
+            return True
 
         return super().has_permission(request=request, view=view)
 
     def has_object_permission(self, request, view, obj) -> bool:
-        self.perms_map = self.perms_map_default
         if view.action == "maintenance_mode":
-            self.perms_map = self.perms_map_mm
+            return True
 
         return super().has_object_permission(request=request, view=view, obj=obj)
