@@ -15,7 +15,7 @@ from api_v2.rbac.role.filters import RoleFilter
 from api_v2.rbac.role.serializers import RoleCreateUpdateSerializer, RoleSerializer
 from api_v2.views import CamelCaseModelViewSet
 from audit.utils import audit
-from cm.errors import raise_adcm_ex
+from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ProductCategory
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
@@ -31,7 +31,7 @@ from adcm.permissions import VIEW_ROLE_PERMISSION, CustomModelPermissionsByMetho
 
 
 class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = Role.objects.prefetch_related("child", "category").order_by("display_name")
+    queryset = Role.objects.prefetch_related("child", "category", "policy_set").order_by("display_name")
     permission_classes = (CustomModelPermissionsByMethod,)
     method_permissions_map = {
         "patch": [(VIEW_ROLE_PERMISSION, NotFound)],
@@ -63,7 +63,7 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
         instance = self.get_object()
 
         if instance.built_in:
-            raise_adcm_ex(code="ROLE_UPDATE_ERROR", msg=f"Can't modify role {instance.name} as it is auto created")
+            raise AdcmEx(code="ROLE_UPDATE_ERROR", msg=f"Can't modify role {instance.name} as it is auto created")
 
         serializer = self.get_serializer(data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
@@ -76,7 +76,10 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
         instance = self.get_object()
 
         if instance.built_in:
-            raise_adcm_ex(code="ROLE_DELETE_ERROR", msg="It is forbidden to remove the built-in role.")
+            raise AdcmEx(code="ROLE_DELETE_ERROR", msg="It is forbidden to remove the built-in role.")
+
+        if instance.policy_set.exists():
+            raise AdcmEx(code="ROLE_DELETE_ERROR", msg="Can't remove role that is used in policy.")
 
         return super().destroy(request, *args, **kwargs)
 

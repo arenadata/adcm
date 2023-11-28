@@ -13,6 +13,8 @@
 from api_v2.tests.base import BaseAPITestCase
 from django.urls import reverse
 from rbac.models import Role
+from rbac.services.group import create as create_group
+from rbac.services.policy import policy_create
 from rbac.services.role import role_create
 from rest_framework.status import (
     HTTP_200_OK,
@@ -162,6 +164,27 @@ class TestRole(BaseAPITestCase):
         self.assertDictEqual(
             response.json(),
             {"code": "ROLE_DELETE_ERROR", "desc": "It is forbidden to remove the built-in role.", "level": "error"},
+        )
+
+    def test_delete_role_in_policy_fail(self):
+        child_role = Role.objects.get(name="View cluster configurations")
+        group = create_group(name_to_display=f"Group for role `{child_role.name}`", user_set=[])
+        custom_role_in_policy = role_create(display_name=f"Custom `{child_role.name}` role", child=[child_role])
+        policy_create(
+            name=f"Policy for role `{child_role.name}`",
+            role=custom_role_in_policy,
+            group=[group],
+            object=[self.cluster_1],
+        )
+
+        response = self.client.delete(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": custom_role_in_policy.pk})
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {"code": "ROLE_DELETE_ERROR", "desc": "Can't remove role that is used in policy.", "level": "error"},
         )
 
     def test_ordering_success(self):
