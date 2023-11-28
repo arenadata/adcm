@@ -38,7 +38,7 @@ from cm.models import (
 from django.conf import settings
 from django.db.models import QuerySet
 from init_db import init
-from rbac.models import Group, Policy, Role, User
+from rbac.models import Group, Policy, Role, RoleTypes, User
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
@@ -248,12 +248,22 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
     def grant_permissions(self, to: User, on: list[ADCMEntity] | ADCMEntity, role_name: str):
         if not isinstance(on, list):
             on = [on]
+
         group = create_group(name_to_display=f"Group for role `{role_name}`", user_set=[{"id": to.pk}])
-        custom_role = role_create(display_name=f"Custom `{role_name}` role", child=[Role.objects.get(name=role_name)])
+        target_role = Role.objects.get(name=role_name)
+        delete_role = True
+
+        if target_role.type != RoleTypes.ROLE:
+            custom_role = role_create(display_name=f"Custom `{role_name}` role", child=[target_role])
+        else:
+            custom_role = target_role
+            delete_role = False
+
         policy = policy_create(name=f"Policy for role `{role_name}`", role=custom_role, group=[group], object=on)
 
         yield
 
         policy.delete()
-        custom_role.delete()
+        if delete_role:
+            custom_role.delete()
         group.delete()
