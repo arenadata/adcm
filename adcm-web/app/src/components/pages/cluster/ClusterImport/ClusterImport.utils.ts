@@ -56,8 +56,9 @@ export const getIsImportsValid = (
   requiredImports: ClusterImportsSetGroup,
   initialImports: SelectedImportsGroup,
 ) => {
-  const isOneSelected = selectedImports.services.size > 0 || selectedImports.clusters.size > 0;
-  if (!isOneSelected) return false;
+  const isNothingChanged = isImportsEqual(selectedImports, initialImports);
+
+  if (isNothingChanged) return false;
 
   const selectedClustersName = [...selectedImports.clusters.values()].map((value) => value.prototypeName);
   const selectedServicesName = [...selectedImports.services.values()].map((value) => value.prototypeName);
@@ -70,9 +71,7 @@ export const getIsImportsValid = (
     selectedServicesName.includes(service),
   );
 
-  const isNothingChanged = isImportsEqual(selectedImports, initialImports);
-
-  return isRequiredClustersSelected && isRequiredServicesSelected && !isNothingChanged;
+  return isRequiredClustersSelected && isRequiredServicesSelected;
 };
 
 const isImportsEqual = (currentImports: SelectedImportsGroup, initialImports: SelectedImportsGroup) => {
