@@ -9,20 +9,15 @@ import JobPageLog from './JobPageLog/JobPageLog';
 import JobPageStopJobDialog from './Dialogs/JobPageStopJobDialog';
 
 const JobPage: React.FC = () => {
-  const { logNamePartPath, task, dispatch } = useRequestJobPage();
+  const { task, dispatch } = useRequestJobPage();
 
   useEffect(() => {
     if (task) {
       const jobBreadcrumbs = [{ href: '/jobs', label: 'Jobs' }, { label: task.displayName }];
 
-      if (task.childJobs?.length === 1) {
-        jobBreadcrumbs[1].href = `/jobs/${task.id}`;
-        jobBreadcrumbs.push({ label: logNamePartPath });
-      }
-
       dispatch(setBreadcrumbs(jobBreadcrumbs));
     }
-  }, [task, logNamePartPath, dispatch]);
+  }, [task, dispatch]);
 
   return (
     <>

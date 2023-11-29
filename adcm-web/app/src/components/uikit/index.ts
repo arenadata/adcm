@@ -51,6 +51,7 @@ import type { IconsNames } from './Icon/sprite';
 import IconButton from './IconButton/IconButton';
 import LabeledField from './LabeledField/LabeledField';
 import Tab from '@uikit/Tabs/Tab';
+import TabButton from '@uikit/Tabs/TabButton';
 import TabsBlock from '@uikit/Tabs/TabsBlock';
 import Spinner from '@uikit/Spinner/Spinner';
 import Tooltip from '@uikit/Tooltip/Tooltip';
@@ -108,6 +109,7 @@ export {
   TableCellProps,
   TableColumn,
   Tab,
+  TabButton,
   TabsBlock,
   Tag,
   Tags,

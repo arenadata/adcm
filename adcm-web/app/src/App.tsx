@@ -194,7 +194,7 @@ function App() {
                 <Route path="/hosts/:hostId/primary-configuration" element={<HostPrimaryConfiguration />} />
               </Route>
               <Route path="/jobs" element={<JobsPage />} />
-              <Route path="/jobs/:jobId/*" element={<JobPage />} />
+              <Route path="/jobs/:jobId" element={<JobPage />} />
               <Route path="/access-manager" element={<AccessManagerPage />}>
                 <Route index element={<Navigate to="/access-manager/users" replace />} />
                 <Route path="/access-manager/users" element={<AccessManagerUsersPage />} />

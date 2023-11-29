@@ -57,11 +57,12 @@ export enum AdcmJobLogType {
   Stdout = 'stdout',
   Stderr = 'stderr',
   Check = 'check',
+  Custom = 'custom',
 }
 
 interface AdcmJobLogItemCommon {
   id: number;
-  name: 'ansible' | 'python';
+  name: string;
   format: string;
 }
 export interface AdcmJobLogItemCheck extends AdcmJobLogItemCommon {
@@ -72,8 +73,12 @@ export interface AdcmJobLogItemStd extends AdcmJobLogItemCommon {
   type: AdcmJobLogType.Stdout | AdcmJobLogType.Stderr;
   content: string;
 }
+export interface AdcmJobLogItemCustom extends AdcmJobLogItemCommon {
+  type: AdcmJobLogType.Custom;
+  content: string;
+}
 
-export type AdcmJobLogItem = AdcmJobLogItemCheck | AdcmJobLogItemStd;
+export type AdcmJobLogItem = AdcmJobLogItemCheck | AdcmJobLogItemStd | AdcmJobLogItemCustom;
 
 export interface AdcmJobsFilter {
   jobName?: string;
