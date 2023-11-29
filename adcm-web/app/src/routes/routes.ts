@@ -382,7 +382,7 @@ const routes: RoutesConfigs = {
       },
     ],
   },
-  '/jobs/:jobId/*': {
+  '/jobs/:jobId': {
     pageTitle: 'Jobs',
     breadcrumbs: [
       {

@@ -1,70 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useStore } from '@hooks';
-import { Button, Tab, TabsBlock } from '@uikit';
-import CodeHighlighter from '@uikit/CodeHighlighter/CodeHighlighter';
 import { useRequestJobLogPage } from './useRequestJobLogPage';
+import JobLog from '@commonComponents/job/JobLog/JobLog';
+import JobLogsTabs from '@commonComponents/job/JobLogsTabs/JobLogsTabs';
+import { AdcmJobLogItem } from '@models/adcm';
 import s from './JobPageLog.module.scss';
-import { useParams } from 'react-router-dom';
-import { apiHost } from '@constants';
-import JobLogCheck from '@commonComponents/job/JobLog/JobLogCheck/JobLogCheck';
-import { AdcmJobLogItemCheck, AdcmJobLogItemStd } from '@models/adcm';
-import { getStatusLabel } from '@utils/humanizationUtils';
+
+const defaultLogs: AdcmJobLogItem[] = [];
 
 interface JobPageLogProps {
   id: number;
   isLinkEmpty?: boolean;
 }
 
-const JobPageLog: React.FC<JobPageLogProps> = ({ id, isLinkEmpty = false }) => {
+const JobPageLog: React.FC<JobPageLogProps> = ({ id }) => {
   useRequestJobLogPage(id);
 
   const childJob = useStore(({ adcm }) => adcm.jobs.task.childJobs.find((job) => job.id === id));
-  const logs = useStore(({ adcm }) => adcm.jobs.jobLogs[id]) ?? [];
+  const logs = useStore(({ adcm }) => adcm.jobs.jobLogs[id] ?? defaultLogs);
 
-  const params = useParams();
-  const logNamePartPath = params['*'] || 'stdout';
+  const [currentLogId, setCurrentLogId] = useState<number | null>(null);
+  const [isLoadedLogs, setIsLoadedLogs] = useState(false);
 
-  const [logNameClick, setLogNameClick] = useState<string>('stdout');
-  const getHandleTabClick = (log: string) => () => {
-    setLogNameClick(log);
-  };
+  useEffect(
+    () => () => {
+      setIsLoadedLogs(false);
+    },
+    [],
+  );
 
-  const logName = isLinkEmpty ? logNameClick : logNamePartPath;
-  const log = logs.find((log) => log.type === logName);
+  useEffect(() => {
+    if (!isLoadedLogs && logs !== defaultLogs) {
+      setCurrentLogId(logs[0]?.id || null);
+      setIsLoadedLogs(true);
+    }
+  }, [logs, isLoadedLogs]);
 
-  const downloadLink = `${apiHost}/api/v2/jobs/${childJob?.id}/logs/${log?.id}/download/`;
+  const log = useMemo(() => {
+    return logs.find(({ id }) => currentLogId === id);
+  }, [logs, currentLogId]);
 
   return (
-    <>
-      <TabsBlock variant="secondary" className={s.jobLog}>
-        <Tab to={isLinkEmpty ? '' : 'stdout'} onClick={getHandleTabClick('stdout')} isActive={logName === 'stdout'}>
-          {getStatusLabel(logs[0]?.name ?? '')} [stdout]
-        </Tab>
-        <Tab to={isLinkEmpty ? '' : 'stderr'} onClick={getHandleTabClick('stderr')} isActive={logName === 'stderr'}>
-          {getStatusLabel(logs[1]?.name ?? '')} [stderr]
-        </Tab>
-        {logs[2] && (
-          <Tab to={isLinkEmpty ? '' : 'check'} onClick={getHandleTabClick('check')} isActive={logName === 'check'}>
-            {getStatusLabel(logs[2]?.name ?? '')} [check]
-          </Tab>
-        )}
-      </TabsBlock>
-      {logName === 'check' && !!log && !!childJob && (
-        <JobLogCheck log={log as AdcmJobLogItemCheck} jobStatus={childJob.status} />
-      )}
-      {logName !== 'check' && (
-        <CodeHighlighter
-          code={(log as AdcmJobLogItemStd)?.content.trim() || ''}
-          language="accesslog"
-          className={s.codeHighlighter}
-        />
-      )}
-      {log?.content && (
-        <a href={downloadLink} download="download" target="_blank">
-          <Button variant="secondary" className={s.jobLogDownloadButton} children="Download" />
-        </a>
-      )}
-    </>
+    <div className={s.jobPageLog}>
+      <JobLogsTabs
+        jobLogsList={logs}
+        currentTabId={currentLogId}
+        onChangeTab={setCurrentLogId}
+        className={s.jobLogTabs}
+      />
+
+      {childJob && log && <JobLog job={childJob} jobLog={log} />}
+    </div>
   );
 };
 
