@@ -54,8 +54,13 @@ const HeaderNotifications: React.FC = () => {
 
   return (
     <>
-      <button ref={localRef} className={bellButtonClassName} onClick={handleBellClick}>
-        <Bell width={28} />
+      <button
+        ref={localRef}
+        className={bellButtonClassName}
+        onClick={handleBellClick}
+        data-test="notification-bell-button"
+      >
+        <Bell data-test={'status_' + status} width={28} />
       </button>
       <Popover isOpen={isOpen} onOpenChange={setIsOpen} triggerRef={localRef}>
         <div className={s.bellPopoverPanel}>

@@ -9,5 +9,5 @@
     <path class="bell__holePatch" d="M499.4,435.1c-1.6-18-27.2-50.5-38.5-85.7s-18.8-103.7-18.8-103.7c-4.7-31.5-19.9-60.5-43.2-82.6
 		c-23.2-21.9-58.6-40.4-98.9-40.5l0,0c-0.1,0-0.2,0-0.2,0c-0.1,0-0.2,0-0.2,0l0,0" />
   </g>
-  <circle fill="currentColor" class="bell__marker" cx="433.4" cy="231" r="62.5" />
+  <circle fill="currentColor" class="bell__marker" data-test="bell-circle" cx="433.4" cy="231" r="62.5" />
 </svg>
