@@ -15,12 +15,12 @@ const JobInfo: React.FC<JobInfoProps> = ({ jobs }) => {
   if (jobs.length === 0) return <div className={s.noData}>No data</div>;
 
   return (
-    <table className={s.jobs}>
+    <table className={s.jobs} data-test="jobs-notification-table">
       {jobs.map((job) => (
         <tr key={job.id}>
           <td className={s.job__id}>{job.id}</td>
           <td className={s.job__icon}>
-            <JobsStatusIconCell size={14} status={job.status} />
+            <JobsStatusIconCell dataTest={'job_status_' + job.status} size={14} status={job.status} />
           </td>
           <td className={s.job__link}>
             {job?.displayName && (

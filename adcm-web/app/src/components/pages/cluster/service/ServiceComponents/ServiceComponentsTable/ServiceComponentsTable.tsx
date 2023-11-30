@@ -34,6 +34,7 @@ const ServiceComponentsTable = () => {
       sortParams={sortParams}
       onSorting={handleSorting}
       variant="secondary"
+      dataTest="service-component-table"
     >
       {components.map((component) => {
         return (

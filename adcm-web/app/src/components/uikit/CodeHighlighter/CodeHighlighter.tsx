@@ -10,20 +10,22 @@ import IconButton from '@uikit/IconButton/IconButton';
 type LinesWrapperProps = {
   children: React.ReactNode;
   subComponent?: React.ReactElement;
+  dataTest?: string;
 };
 
 interface DefaultCodeTagProps extends React.PropsWithChildren {
   children: [boolean, React.ReactNode[]];
   linesWrapper?: React.ReactElement;
+  dataTest?: string;
 }
 
 type LineNumbersProps = {
   lineCount: number;
 };
 
-export const LinesWrapper = ({ children, subComponent }: LinesWrapperProps) => {
+export const LinesWrapper = ({ children, subComponent, dataTest }: LinesWrapperProps) => {
   return (
-    <div className={cn(s['code-wrapper__code-lines'])}>
+    <div className={cn(s['code-wrapper__code-lines'])} data-test={dataTest}>
       {children}
       {subComponent}
     </div>
@@ -44,7 +46,7 @@ const DefaultCodeTag = ({ children }: DefaultCodeTagProps) => {
   return (
     <div className={cn(s['code-wrapper'])}>
       <LineNumbers lineCount={React.Children.count(childArray)} />
-      <LinesWrapper>{childArray}</LinesWrapper>
+      <LinesWrapper dataTest="code-wrapper-log-text">{childArray}</LinesWrapper>
     </div>
   );
 };
@@ -60,6 +62,7 @@ export type CodeHighlighterProps = {
   isSecret?: boolean;
   className?: string;
   CodeTagComponent?: React.ComponentType<DefaultCodeTagProps>;
+  dataTest?: string;
 };
 
 const CodeHighlighter = ({
