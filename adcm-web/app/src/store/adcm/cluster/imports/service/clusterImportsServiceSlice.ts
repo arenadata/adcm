@@ -4,7 +4,7 @@ import { createAsyncThunk } from '@store/redux';
 import { AdcmClusterImport, AdcmClusterImportPostPayload, AdcmError } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
-import { showError } from '@store/notificationsSlice';
+import { showError, showInfo } from '@store/notificationsSlice';
 
 type GetClusterImportsArg = {
   clusterId: number;
@@ -65,6 +65,7 @@ const saveClusterServiceImports = createAsyncThunk(
     try {
       await AdcmClusterServiceImportsApi.postClusterServiceImport(clusterId, serviceId, clusterImportsList);
       thunkAPI.dispatch(loadClusterServiceImports({ clusterId }));
+      thunkAPI.dispatch(showInfo({ message: 'Import has been completed' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: (error as RequestError<AdcmError>).response?.data.desc ?? '' }));
       return thunkAPI.rejectWithValue(error);
