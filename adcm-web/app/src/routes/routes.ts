@@ -74,6 +74,10 @@ const routes: RoutesConfigs = {
         href: '/clusters/:clusterId/services',
         label: 'Services',
       },
+      {
+        href: '/clusters/:clusterId/services/:serviceId',
+        label: ':serviceId',
+      },
     ],
   },
   '/clusters/:clusterId/services/:serviceId/configuration-groups/:groupId': {
@@ -90,6 +94,9 @@ const routes: RoutesConfigs = {
       {
         href: '/clusters/:clusterId/services',
         label: 'Services',
+      },
+      {
+        label: 'Configuration groups',
       },
     ],
   },
@@ -124,6 +131,53 @@ const routes: RoutesConfigs = {
       {
         href: '/clusters/:clusterId/services',
         label: 'Services',
+      },
+      {
+        href: '/clusters/:clusterId/services/:serviceId',
+        label: ':serviceId',
+      },
+      {
+        href: '/clusters/:clusterId/services/:serviceId/components',
+        label: 'Components',
+      },
+      {
+        href: '/clusters/:clusterId/services/:serviceId/components/:componentId',
+        label: ':componentId',
+      },
+      {
+        label: 'Primary configuration',
+      },
+    ],
+  },
+  '/clusters/:clusterId/services/:serviceId/components/:componentId/configuration-groups': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        href: '/clusters/:clusterId/services',
+        label: 'Services',
+      },
+      {
+        href: '/clusters/:clusterId/services/:serviceId',
+        label: ':serviceId',
+      },
+      {
+        href: '/clusters/:clusterId/services/:serviceId/components',
+        label: 'Components',
+      },
+      {
+        href: '/clusters/:clusterId/services/:serviceId/components/:componentId',
+        label: ':componentId',
+      },
+      {
+        label: 'Configuration groups',
       },
     ],
   },
