@@ -111,7 +111,7 @@ const routes: RoutesConfigs = {
     ],
   },
   '/clusters/:clusterId/services/:serviceId/components/:componentId/primary-configuration': {
-    pageTitle: 'Cluster',
+    pageTitle: 'Clusters',
     breadcrumbs: [
       {
         href: '/clusters',
