@@ -10,7 +10,7 @@
     --cluster-import-item-bg-active-color: var(--color-xdark-new);
     --cluster-import-item-border-active-color: var(--color-xgreen-saturated);
 
-    --cluster-import-item-require-color: var(--color-yellow-light);
+    --cluster-import-item-require-color: var(--color-xred);
   }
 
   body.theme-light {
@@ -24,7 +24,7 @@
     --cluster-import-item-bg-active-color: var(--color-xgray-alt);
     --cluster-import-item-border-active-color: var(--color-xgreen-saturated);
 
-    --cluster-import-item-require-color: var(--color-json-orange);
+    --cluster-import-item-require-color: var(--color-xred-light);
   }
 }
 
