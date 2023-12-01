@@ -27,7 +27,7 @@ const ClusterServiceNavigation: React.FC = () => {
           { href: '/clusters', label: 'Clusters' },
           { href: `/clusters/${cluster.id}`, label: cluster.name },
           { href: `/clusters/${cluster.id}/services`, label: 'Services' },
-          { label: service.displayName },
+          { href: `/clusters/${cluster.id}/services/${service.id}`, label: service.displayName },
           { label: tabsNavigationDictionary[subTabId] },
         ]),
       );
