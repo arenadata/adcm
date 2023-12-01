@@ -93,7 +93,7 @@ def prepare_bundle(
         return bundle
 
     except Exception as error:
-        shutil.rmtree(path)
+        shutil.rmtree(path, ignore_errors=True)
         raise error
 
 
