@@ -16,7 +16,7 @@ const ServiceComponents: React.FC = () => {
         setBreadcrumbs([
           { href: '/clusters', label: 'Clusters' },
           { href: `/clusters/${cluster.id}`, label: cluster.name },
-          { label: 'Services' },
+          { href: `/clusters/${cluster.id}/services`, label: 'Services' },
           { href: `/clusters/${cluster.id}/services/${service.id}`, label: service.displayName },
           { label: 'Components' },
         ]),
