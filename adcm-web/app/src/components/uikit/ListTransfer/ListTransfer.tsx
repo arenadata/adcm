@@ -2,8 +2,9 @@ import React, { useMemo } from 'react';
 import s from './ListTransfer.module.scss';
 import ListTransferPanel from './ListTransferPanel/ListTransferPanel';
 import { ListTransferItem, ListTransferPanelOptions } from './ListTransfer.types';
-import ListTransferItemSrc from '@uikit/ListTransfer/ListTransferItem/ListTransferItemSrc';
-import ListTransferItemDest from '@uikit/ListTransfer/ListTransferItem/ListTransferItemDest';
+import ListTransferItemSrc from './ListTransferItem/ListTransferItemSrc';
+import ListTransferItemDest from './ListTransferItem/ListTransferItemDest';
+import cn from 'classnames';
 
 interface ListTransferProps {
   srcOptions?: Partial<ListTransferPanelOptions>;
@@ -13,6 +14,7 @@ interface ListTransferProps {
   onChangeDest: (keys: Set<ListTransferItem['key']>) => void;
   srcError?: string;
   destError?: string;
+  className?: string;
 }
 
 const ListTransfer: React.FC<ListTransferProps> = ({
@@ -23,6 +25,7 @@ const ListTransfer: React.FC<ListTransferProps> = ({
   destOptions,
   srcError,
   destError,
+  className,
 }) => {
   const srcList = useMemo(() => {
     return incomingList.map((item) => {
@@ -57,7 +60,7 @@ const ListTransfer: React.FC<ListTransferProps> = ({
   };
 
   return (
-    <div className={s.listTransfer}>
+    <div className={cn(s.listTransfer, className)}>
       <ListTransferPanel
         title="Primary"
         {...srcOptions}

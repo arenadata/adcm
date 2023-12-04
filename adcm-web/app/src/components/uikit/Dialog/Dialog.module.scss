@@ -52,4 +52,10 @@
   &__controlsOnTop {
     margin-bottom: 24px;
   }
+
+  &__body {
+    // painless hack for block-template
+    // but very important hack when use grid or flex for dialog
+    min-height: 0;
+  }
 }

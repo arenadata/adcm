@@ -1,0 +1,12 @@
+.configGroupMappingDialog {
+  max-height: 100%;
+  display: grid;
+  // dialog title - min-content
+  // dialog body - 1fr (100% - title)
+  grid-template-rows: min-content 1fr;
+
+
+  &__listTransfer {
+    height: 100%;
+  }
+}

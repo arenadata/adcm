@@ -13,8 +13,9 @@
 }
 
 .roleDialogForm {
-  // 510px - magic number, is sum of heights and margins of prev blocks
-  --list-transfer-list-max-height: calc(100vh - 510px);
+  display: grid;
+  height: 100%;
+  grid-template-rows: min-content 1fr;
 
   &__column {
     display: grid;
@@ -22,8 +23,26 @@
     gap: 0 20px;
     margin-bottom: 24px;
   }
+
+  &__productFilter {
+    grid-column: 1/-1;
+  }
+
   &__productsLabel {
     color: var(--text-green-color);
     margin-bottom: 20px;
   }
+
+  &__listTransfer {
+    min-height: 0;
+  }
+}
+
+.roleDialog {
+  display: grid;
+  // dialog title - min-content
+  // dialog header control panel - min-content
+  // dialog body - 1fr (100% - title - panel)
+  grid-template-rows: min-content min-content 1fr;
+  max-height: 100%;
 }
