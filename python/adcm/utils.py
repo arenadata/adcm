@@ -335,18 +335,18 @@ def delete_service_from_api(service: ClusterObject) -> Response:  # pylint: disa
             raise AdcmEx(code="SERVICE_DELETE_ERROR")
 
         if host_components_exists:
-            raise AdcmEx(code="SERVICE_CONFLICT", msg=f"Service #{service.id} has component(s) on host(s)")
+            raise AdcmEx(code="SERVICE_CONFLICT", msg=f'Service "{service.display_name}" has component(s) on host(s)')
 
     cluster = service.cluster
 
     if cluster.state == "upgrading" and service.prototype.name in cluster.before_upgrade["services"]:
-        raise AdcmEx(code="SERVICE_CONFLICT", msg="It is forbidden to delete service in upgrade mode")
+        raise AdcmEx(code="SERVICE_CONFLICT", msg="Can't remove service when upgrading cluster")
 
     if ClusterBind.objects.filter(source_service=service).exists():
-        raise AdcmEx(code="SERVICE_CONFLICT", msg=f"Service #{service.id} has exports(s)")
+        raise AdcmEx(code="SERVICE_CONFLICT", msg=f'Service "{service.display_name}" has exports(s)')
 
     if service.prototype.required:
-        raise AdcmEx(code="SERVICE_CONFLICT", msg=f"Service #{service.id} is required")
+        raise AdcmEx(code="SERVICE_CONFLICT", msg=f'Service "{service.display_name}" is required')
 
     if TaskLog.objects.filter(action=delete_action, status=JobStatus.RUNNING).exists():
         raise AdcmEx(code="SERVICE_DELETE_ERROR", msg="Service is deleting now")
@@ -355,7 +355,7 @@ def delete_service_from_api(service: ClusterObject) -> Response:  # pylint: disa
         if component.requires_service_name(service_name=service.name):
             raise AdcmEx(
                 code="SERVICE_CONFLICT",
-                msg=f"Component {component.name} of service {component.service.display_name}"
+                msg=f'Component "{component.name}" of service "{component.service.display_name}'
                 f" requires this service or its component",
             )
 
@@ -363,7 +363,7 @@ def delete_service_from_api(service: ClusterObject) -> Response:  # pylint: disa
         if another_service.requires_service_name(service_name=service.name):
             raise AdcmEx(
                 code="SERVICE_CONFLICT",
-                msg=f"Service {another_service.display_name} requires this service or its component",
+                msg=f'Service "{another_service.display_name}" requires this service or its component',
             )
 
     cancel_locking_tasks(obj=service, obj_deletion=True)
