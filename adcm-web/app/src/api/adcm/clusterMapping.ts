@@ -1,5 +1,5 @@
 import { httpClient } from '@api/httpClient';
-import { AdcmMapping, AdcmHostShortView, AdcmMappingComponent } from '@models/adcm/';
+import { AdcmMapping, AdcmHostShortView, AdcmMappingComponent } from '@models/adcm';
 
 export class AdcmClusterMappingApi {
   public static async getMapping(clusterId: number) {

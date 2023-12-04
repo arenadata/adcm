@@ -1,13 +1,11 @@
 import React, { useEffect } from 'react';
 import { useDispatch } from '@hooks';
-import ToolbarPanel from '@uikit/ToolbarPanel/ToolbarPanel';
-import { Button, ButtonGroup, SearchInput } from '@uikit';
+import { Button, ButtonGroup, SearchInput, SpinnerPanel, ToolbarPanel } from '@uikit';
 import { DynamicActionCommonOptions } from '@commonComponents/DynamicActionDialog/DynamicAction.types';
 import s from '@commonComponents/DynamicActionDialog/DynamicActionDialog.module.scss';
 import { useClusterMapping } from '@pages/cluster/ClusterMapping/useClusterMapping';
 import ComponentContainer from '@pages/cluster/ClusterMapping/ComponentsMapping/ComponentContainer/ComponentContainer';
 import { AdcmMappingComponent, AdcmMappingComponentService } from '@models/adcm';
-import { SpinnerPanel } from '@uikit/Spinner/Spinner';
 import { getMappings, cleanupMappings } from '@store/adcm/cluster/mapping/mappingSlice';
 import { Link } from 'react-router-dom';
 
@@ -92,7 +90,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
           {isServicesMappingEmpty && (
             <div>
               Add services on the{' '}
-              <Link className="text-link" to={`/clusters/${clusterId}/services/`} onClick={onCancel}>
+              <Link className="text-link" to={`/clusters/${clusterId}/services`} onClick={onCancel}>
                 services page
               </Link>
             </div>

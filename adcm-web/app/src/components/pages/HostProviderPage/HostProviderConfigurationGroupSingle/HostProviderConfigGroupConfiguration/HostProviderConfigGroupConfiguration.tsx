@@ -33,7 +33,7 @@ const HostProviderConfigGroupConfiguration: React.FC = () => {
           { href: '/hostproviders', label: 'Hostproviders' },
           { href: `/hostproviders/${hostProvider.id}`, label: hostProvider.name },
           {
-            href: `/hostproviders/${hostProvider.id}/configuration-groups/${hostProviderConfigGroup.id}/`,
+            href: `/hostproviders/${hostProvider.id}/configuration-groups/${hostProviderConfigGroup.id}`,
             label: hostProviderConfigGroup.name,
           },
           { label: 'Configuration' },

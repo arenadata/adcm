@@ -42,13 +42,13 @@ const ServiceComponentsTable = () => {
             <StatusableCell status={serviceComponentsStatusMap[component.status]}>
               <Link
                 className="text-link"
-                to={`/clusters/${component.cluster.id}/services/${component.service.id}/components/${component.id}/`}
+                to={`/clusters/${component.cluster.id}/services/${component.service.id}/components/${component.id}`}
               >
                 {component.displayName}
               </Link>
             </StatusableCell>
             <TableCell>
-              <Link className="text-link" to={`/clusters/${component.cluster.id}/hosts/`}>
+              <Link className="text-link" to={`/clusters/${component.cluster.id}/hosts`}>
                 {component.hosts.length} {component.hosts.length === 1 ? 'host' : 'hosts'}
               </Link>
             </TableCell>

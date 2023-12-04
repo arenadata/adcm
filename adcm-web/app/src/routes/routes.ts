@@ -318,11 +318,11 @@ const routes: RoutesConfigs = {
         label: ':clusterId',
       },
       {
-        href: '/clusters/:clusterId/configuration/',
+        href: '/clusters/:clusterId/configuration',
         label: 'Configuration',
       },
       {
-        label: 'Configuration Groups',
+        label: 'Configuration groups',
       },
     ],
   },
@@ -338,12 +338,12 @@ const routes: RoutesConfigs = {
         label: ':clusterId',
       },
       {
-        href: '/clusters/:clusterId/configuration/',
+        href: '/clusters/:clusterId/configuration',
         label: 'Configuration',
       },
       {
-        href: '/clusters/:clusterId/configuration/config-groups/',
-        label: 'Configuration Groups',
+        href: '/clusters/:clusterId/configuration/config-groups',
+        label: 'Configuration groups',
       },
       {
         label: ':groupId',

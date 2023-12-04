@@ -53,10 +53,13 @@ import LabeledField from './LabeledField/LabeledField';
 import Tab from '@uikit/Tabs/Tab';
 import TabButton from '@uikit/Tabs/TabButton';
 import TabsBlock from '@uikit/Tabs/TabsBlock';
-import Spinner from '@uikit/Spinner/Spinner';
+import Spinner, { SpinnerPanel } from '@uikit/Spinner/Spinner';
 import Tooltip from '@uikit/Tooltip/Tooltip';
+import ToolbarPanel from './ToolbarPanel/ToolbarPanel';
+import ActionMenu from './ActionMenu/ActionMenu';
 
 export {
+  ActionMenu,
   AnchorBar,
   AnchorBarItem,
   AnchorList,
@@ -100,6 +103,7 @@ export {
   Select,
   SelectOption,
   Spinner,
+  SpinnerPanel,
   Statusable,
   BaseStatus,
   Switch,
@@ -114,5 +118,6 @@ export {
   Tag,
   Tags,
   Text,
+  ToolbarPanel,
   Tooltip,
 };

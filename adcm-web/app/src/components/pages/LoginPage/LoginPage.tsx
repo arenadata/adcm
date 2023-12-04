@@ -6,7 +6,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { AUTH_STATE } from '@store/authSlice';
 
 import s from './LoginPage.module.scss';
-import Text from '@uikit/Text/Text';
+import { Text } from '@uikit';
 import cn from 'classnames';
 
 type RedirectLocationState = {

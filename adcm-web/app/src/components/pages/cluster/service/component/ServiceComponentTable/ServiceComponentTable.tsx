@@ -22,7 +22,7 @@ const ServiceComponentTable: React.FC = () => {
             {serviceComponent?.displayName}
           </StatusableCell>
           <TableCell>
-            <Link className="text-link" to={`/clusters/${serviceComponent.cluster.id}/hosts/`}>
+            <Link className="text-link" to={`/clusters/${serviceComponent.cluster.id}/hosts`}>
               {serviceComponent.hosts.length} {serviceComponent?.hosts.length === 1 ? 'host' : 'hosts'}
             </Link>
           </TableCell>
@@ -36,7 +36,7 @@ const ServiceComponentTable: React.FC = () => {
             <ServiceComponentMaintenanceModeButton />
           </TableCell>
           <TableCell hasIconOnly>
-            <Link to={`/clusters/${cluster?.id}/services/${service?.id}/components/`} className="flex-inline">
+            <Link to={`/clusters/${cluster?.id}/services/${service?.id}/components`} className="flex-inline">
               <Button iconRight="g2-back" variant="secondary" />
             </Link>
           </TableCell>

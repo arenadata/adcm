@@ -23,7 +23,7 @@ const ServiceConfigGroupSingle: React.FC = () => {
           { href: `/clusters/${cluster.id}/services/${service.id}`, label: service.displayName },
           { href: `/clusters/${cluster.id}/services/${service.id}/configuration-groups`, label: 'Config groups' },
           {
-            href: `/clusters/${cluster.id}/services/${service.id}/configuration-groups/${serviceConfigGroup.id}/`,
+            href: `/clusters/${cluster.id}/services/${service.id}/configuration-groups/${serviceConfigGroup.id}`,
             label: serviceConfigGroup.name,
           },
         ]),
