@@ -35,7 +35,7 @@ const HostProviderConfigGroupDialogs: React.FC = () => {
       dispatch(createHostProviderConfigGroup({ hostProviderId, data }))
         .unwrap()
         .then((configGroup) => {
-          navigate(`/hostproviders/${hostProviderId}/configuration-groups/${configGroup.id}/`);
+          navigate(`/hostproviders/${hostProviderId}/configuration-groups/${configGroup.id}`);
         });
     }
   };

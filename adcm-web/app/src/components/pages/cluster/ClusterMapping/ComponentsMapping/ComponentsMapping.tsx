@@ -138,7 +138,7 @@ const ComponentsMapping = () => {
           {servicesMapping.length === 0 && (
             <div>
               Add services on the{' '}
-              <Link className="text-link" to={`/clusters/${clusterId}/services/`}>
+              <Link className="text-link" to={`/clusters/${clusterId}/services`}>
                 services page
               </Link>
             </div>

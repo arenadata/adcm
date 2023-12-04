@@ -28,7 +28,7 @@ const DeleteServiceButton: React.FC = () => {
       )
         .unwrap()
         .then(() => {
-          navigate(`/clusters/${clusterId}/`);
+          navigate(`/clusters/${clusterId}`);
         });
     }
   };

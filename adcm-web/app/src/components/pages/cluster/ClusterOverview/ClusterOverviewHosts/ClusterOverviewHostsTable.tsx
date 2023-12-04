@@ -1,4 +1,3 @@
-import React from 'react';
 import { Statusable, Table, TableCell, TableRow, Tooltip } from '@uikit';
 import { AdcmClusterOverviewStatusHost, AdcmClusterStatus } from '@models/adcm';
 import s from './ClusterOverviewHosts.module.scss';
@@ -19,7 +18,7 @@ const ClusterOverviewHostsTable = ({ hosts }: clusterOverviewHostsTableProps) =>
             <TableCell>
               <Tooltip label={host.name} placement="top-start">
                 <Statusable className={s.clusterOverviewHosts__title} status={hostStatus} size="medium">
-                  <Link to={`/hosts/${host.id}/`}>{host.name}</Link>
+                  <Link to={`/hosts/${host.id}`}>{host.name}</Link>
                 </Statusable>
               </Tooltip>
             </TableCell>

@@ -38,7 +38,7 @@ const ServiceComponentConfigGroupDialogs: React.FC = () => {
         .unwrap()
         .then((configGroup) => {
           navigate(
-            `/clusters/${clusterId}/services/${serviceId}/components/${componentId}/configuration-groups/${configGroup.id}/`,
+            `/clusters/${clusterId}/services/${serviceId}/components/${componentId}/configuration-groups/${configGroup.id}`,
           );
         });
     }

@@ -1,11 +1,11 @@
 import React from 'react';
 import cn from 'classnames';
+import s from './IconButton.module.scss';
+import ConditionalWrapper from '@uikit/ConditionalWrapper/ConditionalWrapper';
+import { textToDataTestValue } from '@utils/dataTestUtils';
 import { IconsNames } from '@uikit/Icon/sprite';
 import Icon, { IconProps } from '@uikit/Icon/Icon';
-import s from './IconButton.module.scss';
-import { ConditionalWrapper, Tooltip } from '@uikit';
-import { textToDataTestValue } from '@utils/dataTestUtils';
-import { TooltipProps } from '@uikit/Tooltip/Tooltip';
+import Tooltip, { TooltipProps } from '@uikit/Tooltip/Tooltip';
 
 type IconButtonVariant = 'primary' | 'secondary';
 export interface IconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'title'> {

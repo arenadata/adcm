@@ -35,7 +35,7 @@ const ClusterConfigGroupDialogs: React.FC = () => {
       dispatch(createClusterConfigGroup({ clusterId, data }))
         .unwrap()
         .then((configGroup) => {
-          navigate(`/clusters/${clusterId}/configuration/config-groups/${configGroup.id}/`);
+          navigate(`/clusters/${clusterId}/configuration/config-groups/${configGroup.id}`);
         });
     }
   };

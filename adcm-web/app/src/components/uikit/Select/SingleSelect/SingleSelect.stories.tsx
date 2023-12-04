@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { Meta, StoryObj } from '@storybook/react';
-import Select from '@uikit/Select/SingleSelect/Select/Select';
-import Dialog from '@uikit/Dialog/Dialog';
-import ActionMenu from '@uikit/ActionMenu/ActionMenu';
-import { IconButton } from '@uikit';
+import { ActionMenu, Dialog, IconButton, Select } from '@uikit';
 
 type Story = StoryObj<typeof Select>;
 export default {

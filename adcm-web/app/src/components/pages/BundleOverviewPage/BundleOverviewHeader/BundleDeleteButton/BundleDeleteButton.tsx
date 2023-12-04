@@ -1,7 +1,7 @@
 import { useDispatch, useStore } from '@hooks';
 import { deleteBundle } from '@store/adcm/bundle/bundleSlice';
 import { Button, Dialog } from '@uikit';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const BundleDeleteButton = () => {
@@ -21,7 +21,7 @@ const BundleDeleteButton = () => {
       dispatch(deleteBundle(bundle.id))
         .unwrap()
         .then(() => {
-          navigate('/bundles/');
+          navigate('/bundles');
         });
     }
   };

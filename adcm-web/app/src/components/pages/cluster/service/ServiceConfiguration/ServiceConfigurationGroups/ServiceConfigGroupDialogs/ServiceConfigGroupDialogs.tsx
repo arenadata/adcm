@@ -36,7 +36,7 @@ const ServiceConfigGroupDialogs: React.FC = () => {
       dispatch(createClusterServiceConfigGroup({ clusterId, serviceId, data }))
         .unwrap()
         .then((configGroup) => {
-          navigate(`/clusters/${clusterId}/services/${serviceId}/configuration-groups/${configGroup.id}/`);
+          navigate(`/clusters/${clusterId}/services/${serviceId}/configuration-groups/${configGroup.id}`);
         });
     }
   };

@@ -33,7 +33,7 @@ const ClusterConfigGroupConfiguration: React.FC = () => {
           { href: '/clusters', label: 'Clusters' },
           { href: `/clusters/${cluster.id}`, label: cluster.name },
           { label: 'Configuration' },
-          { href: `/clusters/${cluster.id}/configuration/config-groups/`, label: 'Configuration groups' },
+          { href: `/clusters/${cluster.id}/configuration/config-groups`, label: 'Configuration groups' },
           { label: clusterConfigGroup.name },
         ]),
       );
