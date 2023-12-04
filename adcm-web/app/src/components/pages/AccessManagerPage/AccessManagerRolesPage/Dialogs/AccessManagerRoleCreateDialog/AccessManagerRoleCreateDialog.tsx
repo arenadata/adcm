@@ -1,6 +1,7 @@
 import { Dialog } from '@uikit';
 import { useAccessManagerRoleCreateDialog } from './useAccessManagerRoleCreateDialog';
 import AccessManagerRoleDialogForm from '../AccessManagerRoleDialogForm/AccessManagerRoleDialogForm';
+import s from '../AccessManagerRoleDialogForm/AccessManagerRoleDialogForm.module.scss';
 
 const AccessManagerRoleCreateDialog = () => {
   const { isOpen, isValid, formData, onCreate, onClose, onChangeFormData, errors } = useAccessManagerRoleCreateDialog();
@@ -16,6 +17,7 @@ const AccessManagerRoleCreateDialog = () => {
       isDialogControlsOnTop
       width="100%"
       height="100%"
+      className={s.roleDialog}
     >
       <AccessManagerRoleDialogForm onChangeFormData={onChangeFormData} formData={formData} errors={errors} />
     </Dialog>

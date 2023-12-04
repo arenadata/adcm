@@ -91,7 +91,7 @@ const AccessManagerRoleDialogForm: React.FC<AccessManagerRoleDialogFormProps> = 
           />
         </FormField>
 
-        <div>
+        <div className={s.roleDialogForm__productFilter}>
           <div className={s.roleDialogForm__productsLabel}>Product filter</div>
           <AccessManagerRolesTableProducts onSelect={handleSelectProducts} />
         </div>
@@ -104,6 +104,7 @@ const AccessManagerRoleDialogForm: React.FC<AccessManagerRoleDialogFormProps> = 
         srcOptions={availablePermissionsPanel}
         destOptions={selectedPermissionsPanel}
         destError={errors.children}
+        className={s.roleDialogForm__listTransfer}
       />
     </FormFieldsContainer>
   );

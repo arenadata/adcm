@@ -3,6 +3,7 @@ import { AdcmConfigGroup, AdcmHost, AdcmHostCandidate } from '@models/adcm';
 import { Dialog } from '@uikit';
 import ListTransfer from '@uikit/ListTransfer/ListTransfer';
 import { useForm } from '@hooks';
+import s from './ConfigGroupMappingDialog.module.scss';
 
 interface ConfigGroupMappingDialogProps {
   configGroup: AdcmConfigGroup | null;
@@ -99,6 +100,7 @@ const ConfigGroupMappingDialog: React.FC<ConfigGroupMappingDialogProps> = ({
       actionButtonLabel="Save"
       isActionDisabled={!isValid || isSaveMapping}
       width="860px"
+      className={s.configGroupMappingDialog}
     >
       <ListTransfer
         srcList={srcList}
@@ -108,6 +110,7 @@ const ConfigGroupMappingDialog: React.FC<ConfigGroupMappingDialogProps> = ({
         destOptions={destOptions}
         srcError={errors.srcErrorMessage}
         destError={errors.destErrorMessage}
+        className={s.configGroupMappingDialog__listTransfer}
       />
     </Dialog>
   );
