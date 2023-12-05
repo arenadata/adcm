@@ -471,7 +471,7 @@ const routes: RoutesConfigs = {
     ],
   },
   '/access-manager/groups': {
-    pageTitle: 'Groups',
+    pageTitle: 'Access manager',
     breadcrumbs: [
       {
         href: '/access-manager',
@@ -483,7 +483,7 @@ const routes: RoutesConfigs = {
     ],
   },
   '/access-manager/roles': {
-    pageTitle: 'Roles',
+    pageTitle: 'Access manager',
     breadcrumbs: [
       {
         href: '/access-manager',
@@ -495,7 +495,7 @@ const routes: RoutesConfigs = {
     ],
   },
   '/access-manager/policies': {
-    pageTitle: 'Policies',
+    pageTitle: 'Access manager',
     breadcrumbs: [
       {
         href: '/access-manager',
