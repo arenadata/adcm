@@ -4,7 +4,7 @@ import Concern from '@commonComponents/Concern/Concern';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { useDispatch, useStore } from '@hooks';
 import { columns, servicesStatusesMap } from './ClusterServicesTable.constants';
-import { setSortParams } from '@store/adcm/clusters/clustersTableSlice';
+import { setSortParams } from '@store/adcm/cluster/services/servicesTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { openDeleteDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
 import ClusterServiceDynamicActionsButton from '@pages/cluster/ClusterServices/ClusterServiceDynamicActionsButton/ClusterServiceDynamicActionsButton';
