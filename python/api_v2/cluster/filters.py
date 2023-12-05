@@ -27,8 +27,15 @@ class ClusterFilter(FilterSet):
     prototype_display_name = CharFilter(label="Cluster prototype display name", field_name="prototype__display_name")
     name = CharFilter(label="Cluster name", lookup_expr="icontains")
     ordering = OrderingFilter(
-        fields={"name": "name"},
-        field_labels={"name": "Cluster name"},
+        fields={
+            "name": "name",
+            "prototype__display_name": "prototypeDisplayName",
+        },
+        field_labels={
+            "name": "Cluster name",
+            "prototype__display_name": "Product",
+        },
+        label="ordering",
     )
 
     class Meta:
