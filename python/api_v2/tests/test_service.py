@@ -27,6 +27,7 @@ from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
     HTTP_409_CONFLICT,
 )
 
@@ -123,6 +124,18 @@ class TestServiceAPI(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(ClusterObject.objects.count(), initial_service_count + 1)
+
+    def test_create_wrong_data_fail(self):
+        initial_service_count = ClusterObject.objects.count()
+        manual_add_service_proto = Prototype.objects.get(type=ObjectType.SERVICE, name="service_3_manual_add")
+
+        response = self.client.post(
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"prototype_id": manual_add_service_proto.pk},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(ClusterObject.objects.count(), initial_service_count)
 
     def test_filter_by_name_success(self):
         response = self.client.get(
