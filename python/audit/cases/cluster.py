@@ -212,13 +212,13 @@ def cluster_case(
                 operation_name = f"{service_display_name} service added".strip()
 
             elif api_version == 2:
+                service_display_name = []
+
                 if response and response.data:
                     service_display_name = [data["display_name"] for data in response.data]
-                else:
+                elif isinstance(view.request.data, list) and all("prototype_id" in data for data in view.request.data):
                     service_display_name = (
-                        Prototype.objects.filter(
-                            pk__in=[data["prototype_id"] for data in view.request.data if "prototype_id" in data]
-                        )
+                        Prototype.objects.filter(pk__in=[data["prototype_id"] for data in view.request.data])
                         .order_by("pk")
                         .values_list("display_name", flat=True)
                     )
