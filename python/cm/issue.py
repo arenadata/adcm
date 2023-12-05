@@ -206,7 +206,7 @@ def check_hc_requires(shc_list: list[tuple[ClusterObject, Host, ServiceComponent
 
             if not ClusterObject.objects.filter(prototype__name=require["service"]).exists() and not req_comp:
                 raise AdcmEx(
-                    code="COMPONENT_CONSTRAINT_ERROR", msg=f"No required service {require['service']} for {ref}"
+                    code="COMPONENT_CONSTRAINT_ERROR", msg=f"No required service \"{require['service']}\" for {ref}"
                 )
 
             if not req_comp:
@@ -226,17 +226,23 @@ def check_hc_requires(shc_list: list[tuple[ClusterObject, Host, ServiceComponent
 
 def check_bound_components(shc_list: list[tuple[ClusterObject, Host, ServiceComponent]]) -> None:
     for shc in [i for i in shc_list if i[2].prototype.bound_to]:
-        component = shc[2].prototype
-        service = component.bound_to["service"]
-        comp_name = component.bound_to["component"]
-        ref = f'component "{comp_name}" of service "{service}"'
-        bound_hc = [i for i in shc_list if i[0].prototype.name == service and i[2].prototype.name == comp_name]
-        if not bound_hc:
-            msg = f'bound service "{service}", component "{comp_name}" not in hc for {ref}'
+        component_prototype = shc[2].prototype
+        service_name = component_prototype.bound_to["service"]
+        component_name = component_prototype.bound_to["component"]
+
+        bound_target_ref = f'component "{component_name}" of service "{service_name}"'
+        bound_requester_ref = f'component "{shc[2].display_name}" of service "{shc[0].display_name}"'
+
+        bound_targets_shc = [
+            i for i in shc_list if i[0].prototype.name == service_name and i[2].prototype.name == component_name
+        ]
+        if not bound_targets_shc:
+            msg = f"{bound_target_ref.capitalize()} not in hc for {bound_requester_ref}"
             raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=msg)
-        for shc in bound_hc:
-            if not [i for i in shc_list if i[1] == shc[1] and i[2].prototype == component]:
-                msg = f'No bound component "{component.name}" on host "{shc[1].fqdn}" for {ref}'
+
+        for target_shc in bound_targets_shc:
+            if not [i for i in shc_list if i[1] == target_shc[1] and i[2].prototype == component_prototype]:
+                msg = f'No {bound_target_ref} on host "{shc[1].fqdn}" for {bound_requester_ref}'
                 raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=msg)
 
 
@@ -256,7 +262,7 @@ def check_min_required_components(count: int, constraint: int, comp: ServiceComp
     if count < constraint:
         raise AdcmEx(
             code="COMPONENT_CONSTRAINT_ERROR",
-            msg=f'less then {constraint} required component "{comp.name}" ({count}) {ref}',
+            msg=f'Less then {constraint} required component "{comp.name}" ({count}) {ref}',
         )
 
 
@@ -264,7 +270,7 @@ def check_max_required_components(count: int, constraint: int, comp: ServiceComp
     if count > constraint:
         raise AdcmEx(
             code="COMPONENT_CONSTRAINT_ERROR",
-            msg=f'amount ({count}) of component "{comp.name}" more then maximum ({constraint}) {ref}',
+            msg=f'Amount ({count}) of component "{comp.name}" more then maximum ({constraint}) {ref}',
         )
 
 
@@ -272,7 +278,7 @@ def check_components_number_is_odd(count: int, constraint: str, comp: ServiceCom
     if count % 2 == 0:
         raise AdcmEx(
             code="COMPONENT_CONSTRAINT_ERROR",
-            msg=f'amount ({count}) of component "{comp.name}" should be odd ({constraint}) {ref}',
+            msg=f'Amount ({count}) of component "{comp.name}" should be odd ({constraint}) {ref}',
         )
 
 
@@ -280,7 +286,7 @@ def check_components_mapping_contraints(
     cluster: Cluster, service_prototype: Prototype, comp: ServiceComponent, hc_in: list, constraint: list
 ) -> None:
     all_hosts_number = Host.objects.filter(cluster=cluster).count()
-    ref = f"in host component list for {service_prototype.type} {service_prototype.name}"
+    ref = f'in host component list for {service_prototype.type} "{service_prototype.name}"'
     count = 0
     for _, _, component in hc_in:
         if comp.name == component.prototype.name:
@@ -299,7 +305,8 @@ def check_components_mapping_contraints(
 
     if constraint[0] == "+":
         check_min_required_components(count=count, constraint=all_hosts_number, comp=comp, ref=ref)
-    elif constraint[0] == "odd":
+    elif constraint[0] == "odd":  # synonym to [1,odd]
+        check_min_required_components(count=count, constraint=1, comp=comp, ref=ref)
         check_components_number_is_odd(count=count, constraint=constraint[0], comp=comp, ref=ref)
 
 

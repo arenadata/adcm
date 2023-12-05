@@ -135,9 +135,15 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
         return add_host_provider(prototype=prototype, name=name, description=description)
 
     @staticmethod
-    def add_host(bundle: Bundle, provider: HostProvider, fqdn: str, description: str = "") -> Host:
+    def add_host(
+        bundle: Bundle, provider: HostProvider, fqdn: str, description: str = "", cluster: Cluster | None = None
+    ) -> Host:
         prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.HOST).first()
-        return add_host(prototype=prototype, provider=provider, fqdn=fqdn, description=description)
+        host = add_host(prototype=prototype, provider=provider, fqdn=fqdn, description=description)
+        if cluster is not None:
+            BaseAPITestCase.add_host_to_cluster(cluster=cluster, host=host)
+
+        return host
 
     @staticmethod
     def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
