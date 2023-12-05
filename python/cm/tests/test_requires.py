@@ -74,7 +74,7 @@ class TestComponent(BaseTestCase):
         )
 
         with self.assertRaisesRegex(
-            AdcmEx, 'No required service service_2 for component "component_1_1" of service "service_1"'
+            AdcmEx, 'No required service "service_2" for component "component_1_1" of service "service_1"'
         ):
             add_hc(self.cluster, [{"host_id": host.id, "service_id": service_1.id, "component_id": component_1.id}])
 

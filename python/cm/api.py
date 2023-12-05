@@ -68,6 +68,7 @@ from django.core.exceptions import MultipleObjectsReturned
 from django.db.transaction import atomic, on_commit
 from rbac.models import Policy, re_apply_object_policy
 from rbac.roles import apply_policy_for_new_config
+from rest_framework.status import HTTP_409_CONFLICT
 from version_utils import rpm
 
 
@@ -615,16 +616,16 @@ def retrieve_host_component_objects(
     hosts_in_hc: dict[int, Host] = build_id_object_mapping(
         objects=Host.objects.select_related("cluster").filter(pk__in=host_ids)
     )
-    if len(hosts_in_hc) != len(host_ids):
-        message = f"hosts not found: {host_ids.difference(hosts_in_hc.keys())}"
-        raise AdcmEx(code="HOST_NOT_FOUND", msg=message)
+    if not_found_host_ids := host_ids.difference(hosts_in_hc.keys()):
+        message = f"Hosts not found: {', '.join([str(host_id) for host_id in not_found_host_ids])}"
+        raise AdcmEx(code="HOST_NOT_FOUND", http_code=HTTP_409_CONFLICT, msg=message)
 
     components_in_hc: dict[int, ServiceComponent] = build_id_object_mapping(
         objects=ServiceComponent.objects.select_related("service").filter(pk__in=component_ids, cluster=cluster)
     )
-    if len(components_in_hc) != len(component_ids):
-        message = f"components not found: {component_ids.difference(components_in_hc.keys())}"
-        raise AdcmEx(code="COMPONENT_NOT_FOUND", msg=message)
+    if not_found_component_ids := component_ids.difference(components_in_hc.keys()):
+        message = f"Components not found: {', '.join([str(component_id) for component_id in not_found_component_ids])}"
+        raise AdcmEx(code="COMPONENT_NOT_FOUND", http_code=HTTP_409_CONFLICT, msg=message)
 
     host_component_objects = []
 
@@ -632,11 +633,14 @@ def retrieve_host_component_objects(
         host: Host = hosts_in_hc[record["host_id"]]
 
         if not host.cluster:
-            message = f"host #{host.pk} {host.fqdn} does not belong to any cluster"
+            message = f'Host "{host.fqdn}" does not belong to any cluster'
             raise AdcmEx(code="FOREIGN_HOST", msg=message)
 
         if host.cluster.pk != cluster.pk:
-            message = f"host {host.fqdn} (cluster #{host.cluster.pk}) does not belong to cluster #{cluster.pk}"
+            message = (
+                f'Host "{host.fqdn}" (cluster "{host.cluster.display_name}") '
+                f'does not belong to cluster "{cluster.display_name}"'
+            )
             raise AdcmEx(code="FOREIGN_HOST", msg=message)
 
         component: ServiceComponent = components_in_hc[record["component_id"]]

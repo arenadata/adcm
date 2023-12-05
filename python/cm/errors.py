@@ -168,7 +168,7 @@ ERRORS = {
         ERR,
     ),
     "INVALID_HC_HOST_IN_MM": (
-        "you can't save hc with hosts in maintenance mode",
+        "You can't save hc with hosts in maintenance mode",
         HTTP_409_CONFLICT,
         ERR,
     ),
