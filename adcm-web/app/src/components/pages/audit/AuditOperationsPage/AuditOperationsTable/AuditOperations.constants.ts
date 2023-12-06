@@ -15,12 +15,12 @@ export const columns: TableColumn[] = [
   },
   {
     label: 'Operation name',
-    name: 'operationName',
+    name: 'name',
     isSortable: true,
   },
   {
     label: 'Operation type',
-    name: 'operationType',
+    name: 'type',
     isSortable: true,
   },
   {
@@ -35,7 +35,7 @@ export const columns: TableColumn[] = [
   },
   {
     label: 'Username',
-    name: 'user',
+    name: 'userName',
     isSortable: true,
   },
   {
