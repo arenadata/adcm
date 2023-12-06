@@ -1,3 +1,12 @@
+:global {
+  body.theme-dark {
+    --editor-caret-color: white;
+  }
+  body.theme-light {
+    --editor-caret-color: black;
+  }
+}
+
 .codeEditor {
   position: relative;
 }
@@ -8,7 +17,7 @@
   top: 0;
   color: transparent;
   position: absolute;
-  caret-color: white;
+  caret-color: var(--editor-caret-color);
   border: none;
   outline: none;
   resize: none;
