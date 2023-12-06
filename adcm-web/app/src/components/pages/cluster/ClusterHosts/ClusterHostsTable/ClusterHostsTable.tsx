@@ -70,7 +70,7 @@ const ClusterHostsTable: React.FC = () => {
                 {clusterHost.components.length} {clusterHost.components.length === 1 ? 'component' : 'components'}
               </Link>
             </TableCell>
-            <TableCell>
+            <TableCell hasIconOnly>
               <Concern concerns={clusterHost.concerns} />
             </TableCell>
             <TableCell hasIconOnly align="center">

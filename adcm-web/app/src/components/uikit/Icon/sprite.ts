@@ -9,6 +9,7 @@ export const allowIconsNames = [
   'eye',
   'eye-crossed',
   'g1-actions',
+  'g1-actions-disabled',
   'g1-add',
   'g1-block',
   'g1-check',

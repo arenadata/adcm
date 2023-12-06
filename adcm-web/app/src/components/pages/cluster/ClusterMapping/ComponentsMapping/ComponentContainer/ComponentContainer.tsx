@@ -170,7 +170,7 @@ export default ComponentContainer;
 
 const DenyActionTooltip = () => (
   <div>
-    <div>Service of component must have state 'Created'</div>
-    <div>Component must not have maintenance mode is On</div>
+    <div>Service of the component must have "Created" state.</div>
+    <div>Maintenance mode on the component must be Off</div>
   </div>
 );
