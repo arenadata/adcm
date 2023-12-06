@@ -48,6 +48,7 @@ class AuditLogFilterSet(FilterSet):
         fields={
             "audit_object__object_name": "objectName",
             "audit_object__object_type": "objectType",
+            "operation_name": "name",
             "operation_result": "result",
             "operation_type": "type",
             "operation_time": "time",
@@ -56,7 +57,8 @@ class AuditLogFilterSet(FilterSet):
         field_labels={
             "audit_object__object_name": "Object name",
             "audit_object__object_type": "Object type",
-            "operation_result": "result",
+            "operation_name": "Name",
+            "operation_result": "Result",
             "operation_type": "Type",
             "operation_time": "Time",
             "user__username": "User name",
