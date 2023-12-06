@@ -31,6 +31,7 @@ from cm.models import (
     Cluster,
     ConfigLog,
     HostProvider,
+    ObjectType,
     ProductCategory,
     Prototype,
     PrototypeConfig,
@@ -499,6 +500,20 @@ def check_services_requires() -> None:
                 raise_adcm_ex(
                     code="REQUIRES_ERROR",
                     msg=f'Service can not require themself "{service.name}" of {proto_ref(prototype=service.parent)}',
+                )
+
+            if (
+                "component" in item
+                and not StagePrototype.objects.filter(
+                    name=item["component"],
+                    parent__name=item["service"],
+                    type=ObjectType.COMPONENT,
+                    parent__type=ObjectType.SERVICE,
+                ).exists()
+            ):
+                raise AdcmEx(
+                    code="REQUIRES_ERROR",
+                    msg=f'No required component "{item["component"]}" of service "{item["service"]}"',
                 )
 
         service.requires = req_list

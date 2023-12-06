@@ -138,3 +138,20 @@ class TestBundle(BaseAPITestCase):
             [item["displayName"] for item in response.json()["results"]],
             ["product", "cluster_one"],
         )
+
+    def test_upload_no_required_component_fail(self):
+        initial_bundles_count = Bundle.objects.count()
+
+        bundle_path = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "cluster_with_absent_component_requires"
+        )
+
+        with open(settings.DOWNLOAD_DIR / bundle_path, encoding=settings.ENCODING_UTF_8) as bundle_file:
+            response = self.client.post(
+                path=reverse(viewname="v2:bundle-list"),
+                data={"file": bundle_file},
+                format="multipart",
+            )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(Bundle.objects.count(), initial_bundles_count)
