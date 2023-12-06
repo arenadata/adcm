@@ -1,0 +1,21 @@
+- type: cluster
+  name: cluster_with_service_requirements
+  version: &version '1.0'
+  edition: community
+
+- name: main_service
+  type: service
+  version: *version
+  requires:
+    - service: service_with_component_required_by_main
+      component: component_absent
+  components:
+    component_1:
+      constraint: [ 0, + ]
+
+- name: service_with_component_required_by_main
+  type: service
+  version: *version
+  components:
+    component_1:
+      constraint: [ 0, + ]
