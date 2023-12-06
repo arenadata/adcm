@@ -4,7 +4,7 @@
     --icon-button-color-primary: var(--color-xgray-light);
     --icon-button-color-hover-primary: var(--color-xwhite-off);
     --icon-button-color-active-primary: var(--color-xgreen-saturated);
-    --icon-button-color-disabled-primary: var(--color-xgray-reading);
+    --icon-button-color-disabled-primary: var(--color-xdark);
 
     // secondary
     --icon-button-color-secondary: var(--color-xwhite-off);
@@ -14,9 +14,9 @@
   body.theme-light {
     // primary
     --icon-button-color-primary: var(--color-xgray-light);
-    --icon-button-color-hover-primary: var(--color-xdark);
+    --icon-button-color-hover-primary: var(--color-xblack);
     --icon-button-color-active-primary: var(--color-xgreen);
-    --icon-button-color-disabled-primary: var(--color-xgray-lighter);
+    --icon-button-color-disabled-primary: var(--color-popup-light);
 
     // secondary
     --icon-button-color-secondary: var(--color-xdark);
@@ -78,7 +78,7 @@
     --icon-button-color-disabled: var(--icon-button-color-disabled-secondary);
 
     --icon-button-background-hover: var(--icon-button-background-hover-secondary);
-    --icon-button-background-active: var(--icon-button-background-hover-secondary);;
+    --icon-button-background-active: var(--icon-button-background-hover-secondary);
     --icon-button-background-disabled: transparent;
   }
 }

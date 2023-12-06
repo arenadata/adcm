@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CheckAll, Checkbox } from '@uikit';
 import { useStore } from '@hooks';
 import s from './AccessManagerRolesTableProducts.module.scss';
@@ -22,6 +22,10 @@ const AccessManagerRolesTableProducts = ({ onSelect }: AccessManagerRolesTablePr
     );
   };
 
+  const areAllProductsSelected = useMemo(() => {
+    return products.length === productsSelected.length;
+  }, [products, productsSelected]);
+
   const handleCheckAllClick = (value: string[]) => {
     setProductsSelected(value);
   };
@@ -36,8 +40,14 @@ const AccessManagerRolesTableProducts = ({ onSelect }: AccessManagerRolesTablePr
             onChange={handleCheckAllClick}
             label="All products"
           />
-          {products.map((p, i) => (
-            <Checkbox key={i} label={p} checked={productsSelected.includes(p)} onChange={getHandlerProductsFilter(p)} />
+          {products.map((p, id) => (
+            <Checkbox
+              key={id}
+              label={p}
+              disabled={areAllProductsSelected}
+              checked={productsSelected.includes(p)}
+              onChange={getHandlerProductsFilter(p)}
+            />
           ))}
         </div>
       )}
