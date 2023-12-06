@@ -45,7 +45,23 @@ class AuditLogFilterSet(FilterSet):
     time_to = DateTimeFilter(field_name="operation_time", lookup_expr="lte")
     username = CharFilter(field_name="user__username", label="Username", lookup_expr="icontains")
     ordering = OrderingFilter(
-        fields={"operation_time": "time"}, field_labels={"operation_time": "Time"}, label="ordering"
+        fields={
+            "audit_object__object_name": "objectName",
+            "audit_object__object_type": "objectType",
+            "operation_result": "result",
+            "operation_type": "type",
+            "operation_time": "time",
+            "user__username": "userName",
+        },
+        field_labels={
+            "audit_object__object_name": "Object name",
+            "audit_object__object_type": "Object type",
+            "operation_result": "result",
+            "operation_type": "Type",
+            "operation_time": "Time",
+            "user__username": "User name",
+        },
+        label="ordering",
     )
 
     class Meta:
