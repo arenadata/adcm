@@ -59,11 +59,12 @@ const deleteUsersWithUpdate = createAsyncThunk('adcm/usersActions/deleteUsers', 
   try {
     if (arePromisesResolved(await Promise.allSettled(ids.map((id) => AdcmUsersApi.deleteUser(id))))) {
       thunkAPI.dispatch(showInfo({ message: ids.length === 1 ? 'User has been deleted' : 'Users have been deleted' }));
-      await thunkAPI.dispatch(getUsers());
     }
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
     return error;
+  } finally {
+    thunkAPI.dispatch(refreshUsers());
   }
 });
 
@@ -95,7 +96,7 @@ const createUser = createAsyncThunk('adcm/usersActions/createUser', async (arg: 
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
     return thunkAPI.rejectWithValue(error);
   } finally {
-    thunkAPI.dispatch(getUsers());
+    thunkAPI.dispatch(refreshUsers());
   }
 });
 
