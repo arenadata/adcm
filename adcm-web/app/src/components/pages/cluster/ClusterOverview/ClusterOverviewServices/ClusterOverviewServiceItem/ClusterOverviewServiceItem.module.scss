@@ -22,7 +22,8 @@
   background: var(--cluster-overview-service-item-bg-color);
   border: 2px solid var(--cluster-overview-service-item-border-color);
   overflow: hidden;
-  width: 100%;
+  max-width: 100%;
+  width: 200px;
   height: 81px;
   box-sizing: border-box;
 

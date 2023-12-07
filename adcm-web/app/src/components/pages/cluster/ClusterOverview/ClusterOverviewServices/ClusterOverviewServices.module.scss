@@ -16,13 +16,12 @@
 
   &__services {
     width: 100%;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(156px, 280px));
-    grid-template-rows: 81px;
-    grid-column-gap: 12px;
-    grid-row-gap: 12px;
+    display: flex;
+    flex-wrap: wrap;
     justify-items: start;
     align-items: start;
+    gap: 12px;
+    margin-bottom: 24px;
   }
 
   &__servicesContainer {
