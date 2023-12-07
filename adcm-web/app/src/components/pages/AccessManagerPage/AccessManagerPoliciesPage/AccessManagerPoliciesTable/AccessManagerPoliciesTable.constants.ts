@@ -15,7 +15,7 @@ export const columns: TableColumn[] = [
     name: 'role',
   },
   {
-    label: 'Group',
+    label: 'Groups',
     name: 'group',
   },
   {
