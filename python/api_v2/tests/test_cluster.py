@@ -14,8 +14,18 @@ from typing import Callable
 from unittest.mock import patch
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import Action, ADCMEntityStatus, Cluster, ClusterObject, Prototype
+from cm.models import (
+    Action,
+    ADCMEntityStatus,
+    Cluster,
+    ClusterObject,
+    Host,
+    Prototype,
+    ServiceComponent,
+)
 from django.urls import reverse
+from guardian.models import GroupObjectPermission
+from rbac.models import User
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -418,3 +428,159 @@ class TestClusterActions(BaseAPITestCase):
         add, remove = sorted(hc_map, key=lambda rec: rec["action"])
         self.assertDictEqual(add, {"action": "add", "component": "component_1", "service": "service_1"})
         self.assertDictEqual(remove, {"action": "remove", "component": "component_2", "service": "service_1"})
+
+
+class TestClusterMM(BaseAPITestCase):  # pylint:disable=too-many-instance-attributes
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.service_1 = self.add_services_to_cluster(
+            service_names=["service_3_manual_add"], cluster=self.cluster_1
+        ).last()
+        self.service_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).last()
+        self.component_1 = ServiceComponent.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=self.bundle_1,
+                type="component",
+                display_name="test_component",
+            ),
+            cluster=self.cluster_1,
+            service=self.service_1,
+        )
+        self.component_2 = ServiceComponent.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=self.bundle_2,
+                type="component",
+                display_name="test_component",
+            ),
+            cluster=self.cluster_2,
+            service=self.service_2,
+        )
+        self.host_1 = Host.objects.create(
+            fqdn="test-host",
+            prototype=Prototype.objects.create(bundle=self.bundle_1, type="host"),
+        )
+        self.host_2 = Host.objects.create(
+            fqdn="test-host-2",
+            prototype=Prototype.objects.create(bundle=self.bundle_2, type="host"),
+        )
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
+        self.add_host_to_cluster(cluster=self.cluster_2, host=self.host_2)
+
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = User.objects.create_user(**self.test_user_credentials)
+        self.client.login(**self.test_user_credentials)
+
+        self.cluster_1_endpoints = [
+            reverse(
+                "v2:component-detail",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "pk": self.component_1.pk,
+                },
+            ),
+            reverse(viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk}),
+            reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+            reverse(viewname="v2:host-cluster-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk}),
+        ]
+
+        self.host_1_endpoint = reverse(viewname="v2:host-detail", kwargs={"pk": self.host_1.pk})
+
+        self.cluster_1_and_host_mm_endpoints = [
+            reverse(
+                viewname="v2:service-maintenance-mode",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk},
+            ),
+            reverse(
+                viewname="v2:component-maintenance-mode",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "pk": self.component_1.pk,
+                },
+            ),
+            reverse(
+                viewname="v2:host-cluster-maintenance-mode",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk},
+            ),
+            reverse(
+                viewname="v2:host-maintenance-mode",
+                kwargs={"pk": self.host_1.pk},
+            ),
+        ]
+
+    def test_adcm_5051_change_mm_perm_success(self):
+        with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Manage cluster Maintenance mode"):
+            for request in self.cluster_1_endpoints + [self.host_1_endpoint]:
+                response = self.client.get(path=request)
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+
+            permissions_change_mm = GroupObjectPermission.objects.filter(
+                permission__codename__contains="change_maintenance_mode"
+            )
+            permissions_view = GroupObjectPermission.objects.filter(permission__name__contains="view")
+            self.assertEqual(permissions_change_mm.count(), 3)
+            self.assertEqual(permissions_view.count(), 4)
+
+            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="cluster").count(), 1)
+            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="servicecomponent").count(), 2)
+            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="clusterobject").count(), 2)
+            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="host").count(), 2)
+
+    def test_adcm_5051_change_mm_perm_fail(self):
+        with self.grant_permissions(to=self.test_user, on=self.cluster_2, role_name="Manage cluster Maintenance mode"):
+            for request in self.cluster_1_endpoints + [self.host_1_endpoint]:
+                response = self.client.get(path=request)
+
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_adcm_5051_change_mm_perm_host_only_success(self):
+        with self.grant_permissions(to=self.test_user, on=self.host_1, role_name="Manage Maintenance mode"):
+            for request in self.cluster_1_endpoints:
+                response = self.client.get(path=request)
+
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            response = self.client.get(path=self.host_1_endpoint)
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            permissions_change_mm = GroupObjectPermission.objects.filter(
+                permission__codename__contains="change_maintenance_mode"
+            )
+            permissions_view = GroupObjectPermission.objects.filter(permission__name__contains="view")
+            self.assertEqual(permissions_change_mm.count(), 1)
+            self.assertEqual(permissions_view.count(), 1)
+
+            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="cluster").count(), 0)
+            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="servicecomponent").count(), 0)
+            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="clusterobject").count(), 0)
+            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="host").count(), 2)
+
+    def test_adcm_5051_change_mm_perm_host_only_fail(self):
+        with self.grant_permissions(to=self.test_user, on=self.host_2, role_name="Manage Maintenance mode"):
+            for request in self.cluster_1_endpoints:
+                response = self.client.get(path=request)
+
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_adcm_5051_post_change_mm_perm_success(self):
+        with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Manage cluster Maintenance mode"):
+            for request in self.cluster_1_and_host_mm_endpoints:
+                response = self.client.post(path=request, data={"maintenance_mode": "on"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["maintenanceMode"], "on")
+
+                response = self.client.post(path=request, data={"maintenance_mode": "off"})
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["maintenanceMode"], "off")
+
+    def test_adcm_5051_post_change_mm_perm_wrong_object_fail(self):
+        with self.grant_permissions(to=self.test_user, on=self.cluster_2, role_name="Manage cluster Maintenance mode"):
+            for request in self.cluster_1_and_host_mm_endpoints:
+                response = self.client.post(path=request, data={"maintenance_mode": "on"})
+
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)

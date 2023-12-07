@@ -35,6 +35,7 @@ from adcm.permissions import (
     VIEW_COMPONENT_PERM,
     VIEW_HOST_PERM,
     VIEW_SERVICE_PERM,
+    ChangeMMPermissions,
     DjangoModelPermissionsAudit,
     check_custom_perm,
     get_object_for_user,
@@ -72,7 +73,7 @@ class ComponentViewSet(
 
     @audit
     @update_mm_objects
-    @action(methods=["post"], detail=True, url_path="maintenance-mode")
+    @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
         component = get_object_for_user(
             user=request.user, perms=VIEW_COMPONENT_PERM, klass=ServiceComponent, pk=kwargs["pk"]
