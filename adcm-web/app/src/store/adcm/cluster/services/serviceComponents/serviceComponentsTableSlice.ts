@@ -11,7 +11,7 @@ const createInitialState = (): AdcmServiceComponentsFilterState => ({
   },
   requestFrequency: 0,
   sortParams: {
-    sortBy: 'name',
+    sortBy: 'displayName',
     sortDirection: 'asc',
   },
 });

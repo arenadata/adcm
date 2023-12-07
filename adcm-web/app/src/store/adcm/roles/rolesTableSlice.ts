@@ -13,7 +13,7 @@ const createInitialState = (): ListState<AdcmRolesFilter> => ({
   },
   requestFrequency: 0,
   sortParams: {
-    sortBy: '',
+    sortBy: 'displayName',
     sortDirection: 'asc',
   },
 });
