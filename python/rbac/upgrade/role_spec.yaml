@@ -1,6 +1,6 @@
 ---
 
-version: 9
+version: 10
 
 roles:
   - name: Add host
@@ -1522,6 +1522,7 @@ roles:
     class_name: ParentRole
     any_category: true
     child:
+      - Get cluster object
       - Manage host Maintenance mode hidden
       - Manage service Maintenance mode
       - Manage component Maintenance mode
