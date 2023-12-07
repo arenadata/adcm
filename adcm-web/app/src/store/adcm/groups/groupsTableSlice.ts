@@ -13,7 +13,7 @@ const createInitialState = (): ListState<AdcmGroupFilter> => ({
   },
   requestFrequency: 0,
   sortParams: {
-    sortBy: '',
+    sortBy: 'displayName',
     sortDirection: 'asc',
   },
 });
