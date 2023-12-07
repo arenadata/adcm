@@ -58,7 +58,7 @@
   }
 
   &:not(&_selected, &:disabled):hover {
-    background: var(--pagination-btn-background-color-selected);
+    background: var(--pagination-btn-bg-color-hover);
     color: var(--pagination-btn-text-color-hover);
   }
 

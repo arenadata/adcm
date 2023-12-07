@@ -32,7 +32,7 @@ const ConfigurationField = ({
       </FormField>
       <div className={s.configurationField__actions}>
         <Button
-          variant="secondary"
+          variant="tertiary"
           iconLeft="g1-return"
           disabled={disabled}
           title="Reset to default"

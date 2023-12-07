@@ -38,6 +38,7 @@
     border-radius: 50%;
     background: var(--step-number-background);
     margin-right: 6px;
+    line-height: 20px;
 
     &_valid {
       color: var(--step-text-valid);

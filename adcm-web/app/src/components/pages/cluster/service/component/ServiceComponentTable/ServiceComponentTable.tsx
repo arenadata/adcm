@@ -37,7 +37,7 @@ const ServiceComponentTable: React.FC = () => {
           </TableCell>
           <TableCell hasIconOnly>
             <Link to={`/clusters/${cluster?.id}/services/${service?.id}/components`} className="flex-inline">
-              <Button iconRight="g2-back" variant="secondary" />
+              <Button iconRight="g2-back" variant="tertiary" />
             </Link>
           </TableCell>
         </TableRow>
