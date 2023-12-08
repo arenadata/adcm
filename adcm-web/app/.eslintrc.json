@@ -38,6 +38,7 @@
           "authed",
           "axios",
           "attribs",
+          "calc",
           "cancelable",
           "cancelled",
           "cancelling",

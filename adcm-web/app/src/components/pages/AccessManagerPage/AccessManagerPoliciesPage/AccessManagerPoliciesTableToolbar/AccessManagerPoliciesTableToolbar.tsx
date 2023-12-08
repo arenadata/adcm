@@ -16,7 +16,11 @@ const AccessManagerPoliciesTableToolbar: React.FC = () => {
   return (
     <TableToolbar>
       <AccessManagerPoliciesTableFilters />
-      <Button onClick={handleAddPolicyClick} disabled={isCreating} iconLeft={isCreating ? 'g1-load' : undefined}>
+      <Button
+        onClick={handleAddPolicyClick}
+        disabled={isCreating}
+        iconLeft={isCreating ? { name: 'g1-load', className: 'spin' } : undefined}
+      >
         Create policy
       </Button>
     </TableToolbar>

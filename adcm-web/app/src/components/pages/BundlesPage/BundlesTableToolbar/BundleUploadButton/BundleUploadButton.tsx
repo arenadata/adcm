@@ -31,7 +31,11 @@ const BundleUploadButton: React.FC = () => {
 
   return (
     <>
-      <Button onClick={handleClick} disabled={isUploading} iconLeft={isUploading ? 'g1-load' : 'g1-imports'}>
+      <Button
+        onClick={handleClick}
+        disabled={isUploading}
+        iconLeft={isUploading ? { name: 'g1-load', className: 'spin' } : 'g1-imports'}
+      >
         Upload bundle
       </Button>
       <input
