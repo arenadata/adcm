@@ -1063,3 +1063,55 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
+
+    def test_cluster_object_changes_one_field_success(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+            data={"name": "new_cluster_name"},
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.check_last_audit_record(
+            operation_name="Cluster updated",
+            operation_type="update",
+            operation_result="success",
+            user__username="admin",
+            expect_object_changes_=True,
+            object_changes={"current": {"name": "new_cluster_name"}, "previous": {"name": self.cluster_1.name}},
+        )
+
+    def test_cluster_object_changes_name_on_installed_fail(self):
+        self.cluster_1.set_state("installed")
+        response = self.client.patch(
+            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+            data={"name": "new_cluster_name"},
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+        self.check_last_audit_record(
+            operation_name="Cluster updated",
+            operation_type="update",
+            operation_result="fail",
+            user__username="admin",
+            expect_object_changes_=False,
+        )
+
+    def test_cluster_object_changes_all_fields_success(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+            data={"name": "new_cluster_name", "description": "new description"},
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        expected_object_changes = {
+            "current": {"name": "new_cluster_name", "description": "new description"},
+            "previous": {"name": self.cluster_1.name, "description": self.cluster_1.description},
+        }
+        self.check_last_audit_record(
+            operation_name="Cluster updated",
+            operation_type="update",
+            operation_result="success",
+            user__username="admin",
+            expect_object_changes_=True,
+            object_changes=expected_object_changes,
+        )

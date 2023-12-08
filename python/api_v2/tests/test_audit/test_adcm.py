@@ -130,6 +130,7 @@ class TestADCMAudit(BaseAPITestCase):
             operation_type="update",
             operation_result="success",
             audit_object__is_deleted=False,
+            object_changes={"current": {"password": "******"}, "previous": {"password": "******"}},
             user__username="admin",
         )
 
@@ -145,6 +146,7 @@ class TestADCMAudit(BaseAPITestCase):
             operation_type="update",
             operation_result="success",
             audit_object__is_deleted=False,
+            object_changes={"current": {"password": "******"}, "previous": {"password": "******"}},
             user__username=self.test_user_credentials["username"],
         )
 
@@ -160,6 +162,7 @@ class TestADCMAudit(BaseAPITestCase):
             operation_type="update",
             operation_result="success",
             audit_object__is_deleted=False,
+            object_changes={"current": {"password": "******"}, "previous": {"password": "******"}},
             user__username=self.test_user_credentials["username"],
         )
 
