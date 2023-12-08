@@ -9,8 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from api_v2.tests.base import BaseAPITestCase
+from django.db.models import Count
 from django.urls import reverse
 from rbac.models import Role
 from rbac.services.group import create as create_group
@@ -45,6 +45,23 @@ class TestRole(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_retrieve_hidden_not_found_fail(self):
+        hidden_role = Role.objects.filter(type="hidden").first()
+        response = self.client.get(path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": hidden_role.pk}))
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_retrieve_hidden_child_not_shown_success(self):
+        role_with_hidden_children = (
+            Role.objects.annotate(num_children=Count("child")).filter(num_children__gt=0, child__type="hidden").first()
+        )
+        response = self.client.get(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": role_with_hidden_children.pk})
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()["children"]), 0)
 
     def test_retrieve_success(self):
         response = self.client.get(
@@ -156,7 +173,7 @@ class TestRole(BaseAPITestCase):
         self.assertFalse(Role.objects.filter(pk=self.cluster_config_role.pk).exists())
 
     def test_delete_failed(self):
-        built_in_role = Role.objects.filter(built_in=True).first()
+        built_in_role = Role.objects.filter(built_in=True).exclude(type="hidden").first()
 
         response = self.client.delete(path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": built_in_role.pk}))
 
@@ -200,7 +217,7 @@ class TestRole(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response_names = [role_data["displayName"] for role_data in response.json()["results"]]
-        db_names = [role.display_name for role in Role.objects.order_by("-display_name")[:limit]]
+        db_names = [role.display_name for role in Role.objects.order_by("-display_name").exclude(type="hidden")[:limit]]
         self.assertListEqual(response_names, db_names)
 
     def test_filtering_by_display_name_success(self):
@@ -211,14 +228,14 @@ class TestRole(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response_pks = [role_data["id"] for role_data in response.json()["results"]]
-        db_pks = [role.pk for role in Role.objects.filter(display_name__icontains=filter_name)]
-        self.assertListEqual(response_pks, db_pks)
+        db_pks = [role.pk for role in Role.objects.filter(display_name__icontains=filter_name).exclude(type="hidden")]
+        self.assertListEqual(sorted(response_pks), sorted(db_pks))
 
     def test_filtering_by_categories_success(self):
         response = self.client.get(path=reverse(viewname="v2:rbac:role-list"), data={"categories": "cluster_one"})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 48)
+        self.assertEqual(response.json()["count"], 34)
 
     def test_list_object_candidates_success(self):
         response = self.client.get(

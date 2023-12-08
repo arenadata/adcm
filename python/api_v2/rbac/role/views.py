@@ -17,8 +17,8 @@ from api_v2.views import CamelCaseModelViewSet
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ProductCategory
+from django.db.models import Prefetch
 from guardian.mixins import PermissionListMixin
-from guardian.shortcuts import get_objects_for_user
 from rbac.models import ObjectType as RBACObjectType
 from rbac.models import Role, RoleTypes
 from rbac.services.role import role_create, role_update
@@ -31,7 +31,13 @@ from adcm.permissions import VIEW_ROLE_PERMISSION, CustomModelPermissionsByMetho
 
 
 class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = Role.objects.prefetch_related("child", "category", "policy_set").order_by("display_name")
+    queryset = (
+        Role.objects.prefetch_related(
+            Prefetch(lookup="child", queryset=Role.objects.exclude(type=RoleTypes.HIDDEN)), "category", "policy_set"
+        )
+        .exclude(type=RoleTypes.HIDDEN)
+        .order_by("display_name")
+    )
     permission_classes = (CustomModelPermissionsByMethod,)
     method_permissions_map = {
         "patch": [(VIEW_ROLE_PERMISSION, NotFound)],
@@ -39,9 +45,6 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
     }
     permission_required = ["rbac.view_role"]
     filterset_class = RoleFilter
-
-    def get_queryset(self, *args, **kwargs):
-        return get_objects_for_user(**self.get_get_objects_for_user_kwargs(Role.objects.all()))
 
     def get_serializer_class(self):
         if self.action in ("create", "update", "partial_update"):
