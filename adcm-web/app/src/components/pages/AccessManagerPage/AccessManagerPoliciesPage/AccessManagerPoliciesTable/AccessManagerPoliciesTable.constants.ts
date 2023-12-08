@@ -19,6 +19,16 @@ export const columns: TableColumn[] = [
     name: 'group',
   },
   {
+    label: 'Objects',
+    name: 'objects',
+  },
+  {
+    // label and name are empty because it's column for expand button:
+    label: '',
+    name: '',
+    width: '80px',
+  },
+  {
     label: 'Actions',
     name: 'actions',
     headerAlign: 'center',
