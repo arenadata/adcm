@@ -17,7 +17,7 @@ from cm.api import cancel_locking_tasks, delete_service, load_mm_objects
 from cm.errors import AdcmEx
 from cm.flag import update_flags
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
-from cm.job import start_task
+from cm.job import ActionRunPayload, run_action
 from cm.models import (
     ADCM,
     Action,
@@ -54,14 +54,11 @@ def _change_mm_via_action(
 ) -> Serializer:
     action = Action.objects.filter(prototype=prototype, name=action_name).first()
     if action:
-        start_task(
+        run_action(
             action=action,
             obj=obj,
-            conf={},
-            attr={},
-            hostcomponent=[],
+            payload=ActionRunPayload(conf={}, attr={}, hostcomponent=[], verbose=False),
             hosts=[],
-            verbose=False,
         )
         serializer.validated_data["maintenance_mode"] = MaintenanceMode.CHANGING
 
@@ -348,7 +345,7 @@ def delete_service_from_api(service: ClusterObject) -> Response:  # pylint: disa
     if service.prototype.required:
         raise AdcmEx(code="SERVICE_CONFLICT", msg=f'Service "{service.display_name}" is required')
 
-    if TaskLog.objects.filter(action=delete_action, status=JobStatus.RUNNING).exists():
+    if TaskLog.objects.filter(action=delete_action, status__in={JobStatus.CREATED, JobStatus.RUNNING}).exists():
         raise AdcmEx(code="SERVICE_DELETE_ERROR", msg="Service is deleting now")
 
     for component in ServiceComponent.objects.filter(cluster=service.cluster).exclude(service=service):
@@ -368,14 +365,11 @@ def delete_service_from_api(service: ClusterObject) -> Response:  # pylint: disa
 
     cancel_locking_tasks(obj=service, obj_deletion=True)
     if delete_action and (host_components_exists or service.state != "created"):
-        start_task(
+        run_action(
             action=delete_action,
             obj=service,
-            conf={},
-            attr={},
-            hostcomponent=[],
+            payload=ActionRunPayload(conf={}, attr={}, hostcomponent=[], verbose=False),
             hosts=[],
-            verbose=False,
         )
     else:
         delete_service(service=service)

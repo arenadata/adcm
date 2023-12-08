@@ -16,7 +16,7 @@ from pathlib import Path
 from api.action.serializers import ActionJobSerializer
 from api.concern.serializers import ConcernItemSerializer
 from cm.ansible_plugin import get_checklogs_data_by_job_id
-from cm.job import start_task
+from cm.job import ActionRunPayload, run_action
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
 from django.conf import settings
 from rest_framework.reverse import reverse
@@ -143,14 +143,16 @@ class TaskRetrieveSerializer(HyperlinkedModelSerializer):
 
 class RunTaskRetrieveSerializer(TaskRetrieveSerializer):
     def create(self, validated_data):
-        obj = start_task(
-            validated_data.get("action"),
-            validated_data.get("task_object"),
-            validated_data.get("config", {}),
-            validated_data.get("attr", {}),
-            validated_data.get("hc", []),
-            validated_data.get("hosts", []),
-            validated_data.get("verbose", False),
+        obj = run_action(
+            action=validated_data.get("action"),
+            obj=validated_data.get("task_object"),
+            payload=ActionRunPayload(
+                conf=validated_data.get("config", {}),
+                attr=validated_data.get("attr", {}),
+                hostcomponent=validated_data.get("hc", []),
+                verbose=validated_data.get("verbose", False),
+            ),
+            hosts=validated_data.get("hosts", []),
         )
         obj.jobs = JobLog.objects.filter(task_id=obj.id)
 

@@ -214,3 +214,14 @@
         type: builtin
         strict: true
         name: host_in_cluster
+
+- name: service_6_delete_with_action
+  type: service
+  version: "1004"
+  actions:
+    adcm_delete_service: *action
+
+    regular_action: *action
+
+  components:
+    component: {}

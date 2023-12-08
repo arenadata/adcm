@@ -29,7 +29,7 @@ from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
 from audit.utils import audit
 from cm.errors import AdcmEx
-from cm.job import start_task
+from cm.job import ActionRunPayload, run_action
 from cm.models import ADCM, Action, ConcernType, Host, HostComponent, PrototypeConfig
 from cm.stack import check_hostcomponents_objects_exist
 from django.conf import settings
@@ -166,14 +166,16 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
 
         check_hostcomponents_objects_exist(serializer.validated_data["host_component_map"])
 
-        task = start_task(
+        task = run_action(
             action=target_action,
             obj=self.parent_object,
-            conf=config,
-            attr=attr,
-            hostcomponent=insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),
+            payload=ActionRunPayload(
+                conf=config,
+                attr=attr,
+                hostcomponent=insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),
+                verbose=serializer.validated_data["is_verbose"],
+            ),
             hosts=[],
-            verbose=serializer.validated_data["is_verbose"],
         )
 
         return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)

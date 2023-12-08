@@ -10,17 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable
+from typing import Callable, NamedTuple
 from unittest.mock import patch
 
 from api_v2.tests.base import BaseAPITestCase
+from cm.job import ActionRunPayload, run_action
 from cm.models import (
     Action,
     ADCMEntityStatus,
+    Cluster,
     ClusterObject,
+    ConcernType,
+    HostComponent,
+    JobLog,
     MaintenanceMode,
     ObjectType,
     Prototype,
+    ServiceComponent,
+    TaskLog,
 )
 from django.urls import reverse
 from rest_framework.status import (
@@ -30,6 +37,10 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_409_CONFLICT,
 )
+
+
+class FakePopenResponse(NamedTuple):
+    pid: int
 
 
 class TestServiceAPI(BaseAPITestCase):
@@ -227,3 +238,66 @@ class TestServiceAPI(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+
+class TestServiceDeleteAction(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.service_to_delete, *_ = self.add_services_to_cluster(
+            service_names=["service_6_delete_with_action"], cluster=self.cluster_1
+        )
+        self.service_regular_action: Action = Action.objects.get(
+            prototype=self.service_to_delete.prototype, name="regular_action"
+        )
+        self.cluster_regular_action: Action = Action.objects.get(prototype=self.cluster_1.prototype, name="action")
+        HostComponent.objects.create(
+            cluster=self.cluster_1,
+            service=self.service_to_delete,
+            component=ServiceComponent.objects.get(service=self.service_to_delete, prototype__name="component"),
+            host=self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter"),
+        )
+
+    def test_delete_service_do_not_abort_cluster_actions_fail(self) -> None:
+        self.imitate_task_running(action=self.cluster_regular_action, object_=self.cluster_1)
+
+        self.assertTrue(self.service_to_delete.concerns.filter(type=ConcernType.LOCK).exists())
+
+        with patch("subprocess.Popen", return_value=FakePopenResponse(3)), patch("os.kill", return_type=None):
+            response = self.client.delete(
+                path=reverse(
+                    viewname="v2:service-detail",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_to_delete.pk},
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            self.assertEqual(response.json()["code"], "LOCK_ERROR")
+
+    def test_delete_service_abort_own_actions_success(self) -> None:
+        self.imitate_task_running(action=self.service_regular_action, object_=self.service_to_delete)
+
+        self.assertTrue(self.service_to_delete.concerns.filter(type=ConcernType.LOCK).exists())
+
+        with patch("subprocess.Popen", return_value=FakePopenResponse(3)), patch("os.kill", return_type=None):
+            response = self.client.delete(
+                path=reverse(
+                    viewname="v2:service-detail",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_to_delete.pk},
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+    @staticmethod
+    def imitate_task_running(action: Action, object_: Cluster | ClusterObject) -> TaskLog:
+        with patch("subprocess.Popen", return_value=FakePopenResponse(4)):
+            task = run_action(action=action, obj=object_, payload=ActionRunPayload(), hosts=[])
+
+        job = JobLog.objects.filter(task=task).first()
+        job.status = "running"
+        job.save(update_fields=["status"])
+
+        task.status = "running"
+        task.pid = 4
+        task.save(update_fields=["status", "pid"])
+
+        return task

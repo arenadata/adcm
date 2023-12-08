@@ -179,7 +179,7 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
             action=self.upgrade_cluster_via_action_simple.action,
         )
 
-        with patch("cm.upgrade.start_task", return_value=tasklog):
+        with patch("cm.upgrade.run_action", return_value=tasklog):
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",
@@ -207,7 +207,7 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
         component_2 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_2")
         HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_2, host=host)
 
-        with patch("cm.upgrade.start_task", return_value=tasklog):
+        with patch("cm.upgrade.run_action", return_value=tasklog):
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",
@@ -240,7 +240,7 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
         host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host)
 
-        with patch("cm.upgrade.start_task", return_value=tasklog):
+        with patch("cm.upgrade.run_action", return_value=tasklog):
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",
@@ -270,7 +270,7 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
 
         component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
 
-        with patch("cm.upgrade.start_task", return_value=tasklog):
+        with patch("cm.upgrade.run_action", return_value=tasklog):
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",
@@ -302,7 +302,7 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
 
         component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
 
-        with patch("cm.upgrade.start_task", return_value=tasklog):
+        with patch("cm.upgrade.run_action", return_value=tasklog):
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",
@@ -340,7 +340,7 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
         component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
         component_2 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_2")
 
-        with patch("cm.upgrade.start_task", return_value=tasklog):
+        with patch("cm.upgrade.run_action", return_value=tasklog):
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",
@@ -421,7 +421,7 @@ class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, t
             action=self.upgrade_host_via_action_simple.action,
         )
 
-        with patch("cm.upgrade.start_task", return_value=tasklog):
+        with patch("cm.upgrade.run_action", return_value=tasklog):
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",

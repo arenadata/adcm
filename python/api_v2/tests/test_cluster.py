@@ -244,7 +244,7 @@ class TestCluster(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 5)
+        self.assertEqual(len(response.json()), 6)
         self.assertListEqual(
             [prototype["displayName"] for prototype in response.json()],
             [
@@ -253,6 +253,7 @@ class TestCluster(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 "service_3_manual_add",
                 "service_4_save_config_without_required_field",
                 "service_5_variant_type_without_values",
+                "service_6_delete_with_action",
             ],
         )
 
@@ -264,7 +265,7 @@ class TestCluster(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 4)
+        self.assertEqual(len(response.json()), 5)
         self.assertListEqual(
             [prototype["displayName"] for prototype in response.json()],
             [
@@ -272,6 +273,7 @@ class TestCluster(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 "service_2",
                 "service_4_save_config_without_required_field",
                 "service_5_variant_type_without_values",
+                "service_6_delete_with_action",
             ],
         )
 
