@@ -249,7 +249,7 @@ def add_host_provider(prototype: Prototype, name: str, description: str = ""):
 
 
 def cancel_locking_tasks(obj: ADCMEntity, obj_deletion=False):
-    for lock in obj.concerns.filter(type=ConcernType.LOCK):
+    for lock in obj.concerns.filter(type=ConcernType.LOCK, owner_type=obj.content_type, owner_id=obj.id):
         for task in TaskLog.objects.filter(lock=lock):
             task.cancel(obj_deletion=obj_deletion)
 

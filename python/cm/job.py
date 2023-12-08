@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines
-
 import copy
 import json
 import subprocess
 from collections.abc import Hashable
 from configparser import ConfigParser
+from dataclasses import dataclass, field
 from functools import partial
 from pathlib import Path
 from typing import Any, Literal
@@ -101,95 +100,77 @@ from django.utils import timezone
 from rbac.roles import re_apply_policy_for_jobs
 
 
-def start_task(
+@dataclass
+class ActionRunPayload:
+    conf: dict = field(default_factory=dict)
+    attr: dict = field(default_factory=dict)
+    hostcomponent: list[dict] = field(default_factory=list)
+    verbose: bool = False
+
+
+def run_action(
     action: Action,
     obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
-    conf: dict,
-    attr: dict,
-    hostcomponent: list[dict],
-    hosts: list[Host],
-    verbose: bool,
-) -> TaskLog:
-    if action.type not in ActionType.values:
-        msg = f'unknown type "{action.type}" for action {action} on {obj}'
-        raise_adcm_ex("WRONG_ACTION_TYPE", msg)
-
-    task = prepare_task(action, obj, conf, attr, hostcomponent, hosts, verbose)
-    run_task(task)
-
-    return task
-
-
-def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster | None, hosts: list[int]) -> None:
-    provider = None
-    if obj.prototype.type == "provider":
-        provider = obj
-
-    if not hosts:
-        return
-
-    if not action.partial_execution:
-        raise_adcm_ex("TASK_ERROR", "Only action with partial_execution permission can receive host list")
-
-    if not isinstance(hosts, list):
-        raise_adcm_ex("TASK_ERROR", "Hosts should be array")
-
-    for host_id in hosts:
-        if not isinstance(host_id, int):
-            raise_adcm_ex("TASK_ERROR", f"host id should be integer ({host_id})")
-
-        host = Host.obj.get(id=host_id)
-        if cluster and host.cluster != cluster:
-            raise_adcm_ex("TASK_ERROR", f"host #{host_id} does not belong to cluster #{cluster.pk}")
-
-        if provider and host.provider != provider:
-            raise_adcm_ex("TASK_ERROR", f"host #{host_id} does not belong to host provider #{provider.pk}")
-
-
-def prepare_task(
-    action: Action,
-    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
-    conf: dict,
-    attr: dict,
-    hostcomponent: list[dict],
+    payload: ActionRunPayload,
     hosts: list[int],
-    verbose: bool,
 ) -> TaskLog:
-    cluster = get_object_cluster(obj=obj)
-    check_action_state(action=action, task_object=obj, cluster=cluster)
-    _, spec, flat_spec = check_action_config(action=action, obj=obj, conf=conf, attr=attr)
-    if conf and not spec:
-        raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg="Absent config in action prototype")
+    cluster: Cluster | None = get_object_cluster(obj=obj)
 
-    check_action_hosts(action=action, obj=obj, cluster=cluster, hosts=hosts)
-    old_hc = get_hc(cluster=cluster)
-    host_map, post_upgrade_hc = check_hostcomponentmap(cluster=cluster, action=action, new_hc=hostcomponent)
+    if hosts:
+        check_action_hosts(action=action, obj=obj, cluster=cluster, hosts=hosts)
 
-    if hasattr(action, "upgrade") and not action.hostcomponentmap:
+    if action.host_action:
+        action_target = get_host_object(action=action, cluster=cluster)
+    else:
+        action_target = obj
+
+    object_locks = action_target.concerns.filter(type=ConcernType.LOCK)
+
+    if action.name == settings.ADCM_DELETE_SERVICE_ACTION_NAME:
+        object_locks = object_locks.exclude(owner_id=obj.id, owner_type=obj.content_type)
+
+    if object_locks.exists():
+        raise AdcmEx(code="LOCK_ERROR", msg=f"object {action_target} is locked")
+
+    if (
+        action.name not in settings.ADCM_SERVICE_ACTION_NAMES_SET
+        and action_target.concerns.filter(type=ConcernType.ISSUE).exists()
+    ):
+        raise AdcmEx(code="ISSUE_INTEGRITY_ERROR", msg=f"object {action_target} has issues")
+
+    if not action.allowed(obj=action_target):
+        raise AdcmEx(code="TASK_ERROR", msg="action is disabled")
+
+    spec, flat_spec = check_action_config(action=action, obj=obj, conf=payload.conf, attr=payload.attr)
+
+    is_upgrade_action = hasattr(action, "upgrade")
+
+    if is_upgrade_action and not action.hostcomponentmap:
         check_constraints_for_upgrade(
             cluster=cluster, upgrade=action.upgrade, host_comp_list=get_actual_hc(cluster=cluster)
         )
 
-    if not attr:
-        attr = {}
+    host_map, post_upgrade_hc = check_hostcomponentmap(cluster=cluster, action=action, new_hc=payload.hostcomponent)
 
     with atomic():
         task = create_task(
             action=action,
             obj=obj,
-            conf=conf,
-            attr=attr,
-            hostcomponent=old_hc,
+            conf=payload.conf,
+            attr=payload.attr,
+            verbose=payload.verbose,
             hosts=hosts,
-            verbose=verbose,
+            hostcomponent=get_hc(cluster=cluster),
             post_upgrade_hc=post_upgrade_hc,
         )
-        if host_map or (hasattr(action, "upgrade") and host_map is not None):
+        if host_map or (is_upgrade_action and host_map is not None):
             save_hc(cluster=cluster, host_comp_list=host_map)
 
-        if conf:
-            new_conf = process_config_and_attr(obj=obj, conf=conf, attr=attr, spec=spec, flat_spec=flat_spec)
-            process_file_type(obj=task, spec=spec, conf=conf)
+        if payload.conf:
+            new_conf = process_config_and_attr(
+                obj=obj, conf=payload.conf, attr=payload.attr, spec=spec, flat_spec=flat_spec
+            )
+            process_file_type(obj=task, spec=spec, conf=payload.conf)
             task.config = new_conf
             task.save()
 
@@ -197,7 +178,24 @@ def prepare_task(
 
     re_apply_policy_for_jobs(action_object=obj, task=task)
 
+    run_task(task)
+
     return task
+
+
+def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster | None, hosts: list[int]) -> None:
+    if not action.partial_execution:
+        raise AdcmEx(code="TASK_ERROR", msg="Only action with partial_execution permission can receive host list")
+
+    provider = obj if obj.prototype.type == "provider" else None
+
+    hosts = Host.objects.filter(id__in=hosts)
+
+    if cluster and hosts.exclude(cluster=cluster).exists():
+        raise AdcmEx(code="TASK_ERROR", msg=f"One of hosts does not belong to cluster #{cluster.pk}")
+
+    if provider and hosts.exclude(provider=provider).exists():
+        raise AdcmEx(code="TASK_ERROR", msg=f"One of hosts does not belong to host provider #{provider.pk}")
 
 
 def restart_task(task: TaskLog):
@@ -223,35 +221,17 @@ def get_host_object(action: Action, cluster: Cluster | None) -> ADCMEntity | Non
     return obj
 
 
-def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster | None) -> None:
-    if action.host_action:
-        obj = get_host_object(action=action, cluster=cluster)
-    else:
-        obj = task_object
-
-    if obj.concerns.filter(type=ConcernType.LOCK).exists():
-        raise_adcm_ex(code="LOCK_ERROR", msg=f"object {obj} is locked")
-
-    if (
-        action.name not in settings.ADCM_SERVICE_ACTION_NAMES_SET
-        and obj.concerns.filter(type=ConcernType.ISSUE).exists()
-    ):
-        raise_adcm_ex(code="ISSUE_INTEGRITY_ERROR", msg=f"object {obj} has issues")
-
-    if action.allowed(obj=obj):
-        return
-
-    raise_adcm_ex(code="TASK_ERROR", msg="action is disabled")
-
-
-def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict) -> tuple[dict, dict, dict]:
+def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict) -> tuple[dict, dict]:
     proto = action.prototype
     spec, flat_spec, _, _ = get_prototype_config(prototype=proto, action=action, obj=obj)
     if not spec:
-        return {}, {}, {}
+        if conf:
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Absent config in action prototype")
+
+        return {}, {}
 
     if not conf:
-        raise_adcm_ex("TASK_ERROR", "action config is required")
+        raise AdcmEx("TASK_ERROR", "action config is required")
 
     check_attr(proto, action, attr, flat_spec)
 
@@ -262,9 +242,9 @@ def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict)
     process_variant(obj=obj, spec=spec, conf=object_config)
     check_config_spec(proto=proto, obj=action, spec=spec, flat_spec=flat_spec, conf=conf, attr=attr)
 
-    new_config = process_config_spec(obj=obj, spec=spec, new_config=conf)
+    process_config_spec(obj=obj, spec=spec, new_config=conf)
 
-    return new_config, spec, flat_spec
+    return spec, flat_spec
 
 
 def add_to_dict(my_dict: dict, key: Hashable, subkey: Hashable, value: Any):
@@ -456,31 +436,8 @@ def check_service_task(cluster_id: int, action: Action) -> ClusterObject | None:
     return None
 
 
-def check_component_task(cluster_id: int, action: Action) -> ServiceComponent | None:
-    cluster = Cluster.obj.get(id=cluster_id)
-    try:
-        component = ServiceComponent.objects.get(cluster=cluster, prototype=action.prototype)
-
-        return component
-    except ServiceComponent.DoesNotExist:
-        msg = (
-            f"component #{action.prototype.pk} for action " f'"{action.name}" is not installed in cluster #{cluster.pk}'
-        )
-        raise_adcm_ex("COMPONENT_NOT_FOUND", msg)
-
-    return None
-
-
 def check_cluster(cluster_id: int) -> Cluster:
     return Cluster.obj.get(id=cluster_id)
-
-
-def check_provider(provider_id: int) -> HostProvider:
-    return HostProvider.obj.get(id=provider_id)
-
-
-def check_adcm(adcm_id: int) -> ADCM:
-    return ADCM.obj.get(id=adcm_id)
 
 
 def get_bundle_root(action: Action) -> str:
@@ -926,10 +883,6 @@ def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:
     except Exception as error:  # pylint: disable=broad-except
         logger.warning("Error loading mm objects on task finish")
         logger.exception(error)
-
-
-def cook_log_name(tag, level, ext="txt"):
-    return f"{tag}-{level}.{ext}"
 
 
 def run_task(task: TaskLog, args: str = ""):

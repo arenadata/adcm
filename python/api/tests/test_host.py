@@ -13,6 +13,7 @@
 from pathlib import Path
 from unittest.mock import patch
 
+from cm.job import ActionRunPayload
 from cm.models import (
     Action,
     ActionType,
@@ -93,7 +94,7 @@ class TestHostAPI(BaseTestCase):
             state_available="any",
         )
 
-        with patch("adcm.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.run_action") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": "ON"},
@@ -107,18 +108,15 @@ class TestHostAPI(BaseTestCase):
         start_task_mock.assert_called_once_with(
             action=action,
             obj=self.host,
-            conf={},
-            attr={},
-            hostcomponent=[],
+            payload=ActionRunPayload(),
             hosts=[],
-            verbose=False,
         )
 
     def test_change_mm_on_from_on_with_action_fail(self):
         self.host.maintenance_mode = MaintenanceMode.ON
         self.host.save(update_fields=["maintenance_mode"])
 
-        with patch("adcm.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.run_action") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": "ON"},
@@ -153,7 +151,7 @@ class TestHostAPI(BaseTestCase):
             name=settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
         )
 
-        with patch("adcm.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.run_action") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": "OFF"},
@@ -167,18 +165,15 @@ class TestHostAPI(BaseTestCase):
         start_task_mock.assert_called_once_with(
             action=action,
             obj=self.host,
-            conf={},
-            attr={},
-            hostcomponent=[],
+            payload=ActionRunPayload(),
             hosts=[],
-            verbose=False,
         )
 
     def test_change_mm_off_to_off_with_action_fail(self):
         self.host.maintenance_mode = MaintenanceMode.OFF
         self.host.save(update_fields=["maintenance_mode"])
 
-        with patch("adcm.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.run_action") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": "OFF"},
@@ -329,7 +324,7 @@ class TestHostAPI(BaseTestCase):
             data={"host_id": host.pk},
         )
 
-        with patch("adcm.utils.start_task") as start_task_mock:
+        with patch("adcm.utils.run_action") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": host.pk}),
                 data={"maintenance_mode": "ON"},
@@ -343,9 +338,6 @@ class TestHostAPI(BaseTestCase):
         start_task_mock.assert_called_once_with(
             action=action,
             obj=host,
-            conf={},
-            attr={},
-            hostcomponent=[],
+            payload=ActionRunPayload(),
             hosts=[],
-            verbose=False,
         )

@@ -28,7 +28,7 @@ from cm.api import (
 )
 from cm.errors import raise_adcm_ex
 from cm.issue import update_hierarchy_issues
-from cm.job import start_task
+from cm.job import ActionRunPayload, run_action
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
@@ -495,14 +495,11 @@ def do_upgrade(
 
         send_prototype_and_state_update_event(object_=obj)
     else:
-        task = start_task(
+        task = run_action(
             action=upgrade.action,
             obj=obj,
-            conf=config,
-            attr=attr,
-            hostcomponent=hostcomponent,
+            payload=ActionRunPayload(conf=config, attr=attr, hostcomponent=hostcomponent, verbose=False),
             hosts=[],
-            verbose=False,
         )
         task_id = task.id
 
