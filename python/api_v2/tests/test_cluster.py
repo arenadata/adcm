@@ -215,7 +215,7 @@ class TestCluster(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             data={"name": correct_cluster_name},
         )
 
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     def test_update_success(self):
         new_test_cluster_name = "new_test_cluster_name"

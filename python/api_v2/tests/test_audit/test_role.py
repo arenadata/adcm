@@ -110,6 +110,86 @@ class TestRoleAudit(BaseAPITestCase):
             user__username="admin",
         )
 
+    def test_role_update_all_fields_success(self):
+        role_create_data = {
+            "name": "new name",
+            "description": "new description",
+            "displayName": "Custom `view cluster configurations` role",
+            "children": [
+                Role.objects.get(name="View cluster configurations").pk,
+                Role.objects.get(name="Manage cluster Maintenance mode").pk,
+            ],
+        }
+
+        old_description = self.custom_role.description
+
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
+            data=role_create_data,
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.custom_role.refresh_from_db()
+
+        expected_object_changes = (
+            {
+                "current": {
+                    "description": "new description",
+                    "display_name": "Custom `view cluster configurations` role",
+                    "child": ["View cluster configurations", "Manage cluster Maintenance mode"],
+                },
+                "previous": {
+                    "description": old_description,
+                    "display_name": "Custom `view service configurations` role",
+                    "child": ["View service configurations"],
+                },
+            },
+        )
+
+        last_audit_log = self.check_last_audit_record(
+            operation_name="Role updated",
+            operation_type="update",
+            operation_result="success",
+            **self.prepare_audit_object_arguments(expected_object=self.custom_role),
+            expect_object_changes_=False,
+            user__username="admin",
+        )
+        self.assertDictEqual(last_audit_log.object_changes, *expected_object_changes)
+
+    def test_role_update_one_field_success(self):
+        role_create_data = {
+            "description": "new description",
+        }
+
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
+            data=role_create_data,
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.custom_role.refresh_from_db()
+
+        expected_object_changes = (
+            {
+                "current": {
+                    "description": "new description",
+                },
+                "previous": {
+                    "description": "",
+                },
+            },
+        )
+
+        last_audit_log = self.check_last_audit_record(
+            operation_name="Role updated",
+            operation_type="update",
+            operation_result="success",
+            **self.prepare_audit_object_arguments(expected_object=self.custom_role),
+            expect_object_changes_=False,
+            user__username="admin",
+        )
+        self.assertDictEqual(last_audit_log.object_changes, *expected_object_changes)
+
     def test_role_update_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 

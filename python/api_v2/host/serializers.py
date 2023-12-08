@@ -118,7 +118,7 @@ class HostUpdateSerializer(ModelSerializer):
 
     class Meta:
         model = Host
-        fields = ["name"]
+        fields = ["name", "description"]
 
 
 class HostCreateSerializer(EmptySerializer):
@@ -194,4 +194,4 @@ class ClusterHostStatusSerializer(EmptySerializer):
 class HostAuditSerializer(ModelSerializer):
     class Meta:
         model = Host
-        fields = ["maintenance_mode"]
+        fields = ["fqdn", "description", "maintenance_mode"]

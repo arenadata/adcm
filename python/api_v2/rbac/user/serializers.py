@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from api_v2.rbac.user.constants import UserStatusChoices
 from django.contrib.auth.models import Group as AuthGroup
 from rbac.models import User

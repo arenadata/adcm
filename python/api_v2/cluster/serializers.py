@@ -50,6 +50,7 @@ class ClusterSerializer(ModelSerializer):
         fields = [
             "id",
             "name",
+            "description",
             "state",
             "multi_state",
             "status",
@@ -115,7 +116,7 @@ class ClusterUpdateSerializer(ModelSerializer):
 
     class Meta:
         model = Cluster
-        fields = ["name"]
+        fields = ["name", "description"]
 
 
 class ClusterAuditSerializer(ModelSerializer):
@@ -123,7 +124,7 @@ class ClusterAuditSerializer(ModelSerializer):
 
     class Meta:
         model = Cluster
-        fields = ("name",)
+        fields = ("name", "description")
 
 
 class ServicePrototypeSerializer(ModelSerializer):

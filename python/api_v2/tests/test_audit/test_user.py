@@ -15,6 +15,7 @@ from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditObject
 from django.utils import timezone
 from rbac.models import User
+from rbac.services.group import create as create_group
 from rbac.services.user import create_user
 from rest_framework.reverse import reverse
 from rest_framework.status import (
@@ -47,6 +48,8 @@ class TestUserAudit(BaseAPITestCase):
             "isSuperUser": False,
         }
         self.user_update_data = {"lastName": "new_last_name"}
+
+        self.group = create_group(name_to_display="Some group")
 
     def test_user_create_success(self):
         response = self.client.post(path=reverse(viewname="v2:rbac:user-list"), data=self.user_create_data)
@@ -102,6 +105,47 @@ class TestUserAudit(BaseAPITestCase):
             object_changes={"current": {"last_name": "new_last_name"}, "previous": {"last_name": ""}},
             user__username="admin",
         )
+
+    def test_user_update_all_fields_success(self):
+        user_update_data = {
+            "first_name": "new_first_name",
+            "lastName": "new_last_name",
+            "email": "email@new.mail",
+            "is_superuser": True,
+            "password": "new_password1",
+            "groups": [self.group.pk],
+        }
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.test_user.pk}), data=user_update_data
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        expected_object_changes = {
+            "current": {
+                "email": "email@new.mail",
+                "first_name": "new_first_name",
+                "last_name": "new_last_name",
+                "password": "******",
+                "group": ["Some group [local]"],
+            },
+            "previous": {
+                "email": "",
+                "first_name": "",
+                "last_name": "",
+                "password": "******",
+                "group": [],
+            },
+        }
+
+        last_record = self.check_last_audit_record(
+            operation_name="User updated",
+            operation_type="update",
+            operation_result="success",
+            **self.prepare_audit_object_arguments(expected_object=self.test_user),
+            user__username="admin",
+            expect_object_changes_=False,
+        )
+        self.assertDictEqual(expected_object_changes, last_record.object_changes)
 
     def test_user_update_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)

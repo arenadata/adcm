@@ -37,6 +37,7 @@ from cm.api import (
     retrieve_host_component_objects,
     set_host_component,
 )
+from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues
 from cm.models import (
     Cluster,
@@ -50,7 +51,6 @@ from cm.models import (
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -122,10 +122,11 @@ class ClusterViewSet(
         valid_data = serializer.validated_data
 
         if valid_data.get("name") and valid_data.get("name") != instance.name and instance.state != "created":
-            raise ValidationError("Name change is available only in the 'created' state")
+            raise AdcmEx(code="CLUSTER_CONFLICT", msg="Name change is available only in the 'created' state")
 
         instance.name = valid_data.get("name", instance.name)
-        instance.save(update_fields=["name"])
+        instance.description = valid_data.get("description", instance.description)
+        instance.save(update_fields=["name", "description"])
         update_hierarchy_issues(obj=instance)
 
         return Response(status=HTTP_200_OK, data=ClusterSerializer(instance).data)

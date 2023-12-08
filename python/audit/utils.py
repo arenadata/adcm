@@ -251,7 +251,7 @@ def _get_object_changes(prev_data: dict, current_obj: Model, api_version: int) -
         return {}
 
     current_data = serializer_class(current_obj).data
-    current_fields = {k: v for k, v in current_data.items() if prev_data[k] != v}
+    current_fields = {k: v for k, v in current_data.items() if k in prev_data and prev_data[k] != v}
     if not current_fields:
         return current_fields
 
@@ -292,6 +292,8 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
             serializer_class = PolicyAuditSerializer
         elif view.__class__.__name__ == "ClusterViewSet":
             serializer_class = ClusterAuditSerializerV2
+        elif view.__class__.__name__ == "HostViewSet":
+            serializer_class = HostAuditSerializerV2
     elif view.request.method in {"PATCH", "PUT"}:
         if view.__class__.__name__ == "ClusterDetail":
             serializer_class = ClusterAuditSerializer
@@ -299,6 +301,9 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
         elif view.__class__.__name__ == "HostDetail":
             serializer_class = HostAuditSerializer
             pk = view.kwargs["host_id"]
+        elif view.__class__.__name__ == "ProfileView":
+            serializer_class = UserAuditSerializer
+            pk = view.request.user.id
     elif view.request.method == "POST":
         if view.__class__.__name__ == "ServiceMaintenanceModeView":
             serializer_class = ServiceAuditSerializer

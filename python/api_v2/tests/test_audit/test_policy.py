@@ -29,7 +29,7 @@ from rest_framework.status import (
 )
 
 
-class TestPolicyAudit(BaseAPITestCase):
+class TestPolicyAudit(BaseAPITestCase):  # pylint: disable=too-many-instance-attributes
     def setUp(self) -> None:
         super().setUp()
 
@@ -40,19 +40,31 @@ class TestPolicyAudit(BaseAPITestCase):
             display_name="Custom role name",
             child=[Role.objects.get(name="View cluster configurations")],
         )
-        group = create_group(name_to_display="Some group")
+        self.another_role = role_create(
+            display_name="Another custom role name",
+            child=[Role.objects.get(name="Edit cluster configurations")],
+        )
+        self.group = create_group(name_to_display="Some group")
+        self.another_group = create_group(name_to_display="Other group")
+        self.another_group_2 = create_group(name_to_display="Other group 2")
         self.policy_create_data = {
             "name": "New Policy",
             "role": {"id": custom_role.pk},
             "objects": [{"id": self.cluster_1.pk, "type": "cluster"}],
-            "groups": [group.pk],
+            "groups": [self.group.pk],
         }
         self.policy_update_data = {"name": "Updated name"}
         self.policy = policy_create(
             name="Test policy",
             role=Role.objects.get(name="View provider configurations"),
-            group=[create_group(name_to_display="Other group")],
+            group=[self.another_group],
             object=[self.provider],
+        )
+        self.another_policy = policy_create(
+            name="Test policy 2",
+            role=Role.objects.get(name="View cluster configurations"),
+            group=[self.group],
+            object=[self.cluster_1],
         )
 
     def test_policy_create_success(self):
@@ -123,6 +135,46 @@ class TestPolicyAudit(BaseAPITestCase):
             object_changes={"current": {"name": "Updated name"}, "previous": {"name": "Test policy"}},
             user__username="admin",
         )
+
+    def test_policy_all_fields_edit_success(self):
+        policy_update_data = {
+            "name": "Updated name",
+            "description": "new description",
+            "groups": [self.another_group.pk, self.another_group_2.pk],
+            "role": {"id": self.another_role.pk},
+            "object": [{"name": self.cluster_2.name, "type": self.cluster_2.prototype.type, "id": self.cluster_2.pk}],
+        }
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.another_policy.pk}),
+            data=policy_update_data,
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.another_policy.refresh_from_db()
+
+        expected_object_changes = {
+            "current": {
+                "name": "Updated name",
+                "description": "new description",
+                "role": "Another custom role name",
+                "group": ["Other group [local]", "Other group 2 [local]"],
+            },
+            "previous": {
+                "name": "Test policy 2",
+                "description": "",
+                "role": "View cluster configurations",
+                "group": ["Some group [local]"],
+            },
+        }
+        last_record = self.check_last_audit_record(
+            operation_name="Policy updated",
+            operation_type="update",
+            operation_result="success",
+            **self.prepare_audit_object_arguments(expected_object=self.another_policy),
+            user__username="admin",
+            expect_object_changes_=False,
+        )
+        self.assertDictEqual(expected_object_changes, last_record.object_changes)
 
     def test_policy_edit_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
