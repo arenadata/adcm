@@ -10,12 +10,15 @@ import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/Maint
 import { openMaintenanceModeDialog } from '@store/adcm/cluster/services/serviceComponents/serviceComponentsActionsSlice';
 import { AdcmServiceComponent } from '@models/adcm';
 import ClusterServiceComponentsDynamicActionsIcon from '../ServiceComponentsDynamicActionsIcon/ServiceComponentsDynamicActionsIcon';
+import { usePersistServiceComponentsTableSettings } from '../usePersistServiceComponentsTableSettings';
 
 const ServiceComponentsTable = () => {
   const dispatch = useDispatch();
   const components = useStore((s) => s.adcm.serviceComponents.serviceComponents);
   const isLoading = useStore((s) => s.adcm.serviceComponents.isLoading);
   const sortParams = useStore((s) => s.adcm.serviceComponentsTable.sortParams);
+
+  usePersistServiceComponentsTableSettings();
 
   const handleSorting = (sortParams: SortParams) => {
     dispatch(setSortParams(sortParams));

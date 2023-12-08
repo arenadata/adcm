@@ -4,6 +4,7 @@ import ServiceComponentsTable from './ServiceComponentsTable/ServiceComponentsTa
 import ServiceComponentsDialogs from './Dialogs';
 import { useDispatch, useStore } from '@hooks';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
+import ServiceComponentsTableFooter from './ServiceComponentsTableFooter/ServiceComponentsTableFooter';
 
 const ServiceComponents: React.FC = () => {
   const dispatch = useDispatch();
@@ -30,6 +31,7 @@ const ServiceComponents: React.FC = () => {
     <>
       <ServiceComponentsTable />
       <ServiceComponentsDialogs />
+      <ServiceComponentsTableFooter />
     </>
   );
 };

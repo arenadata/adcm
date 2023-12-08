@@ -26,12 +26,17 @@ const loadClusterServiceComponentsFromBackend = createAsyncThunk(
   async ({ clusterId, serviceId }: LoadClusterServiceComponentsPayload, thunkAPI) => {
     const {
       adcm: {
-        serviceComponentsTable: { sortParams },
+        serviceComponentsTable: { sortParams, paginationParams },
       },
     } = thunkAPI.getState();
 
     try {
-      const components = await AdcmClusterServiceComponentsApi.getServiceComponents(clusterId, serviceId, sortParams);
+      const components = await AdcmClusterServiceComponentsApi.getServiceComponents(
+        clusterId,
+        serviceId,
+        sortParams,
+        paginationParams,
+      );
       return components;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));

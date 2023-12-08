@@ -1,13 +1,18 @@
 import { httpClient } from '@api/httpClient';
 import { AdcmMaintenanceMode, AdcmServiceComponent, AdcmSetMaintenanceModeResponse, Batch } from '@models/adcm';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
-import { SortParams } from '@models/table';
-import { prepareSorting } from '@utils/apiUtils';
+import { SortParams, PaginationParams } from '@models/table';
+import { prepareQueryParams } from '@utils/apiUtils';
 import qs from 'qs';
 
 export class AdcmClusterServiceComponentsApi {
-  public static async getServiceComponents(clusterId: number, serviceId: number, sortParams: SortParams) {
-    const queryParams = prepareSorting(sortParams);
+  public static async getServiceComponents(
+    clusterId: number,
+    serviceId: number,
+    sortParams: SortParams,
+    paginationParams: PaginationParams,
+  ) {
+    const queryParams = prepareQueryParams(undefined, sortParams, paginationParams);
 
     const query = qs.stringify(queryParams);
     const response = await httpClient.get<Batch<AdcmServiceComponent>>(
