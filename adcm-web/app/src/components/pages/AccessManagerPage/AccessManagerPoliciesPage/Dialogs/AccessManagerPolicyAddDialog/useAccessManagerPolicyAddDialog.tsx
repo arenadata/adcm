@@ -39,8 +39,10 @@ export const useAccessManagerPolicyAddDialog = () => {
   }, [roles, roleId]);
 
   useEffect(() => {
-    if (roleId && policy && roles.length > 0 && objectTypes?.length > 0) {
-      dispatch(getObjectCandidates(roleId));
+    if (roleId && policy && roles.length > 0) {
+      if (objectTypes?.length > 0) {
+        dispatch(getObjectCandidates(roleId));
+      }
       setFormData(generateDialogData(policy, objectTypes));
     }
   }, [dispatch, objectTypes, policy, roleId, roles]);
