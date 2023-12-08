@@ -17,6 +17,7 @@ export const useRequestServiceComponents = () => {
   const serviceId = Number(serviceIdFromUrl);
 
   const sortParams = useStore(({ adcm }) => adcm.serviceComponentsTable.sortParams);
+  const paginationParams = useStore((s) => s.adcm.serviceComponentsTable.paginationParams);
 
   useEffect(() => {
     return () => {
@@ -38,5 +39,5 @@ export const useRequestServiceComponents = () => {
     dispatch(refreshServiceComponents({ clusterId, serviceId }));
   }, defaultDebounceDelay);
 
-  useRequestTimer(debounceGetServiceComponents, debounceRefreshServiceComponents, 0, [sortParams]);
+  useRequestTimer(debounceGetServiceComponents, debounceRefreshServiceComponents, 0, [sortParams, paginationParams]);
 };
