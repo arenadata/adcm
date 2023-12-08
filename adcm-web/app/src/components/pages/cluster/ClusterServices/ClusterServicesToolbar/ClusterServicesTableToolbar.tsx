@@ -19,7 +19,7 @@ const ClustersTableHeader = () => {
       <Button
         onClick={handleAddClusterServiceClick}
         disabled={isAddingServices || !cluster}
-        iconLeft={isAddingServices ? 'g1-load' : undefined}
+        iconLeft={isAddingServices ? { name: 'g1-load', className: 'spin' } : undefined}
       >
         Add services
       </Button>

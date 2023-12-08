@@ -89,7 +89,7 @@ const ComponentsMapping = () => {
               onClick={handleSave}
               disabled={isButtonsDisabledByState || !mappingValidation.isAllMappingValid}
               hasError={hasSaveError}
-              iconLeft={mappingState === 'saving' ? 'g1-load' : undefined}
+              iconLeft={mappingState === 'saving' ? { name: 'g1-load', className: 'spin' } : undefined}
             >
               Save
             </Button>

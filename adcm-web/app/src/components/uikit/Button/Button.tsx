@@ -2,19 +2,25 @@ import React from 'react';
 import cn from 'classnames';
 import s from './Button.module.scss';
 import { IconsNames } from '@uikit/Icon/sprite';
-import Icon from '@uikit/Icon/Icon';
+import Icon, { IconProps } from '@uikit/Icon/Icon';
 import { ConditionalWrapper, Tooltip } from '@uikit';
 import { TooltipProps } from '@uikit/Tooltip/Tooltip';
 
 type ButtonVariant = 'primary' | 'secondary' | 'clear' | 'tertiary';
+
 export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'title'> {
   variant?: ButtonVariant;
   hasError?: boolean;
-  iconLeft?: IconsNames;
-  iconRight?: IconsNames;
+  iconLeft?: IconsNames | IconProps;
+  iconRight?: IconsNames | IconProps;
   title?: TooltipProps['label'];
   tooltipProps?: Omit<TooltipProps, 'label' | 'children'>;
 }
+
+const defaultIconProps: Partial<IconProps> = {
+  size: 28,
+};
+
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
@@ -38,6 +44,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       [s.button_hasIcon]: hasIcon,
       [s.button_hasIconOnly]: !children,
     });
+
+    const calcIconProps = (icon?: IconsNames | IconProps) =>
+      !icon
+        ? undefined
+        : typeof icon === 'string'
+        ? { ...defaultIconProps, name: icon }
+        : { ...defaultIconProps, ...icon };
+
+    const iconLeftProps = calcIconProps(iconLeft);
+    const iconRightProps = calcIconProps(iconRight);
+
     return (
       <ConditionalWrapper Component={Tooltip} isWrap={!!title} label={title} {...tooltipProps}>
         <button
@@ -48,9 +65,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           {...props}
           ref={ref}
         >
-          {iconLeft && <Icon name={iconLeft} size={28} />}
+          {iconLeftProps && <Icon {...iconLeftProps} />}
           {children}
-          {iconRight && <Icon name={iconRight} size={28} />}
+          {iconRightProps && <Icon {...iconRightProps} />}
         </button>
       </ConditionalWrapper>
     );

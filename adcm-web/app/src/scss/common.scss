@@ -75,6 +75,10 @@ strong {
   }
 }
 
+.spin {
+  animation: spin var(--spin-duration) linear infinite;
+}
+
 .hidden {
   display: none !important;
 }

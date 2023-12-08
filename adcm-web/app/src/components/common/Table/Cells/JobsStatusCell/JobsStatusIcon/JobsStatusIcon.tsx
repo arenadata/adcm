@@ -13,7 +13,9 @@ interface JobsTableStatusIconProps extends React.HTMLAttributes<HTMLDivElement> 
 
 // todo: rename and replace this component. This is not Cell
 const JobsStatusIconCell: React.FC<JobsTableStatusIconProps> = ({ status, dataTest, size = 10 }) => {
-  const classes = cn(s.status, s[`status_${status.toLowerCase()}`]);
+  const classes = cn(s.status, s[`status_${status.toLowerCase()}`], {
+    ['spin']: status === AdcmJobStatus.Running,
+  });
 
   return (
     <>
