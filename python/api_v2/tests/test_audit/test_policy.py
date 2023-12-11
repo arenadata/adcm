@@ -26,6 +26,7 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
 )
 
 
@@ -109,7 +110,7 @@ class TestPolicyAudit(BaseAPITestCase):  # pylint: disable=too-many-instance-att
             data=wrong_data,
         )
 
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.check_last_audit_record(
             operation_name="Policy created",
             operation_type="create",

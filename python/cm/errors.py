@@ -212,7 +212,7 @@ ERRORS = {
     "GROUP_CREATE_ERROR": ("Error during process of group creating", HTTP_409_CONFLICT, ERR),
     "GROUP_UPDATE_ERROR": ("Error during process of group updating", HTTP_400_BAD_REQUEST, ERR),
     "GROUP_DELETE_ERROR": ("Built-in group could not be deleted", HTTP_409_CONFLICT, ERR),
-    "POLICY_INTEGRITY_ERROR": ("Incorrect role or user list of policy", HTTP_400_BAD_REQUEST, ERR),
+    "POLICY_INTEGRITY_ERROR": ("Incorrect role or user list of policy", HTTP_409_CONFLICT, ERR),
     "POLICY_CREATE_ERROR": ("Error during process of policy creating", HTTP_409_CONFLICT, ERR),
     "POLICY_UPDATE_ERROR": ("Error during process of policy updating", HTTP_409_CONFLICT, ERR),
     "POLICY_DELETE_ERROR": ("Error during process of policy deleting", HTTP_409_CONFLICT, ERR),
