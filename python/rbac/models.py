@@ -85,7 +85,7 @@ class User(AuthUser):
 
 
 class Group(AuthGroup):
-    description = CharField(max_length=1000, null=True)
+    description = CharField(max_length=1000, default="")
     built_in = BooleanField(default=False, null=False)
     type = CharField(max_length=1000, choices=OriginType.choices, null=False, default=OriginType.LOCAL)
 

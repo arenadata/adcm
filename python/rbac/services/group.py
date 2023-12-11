@@ -49,7 +49,7 @@ def _update_users(group: models.Group, users: [Empty, list[dict]]) -> None:
 def create(
     *,
     name_to_display: str,
-    description: str = None,
+    description: str = "",
     user_set: list[dict] = None,
 ) -> models.Group:
     """Create Group"""
