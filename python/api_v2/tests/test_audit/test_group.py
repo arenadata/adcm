@@ -100,7 +100,7 @@ class TestGroupAudit(BaseAPITestCase):
                 "name": "new display name",
                 "user": [self.blocked_user.username],
             },
-            "previous": {"description": None, "name": "Some group", "user": []},
+            "previous": {"description": "", "name": "Some group", "user": []},
         }
 
         response = self.client.patch(

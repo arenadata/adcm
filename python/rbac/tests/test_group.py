@@ -92,7 +92,7 @@ class GroupTestCase(BaseTestCase):
             },
             {
                 "name": f"test_group_name_2 [{OriginType.LOCAL.value}]",
-                "description": None,
+                "description": "",
                 "type": OriginType.LOCAL,
                 "display_name": "test_group_name_2",
             },
