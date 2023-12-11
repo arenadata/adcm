@@ -54,7 +54,6 @@ const AccessManagerPoliciesTable: React.FC = () => {
             key={policy.id}
             colSpan={columns.length}
             isExpanded={expandableRows[policy.id] || false}
-            isInactive={!policy.objects.length}
             expandedContent={<AccessManagerPoliciesTableExpandedContent objects={policy.objects} />}
             className={cn(s.policiesTable__policyRow, { [s.expandedRow]: expandableRows[policy.id] })}
             expandedClassName={s.policiesTable__expandedRow}
