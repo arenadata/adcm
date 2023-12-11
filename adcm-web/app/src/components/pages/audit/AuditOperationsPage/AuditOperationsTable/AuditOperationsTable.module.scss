@@ -1,0 +1,24 @@
+:global {
+  body.theme-dark {
+    --audit-table-expandable-row-background: var(--color-xdark-new-full);
+  }
+
+  body.theme-light {
+    --audit-table-expandable-row-background: var(--color-xgray-alt);
+  }
+}
+
+.auditOperationsTable {
+  &__auditRow {
+    &.expandedRow {
+      --table-expandable-row-background: var(--audit-table-expandable-row-background);
+    }
+  }
+  &__expandedRow > td {
+    background: var(--audit-table-expandable-row-background) !important;
+
+    & table > tbody > tr:first-child {
+      border-bottom: 0;
+    }
+  }
+}
