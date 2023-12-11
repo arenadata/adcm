@@ -100,6 +100,7 @@ class TestServiceAPI(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], self.service_2.pk)
+        self.assertEqual(response.json()["description"], self.service_2.description)
 
     def test_delete_success(self):
         response = self.client.delete(

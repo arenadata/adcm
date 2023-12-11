@@ -111,6 +111,28 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
             object_changes={"current": {"fqdn": "new.name"}, "previous": {"fqdn": "test_host_2"}},
         )
 
+    def test_update_full_success(self):
+        response = self.client.patch(
+            path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
+            data={"name": "new.name", "description": "new description"},
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.host_2.refresh_from_db()
+
+        self.check_last_audit_record(
+            operation_name="Host updated",
+            operation_type="update",
+            operation_result="success",
+            **self.prepare_audit_object_arguments(expected_object=self.host_2),
+            user__username="admin",
+            expect_object_changes_=True,
+            object_changes={
+                "current": {"fqdn": "new.name", "description": "new description"},
+                "previous": {"fqdn": "test_host_2", "description": ""},
+            },
+        )
+
     def test_update_incorrect_data_fail(self):
         response = self.client.patch(
             path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
