@@ -12,6 +12,7 @@
 
 import functools
 
+from adcm_version import compare_prototype_versions
 from cm.adcm_config.config import (
     init_object_config,
     make_object_config,
@@ -53,7 +54,6 @@ from cm.utils import obj_ref
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from rbac.models import Policy
-from version_utils import rpm
 
 
 def switch_object(obj: Host | ClusterObject, new_prototype: Prototype) -> None:
@@ -105,28 +105,28 @@ def switch_hosts(upgrade: Upgrade, provider: HostProvider) -> None:
 
 def check_upgrade_version(prototype: Prototype, upgrade: Upgrade) -> tuple[bool, str]:
     if upgrade.min_strict:
-        if rpm.compare_versions(prototype.version, upgrade.min_version) <= 0:
+        if compare_prototype_versions(prototype.version, upgrade.min_version) <= 0:
             return (
                 False,
                 f"{prototype.type} version {prototype.version} "
                 f"is less than or equal to upgrade min version {upgrade.min_version}",
             )
     else:
-        if rpm.compare_versions(prototype.version, upgrade.min_version) < 0:
+        if compare_prototype_versions(prototype.version, upgrade.min_version) < 0:
             return (
                 False,
                 "{prototype.type} version {prototype.version} is less than upgrade min version {upgrade.min_version}",
             )
 
     if upgrade.max_strict:
-        if rpm.compare_versions(prototype.version, upgrade.max_version) >= 0:
+        if compare_prototype_versions(prototype.version, upgrade.max_version) >= 0:
             return (
                 False,
                 f"{prototype.type} version {prototype.version} "
                 f"is more than or equal to upgrade max version {upgrade.max_version}",
             )
     else:
-        if rpm.compare_versions(prototype.version, upgrade.max_version) > 0:
+        if compare_prototype_versions(prototype.version, upgrade.max_version) > 0:
             return (
                 False,
                 f"{prototype.type} version {prototype.version} is more than upgrade max version {upgrade.max_version}",
@@ -284,13 +284,13 @@ def get_upgrade(obj: Cluster | HostProvider, order=None) -> list[Upgrade]:
         if "name" in order:
             return sorted(
                 res,
-                key=functools.cmp_to_key(mycmp=lambda obj1, obj2: rpm.compare_versions(obj1.name, obj2.name)),
+                key=functools.cmp_to_key(mycmp=lambda obj1, obj2: compare_prototype_versions(obj1.name, obj2.name)),
             )
 
         if "-name" in order:
             return sorted(
                 res,
-                key=functools.cmp_to_key(mycmp=lambda obj1, obj2: rpm.compare_versions(obj2.name, obj2.name)),
+                key=functools.cmp_to_key(mycmp=lambda obj1, obj2: compare_prototype_versions(obj2.name, obj2.name)),
             )
 
     return res

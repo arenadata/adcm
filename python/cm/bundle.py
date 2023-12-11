@@ -20,6 +20,7 @@ import tarfile
 from collections.abc import Iterable
 from pathlib import Path
 
+from adcm_version import compare_adcm_versions, compare_prototype_versions
 from cm.adcm_config.config import init_object_config, switch_config
 from cm.adcm_config.utils import cook_file_type_name, proto_ref
 from cm.errors import AdcmEx, raise_adcm_ex
@@ -55,7 +56,6 @@ from django.db.transaction import atomic
 from gnupg import GPG, ImportResult
 from rbac.models import Role
 from rbac.upgrade.role import prepare_action_roles
-from version_utils import rpm
 
 STAGE = (
     StagePrototype,
@@ -201,7 +201,7 @@ def order_model_versions(model):
     count = 0
     for obj in sorted(
         items,
-        key=functools.cmp_to_key(lambda obj1, obj2: rpm.compare_versions(obj1.version, obj2.version)),
+        key=functools.cmp_to_key(lambda obj1, obj2: compare_prototype_versions(obj1.version, obj2.version)),
     ):
         if ver != obj.version:
             count += 1
@@ -307,7 +307,7 @@ def process_adcm():
 
         if old_proto.version == new_proto.version:
             logger.debug("adcm version %s, skip upgrade", old_proto.version)
-        elif rpm.compare_versions(old_proto.version, new_proto.version) < 0:
+        elif compare_prototype_versions(old_proto.version, new_proto.version) < 0:
             bundle = copy_stage("adcm", adcm_stage_proto)
             upgrade_adcm(adcm, bundle)
         else:
@@ -353,7 +353,7 @@ def init_adcm(bundle: Bundle) -> ADCM:
 def upgrade_adcm(adcm, bundle):
     old_proto = adcm.prototype
     new_proto = Prototype.objects.get(type="adcm", bundle=bundle)
-    if rpm.compare_versions(old_proto.version, new_proto.version) >= 0:
+    if compare_prototype_versions(old_proto.version, new_proto.version) >= 0:
         raise_adcm_ex(
             code="UPGRADE_ERROR",
             msg=f"Current adcm version {old_proto.version} is more than "
@@ -364,7 +364,11 @@ def upgrade_adcm(adcm, bundle):
         adcm.save()
         switch_config(adcm, new_proto, old_proto)
 
-        if rpm.compare_versions(old_proto.version, "2.6") <= 0 <= rpm.compare_versions(new_proto.version, "2.7"):
+        if (
+            compare_prototype_versions(old_proto.version, "2.6")
+            <= 0
+            <= compare_prototype_versions(new_proto.version, "2.7")
+        ):
             config_log_old = ConfigLog.objects.get(obj_ref=adcm.config, id=adcm.config.previous)
             config_log_new = ConfigLog.objects.get(obj_ref=adcm.config, id=adcm.config.current)
             log_rotation_on_fs = config_log_old.config.get("job_log", {}).get(
@@ -393,6 +397,14 @@ def upgrade_adcm(adcm, bundle):
     return adcm
 
 
+def check_adcm_min_version(adcm_min_version: str) -> None:
+    if compare_adcm_versions(adcm_min_version, settings.ADCM_VERSION) > 0:
+        raise AdcmEx(
+            code="BUNDLE_VERSION_ERROR",
+            msg=f"This bundle required ADCM version equal to {adcm_min_version} or newer.",
+        )
+
+
 def process_bundle(path: Path, bundle_hash: str) -> tuple[list[StagePrototype], list[StageUpgrade]]:
     all_prototypes = []
     all_upgrades = []
@@ -402,12 +414,9 @@ def process_bundle(path: Path, bundle_hash: str) -> tuple[list[StagePrototype], 
         if not conf:
             continue
 
-        adcm_min_version = [item["adcm_min_version"] for item in conf if item.get("adcm_min_version")]
-        if adcm_min_version and rpm.compare_versions(adcm_min_version[0], settings.ADCM_VERSION) > 0:
-            raise AdcmEx(
-                code="BUNDLE_VERSION_ERROR",
-                msg=f"This bundle required ADCM version equal to {adcm_min_version} or newer.",
-            )
+        for item in conf:
+            if "adcm_min_version" in item:
+                check_adcm_min_version(adcm_min_version=item["adcm_min_version"])
 
         prototypes, upgrades = save_definition(conf_path, conf_file, conf, obj_list, bundle_hash)
         all_prototypes.extend(prototypes)

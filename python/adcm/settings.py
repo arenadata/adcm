@@ -29,7 +29,6 @@ if BASE_DIR:
 else:
     BASE_DIR = Path(__file__).absolute().parent.parent.parent
 
-CONFIG_FILE = BASE_DIR / "config.json"
 STACK_DIR = os.getenv("ADCM_STACK_DIR", BASE_DIR)
 BUNDLE_DIR = STACK_DIR / "data" / "bundle"
 CODE_DIR = BASE_DIR / "python"
@@ -66,11 +65,7 @@ else:
 
 SECRET_KEY = os.getenv("SECRET_KEY", get_random_secret_key())
 
-if CONFIG_FILE.is_file():
-    with open(CONFIG_FILE, encoding=ENCODING_UTF_8) as f:
-        ADCM_VERSION = json.load(f)["version"]
-else:
-    ADCM_VERSION = "2019.02.07.00"
+ADCM_VERSION = os.getenv("ADCM_VERSION", "2.0.0")
 
 DEBUG = os.getenv("DEBUG") in {"1", "True", "true"}
 ALLOWED_HOSTS = ["*"]

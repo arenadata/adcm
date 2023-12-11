@@ -3,6 +3,7 @@ APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
 SELENOID_HOST ?= 10.92.2.65
 SELENOID_PORT ?= 4444
+ADCM_VERSION = "2.0.0"
 
 .PHONY: help
 
@@ -12,9 +13,6 @@ help:
 describe_old:
 	@echo '{"version": "$(shell date '+%Y.%m.%d.%H')","commit_id": "$(shell git log --pretty=format:'%h' -n 1)"}' > config.json
 	cp config.json web/src/assets/config.json
-
-describe:
-	@echo '{"version": "$(shell date '+%Y.%m.%d.%H')","commit_id": "$(shell git log --pretty=format:'%h' -n 1)"}' > config.json
 
 buildss:
 	@docker run -i --rm -v $(CURDIR)/go:/code -w /code golang sh -c "make"
@@ -29,19 +27,19 @@ build_base_old:
 	@docker build . -t $(APP_IMAGE):$(APP_TAG)_old
 
 build_base:
-	@docker build . -t $(APP_IMAGE):$(APP_TAG)
+	@docker build . -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
 
 # build ADCM_v1
 build_old: describe_old buildss buildjs_old build_base_old
 
 # build ADCM_v2
-build: describe buildss buildjs build_base
+build: buildss buildjs build_base
 
-unittests_sqlite: describe
+unittests_sqlite:
 	poetry install --no-root --with unittests
 	poetry run python/manage.py test python -v 2 --parallel
 
-unittests_postgresql: describe
+unittests_postgresql:
 	docker run -d --rm -e POSTGRES_PASSWORD="postgres" --name postgres -p 5500:5432 postgres:14
 	export DB_HOST="localhost" DB_PORT="5500" DB_NAME="postgres" DB_PASS="postgres" DB_USER="postgres"
 	poetry install --no-root --with unittests
@@ -66,3 +64,6 @@ lint:
 	poetry run isort --check license_checker.py python
 	python license_checker.py --folders python go
 	poetry run pylint -j 0 --rcfile pyproject.toml --recursive y python
+
+version:
+	@echo $(ADCM_VERSION)

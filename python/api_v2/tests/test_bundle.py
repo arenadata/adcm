@@ -155,3 +155,69 @@ class TestBundle(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(Bundle.objects.count(), initial_bundles_count)
+
+    def test_upload_adcm_min_old_version_success(self):
+        bundle_file = self.prepare_bundle_file(source_dir=self.test_bundles_dir / "adcm_min_version" / "old")
+
+        with open(settings.DOWNLOAD_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+            response = self.client.post(
+                path=reverse(viewname="v2:bundle-list"),
+                data={"file": f},
+                format="multipart",
+            )
+
+        self.assertEqual(Bundle.objects.filter(name="cluster_adcm_min_version").exists(), True)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_upload_adcm_min_version_success(self):
+        bundle_file = self.prepare_bundle_file(source_dir=self.test_bundles_dir / "adcm_min_version" / "new" / "older")
+
+        with open(settings.DOWNLOAD_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+            response = self.client.post(
+                path=reverse(viewname="v2:bundle-list"),
+                data={"file": f},
+                format="multipart",
+            )
+
+        self.assertEqual(Bundle.objects.filter(name="cluster_adcm_min_version").exists(), True)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_upload_adcm_min_version_fail(self):
+        bundle_file = self.prepare_bundle_file(source_dir=self.test_bundles_dir / "adcm_min_version" / "new" / "newer")
+
+        with open(settings.DOWNLOAD_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+            response = self.client.post(
+                path=reverse(viewname="v2:bundle-list"),
+                data={"file": f},
+                format="multipart",
+            )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "BUNDLE_VERSION_ERROR",
+                "desc": "This bundle required ADCM version equal to 10.0.0 or newer.",
+                "level": "error",
+            },
+        )
+
+    def test_upload_adcm_min_version_multiple_fail(self):
+        bundle_file = self.prepare_bundle_file(source_dir=self.test_bundles_dir / "adcm_min_version" / "multiple")
+
+        with open(settings.DOWNLOAD_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+            response = self.client.post(
+                path=reverse(viewname="v2:bundle-list"),
+                data={"file": f},
+                format="multipart",
+            )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "BUNDLE_VERSION_ERROR",
+                "desc": "This bundle required ADCM version equal to 10.0.0 or newer.",
+                "level": "error",
+            },
+        )
