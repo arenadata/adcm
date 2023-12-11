@@ -12,6 +12,7 @@ import {
 } from '@store/adcm/hostComponents/hostComponentsSlice';
 import { defaultDebounceDelay } from '@constants';
 import { cleanupList } from '@store/adcm/hostComponents/hostComponentsTableSlice';
+import { usePersistHostComponentsTableSettings } from './usePersistHostComponentsTableSettings';
 
 export const useRequestHostComponents = () => {
   const dispatch = useDispatch();
@@ -30,6 +31,8 @@ export const useRequestHostComponents = () => {
       dispatch(cleanupList());
     };
   }, [dispatch]);
+
+  usePersistHostComponentsTableSettings();
 
   const debounceGetClusters = useDebounce(() => {
     clusters && dispatch(getHostComponents({ clusterId: clusters.id, hostId: host.id }));
