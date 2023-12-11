@@ -38,6 +38,7 @@ class ServiceRetrieveSerializer(ModelSerializer):
         fields = [
             "id",
             "name",
+            "description",
             "display_name",
             "prototype",
             "cluster",

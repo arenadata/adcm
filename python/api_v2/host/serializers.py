@@ -75,6 +75,7 @@ class HostSerializer(ModelSerializer):
         fields = [
             "id",
             "name",
+            "description",
             "state",
             "status",
             "hostprovider",

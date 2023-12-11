@@ -28,7 +28,9 @@ class TestHost(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host")
+        self.host = self.add_host(
+            bundle=self.provider_bundle, description="description", provider=self.provider, fqdn="test_host"
+        )
 
     def test_list_success(self):
         response = self.client.get(
@@ -45,6 +47,7 @@ class TestHost(BaseAPITestCase):
         data = {
             "id": self.host.pk,
             "name": "test_host",
+            "description": "description",
             "state": "created",
             "status": 32,
             "hostprovider": {"id": 1, "name": "provider", "display_name": "provider"},
@@ -55,6 +58,7 @@ class TestHost(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["id"], data["id"])
         self.assertEqual(response.data["name"], data["name"])
+        self.assertEqual(response.data["description"], data["description"])
         self.assertEqual(response.data["state"], data["state"])
         self.assertDictEqual(response.data["hostprovider"], data["hostprovider"])
         self.assertEqual(response.data["concerns"], data["concerns"])
