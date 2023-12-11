@@ -15,6 +15,7 @@ import json
 from functools import partial, wraps
 from typing import Literal
 
+from adcm_version import compare_prototype_versions
 from cm.adcm_config.config import (
     init_object_config,
     process_json_config,
@@ -69,7 +70,6 @@ from django.db.transaction import atomic, on_commit
 from rbac.models import Policy, re_apply_object_policy
 from rbac.roles import apply_policy_for_new_config
 from rest_framework.status import HTTP_409_CONFLICT
-from version_utils import rpm
 
 
 def check_license(prototype: Prototype) -> None:
@@ -82,17 +82,17 @@ def check_license(prototype: Prototype) -> None:
 
 def is_version_suitable(version: str, prototype_import: PrototypeImport) -> bool:
     if prototype_import.min_strict:
-        if rpm.compare_versions(version, prototype_import.min_version) <= 0:
+        if compare_prototype_versions(version, prototype_import.min_version) <= 0:
             return False
     elif prototype_import.min_version:
-        if rpm.compare_versions(version, prototype_import.min_version) < 0:
+        if compare_prototype_versions(version, prototype_import.min_version) < 0:
             return False
 
     if prototype_import.max_strict:
-        if rpm.compare_versions(version, prototype_import.max_version) >= 0:
+        if compare_prototype_versions(version, prototype_import.max_version) >= 0:
             return False
     elif prototype_import.max_version:
-        if rpm.compare_versions(version, prototype_import.max_version) > 0:
+        if compare_prototype_versions(version, prototype_import.max_version) > 0:
             return False
 
     return True

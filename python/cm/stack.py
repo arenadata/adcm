@@ -22,6 +22,7 @@ from typing import Any, List, Literal
 
 import ruyaml
 import yaml
+from adcm_version import compare_prototype_versions
 from cm.adcm_config.checks import check_config_type
 from cm.adcm_config.config import read_bundle_file
 from cm.adcm_config.utils import proto_ref
@@ -51,7 +52,6 @@ from ruyaml.constructor import DuplicateKeyError
 from ruyaml.error import ReusedAnchorWarning
 from ruyaml.parser import ParserError as RuYamlParserError
 from ruyaml.scanner import ScannerError as RuYamlScannerError
-from version_utils import rpm
 from yaml.parser import ParserError as YamlParserError
 from yaml.scanner import ScannerError as YamlScannerError
 
@@ -556,7 +556,7 @@ def save_import(proto: StagePrototype, conf: dict) -> None:
             set_version(stage_prototype_import, conf["import"][key])
             if stage_prototype_import.min_version and stage_prototype_import.max_version:
                 if (
-                    rpm.compare_versions(
+                    compare_prototype_versions(
                         str(stage_prototype_import.min_version),
                         str(stage_prototype_import.max_version),
                     )

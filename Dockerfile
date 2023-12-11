@@ -43,5 +43,7 @@ RUN mkdir -p /adcm/data/log && \
     cp -r /adcm/python/ansible/* /adcm/venv/2.9/lib/python3.10/site-packages/ansible/ && \
     python /adcm/python/manage.py collectstatic --noinput && \
     cp -r /adcm/wwwroot/static/rest_framework/css/* /adcm/wwwroot/static/rest_framework/docs/css/
+ARG ADCM_VERSION
+ENV ADCM_VERSION=$ADCM_VERSION
 EXPOSE 8000
 CMD ["/etc/startup.sh"]

@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.conf import settings
 from djangorestframework_camel_case.parser import (
     CamelCaseFormParser,
     CamelCaseJSONParser,
@@ -19,6 +20,7 @@ from djangorestframework_camel_case.render import (
     CamelCaseBrowsableAPIRenderer,
     CamelCaseJSONRenderer,
 )
+from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import (
     CreateModelMixin,
     DestroyModelMixin,
@@ -26,12 +28,17 @@ from rest_framework.mixins import (
     RetrieveModelMixin,
     UpdateModelMixin,
 )
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 from rest_framework.routers import APIRootView
 from rest_framework.viewsets import GenericViewSet
 
 
 class APIRoot(APIRootView):
+    permission_classes = (AllowAny,)
     api_root_dict = {
+        "adcm-info": "adcm-info",
+        "adcm": "adcm-detail",
         "clusters": "cluster-list",
         "audit": "audit:root",
         "bundles": "bundle-list",
@@ -59,3 +66,10 @@ class CamelCaseReadOnlyModelViewSet(
     RetrieveModelMixin, ListModelMixin, CamelCaseGenericViewSet
 ):  # pylint: disable=too-many-ancestors
     pass
+
+
+class ADCMInfo(GenericAPIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, _) -> Response:
+        return Response(data={"version": settings.ADCM_VERSION})

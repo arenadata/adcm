@@ -1,0 +1,5 @@
+---
+- type: cluster
+  name: cluster_adcm_min_version
+  version: 1.0
+  adcm_min_version: 2023.10.10.08
