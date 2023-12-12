@@ -27,7 +27,7 @@ from adcm.permissions import VIEW_POLICY_PERMISSION, CustomModelPermissionsByMet
 
 
 class PolicyViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = Policy.objects.select_related("role").prefetch_related("group", "object")
+    queryset = Policy.objects.select_related("role").prefetch_related("group", "object").order_by("name")
     filter_backends = (DjangoFilterBackend,)
     filterset_class = PolicyFilter
     permission_classes = (CustomModelPermissionsByMethod,)

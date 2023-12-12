@@ -172,3 +172,13 @@ class TestPolicy(BaseAPITestCase):
             data={"objects": [{"type": "role", "id": self.create_user_role.pk}]},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_adcm_5103_policy_ordering_success(self) -> None:
+        for name in ("Test", "Best", "Good", "Class"):
+            policy_create(name=name, role=self.create_user_role, group=[self.group_1], object=[])
+        response = self.client.get(path=reverse(viewname="v2:rbac:policy-list"))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        policies = [p["name"] for p in response.json()["results"]]
+        self.assertEqual(len(policies), 6)
+        self.assertEqual(policies, ["Awesome Policy", "Best", "Class", "Create User Policy", "Good", "Test"])
