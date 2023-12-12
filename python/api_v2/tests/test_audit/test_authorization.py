@@ -44,6 +44,7 @@ class TestAuthorizationAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["results"][0]["user"], {"name": self.username})
+        self.assertDictEqual(response.json()["results"][0]["details"], {"username": self.username})
 
     def test_logins_time_filtering_success(self):
         response = self.client.get(
@@ -67,6 +68,7 @@ class TestAuthorizationAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["user"]["name"], self.username)
+        self.assertDictEqual(response.json()["details"], {"username": self.username})
 
     def test_logins_retrieve_not_found_fail(self):
         response = self.client.get(
