@@ -126,7 +126,7 @@ class TestADCMAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_last_audit_record(
-            operation_name="admin user changed password",
+            operation_name="Profile updated",
             operation_type="update",
             operation_result="success",
             audit_object__is_deleted=False,
@@ -142,7 +142,7 @@ class TestADCMAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_last_audit_record(
-            operation_name=f"{self.test_user_credentials['username']} user changed password",
+            operation_name="Profile updated",
             operation_type="update",
             operation_result="success",
             audit_object__is_deleted=False,
@@ -158,7 +158,7 @@ class TestADCMAudit(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_last_audit_record(
-            operation_name=f"{self.test_user_credentials['username']} user changed password",
+            operation_name="Profile updated",
             operation_type="update",
             operation_result="success",
             audit_object__is_deleted=False,

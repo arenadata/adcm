@@ -62,7 +62,7 @@ def adcm_case(
             case ["profile"]:
                 current_user = view.request.user
                 audit_operation = AuditOperation(
-                    name=f"{current_user.username} user changed password",
+                    name="Profile updated",
                     operation_type=AuditLogOperationType.UPDATE,
                 )
                 audit_object = get_or_create_audit_obj(
