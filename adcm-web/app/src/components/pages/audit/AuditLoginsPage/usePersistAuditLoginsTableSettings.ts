@@ -17,8 +17,6 @@ const mergeFilters = (
     ...filterFromStorage,
     login: filterFromStorage.login || undefined,
     loginResult: filterFromStorage.loginResult || undefined,
-    timeFrom: filterFromStorage.timeFrom || actualFilter.timeFrom,
-    timeTo: filterFromStorage.timeTo || actualFilter.timeTo,
   };
 
   return result;
@@ -45,7 +43,7 @@ export const usePersistAuditLoginsTableSettings = () => {
       },
       isReadyToLoad: true,
       onSettingsLoaded: (settings) => {
-        const mergedFilter = mergeFilters(settings.filter, filter);
+        const { timeFrom, timeTo, ...mergedFilter } = mergeFilters(settings.filter, filter);
         dispatch(setFilter(mergedFilter));
         dispatch(setSortParams(settings.sortParams));
         dispatch(setRequestFrequency(settings.requestFrequency));
