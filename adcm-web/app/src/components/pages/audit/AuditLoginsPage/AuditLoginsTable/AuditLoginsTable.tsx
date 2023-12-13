@@ -22,7 +22,7 @@ const AuditLoginsTable = () => {
     <Table variant="tertiary" isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
       {auditLogins.map((auditLogin) => (
         <TableRow key={auditLogin.id} isInactive={loginsAuditInactiveResults.includes(auditLogin.result)}>
-          <TableCell>{orElseGet(auditLogin.user?.name)}</TableCell>
+          <TableCell>{orElseGet(auditLogin.user?.name ?? auditLogin.details.username)}</TableCell>
           <TableCell>{orElseGet(auditLogin.result)}</TableCell>
           <DateTimeCell value={orElseGet(auditLogin.time)} />
         </TableRow>

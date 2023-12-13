@@ -76,6 +76,9 @@ export interface AdcmAuditLogin {
   user: AdcmAuditLoginUser;
   result: AdcmAuditLoginResultType;
   time: string;
+  details: {
+    username: string;
+  };
 }
 
 export enum AdcmAuditLoginResultType {
