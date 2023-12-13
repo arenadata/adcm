@@ -86,6 +86,8 @@ INSTALLED_APPS = [
     "audit",
     "api_v2",
     "corsheaders",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
 ]
 
 MIDDLEWARE = [
@@ -103,9 +105,11 @@ MIDDLEWARE = [
 if not DEBUG:
     MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
-CSP_DEFAULT_SRC = ["'self'"]
+CSP_DEFAULT_SRC = ["'self'", "blob:"]
+CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com"]
+CSP_IMG_SRC = ["'self'", "cdn.redoc.ly", "data:"]
+CSP_FONT_SRC = ["'self'", "fonts.gstatic.com"]
 CSP_FRAME_ANCESTORS = ["'none'"]
-CSP_STYLE_SRC = ["'self'", "'unsafe-inline'"]
 
 ROOT_URLCONF = "adcm.urls"
 
@@ -138,7 +142,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ),
-    "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 50,
     "DEFAULT_FILTER_BACKENDS": [
@@ -321,3 +325,13 @@ STATUS_REQUEST_TIMEOUT = 0.01
 
 JOB_TYPE = "job"
 TASK_TYPE = "task"
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "ADCM API",
+    "DESCRIPTION": "Arenadata Cluster Manager",
+    "VERSION": "2.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
+}

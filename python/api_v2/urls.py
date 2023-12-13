@@ -15,6 +15,11 @@ from api_v2.profile.views import ProfileView
 from api_v2.token.views import TokenView
 from api_v2.views import ADCMInfo, APIRoot
 from django.urls import include, path
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerSplitView,
+)
 
 urlpatterns = [
     path("", APIRoot.as_view(), name="api-root-v2"),
@@ -33,4 +38,7 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("profile/", ProfileView.as_view(), name="profile"),
     path("token/", TokenView.as_view(), name="token"),
+    path("schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("schema/swagger-ui/", SpectacularSwaggerSplitView.as_view(url_name="schema"), name="swagger-ui"),
+    path("schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
 ]

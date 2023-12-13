@@ -20,6 +20,7 @@ from rest_framework import serializers
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import SAFE_METHODS, DjangoModelPermissions
 from rest_framework.response import Response
+from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.utils.urls import replace_query_param
 from rest_framework.viewsets import ViewSetMixin
 
@@ -53,6 +54,7 @@ class GenericUIView(GenericAPIView):
     serializer_class_patch: serializers.Serializer = None
     serializer_class_ui: serializers.Serializer = None
     serializer_class: serializers.Serializer = None
+    schema = AutoSchema()
 
     def _is_for_ui(self) -> bool:
         if not self.request:
@@ -79,6 +81,8 @@ class GenericUIView(GenericAPIView):
 
 
 class GenericUIViewSet(ViewSetMixin, GenericAPIView):
+    schema = AutoSchema()
+
     def is_for_ui(self) -> bool:
         if not self.request:
             return False

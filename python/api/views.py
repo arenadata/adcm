@@ -15,6 +15,7 @@ from django.conf import settings
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.routers import APIRootView
+from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.views import APIView
 
 from adcm.utils import has_google_oauth, has_yandex_oauth
@@ -58,6 +59,7 @@ class NameConverter:
 
 class ADCMInfo(APIView):
     permission_classes = (AllowAny,)
+    schema = AutoSchema()
 
     @staticmethod
     def get(request):  # pylint: disable=unused-argument

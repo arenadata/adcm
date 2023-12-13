@@ -14,6 +14,7 @@ from api.object_config.serializers import ObjectConfigSerializer
 from cm.models import ObjectConfig
 from guardian.mixins import PermissionListMixin
 from rest_framework.permissions import DjangoObjectPermissions
+from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 
@@ -22,6 +23,7 @@ class ObjectConfigViewSet(PermissionListMixin, ReadOnlyModelViewSet):  # pylint:
     serializer_class = ObjectConfigSerializer
     permission_classes = (DjangoObjectPermissions,)
     permission_required = ["cm.view_objectconfig"]
+    schema = AutoSchema()
     ordering = ["id"]
 
     def get_queryset(self, *args, **kwargs):
