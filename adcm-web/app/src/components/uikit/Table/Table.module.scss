@@ -203,27 +203,22 @@
           border-bottom-right-radius: var(--table-border-radius);
         }
 
-        // safari hack:
-        @media not all and (min-resolution: 0.001dpcm) {
-          @supports (-webkit-appearance: none) {
-            /**
-              Safari can't render box-shadow for <TR> (Chrome anf Mozilla can!)
-              Alter way: render borders for TD
-              Bat Chrome bad rendered border styles for last TD, (wrapper for table is overflow, and last border is hide)
-              Use normal one-line styles for BRO-wsers,
-              And use ugly hack for this piece of shit
-             */
-            & {
-              box-sizing: border-box;
-              border-top: 1px solid var(--table-tr-border, transparent);
-              border-bottom: 1px solid var(--table-tr-border, transparent);
-              &:first-child {
-                border-left: 1px solid var(--table-tr-border, transparent);
-              }
-              &:last-child {
-                border-right: 1px solid var(--table-tr-border, transparent);
-              }
-            }
+        /**
+          Safari can't render box-shadow for <TR> (Chrome anf Mozilla can!)
+          Alter way: render borders for TD
+          Bat Chrome bad rendered border styles for last TD, (wrapper for table is overflow, and last border is hide)
+          Use normal one-line styles for BRO-wsers,
+          And use ugly hack for this piece of shit
+         */
+        :global(.is-ugly-safari) & {
+          box-sizing: border-box;
+          border-top: 1px solid var(--table-tr-border, transparent);
+          border-bottom: 1px solid var(--table-tr-border, transparent);
+          &:first-child {
+            border-left: 1px solid var(--table-tr-border, transparent);
+          }
+          &:last-child {
+            border-right: 1px solid var(--table-tr-border, transparent);
           }
         }
       }
