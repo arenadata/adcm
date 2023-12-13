@@ -44,7 +44,7 @@ const AuditLoginsTableFilters = () => {
         variant="primary"
         onChange={handleUsernameChange}
       />
-      <LabeledField label="Object type" direction="row">
+      <LabeledField label="Result" direction="row">
         <Select
           maxHeight={200}
           placeholder="All"
