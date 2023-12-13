@@ -17,6 +17,7 @@ from guardian.mixins import PermissionListMixin
 from rbac.endpoints.group.serializers import GroupSerializer
 from rbac.models import Group
 from rest_framework.filters import OrderingFilter
+from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import DjangoModelPermissionsAudit
@@ -62,6 +63,7 @@ class GroupViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-ma
     filterset_class = GroupFilterSet
     ordering_fields = ("id", "name")
     search_fields = ("name", "description", "display_name")
+    schema = AutoSchema()
 
     @audit
     def create(self, request, *args, **kwargs):

@@ -44,6 +44,8 @@ six = "^1.16.0"
 django-cors-headers = "^4.1.0"
 djangorestframework-camel-case = "^1.4.2"
 adcm-version = "^1.0.0"
+drf-spectacular = "^0.26.5"
+drf-spectacular-sidecar = "^2023.12.1"
 
 [tool.poetry.group.lint]
 optional = true

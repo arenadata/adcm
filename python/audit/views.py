@@ -15,6 +15,7 @@ from audit.models import AuditLog, AuditSession
 from audit.serializers import AuditLogSerializer, AuditSessionSerializer
 from rest_framework.permissions import AllowAny
 from rest_framework.routers import APIRootView
+from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from adcm.permissions import SuperuserOnlyMixin
@@ -34,6 +35,7 @@ class AuditLogViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
     queryset = AuditLog.objects.select_related("audit_object", "user").order_by("-operation_time", "-pk")
     serializer_class = AuditLogSerializer
     filterset_class = AuditLogListFilter
+    schema = AutoSchema()
 
 
 # pylint: disable=too-many-ancestors
@@ -42,3 +44,4 @@ class AuditSessionViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
     queryset = AuditSession.objects.select_related("user").order_by("-login_time", "-pk")
     serializer_class = AuditSessionSerializer
     filterset_class = AuditSessionListFilter
+    schema = AutoSchema()

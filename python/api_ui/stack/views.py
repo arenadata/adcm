@@ -15,6 +15,7 @@ from cm.models import ObjectType, Prototype
 from django.db.models.query import QuerySet
 from rest_framework.mixins import ListModelMixin
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.viewsets import GenericViewSet
 
 
@@ -36,6 +37,7 @@ class PrototypeUIViewMixin:
 class ClusterPrototypeUIViewSet(PrototypeUIViewMixin, ListModelMixin, GenericViewSet):
     permission_classes = (IsAuthenticated,)
     serializer_class = PrototypeUISerializer
+    schema = AutoSchema()
     ordering_fields = ("id", "name", "display_name")
     ordering = ["display_name"]
 
@@ -46,6 +48,7 @@ class ClusterPrototypeUIViewSet(PrototypeUIViewMixin, ListModelMixin, GenericVie
 class ProviderPrototypeUIViewSet(PrototypeUIViewMixin, ListModelMixin, GenericViewSet):
     permission_classes = (IsAuthenticated,)
     serializer_class = PrototypeUISerializer
+    schema = AutoSchema()
     ordering_fields = ("id", "name", "display_name")
     ordering = ["display_name"]
 

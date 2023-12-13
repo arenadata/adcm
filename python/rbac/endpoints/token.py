@@ -19,6 +19,7 @@ from rest_framework import authentication, permissions
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
+from rest_framework.schemas.coreapi import AutoSchema
 
 
 class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
@@ -44,6 +45,7 @@ class GetAuthToken(GenericAPIView):
     authentication_classes = (authentication.TokenAuthentication,)
     permission_classes = (permissions.AllowAny,)
     serializer_class = AuthSerializer
+    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         """

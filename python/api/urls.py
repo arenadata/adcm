@@ -13,10 +13,22 @@
 from api import docs, views
 from django.urls import include, path, register_converter
 from rbac.endpoints import token
-from rest_framework.schemas import get_schema_view
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.renderers import (
+    BrowsableAPIRenderer,
+    CoreAPIOpenAPIRenderer,
+    CoreJSONRenderer,
+)
+from rest_framework.schemas.coreapi import SchemaGenerator
+from rest_framework.schemas.views import SchemaView
 
 register_converter(views.NameConverter, "name")
-schema_view = get_schema_view(title="ArenaData Chapel API", patterns=[path("api/v1/", include("api.urls"))])
+generator = SchemaGenerator(title="ArenaData Chapel API", patterns=[path("api/v1/", include("api.urls"))])
+authentication_classes = (SessionAuthentication, TokenAuthentication)
+permission_classes = (IsAuthenticated,)
+renderer_classes = (BrowsableAPIRenderer, CoreAPIOpenAPIRenderer, CoreJSONRenderer)
+
 
 urlpatterns = [
     path("", views.APIRoot.as_view()),
@@ -36,7 +48,16 @@ urlpatterns = [
     path("job/", include("api.job.urls")),
     path("concern/", include("api.concern.urls")),
     path("audit/", include(("audit.urls", "audit"))),
-    path("schema/", schema_view),
+    path(
+        "schema/",
+        SchemaView.as_view(
+            renderer_classes=renderer_classes,
+            schema_generator=generator,
+            public=False,
+            authentication_classes=authentication_classes,
+            permission_classes=permission_classes,
+        ),
+    ),
     path("docs/md/", docs.docs_md),
     path("docs/", docs.docs_html),
     path("rbac/", include(("rbac.urls", "rbac"))),

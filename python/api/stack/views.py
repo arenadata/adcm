@@ -58,6 +58,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -151,6 +152,8 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
     filterset_fields = ("name", "version")
     ordering_fields = ("id", "name", "version_order")
     lookup_url_kwarg = "bundle_pk"
+    schema = AutoSchema()
+
     ordering = ["id"]
 
     def get_permissions(self):

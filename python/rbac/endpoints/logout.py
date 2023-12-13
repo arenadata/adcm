@@ -14,6 +14,7 @@ import django.contrib.auth
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
+from rest_framework.schemas.coreapi import AutoSchema
 
 from adcm.serializers import EmptySerializer
 
@@ -24,6 +25,7 @@ class LogOutSerializer(EmptySerializer):
 
 class LogOut(GenericAPIView):
     serializer_class = LogOutSerializer
+    schema = AutoSchema()
 
     @staticmethod
     def post(request, *args, **kwargs):  # pylint: disable=unused-argument

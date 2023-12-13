@@ -14,11 +14,13 @@ from rbac.endpoints.me.serializers import MeUserSerializer
 from rbac.models import User
 from rbac.services.user import update_user
 from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.schemas.coreapi import AutoSchema
 
 
 class MyselfView(RetrieveUpdateAPIView):
     queryset = User.objects.all()
     serializer_class = MeUserSerializer
+    schema = AutoSchema()
 
     def get_object(self):
         return User.objects.get(id=self.request.user.id)

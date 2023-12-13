@@ -18,6 +18,7 @@ from rbac.models import User
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.status import HTTP_400_BAD_REQUEST
 from rest_framework.viewsets import ModelViewSet
 
@@ -42,6 +43,7 @@ class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
     )
     ordering_fields = ("id", "username", "first_name", "last_name", "email", "is_superuser")
     search_fields = ("username", "first_name", "last_name", "email")
+    schema = AutoSchema()
 
     @audit
     def create(self, request, *args, **kwargs):
