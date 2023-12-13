@@ -2,13 +2,13 @@
 
 [[package]]
 name = "adcm-version"
-version = "1.0.0"
+version = "1.0.3"
 description = ""
 optional = false
-python-versions = ">=3.10,<4.0"
+python-versions = ">=3.8,<4.0"
 files = [
-    {file = "adcm_version-1.0.0-py3-none-any.whl", hash = "sha256:bc4db72b72c3b89085043f8aaae0e5d2b641ce690acca9c681348b390764d163"},
-    {file = "adcm_version-1.0.0.tar.gz", hash = "sha256:3bc984895a752b0cab89b8011d0d00608857a612024333538eea0c6bb76e4358"},
+    {file = "adcm_version-1.0.3-py3-none-any.whl", hash = "sha256:e59bc0e6ed23ee0bc870a5a6b5c1a6ea7c671914e43c2cee6a5fb0d1e3c314ab"},
+    {file = "adcm_version-1.0.3.tar.gz", hash = "sha256:2052d7c17ef72f1e32971e939ec972426978025e5c052320062f4ed3a2c90bc5"},
 ]
 
 [package.dependencies]
