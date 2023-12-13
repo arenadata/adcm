@@ -432,6 +432,8 @@ class TestJob(BaseTestCase):
         adcm = ADCM.objects.create(prototype=proto3)
 
         file_mock = Mock()
+        file_mock.__enter__ = Mock(return_value=(Mock(), None))
+        file_mock.__exit__ = Mock(return_value=None)
         mock_open.return_value = file_mock
         mock_get_adcm_config.return_value = {}
         mock_prepare_context.return_value = {"type": "cluster", "cluster_id": 1}
@@ -516,7 +518,9 @@ class TestJob(BaseTestCase):
                     "w",
                     encoding=settings.ENCODING_UTF_8,
                 )
-                mock_dump.assert_called_with(job_config, file_mock, indent=3, sort_keys=True)
+                mock_dump.assert_called_with(
+                    job_config, file_mock.__enter__.return_value, separators=(",", ":"), sort_keys=True
+                )
                 mock_get_adcm_config.assert_called()
                 mock_prepare_context.assert_called_with(action, obj)
                 mock_get_bundle_root.assert_called_with(action)
