@@ -538,14 +538,11 @@ def prepare_job_inventory(
         delta = {}
 
     logger.info("prepare inventory for job #%s, object: %s", job_id, obj)
-    # pylint: disable=consider-using-with
-    file_descriptor = open(
+
+    with open(
         file=settings.RUN_DIR / f"{job_id}/inventory.json",
         mode="w",
         encoding=settings.ENCODING_UTF_8,
-    )
-
-    inventory_data = get_inventory_data(obj=obj, action=action, action_host=action_host, delta=delta)
-
-    json.dump(obj=inventory_data, fp=file_descriptor, indent=3)
-    file_descriptor.close()
+    ) as file_descriptor:
+        inventory_data = get_inventory_data(obj=obj, action=action, action_host=action_host, delta=delta)
+        json.dump(obj=inventory_data, fp=file_descriptor, separators=(",", ":"))
