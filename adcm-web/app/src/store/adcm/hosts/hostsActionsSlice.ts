@@ -88,11 +88,14 @@ const createHost = createAsyncThunk(
   'adcm/hostsActions/createHost',
   async (payload: CreateAdcmHostPayload, thunkAPI) => {
     try {
+      thunkAPI.dispatch(setIsCreating(true));
       const host = await AdcmHostsApi.createHost(payload);
       return host;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
+    } finally {
+      thunkAPI.dispatch(setIsCreating(false));
     }
   },
 );
@@ -163,6 +166,7 @@ interface AdcmHostsActionsState {
   };
   createDialog: {
     isOpen: boolean;
+    isCreating: boolean;
   };
   linkDialog: {
     id: null;
@@ -188,6 +192,7 @@ const createInitialState = (): AdcmHostsActionsState => ({
   },
   createDialog: {
     isOpen: false,
+    isCreating: false,
   },
   linkDialog: {
     id: null,
@@ -247,6 +252,9 @@ const hostsActionsSlice = createSlice({
     closeUpdateDialog(state) {
       state.updateDialog.host = null;
     },
+    setIsCreating(state, action) {
+      state.createDialog.isCreating = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(toggleMaintenanceMode.pending, (state) => {
@@ -296,6 +304,7 @@ export const {
   closeUnlinkDialog,
   openUpdateDialog,
   closeUpdateDialog,
+  setIsCreating,
 } = hostsActionsSlice.actions;
 
 export {

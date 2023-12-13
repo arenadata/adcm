@@ -8,6 +8,7 @@ const CreateHostDialog = () => {
   const dispatch = useDispatch();
 
   const isOpenDialog = useStore(({ adcm }) => adcm.hostsActions.createDialog.isOpen);
+  const isCreating = useStore(({ adcm }) => adcm.hostsActions.createDialog.isCreating);
 
   const {
     formData,
@@ -49,8 +50,9 @@ const CreateHostDialog = () => {
       isOpen={isOpenDialog}
       onOpenChange={handleCloseDialog}
       onAction={submit}
-      isActionDisabled={!isValid}
+      isActionDisabled={!isValid || isCreating}
       actionButtonLabel="Create"
+      isActionButtonLoaderShown={isCreating}
     >
       <FormFieldsContainer>
         <FormField label="Hostprovider">

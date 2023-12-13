@@ -35,6 +35,7 @@ export const useCreateHostForm = () => {
 
   useEffect(() => {
     setErrors({
+      hostproviderId: required(formData.hostproviderId) ? undefined : 'The host provider is required',
       hostName:
         (required(formData.hostName) ? undefined : 'The host name field is required') ||
         (isHostNameValid(formData.hostName) ? undefined : 'The host name field is incorrect') ||
