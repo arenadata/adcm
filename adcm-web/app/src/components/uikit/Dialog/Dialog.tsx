@@ -31,6 +31,7 @@ const Dialog: React.FC<DialogProps> = ({
   isDialogControlsOnTop,
   cancelButtonLabel,
   actionButtonLabel,
+  isActionButtonLoaderShown,
   isActionDisabled,
   onAction,
   onCancel,
@@ -58,6 +59,7 @@ const Dialog: React.FC<DialogProps> = ({
       cancelButtonLabel={cancelButtonLabel}
       actionButtonLabel={actionButtonLabel}
       isActionDisabled={isActionDisabled}
+      isActionButtonLoaderShown={isActionButtonLoaderShown}
       onAction={onAction}
       onCancel={handleClose}
     />

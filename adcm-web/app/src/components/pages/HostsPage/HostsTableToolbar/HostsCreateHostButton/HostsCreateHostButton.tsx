@@ -1,10 +1,12 @@
 import React from 'react';
 import { Button } from '@uikit';
-import { useDispatch } from '@hooks';
+import { useDispatch, useStore } from '@hooks';
 import { openCreateDialog } from '@store/adcm/hosts/hostsActionsSlice';
 
 const HostsCreateHostButton: React.FC = () => {
   const dispatch = useDispatch();
+
+  const isCreating = useStore(({ adcm }) => adcm.hostsActions.createDialog.isCreating);
 
   const handleClick = () => {
     dispatch(openCreateDialog());
@@ -12,7 +14,13 @@ const HostsCreateHostButton: React.FC = () => {
 
   return (
     <>
-      <Button onClick={handleClick}>Create host</Button>
+      <Button
+        onClick={handleClick}
+        disabled={isCreating}
+        iconLeft={isCreating ? { name: 'g1-load', className: 'spin' } : undefined}
+      >
+        Create host
+      </Button>
     </>
   );
 };
