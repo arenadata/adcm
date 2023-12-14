@@ -44,8 +44,7 @@ six = "^1.16.0"
 django-cors-headers = "^4.1.0"
 djangorestframework-camel-case = "^1.4.2"
 adcm-version = "^1.0.0"
-drf-spectacular = "^0.26.5"
-drf-spectacular-sidecar = "^2023.12.1"
+drf-spectacular = {version = "^0.27.0", extras = ["sidecar"]}
 
 [tool.poetry.group.lint]
 optional = true
@@ -62,6 +61,12 @@ optional = true
 
 [tool.poetry.group.unittests.dependencies]
 tblib = "^2.0.0"
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.6.0"
 
 [build-system]
 requires = ["poetry-core"]
