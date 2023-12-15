@@ -4,6 +4,7 @@ import JobsStatusIconCell from '@commonComponents/Table/Cells/JobsStatusCell/Job
 import { Link } from 'react-router-dom';
 import { ConditionalWrapper, Tooltip } from '@uikit';
 import s from './JobInfo.module.scss';
+import { orElseGet } from '@utils/checkUtils';
 
 interface JobInfoProps {
   jobs: AdcmJob[];
@@ -31,7 +32,7 @@ const JobInfo: React.FC<JobInfoProps> = ({ jobs }) => {
                 placement={'bottom-start'}
               >
                 <Link className="text-link" to={`/jobs/${job.id}`}>
-                  {job.displayName}
+                  {orElseGet(job.displayName || '-')}
                 </Link>
               </ConditionalWrapper>
             )}
