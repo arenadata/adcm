@@ -10,6 +10,7 @@ import JobsStatusCell from '../../../common/Table/Cells/JobsStatusCell/JobsStatu
 import { secondsToDuration } from '@utils/date/timeConvertUtils';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
 import JobObjectsCell from '@commonComponents/Table/Cells/JobObjectsCell/JobObjectsCell';
+import { orElseGet } from '@utils/checkUtils';
 
 const JobsTable = () => {
   const dispatch = useDispatch();
@@ -39,7 +40,7 @@ const JobsTable = () => {
             <TableCell>{job.id}</TableCell>
             <JobsStatusCell status={job.status}>
               <Link to={generatePath('/jobs/:jobId', { jobId: job.id + '' })} className="text-link">
-                {job.displayName}
+                {orElseGet(job.displayName || '-')}
               </Link>
             </JobsStatusCell>
             <TableCell>{job.status}</TableCell>
