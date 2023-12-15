@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import GroupConfig, Host, ServiceComponent
+from cm.models import ConfigLog, GroupConfig, Host, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.reverse import reverse
 from rest_framework.status import (
@@ -231,6 +231,120 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(response.json()["name"], "service-group-config-new")
+
+    def test_adcm_5113_create_success(self):
+        service_config_data = {
+            "config": {
+                "group": {"password": "newpassword"},
+                "activatable_group": {"text": "new text"},
+                "string": "new string",
+            },
+            "adcmMeta": {
+                "/activatable_group": {"isActive": True, "isSynchronized": False},
+                "/activatable_group/text": {"isSynchronized": False},
+                "/group/password": {"isSynchronized": False},
+                "/string": {"isSynchronized": False},
+            },
+            "description": "new config",
+        }
+
+        service_new_group_config = GroupConfig.objects.create(
+            name="service_new_group_config",
+            object_type=ContentType.objects.get_for_model(self.service_1),
+            object_id=self.service_1.pk,
+        )
+
+        config_log_to_delete = ConfigLog.objects.filter(pk=service_new_group_config.pk).last()
+        config_log_to_delete.delete()
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-group-config-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "group_config_pk": service_new_group_config.pk,
+                },
+            ),
+            data=service_config_data,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_adcm_5113_twice_create_success(self):
+        service_config_data_1 = {
+            "config": {
+                "group": {"password": "newpassword"},
+                "activatable_group": {"text": "new text"},
+                "string": "new string",
+            },
+            "adcmMeta": {
+                "/activatable_group": {"isActive": True, "isSynchronized": False},
+                "/activatable_group/text": {"isSynchronized": False},
+                "/group/password": {"isSynchronized": False},
+                "/string": {"isSynchronized": False},
+            },
+            "description": "new config",
+        }
+        service_config_data_2 = {
+            "config": {
+                "group": {"password": "newpassword2"},
+                "activatable_group": {"text": "new text 2"},
+                "string": "new string 2",
+            },
+            "adcmMeta": {
+                "/activatable_group": {"isActive": True, "isSynchronized": False},
+                "/activatable_group/text": {"isSynchronized": False},
+                "/group/password": {"isSynchronized": False},
+                "/string": {"isSynchronized": False},
+            },
+            "description": "new config 2",
+        }
+
+        service_new_group_config_1 = GroupConfig.objects.create(
+            name="service_new_group_config_1",
+            object_type=ContentType.objects.get_for_model(self.service_1),
+            object_id=self.service_1.pk,
+        )
+        service_new_group_config_2 = GroupConfig.objects.create(
+            name="service_new_group_config_2",
+            object_type=ContentType.objects.get_for_model(self.service_1),
+            object_id=self.service_1.pk,
+        )
+
+        config_logs_to_delete = ConfigLog.objects.filter(
+            pk__in=(service_new_group_config_1.pk, service_new_group_config_2.pk)
+        )
+        config_logs_to_delete.first().delete()
+        config_logs_to_delete.last().delete()
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-group-config-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "group_config_pk": service_new_group_config_1.pk,
+                },
+            ),
+            data=service_config_data_1,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-group-config-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "group_config_pk": service_new_group_config_2.pk,
+                },
+            ),
+            data=service_config_data_2,
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def test_delete_success(self):
         response = self.client.delete(
