@@ -39,7 +39,7 @@ class LoginMiddleware:
             result = AuditSessionLoginResult.SUCCESS
             details = {"username": user.username}
         else:
-            details = {"username": username}
+            details = {"username": username[: settings.USERNAME_MAX_LENGTH]}
             try:
                 user = User.objects.get(username=username)
                 if not user.is_active:
