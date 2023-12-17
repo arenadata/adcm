@@ -17,28 +17,29 @@ const JobInfo: React.FC<JobInfoProps> = ({ jobs }) => {
 
   return (
     <table className={s.jobs} data-test="jobs-notification-table">
-      {jobs.map((job) => (
-        <tr key={job.id}>
-          <td className={s.job__id}>{job.id}</td>
-          <td className={s.job__icon}>
-            <JobsStatusIconCell dataTest={'job_status_' + job.status} size={14} status={job.status} />
-          </td>
-          <td className={s.job__link}>
-            {job?.displayName && (
+      {jobs.map((job) => {
+        const jobName = orElseGet(job.displayName || '-');
+        return (
+          <tr key={job.id}>
+            <td className={s.job__id}>{job.id}</td>
+            <td className={s.job__icon}>
+              <JobsStatusIconCell dataTest={'job_status_' + job.status} size={14} status={job.status} />
+            </td>
+            <td className={s.job__link}>
               <ConditionalWrapper
                 Component={Tooltip}
-                isWrap={job.displayName.length > symbolsNumberToShowTooltip}
-                label={job.displayName}
+                isWrap={jobName.length > symbolsNumberToShowTooltip}
+                label={jobName}
                 placement={'bottom-start'}
               >
                 <Link className="text-link" to={`/jobs/${job.id}`}>
-                  {orElseGet(job.displayName || '-')}
+                  {jobName}
                 </Link>
               </ConditionalWrapper>
-            )}
-          </td>
-        </tr>
-      ))}
+            </td>
+          </tr>
+        );
+      })}
     </table>
   );
 };
