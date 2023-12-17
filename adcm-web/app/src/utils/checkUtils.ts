@@ -1,6 +1,6 @@
 type GetCallback<T, R> = (data: T) => R;
 
-export const orElseGet = <T, R>(
+export const orElseGet = <T, R = T>(
   data: T | undefined | null,
   callback?: GetCallback<T, R> | null,
   placeholder: R = '-' as R,
