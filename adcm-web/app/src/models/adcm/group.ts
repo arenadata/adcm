@@ -19,7 +19,7 @@ export interface AdcmGroup {
 
 export interface AdcmGroupFilter {
   displayName?: string;
-  type?: string;
+  type?: AdcmGroupType;
 }
 
 export interface AdcmGroupUserPayload {

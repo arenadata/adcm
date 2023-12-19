@@ -30,7 +30,7 @@ export interface AdcmUser {
 export interface AdcmUsersFilter {
   username?: string;
   status?: AdcmUserStatus;
-  type?: string;
+  type?: AdcmUserType;
 }
 
 export interface AdcmCreateUserPayload {

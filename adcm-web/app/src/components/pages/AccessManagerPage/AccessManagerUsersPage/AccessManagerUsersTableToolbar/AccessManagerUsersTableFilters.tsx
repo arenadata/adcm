@@ -22,7 +22,7 @@ const AccessManagerUsersTableFilters = () => {
     dispatch(setFilter({ status: value ?? undefined }));
   };
 
-  const handleTypeChange = (value: string | null) => {
+  const handleTypeChange = (value: AdcmUserType | null) => {
     dispatch(setFilter({ type: value ?? undefined }));
   };
 

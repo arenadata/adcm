@@ -21,7 +21,7 @@ buildjs_old:
 	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./build.sh
 
 buildjs:
-	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/adcm-web/app:/code -w /code node:18.16-alpine ./build.sh
+	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/adcm-web/app:/code -e ADCM_VERSION=$(ADCM_VERSION) -w /code node:18.16-alpine ./build.sh
 
 build_base_old:
 	@docker build . -t $(APP_IMAGE):$(APP_TAG)_old

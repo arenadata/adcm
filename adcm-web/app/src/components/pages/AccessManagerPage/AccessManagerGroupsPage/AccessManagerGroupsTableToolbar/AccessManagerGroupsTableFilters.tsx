@@ -17,7 +17,7 @@ const AccessManagerGroupsTableFilters = () => {
     dispatch(setFilter({ displayName: event.target.value }));
   };
 
-  const handleTypeChange = (value: string | null) => {
+  const handleTypeChange = (value: AdcmGroupType | null) => {
     dispatch(setFilter({ type: value ?? undefined }));
   };
 
