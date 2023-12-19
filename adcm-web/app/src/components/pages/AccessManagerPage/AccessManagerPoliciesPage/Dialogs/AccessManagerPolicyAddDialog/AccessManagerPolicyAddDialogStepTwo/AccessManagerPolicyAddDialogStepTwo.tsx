@@ -75,6 +75,7 @@ const AccessManagerPolicyAddDialogStepTwo: React.FC<AccessManagerPolicyAddDialog
                     value={formData.serviceName}
                     onChange={handleServiceChange}
                     options={serviceOptions}
+                    maxHeight={200}
                   />
                 </FormField>
                 <FormField label="Parent">
