@@ -30,7 +30,7 @@ const AccessManagerPolicyAddDialogStepTwo: React.FC<AccessManagerPolicyAddDialog
   }, [formData.serviceName, serviceClusters]);
 
   const handleServiceChange = (value: string | null) => {
-    changeFormData({ serviceName: value });
+    changeFormData({ serviceName: value, serviceClusterIds: [] });
   };
 
   const handleServiceClusterChange = (value: number[]) => {
@@ -77,17 +77,16 @@ const AccessManagerPolicyAddDialogStepTwo: React.FC<AccessManagerPolicyAddDialog
                     options={serviceOptions}
                   />
                 </FormField>
-                {formData.clusterIds.length === 0 && formData.serviceName !== '' && (
-                  <FormField label="Parent">
-                    <MultiSelect
-                      checkAllLabel="All clusters"
-                      placeholder="Select cluster"
-                      value={formData.serviceClusterIds}
-                      onChange={handleServiceClusterChange}
-                      options={serviceClustersOptions}
-                    />
-                  </FormField>
-                )}
+                <FormField label="Parent">
+                  <MultiSelect
+                    disabled={formData.serviceName.length === 0}
+                    checkAllLabel="All clusters"
+                    placeholder="Select cluster"
+                    value={formData.serviceClusterIds}
+                    onChange={handleServiceClusterChange}
+                    options={serviceClustersOptions}
+                  />
+                </FormField>
               </>
             )}
             {step === 'host' && (
