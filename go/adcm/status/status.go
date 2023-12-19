@@ -49,6 +49,7 @@ type statusChangePayload struct {
 	Id              int                        `json:"id,omitempty"`
 	Reason          *statusChangeReasonPayload `json:"reason,omitempty"`
 	IsBlocking      bool                       `json:"isBlocking,omitempty"`
+	Type            string                     `json:"type,omitempty"`
 	Cause           string                     `json:"cause,omitempty"`
 	Status          string                     `json:"status,omitempty"`
 	State           string                     `json:"state,omitempty"`
