@@ -78,6 +78,7 @@ const AccessManagerGroupsUpdateGroupDialog = () => {
             onChange={handleGroupUsersChange}
             options={usersOptions}
             maxHeight={400}
+            placeholder="Select"
           />
         </FormField>
       </FormFieldsContainer>
