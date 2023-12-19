@@ -1,48 +1,70 @@
-import React from 'react';
+import React, { useState } from 'react';
 import IconButton from '@uikit/IconButton/IconButton';
 import ActionMenu from '@uikit/ActionMenu/ActionMenu';
 import { Link } from 'react-router-dom';
-import { SelectOption } from '@uikit';
+import { ConditionalWrapper, Tooltip } from '@uikit';
+import AboutAdcm from './AboutAdcm/AboutAdcm.tsx';
+import AboutAdcmModal from './AboutAdcm/AboutAdcmModal/AboutAdcmModal.tsx';
+import { DefaultSelectListItemProps } from '@uikit/Select/SingleSelect/SingleSelectList/SingleSelectList.tsx';
 
 enum HelperLinkActions {
   Help = 'https://t.me/arenadata_cm',
   Documentation = 'https://docs.arenadata.io/en/ADCM/current/introduction/intro.html',
 }
 
-const renderItem = ({ value, label }: SelectOption<string>) => {
+const LinkItem = <T,>(props: DefaultSelectListItemProps<T>) => {
+  const {
+    option: { value, label, title },
+    className,
+  } = props;
+
+  if (typeof value !== 'string') return <li></li>;
+
   return (
-    <Link to={value} target="_blank" className="flex-block">
-      {label}
-    </Link>
+    <ConditionalWrapper Component={Tooltip} isWrap={!!title} label={title} placement="bottom-start">
+      <li className={className}>
+        <Link to={value.toString()} target="_blank" className="flex-block">
+          {label}
+        </Link>
+      </li>
+    </ConditionalWrapper>
   );
 };
 
-const emptyCallback = () => {
-  //
-};
+const linkOptions = [
+  {
+    value: 'aboutAdcm',
+    label: 'About ADCM',
+    ItemComponent: AboutAdcm,
+  },
+  {
+    value: HelperLinkActions.Help,
+    label: 'Help',
+    ItemComponent: LinkItem,
+  },
+  {
+    value: HelperLinkActions.Documentation,
+    label: 'Documentation',
+    ItemComponent: LinkItem,
+  },
+];
 
 const HeaderHelp: React.FC = () => {
-  const linkOptions = [
-    {
-      value: HelperLinkActions.Help,
-      label: 'Help',
-    },
-    {
-      value: HelperLinkActions.Documentation,
-      label: 'Documentation',
-    },
-  ];
+  const [isOpen, setIsOpen] = useState(false);
+
+  const openModal = (value: string | null) => {
+    if (value === 'aboutAdcm') {
+      setIsOpen(true);
+    }
+  };
 
   return (
-    <ActionMenu
-      placement="bottom-end"
-      value={null}
-      renderItem={renderItem}
-      onChange={emptyCallback}
-      options={linkOptions}
-    >
-      <IconButton icon="g2-info" size={28} />
-    </ActionMenu>
+    <>
+      <ActionMenu placement="bottom-end" value={null} onChange={openModal} options={linkOptions}>
+        <IconButton icon="g2-info" size={28} />
+      </ActionMenu>
+      <AboutAdcmModal isOpen={isOpen} onOpenChange={setIsOpen} />
+    </>
   );
 };
 

@@ -1,3 +1,5 @@
+import { DefaultSelectListItemProps } from '@uikit/Select/SingleSelect/SingleSelectList/SingleSelectList.tsx';
+
 export type SelectValue = string | number | null;
 
 export interface SelectOption<T = SelectValue> {
@@ -5,6 +7,7 @@ export interface SelectOption<T = SelectValue> {
   label: string;
   disabled?: boolean;
   title?: string;
+  ItemComponent?: React.FC<DefaultSelectListItemProps<T>>;
 }
 
 export interface SingleSelectParams<T> {

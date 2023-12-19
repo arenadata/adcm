@@ -13,7 +13,6 @@ const SingleSelectList = <T,>() => {
     onChange,
     noneLabel,
     maxHeight,
-    renderItem,
   } = useSingleSelectContext<T>();
 
   const options = useMemo(() => {
@@ -33,51 +32,50 @@ const SingleSelectList = <T,>() => {
 
   return (
     <ul className={cn(s.singleSelectList, 'scroll')} style={{ maxHeight }} data-test="options">
-      {options.map(({ value, label, disabled, title }) => (
-        <SingleSelectOptionsItem
-          key={label.toString()}
-          onSelect={() => {
-            selectedValue !== value && onChange(value);
-          }}
-          isSelected={selectedValue === value}
-          title={title}
-          disabled={disabled}
-        >
-          {renderItem ? renderItem({ value, label, disabled, title }) : label}
-        </SingleSelectOptionsItem>
-      ))}
+      {options.map((optionProps) => {
+        const { value, label, disabled, ItemComponent = SingleSelectOptionsItem } = optionProps;
+        const isSelected = selectedValue === value;
+
+        const itemClass = cn(s.singleSelectListItem, {
+          [s.singleSelectListItem_selected]: isSelected,
+          [s.singleSelectListItem_disabled]: disabled,
+        });
+
+        return (
+          <ItemComponent
+            key={label.toString()}
+            onSelect={() => {
+              selectedValue !== value && onChange(value);
+            }}
+            isSelected={isSelected}
+            className={itemClass}
+            option={optionProps}
+          />
+        );
+      })}
     </ul>
   );
 };
 export default SingleSelectList;
 
-interface SingleSelectListItemProps {
-  children: React.ReactNode;
-  disabled?: boolean;
-  title?: string;
+export interface DefaultSelectListItemProps<T> {
   onSelect?: () => void;
   isSelected?: boolean;
+  className?: string;
+  option: SelectOption<T>;
 }
-const SingleSelectOptionsItem: React.FC<SingleSelectListItemProps> = ({
-  onSelect,
-  children,
-  disabled,
-  title,
-  isSelected,
-}) => {
+
+const SingleSelectOptionsItem = <T,>({ onSelect, option, className }: DefaultSelectListItemProps<T>) => {
+  const { disabled, title, label } = option;
   const handleClick = () => {
     if (disabled) return;
     onSelect?.();
   };
-  const itemClass = cn(s.singleSelectListItem, {
-    [s.singleSelectListItem_selected]: isSelected,
-    [s.singleSelectListItem_disabled]: disabled,
-  });
 
   return (
-    <ConditionalWrapper Component={Tooltip} isWrap={!!title} label={title} placement={'bottom-start'}>
-      <li className={itemClass} onClick={handleClick}>
-        {children}
+    <ConditionalWrapper Component={Tooltip} isWrap={!!title} label={title} placement="bottom-start">
+      <li className={className} onClick={handleClick}>
+        {label}
       </li>
     </ConditionalWrapper>
   );

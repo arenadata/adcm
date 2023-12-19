@@ -1,0 +1,41 @@
+:global {
+  body.theme-dark {
+    --helper-about-adcm-modal-subtitle-color: var(--color-xwhite-off);
+    --helper-about-adcm-modal-bg: var(--color-new-dakx-50);
+  }
+
+  body.theme-light {
+    --helper-about-adcm-modal-subtitle-color: var(--color-xdark);
+    --helper-about-adcm-modal-bg: var(--color-white-background-50);
+  }
+}
+.aboutAdcmModal {
+  border-radius: 12px;
+  background: var(--helper-about-adcm-modal-bg);
+  display: flex;
+  padding: 20px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 40px;
+
+  &__logo {
+    cursor: initial;
+
+    svg {
+      width: 160px;
+      height: 40px;
+    }
+  }
+
+  &__subtitle {
+    color: var(--helper-about-adcm-modal-subtitle-color);
+  }
+
+  &__rightsWrapper {
+    p {
+      margin: 0;
+    }
+  }
+}
