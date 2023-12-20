@@ -331,6 +331,7 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Arenadata Cluster Manager",
     "VERSION": "2.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
     "REDOC_DIST": "SIDECAR",
