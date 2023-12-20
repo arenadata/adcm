@@ -13,7 +13,7 @@ from api_v2.login.views import LoginView
 from api_v2.logout.views import LogoutView
 from api_v2.profile.views import ProfileView
 from api_v2.token.views import TokenView
-from api_v2.views import ADCMInfo, APIRoot
+from api_v2.views import APIRoot
 from django.urls import include, path
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -23,7 +23,6 @@ from drf_spectacular.views import (
 
 urlpatterns = [
     path("", APIRoot.as_view(), name="api-root-v2"),
-    path("adcm-info/", ADCMInfo.as_view(), name="adcm-info"),
     path("rbac/", include(("api_v2.rbac.urls", "rbac"))),
     path("clusters/", include("api_v2.cluster.urls")),
     path("bundles/", include("api_v2.bundle.urls")),
