@@ -8,6 +8,7 @@ export interface DialogDefaultControlsProps {
   actionButtonLabel?: string;
   isActionDisabled?: boolean;
   isActionButtonLoaderShown?: boolean;
+  isActionButtonDefaultFocus?: boolean;
   onAction?: () => void;
   onCancel?: () => void;
 }
@@ -19,6 +20,7 @@ const DialogDefaultControls: React.FC<DialogDefaultControlsProps> = ({
   onCancel,
   isActionDisabled = false,
   isActionButtonLoaderShown = false,
+  isActionButtonDefaultFocus = false,
 }) => {
   return (
     <ButtonGroup className={s.dialog__defaultControls} data-test="dialog-control">
@@ -30,6 +32,7 @@ const DialogDefaultControls: React.FC<DialogDefaultControlsProps> = ({
         onClick={onAction}
         data-test="btn-accept"
         iconLeft={isActionButtonLoaderShown ? { name: 'g1-load', className: 'spin' } : undefined}
+        autoFocus={isActionButtonDefaultFocus}
       >
         {actionButtonLabel}
       </Button>

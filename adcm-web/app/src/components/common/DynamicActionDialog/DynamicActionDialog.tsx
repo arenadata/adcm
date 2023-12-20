@@ -49,7 +49,12 @@ const DynamicActionDialog: React.FC<DynamicActionDialogProps> = ({ clusterId, ac
 
   if (isShowDisclaimer) {
     const dialogControls = (
-      <CustomDialogControls actionButtonLabel="Run" onCancel={onCancel} onAction={() => onSubmit(localActionRunConfig)}>
+      <CustomDialogControls
+        actionButtonLabel="Run"
+        onCancel={onCancel}
+        onAction={() => onSubmit(localActionRunConfig)}
+        isActionButtonDefaultFocus={true}
+      >
         <Checkbox checked={localActionRunConfig.isVerbose} label="Verbose" onChange={handleChangeVerbose} />
       </CustomDialogControls>
     );

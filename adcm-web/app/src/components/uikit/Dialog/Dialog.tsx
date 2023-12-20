@@ -12,6 +12,7 @@ export interface DialogProps extends ModalOptions, DialogDefaultControlsProps {
   children: React.ReactNode;
   title?: React.ReactNode;
   dialogControls?: React.ReactNode;
+  isActionButtonDefaultFocus?: boolean;
   isDialogControlsOnTop?: boolean;
   width?: string;
   height?: string;
@@ -28,6 +29,7 @@ const Dialog: React.FC<DialogProps> = ({
   children,
   title,
   dialogControls,
+  isActionButtonDefaultFocus,
   isDialogControlsOnTop,
   cancelButtonLabel,
   actionButtonLabel,
@@ -62,6 +64,7 @@ const Dialog: React.FC<DialogProps> = ({
       isActionButtonLoaderShown={isActionButtonLoaderShown}
       onAction={onAction}
       onCancel={handleClose}
+      isActionButtonDefaultFocus={isActionButtonDefaultFocus}
     />
   );
 
