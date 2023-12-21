@@ -56,6 +56,9 @@ class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):  # pylint:
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_for_service"
         )
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_for_service)
+        self.host_in_cluster = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="host_in_cluster", cluster=self.cluster_1
+        )
 
         self.component_1 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
@@ -403,6 +406,33 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertDictEqual(response.json(), {"id": 3, "name": "host_for_service"})
 
+    def test_add_not_mapped_host_fail(self):
+        initial_hosts_count = self.service_1_group_config.hosts.count()
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-group-config-hosts-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "group_config_pk": self.service_1_group_config.pk,
+                },
+            ),
+            data={"hostId": self.host_in_cluster.pk},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "GROUP_CONFIG_HOST_ERROR",
+                "level": "error",
+                "desc": "host is not available for this object, "
+                "or host already is a member of another group of this object",
+            },
+        )
+        self.assertEqual(self.service_1_group_config.hosts.count(), initial_hosts_count)
+
     def test_delete_host_success(self):
         response = self.client.delete(
             path=reverse(
@@ -587,7 +617,9 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disab
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertDictEqual(response.json(), {"id": 4, "name": "host_for_component"})
+        self.assertDictEqual(
+            d1=response.json(), d2={"id": self.host_for_component.pk, "name": self.host_for_component.name}
+        )
 
     def test_list_host_candidates_success(self):
         response = self.client.get(
