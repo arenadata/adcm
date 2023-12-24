@@ -13,16 +13,26 @@
 from cm.models import ADCMEntityStatus, ClusterObject, ObjectType
 from cm.status_api import get_service_status
 from django.db.models import QuerySet
-from django_filters.rest_framework import CharFilter, ChoiceFilter, FilterSet
+from django_filters.rest_framework import (
+    CharFilter,
+    ChoiceFilter,
+    FilterSet,
+    OrderingFilter,
+)
 
 
 class ServiceFilter(FilterSet):
     name = CharFilter(label="Service name", method="filter_name")
+    display_name = CharFilter(label="Display name", field_name="prototype__display_name", lookup_expr="icontains")
     status = ChoiceFilter(label="Service status", choices=ADCMEntityStatus.choices, method="filter_status")
+    ordering = OrderingFilter(
+        fields={"prototype__display_name": "displayName"},
+        field_labels={"prototype__display_name": "Display name"},
+    )
 
     class Meta:
         model = ClusterObject
-        fields = ["name", "status"]
+        fields = ["name", "display_name", "status"]
 
     @staticmethod
     def filter_status(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument

@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=wrong-import-order,wrong-import-position
-
 DOCUMENTATION = """
 ---
 module: adcm_change_flag
@@ -61,16 +60,26 @@ EXAMPLES = r"""
         name: host_name
 """
 import sys
-from ansible.plugins.action import ActionBase
+
 from ansible.errors import AnsibleError
+from ansible.plugins.action import ActionBase
 
 sys.path.append("/adcm/python")
 import adcm.init_django  # pylint: disable=unused-import
 
-from cm.ansible_plugin import get_context_object, check_context_type
+from cm.ansible_plugin import check_context_type, get_context_object
+from cm.flag import remove_flag, update_object_flag
 from cm.logger import logger
-from cm.flag import update_object_flag, remove_flag
-from cm.models import ClusterObject, ServiceComponent, get_object_cluster, HostProvider, Host, ADCMEntity
+from cm.models import (
+    ADCMEntity,
+    ADCMEntityStatus,
+    ClusterObject,
+    Host,
+    HostProvider,
+    ServiceComponent,
+    get_object_cluster,
+)
+from cm.status_api import send_object_update_event
 
 cluster_context_type = ("cluster", "service", "component")
 
@@ -184,7 +193,9 @@ class ActionModule(ActionBase):
         for obj in objects:
             if self._task.args["operation"] == "up":
                 update_object_flag(obj=obj, msg=msg)
+                send_object_update_event(object_=obj, changes={"status": ADCMEntityStatus.UP.value})
             elif self._task.args["operation"] == "down":
                 remove_flag(obj=obj, msg=msg)
+                send_object_update_event(object_=obj, changes={"status": ADCMEntityStatus.DOWN.value})
 
         return {"failed": False, "changed": True}

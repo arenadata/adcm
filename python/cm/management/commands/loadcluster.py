@@ -124,8 +124,10 @@ def create_group(group, ex_hosts_list, obj):
     group.pop("object_type")
     config = create_config(group.pop("config"))
     hosts = []
+
     for host in group.pop("hosts"):
         hosts.append(ex_hosts_list[host])
+
     group_config = GroupConfig.objects.create(
         object_id=obj.id,
         config=config,

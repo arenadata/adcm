@@ -1,0 +1,119 @@
+- type: cluster
+  name: cluster_with_hc_requirements
+  version: &version '1.0'
+  edition: community
+
+- name: service_requires_service
+  type: service
+  version: *version
+  requires:
+    - service: service_required
+  components:
+    component_1:
+      constraint: [ 0, + ]
+
+- name: service_requires_component
+  type: service
+  version: *version
+  requires:
+    - service: service_with_component_required
+      component: required_component
+  components:
+    component_1:
+      constraint: [ 0, + ]
+
+- name: service_no_requires
+  type: service
+  version: *version
+  components:
+    component_1:
+      constraint: [ 0, + ]
+
+- name: service_required
+  type: service
+  version: *version
+  components:
+    component_in_required_service:
+      constraint: [ 0, + ]
+
+- name: service_with_component_required
+  type: service
+  version: *version
+  components:
+    required_component:
+      constraint: [ 0, + ]
+    not_required_component:
+      constraint: [ 0, + ]
+
+- name: bound_target_service
+  type: service
+  version: *version
+  components:
+    bound_target_component:
+      constraint: [ 0, + ]
+
+- name: service_with_bound_component
+  type: service
+  version: *version
+  components:
+    bound_component:
+      constraint: [ 0, + ]
+      bound_to:
+        service: bound_target_service
+        component: bound_target_component
+
+- name: service_with_one_component_constraint
+  type: service
+  version: *version
+  components:
+    one:
+      constraint: [1]
+
+- name: service_with_zero_one_component_constraint
+  type: service
+  version: *version
+  components:
+    zero_one:
+      constraint: [0,1]
+
+- name: service_with_one_two_component_constraint
+  type: service
+  version: *version
+  components:
+    one_two:
+      constraint: [1,2]
+
+- name: service_with_one_odd_component_constraint_1
+  type: service
+  version: *version
+  components:
+    one_odd_first_variant:
+      constraint: [1,odd]
+
+- name: service_with_one_odd_component_constraint_2
+  type: service
+  version: *version
+  components:
+    one_odd_second_variant:
+      constraint: [odd]
+
+- name: service_with_zero_odd_component_constraint
+  type: service
+  version: *version
+  components:
+    zero_odd:
+      constraint: [0,odd]
+
+- name: service_with_one_plus_component_constraint
+  type: service
+  version: *version
+  components:
+    one_plus:
+      constraint: [1,+]
+
+- name: service_with_plus_component_constraint
+  type: service
+  version: *version
+  components:
+    plus:
+      constraint: [+]

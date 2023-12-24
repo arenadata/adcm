@@ -1,0 +1,7 @@
+- type: cluster
+  name: cluster_with_variant_in_upgrade
+  version: 1.2
+
+- type: service
+  name: dummy
+  version: 3

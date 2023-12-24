@@ -22,6 +22,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django.conf import settings
 from django.db.models import (
     CASCADE,
     BooleanField,
@@ -79,7 +80,7 @@ class AuditObject(Model):
 
 
 class AuditUser(Model):
-    username = CharField(max_length=150, null=False, blank=False)
+    username = CharField(max_length=settings.USERNAME_MAX_LENGTH, null=False, blank=False)
     auth_user_id = PositiveBigIntegerField()
     created_at = DateTimeField(null=True)
     deleted_at = DateTimeField(null=True)
@@ -130,8 +131,13 @@ AUDIT_OBJECT_TYPE_TO_MODEL_MAP = {v: k for k, v in MODEL_TO_AUDIT_OBJECT_TYPE_MA
 PATH_STR_TO_OBJ_CLASS_MAP = {
     "adcm": ADCM,
     "service": ClusterObject,
+    "services": ClusterObject,
     "component": ServiceComponent,
+    "components": ServiceComponent,
     "provider": HostProvider,
+    "hostproviders": HostProvider,
     "host": Host,
+    "hosts": Host,
     "cluster": Cluster,
+    "clusters": Cluster,
 }

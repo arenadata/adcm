@@ -25,6 +25,7 @@ from django.contrib.auth.models import User as AuthUser
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.utils.timezone import now
+from rbac.models import Group, Policy, Role
 from rbac.models import User as RBACUser
 
 
@@ -36,6 +37,10 @@ from rbac.models import User as RBACUser
 @receiver(signal=post_delete, sender=Bundle)
 @receiver(signal=post_delete, sender=ADCM)
 @receiver(signal=post_delete, sender=Prototype)
+@receiver(signal=post_delete, sender=RBACUser)
+@receiver(signal=post_delete, sender=Group)
+@receiver(signal=post_delete, sender=Role)
+@receiver(signal=post_delete, sender=Policy)
 def mark_deleted_audit_object_handler(sender, instance, **kwargs) -> None:  # pylint: disable=unused-argument
     audit_objs = []
     for audit_obj in AuditObject.objects.filter(

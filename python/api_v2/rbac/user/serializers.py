@@ -9,8 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from api_v2.rbac.user.constants import UserStatusChoices
+from django.conf import settings
 from django.contrib.auth.models import Group as AuthGroup
 from rbac.models import User
 from rest_framework.fields import (
@@ -66,10 +66,10 @@ class UserSerializer(ModelSerializer):
 
 class UserUpdateSerializer(ModelSerializer):
     password = CharField(trim_whitespace=False, write_only=True, required=False)
-    first_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False, default="")
-    last_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False, default="")
-    email = EmailField(allow_blank=True, required=False, default="")
-    is_super_user = BooleanField(source="is_superuser", default=False)
+    first_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False)
+    last_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False)
+    email = EmailField(allow_blank=True, required=False)
+    is_super_user = BooleanField(source="is_superuser", required=False)
 
     class Meta:
         model = User
@@ -77,7 +77,7 @@ class UserUpdateSerializer(ModelSerializer):
 
 
 class UserCreateSerializer(UserUpdateSerializer):
-    username = RegexField(r"^[^\s]+$", max_length=150)
+    username = RegexField(r"^[^\s]+$", max_length=settings.USERNAME_MAX_LENGTH)
     password = CharField(trim_whitespace=False, write_only=True)
     first_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, default="")
     last_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, default="")

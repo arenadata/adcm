@@ -9,13 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-lines
 
 import copy
 import json
 import subprocess
 from collections.abc import Hashable
 from configparser import ConfigParser
+from dataclasses import dataclass, field
 from functools import partial
 from pathlib import Path
 from typing import Any, Literal
@@ -44,7 +44,6 @@ from cm.api import (
     make_host_comp_list,
     save_hc,
 )
-from cm.api_context import CTX
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.hierarchy import Tree
 from cm.inventory import (
@@ -58,6 +57,8 @@ from cm.issue import (
     check_component_constraint,
     check_hc_requires,
     check_service_requires,
+    lock_affected_objects,
+    unlock_affected_objects,
     update_hierarchy_issues,
 )
 from cm.logger import logger
@@ -85,7 +86,11 @@ from cm.models import (
     Upgrade,
     get_object_cluster,
 )
-from cm.status_api import post_event
+from cm.status_api import (
+    send_object_update_event,
+    send_prototype_and_state_update_event,
+    send_task_status_update_event,
+)
 from cm.utils import get_env_with_venv_path
 from cm.variant import process_variant
 from django.conf import settings
@@ -95,125 +100,113 @@ from django.utils import timezone
 from rbac.roles import re_apply_policy_for_jobs
 
 
-def start_task(
+@dataclass
+class ActionRunPayload:
+    conf: dict = field(default_factory=dict)
+    attr: dict = field(default_factory=dict)
+    hostcomponent: list[dict] = field(default_factory=list)
+    verbose: bool = False
+
+
+def run_action(
     action: Action,
     obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
-    conf: dict,
-    attr: dict,
-    hostcomponent: list[dict],
-    hosts: list[Host],
-    verbose: bool,
+    payload: ActionRunPayload,
+    hosts: list[int],
 ) -> TaskLog:
-    if action.type not in ActionType.values:
-        msg = f'unknown type "{action.type}" for action {action} on {obj}'
-        raise_adcm_ex("WRONG_ACTION_TYPE", msg)
+    cluster: Cluster | None = get_object_cluster(obj=obj)
 
-    task = prepare_task(action, obj, conf, attr, hostcomponent, hosts, verbose)
-    CTX.event.send_state()
-    run_task(task, CTX.event)
-    CTX.event.send_state()
+    if hosts:
+        check_action_hosts(action=action, obj=obj, cluster=cluster, hosts=hosts)
+
+    if action.host_action:
+        action_target = get_host_object(action=action, cluster=cluster)
+    else:
+        action_target = obj
+
+    object_locks = action_target.concerns.filter(type=ConcernType.LOCK)
+
+    if action.name == settings.ADCM_DELETE_SERVICE_ACTION_NAME:
+        object_locks = object_locks.exclude(owner_id=obj.id, owner_type=obj.content_type)
+
+    if object_locks.exists():
+        raise AdcmEx(code="LOCK_ERROR", msg=f"object {action_target} is locked")
+
+    if (
+        action.name not in settings.ADCM_SERVICE_ACTION_NAMES_SET
+        and action_target.concerns.filter(type=ConcernType.ISSUE).exists()
+    ):
+        raise AdcmEx(code="ISSUE_INTEGRITY_ERROR", msg=f"object {action_target} has issues")
+
+    if not action.allowed(obj=action_target):
+        raise AdcmEx(code="TASK_ERROR", msg="action is disabled")
+
+    spec, flat_spec = check_action_config(action=action, obj=obj, conf=payload.conf, attr=payload.attr)
+
+    is_upgrade_action = hasattr(action, "upgrade")
+
+    if is_upgrade_action and not action.hostcomponentmap:
+        check_constraints_for_upgrade(
+            cluster=cluster, upgrade=action.upgrade, host_comp_list=get_actual_hc(cluster=cluster)
+        )
+
+    host_map, post_upgrade_hc = check_hostcomponentmap(cluster=cluster, action=action, new_hc=payload.hostcomponent)
+
+    with atomic():
+        task = create_task(
+            action=action,
+            obj=obj,
+            conf=payload.conf,
+            attr=payload.attr,
+            verbose=payload.verbose,
+            hosts=hosts,
+            hostcomponent=get_hc(cluster=cluster),
+            post_upgrade_hc=post_upgrade_hc,
+        )
+        if host_map or (is_upgrade_action and host_map is not None):
+            save_hc(cluster=cluster, host_comp_list=host_map)
+
+        if payload.conf:
+            new_conf = process_config_and_attr(
+                obj=obj, conf=payload.conf, attr=payload.attr, spec=spec, flat_spec=flat_spec
+            )
+            process_file_type(obj=task, spec=spec, conf=payload.conf)
+            task.config = new_conf
+            task.save()
+
+        on_commit(func=partial(send_task_status_update_event, object_=task, status=JobStatus.CREATED.value))
+
+    re_apply_policy_for_jobs(action_object=obj, task=task)
+
+    run_task(task)
 
     return task
 
 
 def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster | None, hosts: list[int]) -> None:
-    provider = None
-    if obj.prototype.type == "provider":
-        provider = obj
-
-    if not hosts:
-        return
-
     if not action.partial_execution:
-        raise_adcm_ex("TASK_ERROR", "Only action with partial_execution permission can receive host list")
+        raise AdcmEx(code="TASK_ERROR", msg="Only action with partial_execution permission can receive host list")
 
-    if not isinstance(hosts, list):
-        raise_adcm_ex("TASK_ERROR", "Hosts should be array")
+    provider = obj if obj.prototype.type == "provider" else None
 
-    for host_id in hosts:
-        if not isinstance(host_id, int):
-            raise_adcm_ex("TASK_ERROR", f"host id should be integer ({host_id})")
+    hosts = Host.objects.filter(id__in=hosts)
 
-        host = Host.obj.get(id=host_id)
-        if cluster and host.cluster != cluster:
-            raise_adcm_ex("TASK_ERROR", f"host #{host_id} does not belong to cluster #{cluster.pk}")
+    if cluster and hosts.exclude(cluster=cluster).exists():
+        raise AdcmEx(code="TASK_ERROR", msg=f"One of hosts does not belong to cluster #{cluster.pk}")
 
-        if provider and host.provider != provider:
-            raise_adcm_ex("TASK_ERROR", f"host #{host_id} does not belong to host provider #{provider.pk}")
-
-
-def prepare_task(
-    action: Action,
-    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
-    conf: dict,
-    attr: dict,
-    hostcomponent: list[dict],
-    hosts: list[int],
-    verbose: bool,
-) -> TaskLog:
-    cluster = get_object_cluster(obj=obj)
-    check_action_state(action=action, task_object=obj, cluster=cluster)
-    _, spec, flat_spec = check_action_config(action=action, obj=obj, conf=conf, attr=attr)
-    if conf and not spec:
-        raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg="Absent config in action prototype")
-
-    check_action_hosts(action=action, obj=obj, cluster=cluster, hosts=hosts)
-    old_hc = get_hc(cluster=cluster)
-    host_map, post_upgrade_hc = check_hostcomponentmap(cluster=cluster, action=action, new_hc=hostcomponent)
-
-    if hasattr(action, "upgrade") and not action.hostcomponentmap:
-        check_constraints_for_upgrade(
-            cluster=cluster, upgrade=action.upgrade, host_comp_list=get_actual_hc(cluster=cluster)
-        )
-
-    if not attr:
-        attr = {}
-
-    with atomic():
-        if cluster:
-            on_commit(
-                func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")
-            )
-
-        task = create_task(
-            action=action,
-            obj=obj,
-            conf=conf,
-            attr=attr,
-            hostcomponent=old_hc,
-            hosts=hosts,
-            verbose=verbose,
-            post_upgrade_hc=post_upgrade_hc,
-        )
-        if host_map or (hasattr(action, "upgrade") and host_map is not None):
-            save_hc(cluster=cluster, host_comp_list=host_map)
-
-        if conf:
-            new_conf = process_config_and_attr(obj=obj, conf=conf, attr=attr, spec=spec, flat_spec=flat_spec)
-            process_file_type(obj=task, spec=spec, conf=conf)
-            task.config = new_conf
-            task.save()
-
-    re_apply_policy_for_jobs(action_object=obj, task=task)
-
-    return task
+    if provider and hosts.exclude(provider=provider).exists():
+        raise AdcmEx(code="TASK_ERROR", msg=f"One of hosts does not belong to host provider #{provider.pk}")
 
 
 def restart_task(task: TaskLog):
     if task.status in (JobStatus.CREATED, JobStatus.RUNNING):
         raise_adcm_ex("TASK_ERROR", f"task #{task.pk} is running")
     elif task.status == JobStatus.SUCCESS:
-        run_task(task, CTX.event)
-        CTX.event.send_state()
+        run_task(task)
     elif task.status in (JobStatus.FAILED, JobStatus.ABORTED):
-        run_task(task, CTX.event, "restart")
-        CTX.event.send_state()
+        run_task(task, "restart")
     else:
         raise_adcm_ex("TASK_ERROR", f"task #{task.pk} has unexpected status: {task.status}")
-
-
-def cancel_task(task: TaskLog):
-    task.cancel(CTX.event)
 
 
 def get_host_object(action: Action, cluster: Cluster | None) -> ADCMEntity | None:
@@ -228,43 +221,30 @@ def get_host_object(action: Action, cluster: Cluster | None) -> ADCMEntity | Non
     return obj
 
 
-def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster | None) -> None:
-    if action.host_action:
-        obj = get_host_object(action=action, cluster=cluster)
-    else:
-        obj = task_object
-
-    if obj.concerns.filter(type=ConcernType.LOCK).exists():
-        raise_adcm_ex(code="LOCK_ERROR", msg=f"object {obj} is locked")
-
-    if (
-        action.name not in settings.ADCM_SERVICE_ACTION_NAMES_SET
-        and obj.concerns.filter(type=ConcernType.ISSUE).exists()
-    ):
-        raise_adcm_ex(code="ISSUE_INTEGRITY_ERROR", msg=f"object {obj} has issues")
-
-    if action.allowed(obj=obj):
-        return
-
-    raise_adcm_ex(code="TASK_ERROR", msg="action is disabled")
-
-
-def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict) -> tuple[dict, dict, dict]:
+def check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict) -> tuple[dict, dict]:
     proto = action.prototype
     spec, flat_spec, _, _ = get_prototype_config(prototype=proto, action=action, obj=obj)
     if not spec:
-        return {}, {}, {}
+        if conf:
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Absent config in action prototype")
+
+        return {}, {}
 
     if not conf:
-        raise_adcm_ex("TASK_ERROR", "action config is required")
+        raise AdcmEx("TASK_ERROR", "action config is required")
 
     check_attr(proto, action, attr, flat_spec)
-    process_variant(obj=obj, spec=spec, conf=conf)
+
+    object_config = {}
+    if obj.config is not None:
+        object_config = ConfigLog.objects.get(id=obj.config.current).config
+
+    process_variant(obj=obj, spec=spec, conf=object_config)
     check_config_spec(proto=proto, obj=action, spec=spec, flat_spec=flat_spec, conf=conf, attr=attr)
 
-    new_config = process_config_spec(obj=obj, spec=spec, new_config=conf)
+    process_config_spec(obj=obj, spec=spec, new_config=conf)
 
-    return new_config, spec, flat_spec
+    return spec, flat_spec
 
 
 def add_to_dict(my_dict: dict, key: Hashable, subkey: Hashable, value: Any):
@@ -456,31 +436,8 @@ def check_service_task(cluster_id: int, action: Action) -> ClusterObject | None:
     return None
 
 
-def check_component_task(cluster_id: int, action: Action) -> ServiceComponent | None:
-    cluster = Cluster.obj.get(id=cluster_id)
-    try:
-        component = ServiceComponent.objects.get(cluster=cluster, prototype=action.prototype)
-
-        return component
-    except ServiceComponent.DoesNotExist:
-        msg = (
-            f"component #{action.prototype.pk} for action " f'"{action.name}" is not installed in cluster #{cluster.pk}'
-        )
-        raise_adcm_ex("COMPONENT_NOT_FOUND", msg)
-
-    return None
-
-
 def check_cluster(cluster_id: int) -> Cluster:
     return Cluster.obj.get(id=cluster_id)
-
-
-def check_provider(provider_id: int) -> HostProvider:
-    return HostProvider.obj.get(id=provider_id)
-
-
-def check_adcm(adcm_id: int) -> ADCM:
-    return ADCM.obj.get(id=adcm_id)
 
 
 def get_bundle_root(action: Action) -> str:
@@ -704,13 +661,12 @@ def prepare_job_config(
     if conf:
         job_conf["job"]["config"] = conf
 
-    file_descriptor = open(  # pylint: disable=consider-using-with
+    with open(
         Path(settings.RUN_DIR, f"{job_id}", "config.json"),
         "w",
         encoding=settings.ENCODING_UTF_8,
-    )
-    json.dump(job_conf, file_descriptor, indent=3, sort_keys=True)
-    file_descriptor.close()
+    ) as file_descriptor:
+        json.dump(job_conf, file_descriptor, sort_keys=True, separators=(",", ":"))
 
 
 def create_task(
@@ -732,12 +688,9 @@ def create_task(
         hosts=hosts,
         post_upgrade_hc_map=post_upgrade_hc,
         verbose=verbose,
-        start_date=timezone.now(),
-        finish_date=timezone.now(),
         status=JobStatus.CREATED,
         selector=get_selector(obj, action),
     )
-    set_task_status(task, JobStatus.CREATED, CTX.event)
 
     if action.type == ActionType.JOB.value:
         sub_actions = [None]
@@ -750,15 +703,12 @@ def create_task(
             action=action,
             sub_action=sub_action,
             log_files=action.log_files,
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
             status=JobStatus.CREATED,
             selector=get_selector(obj, action),
         )
         log_type = sub_action.script_type if sub_action else action.script_type
         LogStorage.objects.create(job=job, name=log_type, type="stdout", format="txt")
         LogStorage.objects.create(job=job, name=log_type, type="stderr", format="txt")
-        set_job_status(job.pk, JobStatus.CREATED, CTX.event)
         Path(settings.RUN_DIR, f"{job.pk}", "tmp").mkdir(parents=True, exist_ok=True)
 
     return task
@@ -816,13 +766,17 @@ def set_action_state(
     )
 
     if state:
-        obj.set_state(state, CTX.event)
+        obj.set_state(state)
+        if hasattr(action, "upgrade"):
+            send_prototype_and_state_update_event(object_=obj)
+        else:
+            send_object_update_event(object_=obj, changes={"state": state})
 
     for m_state in multi_state_set or []:
-        obj.set_multi_state(m_state, CTX.event)
+        obj.set_multi_state(m_state)
 
     for m_state in multi_state_unset or []:
-        obj.unset_multi_state(m_state, CTX.event)
+        obj.unset_multi_state(m_state)
 
 
 def restore_hc(task: TaskLog, action: Action, status: str):
@@ -848,57 +802,24 @@ def restore_hc(task: TaskLog, action: Action, status: str):
     save_hc(cluster, host_comp_list)
 
 
-def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:  # pylint: disable=too-many-locals
-    action = task.action
-    obj = task.task_object
-    state, multi_state_set, multi_state_unset = get_state(action=action, job=job, status=status)
-
-    with atomic():
-        if cluster := get_object_cluster(obj=obj):
-            on_commit(
-                func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")
-            )
-
-        set_action_state(
-            action=action,
-            task=task,
-            obj=obj,
-            state=state,
-            multi_state_set=multi_state_set,
-            multi_state_unset=multi_state_unset,
-        )
-        restore_hc(task=task, action=action, status=status)
-        task.unlock_affected()
-        set_task_status(task=task, status=status, event=CTX.event)
-        update_hierarchy_issues(obj=obj)
-
+def audit_task(
+    action: Action, object_: Cluster | ClusterObject | ServiceComponent | HostProvider | Host, status: str
+) -> None:
     upgrade = Upgrade.objects.filter(action=action).first()
+
     if upgrade:
         operation_name = f"{action.display_name} upgrade completed"
     else:
         operation_name = f"{action.display_name} action completed"
 
-    if (
-        action.name in {settings.ADCM_TURN_ON_MM_ACTION_NAME, settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME}
-        and obj.maintenance_mode == MaintenanceMode.CHANGING
-    ):
-        obj.maintenance_mode = MaintenanceMode.OFF
-        obj.save()
+    obj_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP.get(object_.__class__)
 
-    if (
-        action.name in {settings.ADCM_TURN_OFF_MM_ACTION_NAME, settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME}
-        and obj.maintenance_mode == MaintenanceMode.CHANGING
-    ):
-        obj.maintenance_mode = MaintenanceMode.ON
-        obj.save()
-
-    obj_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP.get(obj.__class__)
     if not obj_type:
         return
 
     audit_object = get_or_create_audit_obj(
-        object_id=obj.pk,
-        object_name=obj.name,
+        object_id=object_.pk,
+        object_name=object_.name,
         object_type=obj_type,
     )
     if status == "success":
@@ -915,35 +836,55 @@ def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:  # pyli
     )
     cef_logger(audit_instance=audit_log, signature_id="Action completion")
 
-    CTX.event.send_state()
+
+def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:
+    action = task.action
+    obj = task.task_object
+
+    state, multi_state_set, multi_state_unset = get_state(action=action, job=job, status=status)
+
+    set_action_state(
+        action=action,
+        task=task,
+        obj=obj,
+        state=state,
+        multi_state_set=multi_state_set,
+        multi_state_unset=multi_state_unset,
+    )
+    restore_hc(task=task, action=action, status=status)
+    unlock_affected_objects(task=task)
+
+    if obj is not None:
+        update_hierarchy_issues(obj=obj)
+
+        if (
+            action.name in {settings.ADCM_TURN_ON_MM_ACTION_NAME, settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME}
+            and obj.maintenance_mode == MaintenanceMode.CHANGING
+        ):
+            obj.maintenance_mode = MaintenanceMode.OFF
+            obj.save()
+
+        if (
+            action.name in {settings.ADCM_TURN_OFF_MM_ACTION_NAME, settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME}
+            and obj.maintenance_mode == MaintenanceMode.CHANGING
+        ):
+            obj.maintenance_mode = MaintenanceMode.ON
+            obj.save()
+
+        audit_task(action=action, object_=obj, status=status)
+
+    set_task_final_status(task=task, status=status)
+
+    send_task_status_update_event(object_=task, status=status)
+
     try:
         load_mm_objects()
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as error:  # pylint: disable=broad-except
         logger.warning("Error loading mm objects on task finish")
-        logger.exception(e)
+        logger.exception(error)
 
 
-def cook_log_name(tag, level, ext="txt"):
-    return f"{tag}-{level}.{ext}"
-
-
-def log_custom(job_id, name, log_format, body):
-    job = JobLog.obj.get(id=job_id)
-    log_storage = LogStorage.objects.create(job=job, name=name, type="custom", format=log_format, body=body)
-    post_event(
-        event="add_job_log",
-        object_id=job.pk,
-        object_type="job",
-        details={
-            "id": log_storage.pk,
-            "type": log_storage.type,
-            "name": log_storage.name,
-            "format": log_storage.format,
-        },
-    )
-
-
-def run_task(task: TaskLog, event, args: str = ""):
+def run_task(task: TaskLog, args: str = ""):
     err_file = open(  # pylint: disable=consider-using-with
         Path(settings.LOG_DIR, "task_runner.err"),
         "a+",
@@ -962,9 +903,7 @@ def run_task(task: TaskLog, event, args: str = ""):
 
     tree = Tree(obj=task.task_object)
     affected_objs = (node.value for node in tree.get_all_affected(node=tree.built_from))
-    task.lock_affected(objects=affected_objs)
-
-    set_task_status(task=task, status=JobStatus.RUNNING, event=event)
+    lock_affected_objects(task=task, objects=affected_objs)
 
 
 def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
@@ -995,33 +934,35 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
         config_parser.write(config_file)
 
 
-def set_task_status(task: TaskLog, status: str, event):
+def set_task_final_status(task: TaskLog, status: str):
     task.status = status
     task.finish_date = timezone.now()
-    task.save()
-    event.set_task_status(task=task, status=status)
+    task.save(update_fields=["status", "finish_date"])
 
 
-def set_job_status(job_id: int, status: str, event, pid: int = 0):
-    job_query = JobLog.objects.filter(id=job_id)
-    job_query.update(status=status, pid=pid, finish_date=timezone.now())
-    job = job_query.first()
+def set_job_start_status(job_id: int, pid: int) -> None:
+    job = JobLog.objects.get(id=job_id)
+    job.status = JobStatus.RUNNING
+    job.start_date = timezone.now()
+    job.pid = pid
+    job.save(update_fields=["status", "start_date", "pid"])
 
-    if status == JobStatus.RUNNING:
-        if job.task.lock and job.task.task_object:
-            job.task.lock.reason = job.cook_reason()
-            job.task.lock.save(update_fields=["reason"])
-
-    event.set_job_status(job=job, status=status)
+    if job.task.lock and job.task.task_object:
+        job.task.lock.reason = job.cook_reason()
+        job.task.lock.save(update_fields=["reason"])
 
 
-def abort_all(event):
+def set_job_final_status(job_id: int, status: str) -> None:
+    JobLog.objects.filter(id=job_id).update(status=status, finish_date=timezone.now())
+
+
+def abort_all():
     for task in TaskLog.objects.filter(status=JobStatus.RUNNING):
-        set_task_status(task, JobStatus.ABORTED, event)
-        task.unlock_affected()
+        set_task_final_status(task, JobStatus.ABORTED)
+        unlock_affected_objects(task=task)
+
     for job in JobLog.objects.filter(status=JobStatus.RUNNING):
-        set_job_status(job.pk, JobStatus.ABORTED, event)
-    CTX.event.send_state()
+        set_job_final_status(job_id=job.pk, status=JobStatus.ABORTED)
 
 
 def getattr_first(attr: str, *objects: Any, default: Any = None) -> Any:

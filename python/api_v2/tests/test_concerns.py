@@ -66,8 +66,11 @@ class TestConcernsResponse(BaseAPITestCase):
         response: Response = self.client.get(path=reverse(viewname="v2:cluster-detail", kwargs={"pk": cluster.pk}))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()["concerns"]), 1)
-        self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
+        data = response.json()
+        self.assertEqual(len(data["concerns"]), 1)
+        concern, *_ = data["concerns"]
+        self.assertEqual(concern["type"], "issue")
+        self.assertDictEqual(concern["reason"], expected_concern_reason)
 
     def test_required_config_concern(self):
         cluster = self.add_cluster(bundle=self.required_config_bundle, name="required_config_cluster")
@@ -79,8 +82,11 @@ class TestConcernsResponse(BaseAPITestCase):
         response: Response = self.client.get(path=reverse(viewname="v2:cluster-detail", kwargs={"pk": cluster.pk}))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()["concerns"]), 1)
-        self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
+        data = response.json()
+        self.assertEqual(len(data["concerns"]), 1)
+        concern, *_ = data["concerns"]
+        self.assertEqual(concern["type"], "issue")
+        self.assertDictEqual(concern["reason"], expected_concern_reason)
 
     def test_required_import_concern(self):
         cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
@@ -97,7 +103,7 @@ class TestConcernsResponse(BaseAPITestCase):
 
     def test_required_hc_concern(self):
         cluster = self.add_cluster(bundle=self.required_hc_bundle, name="required_hc_cluster")
-        self.add_service_to_cluster(service_name="service_1", cluster=cluster)
+        self.add_services_to_cluster(service_names=["service_1"], cluster=cluster)
         expected_concern_reason = {
             "message": MessageTemplate.objects.get(name=KnownNames.HOST_COMPONENT_ISSUE.value).template["message"],
             "placeholder": {"source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster"}},
@@ -125,12 +131,15 @@ class TestConcernsResponse(BaseAPITestCase):
         response: Response = self.client.get(path=reverse(viewname="v2:cluster-detail", kwargs={"pk": cluster.pk}))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()["concerns"]), 1)
-        self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
+        data = response.json()
+        self.assertEqual(len(data["concerns"]), 1)
+        concern, *_ = data["concerns"]
+        self.assertEqual(concern["type"], "flag")
+        self.assertDictEqual(concern["reason"], expected_concern_reason)
 
     def test_service_requirements(self):
         cluster = self.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")
-        service = self.add_service_to_cluster(service_name="service_1", cluster=cluster)
+        service = self.add_services_to_cluster(service_names=["service_1"], cluster=cluster).get()
         expected_concern_reason = {
             "message": MessageTemplate.objects.get(name=KnownNames.UNSATISFIED_REQUIREMENT_ISSUE.value).template[
                 "message"

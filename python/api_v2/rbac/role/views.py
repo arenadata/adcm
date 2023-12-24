@@ -14,28 +14,37 @@ from collections import defaultdict
 from api_v2.rbac.role.filters import RoleFilter
 from api_v2.rbac.role.serializers import RoleCreateUpdateSerializer, RoleSerializer
 from api_v2.views import CamelCaseModelViewSet
-from cm.errors import raise_adcm_ex
+from audit.utils import audit
+from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ProductCategory
+from django.db.models import Prefetch
 from guardian.mixins import PermissionListMixin
-from guardian.shortcuts import get_objects_for_user
 from rbac.models import ObjectType as RBACObjectType
 from rbac.models import Role, RoleTypes
 from rbac.services.role import role_create, role_update
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from adcm.permissions import DjangoModelPermissionsAudit
+from adcm.permissions import VIEW_ROLE_PERMISSION, CustomModelPermissionsByMethod
 
 
 class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disable=too-many-ancestors
-    queryset = Role.objects.prefetch_related("child", "category").order_by("display_name")
-    permission_classes = (DjangoModelPermissionsAudit,)
+    queryset = (
+        Role.objects.prefetch_related(
+            Prefetch(lookup="child", queryset=Role.objects.exclude(type=RoleTypes.HIDDEN)), "category", "policy_set"
+        )
+        .exclude(type=RoleTypes.HIDDEN)
+        .order_by("display_name")
+    )
+    permission_classes = (CustomModelPermissionsByMethod,)
+    method_permissions_map = {
+        "patch": [(VIEW_ROLE_PERMISSION, NotFound)],
+        "delete": [(VIEW_ROLE_PERMISSION, NotFound)],
+    }
     permission_required = ["rbac.view_role"]
     filterset_class = RoleFilter
-
-    def get_queryset(self, *args, **kwargs):
-        return get_objects_for_user(**self.get_get_objects_for_user_kwargs(Role.objects.all()))
 
     def get_serializer_class(self):
         if self.action in ("create", "update", "partial_update"):
@@ -43,6 +52,7 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
 
         return RoleSerializer
 
+    @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -50,12 +60,13 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
 
         return Response(data=RoleSerializer(instance=role).data, status=HTTP_201_CREATED)
 
+    @audit
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
 
         if instance.built_in:
-            raise_adcm_ex(code="ROLE_UPDATE_ERROR", msg=f"Can't modify role {instance.name} as it is auto created")
+            raise AdcmEx(code="ROLE_UPDATE_ERROR", msg=f"Can't modify role {instance.name} as it is auto created")
 
         serializer = self.get_serializer(data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
@@ -63,11 +74,15 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
 
         return Response(data=RoleSerializer(instance=role).data, status=HTTP_200_OK)
 
+    @audit
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
 
         if instance.built_in:
-            raise_adcm_ex(code="ROLE_DELETE_ERROR", msg="It is forbidden to remove the built-in role.")
+            raise AdcmEx(code="ROLE_DELETE_ERROR", msg="It is forbidden to remove the built-in role.")
+
+        if instance.policy_set.exists():
+            raise AdcmEx(code="ROLE_DELETE_ERROR", msg="Can't remove role that is used in policy.")
 
         return super().destroy(request, *args, **kwargs)
 

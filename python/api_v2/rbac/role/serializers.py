@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from rbac.models import Role
-from rest_framework.fields import BooleanField
+from rest_framework.fields import BooleanField, CharField
 from rest_framework.serializers import (
     ManyRelatedField,
     ModelSerializer,
@@ -55,10 +55,11 @@ class RoleSerializer(RoleChildSerializer):
 
 class RoleCreateUpdateSerializer(ModelSerializer):
     children = ManyRelatedField(child_relation=PrimaryKeyRelatedField(queryset=Role.objects.all()), source="child")
+    name = CharField(max_length=1000, default="")
 
     class Meta:
         model = Role
-        fields = ("display_name", "description", "children")
+        fields = ("name", "display_name", "description", "children")
         extra_kwargs = {"display_name": {"required": True}, "children": {"required": True}}
 
 

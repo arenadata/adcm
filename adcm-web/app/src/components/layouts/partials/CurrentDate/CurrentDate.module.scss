@@ -1,0 +1,23 @@
+.currentDate {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 210px;
+
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 20px;
+
+  &__item {
+    color: var(--text-default-color);
+
+    &:not(:first-child) {
+      margin-inline-start: 7px;
+    }
+
+    &_time {
+      width: 60px;
+    }
+  }
+}
+

@@ -22,6 +22,7 @@ from rbac.services.role import role_create, role_update
 from rest_flex_fields import is_expanded
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -62,6 +63,7 @@ class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
     filterset_class = RoleFilter
     ordering_fields = ("id", "name", "display_name", "built_in", "type")
     search_fields = ("name", "display_name")
+    schema = AutoSchema()
 
     def get_queryset(self, *args, **kwargs):
         queryset = get_objects_for_user(**self.get_get_objects_for_user_kwargs(Role.objects.all()))

@@ -69,8 +69,9 @@ from ansible.plugins.action import ActionBase
 
 sys.path.append("/adcm/python")
 import adcm.init_django  # pylint: disable=unused-import
+
 from cm.errors import AdcmEx
-from cm.job import log_custom
+from cm.ansible_plugin import create_custom_log
 from cm.logger import logger
 
 
@@ -95,7 +96,7 @@ class ActionModule(ActionBase):
         try:
             if path is None:
                 logger.debug("ansible adcm_custom_log: %s, %s, %s, %s", job_id, name, log_format, content)
-                log_custom(job_id, name, log_format, content)
+                create_custom_log(job_id=job_id, name=name, log_format=log_format, body=content)
             else:
                 logger.debug("ansible adcm_custom_log: %s, %s, %s, %s", job_id, name, log_format, path)
                 slurp_return = self._execute_module(
@@ -103,13 +104,15 @@ class ActionModule(ActionBase):
                 )
                 if "failed" in slurp_return and slurp_return["failed"]:
                     raise AdcmEx("UNKNOWN_ERROR", msg=slurp_return["msg"])
+
                 try:
                     body = base64.standard_b64decode(slurp_return["content"]).decode()
                 except Error as error:
                     raise AdcmEx("UNKNOWN_ERROR", msg="Error b64decode for slurp module") from error
                 except UnicodeDecodeError as error:
                     raise AdcmEx("UNKNOWN_ERROR", msg="Error UnicodeDecodeError for slurp module") from error
-                log_custom(job_id, name, log_format, body)
+
+                create_custom_log(job_id=job_id, name=name, log_format=log_format, body=body)
 
         except AdcmEx as e:
             return {"failed": True, "msg": f"{e.code}: {e.msg}"}

@@ -1,0 +1,17 @@
+:global {
+  body.theme-dark {
+    --cluster-overview-info-bg-color: var(--color-xdark-new-50);
+  }
+
+  body.theme-light {
+    --cluster-overview-info-bg-color: var(--color-xdark-new-50);
+  }
+}
+
+
+
+.clusterOverviewInfo__wrapper {
+  background: var(--cluster-overview-info-bg-color);
+  border-radius: 20px;
+  padding: 20px;
+}

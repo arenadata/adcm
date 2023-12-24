@@ -15,21 +15,24 @@ import json
 from functools import partial, wraps
 from typing import Literal
 
+from adcm_version import compare_prototype_versions
 from cm.adcm_config.config import (
     init_object_config,
     process_json_config,
     read_bundle_file,
-    save_obj_config,
+    save_object_config,
 )
 from cm.adcm_config.utils import proto_ref
 from cm.api_context import CTX
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.flag import update_object_flag
 from cm.issue import (
+    add_concern_to_object,
     check_bound_components,
     check_component_constraint,
     check_hc_requires,
     check_service_requires,
+    remove_concern_from_object,
     update_hierarchy_issues,
     update_issue_after_deleting,
 )
@@ -54,14 +57,19 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from cm.status_api import api_request, post_event
+from cm.status_api import (
+    api_request,
+    send_config_creation_event,
+    send_delete_service_event,
+    send_host_component_map_update_event,
+)
 from cm.utils import build_id_object_mapping, obj_ref
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
 from django.db.transaction import atomic, on_commit
 from rbac.models import Policy, re_apply_object_policy
 from rbac.roles import apply_policy_for_new_config
-from version_utils import rpm
+from rest_framework.status import HTTP_409_CONFLICT
 
 
 def check_license(prototype: Prototype) -> None:
@@ -74,17 +82,17 @@ def check_license(prototype: Prototype) -> None:
 
 def is_version_suitable(version: str, prototype_import: PrototypeImport) -> bool:
     if prototype_import.min_strict:
-        if rpm.compare_versions(version, prototype_import.min_version) <= 0:
+        if compare_prototype_versions(version, prototype_import.min_version) <= 0:
             return False
     elif prototype_import.min_version:
-        if rpm.compare_versions(version, prototype_import.min_version) < 0:
+        if compare_prototype_versions(version, prototype_import.min_version) < 0:
             return False
 
     if prototype_import.max_strict:
-        if rpm.compare_versions(version, prototype_import.max_version) >= 0:
+        if compare_prototype_versions(version, prototype_import.max_version) >= 0:
             return False
     elif prototype_import.max_version:
-        if rpm.compare_versions(version, prototype_import.max_version) > 0:
+        if compare_prototype_versions(version, prototype_import.max_version) > 0:
             return False
 
     return True
@@ -189,7 +197,6 @@ def add_cluster(prototype: Prototype, name: str, description: str = "") -> Clust
         cluster.save()
         update_hierarchy_issues(cluster)
 
-    post_event(event="create", object_id=cluster.pk, object_type="cluster")
     load_service_map()
     logger.info("cluster #%s %s is added", cluster.pk, cluster.name)
 
@@ -213,14 +220,10 @@ def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, descriptio
         obj_conf = init_object_config(prototype, host)
         host.config = obj_conf
         host.save()
-        host.add_to_concerns(CTX.lock)
+        add_concern_to_object(object_=host, concern=CTX.lock)
         update_hierarchy_issues(host.provider)
         re_apply_object_policy(provider)
 
-    CTX.event.send_state()
-    post_event(
-        event="create", object_id=host.pk, object_type="host", details={"type": "provider", "value": str(provider.pk)}
-    )
     load_service_map()
     logger.info("host #%s %s is added", host.pk, host.fqdn)
 
@@ -237,18 +240,16 @@ def add_host_provider(prototype: Prototype, name: str, description: str = ""):
         obj_conf = init_object_config(prototype, provider)
         provider.config = obj_conf
         provider.save()
-        provider.add_to_concerns(CTX.lock)
+        add_concern_to_object(object_=provider, concern=CTX.lock)
         update_hierarchy_issues(provider)
 
-    CTX.event.send_state()
-    post_event(event="create", object_id=provider.pk, object_type="provider")
     logger.info("host provider #%s %s is added", provider.pk, provider.name)
 
     return provider
 
 
 def cancel_locking_tasks(obj: ADCMEntity, obj_deletion=False):
-    for lock in obj.concerns.filter(type=ConcernType.LOCK):
+    for lock in obj.concerns.filter(type=ConcernType.LOCK, owner_type=obj.content_type, owner_id=obj.id):
         for task in TaskLog.objects.filter(lock=lock):
             task.cancel(obj_deletion=obj_deletion)
 
@@ -264,10 +265,8 @@ def delete_host_provider(provider, cancel_tasks=True):
     if cancel_tasks:
         cancel_locking_tasks(provider, obj_deletion=True)
 
-    provider_pk = provider.pk
-    post_event(event="delete", object_id=provider.pk, object_type="provider")
     provider.delete()
-    logger.info("host provider #%s is deleted", provider_pk)
+    logger.info("host provider #%s is deleted", provider.pk)
 
 
 def get_cluster_and_host(cluster_pk, fqdn, host_pk):
@@ -313,13 +312,12 @@ def remove_host_from_cluster_by_pk(cluster_pk, fqdn, host_pk):
 def delete_host(host: Host, cancel_tasks: bool = True) -> None:
     cluster = host.cluster
     if cluster:
-        raise_adcm_ex(code="HOST_CONFLICT", msg=f'Host #{host.pk} "{host.fqdn}" belong to {obj_ref(cluster)}')
+        raise AdcmEx(code="HOST_CONFLICT", msg="Unable to remove a host associated with a cluster.")
 
     if cancel_tasks:
         cancel_locking_tasks(obj=host, obj_deletion=True)
 
     host_pk = host.pk
-    post_event(event="delete", object_id=host.pk, object_type="host")
     host.delete()
     load_service_map()
     update_issue_after_deleting()
@@ -362,11 +360,6 @@ def delete_service_by_pk(service_pk):
 
     service = ClusterObject.obj.get(pk=service_pk)
     with atomic():
-        on_commit(
-            func=partial(
-                post_event, event="change_hostcomponentmap", object_id=service.cluster.pk, object_type="cluster"
-            )
-        )
         _clean_up_related_hc(service=service)
         ClusterBind.objects.filter(source_service=service).delete()
         delete_service(service=service)
@@ -381,11 +374,6 @@ def delete_service_by_name(service_name, cluster_pk):
 
     service = ClusterObject.obj.get(cluster__pk=cluster_pk, prototype__name=service_name)
     with atomic():
-        on_commit(
-            func=partial(
-                post_event, event="change_hostcomponentmap", object_id=service.cluster.pk, object_type="cluster"
-            )
-        )
         _clean_up_related_hc(service=service)
         ClusterBind.objects.filter(source_service=service).delete()
         delete_service(service=service)
@@ -393,41 +381,43 @@ def delete_service_by_name(service_name, cluster_pk):
 
 def delete_service(service: ClusterObject) -> None:
     service_pk = service.pk
-    post_event(event="delete", object_id=service.pk, object_type="service")
     service.delete()
     update_issue_after_deleting()
     update_hierarchy_issues(service.cluster)
     re_apply_object_policy(service.cluster)
     load_service_map()
+    on_commit(func=partial(send_delete_service_event, service_id=service_pk))
     logger.info("service #%s is deleted", service_pk)
 
 
-@atomic
-def delete_cluster(cluster, cancel_tasks=True):
-    if cancel_tasks:
-        cancel_locking_tasks(cluster, obj_deletion=True)
+def delete_cluster(cluster: Cluster) -> None:
+    tasks = []
+    for lock in cluster.concerns.filter(type=ConcernType.LOCK):
+        for task in TaskLog.objects.filter(lock=lock):
+            tasks.append(task)
 
-    cluster_pk = cluster.pk
     hosts = cluster.host_set.order_by("id")
     host_pks = [str(host.pk) for host in hosts]
     hosts.update(maintenance_mode=MaintenanceMode.OFF)
     logger.debug(
         "Deleting cluster #%s. Set `%s` maintenance mode value for `%s` hosts.",
-        cluster_pk,
+        cluster.pk,
         MaintenanceMode.OFF,
         ", ".join(host_pks),
     )
-    post_event(event="delete", object_id=cluster.pk, object_type="cluster")
     cluster.delete()
     update_issue_after_deleting()
     load_service_map()
 
+    for task in tasks:
+        task.cancel(obj_deletion=True)
+
 
 def remove_host_from_cluster(host: Host) -> Host:
     cluster = host.cluster
-    hostcomponent = HostComponent.objects.filter(cluster=cluster, host=host)
-    if hostcomponent:
-        return raise_adcm_ex(code="HOST_CONFLICT", msg=f"Host #{host.pk} has component(s)")
+
+    if HostComponent.objects.filter(cluster=cluster, host=host).exists():
+        return raise_adcm_ex(code="HOST_CONFLICT", msg="There are components on the host.")
 
     if cluster.state == "upgrading":
         return raise_adcm_ex(code="HOST_CONFLICT", msg="It is forbidden to delete host from cluster in upgrade mode")
@@ -441,14 +431,10 @@ def remove_host_from_cluster(host: Host) -> Host:
             group.hosts.remove(host)
             update_hierarchy_issues(obj=host)
 
-        host.remove_from_concerns(CTX.lock)
+        remove_concern_from_object(object_=host, concern=CTX.lock)
         update_hierarchy_issues(obj=cluster)
         re_apply_object_policy(apply_object=cluster)
 
-    CTX.event.send_state()
-    post_event(
-        event="remove", object_id=host.pk, object_type="host", details={"type": "cluster", "value": str(cluster.pk)}
-    )
     load_service_map()
 
     return host
@@ -460,12 +446,6 @@ def unbind(cbind):
     check_import_default(import_obj, export_obj)
 
     with atomic():
-        post_event(
-            event="delete",
-            object_id=cbind.pk,
-            object_type="cbind",
-            details={"type": "cluster", "value": str(cbind.cluster.pk)},
-        )
         cbind.delete()
         update_hierarchy_issues(cbind.cluster)
 
@@ -492,9 +472,6 @@ def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
         update_hierarchy_issues(obj=cluster)
         re_apply_object_policy(apply_object=cluster)
 
-    post_event(
-        event="add", object_id=service.pk, object_type="service", details={"type": "cluster", "value": str(cluster.pk)}
-    )
     load_service_map()
     logger.info(
         "service #%s %s is added to cluster #%s %s",
@@ -537,12 +514,14 @@ def accept_license(proto: Prototype) -> None:
 
 
 def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, description: str = "") -> ConfigLog:
-    if not isinstance(attr, dict):
-        raise_adcm_ex("INVALID_CONFIG_UPDATE", "attr should be a map")
+    if not isinstance(config, dict) or not isinstance(attr, dict):
+        message = f"Both `config` and `attr` should be of `dict` type, not {type(config)} and {type(attr)} respectively"
+        raise TypeError(message)
 
     obj: ADCMEntity = obj_conf.object
     if obj is None:
-        raise_adcm_ex("INVALID_CONFIG_UPDATE", f'unknown object type "{obj_conf}"')
+        message = "Can't update configuration that have no linked object"
+        raise ValueError(message)
 
     group = None
     if isinstance(obj, GroupConfig):
@@ -557,30 +536,17 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
         prototype=proto,
         obj=group or obj,
         new_config=config,
-        current_config=old_conf.config,
         new_attr=attr,
         current_attr=old_conf.attr,
     )
+
     with atomic():
-        config_log = save_obj_config(obj_conf=obj_conf, conf=new_conf, attr=attr, desc=description)
+        config_log = save_object_config(object_config=obj_conf, config=new_conf, attr=attr, description=description)
         update_hierarchy_issues(obj=obj)
         update_object_flag(obj=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
-    if group is not None:
-        post_event(
-            event="change_config",
-            object_id=group.pk,
-            object_type="group-config",
-            details={"type": "version", "value": str(config_log.pk)},
-        )
-    else:
-        post_event(
-            event="change_config",
-            object_id=obj.pk,
-            object_type=obj.prototype.type,
-            details={"type": "version", "value": str(config_log.pk)},
-        )
+    send_config_creation_event(object_=obj)
 
     return config_log
 
@@ -589,16 +555,12 @@ def set_object_config_with_plugin(obj: ADCMEntity, config: dict, attr: dict) -> 
     new_conf = process_json_config(prototype=obj.prototype, obj=obj, new_config=config, new_attr=attr)
 
     with atomic():
-        config_log = save_obj_config(obj_conf=obj.config, conf=new_conf, attr=attr, desc="ansible update")
+        config_log = save_object_config(
+            object_config=obj.config, config=new_conf, attr=attr, description="ansible update"
+        )
         update_hierarchy_issues(obj=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
-    post_event(
-        event="change_config",
-        object_id=obj.pk,
-        object_type=obj.prototype.type,
-        details={"type": "version", "value": str(config_log.pk)},
-    )
     return config_log
 
 
@@ -654,16 +616,16 @@ def retrieve_host_component_objects(
     hosts_in_hc: dict[int, Host] = build_id_object_mapping(
         objects=Host.objects.select_related("cluster").filter(pk__in=host_ids)
     )
-    if len(hosts_in_hc) != len(host_ids):
-        message = f"hosts not found: {host_ids.difference(hosts_in_hc.keys())}"
-        raise AdcmEx(code="HOST_NOT_FOUND", msg=message)
+    if not_found_host_ids := host_ids.difference(hosts_in_hc.keys()):
+        message = f"Hosts not found: {', '.join([str(host_id) for host_id in not_found_host_ids])}"
+        raise AdcmEx(code="HOST_NOT_FOUND", http_code=HTTP_409_CONFLICT, msg=message)
 
     components_in_hc: dict[int, ServiceComponent] = build_id_object_mapping(
         objects=ServiceComponent.objects.select_related("service").filter(pk__in=component_ids, cluster=cluster)
     )
-    if len(components_in_hc) != len(component_ids):
-        message = f"components not found: {component_ids.difference(components_in_hc.keys())}"
-        raise AdcmEx(code="COMPONENT_NOT_FOUND", msg=message)
+    if not_found_component_ids := component_ids.difference(components_in_hc.keys()):
+        message = f"Components not found: {', '.join([str(component_id) for component_id in not_found_component_ids])}"
+        raise AdcmEx(code="COMPONENT_NOT_FOUND", http_code=HTTP_409_CONFLICT, msg=message)
 
     host_component_objects = []
 
@@ -671,11 +633,14 @@ def retrieve_host_component_objects(
         host: Host = hosts_in_hc[record["host_id"]]
 
         if not host.cluster:
-            message = f"host #{host.pk} {host.fqdn} does not belong to any cluster"
+            message = f'Host "{host.fqdn}" does not belong to any cluster'
             raise AdcmEx(code="FOREIGN_HOST", msg=message)
 
         if host.cluster.pk != cluster.pk:
-            message = f"host {host.fqdn} (cluster #{host.cluster.pk}) does not belong to cluster #{cluster.pk}"
+            message = (
+                f'Host "{host.fqdn}" (cluster "{host.cluster.display_name}") '
+                f'does not belong to cluster "{cluster.display_name}"'
+            )
             raise AdcmEx(code="FOREIGN_HOST", msg=message)
 
         component: ServiceComponent = components_in_hc[record["component_id"]]
@@ -755,10 +720,10 @@ def save_hc(
     new_hosts = {i[1] for i in host_comp_list}
 
     for removed_host in old_hosts.difference(new_hosts):
-        removed_host.remove_from_concerns(CTX.lock)
+        remove_concern_from_object(object_=removed_host, concern=CTX.lock)
 
     for added_host in new_hosts.difference(old_hosts):
-        added_host.add_to_concerns(CTX.lock)
+        add_concern_to_object(object_=added_host, concern=CTX.lock)
 
     still_hc = still_existed_hc(cluster, host_comp_list)
     host_service_of_still_hc = {(hc.host, hc.service) for hc in still_hc}
@@ -789,7 +754,6 @@ def save_hc(
         host_component.save()
         host_component_list.append(host_component)
 
-    CTX.event.send_state()
     update_hierarchy_issues(cluster)
 
     for provider in {host.provider for host in Host.objects.filter(cluster=cluster)}:
@@ -816,6 +780,7 @@ def save_hc(
         ):
             policy.apply()
 
+    send_host_component_map_update_event(cluster=cluster)
     return host_component_list
 
 
@@ -841,9 +806,6 @@ def set_host_component(
     check_maintenance_mode(cluster=cluster, host_comp_list=host_component_objects)
 
     with atomic():
-        on_commit(
-            func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")
-        )
         new_host_component = save_hc(cluster=cluster, host_comp_list=host_component_objects)
 
     return new_host_component
@@ -853,9 +815,6 @@ def add_hc(cluster: Cluster, hc_in: list[dict]) -> list[HostComponent]:
     host_comp_list = check_hc(cluster=cluster, hc_in=hc_in)
 
     with atomic():
-        on_commit(
-            func=partial(post_event, event="change_hostcomponentmap", object_id=cluster.pk, object_type="cluster")
-        )
         new_host_component = save_hc(cluster=cluster, host_comp_list=host_comp_list)
 
     return new_host_component
@@ -1173,21 +1132,18 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
 
 def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
     if host.cluster:
-        if host.cluster.pk != cluster.pk:
-            raise_adcm_ex("FOREIGN_HOST", f"Host #{host.pk} belong to cluster #{host.cluster.pk}")
-        else:
-            raise_adcm_ex("HOST_CONFLICT")
+        if host.cluster.pk == cluster.pk:
+            raise AdcmEx(code="HOST_CONFLICT", msg="The host is already associated with this cluster.")
+
+        raise AdcmEx(code="FOREIGN_HOST", msg="Host already linked to another cluster.")
 
     with atomic():
         host.cluster = cluster
         host.save()
-        host.add_to_concerns(CTX.lock)
+        add_concern_to_object(object_=host, concern=CTX.lock)
         update_hierarchy_issues(host)
         re_apply_object_policy(cluster)
 
-    post_event(
-        event="add", object_id=host.pk, object_type="host", details={"type": "cluster", "value": str(cluster.pk)}
-    )
     load_service_map()
     logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
 

@@ -9,21 +9,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from api_v2.adcm.views import (
-    ADCMConfigView,
-    LoginView,
-    LogoutView,
-    ProfileView,
-    TokenView,
-)
+from api_v2.action.views import AdcmActionViewSet
+from api_v2.adcm.views import ADCMConfigView, ADCMViewSet
 from django.urls import path
 
 urlpatterns = [
-    path("login/", LoginView.as_view(), name="login"),
-    path("logout/", LogoutView.as_view(), name="logout"),
-    path("token/", TokenView.as_view(), name="token"),
-    path("profile/", ProfileView.as_view(), name="profile"),
+    path("", ADCMViewSet.as_view({"get": "retrieve"}), name="adcm-detail"),
     path("configs/", ADCMConfigView.as_view({"get": "list", "post": "create"}), name="adcm-config-list"),
     path("configs/<int:pk>/", ADCMConfigView.as_view({"get": "retrieve"}), name="adcm-config-detail"),
+    path("config-schema/", ADCMConfigView.as_view({"get": "config_schema"}), name="adcm-config-schema"),
+    path("actions/", AdcmActionViewSet.as_view({"get": "list"}), name="adcm-action-list"),
+    path("actions/<int:pk>/", AdcmActionViewSet.as_view({"get": "retrieve"}), name="adcm-action-detail"),
+    path("actions/<int:pk>/run/", AdcmActionViewSet.as_view({"post": "run"}), name="adcm-action-run"),
 ]

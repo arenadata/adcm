@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=wrong-import-order,wrong-import-position
-
 DOCUMENTATION = """
 ---
 module: adcm_change_maintenance_mode
@@ -55,6 +54,7 @@ sys.path.append("/adcm/python")
 import adcm.init_django  # pylint: disable=unused-import
 from cm.ansible_plugin import get_object_id_from_context
 from cm.api import load_mm_objects
+from cm.status_api import send_object_update_event
 from cm.issue import update_hierarchy_issues
 from cm.models import ClusterObject, Host, ServiceComponent
 
@@ -107,6 +107,7 @@ class ActionModule(ActionBase):
 
         obj.maintenance_mode = obj_value
         obj.save()
+        send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
         update_hierarchy_issues(obj.cluster)
         load_mm_objects()
 

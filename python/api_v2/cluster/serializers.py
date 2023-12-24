@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
 
+from api_v2.cluster.utils import get_depend_on
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
+from api_v2.prototype.utils import get_license_text
 from cm.adcm_config.config import get_main_info
 from cm.models import (
     Cluster,
@@ -35,7 +36,6 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
-from adcm.utils import get_requires
 
 
 class ClusterSerializer(ModelSerializer):
@@ -50,6 +50,7 @@ class ClusterSerializer(ModelSerializer):
         fields = [
             "id",
             "name",
+            "description",
             "state",
             "multi_state",
             "status",
@@ -93,7 +94,7 @@ class ClusterCreateSerializer(EmptySerializer):
             ),
         ],
     )
-    description = CharField(required=False, allow_blank=True)
+    description = CharField(required=False, allow_blank=True, default="")
 
 
 class ClusterUpdateSerializer(ModelSerializer):
@@ -115,32 +116,53 @@ class ClusterUpdateSerializer(ModelSerializer):
 
     class Meta:
         model = Cluster
-        fields = ["name"]
+        fields = ["name", "description"]
+
+
+class ClusterAuditSerializer(ModelSerializer):
+    name = CharField(max_length=80, required=False)
+
+    class Meta:
+        model = Cluster
+        fields = ("name", "description")
 
 
 class ServicePrototypeSerializer(ModelSerializer):
     is_required = BooleanField(source="required")
     depend_on = SerializerMethodField()
-    license_status = CharField(source="license")
+    license = SerializerMethodField()
 
     class Meta:
         model = Prototype
-        fields = ["id", "name", "display_name", "version", "is_required", "depend_on", "license_status"]
+        fields = ["id", "name", "display_name", "version", "is_required", "depend_on", "license"]
 
     @staticmethod
-    def get_depend_on(prototype: Prototype) -> list[dict[str, list[dict[str, Any]] | Any]] | None:
-        return get_requires(prototype=prototype)
+    def get_depend_on(prototype: Prototype) -> list[dict] | None:
+        if prototype.requires:
+            return get_depend_on(prototype=prototype)
+
+        return None
+
+    @staticmethod
+    def get_license(prototype: Prototype) -> dict:
+        return {
+            "status": prototype.license,
+            "text": get_license_text(
+                license_path=prototype.license_path,
+                path=prototype.path,
+                bundle_hash=prototype.bundle.hash,
+            ),
+        }
 
 
-class HostComponentListSerializer(ModelSerializer):
+class MappingSerializer(ModelSerializer):
+    host_id = IntegerField()
+    component_id = IntegerField()
+
     class Meta:
         model = HostComponent
         fields = ["id", "host_id", "component_id"]
-
-
-class HostComponentPostSerializer(EmptySerializer):
-    host_id = IntegerField()
-    component_id = IntegerField()
+        extra_kwargs = {"id": {"read_only": True}}
 
 
 class RelatedComponentStatusSerializer(ModelSerializer):

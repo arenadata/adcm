@@ -11,6 +11,8 @@
 # limitations under the License.
 
 from cm.logger import logger
+from django.conf import settings
+from django.db.utils import OperationalError
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -18,8 +20,8 @@ from rest_framework.status import (
     HTTP_401_UNAUTHORIZED,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
-    HTTP_405_METHOD_NOT_ALLOWED,
     HTTP_409_CONFLICT,
+    HTTP_500_INTERNAL_SERVER_ERROR,
     HTTP_501_NOT_IMPLEMENTED,
 )
 from rest_framework.views import exception_handler
@@ -57,7 +59,6 @@ ERRORS = {
     "TASK_NOT_FOUND": ("task doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "JOB_NOT_FOUND": ("job doesn't exist", HTTP_404_NOT_FOUND, ERR),
     "LOG_NOT_FOUND": ("log file is not found", HTTP_404_NOT_FOUND, ERR),
-    "LOG_FOR_TASK_VIEW_NOT_ALLOWED": ("method to read logs for tasks is not allowed", HTTP_405_METHOD_NOT_ALLOWED, ERR),
     "UPGRADE_NOT_FOUND": ("upgrade is not found", HTTP_404_NOT_FOUND, ERR),
     "USER_NOT_FOUND": ("user profile is not found", HTTP_404_NOT_FOUND, ERR),
     "GROUP_NOT_FOUND": ("group is not found", HTTP_404_NOT_FOUND, ERR),
@@ -161,18 +162,13 @@ ERRORS = {
         ERR,
     ),
     "LOCK_ERROR": ("lock error", HTTP_409_CONFLICT, ERR),
-    "GROUP_CONFIG_CHANGE_UNSELECTED_FIELD": (
-        "you can't change the value of an unselected field",
-        HTTP_400_BAD_REQUEST,
-        ERR,
-    ),
     "MAINTENANCE_MODE_NOT_AVAILABLE": (
         "you can't manage host maintenance mode",
         HTTP_409_CONFLICT,
         ERR,
     ),
     "INVALID_HC_HOST_IN_MM": (
-        "you can't save hc with hosts in maintenance mode",
+        "You can't save hc with hosts in maintenance mode",
         HTTP_409_CONFLICT,
         ERR,
     ),
@@ -216,7 +212,7 @@ ERRORS = {
     "GROUP_CREATE_ERROR": ("Error during process of group creating", HTTP_409_CONFLICT, ERR),
     "GROUP_UPDATE_ERROR": ("Error during process of group updating", HTTP_400_BAD_REQUEST, ERR),
     "GROUP_DELETE_ERROR": ("Built-in group could not be deleted", HTTP_409_CONFLICT, ERR),
-    "POLICY_INTEGRITY_ERROR": ("Incorrect role or user list of policy", HTTP_400_BAD_REQUEST, ERR),
+    "POLICY_INTEGRITY_ERROR": ("Incorrect role or user list of policy", HTTP_409_CONFLICT, ERR),
     "POLICY_CREATE_ERROR": ("Error during process of policy creating", HTTP_409_CONFLICT, ERR),
     "POLICY_UPDATE_ERROR": ("Error during process of policy updating", HTTP_409_CONFLICT, ERR),
     "POLICY_DELETE_ERROR": ("Error during process of policy deleting", HTTP_409_CONFLICT, ERR),
@@ -238,6 +234,7 @@ ERRORS = {
     "BAD_REQUEST": ("Bad request", HTTP_400_BAD_REQUEST, ERR),
     "HOSTPROVIDER_CREATE_ERROR": ("Error during process of host provider creating", HTTP_409_CONFLICT, ERR),
     "CONFIG_OPTION_ERROR": ("error in config option type", HTTP_409_CONFLICT, ERR),
+    "DATABASE_IS_LOCKED": ("SQLite not for production", HTTP_500_INTERNAL_SERVER_ERROR, ERR),
 }
 
 
@@ -316,5 +313,22 @@ def custom_drf_exception_handler(exc: Exception, context) -> Response | None:
                     msg = f"{msg}{err_type} - {err[0]};"
 
         return exception_handler(exc=AdcmEx(code="BAD_REQUEST", msg=msg), context=context)
+
+    if (
+        isinstance(exc, OperationalError)
+        and settings.DB_DEFAULT["ENGINE"] == "django.db.backends.sqlite3"
+        and str(exc) == "database is locked"
+    ):
+        return exception_handler(
+            exc=AdcmEx(
+                code="DATABASE_IS_LOCKED",
+                msg=(
+                    "Something wrong\n"
+                    '<a href="https://docs.arenadata.io/en/ADCM/current/get-started/external-db.html">'
+                    "SQLite not for production use</a>"
+                ),
+            ),
+            context=context,
+        )
 
     return exception_handler(exc=exc, context=context)

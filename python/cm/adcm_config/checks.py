@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Mapping
+from typing import Any
 
 from cm.adcm_config.utils import config_is_ro, group_keys_to_flat, proto_ref
 from cm.checker import FormatError, SchemaError, process_rule
 from cm.errors import raise_adcm_ex
-from cm.logger import logger
-from cm.models import Action, ADCMEntity, GroupConfig, Prototype, StagePrototype
+from cm.models import GroupConfig, Prototype, StagePrototype
 from django.conf import settings
 
 
@@ -134,71 +133,6 @@ def _check_empty_values(key: str, current: dict, new: dict) -> bool:
         return True
 
     return False
-
-
-def check_value_unselected_field(
-    current_config: dict,
-    new_config: dict,
-    current_attr: dict,
-    new_attr: dict,
-    group_keys: dict,
-    spec: dict,
-    obj: ADCMEntity | Action,
-) -> None:
-    """
-    Check value unselected field
-    :param current_config: Current config
-    :param new_config: New config
-    :param current_attr: Current attr
-    :param new_attr: New attr
-    :param group_keys: group_keys from attr
-    :param spec: Config specification
-    :param obj: Parent object (Cluster, Service, Component Provider or Host)
-    """
-
-    for group_key, group_value in group_keys.items():
-        if isinstance(group_value, Mapping):
-            if (
-                "activatable" in spec[group_key]["limits"]
-                and not group_value["value"]
-                and current_attr[group_key]["active"] != new_attr[group_key]["active"]
-            ):
-                msg = (
-                    f"Value of `{group_key}` activatable group is different in current and new attr."
-                    f' Current: ({current_attr[group_key]["active"]}), New: ({new_attr[group_key]["active"]})'
-                )
-                logger.info(msg)
-                raise_adcm_ex(code="GROUP_CONFIG_CHANGE_UNSELECTED_FIELD", msg=msg)
-
-            check_value_unselected_field(
-                current_config=current_config[group_key],
-                new_config=new_config[group_key],
-                current_attr=current_attr,
-                new_attr=new_attr,
-                group_keys=group_keys[group_key]["fields"],
-                spec=spec[group_key]["fields"],
-                obj=obj,
-            )
-        else:
-            if _check_empty_values(key=group_key, current=current_config, new=new_config):
-                continue
-            if spec[group_key]["type"] in {"list", "map", "secretmap", "string", "structure"} and config_is_ro(
-                obj=obj, key=group_key, limits=spec[group_key]["limits"]
-            ):
-                continue
-
-            if (
-                not group_value
-                and group_key in current_config
-                and group_key in new_config
-                and current_config[group_key] != new_config[group_key]
-            ):
-                msg = (
-                    f"Value of `{group_key}` field is different in current and new config."
-                    f" Current: ({current_config[group_key]}), New: ({new_config[group_key]})"
-                )
-                logger.info(msg)
-                raise_adcm_ex(code="GROUP_CONFIG_CHANGE_UNSELECTED_FIELD", msg=msg)
 
 
 def _check_str(value: Any, idx: Any, key: str, subkey: str, ref: str, label: str):

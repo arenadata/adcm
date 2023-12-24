@@ -10,34 +10,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable
+from typing import Callable, NamedTuple
 from unittest.mock import patch
 
 from api_v2.tests.base import BaseAPITestCase
+from cm.job import ActionRunPayload, run_action
 from cm.models import (
     Action,
     ADCMEntityStatus,
+    Cluster,
     ClusterObject,
+    ConcernType,
+    HostComponent,
+    JobLog,
     MaintenanceMode,
     ObjectType,
     Prototype,
+    ServiceComponent,
+    TaskLog,
 )
 from django.urls import reverse
-from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
     HTTP_409_CONFLICT,
 )
+
+
+class FakePopenResponse(NamedTuple):
+    pid: int
 
 
 class TestServiceAPI(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
-        self.service_2 = self.add_service_to_cluster(service_name="service_2", cluster=self.cluster_1)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
         self.action = Action.objects.filter(prototype=self.service_2.prototype).first()
 
     def get_service_status_mock(self) -> Callable:
@@ -50,15 +61,38 @@ class TestServiceAPI(BaseAPITestCase):
         return inner
 
     def test_list_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 2)
 
+    def test_adcm_4544_list_service_name_ordering_success(self):
+        service_3 = self.add_services_to_cluster(service_names=["service_3_manual_add"], cluster=self.cluster_1).get()
+        service_list = [self.service_1.display_name, self.service_2.display_name, service_3.display_name]
+        response = self.client.get(
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"ordering": "displayName"},
+        )
+
+        self.assertListEqual(
+            [service["displayName"] for service in response.json()["results"]],
+            service_list,
+        )
+
+        response = self.client.get(
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"ordering": "-displayName"},
+        )
+
+        self.assertListEqual(
+            [service["displayName"] for service in response.json()["results"]],
+            service_list[::-1],
+        )
+
     def test_retrieve_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(
                 viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk}
             ),
@@ -66,9 +100,10 @@ class TestServiceAPI(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], self.service_2.pk)
+        self.assertEqual(response.json()["description"], self.service_2.description)
 
     def test_delete_success(self):
-        response: Response = self.client.delete(
+        response = self.client.delete(
             path=reverse(
                 viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk}
             ),
@@ -81,7 +116,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.service_2.state = "non_created"
         self.service_2.save(update_fields=["state"])
 
-        response: Response = self.client.delete(
+        response = self.client.delete(
             path=reverse(
                 viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk}
             ),
@@ -94,7 +129,7 @@ class TestServiceAPI(BaseAPITestCase):
         initial_service_count = ClusterObject.objects.count()
         manual_add_service_proto = Prototype.objects.get(type=ObjectType.SERVICE, name="service_3_manual_add")
 
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data=[{"prototype_id": manual_add_service_proto.pk}],
         )
@@ -102,8 +137,20 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(ClusterObject.objects.count(), initial_service_count + 1)
 
+    def test_create_wrong_data_fail(self):
+        initial_service_count = ClusterObject.objects.count()
+        manual_add_service_proto = Prototype.objects.get(type=ObjectType.SERVICE, name="service_3_manual_add")
+
+        response = self.client.post(
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"prototype_id": manual_add_service_proto.pk},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(ClusterObject.objects.count(), initial_service_count)
+
     def test_filter_by_name_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data={"name": "service_1"},
         )
@@ -111,9 +158,18 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
 
+    def test_filter_by_display_name_success(self):
+        response = self.client.get(
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"display_name": "vice_1"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+
     def test_filter_by_status_success(self):
         with patch("api_v2.service.filters.get_service_status", new_callable=self.get_service_status_mock):
-            response: Response = self.client.get(
+            response = self.client.get(
                 path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
                 data={"status": ADCMEntityStatus.UP},
             )
@@ -123,7 +179,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.json()["results"][0]["id"], self.service_2.pk)
 
     def test_limit_offset_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data={"limit": 1, "offset": 1},
         )
@@ -132,7 +188,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(len(response.json()["results"]), 1)
 
     def test_change_mm(self):
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(
                 viewname="v2:service-maintenance-mode",
                 kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk},
@@ -143,7 +199,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_action_list_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(
                 viewname="v2:service-action-list",
                 kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_2.pk},
@@ -154,7 +210,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(len(response.json()), 2)
 
     def test_action_retrieve_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(
                 viewname="v2:service-action-detail",
                 kwargs={
@@ -169,16 +225,80 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
-        response: Response = self.client.post(
-            path=reverse(
-                viewname="v2:service-action-run",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_2.pk,
-                    "pk": self.action.pk,
-                },
-            ),
-            data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
-        )
+        with patch("cm.job.run_task", return_value=None):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:service-action-run",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_2.pk,
+                        "pk": self.action.pk,
+                    },
+                ),
+                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+            )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+
+class TestServiceDeleteAction(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.service_to_delete, *_ = self.add_services_to_cluster(
+            service_names=["service_6_delete_with_action"], cluster=self.cluster_1
+        )
+        self.service_regular_action: Action = Action.objects.get(
+            prototype=self.service_to_delete.prototype, name="regular_action"
+        )
+        self.cluster_regular_action: Action = Action.objects.get(prototype=self.cluster_1.prototype, name="action")
+        HostComponent.objects.create(
+            cluster=self.cluster_1,
+            service=self.service_to_delete,
+            component=ServiceComponent.objects.get(service=self.service_to_delete, prototype__name="component"),
+            host=self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter"),
+        )
+
+    def test_delete_service_do_not_abort_cluster_actions_fail(self) -> None:
+        self.imitate_task_running(action=self.cluster_regular_action, object_=self.cluster_1)
+
+        self.assertTrue(self.service_to_delete.concerns.filter(type=ConcernType.LOCK).exists())
+
+        with patch("subprocess.Popen", return_value=FakePopenResponse(3)), patch("os.kill", return_type=None):
+            response = self.client.delete(
+                path=reverse(
+                    viewname="v2:service-detail",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_to_delete.pk},
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            self.assertEqual(response.json()["code"], "LOCK_ERROR")
+
+    def test_delete_service_abort_own_actions_success(self) -> None:
+        self.imitate_task_running(action=self.service_regular_action, object_=self.service_to_delete)
+
+        self.assertTrue(self.service_to_delete.concerns.filter(type=ConcernType.LOCK).exists())
+
+        with patch("subprocess.Popen", return_value=FakePopenResponse(3)), patch("os.kill", return_type=None):
+            response = self.client.delete(
+                path=reverse(
+                    viewname="v2:service-detail",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_to_delete.pk},
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+    @staticmethod
+    def imitate_task_running(action: Action, object_: Cluster | ClusterObject) -> TaskLog:
+        with patch("subprocess.Popen", return_value=FakePopenResponse(4)):
+            task = run_action(action=action, obj=object_, payload=ActionRunPayload(), hosts=[])
+
+        job = JobLog.objects.filter(task=task).first()
+        job.status = "running"
+        job.save(update_fields=["status"])
+
+        task.status = "running"
+        task.pid = 4
+        task.save(update_fields=["status", "pid"])
+
+        return task

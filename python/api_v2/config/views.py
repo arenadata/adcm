@@ -14,15 +14,16 @@ from api_v2.config.serializers import ConfigLogListSerializer, ConfigLogSerializ
 from api_v2.config.utils import (
     convert_adcm_meta_to_attr,
     convert_attr_to_adcm_meta,
-    get_config_schema,
+    represent_json_type_as_string,
+    represent_string_as_json_type,
 )
 from api_v2.views import CamelCaseGenericViewSet
+from audit.utils import audit
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
-from cm.models import ConfigLog
+from cm.models import ConfigLog, PrototypeConfig
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
-from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
@@ -66,10 +67,15 @@ class ConfigLogViewSet(
 
         return ConfigLogSerializer
 
+    @audit
     def create(self, request, *args, **kwargs) -> Response:
         parent_object = self.get_parent_object()
 
-        if parent_object is None:
+        parent_view_perm = f"cm.view_{parent_object.__class__.__name__.lower()}"
+        if parent_object is None or not (
+            request.user.has_perm(perm=parent_view_perm, obj=parent_object)
+            or request.user.has_perm(perm=parent_view_perm)
+        ):
             raise NotFound("Can't find config's parent object")
 
         if parent_object.config is None:
@@ -81,29 +87,30 @@ class ConfigLogViewSet(
             model=ContentType.objects.get_for_model(model=parent_object).model,
             obj=parent_object,
         )
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=request.data, context={"object_": parent_object})
         serializer.is_valid(raise_exception=True)
+
+        prototype_configs = PrototypeConfig.objects.filter(prototype=parent_object.prototype, type="json", action=None)
 
         config_log = update_obj_config(
             obj_conf=parent_object.config,
-            config=serializer.validated_data["config"],
+            config=represent_string_as_json_type(
+                prototype_configs=prototype_configs, value=serializer.validated_data["config"]
+            ),
             attr=convert_adcm_meta_to_attr(adcm_meta=serializer.validated_data["attr"]),
             description=serializer.validated_data.get("description", ""),
         )
 
         config_log.attr = convert_attr_to_adcm_meta(attr=config_log.attr)
+        config_log.config = represent_json_type_as_string(prototype=parent_object.prototype, value=config_log.config)
 
         return Response(data=self.get_serializer(config_log).data, status=HTTP_201_CREATED)
 
     def retrieve(self, request, *args, **kwargs) -> Response:
+        parent_object = self.get_parent_object()
         instance = self.get_object()
         instance.attr = convert_attr_to_adcm_meta(attr=instance.attr)
+        instance.config = represent_json_type_as_string(prototype=parent_object.prototype, value=instance.config)
         serializer = self.get_serializer(instance)
 
         return Response(data=serializer.data, status=HTTP_200_OK)
-
-    @action(methods=["get"], detail=True, url_path="schema", url_name="schema")
-    def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
-        schema = get_config_schema(parent_object=self.get_parent_object())
-
-        return Response(data=schema, status=HTTP_200_OK)

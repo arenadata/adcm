@@ -9,10 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from unittest.mock import patch
 
 from api_v2.tests.base import BaseAPITestCase
 from cm.models import Action, HostProvider
-from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -57,7 +57,7 @@ class TestHostProvider(BaseAPITestCase):
         response = self.client.post(
             path=reverse(viewname="v2:hostprovider-list"),
             data={
-                "prototype_id": self.host_provider_bundle.pk,
+                "prototypeId": self.host_provider_bundle.pk,
                 "name": self.host_provider.name + " new",
                 "description": "newly created host provider",
             },
@@ -69,7 +69,7 @@ class TestHostProvider(BaseAPITestCase):
         response = self.client.post(
             path=reverse(viewname="v2:hostprovider-list"),
             data={
-                "prototype_id": self.host_provider_bundle.pk,
+                "prototypeId": self.host_provider_bundle.pk,
                 "name": self.host_provider.name + " new",
             },
         )
@@ -110,7 +110,7 @@ class TestProviderActions(BaseAPITestCase):
         self.action = Action.objects.get(prototype=self.provider.prototype, name="provider_action")
 
     def test_action_list_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(
                 viewname="v2:provider-action-list",
                 kwargs={"hostprovider_pk": self.provider.pk},
@@ -121,7 +121,7 @@ class TestProviderActions(BaseAPITestCase):
         self.assertEqual(len(response.json()), 1)
 
     def test_action_retrieve_success(self):
-        response: Response = self.client.get(
+        response = self.client.get(
             path=reverse(
                 viewname="v2:provider-action-detail",
                 kwargs={
@@ -135,15 +135,16 @@ class TestProviderActions(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
-        response: Response = self.client.post(
-            path=reverse(
-                viewname="v2:provider-action-run",
-                kwargs={
-                    "hostprovider_pk": self.provider.pk,
-                    "pk": self.action.pk,
-                },
-            ),
-            data={"host_component_map": [], "config": {}, "attr": {}, "is_verbose": False},
-        )
+        with patch("cm.job.run_task", return_value=None):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:provider-action-run",
+                    kwargs={
+                        "hostprovider_pk": self.provider.pk,
+                        "pk": self.action.pk,
+                    },
+                ),
+                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+            )
 
         self.assertEqual(response.status_code, HTTP_200_OK)

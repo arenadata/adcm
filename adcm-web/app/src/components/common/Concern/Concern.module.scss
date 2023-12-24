@@ -1,0 +1,21 @@
+:global {
+  body.theme-dark {
+    --concern-icon-error: var(--color-xred);
+    --concern-icon-warning: var(--color-yellow-light);
+  }
+
+  body.theme-light {
+    --concern-icon-error: var(--color-xred-light);
+    --concern-icon-warning: var(--color-json-orange);
+  }
+}
+
+.concern {
+  &_warning {
+    color: var(--concern-icon-warning);
+  }
+
+  &_error {
+    color: var(--concern-icon-error);
+  }
+}

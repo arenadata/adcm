@@ -16,22 +16,21 @@ import json
 import os
 import subprocess
 import sys
-from functools import partial
 from pathlib import Path
 
 import adcm.init_django  # pylint: disable=unused-import
 
-import cm.job
 from cm.ansible_plugin import finish_check
 from cm.api import get_hc, save_hc
 from cm.errors import AdcmEx
+from cm.job import check_hostcomponentmap, set_job_final_status, set_job_start_status
 from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, Prototype, ServiceComponent
-from cm.status_api import Event, post_event
+from cm.status_api import send_prototype_and_state_update_event
 from cm.upgrade import bundle_revert, bundle_switch
 from cm.utils import get_env_with_venv_path
 from django.conf import settings
-from django.db.transaction import atomic, on_commit
+from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
 
@@ -53,16 +52,16 @@ def read_config(job_id):
     return conf
 
 
-def set_job_status(job_id, ret, pid, event):
-    if ret == 0:
-        cm.job.set_job_status(job_id, JobStatus.SUCCESS, event, pid)
+def set_job_status(job_id: int, return_code: int) -> int:
+    if return_code == 0:
+        set_job_final_status(job_id=job_id, status=JobStatus.SUCCESS)
         return 0
-    elif ret == -15:
-        cm.job.set_job_status(job_id, JobStatus.ABORTED, event, pid)
+    elif return_code == -15:
+        set_job_final_status(job_id=job_id, status=JobStatus.ABORTED)
         return 15
     else:
-        cm.job.set_job_status(job_id, JobStatus.FAILED, event, pid)
-        return ret
+        set_job_final_status(job_id=job_id, status=JobStatus.FAILED)
+        return return_code
 
 
 def set_pythonpath(env, stack_dir):
@@ -96,19 +95,7 @@ def get_configured_env(job_config: dict) -> dict:
 
 
 def post_log(job_id, log_type, log_name):
-    log_storage = LogStorage.objects.filter(job__id=job_id, type=log_type, name=log_name).first()
-    if log_storage:
-        post_event(
-            event="add_job_log",
-            object_id=log_storage.job.pk,
-            object_type="job",
-            details={
-                "id": log_storage.id,
-                "type": log_storage.type,
-                "name": log_storage.name,
-                "format": log_storage.format,
-            },
-        )
+    LogStorage.objects.filter(job__id=job_id, type=log_type, name=log_name).first()
 
 
 def get_venv(job_id: int) -> str:
@@ -124,27 +111,24 @@ def process_err_out_file(job_id, job_type):
 
 
 def start_subprocess(job_id, cmd, conf, out_file, err_file):
-    event = Event()
     logger.info("job run cmd: %s", " ".join(cmd))
-    proc = subprocess.Popen(  # pylint: disable=consider-using-with
+    process = subprocess.Popen(  # pylint: disable=consider-using-with
         cmd,
         env=get_configured_env(job_config=conf),
         stdout=out_file,
         stderr=err_file,
     )
-    cm.job.set_job_status(job_id, JobStatus.RUNNING, event, proc.pid)
-    event.send_state()
-    logger.info("run job #%s, pid %s", job_id, proc.pid)
-    ret = proc.wait()
+    set_job_start_status(job_id=job_id, pid=process.pid)
+    logger.info("run job #%s, pid %s", job_id, process.pid)
+    return_code = process.wait()
     finish_check(job_id)
-    ret = set_job_status(job_id, ret, proc.pid, event)
-    event.send_state()
+    return_code = set_job_status(job_id=job_id, return_code=return_code)
 
     out_file.close()
     err_file.close()
 
-    logger.info("finish job subprocess #%s, pid %s, ret %s", job_id, proc.pid, ret)
-    return ret
+    logger.info("finish job subprocess #%s, pid %s, ret %s", job_id, process.pid, return_code)
+    return return_code
 
 
 def run_ansible(job_id: int) -> None:
@@ -174,26 +158,19 @@ def run_ansible(job_id: int) -> None:
 
 
 def run_internal(job: JobLog) -> None:
-    event = Event()
-    cm.job.set_job_status(job.id, JobStatus.RUNNING, event)
+    set_job_start_status(job_id=job.id, pid=0)
     out_file, err_file = process_err_out_file(job_id=job.id, job_type="internal")
     script = job.sub_action.script if job.sub_action else job.action.script
+    return_code = 0
+    status = JobStatus.SUCCESS
 
     try:
         with atomic():
-            on_commit(
-                func=partial(
-                    post_event,
-                    event="change_hostcomponentmap",
-                    object_id=job.task.task_object.pk,
-                    object_type=job.task.task_object.prototype.type,
-                )
-            )
-
+            object_ = job.task.task_object
             if script == "bundle_switch":
-                bundle_switch(obj=job.task.task_object, upgrade=job.action.upgrade)
+                bundle_switch(obj=object_, upgrade=job.action.upgrade)
             elif script == "bundle_revert":
-                bundle_revert(obj=job.task.task_object)
+                bundle_revert(obj=object_)
             elif script == "hc_apply":
                 job.task.restore_hc_on_fail = False
                 job.task.save(update_fields=["restore_hc_on_fail"])
@@ -201,19 +178,19 @@ def run_internal(job: JobLog) -> None:
             if script != "hc_apply":
                 switch_hc(task=job.task, action=job.action)
 
-            re_apply_policy_for_jobs(action_object=job.task.task_object, task=job.task)
+            re_apply_policy_for_jobs(action_object=object_, task=job.task)
     except AdcmEx as e:
         err_file.write(e.msg)
-        cm.job.set_job_status(job_id=job.id, status=JobStatus.FAILED, event=event)
+        return_code = 1
+        status = JobStatus.FAILED
+    finally:
+        if script == "bundle_revert":
+            send_prototype_and_state_update_event(object_=object_)
+
+        set_job_final_status(job_id=job.id, status=status)
         out_file.close()
         err_file.close()
-        sys.exit(1)
-
-    cm.job.set_job_status(job.id, JobStatus.SUCCESS, event)
-    event.send_state()
-    out_file.close()
-    err_file.close()
-    sys.exit(0)
+        sys.exit(return_code)
 
 
 def run_python(job: JobLog) -> None:
@@ -248,7 +225,7 @@ def switch_hc(task, action):
             hostcomponent["component_id"] = comp.id
             hostcomponent["service_id"] = comp.service.id
 
-    host_map, _ = cm.job.check_hostcomponentmap(cluster, action, new_hc)
+    host_map, _ = check_hostcomponentmap(cluster, action, new_hc)
     if host_map is not None:
         save_hc(cluster, host_map)
 

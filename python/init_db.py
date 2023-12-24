@@ -13,18 +13,17 @@
 # pylint: disable=wrong-import-order
 
 import json
-from itertools import chain
 from pathlib import Path
 from secrets import token_hex
 
-from django.conf import settings
-
 import adcm.init_django  # pylint: disable=unused-import
+
 from cm.bundle import load_adcm
 from cm.issue import update_hierarchy_issues
 from cm.job import abort_all
 from cm.logger import logger
 from cm.models import (
+    ADCM,
     CheckLog,
     Cluster,
     ConcernItem,
@@ -32,7 +31,7 @@ from cm.models import (
     GroupCheckLog,
     HostProvider,
 )
-from cm.status_api import Event
+from django.conf import settings
 from rbac.models import User
 
 TOKEN_LENGTH = 20
@@ -81,7 +80,7 @@ def recheck_issues():
     Could slow down startup process
     """
     ConcernItem.objects.filter(type=ConcernType.ISSUE).delete()
-    for model in chain([Cluster, HostProvider]):
+    for model in [ADCM, Cluster, HostProvider]:
         for obj in model.objects.order_by("id"):
             update_hierarchy_issues(obj)
 
@@ -95,10 +94,8 @@ def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.
     if not User.objects.filter(username="system").exists():
         User.objects.create_superuser("system", "", None, built_in=True)
         logger.info("Create system user")
-    event = Event()
-    abort_all(event)
+    abort_all()
     clear_temp_tables()
-    event.send_state()
     load_adcm(adcm_conf_file)
     drop_locks()
     recheck_issues()

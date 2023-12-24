@@ -67,7 +67,7 @@ class TestTaskAudit(BaseTestCase):
         self.assertEqual(log.object_changes, {})
 
     def test_cancel(self):
-        with patch("api.job.views.cancel_task"):
+        with patch("cm.models.TaskLog.cancel"):
             self.client.put(path=reverse(viewname="v1:tasklog-cancel", kwargs={"task_pk": self.task.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

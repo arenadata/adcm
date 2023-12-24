@@ -1,0 +1,89 @@
+:global {
+  body.theme-dark {
+    --pagination-btn-border-color: var(--color-xdark);
+    --pagination-btn-text-color: var(--color-xgray-light);
+
+    --pagination-btn-bg-color-hover: var(--color-xdark-new-50);
+    --pagination-btn-text-color-hover: var(--color-xgray-lighter);
+
+    --pagination-btn-background-color-selected: var(--color-xdark-new);
+    --pagination-btn-text-color-selected: var(--color-xwhite-off);
+
+    --pagination-dots-color: var(--color-xgray-lighter);
+  }
+
+  body.theme-light {
+    --pagination-btn-border-color: var(--color-xgray-lighter);
+    --pagination-btn-text-color: var(--color-xgray-light);
+
+    --pagination-btn-bg-color-hover: #eef2f5;
+    --pagination-btn-text-color-hover: var(--color-xgray-light);
+
+    --pagination-btn-background-color-selected: var(--color-xgray-alt);
+    --pagination-btn-text-color-selected: var(--color-xdark);
+
+    --pagination-dots-color: var(--color-xgray-light);
+  }
+}
+
+.paginationButton {
+  width: 2.286em;
+  height: 2.286em;
+  cursor: pointer;
+  background: none;
+  border: 2px solid var(--pagination-btn-border-color);
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 500;
+  box-sizing: border-box;
+  border-radius: 8px;
+  color: var(--pagination-btn-text-color);
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  line-height: 20px;
+
+  &:disabled {
+    background: var(--icon-button-background-disabled);
+    color: var(--icon-button-color-disabled);
+    cursor: not-allowed;
+  }
+
+  &:active:not(&:disabled),
+  &_selected {
+    background: var(--pagination-btn-background-color-selected);
+    color: var(--pagination-btn-text-color-selected);
+    border-color: transparent;
+  }
+
+  &:not(&_selected, &:disabled):hover {
+    background: var(--pagination-btn-bg-color-hover);
+    color: var(--pagination-btn-text-color-hover);
+  }
+
+  &_dots {
+    color: var(--pagination-dots-color);
+    padding-bottom: 2px;
+  }
+}
+
+.paginationButtonArrowSingle_prev,
+.paginationButtonArrowSingle_next,
+.paginationButtonArrowDouble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.paginationButtonArrowSingle_prev > svg {
+  transform: rotate(90deg);
+}
+
+.paginationButtonArrowSingle_next > svg {
+  transform: rotate(-90deg);
+}
+
+.paginationButtonArrowDouble > svg {
+  transform: rotate(180deg);
+}

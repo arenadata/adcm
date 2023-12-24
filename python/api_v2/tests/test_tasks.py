@@ -10,91 +10,130 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import timedelta
+from io import BytesIO
 from operator import itemgetter
+from unittest.mock import patch
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.job import create_task, get_selector
+from cm.job import create_task
 from cm.models import (
     ADCM,
     Action,
-    ActionType,
     Cluster,
     ClusterObject,
     Host,
     HostComponent,
     HostProvider,
-    JobLog,
     ServiceComponent,
     TaskLog,
 )
-from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
-from django.utils import timezone
-from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
-from adcm.tests.base import BaseTestCase
 
-
-class TestTask(BaseTestCase):
+class TestTask(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.adcm = ADCM.objects.first()
-        self.action = Action.objects.create(
-            display_name="test_adcm_action",
-            prototype=self.adcm.prototype,
-            type=ActionType.JOB,
-            state_available="any",
+        service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        component_1 = ServiceComponent.objects.filter(service=service_1, prototype__name="component_1").first()
+        self.cluster_action = Action.objects.filter(name="action", prototype=self.cluster_1.prototype).first()
+        service_1_action = Action.objects.filter(name="action", prototype=service_1.prototype).first()
+        component_1_action = Action.objects.filter(name="action_1_comp_1", prototype=component_1.prototype).first()
+        self.cluster_task = create_task(
+            action=self.cluster_action,
+            obj=self.cluster_1,
+            conf={},
+            attr={},
+            hostcomponent=[],
+            hosts=[],
+            verbose=False,
+            post_upgrade_hc=[],
         )
-        self.task_1 = TaskLog.objects.create(
-            object_id=self.adcm.pk,
-            object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=timezone.now(),
-            finish_date=timezone.now() + timedelta(days=1),
-            action=self.action,
+        self.service_task = create_task(
+            action=service_1_action,
+            obj=service_1,
+            conf={},
+            attr={},
+            hostcomponent=[],
+            hosts=[],
+            verbose=False,
+            post_upgrade_hc=[],
         )
-        self.task_2 = TaskLog.objects.create(
-            object_id=self.adcm.pk,
-            object_type=ContentType.objects.get(app_label="cm", model="adcm"),
-            start_date=timezone.now(),
-            finish_date=timezone.now() + timedelta(days=1),
-            action=self.action,
-            selector=get_selector(self.adcm, self.action),
-        )
-        self.job = JobLog.objects.create(
-            status="failed",
-            start_date=timezone.now() + timedelta(days=1),
-            finish_date=timezone.now() + timedelta(days=2),
-            action=self.action,
-            task=self.task_1,
+        self.component_task = create_task(
+            action=component_1_action,
+            obj=component_1,
+            conf={},
+            attr={},
+            hostcomponent=[],
+            hosts=[],
+            verbose=False,
+            post_upgrade_hc=[],
         )
 
     def test_task_list_success(self):
-        response: Response = self.client.get(path=reverse(viewname="v2:tasklog-list"))
-        self.assertEqual(len(response.data["results"]), 2)
+        response = self.client.get(path=reverse(viewname="v2:tasklog-list"))
+
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.data["results"]), 3)
+
+    def test_task_filter_by_job_name(self):
+        response = self.client.get(path=reverse(viewname="v2:tasklog-list"), data={"jobName": "comp"})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["id"], self.component_task.pk)
+
+    def test_task_filter_by_object_name(self):
+        response = self.client.get(path=reverse(viewname="v2:tasklog-list"), data={"objectName": "service_1"})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["id"], self.service_task.pk)
+
+    def test_task_filter_by_job_name_multiple_found_success(self):
+        response = self.client.get(path=reverse(viewname="v2:tasklog-list"), data={"jobName": "action"})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 3)
+        tasks = response.json()["results"]
+        self.assertEqual(tasks[0]["id"], self.component_task.pk)
+        self.assertEqual(tasks[1]["id"], self.service_task.pk)
+        self.assertEqual(tasks[2]["id"], self.cluster_task.pk)
+
+    def test_task_filter_by_job_name_and_object_name(self):
+        response = self.client.get(
+            path=reverse(viewname="v2:tasklog-list"), data={"jobName": "action", "objectName": "cluster"}
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["id"], self.cluster_task.pk)
 
     def test_task_retrieve_success(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:tasklog-detail", kwargs={"pk": self.task_2.pk}),
+        task_object = {"type": self.cluster_1.content_type.name, "id": self.cluster_1.pk, "name": self.cluster_1.name}
+
+        response = self.client.get(
+            path=reverse(viewname="v2:tasklog-detail", kwargs={"pk": self.cluster_task.pk}),
         )
-        task_object = {"type": self.adcm.content_type.name, "id": self.adcm.pk, "name": self.adcm.name}
-        self.assertEqual(response.data["id"], self.task_2.pk)
+
+        self.assertEqual(response.data["id"], self.cluster_task.pk)
         self.assertEqual(response.data["objects"], [task_object])
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_task_retrieve_not_found_fail(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:tasklog-detail", kwargs={"pk": self.task_2.pk + 10}),
+        response = self.client.get(
+            path=reverse(viewname="v2:tasklog-detail", kwargs={"pk": self.get_non_existent_pk(TaskLog)}),
         )
+
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_task_log_download_success(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:log-download", kwargs={"task_pk": self.task_1.pk})
-        )
+        with patch("api_v2.task.views.get_task_download_archive_file_handler", return_value=BytesIO(b"content")):
+            response = self.client.get(
+                path=reverse(viewname="v2:tasklog-download", kwargs={"pk": self.cluster_task.pk})
+            )
+
         self.assertEqual(response.status_code, HTTP_200_OK)
 
 
@@ -102,8 +141,8 @@ class TestTaskObjects(BaseAPITestCase):  # pylint: disable=too-many-instance-att
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = self.add_service_to_cluster("service_1", self.cluster_1)
-        self.service_2 = self.add_service_to_cluster("service_2", self.cluster_1)
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
 
         self.component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
 

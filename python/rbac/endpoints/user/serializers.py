@@ -11,6 +11,7 @@
 # limitations under the License.
 
 
+from django.conf import settings
 from rbac.models import Group, User
 from rbac.services.user import create_user, update_user
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
@@ -67,7 +68,7 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
     """
 
     id = IntegerField(read_only=True)
-    username = RegexField(r"^[^\s]+$", max_length=150)
+    username = RegexField(r"^[^\s]+$", max_length=settings.USERNAME_MAX_LENGTH)
     first_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False, default="")
     last_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False, default="")
     email = EmailField(

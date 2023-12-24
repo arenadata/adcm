@@ -2,64 +2,34 @@
 - type: provider
   name: provider
   version: &version '1.0'
+  config_group_customization: true
 
-  config: &config
-    - name: string
-      type: string
-      required: false
-      default: string
-    - name: list
-      type: list
+  config:
+    - name: json
+      type: json
       required: false
       default:
-        - value1
-        - value2
-        - value3
-    - name: boolean
-      type: boolean
-      required: false
-      default: true
+        key: value
     - name: group
       type: group
       subs:
-        - name: float
-          type: float
-          required: false
-          default: 0.1
         - name: map
           type: map
           required: false
           default:
             integer_key: '10'
             string_key: string
-        - name: text
-          type: text
-          required: false
-          default: text
     - name: activatable_group
       type: group
       activatable: True
       active: True
       subs:
-        - name: integer
-          type: integer
-          required: false
-          default: 10
-        - name: json
-          type: json
+        - name: secretmap
+          type: secretmap
           required: false
           default:
-            key: value
-        - name: structure
-          type: structure
-          required: false
-          yspec: ./schema.yaml
-          default:
-            - integer: 1
-              string: string1
-            - integer: 2
-              string: string2
-
+            integer_key: '10'
+            string_key: string
   actions:
     provider_action:
       type: job
@@ -71,7 +41,44 @@
 - type: host
   name: host
   version: *version
-  config: *config
+  config:
+    - name: structure
+      type: structure
+      required: false
+      yspec: ./schema.yaml
+      default:
+        - integer: 1
+          string: string1
+        - integer: 2
+          string: string2
+    - name: variant
+      type: variant
+      source:
+        type: config
+        name: group/list
+      default: value1
+    - name: group
+      type: group
+      subs:
+        - name: list
+          type: list
+          required: false
+          default:
+            - value1
+            - value2
+            - value3
+    - name: activatable_group
+      type: group
+      activatable: True
+      active: True
+      subs:
+        - name: option
+          type: option
+          required: false
+          option:
+            string1: string1
+            string2: string2
+          default: string1
   actions:
     host_action:
       display_name: "host_action"

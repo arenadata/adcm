@@ -9,9 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Dict
 
-from api_v2.bundle.serializers import BundleIdSerializer
+from api_v2.bundle.serializers import BundleRelatedSerializer
 from api_v2.prototype.utils import get_license_text
 from cm.models import Prototype
 from rest_framework.fields import CharField, IntegerField, SerializerMethodField
@@ -22,7 +21,7 @@ from adcm.serializers import EmptySerializer
 
 class PrototypeListSerializer(ModelSerializer):
     license = SerializerMethodField()
-    bundle = BundleIdSerializer(read_only=True)
+    bundle = BundleRelatedSerializer(read_only=True)
 
     class Meta:
         model = Prototype
@@ -37,14 +36,22 @@ class PrototypeListSerializer(ModelSerializer):
             "version",
         )
 
-    def get_license(self, obj: Prototype) -> Dict:
-        return {"status": obj.license, "text": get_license_text(obj)}
+    @staticmethod
+    def get_license(prototype: Prototype) -> dict:
+        return {
+            "status": prototype.license,
+            "text": get_license_text(
+                license_path=prototype.license_path,
+                path=prototype.path,
+                bundle_hash=prototype.bundle.hash,
+            ),
+        }
 
 
 class PrototypeVersionSerializer(ModelSerializer):
     id = IntegerField(source="pk")
     version = CharField()
-    bundle = BundleIdSerializer(read_only=True)
+    bundle = BundleRelatedSerializer(read_only=True)
     license_status = CharField(source="license")
 
     class Meta:
@@ -59,7 +66,11 @@ class PrototypeTypeSerializer(EmptySerializer):
 
     @staticmethod
     def get_versions(obj: Prototype) -> str | None:
-        queryset = Prototype.objects.filter(type=obj.type, name=obj.name).order_by("-version")
+        queryset = (
+            Prototype.objects.select_related("bundle")
+            .filter(type=obj.type, name=obj.name)
+            .order_by("-version", "-bundle__edition")
+        )
         serializer = PrototypeVersionSerializer(instance=queryset, many=True)
 
         return serializer.data
@@ -68,4 +79,4 @@ class PrototypeTypeSerializer(EmptySerializer):
 class PrototypeRelatedSerializer(ModelSerializer):
     class Meta:
         model = Prototype
-        fields = ("id", "name", "display_name", "type", "version")
+        fields = ("id", "name", "display_name", "version")

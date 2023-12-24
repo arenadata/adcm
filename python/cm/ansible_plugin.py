@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import fcntl
 import json
 from collections import defaultdict
@@ -18,16 +17,15 @@ from typing import Any
 
 # isort: off
 from ansible.errors import AnsibleError
-from ansible.utils.vars import merge_hash
 from ansible.plugins.action import ActionBase
-
-# isort: on
+from ansible.utils.vars import merge_hash
+from django.conf import settings
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 
 from cm.adcm_config.config import get_option_value
 from cm.api import add_hc, get_hc, set_object_config_with_plugin
-from cm.api_context import CTX
 from cm.errors import AdcmEx
-from cm.errors import raise_adcm_ex as err
 from cm.models import (
     Action,
     ADCMEntity,
@@ -46,12 +44,11 @@ from cm.models import (
     ServiceComponent,
     get_model_by_type,
 )
-from cm.status_api import post_event
-from django.conf import settings
-from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.models import ContentType
-from rbac.models import Policy, Role
+from cm.status_api import send_object_update_event, send_config_creation_event
+from rbac.models import Role, Policy
 from rbac.roles import assign_group_perm
+
+# isort: on
 
 MSG_NO_CONFIG = (
     "There are no job related vars in inventory. It's mandatory for that module to have some"
@@ -96,7 +93,7 @@ def job_lock(job_id):
 
         return file_descriptor
     except OSError as e:
-        return err("LOCK_ERROR", e)
+        raise AdcmEx("LOCK_ERROR", e) from e
 
 
 def check_context_type(task_vars: dict, context_types: tuple, err_msg: str | None = None) -> None:
@@ -277,8 +274,8 @@ def get_service_by_name(cluster_id, service_name):
 
 
 def _set_object_state(obj: ADCMEntity, state: str) -> ADCMEntity:
-    obj.set_state(state, CTX.event)
-    CTX.event.send_state()
+    obj.set_state(state)
+    send_object_update_event(object_=obj, changes={"state": state})
     return obj
 
 
@@ -318,8 +315,7 @@ def set_service_state(cluster_id, service_id, state):
 
 
 def _set_object_multi_state(obj: ADCMEntity, multi_state: str) -> ADCMEntity:
-    obj.set_multi_state(multi_state, CTX.event)
-    CTX.event.send_state()
+    obj.set_multi_state(multi_state)
     return obj
 
 
@@ -366,7 +362,7 @@ def change_hc(job_id, cluster_id, operations):
     job = JobLog.objects.get(id=job_id)
     action = Action.objects.get(id=job.action_id)
     if action.hostcomponentmap:
-        err("ACTION_ERROR", "You can not change hc in plugin for action with hc_acl")
+        raise AdcmEx("ACTION_ERROR", "You can not change hc in plugin for action with hc_acl")
 
     cluster = Cluster.obj.get(id=cluster_id)
     hostcomponent = get_hc(cluster)
@@ -384,15 +380,15 @@ def change_hc(job_id, cluster_id, operations):
                 hostcomponent.append(item)
             else:
                 msg = 'There is already component "{}" on host "{}"'
-                err("COMPONENT_CONFLICT", msg.format(component.prototype.name, host.fqdn))
+                raise AdcmEx("COMPONENT_CONFLICT", msg.format(component.prototype.name, host.fqdn))
         elif operation["action"] == "remove":
             if item in hostcomponent:
                 hostcomponent.remove(item)
             else:
                 msg = 'There is no component "{}" on host "{}"'
-                err("COMPONENT_CONFLICT", msg.format(component.prototype.name, host.fqdn))
+                raise AdcmEx("COMPONENT_CONFLICT", msg.format(component.prototype.name, host.fqdn))
         else:
-            err("INVALID_INPUT", f'unknown hc action "{operation["action"]}"')
+            raise AdcmEx("INVALID_INPUT", f'unknown hc action "{operation["action"]}"')
 
     add_hc(cluster, hostcomponent)
     file_descriptor.close()
@@ -458,6 +454,7 @@ def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> dict | int | str:
                 new_config[key][subkey] = value
 
     set_object_config_with_plugin(obj=obj, config=new_config, attr=new_attr)
+    send_config_creation_event(object_=obj)
 
     if len(conf) == 1:
         return list(conf.values())[0]
@@ -522,8 +519,8 @@ def check_missing_ok(obj: ADCMEntity, multi_state: str, missing_ok):
 
 def _unset_object_multi_state(obj: ADCMEntity, multi_state: str, missing_ok) -> ADCMEntity:
     check_missing_ok(obj, multi_state, missing_ok)
-    obj.unset_multi_state(multi_state, CTX.event)
-    CTX.event.send_state()
+    obj.unset_multi_state(multi_state)
+    send_object_update_event(object_=obj, changes={"state": multi_state})
     return obj
 
 
@@ -576,11 +573,28 @@ def log_group_check(group: GroupCheckLog, fail_msg: str, success_msg: str):
     group.save()
 
 
-def log_check(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
+def assign_view_logstorage_permissions_by_job(log_storage: LogStorage) -> None:
+    task_role = Role.objects.filter(name=f"View role for task {log_storage.job.task_id}", built_in=True).first()
+    view_logstorage_permission, _ = Permission.objects.get_or_create(
+        content_type=ContentType.objects.get_for_model(model=LogStorage),
+        codename=f"view_{LogStorage.__name__.lower()}",
+    )
+
+    for policy in (policy for policy in Policy.objects.all() if task_role in policy.role.child.all()):
+        assign_group_perm(policy=policy, permission=view_logstorage_permission, obj=log_storage)
+
+
+def create_custom_log(job_id: int, name: str, log_format: str, body: str) -> LogStorage:
+    log = LogStorage.objects.create(job_id=job_id, name=name, type="custom", format=log_format, body=body)
+    assign_view_logstorage_permissions_by_job(log_storage=log)
+    return log
+
+
+def create_checklog_object(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
     file_descriptor = job_lock(job_id)
     job = JobLog.obj.get(id=job_id)
     if job.status != JobStatus.RUNNING:
-        err("JOB_NOT_FOUND", f'job #{job.pk} has status "{job.status}", not "running"')
+        raise AdcmEx("JOB_NOT_FOUND", f'job #{job.pk} has status "{job.status}", not "running"')
 
     group_title = group_data.pop("title")
 
@@ -597,33 +611,15 @@ def log_check(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
         log_group_check(**group_data)
 
     log_storage, _ = LogStorage.objects.get_or_create(job=job, name="ansible", type="check", format="json")
-    task_role = Role.objects.filter(name=f"View role for task {job.task.id}", built_in=True).first()
 
-    if task_role:
-        view_logstorage_permission, _ = Permission.objects.get_or_create(
-            content_type=ContentType.objects.get_for_model(model=LogStorage),
-            codename=f"view_{LogStorage.__name__.lower()}",
-        )
-        for policy in (policy for policy in Policy.objects.all() if task_role in policy.role.child.all()):
-            assign_group_perm(policy=policy, permission=view_logstorage_permission, obj=log_storage)
+    assign_view_logstorage_permissions_by_job(log_storage)
 
-    post_event(
-        event="add_job_log",
-        object_id=job.pk,
-        object_type="job",
-        details={
-            "id": log_storage.pk,
-            "type": log_storage.type,
-            "name": log_storage.name,
-            "format": log_storage.format,
-        },
-    )
     file_descriptor.close()
 
     return check_log
 
 
-def get_check_log(job_id: int):
+def get_checklogs_data_by_job_id(job_id: int) -> list[dict[str, Any]]:
     data = []
     group_subs = defaultdict(list)
 
@@ -651,7 +647,7 @@ def get_check_log(job_id: int):
 
 
 def finish_check(job_id: int):
-    data = get_check_log(job_id)
+    data = get_checklogs_data_by_job_id(job_id)
     if not data:
         return
 

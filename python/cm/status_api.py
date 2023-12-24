@@ -24,7 +24,6 @@ from cm.models import (
     ClusterObject,
     Host,
     HostComponent,
-    JobLog,
     ServiceComponent,
     TaskLog,
 )
@@ -33,35 +32,13 @@ from requests import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 
-class Event:
-    def __init__(self):
-        self.events = []
-
-    def __del__(self):
-        self.send_state()
-
-    def clear_state(self):
-        self.events = []
-
-    def send_state(self):
-        while self.events:
-            try:
-                func, args = self.events.pop(0)
-                func(*args)
-            except IndexError:
-                pass
-
-    def set_object_state(self, obj, state):
-        self.events.append((set_obj_state, (obj, state)))
-
-    def change_object_multi_state(self, obj, multi_state):
-        self.events.append((change_obj_multi_state, (obj, multi_state)))
-
-    def set_job_status(self, job, status):
-        self.events.append((set_job_status, (job, status)))
-
-    def set_task_status(self, task, status):
-        self.events.append((set_task_status, (task, status)))
+class EventTypes:
+    CREATE_CONCERN = "create_{}_concern"
+    DELETE_CONCERN = "delete_{}_concern"
+    DELETE_SERVICE = "delete_service"
+    UPDATE_HOSTCOMPONENTMAP = "update_hostcomponentmap"
+    CREATE_CONFIG = "create_{}_config"
+    UPDATE = "update_{}"
 
 
 def api_request(method: str, url: str, data: dict = None) -> Response | None:
@@ -90,72 +67,78 @@ def api_request(method: str, url: str, data: dict = None) -> Response | None:
         return None
 
 
-def post_event(event: str, object_id: int | None, object_type: str, details: dict = None) -> Response | None:
+def post_event(event: str, object_id: int | None, changes: dict | None = None) -> Response | None:
     if object_id is None:
         return None
 
-    if details is None:
-        details = {"type": None, "value": None}
-
     data = {
         "event": event,
-        "object": {
-            "type": object_type,
-            "id": object_id,
-            "details": details,
-        },
+        "object": {"id": object_id, **({"changes": changes} if changes else {})},
     }
 
     return api_request(method="post", url="event/", data=data)
 
 
-def set_job_status(job: JobLog, status: str) -> Response | None:
-    return post_event(
-        event="change_job_status", object_id=job.pk, object_type="job", details={"type": "status", "value": status}
+def fix_object_type(type_: str) -> str:
+    if type_ == "provider":
+        return "hostprovider"
+
+    return type_
+
+
+def send_concern_creation_event(object_: ADCMEntity, concern: dict) -> None:
+    post_event(
+        event=EventTypes.CREATE_CONCERN.format(fix_object_type(type_=object_.prototype.type)),
+        object_id=object_.pk,
+        changes=concern,
     )
 
 
-def set_task_status(task: TaskLog, status: str) -> Response | None:
-    return post_event(
-        event="change_job_status", object_id=task.pk, object_type="task", details={"type": "status", "value": status}
+def send_concern_delete_event(object_id: int, object_type: str, concern_id: int) -> None:
+    post_event(
+        event=EventTypes.DELETE_CONCERN.format(fix_object_type(type_=object_type)),
+        object_id=object_id,
+        changes={"id": concern_id},
     )
 
 
-def set_obj_state(obj: ADCMEntity, state: str) -> Response | None:
-    if not hasattr(obj, "prototype"):
-        return None
-
-    object_type = obj.prototype.type
-    if object_type == "adcm":
-        return None
-
-    if object_type not in {"cluster", "service", "host", "provider", "component"}:
-        logger.error("Unknown object type: '%s'", object_type)
-        return None
-
+def send_delete_service_event(service_id: int) -> Response | None:
     return post_event(
-        event="change_state", object_id=obj.pk, object_type=object_type, details={"type": "state", "value": state}
+        event=EventTypes.DELETE_SERVICE,
+        object_id=service_id,
     )
 
 
-def change_obj_multi_state(obj: ADCMEntity, multi_state: str) -> Response | None:
-    if not hasattr(obj, "prototype"):
-        return None
+def send_host_component_map_update_event(cluster: Cluster) -> None:
+    post_event(event=EventTypes.UPDATE_HOSTCOMPONENTMAP, object_id=cluster.pk)
 
-    object_type = obj.prototype.type
-    if object_type == "adcm":
-        return None
 
-    if object_type not in {"cluster", "service", "host", "provider", "component"}:
-        logger.error("Unknown object type: '%s'", object_type)
-        return None
-
-    return post_event(
-        event="change_state",
-        object_id=obj.pk,
-        object_type=object_type,
-        details={"type": "multi_state", "value": multi_state},
+def send_config_creation_event(object_: ADCMEntity) -> None:
+    post_event(
+        event=EventTypes.CREATE_CONFIG.format(fix_object_type(type_=object_.prototype.type)), object_id=object_.pk
     )
+
+
+def send_object_update_event(object_: ADCMEntity, changes: dict) -> None:
+    post_event(event=EventTypes.UPDATE.format(object_.prototype.type), object_id=object_.pk, changes=changes)
+
+
+def send_task_status_update_event(object_: TaskLog, status: str) -> None:
+    post_event(event=EventTypes.UPDATE.format("task"), object_id=object_.pk, changes={"status": status})
+
+
+def send_prototype_and_state_update_event(object_: ADCMEntity) -> None:
+    changes = {
+        "state": object_.state,
+        "prototype": {
+            "id": object_.prototype.pk,
+            "name": object_.prototype.name,
+            "displayName": object_.prototype.display_name,
+            "version": object_.prototype.version,
+        },
+    }
+
+    post_event(event=EventTypes.UPDATE.format(object_.prototype.type), object_id=object_.pk, changes=changes)
 
 
 def get_raw_status(url: str) -> int:

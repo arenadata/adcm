@@ -257,8 +257,7 @@ class TestBundle(BaseTestCase):
             data={"bundle_file": test_bundle_path.name},
         )
 
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["code"], "BUNDLE_VERSION_ERROR")
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_upload_hc_apply_without_hc_acl_job_fail(self):
         bundle_filename = "hc_apply_without_hc_acl_job.tar"

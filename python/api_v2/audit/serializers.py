@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from audit.models import AuditLog, AuditObject, AuditSession, AuditUser
-from rest_framework.fields import CharField, DateTimeField, IntegerField
+from rest_framework.fields import CharField, DateTimeField, IntegerField, JSONField
 from rest_framework.serializers import ModelSerializer
 
 
@@ -59,7 +59,8 @@ class AuditSessionSerializer(ModelSerializer):
     user = AuditUserShortSerializer(read_only=True, allow_null=True)
     result = CharField(source="login_result")
     time = DateTimeField(source="login_time")
+    details = JSONField(source="login_details")
 
     class Meta:
         model = AuditSession
-        fields = ("id", "user", "result", "time")
+        fields = ("id", "user", "result", "time", "details")

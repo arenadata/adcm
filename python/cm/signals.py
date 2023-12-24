@@ -10,14 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
+
 from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP, AuditObject
-from casestyle import kebabcase
-from cm.models import ADCMEntity, Cluster, GroupConfig, Host
-from cm.status_api import post_event
-from django.db.models.signals import m2m_changed, post_delete, post_save, pre_save
+from cm.models import Cluster, ConcernItem, Host
+from cm.status_api import send_concern_delete_event
+from django.db.models.signals import pre_delete, pre_save
 from django.db.transaction import on_commit
 from django.dispatch import receiver
-from rbac.models import Group, Policy, Role, User
+from rbac.models import Group, Policy
 
 
 @receiver(signal=pre_save, sender=Cluster)
@@ -60,65 +61,14 @@ def rename_audit_object_host(sender, instance, **kwargs) -> None:
     audit_obj.save(update_fields=["object_name"])
 
 
-@receiver(signal=post_save, sender=User)
-@receiver(signal=post_save, sender=Group)
-@receiver(signal=post_save, sender=Policy)
-@receiver(signal=post_save, sender=Role)
-@receiver(signal=post_save, sender=GroupConfig)
-def model_change(sender, **kwargs):
-    if kwargs["raw"]:
-        return
-
-    action = "update"
-    if kwargs.get("created"):
-        action = "create"
-
-    on_commit(
-        lambda: post_event(
-            event=action,
-            object_id=kwargs["instance"].pk,
-            object_type=kebabcase(sender.__name__),
-            details={"module": sender.__module__, "model_name": None},
-        ),
-    )
-
-
-@receiver(signal=post_delete, sender=User)
-@receiver(signal=post_delete, sender=Group)
-@receiver(signal=post_delete, sender=Policy)
-@receiver(signal=post_delete, sender=Role)
-@receiver(signal=post_delete, sender=GroupConfig)
-def model_delete(sender, **kwargs):
-    on_commit(
-        lambda: post_event(
-            event="delete",
-            object_id=kwargs["instance"].pk,
-            object_type=kebabcase(sender.__name__),
-            details={"module": sender.__module__, "model_name": None},
-        ),
-    )
-
-
-@receiver(signal=m2m_changed, sender=GroupConfig)
-@receiver(signal=m2m_changed, sender=ADCMEntity.concerns.through)
-@receiver(signal=m2m_changed, sender=Policy)
-@receiver(signal=m2m_changed, sender=Role)
-@receiver(signal=m2m_changed, sender=User)
-@receiver(signal=m2m_changed, sender=Group)
-def m2m_change(sender, **kwargs):
-    if kwargs["action"] == "post_add":
-        action = "add"
-    elif kwargs["action"] == "post_remove":
-        action = "delete"
-    else:
-        return
-
-    object_type = kebabcase(sender.__name__)
-    on_commit(
-        lambda: post_event(
-            event=action,
-            object_id=kwargs["instance"].pk,
-            object_type=object_type,
-            details={"module": sender.__module__, "model_name": object_type},
-        ),
-    )
+@receiver(signal=pre_delete, sender=ConcernItem)
+def send_delete_event(sender, instance, **kwargs):  # pylint: disable=unused-argument
+    for object_ in instance.related_objects:
+        on_commit(
+            func=partial(
+                send_concern_delete_event,
+                object_id=object_.pk,
+                object_type=object_.prototype.type,
+                concern_id=instance.pk,
+            )
+        )

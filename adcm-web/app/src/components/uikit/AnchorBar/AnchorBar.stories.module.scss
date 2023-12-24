@@ -1,0 +1,30 @@
+:global {
+  body.theme-dark {
+    --anchor-bar-stories-red: var(--color-xred);
+    --anchor-bar-stories-yellow: var(--color-yellow-light);
+  }
+
+  body.theme-light {
+    --anchor-bar-stories-red: var(--color-xred-light);
+    --anchor-bar-stories-yellow: var(--color-json-orange);
+  }
+}
+
+.articlesPage {
+  display: flex;
+}
+
+.article {
+  padding: 24px;
+  max-width: 600px;
+  margin-right: 100px;
+  text-align: justify;
+}
+
+.colorRed {
+ color: var(--anchor-bar-stories-red);
+}
+
+.colorYellow {
+ color: var(--anchor-bar-stories-yellow);
+}

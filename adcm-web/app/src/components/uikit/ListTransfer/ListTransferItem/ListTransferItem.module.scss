@@ -1,0 +1,23 @@
+:global {
+  body.theme-dark {
+    --list-transfer-item-src-include-border: var(--color-xdark);
+    --list-transfer-item-src-include-color: var(--color-xgray-light);
+  }
+
+  body.theme-light {
+    --list-transfer-item-src-include-border: var(--color-stroke-light);
+    --list-transfer-item-src-include-color: var(--color-xgray-lighter);
+  }
+}
+
+.listTransferItemSrc {
+  &_include {
+    color: var(--list-transfer-item-src-include-color);
+    border: 2px solid var(--list-transfer-item-src-include-border);
+    border-radius: 8px;
+
+    padding: 4px 32px;
+    font-size: 14px;
+    line-height: 20px;
+  }
+}

@@ -1,0 +1,16 @@
+:global {
+  body.theme-dark {
+    --job-page-table-childjobs-name-color: var(--color-xwhite-off);
+  }
+
+  body.theme-light {
+    --job-page-table-childjobs-name-color: var(--color-xdark);
+  }
+}
+
+.jobRow {
+  &__jobName {
+    color: var(--job-page-table-childjobs-name-color) !important;
+    font-weight: 500;
+  }
+}

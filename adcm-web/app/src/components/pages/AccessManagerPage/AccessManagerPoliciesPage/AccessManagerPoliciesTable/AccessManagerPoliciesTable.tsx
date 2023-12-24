@@ -1,0 +1,87 @@
+import React, { useState } from 'react';
+import { useDispatch, useStore } from '@hooks';
+import { Button, ExpandableRowComponent, IconButton, Table, TableCell } from '@uikit';
+import { columns } from './AccessManagerPoliciesTable.constants';
+import { orElseGet } from '@utils/checkUtils';
+import { openDeleteDialog, openPoliciesEditDialog } from '@store/adcm/policies/policiesActionsSlice';
+import { setSortParams } from '@store/adcm/policies/policiesTableSlice';
+import { SortParams } from '@uikit/types/list.types';
+import { AdcmPolicy } from '@models/adcm';
+import cn from 'classnames';
+import s from './AccessManagerPoliciesTable.module.scss';
+import AccessManagerPoliciesTableExpandedContent from './AccessManagerPoliciesTableExpandedContent/AccessManagerPoliciesTableExpandedContent';
+
+const AccessManagerPoliciesTable: React.FC = () => {
+  const dispatch = useDispatch();
+
+  const policies = useStore(({ adcm }) => adcm.policies.policies);
+  const isLoading = useStore(({ adcm }) => adcm.policies.isLoading);
+  const sortParams = useStore(({ adcm }) => adcm.policiesTable.sortParams);
+
+  const handleEditClick = (policy: AdcmPolicy) => () => {
+    dispatch(openPoliciesEditDialog(policy));
+  };
+
+  const handleDeleteClick = (policyId: number) => () => {
+    dispatch(openDeleteDialog(policyId));
+  };
+
+  const handleSorting = (sortParams: SortParams) => {
+    dispatch(setSortParams(sortParams));
+  };
+
+  const [expandableRows, setExpandableRows] = useState<Record<number, boolean>>({});
+
+  const handleExpandClick = (id: number) => {
+    setExpandableRows({
+      ...expandableRows,
+      [id]: expandableRows[id] === undefined ? true : !expandableRows[id],
+    });
+  };
+
+  return (
+    <Table
+      variant="secondary"
+      columns={columns}
+      isLoading={isLoading}
+      sortParams={sortParams}
+      onSorting={handleSorting}
+      className={s.policiesTable}
+    >
+      {policies.map((policy) => {
+        return (
+          <ExpandableRowComponent
+            key={policy.id}
+            colSpan={columns.length}
+            isExpanded={expandableRows[policy.id] || false}
+            expandedContent={<AccessManagerPoliciesTableExpandedContent objects={policy.objects} />}
+            className={cn(s.policiesTable__policyRow, { [s.expandedRow]: expandableRows[policy.id] })}
+            expandedClassName={s.policiesTable__expandedRow}
+          >
+            <TableCell>{policy.name}</TableCell>
+            <TableCell>{orElseGet(policy.description)}</TableCell>
+            <TableCell>{orElseGet(policy.role?.displayName)}</TableCell>
+            <TableCell>{policy.groups.map((group) => group.displayName).join(', ')}</TableCell>
+            <TableCell>{policy.objects.map((object) => object.displayName).join(', ')}</TableCell>
+            <TableCell>
+              <Button
+                className={expandableRows[policy.id] ? 'is-active' : ''}
+                variant="secondary"
+                iconLeft="dots"
+                onClick={() => handleExpandClick(policy.id)}
+                disabled={!policy.objects.length}
+                placeholder="Expand"
+              />
+            </TableCell>
+            <TableCell hasIconOnly align="center">
+              <IconButton icon="g1-edit" size={32} onClick={handleEditClick(policy)} title="Edit" />
+              <IconButton icon="g1-delete" size={32} onClick={handleDeleteClick(policy.id)} title="Delete" />
+            </TableCell>
+          </ExpandableRowComponent>
+        );
+      })}
+    </Table>
+  );
+};
+
+export default AccessManagerPoliciesTable;

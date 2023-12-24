@@ -18,9 +18,6 @@ class CmConfig(AppConfig):
 
     def ready(self):
         from cm.signals import (  # pylint: disable=import-outside-toplevel,unused-import
-            m2m_change,
-            model_change,
-            model_delete,
             rename_audit_object,
             rename_audit_object_host,
         )

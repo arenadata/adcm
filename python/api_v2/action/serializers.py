@@ -13,6 +13,7 @@ from cm.models import Action
 from rest_framework.fields import IntegerField
 from rest_framework.serializers import (
     BooleanField,
+    DictField,
     JSONField,
     ListSerializer,
     ModelSerializer,
@@ -37,8 +38,7 @@ class ActionRetrieveSerializer(ActionListSerializer):
     is_allow_to_terminate = BooleanField(source="allow_to_terminate")
     host_component_map_rules = JSONField(source="hostcomponentmap")
     disclaimer = SerializerMethodField()
-    config_schema = SerializerMethodField()
-    adcm_meta = SerializerMethodField()
+    configuration = SerializerMethodField()
 
     class Meta:
         model = Action
@@ -50,19 +50,26 @@ class ActionRetrieveSerializer(ActionListSerializer):
             "is_allow_to_terminate",
             "host_component_map_rules",
             "disclaimer",
-            "config_schema",
-            "adcm_meta",
+            "configuration",
         ]
 
     @staticmethod
     def get_disclaimer(action: Action) -> str:
         return action.ui_options.get("disclaimer", "")
 
-    def get_config_schema(self, _: Action) -> dict:
-        return self.context["config_schema"]
+    def get_configuration(self, _: Action) -> dict | None:
+        if (
+            self.context["config_schema"] is None
+            and self.context["config"] is None
+            and self.context["adcm_meta"] is None
+        ):
+            return None
 
-    def get_adcm_meta(self, _: Action) -> dict:
-        return self.context["adcm_meta"]
+        return {
+            "config_schema": self.context["config_schema"],
+            "config": self.context["config"],
+            "adcm_meta": self.context["adcm_meta"],
+        }
 
 
 class HostComponentEntry(EmptySerializer):
@@ -70,10 +77,14 @@ class HostComponentEntry(EmptySerializer):
     component_id = IntegerField()
 
 
+class ActionConfiguration(EmptySerializer):
+    config = DictField(allow_empty=True)
+    adcm_meta = DictField(allow_empty=True)
+
+
 class ActionRunSerializer(EmptySerializer):
     host_component_map = ListSerializer(child=HostComponentEntry(), required=False, default=[])
-    config = JSONField(required=False, default={})
-    adcm_meta = JSONField(required=False, default={})
+    configuration = ActionConfiguration(required=False, default=None, allow_null=True)
     is_verbose = BooleanField(required=False, default=False)
 
 

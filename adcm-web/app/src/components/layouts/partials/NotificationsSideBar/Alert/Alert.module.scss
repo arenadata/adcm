@@ -1,0 +1,73 @@
+:global {
+  body.theme-dark {
+    // alert-info
+    --alert-border-info: var(--color-xdark);
+    --alert-background-info: #3C4145;
+    --alert-color-info: var(--color-xwhite-off);
+    --alert-icon-color-info: var(--color-xgreen-saturated);
+
+    // alert-error
+    --alert-border-error: #FFCC47;
+    --alert-background-error: #212121;
+    --alert-color-error: var(--color-xwhite-off);
+    --alert-icon-color-error: var(--alert-border-error);
+  }
+
+  body.theme-light {
+    // alert-info
+    --alert-border-info: var(--color-stroke-light);
+    --alert-background-info: var(-color-xgray-alt);
+    --alert-color-info: var(--color-xdark);
+    --alert-icon-color-info: var(--color-xgreen);
+
+    // alert-error
+    --alert-border-error: var(--color-json-orange);
+    --alert-background-error: var(--color-popup-light);
+    --alert-color-error: var(--color-xdark);
+    --alert-icon-color-error: var(--color-json-orange);
+  }
+}
+
+.alert {
+  border-radius: 12px;
+  background: var(--alert-background);
+  border: 1px solid var(--alert-border);
+  color: var(--alert-color);
+  padding: 15px;
+
+  display: flex;
+  align-items: center;
+  gap: 20px;
+
+  font-size: 15px;
+  line-height: 18px;
+  font-weight: 400;
+
+  width: 420px;
+  word-break: break-word;
+
+  &__icon {
+    color: var(--alert-icon-color);
+    flex-shrink: 0;
+  }
+
+  &__button {
+    min-width: 70px !important;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  &_info {
+    --alert-border: var(--alert-border-info);
+    --alert-background: var(--alert-background-info);
+    --alert-color: var(--alert-color-info);
+    --alert-icon-color: var(--alert-icon-color-info);
+  }
+
+  &_error {
+    --alert-border: var(--alert-border-error);
+    --alert-background: var(--alert-background-error);
+    --alert-color: var(--alert-color-error);
+    --alert-icon-color: var(--alert-icon-color-error);
+  }
+}

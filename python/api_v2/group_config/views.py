@@ -9,28 +9,32 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.group_config.permissions import GroupConfigPermissions
 from api_v2.group_config.serializers import GroupConfigSerializer
 from api_v2.host.serializers import HostGroupConfigSerializer
 from api_v2.views import CamelCaseModelViewSet
+from audit.utils import audit
 from cm.models import GroupConfig
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
+from rbac.models import re_apply_object_policy
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import VIEW_GROUP_CONFIG_PERM, check_config_perm
 
 
 class GroupConfigViewSet(
-    PermissionListMixin, GetParentObjectMixin, CamelCaseModelViewSet
+    PermissionListMixin, GetParentObjectMixin, ConfigSchemaMixin, CamelCaseModelViewSet
 ):  # pylint: disable=too-many-ancestors
     queryset = GroupConfig.objects.order_by("name")
     serializer_class = GroupConfigSerializer
+    permission_classes = [GroupConfigPermissions]
     permission_required = [VIEW_GROUP_CONFIG_PERM]
     filter_backends = []
 
@@ -45,8 +49,16 @@ class GroupConfigViewSet(
             .filter(object_id=parent_object.pk, object_type=ContentType.objects.get_for_model(model=parent_object))
         )
 
+    @audit
     def create(self, request: Request, *args, **kwargs):
         parent_object = self.get_parent_object()
+
+        parent_view_perm = f"cm.view_{parent_object.__class__.__name__.lower()}"
+        if parent_object is None or not (
+            request.user.has_perm(perm=parent_view_perm, obj=parent_object)
+            or request.user.has_perm(perm=parent_view_perm)
+        ):
+            raise NotFound("Can't find config's parent object")
         check_config_perm(
             user=request.user,
             action_type="change",
@@ -59,8 +71,10 @@ class GroupConfigViewSet(
         group_config = GroupConfig.objects.create(
             object_type=ContentType.objects.get_for_model(model=parent_object),
             object_id=parent_object.pk,
-            **serializer.validated_data
+            **serializer.validated_data,
         )
+
+        re_apply_object_policy(apply_object=parent_object)
 
         return Response(data=self.get_serializer(group_config).data, status=HTTP_201_CREATED)
 
@@ -68,6 +82,14 @@ class GroupConfigViewSet(
     def host_candidates(self, request: Request, *args, **kwargs):  # pylint: disable=unused-argument
         group_config: GroupConfig = self.get_object()
         hosts = group_config.host_candidate()
-        serializer = HostGroupConfigSerializer(self.paginate_queryset(queryset=hosts), many=True)
+        serializer = HostGroupConfigSerializer(instance=hosts, many=True)
 
-        return self.get_paginated_response(data=serializer.data)
+        return Response(data=serializer.data, status=HTTP_200_OK)
+
+    @audit
+    def destroy(self, request: Request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+
+    @audit
+    def update(self, request: Request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)

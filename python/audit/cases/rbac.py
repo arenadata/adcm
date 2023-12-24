@@ -74,7 +74,7 @@ def _rbac_case(
 
 
 def rbac_case(
-    path: list[str, ...],
+    path: list[str],
     view: View,
     response: Response,
     deleted_obj: Model,
@@ -83,13 +83,13 @@ def rbac_case(
     audit_object = None
 
     match path:
-        case ["rbac", "group"]:
+        case ["rbac", "group" | "groups"]:
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.GROUP,
                 response=response,
             )
 
-        case ["rbac", "group", group_pk]:
+        case ["rbac", "group" | "groups", group_pk]:
             data = RbacCaseData(view=view, deleted_obj=deleted_obj, obj_pk=group_pk)
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.GROUP,
@@ -97,13 +97,13 @@ def rbac_case(
                 data=data,
             )
 
-        case ["rbac", "policy"]:
+        case ["rbac", "policy" | "policies"]:
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.POLICY,
                 response=response,
             )
 
-        case ["rbac", "policy", policy_pk]:
+        case ["rbac", "policy" | "policies", policy_pk]:
             data = RbacCaseData(view=view, deleted_obj=deleted_obj, obj_pk=policy_pk)
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.POLICY,
@@ -111,13 +111,13 @@ def rbac_case(
                 data=data,
             )
 
-        case ["rbac", "role"]:
+        case ["rbac", "role" | "roles"]:
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.ROLE,
                 response=response,
             )
 
-        case ["rbac", "role", role_pk]:
+        case ["rbac", "role" | "roles", role_pk]:
             data = RbacCaseData(view=view, deleted_obj=deleted_obj, obj_pk=role_pk)
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.ROLE,
@@ -125,13 +125,18 @@ def rbac_case(
                 data=data,
             )
 
-        case ["rbac", "user"]:
+        case ["rbac", "user" | "users"]:
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.USER,
                 response=response,
             )
 
-        case ["rbac", "user", user_pk] | ["rbac", "user", user_pk, "reset_failed_login_attempts"]:
+        case ["rbac", "user" | "users", user_pk] | [
+            "rbac",
+            "user" | "users",
+            user_pk,
+            "reset_failed_login_attempts" | "unblock",
+        ]:
             data = RbacCaseData(view=view, deleted_obj=deleted_obj, obj_pk=user_pk)
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.USER,
@@ -139,7 +144,11 @@ def rbac_case(
                 data=data,
             )
 
-            if view.action == "reset_failed_login_attempts":
-                audit_operation.name = "User login attempts reset"
+            match view.action:
+                case "reset_failed_login_attempts":
+                    audit_operation.name = "User login attempts reset"
+                case "unblock":
+                    username = f"{audit_object.object_name} " if audit_object is not None else ""
+                    audit_operation.name = f"{username}user unblocked"
 
     return audit_operation, audit_object

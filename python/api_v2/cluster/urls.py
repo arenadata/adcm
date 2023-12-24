@@ -11,8 +11,8 @@
 # limitations under the License.
 
 from api_v2.action.views import ActionViewSet
-from api_v2.cluster.views import ClusterViewSet, MappingViewSet
-from api_v2.component.views import ComponentViewSet
+from api_v2.cluster.views import ClusterViewSet
+from api_v2.component.views import ComponentViewSet, HostComponentViewSet
 from api_v2.config.views import ConfigLogViewSet
 from api_v2.group_config.views import GroupConfigViewSet
 from api_v2.host.views import HostClusterViewSet, HostGroupConfigViewSet
@@ -44,20 +44,20 @@ cluster_group_config_router = NestedSimpleRouter(
     parent_router=cluster_router, parent_prefix=CLUSTER_PREFIX, lookup="cluster"
 )
 cluster_group_config_router.register(
-    prefix=CONFIG_GROUPS_PREFIX, viewset=GroupConfigViewSet, basename="cluster-config-group"
+    prefix=CONFIG_GROUPS_PREFIX, viewset=GroupConfigViewSet, basename="cluster-group-config"
 )
 cluster_group_config_hosts_router = NestedSimpleRouter(
     cluster_group_config_router, CONFIG_GROUPS_PREFIX, lookup="group_config"
 )
 cluster_group_config_hosts_router.register(
-    prefix=r"hosts", viewset=HostGroupConfigViewSet, basename="cluster-config-group-hosts"
+    prefix=r"hosts", viewset=HostGroupConfigViewSet, basename="cluster-group-config-hosts"
 )
 
 cluster_group_config_config_router = NestedSimpleRouter(
-    parent_router=cluster_group_config_router, parent_prefix=CONFIG_GROUPS_PREFIX, lookup="config_group"
+    parent_router=cluster_group_config_router, parent_prefix=CONFIG_GROUPS_PREFIX, lookup="group_config"
 )
 cluster_group_config_config_router.register(
-    prefix=CONFIG_PREFIX, viewset=ConfigLogViewSet, basename="cluster-config-group-config"
+    prefix=CONFIG_PREFIX, viewset=ConfigLogViewSet, basename="cluster-group-config-config"
 )
 import_cluster_router = NestedSimpleRouter(parent_router=cluster_router, parent_prefix=CLUSTER_PREFIX, lookup="cluster")
 import_cluster_router.register(prefix=IMPORT_PREFIX, viewset=ImportViewSet, basename="cluster-import")
@@ -76,20 +76,20 @@ service_group_config_router = NestedSimpleRouter(
     parent_router=service_router, parent_prefix=SERVICE_PREFIX, lookup="service"
 )
 service_group_config_router.register(
-    prefix=CONFIG_GROUPS_PREFIX, viewset=GroupConfigViewSet, basename="service-config-group"
+    prefix=CONFIG_GROUPS_PREFIX, viewset=GroupConfigViewSet, basename="service-group-config"
 )
 
 service_group_config_config_router = NestedSimpleRouter(
-    parent_router=service_group_config_router, parent_prefix=CONFIG_GROUPS_PREFIX, lookup="config_group"
+    parent_router=service_group_config_router, parent_prefix=CONFIG_GROUPS_PREFIX, lookup="group_config"
 )
 service_group_config_config_router.register(
-    prefix=CONFIG_PREFIX, viewset=ConfigLogViewSet, basename="service-config-group-config"
+    prefix=CONFIG_PREFIX, viewset=ConfigLogViewSet, basename="service-group-config-config"
 )
 service_group_config_hosts_router = NestedSimpleRouter(
     service_group_config_router, CONFIG_GROUPS_PREFIX, lookup="group_config"
 )
 service_group_config_hosts_router.register(
-    prefix=r"hosts", viewset=HostGroupConfigViewSet, basename="service-config-group-hosts"
+    prefix=r"hosts", viewset=HostGroupConfigViewSet, basename="service-group-config-hosts"
 )
 import_service_router = NestedSimpleRouter(parent_router=service_router, parent_prefix=SERVICE_PREFIX, lookup="service")
 import_service_router.register(prefix=IMPORT_PREFIX, viewset=ImportViewSet, basename="service-import")
@@ -112,20 +112,20 @@ component_group_config_router = NestedSimpleRouter(
     parent_router=component_router, parent_prefix=COMPONENT_PREFIX, lookup="component"
 )
 component_group_config_router.register(
-    prefix=CONFIG_GROUPS_PREFIX, viewset=GroupConfigViewSet, basename="component-config-group"
+    prefix=CONFIG_GROUPS_PREFIX, viewset=GroupConfigViewSet, basename="component-group-config"
 )
 
 component_group_config_config_router = NestedSimpleRouter(
-    parent_router=component_group_config_router, parent_prefix=CONFIG_GROUPS_PREFIX, lookup="config_group"
+    parent_router=component_group_config_router, parent_prefix=CONFIG_GROUPS_PREFIX, lookup="group_config"
 )
 component_group_config_config_router.register(
-    prefix=CONFIG_PREFIX, viewset=ConfigLogViewSet, basename="component-config-group-config"
+    prefix=CONFIG_PREFIX, viewset=ConfigLogViewSet, basename="component-group-config-config"
 )
 component_group_config_hosts_router = NestedSimpleRouter(
     component_group_config_router, CONFIG_GROUPS_PREFIX, lookup="group_config"
 )
 component_group_config_hosts_router.register(
-    prefix=r"hosts", viewset=HostGroupConfigViewSet, basename="component-config-group-hosts"
+    prefix=r"hosts", viewset=HostGroupConfigViewSet, basename="component-group-config-hosts"
 )
 
 
@@ -136,12 +136,12 @@ host_router.register(prefix=HOST_PREFIX, viewset=HostClusterViewSet, basename="h
 host_action_router = NestedSimpleRouter(parent_router=host_router, parent_prefix=HOST_PREFIX, lookup="host")
 host_action_router.register(prefix=ACTION_PREFIX, viewset=ActionViewSet, basename="host-cluster-action")
 
+host_component_router = NestedSimpleRouter(parent_router=host_router, parent_prefix=HOST_PREFIX, lookup="host")
+host_component_router.register(prefix=COMPONENT_PREFIX, viewset=HostComponentViewSet, basename="host-cluster-component")
+
 # other
 upgrade_router = NestedSimpleRouter(parent_router=cluster_router, parent_prefix=CLUSTER_PREFIX, lookup="cluster")
 upgrade_router.register(prefix="upgrades", viewset=UpgradeViewSet)
-
-mapping_router = NestedSimpleRouter(parent_router=cluster_router, parent_prefix=CLUSTER_PREFIX, lookup="cluster")
-mapping_router.register(prefix="mapping", viewset=MappingViewSet, basename="mapping")
 
 
 urlpatterns = [
@@ -171,7 +171,7 @@ urlpatterns = [
     # host
     *host_router.urls,
     *host_action_router.urls,
+    *host_component_router.urls,
     # other
     *upgrade_router.urls,
-    *mapping_router.urls,
 ]

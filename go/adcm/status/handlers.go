@@ -2,7 +2,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -222,13 +222,9 @@ func showService(h Hub, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func checkEvent(e eventMsg, w http.ResponseWriter, r *http.Request) bool {
+func checkEvent(e eventMessage, w http.ResponseWriter, r *http.Request) bool {
 	if e.Event == "" {
 		ErrOut4(w, r, "FIELD_REQUIRED", "field \"event\" is required")
-		return false
-	}
-	if e.Object.Type == "" {
-		ErrOut4(w, r, "FIELD_REQUIRED", "field \"object\" is required")
 		return false
 	}
 	if e.Object.Id == 0 {
@@ -240,7 +236,7 @@ func checkEvent(e eventMsg, w http.ResponseWriter, r *http.Request) bool {
 
 func postEvent(h Hub, w http.ResponseWriter, r *http.Request) {
 	allow(w, "POST")
-	event := eventMsg{}
+	event := eventMessage{}
 	body, err := decodeBody(w, r, &event)
 	if err != nil {
 		return

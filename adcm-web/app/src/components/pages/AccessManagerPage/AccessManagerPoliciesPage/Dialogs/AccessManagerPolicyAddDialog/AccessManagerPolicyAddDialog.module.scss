@@ -1,0 +1,47 @@
+:global {
+  body.theme-dark {
+    --steps-panel-background: var(--color-xdark-new-20);
+    --step-number-background: var(--color-xdark);
+    --step-number-text: var(--color-xwhite-off);
+    --step-text-valid: var(--color-xgreen-saturated);
+  }
+
+  body.theme-light {
+    --steps-panel-background: var(--color-xgray-alt-30);
+    --step-number-background: var(--color-popup-light);
+    --step-number-text: var(--color-stroke-light);
+    --step-text-valid: var(--color-xgreen-saturated);
+  }
+}
+
+.policyAddDialog {
+
+  &__stepsPanel {
+    padding: 12px;
+    border-radius: 12px;
+    background: var(--steps-panel-background);
+    margin-bottom: 16px;
+
+    &__stepButton {
+
+      &_valid {
+        color: var(--step-text-valid) !important;
+      }
+    }
+  }
+
+  &__stepNumber {
+    display: inline-flex;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--step-number-background);
+    margin-right: 6px;
+    line-height: 20px;
+
+    &_valid {
+      color: var(--step-text-valid);
+    }
+  }
+}

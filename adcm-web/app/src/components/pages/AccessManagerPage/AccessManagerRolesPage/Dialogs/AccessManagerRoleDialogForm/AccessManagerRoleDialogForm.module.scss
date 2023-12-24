@@ -1,0 +1,48 @@
+:global {
+  body.theme-dark {
+    --role-permissions-list-bg-color: var(--color-xdark-new);
+    --role-all-permissions-title-color: var(--color-xgreen-saturated);
+    --role-selected-permissions-title-color: var(--color-xwhite-off);
+  }
+
+  body.theme-light {
+    --role-permissions-list-bg-color: var(--color-xgray-alt);
+    --role-all-permissions-title-color: var(--color-xgreen);
+    --role-selected-permissions-title-color: var(--color-xdark);
+  }
+}
+
+.roleDialogForm {
+  display: grid;
+  height: 100%;
+  grid-template-rows: min-content 1fr;
+
+  &__column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 20px;
+    margin-bottom: 24px;
+  }
+
+  &__productFilter {
+    grid-column: 1/-1;
+  }
+
+  &__productsLabel {
+    color: var(--text-green-color);
+    margin-bottom: 20px;
+  }
+
+  &__listTransfer {
+    min-height: 0;
+  }
+}
+
+.roleDialog {
+  display: grid;
+  // dialog title - min-content
+  // dialog header control panel - min-content
+  // dialog body - 1fr (100% - title - panel)
+  grid-template-rows: min-content min-content 1fr;
+  max-height: 100%;
+}

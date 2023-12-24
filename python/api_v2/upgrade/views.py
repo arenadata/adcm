@@ -10,17 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from api_v2.action.serializers import ActionRunSerializer
-from api_v2.action.utils import insert_service_ids
-from api_v2.config.utils import get_config_schema
+from api_v2.action.utils import get_action_configuration, insert_service_ids
+from api_v2.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
 from api_v2.views import CamelCaseGenericViewSet
+from audit.utils import audit
 from cm.errors import AdcmEx
-from cm.models import Cluster, HostProvider, TaskLog, Upgrade
+from cm.models import Cluster, HostProvider, PrototypeConfig, TaskLog, Upgrade
+from cm.stack import check_hostcomponents_objects_exist
 from cm.upgrade import check_upgrade, do_upgrade, get_upgrade
 from rbac.models import User
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.generics import get_object_or_404
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -32,16 +35,22 @@ from adcm.permissions import (
     VIEW_CLUSTER_UPGRADE_PERM,
     VIEW_PROVIDER_PERM,
     VIEW_PROVIDER_UPGRADE_PERM,
-    DjangoModelPermissionsAudit,
+    check_custom_perm,
     get_object_for_user,
 )
 
 
-class UpgradeViewSet(
-    ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, CamelCaseGenericViewSet
-):  # pylint: disable=too-many-ancestors
-    queryset = Upgrade.objects.select_related("action", "bundle", "action__prototype").order_by("pk")
-    permission_classes = [DjangoModelPermissionsAudit]
+class UpgradeViewSet(  # pylint: disable=too-many-ancestors
+    ListModelMixin,
+    GetParentObjectMixin,
+    RetrieveModelMixin,
+    CamelCaseGenericViewSet,
+):
+    queryset = (
+        Upgrade.objects.select_related("action", "bundle", "action__prototype")
+        .prefetch_related("bundle__prototype_set")
+        .order_by("pk")
+    )
     filter_backends = []
 
     def get_serializer_class(self) -> type[UpgradeListSerializer | ActionRunSerializer | UpgradeRetrieveSerializer]:
@@ -53,6 +62,32 @@ class UpgradeViewSet(
 
         return UpgradeListSerializer
 
+    def get_object(self):
+        parent_object: Cluster | HostProvider | None = self.get_parent_object()
+        if parent_object is None:
+            raise NotFound("Can't get parent object for upgrade")
+
+        check_custom_perm(
+            user=self.request.user,
+            action_type="view_upgrade_of",
+            model=parent_object.__class__.__name__.lower(),
+            obj=parent_object,
+        )
+
+        if self.action == "run":
+            check_custom_perm(
+                user=self.request.user,
+                action_type="do_upgrade_of",
+                model=parent_object.__class__.__name__.lower(),
+                obj=parent_object,
+            )
+
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
+        obj = get_object_or_404(queryset, **filter_kwargs)
+        return obj
+
     def get_parent_object_for_user(self, user: User) -> Cluster | HostProvider:
         parent: Cluster | HostProvider | None = self.get_parent_object()
         if parent is None or not isinstance(parent, (Cluster, HostProvider)):
@@ -60,13 +95,18 @@ class UpgradeViewSet(
             raise NotFound(message)
 
         if isinstance(parent, Cluster):
-            return get_object_for_user(
-                user=user, perms=(VIEW_CLUSTER_PERM, VIEW_CLUSTER_UPGRADE_PERM), klass=Cluster, id=parent.pk
-            )
+            cluster = get_object_for_user(user=user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=parent.pk)
+            if not user.has_perm(perm=VIEW_CLUSTER_UPGRADE_PERM, obj=cluster):
+                raise PermissionDenied(f"You can't view upgrades of {cluster}")
+            return cluster
 
-        return get_object_for_user(
-            user=user, perms=(VIEW_PROVIDER_PERM, VIEW_PROVIDER_UPGRADE_PERM), klass=HostProvider, id=parent.pk
-        )
+        if isinstance(parent, HostProvider):
+            hostprovider = get_object_for_user(user=user, perms=VIEW_PROVIDER_PERM, klass=HostProvider, id=parent.pk)
+            if not user.has_perm(perm=VIEW_PROVIDER_UPGRADE_PERM, obj=hostprovider):
+                raise PermissionDenied(f"You can't view upgrades of {hostprovider}")
+            return hostprovider
+
+        raise ValueError("Wrong object")
 
     def get_upgrade(self, parent: Cluster | HostProvider):
         upgrade = self.get_object()
@@ -90,29 +130,52 @@ class UpgradeViewSet(
 
         upgrade = self.get_upgrade(parent=parent)
 
-        if upgrade.action:
-            schema = {"fields": get_config_schema(parent_object=parent, action=upgrade.action)}
-        else:
-            schema = None
+        config_schema = None
+        config = None
+        adcm_meta = None
 
-        serializer = self.get_serializer_class()(instance=upgrade, context={"parent": parent, "config_schema": schema})
+        if upgrade.action:
+            config_schema, config, adcm_meta = get_action_configuration(action_=upgrade.action, object_=parent)
+
+        serializer = self.get_serializer_class()(
+            instance=upgrade,
+            context={"parent": parent, "config_schema": config_schema, "config": config, "adcm_meta": adcm_meta},
+        )
 
         return Response(serializer.data)
 
+    @audit
     @action(methods=["post"], detail=True)
     def run(self, request: Request, *_, **__) -> Response:
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         parent: Cluster | HostProvider = self.get_parent_object_for_user(user=request.user)
-
         upgrade = self.get_upgrade(parent=parent)
+
+        configuration = serializer.validated_data["configuration"]
+        config = {}
+        adcm_meta = {}
+
+        if configuration is not None:
+            config = configuration["config"]
+            adcm_meta = configuration["adcm_meta"]
+
+        if upgrade.action:
+            prototype_configs = PrototypeConfig.objects.filter(
+                prototype=upgrade.action.prototype, type="json", action=upgrade.action
+            ).order_by("pk")
+            config = represent_string_as_json_type(prototype_configs=prototype_configs, value=config)
+
+        attr = convert_adcm_meta_to_attr(adcm_meta=adcm_meta)
+
+        check_hostcomponents_objects_exist(serializer.validated_data["host_component_map"])
 
         result = do_upgrade(
             obj=parent,
             upgrade=upgrade,
-            config=serializer.validated_data["config"],
-            attr=serializer.validated_data.get("attr", {}),
+            config=config,
+            attr=attr,
             hostcomponent=insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),
         )
 

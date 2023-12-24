@@ -22,12 +22,12 @@ from collections.abc import Iterable, Mapping
 from copy import deepcopy
 from enum import Enum
 from itertools import chain
-from typing import Optional
+from typing import Optional, TypeAlias
 from uuid import uuid4
 
+from cm.adcm_config.ansible import ansible_decrypt
 from cm.errors import AdcmEx
 from cm.logger import logger
-from cm.utils import deep_merge
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -35,7 +35,6 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
-from django.utils import timezone
 
 
 def validate_line_break_character(value: str) -> None:
@@ -78,25 +77,6 @@ LICENSE_STATE = (
     ("accepted", "accepted"),
     ("unaccepted", "unaccepted"),
 )
-
-
-def get_model_by_type(object_type):  # pylint: disable=too-many-return-statements
-    if object_type == "adcm":
-        return ADCM
-    if object_type == "cluster":
-        return Cluster
-    elif object_type == "provider":
-        return HostProvider
-    elif object_type == "service":
-        return ClusterObject
-    elif object_type == "component":
-        return ServiceComponent
-    elif object_type == "host":
-        return Host
-    else:
-        # This function should return a Model, this is necessary for the correct
-        # construction of the schema.
-        return Cluster
 
 
 def get_object_cluster(obj):
@@ -316,86 +296,6 @@ class ConfigLog(ADCMModel):
 
     __error_code__ = "CONFIG_NOT_FOUND"
 
-    @transaction.atomic()
-    def save(self, *args, **kwargs):  # pylint: disable=too-many-locals,too-many-statements
-        def update_config(origin: dict, renovator: dict, _group_keys: dict) -> None:
-            for key, value in _group_keys.items():
-                if key in renovator:
-                    if isinstance(value, Mapping):
-                        origin.setdefault(key, {})
-                        update_config(origin[key], renovator[key], _group_keys[key]["fields"])
-                    else:
-                        if value:
-                            origin[key] = renovator[key]
-
-        def update_attr(origin: dict, renovator: dict, _group_keys: dict) -> None:
-            for key, value in _group_keys.items():
-                if key in renovator and isinstance(value, Mapping):
-                    if value["value"] is not None and value["value"]:
-                        origin[key] = renovator[key]
-
-        def clean_attr(attrs: dict, _spec: dict) -> None:
-            extra_fields = []
-
-            for key in attrs.keys():
-                if key not in ["group_keys", "custom_group_keys"]:
-                    if key not in _spec:
-                        extra_fields.append(key)
-
-            for field in extra_fields:
-                attrs.pop(field)
-
-        def clean_group_keys(_group_keys, _spec):
-            correct_group_keys = {}
-            for field, info in _spec.items():
-                if info["type"] == "group":
-                    correct_group_keys[field] = {}
-                    correct_group_keys[field]["value"] = _group_keys[field]["value"]
-                    correct_group_keys[field]["fields"] = {}
-                    for key in info["fields"].keys():
-                        correct_group_keys[field]["fields"][key] = _group_keys[field]["fields"][key]
-                else:
-                    correct_group_keys[field] = _group_keys[field]
-            return correct_group_keys
-
-        obj = self.obj_ref.object
-        if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
-            # Sync group configs with object config
-            for conf_group in obj.group_config.order_by("id"):
-                diff_config, diff_attr = conf_group.get_diff_config_attr()
-                group_config = ConfigLog()
-                current_group_config = ConfigLog.objects.get(id=conf_group.config.current)
-                group_config.obj_ref = conf_group.config
-                config = deepcopy(self.config)
-                current_group_keys = current_group_config.attr["group_keys"]
-                update_config(config, diff_config, current_group_keys)
-                group_config.config = config
-                attr = deepcopy(self.attr)
-                update_attr(attr, diff_attr, current_group_keys)
-                spec = conf_group.get_config_spec()
-                group_keys, custom_group_keys = conf_group.create_group_keys(spec)
-                group_keys = deep_merge(group_keys, current_group_keys)
-                group_keys = clean_group_keys(group_keys, spec)
-                attr["group_keys"] = group_keys
-                attr["custom_group_keys"] = custom_group_keys
-                clean_attr(attr, spec)
-
-                group_config.attr = attr
-                group_config.description = current_group_config.description
-                group_config.save()
-                conf_group.config.previous = conf_group.config.current
-                conf_group.config.current = group_config.id
-                conf_group.config.save()
-                conf_group.preparing_file_type_field()
-        if isinstance(obj, GroupConfig):
-            # `custom_group_keys` read only field in attr,
-            # needs to be replaced when creating an object with ORM
-            # for api it is checked in /cm/adcm_config.py:check_custom_group_keys_attr()
-            _, custom_group_keys = obj.create_group_keys(obj.get_config_spec())
-            self.attr.update({"custom_group_keys": custom_group_keys})
-
-        super().save(*args, **kwargs)
-
 
 class ADCMEntity(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
@@ -412,26 +312,6 @@ class ADCMEntity(ADCMModel):
     def locked(self) -> bool:
         """Check if actions could be run over entity"""
         return self.concerns.filter(blocking=True).exists()
-
-    def add_to_concerns(self, item: "ConcernItem") -> None:
-        """Attach entity to ConcernItem to keep up with it"""
-        if not item or getattr(item, "id", None) is None:
-            return
-
-        if item in self.concerns.all():
-            return
-
-        self.concerns.add(item)
-
-    def remove_from_concerns(self, item: "ConcernItem") -> None:
-        """Detach entity from ConcernItem when it outdated"""
-        if not item or not hasattr(item, "id"):
-            return
-
-        if item not in self.concerns.all():
-            return
-
-        self.concerns.remove(item)
 
     def get_own_issue(self, cause: "ConcernCause") -> Optional["ConcernItem"]:
         """Get object's issue of specified cause or None"""
@@ -455,11 +335,9 @@ class ADCMEntity(ADCMModel):
         name = own_name or fqdn or self.prototype.name
         return f'{self.prototype.type} #{self.id} "{name}"'
 
-    def set_state(self, state: str, event=None) -> None:
+    def set_state(self, state: str) -> None:
         self.state = state or self.state
         self.save()
-        if event:
-            event.set_object_state(obj=self, state=state)
         logger.info('set %s state to "%s"', self, state)
 
     def get_id_chain(self) -> dict:
@@ -481,7 +359,7 @@ class ADCMEntity(ADCMModel):
         """Easy to operate self._multi_state representation"""
         return sorted(self._multi_state.keys())
 
-    def set_multi_state(self, multi_state: str, event=None) -> None:
+    def set_multi_state(self, multi_state: str) -> None:
         """Append new unique multi_state to entity._multi_state"""
         if multi_state in self._multi_state:
             return
@@ -489,11 +367,9 @@ class ADCMEntity(ADCMModel):
         self._multi_state.update({multi_state: 1})
         self.save()
 
-        if event:
-            event.change_object_multi_state(obj=self, multi_state=multi_state)
         logger.info('add "%s" to "%s" multi_state', multi_state, self)
 
-    def unset_multi_state(self, multi_state: str, event=None) -> None:
+    def unset_multi_state(self, multi_state: str) -> None:
         """Remove specified multi_state from entity._multi_state"""
         if multi_state not in self._multi_state:
             return
@@ -501,8 +377,6 @@ class ADCMEntity(ADCMModel):
         del self._multi_state[multi_state]
         self.save()
 
-        if event:
-            event.change_object_multi_state(obj=self, multi_state=multi_state)
         logger.info('remove "%s" from "%s" multi_state', multi_state, self)
 
     def has_multi_state_intersection(self, multi_states: list[str]) -> bool:
@@ -918,6 +792,10 @@ class GroupConfig(ADCMModel):
 
     not_changeable_fields = ("id", "object_id", "object_type")
 
+    @property
+    def prototype(self):
+        return self.object.prototype
+
     class Meta:
         unique_together = ["object_id", "name", "object_type"]
 
@@ -979,42 +857,6 @@ class GroupConfig(ADCMModel):
                 custom_group_keys[config_key] = config_value["group_customization"]
 
         return group_keys, custom_group_keys
-
-    def get_diff_config_attr(self):
-        def get_diff(_config, _attr, _group_keys, diff_config=None, diff_attr=None):
-            if diff_config is None:
-                diff_config = {}
-
-            if diff_attr is None:
-                diff_attr = {}
-
-            for group_key, group_value in _group_keys.items():
-                if isinstance(group_value, Mapping):
-                    if group_value["value"] is not None and group_value["value"]:
-                        diff_attr[group_key] = _attr[group_key]
-
-                    diff_config.setdefault(group_key, {})
-                    get_diff(
-                        _config[group_key],
-                        _attr,
-                        _group_keys[group_key]["fields"],
-                        diff_config[group_key],
-                        diff_attr,
-                    )
-                    if not diff_config[group_key]:
-                        diff_config.pop(group_key)
-                else:
-                    if group_value:
-                        diff_config[group_key] = _config[group_key]
-
-            return diff_config, diff_attr
-
-        config_log = ConfigLog.obj.get(id=self.config.current)
-        config = config_log.config
-        attr = config_log.attr
-        group_keys = config_log.attr.get("group_keys", {})
-
-        return get_diff(config, attr, group_keys)
 
     def get_group_keys(self):
         config_log = ConfigLog.objects.get(id=self.config.current)
@@ -1081,7 +923,7 @@ class GroupConfig(ADCMModel):
         group_attr = self.get_config_attr()
         config = self.merge_config(object_config, group_config, group_keys)
         attr = self.merge_attr(object_attr, group_attr, group_keys)
-        self.preparing_file_type_field(config)
+        self.prepare_files_for_config(config)
 
         return config, attr
 
@@ -1106,7 +948,7 @@ class GroupConfig(ADCMModel):
         if set(host_ids).difference({host.pk for host in self.host_candidate()}):
             raise AdcmEx("GROUP_CONFIG_HOST_ERROR")
 
-    def preparing_file_type_field(self, config=None):
+    def prepare_files_for_config(self, config=None):
         """Creating file for file type field"""
 
         if self.config is None:
@@ -1118,7 +960,7 @@ class GroupConfig(ADCMModel):
         fields = PrototypeConfig.objects.filter(
             prototype=self.object.prototype,
             action__isnull=True,
-            type="file",
+            type__in={"file", "secretfile"},
         ).order_by("id")
         for field in fields:
             filename = ".".join(
@@ -1137,6 +979,9 @@ class GroupConfig(ADCMModel):
                 value = config[field.name][field.subname]
             else:
                 value = config[field.name]
+
+            if field.type == "secretfile":
+                value = ansible_decrypt(msg=value)
 
             if value is not None:
                 # See cm.adcm_config.py:313
@@ -1172,7 +1017,7 @@ class GroupConfig(ADCMModel):
                 self.config.current = config_log.pk
                 self.config.save()
         super().save(*args, **kwargs)
-        self.preparing_file_type_field()
+        self.prepare_files_for_config()
 
 
 class ActionType(models.TextChoices):
@@ -1529,42 +1374,13 @@ class TaskLog(ADCMModel):
     restore_hc_on_fail = models.BooleanField(default=True)
     hosts = models.JSONField(null=True, default=None)
     verbose = models.BooleanField(default=False)
-    start_date = models.DateTimeField()
-    finish_date = models.DateTimeField()
+    start_date = models.DateTimeField(null=True, default=None)
+    finish_date = models.DateTimeField(null=True, default=None)
     lock = models.ForeignKey("ConcernItem", null=True, on_delete=models.SET_NULL, default=None)
 
     __error_code__ = "TASK_NOT_FOUND"
 
-    def lock_affected(self, objects: Iterable[ADCMEntity]) -> None:
-        if self.lock:
-            return
-
-        first_job = JobLog.obj.filter(task=self).order_by("id").first()
-        self.lock = ConcernItem.objects.create(
-            type=ConcernType.LOCK.value,
-            name=None,
-            reason=first_job.cook_reason(),
-            blocking=True,
-            owner=self.task_object,
-            cause=ConcernCause.JOB.value,
-        )
-        self.save()
-
-        for obj in objects:
-            obj.add_to_concerns(item=self.lock)
-
-    def unlock_affected(self) -> None:
-        self.refresh_from_db()
-
-        if not self.lock:
-            return
-
-        lock = self.lock
-        self.lock = None
-        self.save()
-        lock.delete()
-
-    def cancel(self, event_queue: "cm.status_api.Event" = None, obj_deletion=False):
+    def cancel(self, obj_deletion=False):
         """
         Cancel running task process
         task status will be updated in separate process of task runner
@@ -1594,19 +1410,16 @@ class TaskLog(ADCMModel):
         if i == 10:
             raise AdcmEx("NO_JOBS_RUNNING", "no jobs running")
 
-        self.status = JobStatus.ABORTED
-        self.finish_date = timezone.now()
-        self.save(update_fields=["status", "finish_date"])
-
-        if event_queue:
-            event_queue.send_state()
         try:
             os.kill(self.pid, signal.SIGTERM)
         except OSError as e:
             raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
 
     @property
-    def duration(self) -> float:
+    def duration(self) -> float | None:
+        if self.finish_date is None or self.start_date is None:
+            return None
+
         return (self.finish_date - self.start_date).total_seconds()
 
 
@@ -1618,8 +1431,8 @@ class JobLog(ADCMModel):
     selector = models.JSONField(default=dict)
     log_files = models.JSONField(default=list)
     status = models.CharField(max_length=1000, choices=JobStatus.choices)
-    start_date = models.DateTimeField()
-    finish_date = models.DateTimeField(db_index=True)
+    start_date = models.DateTimeField(null=True, default=None)
+    finish_date = models.DateTimeField(db_index=True, null=True, default=None)
 
     __error_code__ = "JOB_NOT_FOUND"
 
@@ -1633,13 +1446,11 @@ class JobLog(ADCMModel):
             target=self.task.task_object,
         )
 
-    def cancel(self, event_queue: "cm.status_api.Event" = None):
-        if not self.sub_action.allowed_to_terminate:
-            event_queue.clear_state()
+    def cancel(self):
+        if self.sub_action and not self.sub_action.allowed_to_terminate:
             raise AdcmEx("JOB_TERMINATION_ERROR", f"Job #{self.pk} can not be terminated")
 
         if self.status != JobStatus.RUNNING or self.pid == 0:
-            event_queue.clear_state()
             raise AdcmEx(
                 "JOB_TERMINATION_ERROR",
                 f"Can't terminate job #{self.pk}, pid: {self.pid} with status {self.status}",
@@ -1648,14 +1459,12 @@ class JobLog(ADCMModel):
             os.kill(self.pid, signal.SIGTERM)
         except OSError as e:
             raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
-        self.status = JobStatus.ABORTED
-        self.save()
-
-        if event_queue:
-            event_queue.send_state()
 
     @property
-    def duration(self) -> float:
+    def duration(self) -> float | None:
+        if self.finish_date is None or self.start_date is None:
+            return None
+
         return (self.finish_date - self.start_date).total_seconds()
 
 
@@ -1752,7 +1561,7 @@ class StageUpgrade(ADCMModel):
     action = models.OneToOneField("StageAction", on_delete=models.CASCADE, null=True)
 
 
-class StageAction(AbstractAction):  # pylint: disable=too-many-instance-attributes
+class StageAction(AbstractAction):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
 
 
@@ -1940,7 +1749,7 @@ class MessageTemplate(ADCMModel):
         return {
             "type": PlaceHolderType.JOB.value,
             "name": action.display_name or action.name,
-            "params": {"job_id": job.id},
+            "params": {"job_id": job.task.id},
         }
 
 
@@ -1997,13 +1806,53 @@ class ConcernItem(ADCMModel):
             self.host_entities.order_by("id"),
         )
 
-    def delete(self, using=None, keep_parents=False):
-        """Explicit remove many-to-many references before deletion in order to emit signals"""
-        for entity in self.related_objects:
-            entity.remove_from_concerns(self)
-        return super().delete(using, keep_parents)
-
 
 class ADCMEntityStatus(models.TextChoices):
     UP = "up", "up"
     DOWN = "down", "down"
+
+
+MainObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+
+_CMObjects = ADCM | MainObject | Bundle | Prototype | ConfigLog | GroupConfig | Action | Upgrade | TaskLog | JobLog
+
+CM_MODEL_MAP: dict[str, type[_CMObjects]] = {
+    "adcm": ADCM,
+    "cluster": Cluster,
+    "clusters": Cluster,
+    "service": ClusterObject,
+    "services": ClusterObject,
+    "component": ServiceComponent,
+    "components": ServiceComponent,
+    "provider": HostProvider,
+    "providers": HostProvider,
+    "hostprovider": HostProvider,
+    "hostproviders": HostProvider,
+    "host": Host,
+    "hosts": Host,
+    "config": ConfigLog,
+    "action": Action,
+    "upgrade": Upgrade,
+    "task": TaskLog,
+    "job": JobLog,
+    "group_config": GroupConfig,
+    "config-group": GroupConfig,
+    "config-groups": GroupConfig,
+    "prototype": Prototype,
+    "prototypes": Prototype,
+    "bundle": Bundle,
+    "bundles": Bundle,
+}
+
+
+def get_cm_model_by_type(object_type: str) -> type[_CMObjects]:
+    return CM_MODEL_MAP[object_type]
+
+
+def get_model_by_type(object_type):
+    try:
+        return get_cm_model_by_type(object_type=object_type)
+    except KeyError:
+        # This function should return a Model, this is necessary for the correct
+        # construction of the schema.
+        return Cluster

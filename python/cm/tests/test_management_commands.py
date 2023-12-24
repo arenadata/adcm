@@ -46,7 +46,7 @@ class TestStatistics(BaseAPITestCase):
         for host in (host_1, host_2, host_3, host_unmapped):
             self.add_host_to_cluster(cluster=self.cluster_1, host=host)
 
-        service = self.add_service_to_cluster(service_name="service_1", cluster=self.cluster_1)
+        service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         component_1 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=service, prototype__name="component_1"
         )

@@ -1,0 +1,89 @@
+:root {
+  // colors
+  --color-adcmx: #73858F;
+  --color-added-text: #5A5A5A;
+
+  --color-xblack: #110F12;
+  --color-teal: #39C2CB;
+
+  --color-xblue: #1997E8;
+
+  --colo-new-black: #2F3338;
+  --color-all-new-black: #4C555E;
+  --color-xdark: #353E47;
+  --color-new-dakx-50: rgba(50, 50, 57, 0.50);
+  --color-xdark-new: #323239;
+  --color-xdark-new-20: rgba(50, 50, 57, 0.2);
+  --color-xdark-new-50: rgba(50, 50, 57, 0.5);
+  --color-xdark-new-full: #252429;
+  --color-xdark-plate10: rgba(112, 122, 131, 0.1);
+  --color-xdark-plate20: rgba(112, 122, 131, 0.2);
+
+  --color-xgray-light: #757B81;
+  --color-xgray-light-new: #C5D1D8;
+  --color-xgray-lighter: #C4C4C4;
+  --color-xgray-dark: #333538;
+  --color-xgray-darker: #565B61;
+  --color-xgray-alt:  #E3EAEE;
+  --color-xgray-alt-20: rgba(227, 234, 238, 0.2);
+  --color-xgray-alt-30: rgba(227, 234, 238, 0.3);
+  --color-xgray-alt-50: rgba(227, 234, 238, 0.5);
+  --color-xgray-alt-60: rgba(227, 234, 238, 0.6);
+  --color-xgray-reading: #545E68;
+  --color-xgray-medium: rgba(112, 122, 131, 0.2);
+  --color-xgray: #e0e2e4;
+
+  --color-hijack: #47474F;
+
+  --color-xgreen: #00A872;
+  --color-dark-green: #0A9266;
+  --color-dark-card-hover: #4D4F5E;
+  --color-xgreen-saturated: #00D2A0;
+  --color-xgreen-saturated15: rgba(0, 210, 160, 0.15);
+  --color-green-dark: #016B49;
+  --color-presson-light: #00C787;
+  --color-new-light: #2F3136;
+  --color-stroke-light: #D9DEF3;
+  --color-background-light: #F3F3F3;
+
+  --color-xred: #C64A6F;
+  --color-xred-light: #F35081;
+  --color-xred-dark: #692C3E;
+  --color-red-10: rgba(198, 74, 111, 0.1);
+  --color-red-15: rgba(198, 74, 111, 0.15);
+  --color-red-30: #EEC9D4;
+  --color-dark-red: #6F213A;
+
+  --color-navy: #1A1B21;
+
+  --color-popup-light: #CEDBE2;
+
+  --color-yellow-light: #F5CB32;
+
+  --color-json-orange: #F4980C;
+
+  --color-xwhite: #FFF;
+  --color-xwhite-50: rgba(255, 255, 255, 0.5);
+  --color-xwhite-off: #FCFCFD;
+  --color-white-background-50: #EEF2F5;
+
+
+  --color-orangex: #FFCC47;
+
+  --text-default-color: var(--color-xgray-light);
+
+  // sizes:
+  --z-index-spinner: 10;
+  --z-index-dialog: 100;
+  --z-index-popover: calc(var(--z-index-dialog) + 1);
+  --z-index-tooltip: var(--z-index-popover);
+  --z-index-notifications: var(--z-index-popover);
+
+  // margins
+  --base-margin-v: 32px;
+
+  --page-padding-v: 20px;
+  --page-padding-h: 40px;
+
+  --spin-duration: 1s;
+}

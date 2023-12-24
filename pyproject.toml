@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "adcm"
-version = "0.1.0"
-description = "ArenaData Cluster Manager"
+version = "2.0.0"
+description = "Arenadata Cluster Manager"
 authors = [""]
 readme = "README.md"
 
@@ -9,57 +9,64 @@ readme = "README.md"
 python = "^3.10"
 
 ansible = { git = "https://github.com/arenadata/ansible.git", branch = "v2.8.8-p6" }
-apache-libcloud = "*"
-attr = "*"
-casestyle = "*"
-coreapi = "*"
-cryptography = "*"
+apache-libcloud = "^3.7.0"
+attr = "0.3.2"
+casestyle = "^0.0.4"
+coreapi = "^2.3.3"
+cryptography = "^41.0.1"
 Django = "^3.2"
-django-auth-ldap = "*"
-django-csp = "*"
-django-filter = "*"
-django-guardian = "*"
-djangorestframework = "*"
-drf-extensions = "*"
-drf-flex-fields = "*"
+django-auth-ldap = "^4.3.0"
+django-csp = "^3.7"
+django-filter = "^23.2"
+django-guardian = "^2.4.0"
+djangorestframework = "^3.14.0"
+drf-extensions = "^0.7.1"
+drf-flex-fields = "^1.0.2"
 drf-nested-routers = "*"
-googleapis-common-protos = "*"
-grpcio = "*"
+googleapis-common-protos = "^1.59.1"
+grpcio = "^1.56.0"
 jinja2 = "2.11.3"
-jmespath = "*"
-jsonschema = "*"
-lxml = "*"
+jmespath = "^1.0.1"
+jsonschema = "^4.17.3"
+lxml = "^4.9.2"
 markupsafe = "1.1.1"
-multipledispatch = "*"
-psycopg2-binary = "*"
-pycryptodome = "*"
-pydantic = "*"
-python-gnupg = "*"
-requests-toolbelt = "*"
-rstr = "*"
-ruyaml = "*"
-social-auth-app-django = "*"
-uwsgi = "*"
-version-utils = "*"
-six = "*"
-django-cors-headers = "*"
+multipledispatch = "^1.0.0"
+psycopg2-binary = "^2.9.6"
+pycryptodome = "3.18.0"
+pydantic = "^1.10.9"
+python-gnupg = "^0.5.0"
+requests-toolbelt = "^1.0.0"
+rstr = "^3.2.1"
+ruyaml = "^0.91.0"
+social-auth-app-django = "^5.2.0"
+uwsgi = "^2.0.22"
+six = "^1.16.0"
+django-cors-headers = "^4.1.0"
 djangorestframework-camel-case = "^1.4.2"
+adcm-version = "^1.0.0"
+drf-spectacular = {version = "^0.27.0", extras = ["sidecar"]}
 
 [tool.poetry.group.lint]
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-autoflake = "*"
-black = "*"
-flake8 = "*"
-isort = "*"
-pylint = "*"
+autoflake = "^2.2.0"
+black = "^23.3.0"
+flake8 = "^6.0.0"
+isort = "^5.12.0"
+pylint = "^3.0.0"
 
 [tool.poetry.group.unittests]
 optional = true
 
 [tool.poetry.group.unittests.dependencies]
 tblib = "^2.0.0"
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.6.0"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,0 +1,14 @@
+.configurationCompareDialog {
+  &__toolbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 1024px;
+  }
+
+  &__body {
+    overflow: auto;
+    margin-top: 24px;
+    max-height: calc(100vh - 225px);
+  }
+}

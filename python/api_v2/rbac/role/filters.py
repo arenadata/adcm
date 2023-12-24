@@ -11,15 +11,16 @@
 # limitations under the License.
 
 from django.db.models import Q, QuerySet
-from django_filters import CharFilter, OrderingFilter
+from django_filters import CharFilter, ChoiceFilter, OrderingFilter
 from django_filters.rest_framework import FilterSet
-from rbac.models import Role
+from rbac.models import Role, RoleTypes
 
 
 class RoleFilter(FilterSet):
     display_name = CharFilter(field_name="display_name", label="Role name", lookup_expr="icontains")
     categories = CharFilter(label="Categories", method="filter_category")
     ordering = OrderingFilter(fields={"display_name": "displayName"}, field_labels={"display_name": "Display name"})
+    type = ChoiceFilter(choices=[(k, v) for k, v in RoleTypes.choices if k != RoleTypes.HIDDEN])
 
     @staticmethod
     def filter_category(queryset: QuerySet, name: str, value: str):  # pylint: disable=unused-argument

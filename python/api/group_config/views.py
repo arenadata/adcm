@@ -35,6 +35,7 @@ from rest_framework.mixins import (
     RetrieveModelMixin,
 )
 from rest_framework.response import Response
+from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
@@ -74,6 +75,7 @@ class GroupConfigHostViewSet(
     permission_classes = (DjangoObjectPermissionsAudit,)
     permission_required = ["view_host"]
     lookup_url_kwarg = "host_id"
+    schema = AutoSchema()
     ordering = ["id"]
 
     @audit
@@ -121,6 +123,7 @@ class GroupConfigHostCandidateViewSet(
     permission_classes = (DjangoObjectPermissionsAudit,)
     lookup_url_kwarg = "host_id"
     permission_required = ["cm.view_host"]
+    schema = AutoSchema()
 
     def get_queryset(self, *args, **kwargs):
         group_config_id = self.kwargs.get("parent_lookup_group_config")
@@ -154,6 +157,7 @@ class GroupConfigConfigViewSet(
     serializer_class = GroupConfigConfigSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
     permission_required = ["view_objectconfig"]
+    schema = AutoSchema()
     ordering = ["id"]
 
     def get_serializer_context(self):
@@ -234,6 +238,7 @@ class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
     filterset_class = GroupConfigFilterSet
     permission_classes = (DjangoObjectPermissionsAudit,)
     permission_required = ["cm.view_groupconfig"]
+    schema = AutoSchema()
     ordering = ["id"]
 
     @audit

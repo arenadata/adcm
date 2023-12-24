@@ -12,10 +12,11 @@
 
 import functools
 
+from adcm_version import compare_prototype_versions
 from cm.adcm_config.config import (
     init_object_config,
     make_object_config,
-    save_obj_config,
+    save_object_config,
     switch_config,
 )
 from cm.adcm_config.utils import proto_ref
@@ -28,7 +29,7 @@ from cm.api import (
 )
 from cm.errors import raise_adcm_ex
 from cm.issue import update_hierarchy_issues
-from cm.job import start_task
+from cm.job import ActionRunPayload, run_action
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
@@ -48,12 +49,11 @@ from cm.models import (
     ServiceComponent,
     Upgrade,
 )
-from cm.status_api import post_event
+from cm.status_api import send_prototype_and_state_update_event
 from cm.utils import obj_ref
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from rbac.models import Policy
-from version_utils import rpm
 
 
 def switch_object(obj: Host | ClusterObject, new_prototype: Prototype) -> None:
@@ -105,28 +105,28 @@ def switch_hosts(upgrade: Upgrade, provider: HostProvider) -> None:
 
 def check_upgrade_version(prototype: Prototype, upgrade: Upgrade) -> tuple[bool, str]:
     if upgrade.min_strict:
-        if rpm.compare_versions(prototype.version, upgrade.min_version) <= 0:
+        if compare_prototype_versions(prototype.version, upgrade.min_version) <= 0:
             return (
                 False,
                 f"{prototype.type} version {prototype.version} "
                 f"is less than or equal to upgrade min version {upgrade.min_version}",
             )
     else:
-        if rpm.compare_versions(prototype.version, upgrade.min_version) < 0:
+        if compare_prototype_versions(prototype.version, upgrade.min_version) < 0:
             return (
                 False,
                 "{prototype.type} version {prototype.version} is less than upgrade min version {upgrade.min_version}",
             )
 
     if upgrade.max_strict:
-        if rpm.compare_versions(prototype.version, upgrade.max_version) >= 0:
+        if compare_prototype_versions(prototype.version, upgrade.max_version) >= 0:
             return (
                 False,
                 f"{prototype.type} version {prototype.version} "
                 f"is more than or equal to upgrade max version {upgrade.max_version}",
             )
     else:
-        if rpm.compare_versions(prototype.version, upgrade.max_version) > 0:
+        if compare_prototype_versions(prototype.version, upgrade.max_version) > 0:
             return (
                 False,
                 f"{prototype.type} version {prototype.version} is more than upgrade max version {upgrade.max_version}",
@@ -136,6 +136,9 @@ def check_upgrade_version(prototype: Prototype, upgrade: Upgrade) -> tuple[bool,
 
 
 def check_upgrade_edition(prototype: Prototype, upgrade: Upgrade) -> tuple[bool, str]:
+    if upgrade.from_edition == "any":
+        return True, ""
+
     if upgrade.from_edition and prototype.bundle.edition not in upgrade.from_edition:
         return False, f'bundle edition "{prototype.bundle.edition}" is not in upgrade list: {upgrade.from_edition}'
 
@@ -281,13 +284,13 @@ def get_upgrade(obj: Cluster | HostProvider, order=None) -> list[Upgrade]:
         if "name" in order:
             return sorted(
                 res,
-                key=functools.cmp_to_key(mycmp=lambda obj1, obj2: rpm.compare_versions(obj1.name, obj2.name)),
+                key=functools.cmp_to_key(mycmp=lambda obj1, obj2: compare_prototype_versions(obj1.name, obj2.name)),
             )
 
         if "-name" in order:
             return sorted(
                 res,
-                key=functools.cmp_to_key(mycmp=lambda obj1, obj2: rpm.compare_versions(obj2.name, obj2.name)),
+                key=functools.cmp_to_key(mycmp=lambda obj1, obj2: compare_prototype_versions(obj2.name, obj2.name)),
             )
 
     return res
@@ -339,13 +342,15 @@ def revert_object(obj: ADCMEntity, old_proto: Prototype) -> None:
     if "config_id" in obj.before_upgrade:
         config_log = ConfigLog.objects.get(id=obj.before_upgrade["config_id"])
         obj.config.current = 0
-        save_obj_config(obj_conf=obj.config, conf=config_log.config, attr=config_log.attr, desc="revert_upgrade")
+        save_object_config(
+            object_config=obj.config, config=config_log.config, attr=config_log.attr, description="revert_upgrade"
+        )
     else:
         obj.config = None
 
     obj.state = obj.before_upgrade["state"]
     obj.before_upgrade = {"state": None}
-    obj.save()
+    obj.save(update_fields=["prototype", "config", "state", "before_upgrade"])
 
 
 def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-many-locals
@@ -353,56 +358,57 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-m
     old_bundle = Bundle.objects.get(pk=obj.before_upgrade["bundle_id"])
     old_proto = Prototype.objects.filter(bundle=old_bundle, name=old_bundle.name).first()
     before_upgrade_hc = obj.before_upgrade.get("hc")
-    services = obj.before_upgrade.get("services")
+    service_names = obj.before_upgrade.get("services")
 
     revert_object(obj=obj, old_proto=old_proto)
 
     if isinstance(obj, Cluster):
-        for service_proto in Prototype.objects.filter(bundle=old_bundle, type="service"):
-            service = ClusterObject.objects.filter(cluster=obj, prototype__name=service_proto.name).first()
+        for service_prototype in Prototype.objects.filter(bundle=old_bundle, type="service"):
+            service = ClusterObject.objects.filter(cluster=obj, prototype__name=service_prototype.name).first()
             if not service:
                 continue
 
-            revert_object(obj=service, old_proto=service_proto)
-            for component_proto in Prototype.objects.filter(bundle=old_bundle, parent=service_proto, type="component"):
-                comp = ServiceComponent.objects.filter(
+            revert_object(obj=service, old_proto=service_prototype)
+            for component_prototype in Prototype.objects.filter(
+                bundle=old_bundle, parent=service_prototype, type="component"
+            ):
+                component = ServiceComponent.objects.filter(
                     cluster=obj,
                     service=service,
-                    prototype__name=component_proto.name,
+                    prototype__name=component_prototype.name,
                 ).first()
 
-                if comp:
-                    revert_object(obj=comp, old_proto=component_proto)
+                if component:
+                    revert_object(obj=component, old_proto=component_prototype)
                 else:
                     component = ServiceComponent.objects.create(
                         cluster=obj,
                         service=service,
-                        prototype=component_proto,
+                        prototype=component_prototype,
                     )
-                    obj_conf = init_object_config(proto=component_proto, obj=component)
+                    obj_conf = init_object_config(proto=component_prototype, obj=component)
                     component.config = obj_conf
                     component.save(update_fields=["config"])
 
         ClusterObject.objects.filter(cluster=obj, prototype__bundle=upgraded_bundle).delete()
         ServiceComponent.objects.filter(cluster=obj, prototype__bundle=upgraded_bundle).delete()
 
-        for service in services:
-            proto = Prototype.objects.get(bundle=old_bundle, name=service, type="service")
-            try:
-                ClusterObject.objects.get(prototype=proto)
-            except ClusterObject.DoesNotExist:
-                add_service_to_cluster(cluster=obj, proto=proto)
+        for service_name in service_names:
+            prototype = Prototype.objects.get(bundle=old_bundle, name=service_name, type="service")
+
+            if not ClusterObject.objects.filter(prototype=prototype, cluster=obj).exists():
+                add_service_to_cluster(cluster=obj, proto=prototype)
 
         host_comp_list = []
         for hostcomponent in before_upgrade_hc:
             host = Host.objects.get(fqdn=hostcomponent["host"], cluster=obj)
             service = ClusterObject.objects.get(prototype__name=hostcomponent["service"], cluster=obj)
-            comp = ServiceComponent.objects.get(
+            component = ServiceComponent.objects.get(
                 prototype__name=hostcomponent["component"],
                 cluster=obj,
                 service=service,
             )
-            host_comp_list.append((service, host, comp))
+            host_comp_list.append((service, host, component))
 
         save_hc(cluster=obj, host_comp_list=host_comp_list)
 
@@ -464,7 +470,9 @@ def do_upgrade(
     hostcomponent: list,
 ) -> dict:
     check_license(prototype=obj.prototype)
-    upgrade_prototype = Prototype.objects.filter(bundle=upgrade.bundle, name=upgrade.bundle.name).first()
+    upgrade_prototype = Prototype.objects.filter(
+        bundle=upgrade.bundle, name=upgrade.bundle.name, type__in=[ObjectType.CLUSTER, ObjectType.PROVIDER]
+    ).first()
     check_license(prototype=upgrade_prototype)
 
     success, msg = check_upgrade(obj=obj, upgrade=upgrade)
@@ -480,18 +488,18 @@ def do_upgrade(
 
     if not upgrade.action:
         bundle_switch(obj=obj, upgrade=upgrade)
+
         if upgrade.state_on_success:
             obj.state = upgrade.state_on_success
-            obj.save()
+            obj.save(update_fields=["state"])
+
+        send_prototype_and_state_update_event(object_=obj)
     else:
-        task = start_task(
+        task = run_action(
             action=upgrade.action,
             obj=obj,
-            conf=config,
-            attr=attr,
-            hostcomponent=hostcomponent,
+            payload=ActionRunPayload(conf=config, attr=attr, hostcomponent=hostcomponent, verbose=False),
             hosts=[],
-            verbose=False,
         )
         task_id = task.id
 
@@ -528,12 +536,4 @@ def bundle_switch(obj: Cluster | HostProvider, upgrade: Upgrade) -> None:
 
     obj.refresh_from_db()
     re_apply_policy_for_upgrade(obj=obj)
-
     logger.info("upgrade %s OK to version %s", obj_ref(obj=obj), obj.prototype.version)
-
-    post_event(
-        event="upgrade",
-        object_id=obj.pk,
-        object_type=obj.prototype.type,
-        details={"type": "version", "value": str(obj.prototype.version)},
-    )

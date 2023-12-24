@@ -12,6 +12,7 @@
 from api_v2.bundle.filters import BundleFilter
 from api_v2.bundle.serializers import BundleListSerializer, UploadBundleSerializer
 from api_v2.views import CamelCaseGenericViewSet
+from audit.utils import audit
 from cm.bundle import delete_bundle, load_bundle, upload_file
 from cm.models import Bundle, ObjectType
 from django.db.models import F
@@ -25,7 +26,7 @@ from rest_framework.mixins import (
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
-from adcm.permissions import VIEW_ACTION_PERM, DjangoModelPermissionsAudit
+from adcm.permissions import DjangoModelPermissionsAudit
 
 
 class BundleViewSet(  # pylint: disable=too-many-ancestors
@@ -33,31 +34,43 @@ class BundleViewSet(  # pylint: disable=too-many-ancestors
 ):
     queryset = (
         Bundle.objects.exclude(name="ADCM")
-        .annotate(type=F("prototype__type"))
+        .annotate(
+            type=F("prototype__type"),
+            display_name=F("prototype__display_name"),
+            main_prototype_id=F("prototype"),
+            main_prototype_name=F("prototype__name"),
+            main_prototype_description=F("prototype__description"),
+            main_prototype_path=F("prototype__path"),
+            main_prototype_license=F("prototype__license"),
+            main_prototype_license_path=F("prototype__license_path"),
+        )
         .filter(type__in=[ObjectType.CLUSTER, ObjectType.PROVIDER])
         .order_by(F("prototype__display_name").asc())
     )
-    serializer_class = BundleListSerializer
     permission_classes = [DjangoModelPermissionsAudit]
-    permission_required = [VIEW_ACTION_PERM]
     filterset_class = BundleFilter
     filter_backends = (DjangoFilterBackend,)
 
+    def get_serializer_class(self):
+        if self.action == "create":
+            return UploadBundleSerializer
+
+        return BundleListSerializer
+
+    @audit
     def create(self, request, *args, **kwargs) -> Response:
-        serializer = self.get_serializer_class()(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         file_path = upload_file(file=request.data["file"])
         bundle = load_bundle(bundle_file=str(file_path))
 
-        return Response(status=HTTP_201_CREATED, data=self.serializer_class(bundle).data)
+        return Response(
+            status=HTTP_201_CREATED, data=BundleListSerializer(instance=self.get_queryset().get(id=bundle.pk)).data
+        )
 
+    @audit
     def destroy(self, request, *args, **kwargs) -> Response:
         bundle = self.get_object()
         delete_bundle(bundle=bundle)
 
         return Response(status=HTTP_204_NO_CONTENT)
-
-    def get_serializer_class(self):
-        if self.action == "create":
-            return UploadBundleSerializer
-        return super().get_serializer_class()

@@ -1,0 +1,29 @@
+:global {
+  body.theme-dark {
+    --policy-expanded-block-title-color: var(--color-xgreen-saturated);
+  }
+
+  body.theme-light {
+    --policy-expanded-block-title-color: var(--color-xgreen);
+  }
+}
+
+.content {
+  &__title {
+    display: block;
+    color: var(--policy-expanded-block-title-color);
+    margin: 16px 0;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+
+  &__tags {
+    width: fit-content;
+    margin-top: 16px;
+
+    div {
+      width: fit-content;
+      padding: 6px, 12px;
+    }
+  }
+}

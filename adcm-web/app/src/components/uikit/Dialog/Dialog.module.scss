@@ -1,0 +1,61 @@
+:global {
+  body.theme-dark {
+    --dialog-border: var(--color-xdark);
+    --dialog-background: linear-gradient(0deg, rgba(50, 50, 57, 0.15), rgba(50, 50, 57, 0.15)), #212121;
+    --dialog-title-color: var(--color-xgreen-saturated);
+  }
+  body.theme-light {
+    --dialog-border: var(--color-stroke-light);
+    --dialog-background: var(--color-xwhite-off);
+    --dialog-title-color: var(--color-xgreen);
+  }
+}
+
+.dialog {
+  background: var(--dialog-background);
+  border: 1px solid var(--dialog-border);
+  border-radius: 15px;
+  padding: 24px;
+  position: relative;
+  box-sizing: border-box;
+
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-xgray-light);
+
+  &__close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+
+  &__title {
+    color: var(--dialog-title-color);
+    word-wrap: break-word;
+  }
+
+  &__title,
+  &__body,
+  &__defaultControls {
+    &:not(:last-child) {
+      margin-bottom: 24px;
+    }
+  }
+
+  &__defaultControls {
+    display: flex;
+    justify-content: right;
+    margin-left: auto;
+  }
+
+  &__controlsOnTop {
+    margin-bottom: 24px;
+  }
+
+  &__body {
+    // painless hack for block-template
+    // but very important hack when use grid or flex for dialog
+    min-height: 0;
+  }
+}

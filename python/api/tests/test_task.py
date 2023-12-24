@@ -182,7 +182,7 @@ class TestTaskAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_cancel(self):
-        with patch("api.job.views.cancel_task"):
+        with patch("cm.models.TaskLog.cancel"):
             response: Response = self.client.put(
                 path=reverse(viewname="v1:tasklog-cancel", kwargs={"task_pk": self.task_1.pk}),
             )

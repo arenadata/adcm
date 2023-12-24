@@ -33,7 +33,6 @@ VIEW_ACTION_PERM = "cm.view_action"
 CHANGE_MM_PERM = "change_maintenance_mode"
 ADD_SERVICE_PERM = "add_service_to"
 RUN_ACTION_PERM_PREFIX = "cm.run_action_"
-ADD_TASK_PERM = "cm.add_task"
 ADD_HOST_TO = "add_host_to"
 VIEW_HOST_PERM = "cm.view_host"
 VIEW_PROVIDER_PERM = "cm.view_hostprovider"
@@ -50,6 +49,8 @@ VIEW_JOBLOG_PERMISSION = "cm.view_joblog"
 VIEW_LOGSTORAGE_PERMISSION = "cm.view_logstorage"
 VIEW_USER_PERMISSION = "rbac.view_user"
 VIEW_GROUP_PERMISSION = "rbac.view_group"
+VIEW_ROLE_PERMISSION = "rbac.view_role"
+VIEW_POLICY_PERMISSION = "rbac.view_policy"
 
 
 class DjangoObjectPermissionsAudit(DjangoObjectPermissions):
@@ -61,6 +62,21 @@ class DjangoObjectPermissionsAudit(DjangoObjectPermissions):
 class DjangoModelPermissionsAudit(DjangoModelPermissions):
     @audit
     def has_permission(self, request, view):
+        return super().has_permission(request, view)
+
+
+class CustomModelPermissionsByMethod(DjangoModelPermissionsAudit):
+    method_permissions_map = {
+        # Example:
+        # "get": [("app_label.permission", ErrorToRaise), ...]
+    }
+
+    @audit
+    def has_permission(self, request, view):
+        for permission, error in view.method_permissions_map.get(request.method.lower(), []):
+            if not request.user.has_perm(perm=permission):
+                raise error
+
         return super().has_permission(request, view)
 
 
@@ -121,3 +137,13 @@ def check_config_perm(user: User, action_type: str, model: str, obj: ADCMEntity)
         return
 
     raise PermissionDenied()
+
+
+class ChangeMMPermissions(DjangoObjectPermissions):
+    perms_map = {
+        "POST": [],
+    }
+
+    @audit
+    def has_permission(self, request, view) -> bool:
+        return super().has_permission(request=request, view=view)

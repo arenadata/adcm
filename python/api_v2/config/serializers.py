@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ConfigLog
+from cm.models import ADCM, ConfigLog
 from rest_framework.serializers import (
     DateTimeField,
     JSONField,
@@ -41,19 +41,20 @@ class ConfigLogSerializer(ConfigLogListSerializer):
         fields = ["id", "is_current", "creation_time", "config", "adcm_meta", "description"]
 
     def validate_config(self, value):
-        auth_policy = value.get("auth_policy")
-        if not auth_policy:
-            return value
+        if isinstance(self.context["object_"], ADCM) and isinstance(value, dict):
+            auth_policy = value.get("auth_policy")
+            if not auth_policy:
+                return value
 
-        max_password_length = auth_policy.get("max_password_length")
-        if not max_password_length:
-            return value
+            max_password_length = auth_policy.get("max_password_length")
+            if not max_password_length:
+                return value
 
-        min_password_length = auth_policy.get("min_password_length")
-        if not min_password_length:
-            return value
+            min_password_length = auth_policy.get("min_password_length")
+            if not min_password_length:
+                return value
 
-        if min_password_length > max_password_length:
-            raise ValidationError('"min_password_length" must be less or equal than "max_password_length"')
+            if min_password_length > max_password_length:
+                raise ValidationError('"min_password_length" must be less or equal than "max_password_length"')
 
         return value

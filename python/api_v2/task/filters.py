@@ -30,9 +30,7 @@ from django_filters.rest_framework.filterset import FilterSet
 
 
 class TaskFilter(FilterSet):
-    job_name = CharFilter(
-        label="Job name", field_name="joblog__action__display_name", lookup_expr="icontains", distinct=True
-    )
+    job_name = CharFilter(label="Job name", field_name="action__display_name", lookup_expr="icontains")
     object_name = CharFilter(label="Object name", method="filter_object_name")
     status = ChoiceFilter(field_name="status", choices=JobStatus.choices, label="Task status")
     ordering = OrderingFilter(
@@ -46,8 +44,7 @@ class TaskFilter(FilterSet):
         label="ordering",
     )
 
-    # pylint: disable=unused-argument
-    def filter_object_name(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
+    def filter_object_name(self, queryset: QuerySet, _: str, value: str) -> QuerySet:
         clusters = Cluster.objects.filter(name__icontains=value).values_list("id")
         services = ClusterObject.objects.filter(prototype__display_name__icontains=value).values_list("id")
         components = ServiceComponent.objects.filter(prototype__display_name__icontains=value).values_list("id")
@@ -62,7 +59,7 @@ class TaskFilter(FilterSet):
             | queryset.filter(object_type=ContentType.objects.get_for_model(Host), object_id__in=hosts)
         )
 
-        return queryset.order_by("-pk")
+        return queryset
 
     class Meta:
         model = TaskLog

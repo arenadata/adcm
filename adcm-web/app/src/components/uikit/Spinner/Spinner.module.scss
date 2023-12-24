@@ -1,0 +1,41 @@
+:global {
+  body.theme-dark {
+    --spinner-overlay-background: rgba(33, 33, 33, 0.8);
+  }
+  body.theme-light {
+    --spinner-overlay-background: rgba(227, 234, 238, 0.9);
+  }
+
+}
+
+.spinner {
+  display: inline-block;
+  width: 1.65em;
+  height: 1.65em;
+  border: 1px solid;
+  border-top: none;
+  border-bottom: none;
+  border-radius: 50%;
+  :global {
+    animation: spin 1s linear infinite;
+  }
+}
+
+.spinnerPanel {
+  display: flex;
+  position: absolute;
+  background: var(--spinner-overlay-background);
+  backdrop-filter: blur(5px);
+  z-index: var(--z-index-spinner);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  .spinner {
+    margin: auto;
+    position: sticky;
+    top: min(100px, calc(50% - 1.65em));
+    bottom: min(100px, calc(50% - 1.65em));
+  }
+}

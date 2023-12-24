@@ -85,7 +85,7 @@ class User(AuthUser):
 
 
 class Group(AuthGroup):
-    description = CharField(max_length=1000, null=True)
+    description = CharField(max_length=1000, default="")
     built_in = BooleanField(default=False, null=False)
     type = CharField(max_length=1000, choices=OriginType.choices, null=False, default=OriginType.LOCAL)
 
@@ -102,7 +102,7 @@ class Group(AuthGroup):
         return self.display_name
 
 
-class Role(Model):  # pylint: disable=too-many-instance-attributes
+class Role(Model):
     name = CharField(max_length=1000)
     description = TextField(blank=True)
     display_name = CharField(max_length=1000, null=False, default="")
@@ -134,7 +134,7 @@ class Role(Model):  # pylint: disable=too-many-instance-attributes
             try:
                 role_class = getattr(role_module, self.class_name)
 
-                return role_class(**self.init_params)
+                return role_class(**dict(self.init_params))
             except AttributeError:
                 raise_adcm_ex(
                     code="ROLE_CLASS_ERROR",
@@ -376,3 +376,19 @@ def re_apply_object_policy(apply_object):
     for obj, content_type in obj_type_map.items():
         for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=content_type):
             policy.apply()
+
+
+RBAC_MODEL_MAP: dict[str, type[User | Group | Role | Policy]] = {
+    "user": User,
+    "users": User,
+    "group": Group,
+    "groups": Group,
+    "role": Role,
+    "roles": Role,
+    "policy": Policy,
+    "policies": Policy,
+}
+
+
+def get_rbac_model_by_type(rbac_type: str) -> type[User | Group | Role | Policy]:
+    return RBAC_MODEL_MAP[rbac_type]

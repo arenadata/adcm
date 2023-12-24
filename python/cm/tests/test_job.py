@@ -17,6 +17,7 @@ from unittest.mock import Mock, patch
 from urllib.parse import urljoin
 
 from cm.api import add_cluster, add_service_to_cluster
+from cm.issue import lock_affected_objects
 from cm.job import (
     check_cluster,
     check_service_task,
@@ -30,8 +31,7 @@ from cm.job import (
     re_prepare_job,
     restore_hc,
     set_action_state,
-    set_job_status,
-    set_task_status,
+    set_job_start_status,
 )
 from cm.models import (
     ADCM,
@@ -144,36 +144,17 @@ class TestJob(BaseTestCase):
             finish_date=timezone.now(),
         )
         job = JobLog.objects.create(task=task, action=action, start_date=timezone.now(), finish_date=timezone.now())
-        task.lock_affected([cluster])
+        lock_affected_objects(task=task, objects=[cluster])
         status = JobStatus.RUNNING
         pid = 10
-        event = Mock()
 
-        set_job_status(job.id, status, event, pid)
+        set_job_start_status(job_id=job.id, pid=pid)
 
         job = JobLog.objects.get(id=job.id)
 
         self.assertEqual(job.status, status)
         self.assertEqual(job.pid, pid)
         self.assertEqual(task.lock.reason["placeholder"]["job"]["name"], action.display_name)
-        event.set_job_status.assert_called_once_with(job=job, status=status)
-
-    def test_set_task_status(self):
-        event = Mock()
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
-        action = Action.objects.create(prototype=prototype)
-        task = TaskLog.objects.create(
-            action=action,
-            object_id=1,
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-        )
-
-        set_task_status(task, JobStatus.RUNNING, event)
-
-        self.assertEqual(task.status, JobStatus.RUNNING)
-        event.set_task_status.assert_called_once_with(task=task, status=JobStatus.RUNNING)
 
     def test_get_state_single_job(self):
         bundle = gen_bundle()
@@ -451,6 +432,8 @@ class TestJob(BaseTestCase):
         adcm = ADCM.objects.create(prototype=proto3)
 
         file_mock = Mock()
+        file_mock.__enter__ = Mock(return_value=(Mock(), None))
+        file_mock.__exit__ = Mock(return_value=None)
         mock_open.return_value = file_mock
         mock_get_adcm_config.return_value = {}
         mock_prepare_context.return_value = {"type": "cluster", "cluster_id": 1}
@@ -535,7 +518,9 @@ class TestJob(BaseTestCase):
                     "w",
                     encoding=settings.ENCODING_UTF_8,
                 )
-                mock_dump.assert_called_with(job_config, file_mock, indent=3, sort_keys=True)
+                mock_dump.assert_called_with(
+                    job_config, file_mock.__enter__.return_value, separators=(",", ":"), sort_keys=True
+                )
                 mock_get_adcm_config.assert_called()
                 mock_prepare_context.assert_called_with(action, obj)
                 mock_get_bundle_root.assert_called_with(action)

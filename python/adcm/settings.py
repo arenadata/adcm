@@ -29,7 +29,6 @@ if BASE_DIR:
 else:
     BASE_DIR = Path(__file__).absolute().parent.parent.parent
 
-CONFIG_FILE = BASE_DIR / "config.json"
 STACK_DIR = os.getenv("ADCM_STACK_DIR", BASE_DIR)
 BUNDLE_DIR = STACK_DIR / "data" / "bundle"
 CODE_DIR = BASE_DIR / "python"
@@ -66,11 +65,7 @@ else:
 
 SECRET_KEY = os.getenv("SECRET_KEY", get_random_secret_key())
 
-if CONFIG_FILE.is_file():
-    with open(CONFIG_FILE, encoding=ENCODING_UTF_8) as f:
-        ADCM_VERSION = json.load(f)["version"]
-else:
-    ADCM_VERSION = "2019.02.07.00"
+ADCM_VERSION = os.getenv("ADCM_VERSION", "2.0.0")
 
 DEBUG = os.getenv("DEBUG") in {"1", "True", "true"}
 ALLOWED_HOSTS = ["*"]
@@ -91,6 +86,8 @@ INSTALLED_APPS = [
     "audit",
     "api_v2",
     "corsheaders",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
 ]
 
 MIDDLEWARE = [
@@ -108,9 +105,11 @@ MIDDLEWARE = [
 if not DEBUG:
     MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
-CSP_DEFAULT_SRC = ["'self'"]
+CSP_DEFAULT_SRC = ["'self'", "blob:"]
+CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "*.googleapis.com"]
+CSP_IMG_SRC = ["'self'", "cdn.redoc.ly", "data:"]
+CSP_FONT_SRC = ["'self'", "fonts.gstatic.com"]
 CSP_FRAME_ANCESTORS = ["'none'"]
-CSP_STYLE_SRC = ["'self'", "'unsafe-inline'"]
 
 ROOT_URLCONF = "adcm.urls"
 
@@ -143,7 +142,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ),
-    "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 50,
     "DEFAULT_FILTER_BACKENDS": [
@@ -156,7 +155,7 @@ REST_FRAMEWORK = {
     "DEFAULT_VERSION": "v1",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
     "JSON_UNDERSCOREIZE": {
-        "ignore_fields": ("config", "adcmMeta"),
+        "ignore_fields": ("config", "configSchema", "adcmMeta", "properties"),
     },
 }
 
@@ -312,11 +311,12 @@ ADCM_SERVICE_ACTION_NAMES_SET = {
     ADCM_DELETE_SERVICE_ACTION_NAME,
 }
 ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
+ADCM_HIDDEN_USERS = {"status", "system"}
 
 STACK_COMPLEX_FIELD_TYPES = {"json", "structure", "list", "map", "secretmap"}
 STACK_NUMERIC_FIELD_TYPES = {"integer", "float"}
 SECURE_PARAM_TYPES = {"password", "secrettext"}
-TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "read_only", "writable", "subs"}
+TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "read_only", "writable", "subs", "source"}
 
 EMPTY_REQUEST_STATUS_CODE = 32
 VALUE_ERROR_STATUS_CODE = 8
@@ -325,3 +325,16 @@ STATUS_REQUEST_TIMEOUT = 0.01
 
 JOB_TYPE = "job"
 TASK_TYPE = "task"
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "ADCM API",
+    "DESCRIPTION": "Arenadata Cluster Manager",
+    "VERSION": "2.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
+}
+
+USERNAME_MAX_LENGTH = 150

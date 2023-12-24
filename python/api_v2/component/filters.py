@@ -11,10 +11,18 @@
 # limitations under the License.
 
 from cm.models import ServiceComponent
-from django_filters.rest_framework import FilterSet
+from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
 
 
 class ComponentFilter(FilterSet):
+    name = CharFilter(field_name="prototype__name", label="Name", lookup_expr="icontains")
+    display_name = CharFilter(field_name="prototype__display_name", label="Display Name", lookup_expr="icontains")
+    ordering = OrderingFilter(
+        fields={"prototype__name": "name", "prototype__display_name": "displayName"},
+        field_labels={"prototype__name": "Name", "prototype__display_name": "Display Name"},
+        label="ordering",
+    )
+
     class Meta:
         model = ServiceComponent
         fields = ["id"]

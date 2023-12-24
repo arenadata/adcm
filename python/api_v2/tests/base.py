@@ -10,19 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import tarfile
+from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
-from typing import TypedDict
+from typing import Any, TypeAlias, TypedDict
 
 from api_v2.prototype.utils import accept_license
-from cm.api import (
-    add_cluster,
-    add_hc,
-    add_host,
-    add_host_provider,
-    add_host_to_cluster,
-    add_service_to_cluster,
-)
+from api_v2.service.utils import bulk_add_services_to_cluster
+from audit.models import AuditLog, AuditSession
+from cm.api import add_cluster, add_hc, add_host, add_host_provider, add_host_to_cluster
 from cm.bundle import prepare_bundle, process_file
 from cm.models import (
     ADCM,
@@ -37,15 +33,24 @@ from cm.models import (
     HostProvider,
     ObjectType,
     Prototype,
+    ServiceComponent,
 )
 from django.conf import settings
+from django.db.models import QuerySet
 from init_db import init
-from rbac.models import User
+from rbac.models import Group, Policy, Role, RoleTypes, User
+from rbac.services.group import create as create_group
+from rbac.services.policy import policy_create
+from rbac.services.role import role_create
 from rbac.services.user import create_user
 from rbac.upgrade.role import init_roles
 from rest_framework.test import APITestCase
 
 from adcm.tests.base import ParallelReadyTestCase
+
+AuditTarget: TypeAlias = (
+    Bundle | Cluster | ClusterObject | ServiceComponent | HostProvider | Host | User | Group | Role | Policy
+)
 
 
 class HostComponentMapDictType(TypedDict):
@@ -60,6 +65,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
         super().setUpClass()
 
         cls.test_bundles_dir = Path(__file__).parent / "bundles"
+        cls.test_files_dir = Path(__file__).parent / "files"
 
         init_roles()
         init()
@@ -129,27 +135,33 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
         return add_host_provider(prototype=prototype, name=name, description=description)
 
     @staticmethod
-    def add_host(bundle: Bundle, provider: HostProvider, fqdn: str, description: str = "") -> Host:
+    def add_host(
+        bundle: Bundle, provider: HostProvider, fqdn: str, description: str = "", cluster: Cluster | None = None
+    ) -> Host:
         prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.HOST).first()
-        return add_host(prototype=prototype, provider=provider, fqdn=fqdn, description=description)
+        host = add_host(prototype=prototype, provider=provider, fqdn=fqdn, description=description)
+        if cluster is not None:
+            BaseAPITestCase.add_host_to_cluster(cluster=cluster, host=host)
+
+        return host
 
     @staticmethod
     def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
         return add_host_to_cluster(cluster=cluster, host=host)
 
     @staticmethod
-    def add_service_to_cluster(service_name: str, cluster: Cluster) -> ClusterObject:
-        service_prototype = Prototype.objects.get(
-            type=ObjectType.SERVICE, name=service_name, bundle=cluster.prototype.bundle
+    def add_services_to_cluster(service_names: list[str], cluster: Cluster) -> QuerySet[ClusterObject]:
+        service_prototypes = Prototype.objects.filter(
+            type=ObjectType.SERVICE, name__in=service_names, bundle=cluster.prototype.bundle
         )
-        return add_service_to_cluster(cluster=cluster, proto=service_prototype)
+        return bulk_add_services_to_cluster(cluster=cluster, prototypes=service_prototypes)
 
     @staticmethod
     def add_hostcomponent_map(cluster: Cluster, hc_map: list[HostComponentMapDictType]) -> list[HostComponent]:
         return add_hc(cluster=cluster, hc_in=hc_map)
 
     @staticmethod
-    def get_non_existent_pk(model: type[ADCMEntity] | type[ADCMModel] | type[User]):
+    def get_non_existent_pk(model: type[ADCMEntity | ADCMModel | User | Role | Group | Policy]):
         try:
             return model.objects.order_by("-pk").first().pk + 1
         except model.DoesNotExist:
@@ -167,3 +179,97 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase):
             }
 
         return create_user(**user_data)
+
+    def check_last_audit_record(
+        self,
+        model: type[AuditLog | AuditSession] = AuditLog,
+        *,
+        expect_object_changes_: bool = True,
+        **kwargs,
+    ) -> AuditLog:
+        last_audit_record = model.objects.order_by("pk").last()
+        self.assertIsNotNone(last_audit_record, f"{model.__name__} table is empty")
+
+        # we always want to check who performed the audited action
+        if model is AuditLog:
+            kwargs.setdefault("user__username", "admin")
+
+        # Object changes are {} for most cases,
+        # we always want to check it, but providing it each time is redundant.
+        # But sometimes structure is too complex for sqlite/ORM to handle,
+        # so we have to check changes separately.
+        if (model is AuditLog) and expect_object_changes_:
+            kwargs.setdefault("object_changes", {})
+
+        expected_record = model.objects.filter(**kwargs).order_by("pk").last()
+        self.assertIsNotNone(expected_record, "Can't find audit record")
+        self.assertEqual(last_audit_record.pk, expected_record.pk, "Expected audit record is not last")
+
+        return last_audit_record
+
+    @staticmethod
+    def get_most_recent_audit_log() -> AuditLog | None:
+        """Mostly for debug purposes"""
+        return AuditLog.objects.order_by("pk").last()
+
+    @staticmethod
+    def prepare_audit_object_arguments(
+        expected_object: AuditTarget | None,
+        *,
+        is_deleted: bool = False,
+    ) -> dict[str, Any]:
+        if expected_object is None:
+            return {"audit_object__isnull": True}
+
+        if isinstance(expected_object, ServiceComponent):
+            name = (
+                f"{expected_object.cluster.name}/{expected_object.service.display_name}/{expected_object.display_name}"
+            )
+            type_ = "component"
+        elif isinstance(expected_object, ClusterObject):
+            name = f"{expected_object.cluster.name}/{expected_object.display_name}"
+            type_ = "service"
+        elif isinstance(expected_object, Host):
+            name = expected_object.fqdn
+            type_ = "host"
+        elif isinstance(expected_object, Group):
+            name = expected_object.name
+            type_ = "group"
+        elif isinstance(expected_object, Role):
+            name = expected_object.name
+            type_ = "role"
+        else:
+            name = getattr(expected_object, "display_name", expected_object.name)
+            # replace for hostprovider
+            type_ = expected_object.__class__.__name__.lower().replace("hostp", "p")
+
+        return {
+            "audit_object__object_id": expected_object.pk,
+            "audit_object__object_name": name,
+            "audit_object__object_type": type_,
+            "audit_object__is_deleted": is_deleted,
+        }
+
+    @contextmanager
+    def grant_permissions(self, to: User, on: list[ADCMEntity] | ADCMEntity, role_name: str):
+        if not isinstance(on, list):
+            on = [on]
+
+        group = create_group(name_to_display=f"Group for role `{role_name}`", user_set=[{"id": to.pk}])
+        target_role = Role.objects.get(name=role_name)
+        delete_role = True
+
+        if target_role.type != RoleTypes.ROLE:
+            custom_role = role_create(display_name=f"Custom `{role_name}` role", child=[target_role])
+        else:
+            custom_role = target_role
+            delete_role = False
+
+        policy = policy_create(name=f"Policy for role `{role_name}`", role=custom_role, group=[group], object=on)
+
+        yield
+
+        policy.delete()
+        if delete_role:
+            custom_role.delete()
+        group.delete()

@@ -9,10 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 from api_v2.rbac.user.constants import UserTypeChoices
 from api_v2.tests.base import BaseAPITestCase
+from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
@@ -50,7 +49,7 @@ class TestUserAPI(BaseAPITestCase):
         response = self.client.get(path=reverse(viewname="v2:rbac:user-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 3)
+        self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
             sorted(response.json()["results"][0].keys()),
             sorted(
@@ -161,6 +160,8 @@ class TestUserAPI(BaseAPITestCase):
 
         data = response.json()
 
+        expected_group_data = {"id": group.pk, "name": group.name, "displayName": group.display_name}
+
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertFalse(user.check_password(raw_password="test_user_password"))
         self.assertTrue(user.check_password(raw_password="newtestpassword"))
@@ -169,7 +170,23 @@ class TestUserAPI(BaseAPITestCase):
         self.assertEqual(data["lastName"], "test_user_last_name")
         self.assertTrue(data["isSuperUser"])
         self.assertEqual(len(data["groups"]), 1)
-        self.assertDictEqual(data["groups"][0], {"id": group.pk, "name": group.name, "displayName": group.display_name})
+        self.assertDictEqual(data["groups"][0], expected_group_data)
+
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
+            data={"lastName": "WholeNewName"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        data = response.json()
+        user.refresh_from_db()
+        self.assertEqual(user.username, "test_user")
+        self.assertEqual(user.first_name, "test_user_first_name")
+        self.assertEqual(user.last_name, "WholeNewName")
+        self.assertListEqual(list(user.groups.values_list("id", flat=True)), [group.pk])
+        self.assertTrue(data["isSuperUser"])
+        self.assertEqual(len(data["groups"]), 1)
+        self.assertDictEqual(data["groups"][0], expected_group_data)
 
     def test_update_self_by_regular_user_success(self):
         """
@@ -205,9 +222,7 @@ class TestUserAPI(BaseAPITestCase):
         self.assertFalse(data["isSuperUser"])
         self.assertEqual(len(data["groups"]), 0)
 
-    def test_update_not_self_by_regular_user_fail(self):
-        """According to business requirements, a non-superuser cannot modify another user"""
-
+    def test_update_not_self_by_regular_user_success(self):
         group = Group.objects.create(name="group")
         first_user = self.create_user(user_data={"username": "test_user", "password": "test_user_password"})
         second_user = self.create_user(
@@ -222,28 +237,28 @@ class TestUserAPI(BaseAPITestCase):
         self._grant_permissions(user=first_user)
         self.client.login(username="test_user", password="test_user_password")
 
+        new_data = {
+            "password": "newtestuser2password",
+            "email": "new_test_user2@mail.ru",
+            "firstName": "new_test_user2_first_name",
+            "lastName": "new_test_user2_last_name",
+            "isSuperUser": True,
+            "groups": [group.pk],
+        }
         response = self.client.patch(
             path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": second_user.pk}),
-            data={
-                "password": "new_test_user2_password",
-                "email": "new_test_user2@mail.ru",
-                "firstName": "new_test_user2_first_name",
-                "lastName": "new_test_user2_last_name",
-                "isSuperUser": True,
-                "groups": [group.pk],
-            },
+            data=new_data,
         )
         second_user.refresh_from_db()
 
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertDictEqual(
-            response.json(), {"code": "USER_UPDATE_ERROR", "desc": "Can't update other user", "level": "error"}
-        )
-        self.assertFalse(second_user.check_password(raw_password="new_test_user2_password"))
-        self.assertTrue(second_user.check_password(raw_password="test_user2_password"))
-        self.assertEqual(second_user.email, "test_user2@mail.ru")
-        self.assertEqual(second_user.first_name, "test_user2_first_name")
-        self.assertEqual(second_user.last_name, "test_user2_last_name")
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertTrue(second_user.check_password(raw_password=new_data["password"]))
+        self.assertFalse(second_user.check_password(raw_password="test_user2_password"))
+        self.assertEqual(second_user.email, new_data["email"])
+        self.assertEqual(second_user.first_name, new_data["firstName"])
+        self.assertEqual(second_user.last_name, new_data["lastName"])
+
+        # not superuser can't change this values
         self.assertFalse(second_user.is_superuser)
         self.assertEqual(second_user.groups.count(), 0)
 
@@ -262,7 +277,7 @@ class TestUserAPI(BaseAPITestCase):
 
         self.client.login(username="test_user", password="test_user_password")
 
-        response = self.client.put(path=reverse(viewname="v2:adcm:profile"), data={"newPassword": "newtestpassword"})
+        response = self.client.put(path=reverse(viewname="v2:profile"), data={"newPassword": "newtestpassword"})
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
             response.json(),
@@ -360,7 +375,11 @@ class TestUserAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response_usernames = [user["username"] for user in response.json()["results"]]
-        db_usernames = list(User.objects.order_by("-username").values_list("username", flat=True))
+        db_usernames = list(
+            User.objects.order_by("-username")
+            .exclude(username__in=settings.ADCM_HIDDEN_USERS)
+            .values_list("username", flat=True)
+        )
         self.assertListEqual(response_usernames, db_usernames)
 
     def test_ordering_wrong_params_fail(self):

@@ -39,7 +39,7 @@ class LoginMiddleware:
             result = AuditSessionLoginResult.SUCCESS
             details = {"username": user.username}
         else:
-            details = {"username": username}
+            details = {"username": username[: settings.USERNAME_MAX_LENGTH]}
             try:
                 user = User.objects.get(username=username)
                 if not user.is_active:
@@ -73,7 +73,11 @@ class LoginMiddleware:
         block_time_minutes = None
         forbidden_response = HttpResponseForbidden(
             content=json.dumps(
-                {"error": "Account locked: too many login attempts. Please try again later."},
+                {
+                    "code": "USER_BLOCK_ERROR",
+                    "level": "error",
+                    "desc": "Account locked: too many login attempts. Please try again later.",
+                },
             ).encode(encoding=settings.ENCODING_UTF_8),
         )
 
@@ -136,6 +140,8 @@ class LoginMiddleware:
             "/api/v1/rbac/token/",
             "/api/v1/token/",
             "/auth/login/",
+            "/api/v2/login/",
+            "/api/v2/token/",
         }:
             try:
                 username = json.loads(request.body.decode(settings.ENCODING_UTF_8)).get("username")

@@ -1,4 +1,3 @@
-tests/ @aer @v.chudasov
 /data/ @aas @d.skrynnik @aer
 /conf/ @aas @d.skrynnik @a.starovoitov @aer
 /go/ @aas @d.skrynnik @aer
@@ -6,15 +5,16 @@ tests/ @aer @v.chudasov
 /python/ @aas @d.skrynnik @a.starovoitov @aer
 /spec/ @aas @d.skrynnik @aer
 /web/ @v.remizov @d.bardin @k.fedorenko
-.dockerignore @aas @v.remizov @d.skrynnik @aer @v.chudasov
-.gitignore @aas @d.skrynnik @v.remizov @d.bardin @k.fedorenko @aer @v.chudasov
-.gitlab-ci.yaml @aas @v.remizov @d.skrynnik @aer @v.chudasov
-.pre-commit-config.yaml @aas @d.skrynnik @v.remizov @d.bardin @k.fedorenko @aer @v.chudasov
-CODEOWNERS @aas @v.remizov @d.skrynnik @aer @v.chudasov
+.dockerignore @aas @v.remizov @d.skrynnik @aer
+.gitignore @aas @d.skrynnik @v.remizov @d.bardin @k.fedorenko @aer
+.gitlab-ci.yaml @aas @v.remizov @d.skrynnik @aer
+.pre-commit-config.yaml @aas @d.skrynnik @v.remizov @d.bardin @k.fedorenko @aer
+CODEOWNERS @aas @v.remizov @d.skrynnik @aer
 COPYRIGHT @aas @v.remizov @d.skrynnik @aer
 Dockerfile @aas @v.remizov @d.skrynnik @aer
 LICENSE @aas @v.remizov @d.skrynnik @aer
 license_checker.py @aas @d.skrynnik @aer
 Makefile @aas @d.skrynnik @aer
-pyproject.toml @aas @d.skrynnik @aer @v.chudasov
-README.md @aas @d.skrynnik @v.remizov @d.bardin @k.fedorenko @a.starovoitov @aer @v.chudasov
+poetry.lock @aas @d.skrynnik @aer @a.starovoitov
+pyproject.toml @aas @d.skrynnik @aer @a.starovoitov
+README.md @aas @d.skrynnik @v.remizov @d.bardin @k.fedorenko @a.starovoitov @aer

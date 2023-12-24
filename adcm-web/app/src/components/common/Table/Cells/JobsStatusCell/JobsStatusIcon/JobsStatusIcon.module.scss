@@ -1,0 +1,38 @@
+:global {
+  body.theme-dark {
+    --status-icon-color-success: var(--color-xgreen);
+    --status-icon-color-failed: var(--color-xred);
+    --status-icon-color-aborted: var(--color-xdark);
+    --status-icon-color-running: var(--color-xblue);
+    --status-icon-color-created: var(--color-xwhite-off);
+  }
+  body.theme-light {
+    --status-icon-color-success: var(--color-xgreen-saturated);
+    --status-icon-color-failed: var(--color-xred-light);
+    --status-icon-color-aborted: var(--color-xgray-light);
+    --status-icon-color-running: var(--color-xblue);
+    --status-icon-color-created: var(--color-xdark);
+  }
+}
+
+.status {
+  &_created {
+    color: var(--status-icon-color-created);
+  }
+
+  &_success {
+    color: var(--status-icon-color-success);
+  }
+
+  &_failed {
+    color: var(--status-icon-color-failed);
+  }
+
+  &_running {
+    color: var(--status-icon-color-running);
+  }
+
+  &_aborted {
+    color: var(--status-icon-color-aborted);
+  }
+}

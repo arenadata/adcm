@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
@@ -90,6 +90,10 @@ import { ICluster } from '@app/models/cluster';
 export class HostComponent extends BaseFormDirective implements OnInit {
   @Input() displayMode: DisplayMode = DisplayMode.default;
   @Output() event = new EventEmitter();
+
+  @HostListener('keyup') changes() {
+    this.form.markAllAsTouched();
+  }
 
   providers$ = new BehaviorSubject<Partial<Provider[]>>([]);
   clusters$ = new BehaviorSubject<Partial<ICluster>[]>([]);

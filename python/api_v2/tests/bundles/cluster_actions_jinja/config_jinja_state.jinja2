@@ -1,0 +1,48 @@
+- name: boolean
+  type: boolean
+  required: false
+  default: true
+{% if cluster.state == 'created' %}
+- name: float
+  type: float
+  required: false
+  default: 2.0
+- name: activatable_group
+  type: group
+  activatable: true
+  active: true
+  subs:
+    - name: text
+      type: text
+      default: text
+{% elif cluster.state == 'installed' %}
+- name: integer
+  type: integer
+  required: false
+  default: 20
+- name: list
+  type: list
+  required: false
+  default:
+    - /dev/rdisk0s9
+    - /dev/rdisk0s8
+{% else %}
+- name: map
+  type: map
+  required: false
+  default:
+    age: '30'
+    name: John
+    sex: m
+- name: option
+  type: option
+  required: false
+  option:
+    FIRST: FIRST
+    SECOND: SECOND
+  default: SECOND
+{% endif %}
+- name: boolean1
+  type: boolean
+  required: false
+  default: false

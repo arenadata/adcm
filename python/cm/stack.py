@@ -18,18 +18,21 @@ import re
 import warnings
 from copy import copy, deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, List, Literal
 
 import ruyaml
 import yaml
+from adcm_version import compare_prototype_versions
 from cm.adcm_config.checks import check_config_type
 from cm.adcm_config.config import read_bundle_file
 from cm.adcm_config.utils import proto_ref
 from cm.checker import FormatError, check, check_rule, round_trip_load
-from cm.errors import raise_adcm_ex
+from cm.errors import AdcmEx, raise_adcm_ex
 from cm.logger import logger
 from cm.models import (
+    Host,
     Prototype,
+    ServiceComponent,
     StageAction,
     StagePrototype,
     StagePrototypeConfig,
@@ -43,12 +46,12 @@ from django.db import IntegrityError
 from jinja2 import Template
 from jinja2.exceptions import TemplateError
 from rest_framework import status
+from rest_framework.exceptions import NotFound
 from ruyaml.composer import ComposerError
 from ruyaml.constructor import DuplicateKeyError
 from ruyaml.error import ReusedAnchorWarning
 from ruyaml.parser import ParserError as RuYamlParserError
 from ruyaml.scanner import ScannerError as RuYamlScannerError
-from version_utils import rpm
 from yaml.parser import ParserError as YamlParserError
 from yaml.scanner import ScannerError as YamlScannerError
 
@@ -73,26 +76,25 @@ def save_definition(
     obj_list: dict,
     bundle_hash: str,
     adcm_: bool = False,
-) -> None:
+) -> tuple[list[StagePrototype], list[StageUpgrade]]:
+    prototypes = []
+    stage_upgrades = []
+
     if isinstance(conf, dict):
-        save_object_definition(
-            path=path,
-            fname=fname,
-            conf=conf,
-            obj_list=obj_list,
-            bundle_hash=bundle_hash,
-            adcm_=adcm_,
+        prototype, upgrades = save_object_definition(
+            path=path, fname=fname, conf=conf, obj_list=obj_list, bundle_hash=bundle_hash, adcm_=adcm_
         )
+        prototypes.append(prototype)
+        stage_upgrades.extend(upgrades)
     else:
         for obj_def in conf:
-            save_object_definition(
-                path=path,
-                fname=fname,
-                conf=obj_def,
-                obj_list=obj_list,
-                bundle_hash=bundle_hash,
-                adcm_=adcm_,
+            prototype, upgrades = save_object_definition(
+                path=path, fname=fname, conf=obj_def, obj_list=obj_list, bundle_hash=bundle_hash, adcm_=adcm_
             )
+            prototypes.append(prototype)
+            stage_upgrades.extend(upgrades)
+
+    return prototypes, stage_upgrades
 
 
 def cook_obj_id(conf):
@@ -106,20 +108,20 @@ def save_object_definition(
     obj_list: dict,
     bundle_hash: str,
     adcm_: bool = False,
-) -> StagePrototype:
+) -> tuple[StagePrototype, list[StageUpgrade]]:
     def_type = conf["type"]
     if def_type == "adcm" and not adcm_:
-        return raise_adcm_ex(
+        raise AdcmEx(
             code="INVALID_OBJECT_DEFINITION",
             msg=f'Invalid type "{def_type}" in object definition: {fname}',
         )
 
     check_object_definition(fname=fname, conf=conf, def_type=def_type, obj_list=obj_list, bundle_hash=bundle_hash)
-    obj = save_prototype(path=path, conf=conf, def_type=def_type, bundle_hash=bundle_hash)
+    prototype, upgrades = save_prototype(path=path, conf=conf, def_type=def_type, bundle_hash=bundle_hash)
     logger.info('Save definition of %s "%s" %s to stage', def_type, conf["name"], conf["version"])
     obj_list[cook_obj_id(conf)] = fname
 
-    return obj
+    return prototype, upgrades
 
 
 def check_actions_definition(def_type: str, actions: dict, bundle_hash: str) -> None:
@@ -217,12 +219,9 @@ def check_adcm_config(conf_file: Path) -> Any:
 
                 error_msgs.append(f"line {error.line}: {error}")
 
-        raise_adcm_ex(
-            code="INVALID_OBJECT_DEFINITION",
-            msg=f'"{conf_file}" line {e.line} error: {e}',
-            args=os.linesep.join(error_msgs),
-        )
-        return {}
+        msg = f"'{conf_file}' line {e.line} error: {e}\n{os.linesep.join(error_msgs)}"
+        logger.error(msg=msg)
+        raise AdcmEx(code="INVALID_OBJECT_DEFINITION", msg=msg) from e
 
 
 def read_definition(conf_file: Path) -> dict:
@@ -262,48 +261,52 @@ def process_config_group_customization(actual_config: dict, obj: StagePrototype)
             actual_config["config_group_customization"] = stage_prototype.config_group_customization
 
 
-def save_prototype(path: Path, conf: dict, def_type: str, bundle_hash: str) -> StagePrototype:
-    proto = StagePrototype(name=conf["name"], type=def_type, path=path, version=conf["version"])
+def save_prototype(
+    path: Path, conf: dict, def_type: str, bundle_hash: str
+) -> tuple[StagePrototype, list[StageUpgrade]]:
+    prototype = StagePrototype(name=conf["name"], type=def_type, path=path, version=conf["version"])
 
-    dict_to_obj(dictionary=conf, key="required", obj=proto)
-    dict_to_obj(dictionary=conf, key="requires", obj=proto)
-    dict_to_obj(dictionary=conf, key="shared", obj=proto)
-    dict_to_obj(dictionary=conf, key="monitoring", obj=proto)
-    dict_to_obj(dictionary=conf, key="display_name", obj=proto)
-    dict_to_obj(dictionary=conf, key="description", obj=proto)
-    dict_to_obj(dictionary=conf, key="adcm_min_version", obj=proto)
-    dict_to_obj(dictionary=conf, key="venv", obj=proto)
-    dict_to_obj(dictionary=conf, key="edition", obj=proto)
+    dict_to_obj(dictionary=conf, key="required", obj=prototype)
+    dict_to_obj(dictionary=conf, key="requires", obj=prototype)
+    dict_to_obj(dictionary=conf, key="shared", obj=prototype)
+    dict_to_obj(dictionary=conf, key="monitoring", obj=prototype)
+    dict_to_obj(dictionary=conf, key="display_name", obj=prototype)
+    dict_to_obj(dictionary=conf, key="description", obj=prototype)
+    dict_to_obj(dictionary=conf, key="adcm_min_version", obj=prototype)
+    dict_to_obj(dictionary=conf, key="venv", obj=prototype)
+    dict_to_obj(dictionary=conf, key="edition", obj=prototype)
 
-    process_config_group_customization(actual_config=conf, obj=proto)
+    process_config_group_customization(actual_config=conf, obj=prototype)
 
-    dict_to_obj(dictionary=conf, key="config_group_customization", obj=proto)
-    dict_to_obj(dictionary=conf, key="allow_maintenance_mode", obj=proto)
-    dict_to_obj(dictionary=conf, key="allow_flags", obj=proto)
+    dict_to_obj(dictionary=conf, key="config_group_customization", obj=prototype)
+    dict_to_obj(dictionary=conf, key="allow_maintenance_mode", obj=prototype)
+    dict_to_obj(dictionary=conf, key="allow_flags", obj=prototype)
 
-    fix_display_name(conf=conf, obj=proto)
-    license_hash = get_license_hash(proto=proto, conf=conf, bundle_hash=bundle_hash)
+    fix_display_name(conf=conf, obj=prototype)
+    license_hash = get_license_hash(proto=prototype, conf=conf, bundle_hash=bundle_hash)
     if license_hash:
         if def_type not in {"cluster", "service", "provider"}:
-            raise_adcm_ex(
+            raise AdcmEx(
                 code="INVALID_OBJECT_DEFINITION",
-                msg=f"Invalid license definition in {proto_ref(prototype=proto)}. "
-                f"License can be placed in cluster, service or provider",
+                msg=(
+                    f"Invalid license definition in {proto_ref(prototype=prototype)}. "
+                    f"License can be placed in cluster, service or provider"
+                ),
             )
 
-        proto.license_path = conf["license"]
-        proto.license_hash = license_hash
+        prototype.license_path = conf["license"]
+        prototype.license_hash = license_hash
 
-    proto.save()
+    prototype.save()
 
-    save_actions(prototype=proto, config=conf, bundle_hash=bundle_hash)
-    save_upgrade(prototype=proto, config=conf, bundle_hash=bundle_hash)
-    save_components(proto=proto, conf=conf, bundle_hash=bundle_hash)
-    save_prototype_config(prototype=proto, proto_conf=conf, bundle_hash=bundle_hash)
-    save_export(proto=proto, conf=conf)
-    save_import(proto=proto, conf=conf)
+    save_actions(prototype=prototype, config=conf, bundle_hash=bundle_hash)
+    upgrades = save_upgrade(prototype=prototype, config=conf, bundle_hash=bundle_hash)
+    save_components(proto=prototype, conf=conf, bundle_hash=bundle_hash)
+    save_prototype_config(prototype=prototype, proto_conf=conf, bundle_hash=bundle_hash)
+    save_export(proto=prototype, conf=conf)
+    save_import(proto=prototype, conf=conf)
 
-    return proto
+    return prototype, upgrades
 
 
 def check_component_constraint(proto, name, conf):
@@ -461,9 +464,11 @@ def set_version(obj, conf):
         obj.max_strict = True
 
 
-def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> None:
+def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> list[StageUpgrade]:
     if not in_dict(dictionary=config, key="upgrade"):
-        return
+        return []
+
+    upgrades = []
 
     for item in config["upgrade"]:
         check_upgrade(prototype=prototype, config=item)
@@ -489,6 +494,9 @@ def save_upgrade(prototype: StagePrototype, config: dict, bundle_hash: str) -> N
             )
 
         upgrade.save()
+        upgrades.append(upgrade)
+
+    return upgrades
 
 
 def save_export(proto: StagePrototype, conf: dict) -> None:
@@ -548,7 +556,7 @@ def save_import(proto: StagePrototype, conf: dict) -> None:
             set_version(stage_prototype_import, conf["import"][key])
             if stage_prototype_import.min_version and stage_prototype_import.max_version:
                 if (
-                    rpm.compare_versions(
+                    compare_prototype_versions(
                         str(stage_prototype_import.min_version),
                         str(stage_prototype_import.max_version),
                     )
@@ -791,6 +799,13 @@ def get_yspec(prototype: StagePrototype | Prototype, bundle_hash: str, conf: dic
     success, error = check_rule(rules=schema)
     if not success:
         raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'yspec file of config key "{name}/{subname}" error: {error}')
+
+    for _, value in schema.items():
+        if value["match"] in {"one_of", "dict_key_selection", "set", "none", "any"}:
+            raise AdcmEx(
+                code="CONFIG_TYPE_ERROR",
+                msg=f"yspec file of config key '{name}/{subname}': '{value['match']}' rule is not supported",
+            )
 
     return schema
 
@@ -1054,3 +1069,17 @@ def _deep_get(deep_dict: dict, *nested_keys: str, default: Any) -> Any:
             return default
 
     return val
+
+
+def check_hostcomponents_objects_exist(hostcomponent_map: List[dict[Literal["host_id", "component_id"], int]]):
+    host_ids = {hc["host_id"] for hc in hostcomponent_map}
+    component_ids = {hc["component_id"] for hc in hostcomponent_map}
+
+    host_queryset_ids = Host.objects.filter(id__in=host_ids).values_list("pk", flat=True)
+    component_queryset_ids = ServiceComponent.objects.filter(id__in=component_ids).values_list("pk", flat=True)
+    if len(diff := host_ids - set(host_queryset_ids)) != 0:
+        missing_ids = ", ".join(str(h_id) for h_id in diff)
+        raise NotFound(f"Hosts with ids {missing_ids} do not exist")
+    if len(diff := component_ids - set(component_queryset_ids)) != 0:
+        missing_ids = ", ".join(str(h_id) for h_id in diff)
+        raise NotFound(f"Components with ids {missing_ids} do not exist")

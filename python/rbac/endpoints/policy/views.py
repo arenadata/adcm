@@ -16,6 +16,7 @@ from rbac.endpoints.policy.serializers import PolicySerializer
 from rbac.models import Policy
 from rbac.services.policy import policy_create, policy_update
 from rest_framework.response import Response
+from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
@@ -33,6 +34,7 @@ class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-m
     permission_required = ["rbac.view_policy"]
     filterset_fields = ("id", "name", "built_in", "role", "group")
     ordering_fields = ("id", "name", "built_in", "role")
+    schema = AutoSchema()
 
     @audit
     def create(self, request, *args, **kwargs):

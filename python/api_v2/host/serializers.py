@@ -16,19 +16,16 @@ from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from cm.models import Cluster, Host, HostProvider, MaintenanceMode, ServiceComponent
 from cm.status_api import get_obj_status
 from cm.validators import HostUniqueValidator, StartMidEndValidator
-from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     CharField,
     ChoiceField,
     IntegerField,
-    ListSerializer,
     ModelSerializer,
     PrimaryKeyRelatedField,
     SerializerMethodField,
 )
 
 from adcm import settings
-from adcm.permissions import VIEW_CLUSTER_PERM
 from adcm.serializers import EmptySerializer
 
 
@@ -78,6 +75,7 @@ class HostSerializer(ModelSerializer):
         fields = [
             "id",
             "name",
+            "description",
             "state",
             "status",
             "hostprovider",
@@ -105,7 +103,7 @@ class HostUpdateSerializer(ModelSerializer):
     name = CharField(
         max_length=253,
         help_text="fully qualified domain name",
-        required=False,
+        required=True,
         validators=[
             HostUniqueValidator(queryset=Host.objects.all()),
             StartMidEndValidator(
@@ -121,20 +119,7 @@ class HostUpdateSerializer(ModelSerializer):
 
     class Meta:
         model = Host
-        fields = ["name", "cluster"]
-        extra_kwargs = {"cluster": {"required": False}}
-
-    def validate_cluster(self, cluster):
-        if not cluster:
-            return cluster
-
-        if not self.context["request"].user.has_perm(perm=VIEW_CLUSTER_PERM, obj=cluster):
-            raise ValidationError("Current user has no permission to view this cluster")
-
-        if not self.context["request"].user.has_perm(perm="cm.map_host_to_cluster", obj=cluster):
-            raise ValidationError("Current user has no permission to map host to this cluster")
-
-        return cluster
+        fields = ["name", "description"]
 
 
 class HostCreateSerializer(EmptySerializer):
@@ -159,12 +144,8 @@ class HostCreateSerializer(EmptySerializer):
     cluster_id = IntegerField(required=False)
 
 
-class ClusterHostCreateSerializer(EmptySerializer):
-    host_id = IntegerField()
-
-
-class HostListIdCreateSerializer(ListSerializer):  # pylint: disable=abstract-method
-    child = IntegerField()
+class HostCreateRelatedSerializer(EmptySerializer):
+    host_id = PrimaryKeyRelatedField(queryset=Host.objects.all())
 
 
 class HostMappingSerializer(ModelSerializer):
@@ -209,3 +190,9 @@ class ClusterHostStatusSerializer(EmptySerializer):
         return RelatedComponentStatusSerializer(
             instance=[hc.component for hc in instance.hostcomponent_set.select_related("component")], many=True
         ).data
+
+
+class HostAuditSerializer(ModelSerializer):
+    class Meta:
+        model = Host
+        fields = ["fqdn", "description", "maintenance_mode"]

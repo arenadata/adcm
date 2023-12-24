@@ -30,3 +30,6 @@
     component:
       constraint: [ 0, + ]
       config: *config
+
+  export:
+    - string

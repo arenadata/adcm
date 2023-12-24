@@ -1,0 +1,55 @@
+:global {
+  body.theme-dark {
+    --single-select-list-item-background: transparent;
+    --single-select-list-item-color: var(--color-xgray-light);
+
+    --single-select-list-item-background-hover: var(--color-xdark-plate20);
+    --single-select-list-item-color-hover: var(--color-xwhite-off);
+
+    --single-select-list-item-color-selected: var(--color-xgreen-saturated);
+    --single-select-list-item-color-disabled: var(--color-xgray-reading);
+  }
+  body.theme-light {
+    --single-select-list-item-background: transparent;
+    --single-select-list-item-color: var(--color-xgray-light);
+
+    --single-select-list-item-background-hover: var(--color-xwhite-50);
+    --single-select-list-item-color-hover: var(--color-xdark);
+
+    --single-select-list-item-color-selected: var(--color-xgreen);
+    --single-select-list-item-color-disabled: var(--color-xgray-lighter);
+  }
+}
+
+.singleSelectList {
+  overflow: auto;
+}
+
+.singleSelectListItem {
+  padding: 7px 8px;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 18px;
+
+  border-radius: 5px;
+
+  transition: color 250ms, background-color 250ms;
+
+  background: var(--single-select-list-item-background);
+  color: var(--single-select-list-item-color);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--single-select-list-item-background-hover);
+    color: var(--single-select-list-item-color-hover);
+  }
+  &.singleSelectListItem_selected {
+    color: var(--single-select-list-item-color-selected);
+    cursor: default;
+  }
+  &.singleSelectListItem_disabled {
+    background: transparent;
+    color: var(--single-select-list-item-color-disabled);
+    cursor: not-allowed;
+  }
+}

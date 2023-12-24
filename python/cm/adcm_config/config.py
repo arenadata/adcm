@@ -19,11 +19,7 @@ from typing import Any
 
 from ansible.errors import AnsibleError
 from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
-from cm.adcm_config.checks import (
-    check_attr,
-    check_config_type,
-    check_value_unselected_field,
-)
+from cm.adcm_config.checks import check_attr, check_config_type
 from cm.adcm_config.utils import (
     config_is_ro,
     cook_file_type_name,
@@ -39,17 +35,22 @@ from cm.models import (
     ADCM,
     Action,
     ADCMEntity,
+    Cluster,
+    ClusterObject,
     ConfigLog,
     GroupConfig,
+    HostProvider,
     ObjectConfig,
     ObjectType,
     Prototype,
     PrototypeConfig,
+    ServiceComponent,
     StagePrototype,
 )
-from cm.utils import dict_to_obj, obj_to_dict
+from cm.utils import deep_merge, dict_to_obj, obj_to_dict
 from cm.variant import get_variant, process_variant
 from django.conf import settings
+from django.db.models import QuerySet
 from jinja_config import get_jinja_config
 
 
@@ -89,7 +90,7 @@ def init_object_config(proto: Prototype, obj: Any) -> ObjectConfig | None:
 
     obj_conf = ObjectConfig(current=0, previous=0)
     obj_conf.save()
-    save_obj_config(obj_conf, conf, attr, "init")
+    save_object_config(obj_conf, conf, attr, "init")
     process_file_type(obj, spec, conf)
 
     return obj_conf
@@ -224,7 +225,7 @@ def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many
         if key in inactive_groups:
             attr[key] = {"active": False}
 
-    save_obj_config(obj_conf=obj.config, conf=unflat_conf, attr=attr, desc="upgrade")
+    save_object_config(object_config=obj.config, config=unflat_conf, attr=attr, description="upgrade")
     process_file_type(obj=obj, spec=new_unflat_spec, conf=unflat_conf)
 
 
@@ -242,12 +243,123 @@ def restore_cluster_config(obj_conf, version, desc=""):
     return config_log
 
 
-def save_obj_config(obj_conf, conf, attr, desc=""):
-    config_log = ConfigLog(obj_ref=obj_conf, config=conf, attr=attr, description=desc)
-    config_log.save()
-    obj_conf.previous = obj_conf.current
-    obj_conf.current = config_log.id
-    obj_conf.save()
+def _merge_config_field(origin_config_fields: dict, group_config_fields: dict, group_keys: dict, spec: dict) -> dict:
+    for field_name, info in spec.items():
+        if info["type"] == "group" and field_name in group_keys:
+            _merge_config_field(
+                origin_config_fields=origin_config_fields[field_name],
+                group_config_fields=group_config_fields[field_name],
+                group_keys=group_keys[field_name]["fields"],
+                spec=spec[field_name]["fields"],
+            )
+        elif group_keys.get(field_name, False):
+            origin_config_fields[field_name] = group_config_fields[field_name]
+
+    return origin_config_fields
+
+
+def _merge_attr_field(origin_attr_fields: dict, group_attr_fields: dict, group_keys: dict, spec: dict) -> dict:
+    for field_name, info in spec.items():
+        if info["type"] == "group" and group_keys.get(field_name, {}).get("value", False):
+            origin_attr_fields[field_name] = group_attr_fields[field_name]
+
+    return origin_attr_fields
+
+
+def _clear_group_keys(group_keys: dict, spec: dict) -> dict:
+    correct_group_keys = {}
+
+    for field, info in spec.items():
+        if info["type"] == "group":
+            correct_group_keys[field] = {}
+            correct_group_keys[field]["value"] = group_keys[field]["value"]
+            correct_group_keys[field]["fields"] = {}
+
+            for key in info["fields"].keys():
+                correct_group_keys[field]["fields"][key] = group_keys[field]["fields"][key]
+        else:
+            correct_group_keys[field] = group_keys[field]
+
+    return correct_group_keys
+
+
+def merge_config_of_group_with_primary_config(
+    group: GroupConfig,
+    primary_config: ConfigLog,
+    current_config_of_group: ConfigLog,
+) -> ConfigLog:
+    spec = group.get_config_spec()
+    current_group_keys = current_config_of_group.attr["group_keys"]
+
+    config = _merge_config_field(
+        origin_config_fields=copy.deepcopy(primary_config.config),
+        group_config_fields=current_config_of_group.config,
+        group_keys=current_group_keys,
+        spec=spec,
+    )
+    attr = _merge_attr_field(
+        origin_attr_fields=copy.deepcopy(primary_config.attr),
+        group_attr_fields=current_config_of_group.attr,
+        group_keys=current_group_keys,
+        spec=spec,
+    )
+
+    group_keys, custom_group_keys = group.create_group_keys(config_spec=spec)
+
+    attr["group_keys"] = _clear_group_keys(
+        group_keys=deep_merge(origin=group_keys, renovator=current_group_keys), spec=spec
+    )
+    attr["custom_group_keys"] = custom_group_keys
+
+    return ConfigLog.objects.create(
+        obj_ref=group.config, config=config, attr=attr, description=current_config_of_group.description
+    )
+
+
+def update_group_configs_by_primary_object(
+    object_: Cluster | ClusterObject | ServiceComponent | HostProvider, config: ConfigLog
+) -> None:
+    for config_group in object_.group_config.order_by("id"):
+        current_group_config = ConfigLog.objects.get(id=config_group.config.current)
+
+        config_log = merge_config_of_group_with_primary_config(
+            group=config_group, primary_config=config, current_config_of_group=current_group_config
+        )
+
+        config_log.save()
+
+        config_group.config.previous = config_group.config.current
+        config_group.config.current = config_log.id
+        config_group.config.save(update_fields=["previous", "current"])
+
+        config_group.prepare_files_for_config(config=config_log.config)
+
+
+def update_group_config(group_config: GroupConfig, config: ConfigLog) -> ConfigLog:
+    primary_config = ConfigLog.objects.get(id=group_config.object.config.current)
+
+    return merge_config_of_group_with_primary_config(
+        group=group_config, primary_config=primary_config, current_config_of_group=config
+    )
+
+
+def save_object_config(object_config: ObjectConfig, config: dict, attr: dict, description: str = "") -> ConfigLog:
+    config_log = ConfigLog(obj_ref=object_config, config=config, attr=attr, description=description)
+    obj = object_config.object
+
+    if isinstance(obj, GroupConfig):
+        config_log = update_group_config(group_config=obj, config=config_log)
+        config_log.save()
+        obj.prepare_files_for_config(config=config_log.config)
+    elif isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
+        config_log.save()
+        update_group_configs_by_primary_object(object_=obj, config=config_log)
+    else:
+        config_log.save()
+
+    object_config.previous = object_config.current
+    object_config.current = config_log.id
+    object_config.save(update_fields=["previous", "current"])
 
     return config_log
 
@@ -413,11 +525,11 @@ def ui_config(obj, config_log):  # pylint: disable=too-many-locals
     return conf
 
 
-def get_action_variant(obj, config):
+def get_action_variant(obj: ADCMEntity, prototype_configs: QuerySet[PrototypeConfig] | list[PrototypeConfig]) -> None:
     if obj.config:
         config_log = ConfigLog.objects.filter(obj_ref=obj.config, id=obj.config.current).first()
         if config_log:
-            for conf in config:
+            for conf in prototype_configs:
                 if conf.type != "variant":
                     continue
 
@@ -461,26 +573,14 @@ def process_json_config(
     prototype: Prototype,
     obj: ADCMEntity | Action,
     new_config: dict,
-    current_config: dict = None,
-    new_attr=None,
-    current_attr=None,
+    new_attr: dict | None = None,
+    current_attr: dict | None = None,
 ) -> dict:
     spec, flat_spec, _, _ = get_prototype_config(prototype=prototype)
     check_attr(prototype, obj, new_attr, flat_spec, current_attr)
     group = None
 
     if isinstance(obj, GroupConfig):
-        config_spec = obj.get_config_spec()
-        group_keys = new_attr.get("group_keys", {})
-        check_value_unselected_field(
-            current_config,
-            new_config,
-            current_attr,
-            new_attr,
-            group_keys,
-            config_spec,
-            obj.object,
-        )
         group = obj
         obj = group.object
 
@@ -491,7 +591,7 @@ def process_json_config(
     return new_config
 
 
-def check_config_spec(
+def check_config_spec(  # pylint: disable=too-many-branches
     proto: Prototype,
     obj: ADCMEntity | Action,
     spec: dict,
@@ -499,70 +599,87 @@ def check_config_spec(
     conf: dict,
     attr: dict = None,
 ) -> None:
-    # pylint: disable=too-many-branches
+    if not isinstance(conf, dict):
+        # AdcmEx is left here instead of TypeError, because of existing usages
+        # and most likely existence of reliable code on exactly AdcmEx.
+        # Replace during major refactoring.
+        raise AdcmEx(code="JSON_ERROR", msg="config should be a mapping-like entity")
+
     ref = proto_ref(proto)
-    if isinstance(conf, (float, int)):
-        raise_adcm_ex(code="JSON_ERROR", msg="config should not be just one int or float")
 
-    if isinstance(conf, str):
-        raise_adcm_ex(code="JSON_ERROR", msg="config should not be just one string")
+    unknown_keys = set(conf.keys()).difference(spec.keys())
+    if unknown_keys:
+        raise AdcmEx(
+            code="CONFIG_KEY_ERROR",
+            msg=f"There is unknown keys in input config ({ref}): {', '.join(sorted(unknown_keys))}",
+        )
 
-    for key in conf:
-        if key not in spec:
-            raise_adcm_ex(code="CONFIG_KEY_ERROR", msg=f'There is unknown key "{key}" in input config ({ref})')
+    for key in spec:
+        # From discussion with colleagues: most likely type is absent for groups,
+        # because spec for their children is in their value
+        if spec[key].get("type", "group") != "group":
+            if key not in conf:
+                if key_is_required(obj=obj, key=key, subkey="", spec=spec):
+                    raise AdcmEx(
+                        code="CONFIG_KEY_ERROR", msg=f'There is no required key "{key}" in input config ({ref})'
+                    )
 
-        if "type" in spec[key] and spec[key]["type"] != "group":
-            if isinstance(conf[key], dict) and spec[key]["type"] not in settings.STACK_COMPLEX_FIELD_TYPES:
-                raise_adcm_ex(
+                continue
+
+            config_value = conf[key]
+            if isinstance(config_value, dict) and spec[key]["type"] not in settings.STACK_COMPLEX_FIELD_TYPES:
+                raise AdcmEx(
                     code="CONFIG_KEY_ERROR",
                     msg=f'Key "{key}" in input config should not have any subkeys ({ref})',
                 )
 
-    for key in spec:
-        if "type" in spec[key] and spec[key]["type"] != "group":
-            if key in conf:
-                check_config_type(prototype=proto, key=key, subkey="", spec=spec[key], value=conf[key])
-            elif key_is_required(obj=obj, key=key, subkey="", spec=spec):
-                raise_adcm_ex(code="CONFIG_KEY_ERROR", msg=f'There is no required key "{key}" in input config ({ref})')
+            check_config_type(prototype=proto, key=key, subkey="", spec=spec[key], value=config_value)
 
-        else:
-            if key not in conf:
-                if sub_key_is_required(key=key, attr=attr, flat_spec=flat_spec, spec=spec, obj=obj):
-                    raise_adcm_ex(code="CONFIG_KEY_ERROR", msg=f'There are no required key "{key}" in input config')
+            continue
 
-            else:
-                if not isinstance(conf[key], dict):
-                    raise_adcm_ex(code="CONFIG_KEY_ERROR", msg=f'There are not any subkeys for key "{key}" ({ref})')
+        # Processing group
+        if key not in conf:
+            if sub_key_is_required(key=key, attr=attr, flat_spec=flat_spec, spec=spec, obj=obj):
+                raise AdcmEx(code="CONFIG_KEY_ERROR", msg=f'There is no required key "{key}" in input config')
 
-                if not conf[key]:
-                    raise_adcm_ex(
+            continue
+
+        config_value = conf[key]
+        if not isinstance(config_value, dict):
+            raise AdcmEx(code="CONFIG_KEY_ERROR", msg=f'There are not any subkeys for key "{key}" ({ref})')
+
+        if not config_value:
+            raise AdcmEx(
+                code="CONFIG_KEY_ERROR",
+                msg=f'Key "{key}" should contain subkeys ({ref}): {list(spec[key].keys())}',
+            )
+
+        for subkey in config_value:
+            if subkey not in spec[key]:
+                raise AdcmEx(
+                    code="CONFIG_KEY_ERROR",
+                    msg=f'There is unknown subkey "{subkey}" for key "{key}" in input config ({ref})',
+                )
+
+        for subkey in spec[key]:
+            if subkey not in config_value:
+                if key_is_required(obj=obj, key=key, subkey=subkey, spec=spec):
+                    raise AdcmEx(
                         code="CONFIG_KEY_ERROR",
-                        msg=f'Key "{key}" should contains some subkeys ({ref}): {list(spec[key].keys())}',
+                        msg=f'There is no required subkey "{subkey}" for key "{key}" ({ref})',
                     )
 
-                for subkey in conf[key]:
-                    if subkey not in spec[key]:
-                        raise_adcm_ex(
-                            code="CONFIG_KEY_ERROR",
-                            msg=f'There is unknown subkey "{subkey}" for key "{key}" in input config ({ref})',
-                        )
+                continue
 
-                for subkey in spec[key]:
-                    if subkey in conf[key]:
-                        check_config_type(
-                            prototype=proto,
-                            key=key,
-                            subkey=subkey,
-                            spec=spec[key][subkey],
-                            value=conf[key][subkey],
-                            default=False,
-                            inactive=is_inactive(key, attr, flat_spec),
-                        )
-                    elif key_is_required(obj=obj, key=key, subkey=subkey, spec=spec):
-                        raise_adcm_ex(
-                            code="CONFIG_KEY_ERROR",
-                            msg=f'There is no required subkey "{subkey}" for key "{key}" ({ref})',
-                        )
+            check_config_type(
+                prototype=proto,
+                key=key,
+                subkey=subkey,
+                spec=spec[key][subkey],
+                value=config_value[subkey],
+                default=False,
+                inactive=is_inactive(key, attr, flat_spec),
+            )
 
 
 def _process_secretfile(obj: ADCMEntity, key: str, subkey: str, value: Any) -> None:
@@ -625,10 +742,7 @@ def _process_secretmap(conf: dict, key: str, subkey: str) -> None:
                 conf[key][secretmap_key] = ansible_encrypt_and_format(msg=secretmap_value)
 
 
-def process_config_spec(obj: ADCMEntity, spec: dict, new_config: dict, current_config: dict = None) -> dict:
-    if current_config:
-        new_config = restore_read_only(obj=obj, spec=spec, conf=new_config, old_conf=current_config)
-
+def process_config_spec(obj: ADCMEntity, spec: dict, new_config: dict) -> dict:
     for cfg_key, cfg_value in new_config.items():
         spec_type = spec[cfg_key].get("type")
 
@@ -747,16 +861,20 @@ def get_default(  # pylint: disable=too-many-branches
 
 
 def get_main_info(obj: ADCMEntity | None) -> str | None:
-    if obj.config is None:
+    if obj is None or obj.config is None:
         return None
 
     config_log = ConfigLog.objects.filter(id=obj.config.current).first()
-    if config_log:
-        _, spec, _, _ = get_prototype_config(obj.prototype)
+    if not config_log:
+        return None
 
-        if "__main_info" in config_log.config:
-            return config_log.config["__main_info"]
-        elif "__main_info/" in spec:
-            return get_default(spec["__main_info/"], obj.prototype)
+    if "__main_info" in config_log.config:
+        return config_log.config["__main_info"]
 
-    return None
+    main_info = PrototypeConfig.objects.filter(
+        prototype=obj.prototype, action=None, name="__main_info", subname=""
+    ).first()
+    if not main_info:
+        return None
+
+    return get_default(main_info, obj.prototype)

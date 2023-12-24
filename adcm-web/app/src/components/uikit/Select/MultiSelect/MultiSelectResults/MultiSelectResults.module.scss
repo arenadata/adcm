@@ -1,0 +1,16 @@
+.multiSelectResults {
+  margin-top: 12px;
+
+  &__tag {
+    padding-left: 12px;
+
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  &__tagContent {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+}

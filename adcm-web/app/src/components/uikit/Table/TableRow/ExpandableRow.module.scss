@@ -1,0 +1,42 @@
+:global {
+  body.theme-dark {
+    --table-expandable-row-background: var(--color-xdark-new-full);
+    --table-expandable-row-content-background: #18161a;
+
+    --table-expandable-row-inactive-color: var(--color-xgray-lighter);
+  }
+  body.theme-light {
+    --table-expandable-row-background: var(--color-xgray-alt);
+    --table-expandable-row-content-background: #f7f9fa;
+
+    --table-expandable-row-inactive-color: var(--color-xgray-darker);
+  }
+}
+
+tr.expandableRowMain {
+  &.expanded {
+    background: var(--table-expandable-row-background);
+    border-bottom: 0 !important;
+
+    &.expandableRowMain_inactive > td {
+      color: var(--table-expandable-row-inactive-color);
+    }
+  }
+
+  td {
+    border-bottom: 0;
+  }
+}
+
+tr.expandableRowContent > td {
+  height: auto;
+  padding-top: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+  border-top: 0;
+  background: var(--table-expandable-row-content-background);
+}
+
+.expandableRowContent_wrapper {
+  margin: 0 20px 12px;
+}

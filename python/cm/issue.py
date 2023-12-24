@@ -9,7 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from functools import partial
+from typing import Iterable
 
+from api_v2.concern.serializers import ConcernSerializer
 from cm.adcm_config.config import get_prototype_config
 from cm.adcm_config.utils import proto_ref
 from cm.errors import AdcmEx
@@ -27,14 +30,19 @@ from cm.models import (
     ConfigLog,
     Host,
     HostComponent,
+    JobLog,
     KnownNames,
     MessageTemplate,
     ObjectType,
     Prototype,
     PrototypeImport,
     ServiceComponent,
+    TaskLog,
 )
+from cm.status_api import send_concern_creation_event, send_concern_delete_event
 from cm.utils import obj_ref
+from django.db.transaction import on_commit
+from djangorestframework_camel_case.util import camelize
 
 
 def check_config(obj: ADCMEntity) -> bool:  # pylint: disable=too-many-branches
@@ -198,7 +206,7 @@ def check_hc_requires(shc_list: list[tuple[ClusterObject, Host, ServiceComponent
 
             if not ClusterObject.objects.filter(prototype__name=require["service"]).exists() and not req_comp:
                 raise AdcmEx(
-                    code="COMPONENT_CONSTRAINT_ERROR", msg=f"No required service {require['service']} for {ref}"
+                    code="COMPONENT_CONSTRAINT_ERROR", msg=f"No required service \"{require['service']}\" for {ref}"
                 )
 
             if not req_comp:
@@ -218,17 +226,23 @@ def check_hc_requires(shc_list: list[tuple[ClusterObject, Host, ServiceComponent
 
 def check_bound_components(shc_list: list[tuple[ClusterObject, Host, ServiceComponent]]) -> None:
     for shc in [i for i in shc_list if i[2].prototype.bound_to]:
-        component = shc[2].prototype
-        service = component.bound_to["service"]
-        comp_name = component.bound_to["component"]
-        ref = f'component "{comp_name}" of service "{service}"'
-        bound_hc = [i for i in shc_list if i[0].prototype.name == service and i[2].prototype.name == comp_name]
-        if not bound_hc:
-            msg = f'bound service "{service}", component "{comp_name}" not in hc for {ref}'
+        component_prototype = shc[2].prototype
+        service_name = component_prototype.bound_to["service"]
+        component_name = component_prototype.bound_to["component"]
+
+        bound_target_ref = f'component "{component_name}" of service "{service_name}"'
+        bound_requester_ref = f'component "{shc[2].display_name}" of service "{shc[0].display_name}"'
+
+        bound_targets_shc = [
+            i for i in shc_list if i[0].prototype.name == service_name and i[2].prototype.name == component_name
+        ]
+        if not bound_targets_shc:
+            msg = f"{bound_target_ref.capitalize()} not in hc for {bound_requester_ref}"
             raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=msg)
-        for shc in bound_hc:
-            if not [i for i in shc_list if i[1] == shc[1] and i[2].prototype == component]:
-                msg = f'No bound component "{component.name}" on host "{shc[1].fqdn}" for {ref}'
+
+        for target_shc in bound_targets_shc:
+            if not [i for i in shc_list if i[1] == target_shc[1] and i[2].prototype == component_prototype]:
+                msg = f'No {bound_target_ref} on host "{shc[1].fqdn}" for {bound_requester_ref}'
                 raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=msg)
 
 
@@ -248,7 +262,7 @@ def check_min_required_components(count: int, constraint: int, comp: ServiceComp
     if count < constraint:
         raise AdcmEx(
             code="COMPONENT_CONSTRAINT_ERROR",
-            msg=f'less then {constraint} required component "{comp.name}" ({count}) {ref}',
+            msg=f'Less then {constraint} required component "{comp.name}" ({count}) {ref}',
         )
 
 
@@ -256,7 +270,7 @@ def check_max_required_components(count: int, constraint: int, comp: ServiceComp
     if count > constraint:
         raise AdcmEx(
             code="COMPONENT_CONSTRAINT_ERROR",
-            msg=f'amount ({count}) of component "{comp.name}" more then maximum ({constraint}) {ref}',
+            msg=f'Amount ({count}) of component "{comp.name}" more then maximum ({constraint}) {ref}',
         )
 
 
@@ -264,7 +278,7 @@ def check_components_number_is_odd(count: int, constraint: str, comp: ServiceCom
     if count % 2 == 0:
         raise AdcmEx(
             code="COMPONENT_CONSTRAINT_ERROR",
-            msg=f'amount ({count}) of component "{comp.name}" should be odd ({constraint}) {ref}',
+            msg=f'Amount ({count}) of component "{comp.name}" should be odd ({constraint}) {ref}',
         )
 
 
@@ -272,7 +286,7 @@ def check_components_mapping_contraints(
     cluster: Cluster, service_prototype: Prototype, comp: ServiceComponent, hc_in: list, constraint: list
 ) -> None:
     all_hosts_number = Host.objects.filter(cluster=cluster).count()
-    ref = f"in host component list for {service_prototype.type} {service_prototype.name}"
+    ref = f'in host component list for {service_prototype.type} "{service_prototype.name}"'
     count = 0
     for _, _, component in hc_in:
         if comp.name == component.prototype.name:
@@ -291,7 +305,8 @@ def check_components_mapping_contraints(
 
     if constraint[0] == "+":
         check_min_required_components(count=count, constraint=all_hosts_number, comp=comp, ref=ref)
-    elif constraint[0] == "odd":
+    elif constraint[0] == "odd":  # synonym to [1,odd]
+        check_min_required_components(count=count, constraint=1, comp=comp, ref=ref)
         check_components_number_is_odd(count=count, constraint=constraint[0], comp=comp, ref=ref)
 
 
@@ -332,7 +347,7 @@ _issue_check_map = {
     ConcernCause.REQUIREMENT: check_requires,
 }
 _prototype_issue_map = {
-    ObjectType.ADCM: (),
+    ObjectType.ADCM: (ConcernCause.CONFIG,),
     ObjectType.CLUSTER: (
         ConcernCause.CONFIG,
         ConcernCause.IMPORT,
@@ -401,15 +416,19 @@ def _create_concern_item(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernI
 def create_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
     """Create newly discovered issue and add it to linked objects concerns"""
     issue = obj.get_own_issue(cause=issue_cause)
+
     if issue is None:
         issue = _create_concern_item(obj=obj, issue_cause=issue_cause)
+
     if issue.name != _gen_issue_name(obj=obj, cause=issue_cause):
         issue.delete()
         issue = _create_concern_item(obj=obj, issue_cause=issue_cause)
+
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(node=tree.built_from)
+
     for node in affected_nodes:
-        node.value.add_to_concerns(item=issue)
+        add_concern_to_object(object_=node.value, concern=issue)
 
 
 def remove_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
@@ -450,4 +469,65 @@ def update_issue_after_deleting() -> None:
             logger.info("Deleted %s", concern_str)
         elif related != affected:
             for object_moved_out_hierarchy in related.difference(affected):
-                object_moved_out_hierarchy.remove_from_concerns(item=concern)
+                remove_concern_from_object(object_=object_moved_out_hierarchy, concern=concern)
+
+
+def add_concern_to_object(object_: ADCMEntity, concern: ConcernItem | None) -> None:
+    if not concern or getattr(concern, "id", None) is None:
+        return
+
+    if object_.concerns.filter(id=concern.id).exists():
+        return
+
+    object_.concerns.add(concern)
+
+    concern_data = camelize(data=ConcernSerializer(instance=concern).data)
+    on_commit(func=partial(send_concern_creation_event, object_=object_, concern=concern_data))
+
+
+def remove_concern_from_object(object_: ADCMEntity, concern: ConcernItem | None) -> None:
+    if not concern or not hasattr(concern, "id"):
+        return
+
+    concern_id = concern.id
+
+    if not object_.concerns.filter(id=concern_id).exists():
+        return
+
+    object_.concerns.remove(concern)
+    on_commit(
+        func=partial(
+            send_concern_delete_event, object_id=object_.pk, object_type=object_.prototype.type, concern_id=concern_id
+        )
+    )
+
+
+def lock_affected_objects(task: TaskLog, objects: Iterable[ADCMEntity]) -> None:
+    if task.lock:
+        return
+
+    first_job = JobLog.obj.filter(task=task).order_by("id").first()
+    task.lock = ConcernItem.objects.create(
+        type=ConcernType.LOCK.value,
+        name=None,
+        reason=first_job.cook_reason(),
+        blocking=True,
+        owner=task.task_object,
+        cause=ConcernCause.JOB.value,
+    )
+    task.save()
+
+    for obj in objects:
+        add_concern_to_object(object_=obj, concern=task.lock)
+
+
+def unlock_affected_objects(task: TaskLog) -> None:
+    task.refresh_from_db()
+
+    if not task.lock:
+        return
+
+    lock = task.lock
+    task.lock = None
+    task.save(update_fields=["lock"])
+    lock.delete()

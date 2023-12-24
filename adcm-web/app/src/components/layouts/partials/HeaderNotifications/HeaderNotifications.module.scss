@@ -1,0 +1,91 @@
+:global {
+  body.theme-dark {
+    --bell-popover-panel-background-color: #212121;
+    --bell-popover-panel-border-color: var(--color-xdark);
+    --bell-popover-panel-content-background-color: var(--color-xdark-new-50);
+
+    --bell-active-color: var(--color-xgreen-saturated);
+    --bell-hover-color: var(--color-xwhite-off);
+  }
+
+  body.theme-light {
+    --bell-popover-panel-background-color: var(--color-popup-light);
+    --bell-popover-panel-border-color: var(--color-stroke-light);
+    --bell-popover-panel-content-background-color: var(--color-xwhite-50);
+
+    --bell-active-color: var(--color-xgreen);
+    --bell-hover-color: var(--color-xdark);
+  }
+}
+
+.headerNotifications {
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  color: var(--color-xgray-light);
+
+  &:hover {
+    color: var(--bell-hover-color);
+  }
+
+  &:active {
+    color: var(--bell-active-color);
+  }
+
+  :global(.bell__marker) {
+    color: var(--bell-marker-color, transparent);
+  }
+
+  :global(.bell__holePatch) {
+    color: var(--bell-hole-patch, currentColor);
+  }
+
+  &_done {
+    --bell-marker-color: transparent;
+  }
+
+  &_failed {
+    --bell-marker-color: var(--color-xred);
+
+    &:active {
+      color: var(--color-xred);
+    }
+  }
+
+  &_success {
+    --bell-hole-patch: transparent;
+    --bell-marker-color: var(--icon-button-color-active-primary);
+  }
+
+  &_locked {
+    --bell-marker-color: var(--color-xgray-light);
+  }
+
+  &_running {
+    --bell-marker-color: var(--color-xblue);
+  }
+
+  &_aborted {
+    --bell-marker-color: var(--color-xgray-light);
+  }
+}
+
+.bellPopoverPanel {
+  width: 315px;
+  min-height: 20px;
+  border-radius: 15px;
+  border: 1px solid var(--bell-popover-panel-border-color);
+  background-color: var(--bell-popover-panel-background-color);
+  padding: 16px;
+  position: relative;
+  z-index: 100;
+
+  &__spinner {
+    text-align: center;
+  }
+}
+
+.acknowledgeButton {
+  color: var(--color-xblue);
+}

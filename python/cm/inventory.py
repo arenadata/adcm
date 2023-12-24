@@ -12,6 +12,7 @@
 
 import json
 from itertools import chain
+from typing import Iterable
 
 from cm.adcm_config.config import get_prototype_config, process_config
 from cm.logger import logger
@@ -30,6 +31,7 @@ from cm.models import (
     MaintenanceMode,
     ObjectType,
     Prototype,
+    PrototypeConfig,
     PrototypeExport,
     PrototypeImport,
     ServiceComponent,
@@ -48,21 +50,28 @@ class HcAclAction:
 MAINTENANCE_MODE = "maintenance_mode"
 
 
-def process_map(flat_spec: dict, config: dict) -> None:
-    for prototype_config in flat_spec.values():
+def fix_fields_for_inventory(prototype_configs: Iterable[PrototypeConfig], config: dict) -> None:
+    """
+    This function is designed to convert fields of map and list types for inventory
+    """
+    for prototype_config in prototype_configs:
+        if prototype_config.type not in {"map", "list"}:
+            continue
+
+        name = prototype_config.name
+        sub_name = prototype_config.subname
+
         if prototype_config.type == "map":
-            name = prototype_config.name
-            sub_name = prototype_config.subname
+            fix_value = {}
+        else:
+            fix_value = []
 
-            if name not in config and not prototype_config.required:
-                continue
-
-            if sub_name:
-                if config[name][sub_name] is None:
-                    config[name][sub_name] = {}
-            else:
-                if config[name] is None:
-                    config[name] = {}
+        if sub_name and name in config and sub_name in config[name]:
+            if config[name][sub_name] is None:
+                config[name][sub_name] = fix_value
+        else:
+            if name in config and config[name] is None:
+                config[name] = fix_value
 
 
 def process_config_and_attr(
@@ -81,7 +90,7 @@ def process_config_and_attr(
         spec, flat_spec, _, _ = get_prototype_config(prototype=prototype)
 
     new_config = process_config(obj=obj, spec=spec, old_conf=conf)
-    process_map(flat_spec=flat_spec, config=new_config)
+    fix_fields_for_inventory(prototype_configs=flat_spec.values(), config=new_config)
 
     if attr:
         for key, value in attr.items():
@@ -529,14 +538,11 @@ def prepare_job_inventory(
         delta = {}
 
     logger.info("prepare inventory for job #%s, object: %s", job_id, obj)
-    # pylint: disable=consider-using-with
-    file_descriptor = open(
+
+    with open(
         file=settings.RUN_DIR / f"{job_id}/inventory.json",
         mode="w",
         encoding=settings.ENCODING_UTF_8,
-    )
-
-    inventory_data = get_inventory_data(obj=obj, action=action, action_host=action_host, delta=delta)
-
-    json.dump(obj=inventory_data, fp=file_descriptor, indent=3)
-    file_descriptor.close()
+    ) as file_descriptor:
+        inventory_data = get_inventory_data(obj=obj, action=action, action_host=action_host, delta=delta)
+        json.dump(obj=inventory_data, fp=file_descriptor, separators=(",", ":"))

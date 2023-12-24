@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Configuration",
+  "description": "",
+  "readOnly": false,
+  "adcmMeta": {
+    "isAdvanced": false,
+    "isInvisible": false,
+    "activation": null,
+    "synchronization": null,
+    "nullValue": null,
+    "isSecret": false,
+    "stringExtra": null,
+    "enumExtra": null
+  },
+  "type": "object",
+  "properties": {
+    "boolean": {
+      "title": "boolean",
+      "type": "boolean",
+      "description": "",
+      "default": true,
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": {
+          "isAllowChange": true
+        },
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      }
+    },
+    "group": {
+      "title": "group",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "float": {
+          "oneOf": [
+            {
+              "title": "float",
+              "type": "number",
+              "description": "",
+              "default": 0.1,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": {
+                  "isAllowChange": true
+                },
+                "isSecret": false,
+                "stringExtra": null,
+                "enumExtra": null
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "float"
+      ]
+    },
+    "variant_not_strict": {
+      "oneOf": [
+        {
+          "title": "variant_not_strict",
+          "type": "string",
+          "description": "",
+          "default": "value1",
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": {
+              "isAllowChange": true
+            },
+            "isSecret": false,
+            "stringExtra": {
+              "isMultiline": false,
+              "suggestions": [
+                "value1",
+                "value2",
+                "value3"
+              ]
+            },
+            "enumExtra": null
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "list": {
+      "oneOf": [
+        {
+          "title": "list",
+          "type": "array",
+          "description": "",
+          "default": [
+            "value1",
+            "value2",
+            "value3"
+          ],
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": false,
+            "isInvisible": false,
+            "activation": null,
+            "synchronization": {
+              "isAllowChange": true
+            },
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          },
+          "items": {
+            "type": "string",
+            "title": "",
+            "description": "",
+            "default": null,
+            "readOnly": false,
+            "adcmMeta": {
+              "isAdvanced": false,
+              "isInvisible": false,
+              "activation": null,
+              "synchronization": null,
+              "nullValue": null,
+              "isSecret": false,
+              "stringExtra": null,
+              "enumExtra": null
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "activatable_group": {
+      "title": "activatable_group",
+      "type": "object",
+      "description": "",
+      "default": {},
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": {
+          "isAllowChange": true
+        },
+        "synchronization": {
+          "isAllowChange": true
+        },
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "additionalProperties": false,
+      "properties": {
+        "integer": {
+          "oneOf": [
+            {
+              "title": "integer",
+              "type": "integer",
+              "description": "",
+              "default": 10,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": {
+                  "isAllowChange": true
+                },
+                "isSecret": false,
+                "stringExtra": null,
+                "enumExtra": null
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "integer"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "boolean",
+    "group",
+    "variant_not_strict",
+    "list",
+    "activatable_group"
+  ]
+}
