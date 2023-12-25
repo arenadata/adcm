@@ -144,7 +144,7 @@ ERRORS = {
     "ISSUE_INTEGRITY_ERROR": ("Issue object integrity error", HTTP_409_CONFLICT, ERR),
     "GROUP_CONFIG_HOST_ERROR": (
         "host is not available for this object, or host already is a member of another group of this object",
-        HTTP_400_BAD_REQUEST,
+        HTTP_409_CONFLICT,
     ),
     "GROUP_CONFIG_HOST_EXISTS": (
         "the host is already a member of this group ",
