@@ -55,9 +55,10 @@ export const useClusterMapping = () => {
     [isLoaded, componentsMapping],
   );
 
-  const servicesMappingDictionary = useMemo(() => {
-    return Object.fromEntries(servicesMapping.map((item) => [item.service.prototype.id, item]));
-  }, [servicesMapping]);
+  const servicesMappingDictionary = useMemo(
+    () => arrayToHash(servicesMapping, (sm) => sm.service.prototype.id),
+    [servicesMapping],
+  );
 
   const mappingValidation = useMemo(() => {
     return validate(componentsMapping, {

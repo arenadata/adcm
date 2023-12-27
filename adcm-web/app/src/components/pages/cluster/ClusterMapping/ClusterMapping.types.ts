@@ -12,10 +12,12 @@ export type ValidationResult = ValidationError | ValidationSuccess;
 export type HostId = AdcmHostShortView['id'];
 export type ComponentId = AdcmMappingComponent['id'];
 export type ServiceId = AdcmMappingComponentService['id'];
+export type ServicePrototypeId = AdcmServicePrototype['id'];
 
 export type HostsDictionary = Record<HostId, AdcmHostShortView>;
 export type ComponentHostsDictionary = Record<ComponentId, AdcmHostShortView[]>;
 export type ComponentsDictionary = Record<ComponentId, AdcmMappingComponent>;
+export type ServicesDictionary = Record<ServiceId, AdcmServicePrototype>;
 
 export type HostMappingFilter = {
   componentDisplayName: string;
@@ -61,12 +63,12 @@ export type ComponentValidateResult = {
 };
 
 export type ValidateCache = {
-  componentsCache: Map<number, ComponentValidateResult>;
-  servicesCache: Map<AdcmServicePrototype['id'], boolean>;
+  componentsCache: Map<ComponentId, ComponentValidateResult>;
+  servicesCache: Map<ServicePrototypeId, boolean>;
 };
 
 export type ValidateRelatedData = {
-  servicesMappingDictionary: Record<AdcmServicePrototype['id'], ServiceMapping>;
-  notAddedServicesDictionary: Record<ServiceId, AdcmServicePrototype>;
+  servicesMappingDictionary: Record<ServicePrototypeId, ServiceMapping>;
+  notAddedServicesDictionary: ServicesDictionary;
   allHostsCount: number;
 };

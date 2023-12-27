@@ -200,5 +200,6 @@ export {
   getNotAddedServices,
   openRequiredServicesDialog,
   closeRequiredServicesDialog,
+  loadMappingComponents,
 };
 export default mappingSlice.reducer;

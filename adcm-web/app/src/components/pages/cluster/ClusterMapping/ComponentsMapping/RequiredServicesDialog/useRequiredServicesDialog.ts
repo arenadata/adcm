@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   closeRequiredServicesDialog,
-  getMappings,
+  loadMappingComponents,
   getNotAddedServices,
 } from '@store/adcm/cluster/mapping/mappingSlice';
 import { useDispatch, useForm, useStore } from '@hooks';
@@ -68,7 +68,7 @@ export const useRequiredServicesDialog = () => {
       )
         .unwrap()
         .then(() => {
-          dispatch(getMappings({ clusterId }));
+          dispatch(loadMappingComponents({ clusterId }));
           dispatch(getNotAddedServices({ clusterId }));
         });
     }

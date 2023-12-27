@@ -1,134 +1,248 @@
-import { AdcmHostShortView, AdcmMappingComponent, AdcmMaintenanceMode, AdcmMapping } from '@models/adcm';
-import { HostMapping, ServiceMapping } from './ClusterMapping.types';
-import { getComponentsMapping, getHostsMapping, getServicesMapping, mapHostsToComponent } from './ClusterMapping.utils';
+/* eslint-disable spellcheck/spell-checker */
+import {
+  AdcmMappingComponent,
+  AdcmMaintenanceMode,
+  AdcmMapping,
+  AdcmLicenseStatus,
+  AdcmPrototypeType,
+} from '@models/adcm';
+import { HostMapping, ServiceMapping, ValidateRelatedData } from './ClusterMapping.types';
+import {
+  getComponentsMapping,
+  getHostsMapping,
+  getServicesMapping,
+  mapHostsToComponent,
+  getConstraintsLimit,
+  validate,
+} from './ClusterMapping.utils';
 import { arrayToHash } from '@utils/arrayUtils';
 import { validateConstraints } from './ClusterMapping.utils';
 
-const emptyMapping: AdcmMapping[] = [];
-
-const mapping: AdcmMapping[] = [
-  { hostId: 1, componentId: 1 },
-  { hostId: 1, componentId: 2 },
-  { hostId: 3, componentId: 3 },
-];
-
-const services = [
-  {
+const servicesDictionaryByName = {
+  HBase: {
     id: 1,
-    name: 'service 1',
-    displayName: 'Service 1',
-    state: 'create',
+    name: 'hbase',
+    displayName: 'HBase',
+    state: 'created',
     prototype: {
-      id: 1,
-      name: 'service 1',
-      displayName: 'Service 1',
-      version: '0.1',
+      id: 6,
+      name: 'hbase',
+      displayName: 'HBase',
+      version: '2.2.7',
     },
   },
-  {
+  Zookeeper: {
     id: 2,
-    name: 'service 2',
-    displayName: 'Service 2',
-    state: 'create',
+    name: 'zookeeper',
+    displayName: 'Zookeeper',
+    state: 'created',
     prototype: {
-      id: 2,
-      name: 'service 2',
-      displayName: 'Service 2',
-      version: '0.2',
+      id: 19,
+      name: 'zookeeper',
+      displayName: 'Zookeeper',
+      version: '3.5.10',
     },
   },
-];
+};
 
-const hosts: AdcmHostShortView[] = [
-  {
+const candidateServicesDictionaryByName = {
+  HDFS: {
+    id: 7,
+    name: 'hdfs',
+    displayName: 'HDFS',
+    version: '3.1.2',
+    isRequired: false,
+    dependOn: null,
+    type: 'service' as AdcmPrototypeType.Service,
+    license: {
+      status: 'absent' as AdcmLicenseStatus,
+      text: null,
+    },
+  },
+};
+
+const hostsDictionaryByName = {
+  host1: {
     id: 1,
-    name: 'h1',
+    name: 'host 1',
     isMaintenanceModeAvailable: false,
     maintenanceMode: AdcmMaintenanceMode.Off,
   },
-  {
+  host2: {
     id: 2,
-    name: 'h2',
+    name: 'host 2',
     isMaintenanceModeAvailable: false,
     maintenanceMode: AdcmMaintenanceMode.Off,
   },
-  {
+  host3: {
     id: 3,
-    name: 'h3',
+    name: 'host 3',
     isMaintenanceModeAvailable: false,
     maintenanceMode: AdcmMaintenanceMode.Off,
   },
-];
+};
+
+const hosts = [hostsDictionaryByName.host1, hostsDictionaryByName.host2, hostsDictionaryByName.host3];
+
+const componentsDictionaryByName = {
+  hBaseClient: {
+    id: 1,
+    name: 'client',
+    displayName: 'HBase Client',
+    isMaintenanceModeAvailable: true,
+    maintenanceMode: 'off' as AdcmMaintenanceMode,
+    constraints: [0, '+'],
+    prototype: {
+      id: 32,
+      name: 'client',
+      displayName: 'HBase Client',
+      version: '2.2.7',
+    },
+    dependOn: [
+      {
+        servicePrototype: {
+          id: 19,
+          name: 'zookeeper',
+          displayName: 'Zookeeper',
+          version: '3.5.10',
+          license: {
+            status: 'absent' as AdcmLicenseStatus,
+            text: null,
+          },
+          componentPrototypes: [
+            {
+              id: 73,
+              name: 'SERVER',
+              displayName: 'Zookeeper Server',
+              version: '3.5.10',
+            },
+          ],
+        },
+      },
+      {
+        servicePrototype: {
+          id: 7,
+          name: 'hdfs',
+          displayName: 'HDFS',
+          version: '3.1.2',
+          license: {
+            status: 'absent' as AdcmLicenseStatus,
+            text: null,
+          },
+          componentPrototypes: [
+            {
+              id: 39,
+              name: 'namenode',
+              displayName: 'HDFS NameNode',
+              version: '3.1.2',
+            },
+          ],
+        },
+      },
+    ],
+    service: servicesDictionaryByName.HBase,
+  },
+  hBaseMaster: {
+    id: 2,
+    name: 'master',
+    displayName: 'HBase Master Server',
+    isMaintenanceModeAvailable: true,
+    maintenanceMode: 'off' as AdcmMaintenanceMode,
+    constraints: [1, '+'],
+    prototype: {
+      id: 33,
+      name: 'master',
+      displayName: 'HBase Master Server',
+      version: '2.2.7',
+    },
+    dependOn: [
+      {
+        servicePrototype: {
+          id: 19,
+          name: 'zookeeper',
+          displayName: 'Zookeeper',
+          version: '3.5.10',
+          license: {
+            status: 'absent' as AdcmLicenseStatus,
+            text: null,
+          },
+          componentPrototypes: [
+            {
+              id: 73,
+              name: 'SERVER',
+              displayName: 'Zookeeper Server',
+              version: '3.5.10',
+            },
+          ],
+        },
+      },
+      {
+        servicePrototype: {
+          id: 7,
+          name: 'hdfs',
+          displayName: 'HDFS',
+          version: '3.1.2',
+          license: {
+            status: 'absent' as AdcmLicenseStatus,
+            text: null,
+          },
+          componentPrototypes: [
+            {
+              id: 39,
+              name: 'namenode',
+              displayName: 'HDFS NameNode',
+              version: '3.1.2',
+            },
+          ],
+        },
+      },
+    ],
+    service: servicesDictionaryByName.HBase,
+  },
+  zookeeperServer: {
+    id: 7,
+    name: 'SERVER',
+    displayName: 'Zookeeper Server',
+    isMaintenanceModeAvailable: true,
+    maintenanceMode: 'off' as AdcmMaintenanceMode,
+    constraints: ['odd'],
+    prototype: {
+      id: 73,
+      name: 'SERVER',
+      displayName: 'Zookeeper Server',
+      version: '3.5.10',
+    },
+    dependOn: null,
+    service: servicesDictionaryByName.Zookeeper,
+  },
+};
 
 const components: AdcmMappingComponent[] = [
-  {
-    id: 1,
-    name: 'component 1',
-    displayName: 'Component 1',
-    isMaintenanceModeAvailable: false,
-    maintenanceMode: AdcmMaintenanceMode.Off,
-    constraints: [0, 1],
-    dependOn: null,
-    service: services[0],
-    prototype: {
-      id: 1,
-      name: 'component 1',
-      displayName: 'Component 1',
-      version: '0.11',
-    },
-  },
-  {
-    id: 2,
-    name: 'component 2',
-    displayName: 'Component 2',
-    isMaintenanceModeAvailable: false,
-    maintenanceMode: AdcmMaintenanceMode.Off,
-    constraints: [0, 1],
-    dependOn: null,
-    service: services[0],
-    prototype: {
-      id: 2,
-      name: 'component 2',
-      displayName: 'Component 2',
-      version: '0.11',
-    },
-  },
-  {
-    id: 3,
-    name: 'service 3',
-    displayName: 'Service 3',
-    isMaintenanceModeAvailable: false,
-    maintenanceMode: AdcmMaintenanceMode.Off,
-    constraints: [0, 1],
-    dependOn: null,
-    service: services[1],
-    prototype: {
-      id: 3,
-      name: 'component 3',
-      displayName: 'Component 3',
-      version: '0.11',
-    },
-  },
+  componentsDictionaryByName.hBaseClient,
+  componentsDictionaryByName.hBaseMaster,
+  componentsDictionaryByName.zookeeperServer,
 ];
+const emptyMapping: AdcmMapping[] = [];
 
 const componentsDictionary = arrayToHash(components, (c) => c.id);
 const hostsDictionary = arrayToHash(hosts, (h) => h.id);
 
 describe('Cluster mapping utils', () => {
   test('test getHostsMapping empty mapping', () => {
-    const hostsMapping = getHostsMapping(emptyMapping, hosts, componentsDictionary);
+    const mapping: AdcmMapping[] = [];
+    const hostsMapping = getHostsMapping(mapping, hosts, componentsDictionary);
 
     const expected: HostMapping[] = [
       {
-        host: hosts[0],
+        host: hostsDictionaryByName.host1,
         components: [],
       },
       {
-        host: hosts[1],
+        host: hostsDictionaryByName.host2,
         components: [],
       },
       {
-        host: hosts[2],
+        host: hostsDictionaryByName.host3,
         components: [],
       },
     ];
@@ -137,20 +251,26 @@ describe('Cluster mapping utils', () => {
   });
 
   test('test getHostsMapping', () => {
+    const mapping: AdcmMapping[] = [
+      { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseClient.id },
+      { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseMaster.id },
+      { hostId: hostsDictionaryByName.host3.id, componentId: componentsDictionaryByName.zookeeperServer.id },
+    ];
+
     const hostsMapping = getHostsMapping(mapping, hosts, componentsDictionary);
 
     const expected: HostMapping[] = [
       {
-        host: hosts[0],
-        components: [components[0], components[1]],
+        host: hostsDictionaryByName.host1,
+        components: [componentsDictionaryByName.hBaseClient, componentsDictionaryByName.hBaseMaster],
       },
       {
-        host: hosts[1],
+        host: hostsDictionaryByName.host2,
         components: [],
       },
       {
-        host: hosts[2],
-        components: [components[2]],
+        host: hostsDictionaryByName.host3,
+        components: [componentsDictionaryByName.zookeeperServer],
       },
     ];
 
@@ -163,23 +283,23 @@ describe('Cluster mapping utils', () => {
 
     const expected: ServiceMapping[] = [
       {
-        service: services[0],
+        service: servicesDictionaryByName.HBase,
         componentsMapping: [
           {
-            component: components[0],
+            component: componentsDictionaryByName.hBaseClient,
             hosts: [],
           },
           {
-            component: components[1],
+            component: componentsDictionaryByName.hBaseMaster,
             hosts: [],
           },
         ],
       },
       {
-        service: services[1],
+        service: servicesDictionaryByName.Zookeeper,
         componentsMapping: [
           {
-            component: components[2],
+            component: componentsDictionaryByName.zookeeperServer,
             hosts: [],
           },
         ],
@@ -190,29 +310,35 @@ describe('Cluster mapping utils', () => {
   });
 
   test('test getServicesMapping mapping', () => {
+    const mapping: AdcmMapping[] = [
+      { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseClient.id },
+      { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseMaster.id },
+      { hostId: hostsDictionaryByName.host3.id, componentId: componentsDictionaryByName.zookeeperServer.id },
+    ];
+
     const componentsMapping = getComponentsMapping(mapping, components, hostsDictionary);
     const servicesMapping = getServicesMapping(componentsMapping);
 
     const expected: ServiceMapping[] = [
       {
-        service: services[0],
+        service: servicesDictionaryByName.HBase,
         componentsMapping: [
           {
-            component: components[0],
-            hosts: [hosts[0]],
+            component: componentsDictionaryByName.hBaseClient,
+            hosts: [hostsDictionaryByName.host1],
           },
           {
-            component: components[1],
-            hosts: [hosts[0]],
+            component: componentsDictionaryByName.hBaseMaster,
+            hosts: [hostsDictionaryByName.host1],
           },
         ],
       },
       {
-        service: services[1],
+        service: servicesDictionaryByName.Zookeeper,
         componentsMapping: [
           {
-            component: components[2],
-            hosts: [hosts[2]],
+            component: componentsDictionaryByName.zookeeperServer,
+            hosts: [hostsDictionaryByName.host3],
           },
         ],
       },
@@ -222,14 +348,26 @@ describe('Cluster mapping utils', () => {
   });
 
   test('test mapHostsToComponent', () => {
+    const mapping: AdcmMapping[] = [
+      { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseClient.id },
+      { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseMaster.id },
+      { hostId: hostsDictionaryByName.host3.id, componentId: componentsDictionaryByName.zookeeperServer.id },
+    ];
+
     const componentsMapping = getComponentsMapping(mapping, components, hostsDictionary);
     const servicesMapping = getServicesMapping(componentsMapping);
-    const newMapping = mapHostsToComponent(servicesMapping, [hosts[1]], components[0]);
+
+    // moving hbaseMaster from host1 to host2
+    const newMapping = mapHostsToComponent(
+      servicesMapping,
+      [hostsDictionaryByName.host2],
+      componentsDictionaryByName.hBaseMaster,
+    );
 
     const expected: AdcmMapping[] = [
-      { hostId: 1, componentId: 2 },
-      { hostId: 2, componentId: 1 },
-      { hostId: 3, componentId: 3 },
+      { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseClient.id },
+      { hostId: hostsDictionaryByName.host2.id, componentId: componentsDictionaryByName.hBaseMaster.id },
+      { hostId: hostsDictionaryByName.host3.id, componentId: componentsDictionaryByName.zookeeperServer.id },
     ];
 
     expect(newMapping).toEqual(expect.arrayContaining(expected));
@@ -284,6 +422,142 @@ describe('Cluster mapping utils', () => {
     expect(validateConstraints([1, 'odd'], 4, 2)).toEqual({
       isValid: false,
       errors: ['1 or more components should be installed. Total amount should be odd.'],
+    });
+  });
+
+  test('test getConstraintsLimit', () => {
+    expect(getConstraintsLimit(['odd'])).toBe(1);
+    expect(getConstraintsLimit([1, 22])).toBe(22);
+    expect(getConstraintsLimit([42])).toBe(42);
+    expect(getConstraintsLimit([42, '+'])).toBe(42);
+  });
+
+  test('test validate constraints', () => {
+    const mapping: AdcmMapping[] = [
+      { hostId: hostsDictionaryByName.host3.id, componentId: componentsDictionaryByName.zookeeperServer.id },
+    ];
+
+    const componentMapping = getComponentsMapping(mapping, components, hostsDictionary);
+    const serviceMapping = getServicesMapping(componentMapping);
+    const servicesMappingDictionary = arrayToHash(serviceMapping, (sm) => sm.service.prototype.id);
+
+    const relatedData: ValidateRelatedData = {
+      allHostsCount: hosts.length,
+      servicesMappingDictionary,
+      notAddedServicesDictionary: {},
+    };
+
+    const validationResult = validate(componentMapping, relatedData);
+
+    expect(validationResult).toStrictEqual({
+      isAllMappingValid: false,
+      byComponents: {
+        [componentsDictionaryByName.hBaseClient.id]: {
+          constraintsValidationResult: { isValid: true },
+          requireValidationResults: { isValid: true },
+          isValid: true,
+        },
+        [componentsDictionaryByName.hBaseMaster.id]: {
+          constraintsValidationResult: { isValid: false, errors: ['1 or more components should be installed.'] },
+          requireValidationResults: { isValid: true },
+          isValid: false,
+        },
+        [componentsDictionaryByName.zookeeperServer.id]: {
+          constraintsValidationResult: { isValid: true },
+          requireValidationResults: { isValid: true },
+          isValid: true,
+        },
+      },
+    });
+  });
+
+  test('test validate service without component', () => {
+    const mapping: AdcmMapping[] = [
+      { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseClient.id },
+      { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseMaster.id },
+      { hostId: hostsDictionaryByName.host3.id, componentId: componentsDictionaryByName.zookeeperServer.id },
+    ];
+
+    const componentMapping = getComponentsMapping(mapping, components, hostsDictionary);
+    const serviceMapping = getServicesMapping(componentMapping);
+    const servicesMappingDictionary = arrayToHash(serviceMapping, (sm) => sm.service.prototype.id);
+
+    const relatedData: ValidateRelatedData = {
+      allHostsCount: hosts.length,
+      servicesMappingDictionary,
+      notAddedServicesDictionary: {},
+    };
+
+    const validationResult = validate(componentMapping, relatedData);
+
+    expect(validationResult).toStrictEqual({
+      isAllMappingValid: true,
+      byComponents: {
+        [componentsDictionaryByName.hBaseClient.id]: {
+          constraintsValidationResult: { isValid: true },
+          requireValidationResults: { isValid: true },
+          isValid: true,
+        },
+        [componentsDictionaryByName.hBaseMaster.id]: {
+          constraintsValidationResult: { isValid: true },
+          requireValidationResults: { isValid: true },
+          isValid: true,
+        },
+        [componentsDictionaryByName.zookeeperServer.id]: {
+          constraintsValidationResult: { isValid: true },
+          requireValidationResults: { isValid: true },
+          isValid: true,
+        },
+      },
+    });
+  });
+
+  test('test validate dependOn', () => {
+    const mapping: AdcmMapping[] = [
+      { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseClient.id },
+      { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseMaster.id },
+      { hostId: hostsDictionaryByName.host3.id, componentId: componentsDictionaryByName.zookeeperServer.id },
+    ];
+
+    const componentMapping = getComponentsMapping(mapping, components, hostsDictionary);
+    const serviceMapping = getServicesMapping(componentMapping);
+    const servicesMappingDictionary = arrayToHash(serviceMapping, (sm) => sm.service.prototype.id);
+
+    const relatedData: ValidateRelatedData = {
+      allHostsCount: hosts.length,
+      servicesMappingDictionary,
+      notAddedServicesDictionary: {
+        [candidateServicesDictionaryByName.HDFS.id]: candidateServicesDictionaryByName.HDFS,
+      },
+    };
+
+    const validationResult = validate(componentMapping, relatedData);
+
+    expect(validationResult).toStrictEqual({
+      isAllMappingValid: false,
+      byComponents: {
+        [componentsDictionaryByName.hBaseClient.id]: {
+          constraintsValidationResult: { isValid: true },
+          requireValidationResults: {
+            errors: ['Requires mapping of service "HDFS" (components: HDFS NameNode)'],
+            isValid: false,
+          },
+          isValid: false,
+        },
+        [componentsDictionaryByName.hBaseMaster.id]: {
+          constraintsValidationResult: { isValid: true },
+          requireValidationResults: {
+            errors: ['Requires mapping of service "HDFS" (components: HDFS NameNode)'],
+            isValid: false,
+          },
+          isValid: false,
+        },
+        [componentsDictionaryByName.zookeeperServer.id]: {
+          constraintsValidationResult: { isValid: true },
+          requireValidationResults: { isValid: true },
+          isValid: true,
+        },
+      },
     });
   });
 });
