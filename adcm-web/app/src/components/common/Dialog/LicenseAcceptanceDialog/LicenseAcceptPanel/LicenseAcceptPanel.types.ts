@@ -5,7 +5,7 @@ export interface LicensePanel {
   id: number;
   title: string;
   licenseStatus: AdcmLicenseStatus;
-  licenseText?: string;
+  licenseText: string | null;
 }
 
 export interface LicenseAcceptanceDialogProps {

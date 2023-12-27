@@ -45,7 +45,7 @@ export interface AdcmServicePrototype {
   version: string;
   license: {
     status: AdcmLicenseStatus;
-    text: string;
+    text: string | null;
   };
   isRequired: boolean;
   dependOn: AdcmDependOnService[] | null;

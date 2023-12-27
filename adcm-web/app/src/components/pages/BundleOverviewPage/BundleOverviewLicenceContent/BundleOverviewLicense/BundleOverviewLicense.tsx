@@ -2,7 +2,7 @@ import React from 'react';
 import s from './BundleOverviewLicense.module.scss';
 
 interface BundleOverviewLicense {
-  licenseText?: string;
+  licenseText?: string | null;
 }
 
 const BundleOverviewLicense = ({ licenseText }: BundleOverviewLicense) => {
