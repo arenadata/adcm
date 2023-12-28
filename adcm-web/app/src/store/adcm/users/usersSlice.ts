@@ -4,11 +4,12 @@ import { createAsyncThunk } from '@store/redux';
 import { AdcmUser } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
+import { LoadState } from '@models/loadState';
 
 interface AdcmUsersState {
   users: AdcmUser[];
   totalCount: number;
-  isLoading: boolean;
+  loadState: LoadState;
 }
 
 const loadFromBackend = createAsyncThunk('adcm/users/loadFromBackend', async (arg, thunkAPI) => {
@@ -27,7 +28,7 @@ const loadFromBackend = createAsyncThunk('adcm/users/loadFromBackend', async (ar
 });
 
 const getUsers = createAsyncThunk('adcm/users/getUsers', async (arg, thunkAPI) => {
-  thunkAPI.dispatch(setIsLoading(true));
+  thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
   await thunkAPI.dispatch(loadFromBackend());
@@ -36,7 +37,7 @@ const getUsers = createAsyncThunk('adcm/users/getUsers', async (arg, thunkAPI) =
     startDate,
     delay: defaultSpinnerDelay,
     callback: () => {
-      thunkAPI.dispatch(setIsLoading(false));
+      thunkAPI.dispatch(setLoadState(LoadState.Loaded));
     },
   });
 });
@@ -48,15 +49,15 @@ const refreshUsers = createAsyncThunk('adcm/users/refreshUsers', async (arg, thu
 const createInitialState = (): AdcmUsersState => ({
   users: [],
   totalCount: 0,
-  isLoading: true,
+  loadState: LoadState.NotLoaded,
 });
 
 const usersSlice = createSlice({
   name: 'adcm/users',
   initialState: createInitialState(),
   reducers: {
-    setIsLoading(state, action) {
-      state.isLoading = action.payload;
+    setLoadState(state, action) {
+      state.loadState = action.payload;
     },
     cleanupUsers() {
       return createInitialState();
@@ -74,6 +75,6 @@ const usersSlice = createSlice({
   },
 });
 
-const { setIsLoading, cleanupUsers } = usersSlice.actions;
-export { getUsers, refreshUsers, cleanupUsers };
+const { setLoadState, cleanupUsers } = usersSlice.actions;
+export { getUsers, refreshUsers, cleanupUsers, setLoadState };
 export default usersSlice.reducer;
