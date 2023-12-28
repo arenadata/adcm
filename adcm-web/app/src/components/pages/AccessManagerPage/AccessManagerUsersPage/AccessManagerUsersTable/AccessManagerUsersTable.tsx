@@ -12,11 +12,12 @@ import { SortParams } from '@uikit/types/list.types';
 import { AdcmUser, AdcmUserStatus } from '@models/adcm';
 import { useSelectedItems } from '@uikit/hooks/useSelectedItems';
 import { openDeleteDialog } from '@store/adcm/users/usersActionsSlice';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const AccessManagerUsersTable = () => {
   const dispatch = useDispatch();
   const users = useStore((s) => s.adcm.users.users);
-  const isLoading = useStore((s) => s.adcm.users.isLoading);
+  const isLoading = useStore((s) => isShowSpinner(s.adcm.users.loadState));
   const sortParams = useStore((s) => s.adcm.usersTable.sortParams);
   const selectedItemsIds = useStore(({ adcm }) => adcm.usersActions.selectedItemsIds);
 
