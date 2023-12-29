@@ -11,11 +11,12 @@ import { openMaintenanceModeDialog } from '@store/adcm/cluster/services/serviceC
 import { AdcmServiceComponent } from '@models/adcm';
 import ClusterServiceComponentsDynamicActionsIcon from '../ServiceComponentsDynamicActionsIcon/ServiceComponentsDynamicActionsIcon';
 import { usePersistServiceComponentsTableSettings } from '../usePersistServiceComponentsTableSettings';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const ServiceComponentsTable = () => {
   const dispatch = useDispatch();
   const components = useStore((s) => s.adcm.serviceComponents.serviceComponents);
-  const isLoading = useStore((s) => s.adcm.serviceComponents.isLoading);
+  const isLoading = useStore((s) => isShowSpinner(s.adcm.serviceComponents.loadState));
   const sortParams = useStore((s) => s.adcm.serviceComponentsTable.sortParams);
 
   usePersistServiceComponentsTableSettings();

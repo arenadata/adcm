@@ -10,12 +10,13 @@ import { updateIfExists } from '@utils/objectUtils';
 import { AdcmPrototypesApi, RequestError } from '@api';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { toggleMaintenanceMode } from '@store/adcm/cluster/services/servicesActionsSlice';
+import { LoadState } from '@models/loadState';
 
 type AdcmServicesState = {
   services: AdcmService[];
   serviceLicense: Omit<AdcmPrototype, 'type' | 'description' | 'bundleId'>[] | [];
   totalCount: number;
-  isLoading: boolean;
+  loadState: LoadState;
 };
 
 interface LoadClusterServicesPayload {
@@ -41,7 +42,7 @@ const loadClusterServiceFromBackend = createAsyncThunk(
 );
 
 const getServices = createAsyncThunk('adcm/services/getServices', async (arg: LoadClusterServicesPayload, thunkAPI) => {
-  thunkAPI.dispatch(setIsLoading(true));
+  thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
   await thunkAPI.dispatch(loadClusterServiceFromBackend(arg));
@@ -49,7 +50,7 @@ const getServices = createAsyncThunk('adcm/services/getServices', async (arg: Lo
     startDate,
     delay: defaultSpinnerDelay,
     callback: () => {
-      thunkAPI.dispatch(setIsLoading(false));
+      thunkAPI.dispatch(setLoadState(LoadState.Loaded));
     },
   });
 });
@@ -77,15 +78,15 @@ const createInitialState = (): AdcmServicesState => ({
   services: [],
   serviceLicense: [],
   totalCount: 0,
-  isLoading: true,
+  loadState: LoadState.NotLoaded,
 });
 
 const servicesSlice = createSlice({
   name: 'adcm/services',
   initialState: createInitialState(),
   reducers: {
-    setIsLoading(state, action) {
-      state.isLoading = action.payload;
+    setLoadState(state, action) {
+      state.loadState = action.payload;
     },
     cleanupServices() {
       return createInitialState();
@@ -148,7 +149,7 @@ const servicesSlice = createSlice({
   },
 });
 
-export const { setIsLoading, cleanupServices, cleanupServiceLicense } = servicesSlice.actions;
+export const { setLoadState, cleanupServices, cleanupServiceLicense } = servicesSlice.actions;
 export { getServices, refreshServices, acceptServiceLicense };
 
 export default servicesSlice.reducer;

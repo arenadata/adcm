@@ -9,11 +9,12 @@ import { executeWithMinDelay } from '@utils/requestUtils';
 import { updateIfExists } from '@utils/objectUtils';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { toggleMaintenanceMode } from '@store/adcm/cluster/services/serviceComponents/serviceComponentsActionsSlice';
+import { LoadState } from '@models/loadState';
 
 interface AdcmServiceComponentsState {
   serviceComponents: AdcmServiceComponent[];
   totalCount: number;
-  isLoading: boolean;
+  loadState: LoadState;
 }
 
 interface LoadClusterServiceComponentsPayload {
@@ -48,7 +49,7 @@ const loadClusterServiceComponentsFromBackend = createAsyncThunk(
 const getServiceComponents = createAsyncThunk(
   'adcm/cluster/services/serviceComponents/getServiceComponents',
   async (arg: LoadClusterServiceComponentsPayload, thunkAPI) => {
-    thunkAPI.dispatch(setIsLoading(true));
+    thunkAPI.dispatch(setLoadState(LoadState.Loading));
     const startDate = new Date();
 
     await thunkAPI.dispatch(loadClusterServiceComponentsFromBackend(arg));
@@ -57,7 +58,7 @@ const getServiceComponents = createAsyncThunk(
       startDate,
       delay: defaultSpinnerDelay,
       callback: () => {
-        thunkAPI.dispatch(setIsLoading(false));
+        thunkAPI.dispatch(setLoadState(LoadState.Loaded));
       },
     });
   },
@@ -73,15 +74,15 @@ const refreshServiceComponents = createAsyncThunk(
 const createInitialState = (): AdcmServiceComponentsState => ({
   serviceComponents: [],
   totalCount: 0,
-  isLoading: true,
+  loadState: LoadState.NotLoaded,
 });
 
 const serviceComponentsSlice = createSlice({
   name: 'adcm/cluster/services/serviceComponents',
   initialState: createInitialState(),
   reducers: {
-    setIsLoading: (state, action) => {
-      state.isLoading = action.payload;
+    setLoadState: (state, action) => {
+      state.loadState = action.payload;
     },
     cleanupServiceComponents: () => {
       return createInitialState();
@@ -134,7 +135,7 @@ const serviceComponentsSlice = createSlice({
   },
 });
 
-const { setIsLoading, cleanupServiceComponents } = serviceComponentsSlice.actions;
+const { setLoadState, cleanupServiceComponents } = serviceComponentsSlice.actions;
 export {
   getServiceComponents,
   refreshServiceComponents,
