@@ -8,10 +8,12 @@ import { SortParams } from '@uikit/types/list.types';
 import { AdcmGroup } from '@models/adcm';
 import { useSelectedItems } from '@uikit/hooks/useSelectedItems';
 import { openUpdateDialog } from '@store/adcm/groups/groupActionsSlice';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const AccessManagerGroupsTable = () => {
   const dispatch = useDispatch();
-  const { groups, isLoading, selectedItemsIds } = useStore((s) => s.adcm.groups);
+  const { groups, selectedItemsIds } = useStore((s) => s.adcm.groups);
+  const isLoading = useStore((s) => isShowSpinner(s.adcm.groups.loadState));
   const sortParams = useStore((s) => s.adcm.groupsTable.sortParams);
 
   const setSelectedItemsIds = useCallback<Dispatch<SetStateAction<number[]>>>(

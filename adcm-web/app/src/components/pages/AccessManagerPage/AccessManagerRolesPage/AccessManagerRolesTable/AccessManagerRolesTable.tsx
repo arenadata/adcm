@@ -9,12 +9,13 @@ import AccessManagerRolesTableExpandedContent from './AccessManagerRolesTableExp
 import s from './AccessManagerRolesTable.module.scss';
 import cn from 'classnames';
 import { AdcmRole } from '@models/adcm';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const AccessManagerRolesTable = () => {
   const dispatch = useDispatch();
 
   const roles = useStore((s) => s.adcm.roles.roles);
-  const isLoading = useStore((s) => s.adcm.roles.isLoading);
+  const isLoading = useStore((s) => isShowSpinner(s.adcm.roles.loadState));
   const sortParams = useStore((s) => s.adcm.rolesTable.sortParams);
 
   const [expandableRows, setExpandableRows] = useState<Record<number, boolean>>({});

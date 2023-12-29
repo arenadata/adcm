@@ -10,12 +10,13 @@ import { AdcmPolicy } from '@models/adcm';
 import cn from 'classnames';
 import s from './AccessManagerPoliciesTable.module.scss';
 import AccessManagerPoliciesTableExpandedContent from './AccessManagerPoliciesTableExpandedContent/AccessManagerPoliciesTableExpandedContent';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const AccessManagerPoliciesTable: React.FC = () => {
   const dispatch = useDispatch();
 
   const policies = useStore(({ adcm }) => adcm.policies.policies);
-  const isLoading = useStore(({ adcm }) => adcm.policies.isLoading);
+  const isLoading = useStore(({ adcm }) => isShowSpinner(adcm.policies.loadState));
   const sortParams = useStore(({ adcm }) => adcm.policiesTable.sortParams);
 
   const handleEditClick = (policy: AdcmPolicy) => () => {

@@ -4,11 +4,12 @@ import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmRole } from '@models/adcm';
 import { AdcmRolesApi } from '@api';
+import { LoadState } from '@models/loadState';
 
 interface AdcmRolesState {
   roles: AdcmRole[];
   totalCount: number;
-  isLoading: boolean;
+  loadState: LoadState;
   relatedData: {
     categories: string[];
   };
@@ -30,7 +31,7 @@ const loadFromBackend = createAsyncThunk('adcm/roles/loadFromBackend', async (ar
 });
 
 const getRoles = createAsyncThunk('adcm/roles/getRoles', async (arg, thunkAPI) => {
-  thunkAPI.dispatch(setIsLoading(true));
+  thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
   await thunkAPI.dispatch(loadFromBackend());
@@ -39,7 +40,7 @@ const getRoles = createAsyncThunk('adcm/roles/getRoles', async (arg, thunkAPI) =
     startDate,
     delay: defaultSpinnerDelay,
     callback: () => {
-      thunkAPI.dispatch(setIsLoading(false));
+      thunkAPI.dispatch(setLoadState(LoadState.Loaded));
     },
   });
 });
@@ -59,7 +60,7 @@ const refreshRoles = createAsyncThunk('adcm/roles/refreshRoles', async (arg, thu
 const createInitialState = (): AdcmRolesState => ({
   roles: [],
   totalCount: 0,
-  isLoading: true,
+  loadState: LoadState.NotLoaded,
   relatedData: {
     categories: [],
   },
@@ -69,8 +70,8 @@ const rolesSlice = createSlice({
   name: 'adcm/roles',
   initialState: createInitialState(),
   reducers: {
-    setIsLoading(state, action) {
-      state.isLoading = action.payload;
+    setLoadState(state, action) {
+      state.loadState = action.payload;
     },
     cleanupRoles() {
       return createInitialState();
@@ -94,6 +95,6 @@ const rolesSlice = createSlice({
   },
 });
 
-const { setIsLoading, cleanupRoles } = rolesSlice.actions;
+const { setLoadState, cleanupRoles } = rolesSlice.actions;
 export { getRoles, getProducts, refreshRoles, cleanupRoles };
 export default rolesSlice.reducer;
