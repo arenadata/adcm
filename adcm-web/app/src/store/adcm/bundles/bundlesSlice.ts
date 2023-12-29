@@ -7,11 +7,12 @@ import { AdcmBundlesApi, RequestError } from '@api';
 import { rejectedFilter } from '@utils/promiseUtils';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
+import { LoadState } from '@models/loadState';
 
 type AdcmBundlesState = {
   bundles: AdcmBundle[];
   totalCount: number;
-  isLoading: boolean;
+  loadState: LoadState;
   isUploading: boolean;
   itemsForActions: {
     deletableId: number | null;
@@ -35,7 +36,7 @@ const loadBundles = createAsyncThunk('adcm/bundles/loadBundles', async (arg, thu
 });
 
 const getBundles = createAsyncThunk('adcm/bundles/getBundles', async (arg, thunkAPI) => {
-  thunkAPI.dispatch(setIsLoading(true));
+  thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
   await thunkAPI.dispatch(loadBundles());
@@ -44,7 +45,7 @@ const getBundles = createAsyncThunk('adcm/bundles/getBundles', async (arg, thunk
     startDate,
     delay: defaultSpinnerDelay,
     callback: () => {
-      thunkAPI.dispatch(setIsLoading(false));
+      thunkAPI.dispatch(setLoadState(LoadState.Loaded));
     },
   });
 });
@@ -78,10 +79,10 @@ const deleteBundles = createAsyncThunk('adcm/bundles/deleteBundles', async (sele
 const deleteWithUpdateBundles = createAsyncThunk(
   'adcm/bundles/deleteWithUpdateBundles',
   async (selectedBundlesIds: number[], thunkAPI) => {
-    thunkAPI.dispatch(setIsLoading(true));
+    thunkAPI.dispatch(setLoadState(LoadState.Loading));
     await thunkAPI.dispatch(deleteBundles(selectedBundlesIds));
     await thunkAPI.dispatch(getBundles());
-    thunkAPI.dispatch(setIsLoading(false));
+    thunkAPI.dispatch(setLoadState(LoadState.Loaded));
   },
 );
 
@@ -121,7 +122,7 @@ const uploadWithUpdateBundles = createAsyncThunk(
 const createInitialState = (): AdcmBundlesState => ({
   bundles: [],
   totalCount: 0,
-  isLoading: true,
+  loadState: LoadState.NotLoaded,
   isUploading: false,
   itemsForActions: {
     deletableId: null,
@@ -133,8 +134,8 @@ const bundlesSlice = createSlice({
   name: 'adcm/bundles',
   initialState: createInitialState(),
   reducers: {
-    setIsLoading(state, action) {
-      state.isLoading = action.payload;
+    setLoadState(state, action) {
+      state.loadState = action.payload;
     },
     setIsUploading(state, action) {
       state.isUploading = action.payload;
@@ -177,7 +178,7 @@ const bundlesSlice = createSlice({
 });
 
 export const {
-  setIsLoading,
+  setLoadState,
   cleanupBundles,
   setIsUploading,
   setDeletableId,

@@ -1,6 +1,7 @@
 import { AdcmBundlesApi, AdcmPrototypesApi, RequestError } from '@api';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmBundle } from '@models/adcm/bundle';
+import { LoadState } from '@models/loadState';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
@@ -8,7 +9,7 @@ import { executeWithMinDelay } from '@utils/requestUtils';
 
 interface AdcmBundleState {
   bundle?: AdcmBundle;
-  isLicenseLoading: boolean;
+  licenseLoadState: LoadState;
 }
 
 interface AcceptBundleLicensePayload {
@@ -26,7 +27,7 @@ const loadBundleFromBackend = createAsyncThunk('adcm/bundle/loadBundle', async (
 });
 
 const getBundle = createAsyncThunk('adcm/bundle/getBundle', async (arg: number, thunkAPI) => {
-  thunkAPI.dispatch(setIsLicenseLoading(true));
+  thunkAPI.dispatch(setLicenseLoadState(LoadState.Loading));
   const startDate = new Date();
 
   await thunkAPI.dispatch(loadBundleFromBackend(arg));
@@ -35,7 +36,7 @@ const getBundle = createAsyncThunk('adcm/bundle/getBundle', async (arg: number, 
     startDate,
     delay: defaultSpinnerDelay,
     callback: () => {
-      thunkAPI.dispatch(setIsLicenseLoading(false));
+      thunkAPI.dispatch(setLicenseLoadState(LoadState.Loaded));
     },
   });
 });
@@ -71,15 +72,15 @@ const deleteBundle = createAsyncThunk('adcm/bundle/deleteBundle', async (bundleI
 
 const createInitialState = (): AdcmBundleState => ({
   bundle: undefined,
-  isLicenseLoading: false,
+  licenseLoadState: LoadState.NotLoaded,
 });
 
 const bundleSlice = createSlice({
   name: 'adcm/bundle',
   initialState: createInitialState(),
   reducers: {
-    setIsLicenseLoading(state, action) {
-      state.isLicenseLoading = action.payload;
+    setLicenseLoadState(state, action) {
+      state.licenseLoadState = action.payload;
     },
     cleanupBundle() {
       return createInitialState();
@@ -95,6 +96,6 @@ const bundleSlice = createSlice({
   },
 });
 
-const { cleanupBundle, setIsLicenseLoading } = bundleSlice.actions;
-export { getBundle, acceptBundleLicenseWithUpdate, cleanupBundle, deleteBundle };
+const { cleanupBundle, setLicenseLoadState } = bundleSlice.actions;
+export { getBundle, acceptBundleLicenseWithUpdate, cleanupBundle, deleteBundle, setLicenseLoadState };
 export default bundleSlice.reducer;

@@ -7,13 +7,14 @@ import BundleOverviewTable from './BundleOverviewTable/BundleOverviewTable';
 import BundleOverviewLicenseContent from './BundleOverviewLicenceContent/BundleOverviewLicenseContent';
 import { Spinner } from '@uikit';
 import s from './BundleOverviewPage.module.scss';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const BundleOverviewPage: React.FC = () => {
   useRequestBundle();
   const dispatch = useDispatch();
   const bundle = useStore(({ adcm }) => adcm.bundle.bundle);
   const isBundleLicensePresent = bundle?.mainPrototype.license?.text !== null;
-  const isLicenseLoading = useStore(({ adcm }) => adcm.bundle.isLicenseLoading);
+  const isLicenseLoading = useStore(({ adcm }) => isShowSpinner(adcm.bundle.licenseLoadState));
 
   useEffect(() => {
     if (bundle) {

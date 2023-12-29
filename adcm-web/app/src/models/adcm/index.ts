@@ -24,6 +24,7 @@ export * from './dynamicAction';
 export * from './upgrades';
 export * from './backendEvents';
 export * from './settings';
+export * from './bundle';
 
 export interface Batch<T> {
   results: T[];
