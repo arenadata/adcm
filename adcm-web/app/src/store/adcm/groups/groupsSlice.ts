@@ -7,6 +7,7 @@ import { defaultSpinnerDelay } from '@constants';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { rejectedFilter } from '@utils/promiseUtils';
+import { LoadState } from '@models/loadState';
 
 interface AdcmGroupsState {
   groups: AdcmGroup[];
@@ -14,7 +15,7 @@ interface AdcmGroupsState {
   itemsForActions: {
     deletableId: number | null;
   };
-  isLoading: boolean;
+  loadState: LoadState;
   selectedItemsIds: number[];
 }
 
@@ -34,7 +35,7 @@ const loadFromBackend = createAsyncThunk('adcm/groups/loadFromBackend', async (a
 });
 
 const getGroups = createAsyncThunk('adcm/groups/getGroups', async (arg, thunkAPI) => {
-  thunkAPI.dispatch(setIsLoading(true));
+  thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
   await thunkAPI.dispatch(loadFromBackend());
@@ -43,7 +44,7 @@ const getGroups = createAsyncThunk('adcm/groups/getGroups', async (arg, thunkAPI
     startDate,
     delay: defaultSpinnerDelay,
     callback: () => {
-      thunkAPI.dispatch(setIsLoading(false));
+      thunkAPI.dispatch(setLoadState(LoadState.Loaded));
     },
   });
 });
@@ -75,7 +76,7 @@ const createInitialState = (): AdcmGroupsState => ({
   itemsForActions: {
     deletableId: null,
   },
-  isLoading: true,
+  loadState: LoadState.NotLoaded,
   selectedItemsIds: [],
 });
 
@@ -83,8 +84,8 @@ const groupsSlice = createSlice({
   name: 'adcm/groups',
   initialState: createInitialState(),
   reducers: {
-    setIsLoading(state, action) {
-      state.isLoading = action.payload;
+    setLoadState(state, action) {
+      state.loadState = action.payload;
     },
     cleanupGroups() {
       return createInitialState();
@@ -117,6 +118,6 @@ const groupsSlice = createSlice({
   },
 });
 
-const { setIsLoading, cleanupGroups, setDeletableId, setSelectedItemsIds } = groupsSlice.actions;
+const { setLoadState, cleanupGroups, setDeletableId, setSelectedItemsIds } = groupsSlice.actions;
 export { getGroups, refreshGroups, deleteGroupsWithUpdate, cleanupGroups, setDeletableId, setSelectedItemsIds };
 export default groupsSlice.reducer;
