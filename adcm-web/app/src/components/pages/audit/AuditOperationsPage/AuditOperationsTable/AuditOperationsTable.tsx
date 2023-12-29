@@ -12,6 +12,7 @@ import AuditOperationsTableExpandedContent from '@pages/audit/AuditOperationsPag
 import { orElseGet } from '@utils/checkUtils';
 import s from './AuditOperationsTable.module.scss';
 import cn from 'classnames';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const AuditOperationsTable = () => {
   const dispatch = useDispatch();
@@ -19,7 +20,7 @@ const AuditOperationsTable = () => {
   const [expandableRows, setExpandableRows] = useState<Record<number, boolean>>({});
 
   const auditOperations = useStore(({ adcm }) => adcm.auditOperations.auditOperations);
-  const isLoading = useStore(({ adcm }) => adcm.auditOperations.isLoading);
+  const isLoading = useStore(({ adcm }) => isShowSpinner(adcm.auditOperations.loadState));
   const sortParams = useStore(({ adcm }) => adcm.auditOperationsTable.sortParams);
 
   const handleExpandClick = (id: number) => {
