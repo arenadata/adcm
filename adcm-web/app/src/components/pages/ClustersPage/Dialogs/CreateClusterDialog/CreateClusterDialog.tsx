@@ -82,6 +82,7 @@ const CreateClusterDialog = () => {
             value={formData.productVersion}
             onChange={handleProductVersionChange}
             options={productVersionsOptions}
+            maxHeight={200}
           />
         </FormField>
         <FormField label="Cluster name" error={errors.name}>

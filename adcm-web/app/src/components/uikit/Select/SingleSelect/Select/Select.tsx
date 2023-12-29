@@ -18,7 +18,7 @@ function SelectComponent<T>(
     value,
     onChange,
     noneLabel,
-    maxHeight,
+    maxHeight = 200,
     isSearchable,
     searchPlaceholder,
     containerRef,
