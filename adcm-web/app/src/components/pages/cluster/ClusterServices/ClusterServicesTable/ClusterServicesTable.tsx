@@ -12,13 +12,14 @@ import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
 import { AdcmService } from '@models/adcm';
 import { openMaintenanceModeDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const ClusterServicesTable = () => {
   const dispatch = useDispatch();
   const { clusterId: clusterIdFromUrl } = useParams();
   const clusterId = Number(clusterIdFromUrl);
   const services = useStore((s) => s.adcm.services.services);
-  const isLoading = useStore((s) => s.adcm.services.isLoading);
+  const isLoading = useStore((s) => isShowSpinner(s.adcm.services.loadState));
   const sortParams = useStore((s) => s.adcm.servicesTable.sortParams);
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
   const isAddingServices = useStore(({ adcm }) => adcm.servicesActions.isAddingServices);

@@ -6,11 +6,12 @@ import { executeWithMinDelay } from '@utils/requestUtils';
 import { updateIfExists } from '@utils/objectUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { LoadState } from '@models/loadState';
 
 type AdcmClustersState = {
   clusters: AdcmCluster[];
   totalCount: number;
-  isLoading: boolean;
+  loadState: LoadState;
 };
 
 const loadClustersFromBackend = createAsyncThunk('adcm/clusters/loadClustersFromBackend', async (arg, thunkAPI) => {
@@ -29,7 +30,7 @@ const loadClustersFromBackend = createAsyncThunk('adcm/clusters/loadClustersFrom
 });
 
 const getClusters = createAsyncThunk('adcm/clusters/getClusters', async (arg, thunkAPI) => {
-  thunkAPI.dispatch(setIsLoading(true));
+  thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
   await thunkAPI.dispatch(loadClustersFromBackend());
@@ -38,7 +39,7 @@ const getClusters = createAsyncThunk('adcm/clusters/getClusters', async (arg, th
     startDate,
     delay: defaultSpinnerDelay,
     callback: () => {
-      thunkAPI.dispatch(setIsLoading(false));
+      thunkAPI.dispatch(setLoadState(LoadState.Loaded));
     },
   });
 });
@@ -50,15 +51,15 @@ const refreshClusters = createAsyncThunk('adcm/clusters/refreshClusters', async 
 const createInitialState = (): AdcmClustersState => ({
   clusters: [],
   totalCount: 0,
-  isLoading: true,
+  loadState: LoadState.NotLoaded,
 });
 
 const clustersSlice = createSlice({
   name: 'adcm/clusters',
   initialState: createInitialState(),
   reducers: {
-    setIsLoading(state, action) {
-      state.isLoading = action.payload;
+    setLoadState(state, action) {
+      state.loadState = action.payload;
     },
     cleanupClusters() {
       return createInitialState();
@@ -103,6 +104,6 @@ const clustersSlice = createSlice({
   },
 });
 
-const { setIsLoading, cleanupClusters } = clustersSlice.actions;
-export { getClusters, refreshClusters, cleanupClusters };
+const { setLoadState, cleanupClusters } = clustersSlice.actions;
+export { getClusters, refreshClusters, cleanupClusters, setLoadState };
 export default clustersSlice.reducer;
