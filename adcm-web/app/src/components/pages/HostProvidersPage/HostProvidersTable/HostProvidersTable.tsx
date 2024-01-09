@@ -11,12 +11,13 @@ import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 import HostProvidersDynamicActionsIcon from '../HostProvidersDynamicActionsIcon/HostProvidersDynamicActionsIcon';
 import { AdcmHostProvider } from '@models/adcm';
 import { opeHostProviderUpgradeDialog } from '@store/adcm/hostProviders/hostProviderUpgradesSlice';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const HostProviderTable = () => {
   const dispatch = useDispatch();
 
   const hostProviders = useStore(({ adcm }) => adcm.hostProviders.hostProviders);
-  const isLoading = useStore(({ adcm }) => adcm.hostProviders.isLoading);
+  const isLoading = useStore(({ adcm }) => isShowSpinner(adcm.hostProviders.loadState));
   const sortParams = useStore(({ adcm }) => adcm.hostProvidersTable.sortParams);
 
   const handleDeleteAction = (id: number) => {

@@ -6,11 +6,12 @@ import { executeWithMinDelay } from '@utils/requestUtils';
 import { updateIfExists } from '@utils/objectUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { LoadState } from '@models/loadState';
 
 interface AdcmHostProvidersState {
   hostProviders: AdcmHostProvider[];
   totalCount: number;
-  isLoading: boolean;
+  loadState: LoadState;
 }
 
 const loadHostProviders = createAsyncThunk('adcm/hostProviders/loadHostProviders', async (arg, thunkAPI) => {
@@ -29,7 +30,7 @@ const loadHostProviders = createAsyncThunk('adcm/hostProviders/loadHostProviders
 });
 
 const getHostProviders = createAsyncThunk('adcm/hostProviders/getHostProviders', async (arg, thunkAPI) => {
-  thunkAPI.dispatch(setIsLoading(true));
+  thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
   await thunkAPI.dispatch(loadHostProviders());
@@ -38,7 +39,7 @@ const getHostProviders = createAsyncThunk('adcm/hostProviders/getHostProviders',
     startDate,
     delay: defaultSpinnerDelay,
     callback: () => {
-      thunkAPI.dispatch(setIsLoading(false));
+      thunkAPI.dispatch(setLoadState(LoadState.Loaded));
     },
   });
 });
@@ -50,15 +51,15 @@ const refreshHostProviders = createAsyncThunk('adcm/hostProviders/refreshHostPro
 const createInitialState = (): AdcmHostProvidersState => ({
   hostProviders: [],
   totalCount: 0,
-  isLoading: true,
+  loadState: LoadState.NotLoaded,
 });
 
 const hostProvidersSlice = createSlice({
   name: 'adcm/hostProviders',
   initialState: createInitialState(),
   reducers: {
-    setIsLoading(state, action) {
-      state.isLoading = action.payload;
+    setLoadState(state, action) {
+      state.loadState = action.payload;
     },
     cleanupHostProviders() {
       return createInitialState();
@@ -104,7 +105,7 @@ const hostProvidersSlice = createSlice({
   },
 });
 
-const { setIsLoading, cleanupHostProviders } = hostProvidersSlice.actions;
-export { getHostProviders, cleanupHostProviders, refreshHostProviders, setIsLoading };
+const { setLoadState, cleanupHostProviders } = hostProvidersSlice.actions;
+export { getHostProviders, cleanupHostProviders, refreshHostProviders, setLoadState };
 
 export default hostProvidersSlice.reducer;

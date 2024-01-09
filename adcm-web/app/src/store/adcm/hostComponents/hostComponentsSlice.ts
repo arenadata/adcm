@@ -1,6 +1,7 @@
 import { AdcmClusterHostsApi, RequestError } from '@api';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmServiceComponent } from '@models/adcm';
+import { LoadState } from '@models/loadState';
 import { createSlice } from '@reduxjs/toolkit';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { showError } from '@store/notificationsSlice';
@@ -10,7 +11,7 @@ import { updateIfExists } from '@utils/objectUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 
 interface AdcmHostComponentsState {
-  isLoading: boolean;
+  loadState: LoadState;
   hostComponents: AdcmServiceComponent[];
   totalCount: number;
 }
@@ -47,7 +48,7 @@ const loadHostComponents = createAsyncThunk(
 const getHostComponents = createAsyncThunk(
   'adcm/hostComponents/getHostComponents',
   async (arg: ClusterHostComponentsPayload, thunkAPI) => {
-    thunkAPI.dispatch(setIsLoading(true));
+    thunkAPI.dispatch(setLoadState(LoadState.Loading));
     const startDate = new Date();
 
     await thunkAPI.dispatch(loadHostComponents(arg));
@@ -57,7 +58,7 @@ const getHostComponents = createAsyncThunk(
       delay: defaultSpinnerDelay,
 
       callback: () => {
-        thunkAPI.dispatch(setIsLoading(false));
+        thunkAPI.dispatch(setLoadState(LoadState.Loaded));
       },
     });
   },
@@ -71,7 +72,7 @@ const refreshHostComponents = createAsyncThunk(
 );
 
 const createInitialState = (): AdcmHostComponentsState => ({
-  isLoading: true,
+  loadState: LoadState.NotLoaded,
   hostComponents: [],
   totalCount: 0,
 });
@@ -80,8 +81,8 @@ const hostComponentsSlice = createSlice({
   name: 'adcm/hostComponents',
   initialState: createInitialState(),
   reducers: {
-    setIsLoading(state, action) {
-      state.isLoading = action.payload;
+    setLoadState(state, action) {
+      state.loadState = action.payload;
     },
     cleanupHostComponents() {
       return createInitialState();
@@ -129,6 +130,6 @@ const hostComponentsSlice = createSlice({
   },
 });
 
-const { setIsLoading, cleanupHostComponents } = hostComponentsSlice.actions;
+const { setLoadState, cleanupHostComponents } = hostComponentsSlice.actions;
 export { getHostComponents, refreshHostComponents, cleanupHostComponents };
 export default hostComponentsSlice.reducer;

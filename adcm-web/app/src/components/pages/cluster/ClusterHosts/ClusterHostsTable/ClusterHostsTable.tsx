@@ -13,13 +13,14 @@ import { Link, generatePath } from 'react-router-dom';
 import ClusterHostsDynamicActionsButton from '../ClusterHostsDynamicActionsButton/ClusterHostsDynamicActionsButton';
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 import Concern from '@commonComponents/Concern/Concern';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const ClusterHostsTable: React.FC = () => {
   const dispatch = useDispatch();
 
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
   const clusterHosts = useStore(({ adcm }) => adcm.clusterHosts.hosts);
-  const isLoading = useStore(({ adcm }) => adcm.clusterHosts.isLoading);
+  const isLoading = useStore(({ adcm }) => isShowSpinner(adcm.clusterHosts.loadState));
   const sortParams = useStore((s) => s.adcm.clusterHostsTable.sortParams);
 
   const handleSorting = (sortParams: SortParams) => {
