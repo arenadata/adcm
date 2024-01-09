@@ -5,6 +5,7 @@ import JobLog from '@commonComponents/job/JobLog/JobLog';
 import JobLogsTabs from '@commonComponents/job/JobLogsTabs/JobLogsTabs';
 import { AdcmJobLogItem } from '@models/adcm';
 import s from './JobPageLog.module.scss';
+import { Spinner } from '@uikit';
 
 const defaultLogs: AdcmJobLogItem[] = [];
 
@@ -48,6 +49,12 @@ const JobPageLog: React.FC<JobPageLogProps> = ({ id }) => {
         onChangeTab={setCurrentLogId}
         className={s.jobLogTabs}
       />
+
+      {!isLoadedLogs && (
+        <div className={s.jobPageLog__spinner}>
+          <Spinner />
+        </div>
+      )}
 
       {childJob && log && <JobLog job={childJob} jobLog={log} />}
     </div>

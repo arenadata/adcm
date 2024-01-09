@@ -12,3 +12,4 @@ export { useRequestTimer } from './useRequestTimer';
 export { useDownloadFile } from './useDownloadFile';
 export { useForm } from './useForm';
 export { usePersistSettings } from './usePersistSettings';
+export { useExpandableTable } from './useExpandableTable';
