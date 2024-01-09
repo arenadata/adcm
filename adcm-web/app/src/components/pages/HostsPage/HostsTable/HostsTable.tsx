@@ -15,12 +15,13 @@ import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 import Concern from '@commonComponents/Concern/Concern';
 import { AdcmEntitySystemState } from '@models/adcm';
 import { Link } from 'react-router-dom';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const HostsTable: React.FC = () => {
   const dispatch = useDispatch();
 
   const hosts = useStore(({ adcm }) => adcm.hosts.hosts);
-  const isLoading = useStore(({ adcm }) => adcm.hosts.isLoading);
+  const isLoading = useStore(({ adcm }) => isShowSpinner(adcm.hosts.loadState));
   const sortParams = useStore((s) => s.adcm.hostsTable.sortParams);
 
   const handleClickMaintenanceMode = (host: AdcmHost) => () => {

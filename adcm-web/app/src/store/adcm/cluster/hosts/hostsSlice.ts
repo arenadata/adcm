@@ -7,11 +7,12 @@ import { AdcmClusterHost } from '@models/adcm/clusterHosts';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { updateIfExists } from '@utils/objectUtils';
 import { toggleMaintenanceMode } from '@store/adcm/cluster/hosts/hostsActionsSlice';
+import { LoadState } from '@models/loadState';
 
 type AdcmClusterHostsState = {
   hosts: AdcmClusterHost[];
   totalCount: number;
-  isLoading: boolean;
+  loadState: LoadState;
 };
 
 const loadClusterHostsFromBackend = createAsyncThunk(
@@ -33,7 +34,7 @@ const loadClusterHostsFromBackend = createAsyncThunk(
 );
 
 const getClusterHosts = createAsyncThunk('adcm/clusters/getClusterHosts', async (clusterId: number, thunkAPI) => {
-  thunkAPI.dispatch(setIsLoading(true));
+  thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
   await thunkAPI.dispatch(loadClusterHostsFromBackend(clusterId));
@@ -42,7 +43,7 @@ const getClusterHosts = createAsyncThunk('adcm/clusters/getClusterHosts', async 
     startDate,
     delay: defaultSpinnerDelay,
     callback: () => {
-      thunkAPI.dispatch(setIsLoading(false));
+      thunkAPI.dispatch(setLoadState(LoadState.Loaded));
     },
   });
 });
@@ -57,15 +58,15 @@ const refreshClusterHosts = createAsyncThunk(
 const createInitialState = (): AdcmClusterHostsState => ({
   hosts: [],
   totalCount: 0,
-  isLoading: true,
+  loadState: LoadState.NotLoaded,
 });
 
 const clusterHostsSlice = createSlice({
   name: 'adcm/clusterHosts',
   initialState: createInitialState(),
   reducers: {
-    setIsLoading(state, action) {
-      state.isLoading = action.payload;
+    setLoadState(state, action) {
+      state.loadState = action.payload;
     },
     cleanupClusterHosts() {
       return createInitialState();
@@ -116,6 +117,6 @@ const clusterHostsSlice = createSlice({
   },
 });
 
-const { setIsLoading, cleanupClusterHosts } = clusterHostsSlice.actions;
+const { setLoadState, cleanupClusterHosts } = clusterHostsSlice.actions;
 export { getClusterHosts, refreshClusterHosts, cleanupClusterHosts };
 export default clusterHostsSlice.reducer;

@@ -9,13 +9,14 @@ import { SortParams } from '@uikit/types/list.types';
 import { useDispatch, useStore } from '@hooks';
 import HostComponentsDynamicActionsIcon from './HostComponentsDynamicActionsIcon/HostComponentsDynamicActionsIcon';
 import { setSortParams } from '@store/adcm/hostComponents/hostComponentsTableSlice';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const HostComponentsTable: React.FC = () => {
   const dispatch = useDispatch();
   const { hostId: hostIdFromUrl } = useParams();
   const hostId = Number(hostIdFromUrl);
   const hostComponents = useStore((s) => s.adcm.hostComponents.hostComponents);
-  const isLoading = useStore((s) => s.adcm.hostComponents.isLoading);
+  const isLoading = useStore((s) => isShowSpinner(s.adcm.hostComponents.loadState));
   const sortParams = useStore((s) => s.adcm.hostComponentsTable.sortParams);
 
   const handleSorting = (sortParams: SortParams) => {
