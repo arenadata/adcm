@@ -261,6 +261,20 @@ class TestClusterHost(BaseAPITestCase):
             {"code": "FOREIGN_HOST", "desc": "Host already linked to another cluster.", "level": "error"},
         )
 
+    def test_create_already_added_fail(self) -> None:
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+
+        response = self.client.post(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"hostId": self.host.pk},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {"code": "HOST_CONFLICT", "desc": "The host is already associated with this cluster.", "level": "error"},
+        )
+
     def test_create_not_found_fail(self):
         response = self.client.post(
             path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
