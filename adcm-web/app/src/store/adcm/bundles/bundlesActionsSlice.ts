@@ -6,6 +6,7 @@ import { LoadState } from '@models/loadState';
 import { showInfo, showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { rejectedFilter } from '@utils/promiseUtils';
+import { loadRelatedData } from './bundlesTableSlice';
 
 interface AdcmBundlesActionsState {
   isUploading: boolean;
@@ -46,6 +47,7 @@ const deleteWithUpdateBundles = createAsyncThunk(
     thunkAPI.dispatch(setLoadState(LoadState.Loading));
     await thunkAPI.dispatch(deleteBundles(selectedBundlesIds));
     await thunkAPI.dispatch(getBundles());
+    await thunkAPI.dispatch(loadRelatedData());
     thunkAPI.dispatch(setLoadState(LoadState.Loaded));
   },
 );
@@ -80,6 +82,7 @@ const uploadWithUpdateBundles = createAsyncThunk(
   async (files: File[], thunkAPI) => {
     await thunkAPI.dispatch(uploadBundles(files));
     await thunkAPI.dispatch(getBundles());
+    await thunkAPI.dispatch(loadRelatedData());
   },
 );
 
