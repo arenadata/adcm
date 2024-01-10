@@ -6,7 +6,10 @@ import { orElseGet } from '@utils/checkUtils';
 import { useSelectedItems } from '@uikit/hooks/useSelectedItems';
 import { AdcmBundle } from '@models/adcm';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
-import { setDeletableId, setSelectedItemsIds as setSelectedBundlesIds } from '@store/adcm/bundles/bundlesSlice';
+import {
+  openDeleteDialog,
+  setSelectedItemsIds as setSelectedBundlesIds,
+} from '@store/adcm/bundles/bundlesActionsSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { setSortParams } from '@store/adcm/bundles/bundlesTableSlice';
 import { Link } from 'react-router-dom';
@@ -20,7 +23,7 @@ const BundlesTable: React.FC = () => {
 
   const bundles = useStore(({ adcm }) => adcm.bundles.bundles);
   const isLoading = useStore(({ adcm }) => isShowSpinner(adcm.bundles.loadState));
-  const selectedItemsIds = useStore(({ adcm }) => adcm.bundles.selectedItemsIds);
+  const selectedItemsIds = useStore(({ adcm }) => adcm.bundlesActions.selectedItemsIds);
   const sortParams = useStore((s) => s.adcm.bundlesTable.sortParams);
 
   const setSelectedItemsIds = useCallback<Dispatch<SetStateAction<number[]>>>(
@@ -40,7 +43,7 @@ const BundlesTable: React.FC = () => {
 
   const getHandleDeleteClick = (bundleId: number) => () => {
     // set deletable id for show Delete Confirm Dialog
-    dispatch(setDeletableId(bundleId));
+    dispatch(openDeleteDialog(bundleId));
   };
 
   const handleSorting = (sortParams: SortParams) => {

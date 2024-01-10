@@ -113,6 +113,7 @@ import hostProviderConfigGroupConfigurationsCompareSlice from '@store/adcm/hostP
 import bellSlice from '@store/adcm/bell/bellSlice';
 import adcmSettingsSlice from '@store/adcm/settings/settingsSlice';
 import adcmSettingsDynamicActionsSlice from '@store/adcm/settings/settingsDynamicActionsSlice';
+import bundlesActionsSlice from './adcm/bundles/bundlesActionsSlice.ts';
 
 const rootReducer = combineReducers({
   auth: authSlice,
@@ -143,6 +144,7 @@ const rootReducer = combineReducers({
     clusterServicesConfigurationsCompare: clusterServicesConfigurationsCompareSlice,
     bundle: bundleSlice,
     bundles: bundlesSlice,
+    bundlesActions: bundlesActionsSlice,
     bundlesTable: bundlesTableSlice,
     breadcrumbs: breadcrumbsSlice,
     hostComponents: hostComponentsSlice,

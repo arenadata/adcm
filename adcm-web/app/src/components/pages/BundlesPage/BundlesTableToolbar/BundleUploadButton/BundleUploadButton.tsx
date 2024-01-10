@@ -1,11 +1,11 @@
 import React, { ChangeEvent, useRef } from 'react';
 import { Button } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
-import { uploadWithUpdateBundles } from '@store/adcm/bundles/bundlesSlice';
+import { uploadWithUpdateBundles } from '@store/adcm/bundles/bundlesActionsSlice';
 
 const BundleUploadButton: React.FC = () => {
   const dispatch = useDispatch();
-  const isUploading = useStore(({ adcm }) => adcm.bundles.isUploading);
+  const isUploading = useStore(({ adcm }) => adcm.bundlesActions.isUploading);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
 
