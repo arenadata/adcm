@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Button, Dialog } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
-import { deleteWithUpdateBundles } from '@store/adcm/bundles/bundlesSlice';
+import { deleteWithUpdateBundles } from '@store/adcm/bundles/bundlesActionsSlice';
 
 const BundlesDeleteButton: React.FC = () => {
   const dispatch = useDispatch();
-  const selectedItemsIds = useStore(({ adcm }) => adcm.bundles.selectedItemsIds);
+  const selectedItemsIds = useStore(({ adcm }) => adcm.bundlesActions.selectedItemsIds);
 
   const isSelectedSomeRows = selectedItemsIds.length > 0;
   const [isOpenDeleteConfirm, setIsOpenDeleteConfirm] = useState(false);
