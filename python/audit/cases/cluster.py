@@ -215,7 +215,10 @@ def cluster_case(
                 service_display_name = []
 
                 if response and response.data:
-                    service_display_name = [data["display_name"] for data in response.data]
+                    service_display_name = [
+                        data["display_name"]
+                        for data in (response.data if isinstance(response.data, list) else [response.data])
+                    ]
                 elif isinstance(view.request.data, list) and all("prototype_id" in data for data in view.request.data):
                     service_display_name = (
                         Prototype.objects.filter(pk__in=[data["prototype_id"] for data in view.request.data])
