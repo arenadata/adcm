@@ -88,7 +88,7 @@ fail-on = ["useless-suppression"]
 
 [tool.pylint."messages control"]
 disable = ["missing-docstring", "missing-timeout", "no-else-return", "no-member", "too-few-public-methods",
-    "too-many-arguments"]
+    "too-many-arguments", "too-many-ancestors"]
 good-names = ["db", "e", "f", "i", "pk"]
 
 [tool.pylint.format]
