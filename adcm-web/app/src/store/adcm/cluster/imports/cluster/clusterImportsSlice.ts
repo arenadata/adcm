@@ -5,6 +5,7 @@ import { AdcmClusterImport, AdcmClusterImportPostPayload, AdcmError } from '@mod
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { showError, showInfo } from '@store/notificationsSlice';
+import { LoadState } from '@models/loadState';
 
 type GetClusterImportsArg = {
   clusterId: number;
@@ -18,7 +19,7 @@ export interface AdcmSaveClusterImportsArgs {
 type AdcmClusterImportsState = {
   clusterImports: AdcmClusterImport[];
   totalCount: number;
-  isLoading: boolean;
+  loadState: LoadState;
   hasSaveError: boolean;
 };
 
@@ -57,7 +58,7 @@ const saveClusterImports = createAsyncThunk(
 const getClusterImports = createAsyncThunk(
   'adcm/cluster/imports/getClusterImports',
   async (arg: GetClusterImportsArg, thunkAPI) => {
-    thunkAPI.dispatch(setIsLoading(true));
+    thunkAPI.dispatch(setLoadState(LoadState.Loading));
     const startDate = new Date();
 
     await thunkAPI.dispatch(loadClusterImports(arg));
@@ -66,7 +67,7 @@ const getClusterImports = createAsyncThunk(
       startDate,
       delay: defaultSpinnerDelay,
       callback: () => {
-        thunkAPI.dispatch(setIsLoading(false));
+        thunkAPI.dispatch(setLoadState(LoadState.Loaded));
       },
     });
   },
@@ -75,7 +76,7 @@ const getClusterImports = createAsyncThunk(
 const createInitialState = (): AdcmClusterImportsState => ({
   clusterImports: [],
   hasSaveError: false,
-  isLoading: true,
+  loadState: LoadState.NotLoaded,
   totalCount: 0,
 });
 
@@ -86,8 +87,8 @@ const clusterImportsSlice = createSlice({
     cleanupClusterImports() {
       return createInitialState();
     },
-    setIsLoading(state, action) {
-      state.isLoading = action.payload;
+    setLoadState(state, action) {
+      state.loadState = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -107,6 +108,6 @@ const clusterImportsSlice = createSlice({
   },
 });
 
-const { cleanupClusterImports, setIsLoading } = clusterImportsSlice.actions;
-export { cleanupClusterImports, getClusterImports, saveClusterImports };
+const { cleanupClusterImports, setLoadState } = clusterImportsSlice.actions;
+export { cleanupClusterImports, getClusterImports, saveClusterImports, setLoadState };
 export default clusterImportsSlice.reducer;

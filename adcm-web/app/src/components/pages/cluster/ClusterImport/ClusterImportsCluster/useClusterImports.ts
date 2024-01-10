@@ -21,6 +21,7 @@ import {
 } from '@pages/cluster/ClusterImport/ClusterImport.utils';
 import { setPaginationParams } from '@store/adcm/cluster/imports/cluster/clusterImportsFilterSlice';
 import { PaginationParams } from '@models/table';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 export const useClusterImports = () => {
   const dispatch = useDispatch();
@@ -39,7 +40,8 @@ export const useClusterImports = () => {
     clusters: new Set(),
     services: new Set(),
   });
-  const { clusterImports, hasSaveError, isLoading, totalCount } = useStore(({ adcm }) => adcm.clusterImports);
+  const { clusterImports, hasSaveError, totalCount } = useStore(({ adcm }) => adcm.clusterImports);
+  const isLoading = useStore((s) => isShowSpinner(s.adcm.clusterImports.loadState));
   const { paginationParams } = useStore(({ adcm }) => adcm.clusterImportsFilter);
 
   useEffect(() => {
