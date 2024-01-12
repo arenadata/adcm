@@ -49,7 +49,8 @@ PYTHON_SITE_PACKAGES = Path(
 ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
 DEFAULT_SALT = b'"j\xebi\xc0\xea\x82\xe0\xa8\xba\x9e\x12E>\x11D'
 
-ADCM_TOKEN = get_adcm_token()
+
+ADCM_TOKEN = get_adcm_token(ADCM_TOKEN_FILE)
 if SECRETS_FILE.is_file():
     with open(SECRETS_FILE, encoding=ENCODING_UTF_8) as f:
         data = json.load(f)
