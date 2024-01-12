@@ -12,12 +12,7 @@
 
 from datetime import datetime
 
-from audit.models import (
-    AuditLog,
-    AuditLogOperationResult,
-    AuditLogOperationType,
-    AuditObjectType,
-)
+from adcm.tests.base import BaseTestCase
 from cm.models import Bundle, Cluster, ConfigLog, GroupConfig, ObjectConfig, Prototype
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
@@ -25,7 +20,12 @@ from rbac.models import User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_403_FORBIDDEN
 
-from adcm.tests.base import BaseTestCase
+from audit.models import (
+    AuditLog,
+    AuditLogOperationResult,
+    AuditLogOperationType,
+    AuditObjectType,
+)
 
 
 class TestConfigLogAudit(BaseTestCase):

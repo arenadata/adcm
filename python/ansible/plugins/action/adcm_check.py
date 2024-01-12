@@ -10,11 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=wrong-import-order,wrong-import-position
 
-from __future__ import absolute_import, division, print_function
-
-__metaclass__ = type  # pylint: disable=invalid-name
 
 ANSIBLE_METADATA = {"metadata_version": "1.1", "supported_by": "Arenadata"}
 
@@ -100,7 +96,9 @@ import sys
 from ansible.plugins.action import ActionBase
 
 sys.path.append("/adcm/python")
-import adcm.init_django  # pylint: disable=unused-import
+
+import adcm.init_django  # noqa: F401, isort:skip
+
 from cm.ansible_plugin import create_checklog_object
 from cm.errors import AdcmEx
 from cm.logger import logger
@@ -121,7 +119,7 @@ class ActionModule(ActionBase):
         )
     )
 
-    def run(self, tmp=None, task_vars=None):  # pylint: disable=too-many-locals
+    def run(self, tmp=None, task_vars=None):
         super().run(tmp, task_vars)
         job_id = None
         if task_vars is not None and "job" in task_vars or "id" in task_vars["job"]:
@@ -148,10 +146,7 @@ class ActionModule(ActionBase):
         group_fail_msg = self._task.args.get("group_fail_msg", "")
         group_success_msg = self._task.args.get("group_success_msg", "")
 
-        if result:
-            msg = success_msg if success_msg else msg
-        else:
-            msg = fail_msg if fail_msg else msg
+        msg = (success_msg if success_msg else msg) if result else fail_msg if fail_msg else msg
 
         group = {"title": group_title, "success_msg": group_success_msg, "fail_msg": group_fail_msg}
 

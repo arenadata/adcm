@@ -15,6 +15,7 @@ from cm.models import ADCMEntity
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from django.db.transaction import atomic
+
 from rbac.models import Group, Policy, PolicyObject, Role
 
 
@@ -64,7 +65,7 @@ def policy_create(name: str, role: Role, built_in: bool = False, **kwargs) -> Po
 
         policy.apply()
 
-        return policy
+        return policy  # noqa: TRY300
     except IntegrityError as e:
         raise AdcmEx(code="POLICY_CREATE_ERROR", msg=f"Policy creation failed with error {e}") from e
 

@@ -14,7 +14,6 @@ from io import BytesIO
 from operator import itemgetter
 from unittest.mock import patch
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.job import create_task
 from cm.models import (
     ADCM,
@@ -33,8 +32,10 @@ from django.utils import timezone
 from rbac.services.user import create_user
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
+from api_v2.tests.base import BaseAPITestCase
 
-class TestTask(BaseAPITestCase):  # pylint: disable=too-many-instance-attributes
+
+class TestTask(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -165,7 +166,7 @@ class TestTask(BaseAPITestCase):  # pylint: disable=too-many-instance-attributes
         self.assertNotIn(self.adcm_task.pk, [task["id"] for task in response.json()["results"]])
 
 
-class TestTaskObjects(BaseAPITestCase):  # pylint: disable=too-many-instance-attributes
+class TestTaskObjects(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -257,7 +258,7 @@ class TestTaskObjects(BaseAPITestCase):  # pylint: disable=too-many-instance-att
         object_: Cluster | ClusterObject | ServiceComponent | HostProvider | Host | ADCM,
         action_name: str,
         *,
-        host: Host | None = None
+        host: Host | None = None,
     ):
         action = Action.objects.get(name=action_name, prototype=object_.prototype)
         hosts = [] if not host else [host.pk]

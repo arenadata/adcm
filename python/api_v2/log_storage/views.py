@@ -10,12 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
 from pathlib import Path
+import re
 
-from api_v2.log_storage.permissions import LogStoragePermissions
-from api_v2.log_storage.serializers import LogStorageSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from adcm import settings
+from adcm.permissions import VIEW_LOGSTORAGE_PERMISSION
 from cm.models import JobLog, LogStorage
 from django.http import HttpResponse
 from guardian.mixins import PermissionListMixin
@@ -25,11 +24,11 @@ from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from adcm import settings
-from adcm.permissions import VIEW_LOGSTORAGE_PERMISSION
+from api_v2.log_storage.permissions import LogStoragePermissions
+from api_v2.log_storage.serializers import LogStorageSerializer
+from api_v2.views import CamelCaseGenericViewSet
 
 
-# pylint:disable-next=too-many-ancestors
 class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, CamelCaseGenericViewSet):
     queryset = LogStorage.objects.select_related("job")
     serializer_class = LogStorageSerializer
@@ -55,7 +54,7 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
         return super().retrieve(request, *args, **kwargs)
 
     @action(methods=["get"], detail=True)
-    def download(self, request: Request, **kwargs) -> HttpResponse:  # pylint: disable=unused-argument
+    def download(self, request: Request, **kwargs) -> HttpResponse:  # noqa: ARG001, ARG002
         log_storage = self.get_object()
         job_pk = log_storage.job.pk
 
@@ -65,10 +64,7 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
             filename = f"{job_pk}-{log_storage.name}.{log_storage.format}"
 
         filename = re.sub(r"\s+", "_", filename)
-        if log_storage.format == "txt":
-            mime_type = "text/plain"
-        else:
-            mime_type = "application/json"
+        mime_type = "text/plain" if log_storage.format == "txt" else "application/json"
 
         if log_storage.body is None:
             file_path = Path(

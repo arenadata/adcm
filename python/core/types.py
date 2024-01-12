@@ -12,13 +12,9 @@
 
 from typing import TypeAlias
 
-# pylint: disable=invalid-name
-
 ObjectID: TypeAlias = int
 ClusterID: TypeAlias = ObjectID
 HostID: TypeAlias = ObjectID
-
-# pylint: enable=invalid-name
 
 
 class ADCMCoreError(Exception):

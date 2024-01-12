@@ -10,15 +10,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=wrong-import-order
 
-import json
-import os
-import subprocess
-import sys
 from pathlib import Path
+import os
+import sys
+import json
+import subprocess
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django  # noqa: F401, isort:skip
 
 from cm.ansible_plugin import finish_check
 from cm.api import get_hc, save_hc
@@ -36,27 +35,19 @@ from rbac.roles import re_apply_policy_for_jobs
 
 def open_file(root, tag, job_id):
     fname = f"{root}/{job_id}/{tag}.txt"
-    f = open(fname, "w", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
-
-    return f
+    return Path(fname).open(mode="w", encoding=settings.ENCODING_UTF_8)  # noqa: SIM115
 
 
 def read_config(job_id):
-    file_descriptor = open(  # pylint: disable=consider-using-with
-        f"{settings.RUN_DIR}/{job_id}/config.json",
-        encoding=settings.ENCODING_UTF_8,
-    )
-    conf = json.load(file_descriptor)
-    file_descriptor.close()
-
-    return conf
+    with Path(f"{settings.RUN_DIR}/{job_id}/config.json").open(encoding=settings.ENCODING_UTF_8) as file_descriptor:
+        return json.load(file_descriptor)
 
 
 def set_job_status(job_id: int, return_code: int) -> int:
     if return_code == 0:
         set_job_final_status(job_id=job_id, status=JobStatus.SUCCESS)
         return 0
-    elif return_code == -15:
+    elif return_code == -15:  # noqa: RET505
         set_job_final_status(job_id=job_id, status=JobStatus.ABORTED)
         return 15
     else:
@@ -112,8 +103,8 @@ def process_err_out_file(job_id, job_type):
 
 def start_subprocess(job_id, cmd, conf, out_file, err_file):
     logger.info("job run cmd: %s", " ".join(cmd))
-    process = subprocess.Popen(  # pylint: disable=consider-using-with
-        cmd,
+    process = subprocess.Popen(  # noqa: SIM115
+        cmd,  # noqa: S603
         env=get_configured_env(job_config=conf),
         stdout=out_file,
         stderr=err_file,
@@ -148,9 +139,8 @@ def run_ansible(job_id: int) -> None:
         f"{settings.RUN_DIR}/{job_id}/inventory.json",
         playbook,
     ]
-    if "params" in conf["job"]:
-        if "ansible_tags" in conf["job"]["params"]:
-            cmd.append("--tags=" + conf["job"]["params"]["ansible_tags"])
+    if "params" in conf["job"] and "ansible_tags" in conf["job"]["params"]:
+        cmd.append("--tags=" + conf["job"]["params"]["ansible_tags"])
     if "verbose" in conf["job"] and conf["job"]["verbose"]:
         cmd.append("-vvvv")
     ret = start_subprocess(job_id, cmd, conf, out_file, err_file)
@@ -244,7 +234,7 @@ def main(job_id):
 
 def do_job():
     if len(sys.argv) < 2:
-        print(f"\nUsage:\n{os.path.basename(sys.argv[0])} job_id\n")
+        print(f"\nUsage:\n{os.path.basename(sys.argv[0])} job_id\n")  # noqa: PTH119
         sys.exit(4)
     else:
         main(sys.argv[1])

@@ -12,11 +12,11 @@
 
 import string
 
-from cm.models import Bundle, Cluster, Prototype
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from django.urls import reverse
 from rest_framework import status
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from cm.models import Bundle, Cluster, Prototype
 
 
 class TestCluster(BaseTestCase):

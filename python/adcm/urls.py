@@ -21,6 +21,5 @@ urlpatterns = [
     path("api/ui/", include("api_ui.urls")),
 ]
 
-# pylint: disable=invalid-name
 handler500 = "adcm.views.server_error"
 handler404 = "adcm.views.page_not_found"

@@ -13,7 +13,6 @@
 from typing import Callable
 from unittest.mock import patch
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import (
     Action,
     ADCMEntityStatus,
@@ -35,8 +34,10 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
+from api_v2.tests.base import BaseAPITestCase
 
-class TestCluster(BaseAPITestCase):  # pylint:disable=too-many-public-methods
+
+class TestCluster(BaseAPITestCase):
     def get_cluster_status_mock(self) -> Callable:
         def inner(cluster: Cluster) -> int:
             if cluster.pk == self.cluster_1.pk:
@@ -443,7 +444,7 @@ class TestClusterActions(BaseAPITestCase):
         self.assertDictEqual(remove, {"action": "remove", "component": "component_2", "service": "service_1"})
 
 
-class TestClusterMM(BaseAPITestCase):  # pylint:disable=too-many-instance-attributes
+class TestClusterMM(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 

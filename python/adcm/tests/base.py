@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import random
-import string
-import tarfile
 from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
 from typing import TypedDict
+import random
+import string
+import tarfile
 
 from api_v2.prototype.utils import accept_license
 from api_v2.service.utils import bulk_add_services_to_cluster
@@ -91,8 +91,6 @@ class ParallelReadyTestCase:
 
 
 class BaseTestCase(TestCase, ParallelReadyTestCase):
-    # pylint: disable=too-many-instance-attributes,too-many-public-methods
-
     def setUp(self) -> None:
         self.test_user_username = "test_user"
         self.test_user_password = "test_user_password"

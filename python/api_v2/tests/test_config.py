@@ -9,11 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 from pathlib import Path
+import json
 
-from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
-from api_v2.tests.base import BaseAPITestCase
 from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.inventory import get_obj_config
 from cm.models import (
@@ -36,7 +34,8 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
 )
 
-# pylint: disable=too-many-lines
+from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestClusterConfig(BaseAPITestCase):
@@ -2129,7 +2128,7 @@ class TestConfigSchemaEnumWithoutValues(BaseAPITestCase):
         )
 
 
-class TestGroupConfigUpgrade(BaseAPITestCase):  # pylint: disable=too-many-instance-attributes
+class TestGroupConfigUpgrade(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 

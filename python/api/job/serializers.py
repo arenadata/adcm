@@ -10,11 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from pathlib import Path
+import json
 
-from api.action.serializers import ActionJobSerializer
-from api.concern.serializers import ConcernItemSerializer
 from cm.ansible_plugin import get_checklogs_data_by_job_id
 from cm.job import ActionRunPayload, run_action
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
@@ -26,6 +24,9 @@ from rest_framework.serializers import (
     JSONField,
     SerializerMethodField,
 )
+
+from api.action.serializers import ActionJobSerializer
+from api.concern.serializers import ConcernItemSerializer
 
 
 class JobShortSerializer(HyperlinkedModelSerializer):
@@ -117,16 +118,11 @@ class TaskRetrieveSerializer(HyperlinkedModelSerializer):
 
     @staticmethod
     def get_objects(obj: TaskLog) -> list:
-        objects = [{"type": k, **v} for k, v in obj.selector.items()]
-
-        return objects
+        return [{"type": k, **v} for k, v in obj.selector.items()]
 
     @staticmethod
     def get_terminatable(obj: TaskLog):
-        if obj.action:
-            allow_to_terminate = obj.action.allow_to_terminate
-        else:
-            allow_to_terminate = False
+        allow_to_terminate = obj.action.allow_to_terminate if obj.action else False
 
         if allow_to_terminate and obj.status in {JobStatus.CREATED, JobStatus.RUNNING}:
             return True
@@ -214,9 +210,7 @@ class JobRetrieveSerializer(HyperlinkedModelSerializer):
 
     @staticmethod
     def get_objects(obj: JobLog) -> list | None:
-        objects = [{"type": k, **v} for k, v in obj.task.selector.items()]
-
-        return objects
+        return [{"type": k, **v} for k, v in obj.task.selector.items()]
 
     @staticmethod
     def get_display_name(obj: JobLog) -> str | None:
@@ -298,13 +292,12 @@ class LogStorageRetrieveSerializer(HyperlinkedModelSerializer):
                 obj.body = get_checklogs_data_by_job_id(obj.job_id)
             if isinstance(obj.body, str):
                 obj.body = json.loads(obj.body)
-        elif obj.type == "custom":
-            if obj.format == "json" and isinstance(obj.body, str):
-                try:
-                    custom_content = json.loads(obj.body)
-                    obj.body = json.dumps(custom_content, indent=4)
-                except json.JSONDecodeError:
-                    pass
+        elif obj.type == "custom" and obj.format == "json" and isinstance(obj.body, str):
+            try:
+                custom_content = json.loads(obj.body)
+                obj.body = json.dumps(custom_content, indent=4)
+            except json.JSONDecodeError:
+                pass
 
         return obj.body
 

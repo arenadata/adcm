@@ -11,7 +11,6 @@
 # limitations under the License.
 
 
-from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditObject
 from django.utils import timezone
 from rbac.models import Group
@@ -26,6 +25,8 @@ from rest_framework.status import (
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
 )
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestGroupAudit(BaseAPITestCase):

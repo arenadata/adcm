@@ -13,6 +13,9 @@ from functools import partial
 from typing import Iterable
 
 from api_v2.concern.serializers import ConcernSerializer
+from django.db.transaction import on_commit
+from djangorestframework_camel_case.util import camelize
+
 from cm.adcm_config.config import get_prototype_config
 from cm.adcm_config.utils import proto_ref
 from cm.data_containers import PrototypeData
@@ -42,23 +45,19 @@ from cm.models import (
 )
 from cm.status_api import send_concern_creation_event, send_concern_delete_event
 from cm.utils import obj_ref
-from django.db.transaction import on_commit
-from djangorestframework_camel_case.util import camelize
 
 
-def check_config(obj: ADCMEntity) -> bool:  # pylint: disable=too-many-branches
+def check_config(obj: ADCMEntity) -> bool:
     spec, _, _, _ = get_prototype_config(prototype=obj.prototype)
     conf, attr = get_obj_config(obj=obj)
-    for key, value in spec.items():  # pylint: disable=too-many-nested-blocks
+    for key, value in spec.items():
         if "required" in value:
-            if value["required"]:
-                if key in conf and conf[key] is None:
-                    logger.debug("required config key %s of %s is missing", key, obj_ref(obj=obj))
-                    return False
+            if value["required"] and key in conf and conf[key] is None:
+                logger.debug("required config key %s of %s is missing", key, obj_ref(obj=obj))
+                return False
         else:
-            if key in attr:
-                if "active" in attr[key] and not attr[key]["active"]:
-                    continue
+            if key in attr and "active" in attr[key] and not attr[key]["active"]:
+                continue
             for subkey in value:
                 if value[subkey]["required"]:
                     if key not in conf:
@@ -214,7 +213,7 @@ def check_hc_requires(shc_list: list[tuple[ClusterObject, Host, ServiceComponent
                 continue
 
             if not any(
-                {
+                {  # noqa: C419
                     (shc[0].prototype.name == require["service"] and shc[2].prototype.name == req_comp)
                     for shc in shc_list
                 }
@@ -418,14 +417,13 @@ def _create_concern_item(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernI
     kwargs = get_kwargs_for_issue(msg_name=msg_name, source=obj)
     reason = MessageTemplate.get_message_from_template(name=msg_name.value, **kwargs)
     issue_name = _gen_issue_name(obj=obj, cause=issue_cause)
-    issue = ConcernItem.objects.create(
+    return ConcernItem.objects.create(
         type=ConcernType.ISSUE,
         name=issue_name,
         reason=reason,
         owner=obj,
         cause=issue_cause,
     )
-    return issue
 
 
 def create_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:

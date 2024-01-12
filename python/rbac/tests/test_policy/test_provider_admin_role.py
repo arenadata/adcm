@@ -12,14 +12,14 @@
 
 from unittest.mock import patch
 
+from adcm.tests.base import APPLICATION_JSON
 from cm.models import ConfigLog, Host
 from django.db.models import ObjectDoesNotExist
 from django.urls import reverse
-from rbac.tests.test_policy.base import PolicyBaseTestCase
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
-from adcm.tests.base import APPLICATION_JSON
+from rbac.tests.test_policy.base import PolicyBaseTestCase
 
 
 class PolicyWithProviderAdminRole(PolicyBaseTestCase):

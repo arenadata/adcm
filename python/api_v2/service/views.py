@@ -9,20 +9,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.config.utils import ConfigSchemaMixin
-from api_v2.service.filters import ServiceFilter
-from api_v2.service.permissions import ServicePermissions
-from api_v2.service.serializers import (
-    ServiceCreateSerializer,
-    ServiceMaintenanceModeSerializer,
-    ServiceRetrieveSerializer,
-    ServiceStatusSerializer,
+from adcm.permissions import (
+    ADD_SERVICE_PERM,
+    CHANGE_MM_PERM,
+    VIEW_CLUSTER_PERM,
+    VIEW_SERVICE_PERM,
+    ChangeMMPermissions,
+    check_custom_perm,
+    get_object_for_user,
 )
-from api_v2.service.utils import (
-    bulk_add_services_to_cluster,
-    validate_service_prototypes,
-)
-from api_v2.views import CamelCaseGenericViewSet
+from adcm.utils import delete_service_from_api, get_maintenance_mode_response
 from audit.utils import audit
 from cm.api import update_mm_objects
 from cm.models import Cluster, ClusterObject
@@ -39,19 +35,23 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from adcm.permissions import (
-    ADD_SERVICE_PERM,
-    CHANGE_MM_PERM,
-    VIEW_CLUSTER_PERM,
-    VIEW_SERVICE_PERM,
-    ChangeMMPermissions,
-    check_custom_perm,
-    get_object_for_user,
+from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.service.filters import ServiceFilter
+from api_v2.service.permissions import ServicePermissions
+from api_v2.service.serializers import (
+    ServiceCreateSerializer,
+    ServiceMaintenanceModeSerializer,
+    ServiceRetrieveSerializer,
+    ServiceStatusSerializer,
 )
-from adcm.utils import delete_service_from_api, get_maintenance_mode_response
+from api_v2.service.utils import (
+    bulk_add_services_to_cluster,
+    validate_service_prototypes,
+)
+from api_v2.views import CamelCaseGenericViewSet
 
 
-class ServiceViewSet(  # pylint: disable=too-many-ancestors
+class ServiceViewSet(
     PermissionListMixin,
     ConfigSchemaMixin,
     CreateModelMixin,
@@ -85,7 +85,7 @@ class ServiceViewSet(  # pylint: disable=too-many-ancestors
         return self.serializer_class
 
     @audit
-    def create(self, request: Request, *args, **kwargs):
+    def create(self, request: Request, *args, **kwargs):  # noqa: ARG002
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, pk=kwargs["cluster_pk"]
         )
@@ -112,14 +112,14 @@ class ServiceViewSet(  # pylint: disable=too-many-ancestors
         return Response(status=HTTP_201_CREATED, data=ServiceRetrieveSerializer(instance=added_services[0]).data)
 
     @audit
-    def destroy(self, request: Request, *args, **kwargs):
+    def destroy(self, request: Request, *args, **kwargs):  # noqa: ARG002
         instance = self.get_object()
         return delete_service_from_api(service=instance)
 
     @audit
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
-    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         service = get_object_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, pk=kwargs["pk"])
         check_custom_perm(
             user=request.user, action_type=CHANGE_MM_PERM, model=service.__class__.__name__.lower(), obj=service
@@ -135,7 +135,7 @@ class ServiceViewSet(  # pylint: disable=too-many-ancestors
         return response
 
     @action(methods=["get"], detail=True, url_path="statuses")
-    def statuses(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         service = get_object_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, id=kwargs["pk"])
 
         return Response(data=ServiceStatusSerializer(instance=service).data)

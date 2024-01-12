@@ -14,6 +14,13 @@ from datetime import datetime
 from pathlib import Path
 from secrets import token_hex
 
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from cm.models import ObjectType, Prototype
+from django.urls import reverse
+from rbac.models import User
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
+
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -22,13 +29,6 @@ from audit.models import (
     AuditSession,
     AuditUser,
 )
-from cm.models import ObjectType, Prototype
-from django.urls import reverse
-from rbac.models import User
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestUserAudit(BaseTestCase):

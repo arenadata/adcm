@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.tests.base import APPLICATION_JSON
 from cm.models import MaintenanceMode
 from django.urls import reverse
-from rbac.tests.test_policy.base import PolicyBaseTestCase
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
-from adcm.tests.base import APPLICATION_JSON
+from rbac.tests.test_policy.base import PolicyBaseTestCase
 
 
 class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
@@ -25,7 +25,7 @@ class PolicyNoRightsUserHaveNoAccessTestCase(PolicyBaseTestCase):
 
         self.another_user_log_in(username=self.new_user.username, password=self.new_user_password)
 
-    def test_no_rights_user_have_no_access(self):  # pylint: disable=too-many-statements
+    def test_no_rights_user_have_no_access(self):
         response: Response = self.client.get(
             path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": self.cluster.pk}),
         )

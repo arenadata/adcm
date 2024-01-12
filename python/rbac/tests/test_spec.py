@@ -11,12 +11,12 @@
 # limitations under the License.
 
 
-import os
 from pathlib import Path
+import os
 
-import ruyaml
 from django.conf import settings
 from django.test import TestCase
+import ruyaml
 
 MANDATORY_KEYS = ["name", "type", "module_name", "class_name"]
 
@@ -37,7 +37,7 @@ BUSINESS_PARAMETRISATION = [
 
 class TestRoleSpecification(TestCase):
     def setUp(self) -> None:
-        with open(Path(os.path.dirname(__file__), "../upgrade/role_spec.yaml"), encoding=settings.ENCODING_UTF_8) as f:
+        with Path(os.path.dirname(__file__), "../upgrade/role_spec.yaml").open(encoding=settings.ENCODING_UTF_8) as f:
             self.spec_data: dict = ruyaml.YAML().load(f)
         self.role_map: dict = {role["name"]: role for role in self.spec_data["roles"]}
         self.roots = self.role_map.copy()
@@ -64,17 +64,12 @@ class TestRoleSpecification(TestCase):
 
     @staticmethod
     def _is_in_set(allowed: list[set[str]], value: set):
-        for allowed_value in allowed:
-            if allowed_value == value:
-                return True
-
-        return False
+        return any(allowed_value == value for allowed_value in allowed)
 
     def test_allowed_parametrization(self):
         for value in self.role_map.values():
-            if "parametrized_by" in value:
-                if value["type"] == "business":
-                    self.assertTrue(self._is_in_set(BUSINESS_PARAMETRISATION, set(value["parametrized_by"])))
+            if "parametrized_by" in value and value["type"] == "business":
+                self.assertTrue(self._is_in_set(BUSINESS_PARAMETRISATION, set(value["parametrized_by"])))
 
     def _tree_dive_in(self, roles: dict, visited: dict, path: list, role: dict, root):
         if role["name"] in visited:

@@ -11,10 +11,7 @@
 # limitations under the License.
 
 
-from api_v2.cluster.utils import get_depend_on
-from api_v2.concern.serializers import ConcernSerializer
-from api_v2.prototype.serializers import PrototypeRelatedSerializer
-from api_v2.prototype.utils import get_license_text
+from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import (
     Cluster,
@@ -35,7 +32,10 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
-from adcm.serializers import EmptySerializer
+from api_v2.cluster.utils import get_depend_on
+from api_v2.concern.serializers import ConcernSerializer
+from api_v2.prototype.serializers import PrototypeRelatedSerializer
+from api_v2.prototype.utils import get_license_text
 
 
 class ClusterSerializer(ModelSerializer):

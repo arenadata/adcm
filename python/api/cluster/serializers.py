@@ -10,13 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.action.serializers import ActionShort
-from api.component.serializers import ComponentShortSerializer
-from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
-from api.host.serializers import HostSerializer
-from api.serializers import DoUpgradeSerializer, StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL, UrlField, check_obj
+from adcm.serializers import EmptySerializer
+from adcm.utils import filter_actions, get_requires
 from cm.adcm_config.config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
@@ -40,8 +35,13 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
-from adcm.serializers import EmptySerializer
-from adcm.utils import filter_actions, get_requires
+from api.action.serializers import ActionShort
+from api.component.serializers import ComponentShortSerializer
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.host.serializers import HostSerializer
+from api.serializers import DoUpgradeSerializer, StringListSerializer
+from api.utils import CommonAPIURL, ObjectURL, UrlField, check_obj
 
 
 def get_cluster_id(obj):
@@ -289,12 +289,12 @@ class HostComponentUISerializer(EmptySerializer):
     host = SerializerMethodField()
     component = SerializerMethodField()
 
-    def get_host(self, obj):  # pylint: disable=unused-argument
+    def get_host(self, obj):  # noqa: ARG001, ARG002
         hosts = Host.objects.filter(cluster=self.context.get("cluster"))
 
         return HostSerializer(hosts, many=True, context=self.context).data
 
-    def get_component(self, obj):  # pylint: disable=unused-argument
+    def get_component(self, obj):  # noqa: ARG001, ARG002
         comps = ServiceComponent.objects.filter(cluster=self.context.get("cluster"))
 
         return HCComponentSerializer(comps, many=True, context=self.context).data

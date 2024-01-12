@@ -11,9 +11,8 @@
 # limitations under the License.
 
 
+from adcm.serializers import EmptySerializer
 from django.conf import settings
-from rbac.models import Group, User
-from rbac.services.user import create_user, update_user
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.fields import (
     BooleanField,
@@ -30,7 +29,8 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
-from adcm.serializers import EmptySerializer
+from rbac.models import Group, User
+from rbac.services.user import create_user, update_user
 
 
 class UserGroupSerializer(EmptySerializer):

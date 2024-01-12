@@ -24,5 +24,5 @@ class TaskPermissions(DjangoObjectPermissions):
         "DELETE": ["%(app_label)s.delete_%(model_name)s"],
     }
 
-    def has_permission(self, request, view):
+    def has_permission(self, request, view):  # noqa: ARG002
         return True

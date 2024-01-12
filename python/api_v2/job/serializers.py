@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.task.serializers import JobListSerializer, TaskRetrieveByJobSerializer
 from cm.models import JobLog
 from rest_framework.fields import DateTimeField
+
+from api_v2.task.serializers import JobListSerializer, TaskRetrieveByJobSerializer
 
 
 class JobRetrieveSerializer(JobListSerializer):

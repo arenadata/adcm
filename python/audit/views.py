@@ -10,15 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from audit.filters import AuditLogListFilter, AuditSessionListFilter
-from audit.models import AuditLog, AuditSession
-from audit.serializers import AuditLogSerializer, AuditSessionSerializer
+from adcm.permissions import SuperuserOnlyMixin
 from rest_framework.permissions import AllowAny
 from rest_framework.routers import APIRootView
 from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from adcm.permissions import SuperuserOnlyMixin
+from audit.filters import AuditLogListFilter, AuditSessionListFilter
+from audit.models import AuditLog, AuditSession
+from audit.serializers import AuditLogSerializer, AuditSessionSerializer
 
 
 class AuditRoot(APIRootView):
@@ -29,7 +29,6 @@ class AuditRoot(APIRootView):
     }
 
 
-# pylint: disable=too-many-ancestors
 class AuditLogViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
     not_superuser_error_code = "AUDIT_OPERATIONS_FORBIDDEN"
     queryset = AuditLog.objects.select_related("audit_object", "user").order_by("-operation_time", "-pk")
@@ -38,7 +37,6 @@ class AuditLogViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
     schema = AutoSchema()
 
 
-# pylint: disable=too-many-ancestors
 class AuditSessionViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
     not_superuser_error_code = "AUDIT_LOGINS_FORBIDDEN"
     queryset = AuditSession.objects.select_related("user").order_by("-login_time", "-pk")

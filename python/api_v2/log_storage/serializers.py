@@ -10,14 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=duplicate-code
-import json
 from contextlib import suppress
+import json
 
+from adcm import settings
 from cm.ansible_plugin import get_checklogs_data_by_job_id
 from cm.log import extract_log_content_from_fs
 from cm.models import LogStorage
-from django.conf import settings
 from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
@@ -54,15 +53,10 @@ class LogStorageSerializer(ModelSerializer):
             and len(content) >= settings.STDOUT_STDERR_LOG_MAX_UNCUT_LENGTH
         ):
             cut_lines = "\n".join(
-                (
-                    line
-                    if len(line) <= settings.STDOUT_STDERR_LOG_LINE_CUT_LENGTH
-                    else (
-                        line[: settings.STDOUT_STDERR_LOG_LINE_CUT_LENGTH]
-                        + settings.STDOUT_STDERR_TRUNCATED_LOG_MESSAGE
-                    )
-                    for line in content.splitlines()[-1500:]
-                )
+                line
+                if len(line) <= settings.STDOUT_STDERR_LOG_LINE_CUT_LENGTH
+                else (line[: settings.STDOUT_STDERR_LOG_LINE_CUT_LENGTH] + settings.STDOUT_STDERR_TRUNCATED_LOG_MESSAGE)
+                for line in content.splitlines()[-1500:]
             )
             content = (
                 f"{settings.STDOUT_STDERR_TRUNCATED_LOG_MESSAGE}\n"

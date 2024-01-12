@@ -15,11 +15,12 @@ import re
 from cm.errors import raise_adcm_ex
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
+
 from rbac.models import Group, OriginType
 
 
 @receiver(signal=pre_save, sender=Group)
-def handle_name_type_display_name(sender, instance, **kwargs):  # pylint: disable=unused-argument
+def handle_name_type_display_name(sender, instance, **kwargs):  # noqa: ARG001
     if kwargs["raw"]:
         return
 

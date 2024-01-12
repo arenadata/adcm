@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.job.views import TaskViewSet
 from rest_framework.routers import SimpleRouter
+
+from api.job.views import TaskViewSet
 
 router = SimpleRouter()
 router.register("", TaskViewSet)

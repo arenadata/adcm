@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.tests.base import BaseTestCase
+
 from cm.api import add_hc, add_service_to_cluster
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues
@@ -22,8 +24,6 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
-
-from adcm.tests.base import BaseTestCase
 
 
 class TestComponent(BaseTestCase):

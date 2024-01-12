@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api import docs, views
 from django.urls import include, path, register_converter
 from rbac.endpoints import token
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
@@ -22,6 +21,8 @@ from rest_framework.renderers import (
 )
 from rest_framework.schemas.coreapi import SchemaGenerator
 from rest_framework.schemas.views import SchemaView
+
+from api import docs, views
 
 register_converter(views.NameConverter, "name")
 generator = SchemaGenerator(title="ArenaData Chapel API", patterns=[path("api/v1/", include("api.urls"))])

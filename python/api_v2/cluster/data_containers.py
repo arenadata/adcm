@@ -33,7 +33,7 @@ class MappingEntryData:
 
 
 @dataclass
-class MappingData:  # pylint: disable=too-many-instance-attributes
+class MappingData:
     cluster: ClusterData
     services: dict[int, ServiceData]
     components: dict[int, ComponentData]
@@ -46,8 +46,8 @@ class MappingData:  # pylint: disable=too-many-instance-attributes
 
     @cached_property
     def mapping_difference(self) -> dict[Literal["add", "remove", "remain"], list[MappingEntryData]]:
-        input_mapping_ids = set((map_.host.id, map_.component.id, map_.service.id) for map_ in self.mapping)
-        existing_mapping_ids = set((map_.host_id, map_.component_id, map_.service_id) for map_ in self.existing_mapping)
+        input_mapping_ids = {(map_.host.id, map_.component.id, map_.service.id) for map_ in self.mapping}
+        existing_mapping_ids = {(map_.host_id, map_.component_id, map_.service_id) for map_ in self.existing_mapping}
 
         return {
             "add": [
@@ -73,16 +73,16 @@ class MappingData:  # pylint: disable=too-many-instance-attributes
     @cached_property
     def mapping_names(self) -> dict[Literal["services", "components"], set[str]]:
         return {
-            "services": set(
+            "services": {
                 self.prototypes[map_.service.prototype_id].name
                 for map_ in self.mapping
                 if self.prototypes[map_.service.prototype_id].type == "service"
-            ),
-            "components": set(
+            },
+            "components": {
                 self.prototypes[map_.service.prototype_id].name
                 for map_ in self.mapping
                 if self.prototypes[map_.service.prototype_id].type == "component"
-            ),
+            },
         }
 
     @cached_property

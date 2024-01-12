@@ -11,7 +11,6 @@
 # limitations under the License.
 
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import Action, ClusterObject, ServiceComponent
 from rbac.services.user import create_user
 from rest_framework.reverse import reverse
@@ -22,6 +21,8 @@ from rest_framework.status import (
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
 )
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestComponentAudit(BaseAPITestCase):

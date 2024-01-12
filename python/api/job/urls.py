@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.job.views import JobViewSet, LogStorageViewSet
 from django.urls import path
 from rest_framework.routers import SimpleRouter
+
+from api.job.views import JobViewSet, LogStorageViewSet
 
 router = SimpleRouter()
 router.register("", JobViewSet, basename="joblog")

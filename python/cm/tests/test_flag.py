@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.tests.base import BaseTestCase
+
 from cm.flag import create_flag, get_flag_name, remove_flag, update_object_flag
 from cm.hierarchy import Tree
 from cm.models import ConcernCause, ConcernItem, ConcernType
 from cm.tests.utils import generate_hierarchy
-
-from adcm.tests.base import BaseTestCase
 
 
 class FlagTest(BaseTestCase):

@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rbac.endpoints.group.views import GroupViewSet
 from rest_framework.routers import SimpleRouter
+
+from rbac.endpoints.group.views import GroupViewSet
 
 router = SimpleRouter()
 router.register("", GroupViewSet, basename="group")

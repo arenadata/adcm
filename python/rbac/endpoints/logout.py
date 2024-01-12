@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import django.contrib.auth
+from adcm.serializers import EmptySerializer
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.schemas.coreapi import AutoSchema
-
-from adcm.serializers import EmptySerializer
+import django.contrib.auth
 
 
 class LogOutSerializer(EmptySerializer):
@@ -28,7 +27,7 @@ class LogOut(GenericAPIView):
     schema = AutoSchema()
 
     @staticmethod
-    def post(request, *args, **kwargs):  # pylint: disable=unused-argument
+    def post(request, *args, **kwargs):  # noqa: ARG004
         django.contrib.auth.logout(request)
 
         return Response(status=status.HTTP_204_NO_CONTENT)

@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-import os
 from collections.abc import Mapping
 from pathlib import Path
 from secrets import token_hex
 from typing import Any, Iterable, Protocol, TypeVar
+import os
+import json
 
 
 class WithPK(Protocol):
@@ -99,7 +99,7 @@ def dict_to_obj(dictionary: dict, obj: Any, keys: Iterable) -> Any:
     return obj
 
 
-def obj_ref(obj: type["ADCMEntity"]) -> str:
+def obj_ref(obj: type["ADCMEntity"]) -> str:  # noqa: F821
     if hasattr(obj, "name"):
         name = obj.name
     elif hasattr(obj, "fqdn"):

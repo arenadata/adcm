@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.concern.serializers import ConcernSerializer
-from api_v2.prototype.serializers import PrototypeRelatedSerializer
+from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
 from cm.errors import AdcmEx
 from cm.models import HostProvider, ObjectType, Prototype
@@ -23,7 +22,8 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
-from adcm.serializers import EmptySerializer
+from api_v2.concern.serializers import ConcernSerializer
+from api_v2.prototype.serializers import PrototypeRelatedSerializer
 
 
 class HostProviderSerializer(ModelSerializer):

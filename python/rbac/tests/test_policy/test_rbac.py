@@ -19,11 +19,12 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+
 from rbac.models import Group, Policy, User
 from rbac.tests.test_base import RBACBaseTestCase
 
 
-class PolicyRBACTestCase(RBACBaseTestCase):  # pylint: disable=too-many-instance-attributes
+class PolicyRBACTestCase(RBACBaseTestCase):
     """Tests for applying policy with different combination of roles and object"""
 
     def setUp(self) -> None:

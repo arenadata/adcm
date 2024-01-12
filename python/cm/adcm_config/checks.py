@@ -12,11 +12,12 @@
 
 from typing import Any
 
+from django.conf import settings
+
 from cm.adcm_config.utils import config_is_ro, group_keys_to_flat, proto_ref
 from cm.checker import FormatError, SchemaError, process_rule
 from cm.errors import raise_adcm_ex
 from cm.models import GroupConfig, Prototype, StagePrototype
-from django.conf import settings
 
 
 def check_agreement_group_attr(group_keys: dict, custom_group_keys: dict, spec: dict) -> None:
@@ -37,7 +38,7 @@ def check_group_keys_attr(attr: dict, spec: dict, group_config: GroupConfig) -> 
     check_agreement_group_attr(group_keys=group_keys, custom_group_keys=custom_group_keys, spec=spec)
 
 
-def check_attr(  # pylint: disable=too-many-branches
+def check_attr(
     proto: Prototype,
     obj,
     attr: dict,
@@ -53,7 +54,7 @@ def check_attr(  # pylint: disable=too-many-branches
     if not isinstance(attr, dict):
         raise_adcm_ex(code="ATTRIBUTE_ERROR", msg="`attr` should be a map")
 
-    for key, value in attr.items():
+    for key in attr:
         if key in ["group_keys", "custom_group_keys"]:
             if not is_group_config:
                 raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"not allowed key `{key}` for object ({ref})")
@@ -120,9 +121,8 @@ def check_structure_for_group_attr(group_keys: dict, spec: dict, key_name: str) 
                 raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"invalid type `{key}` field in `{key_name}`")
 
     for key, value in spec.items():
-        if value.type != "group":
-            if key not in flat_group_attr:
-                raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"there is no `{key}` field in `{key_name}`")
+        if value.type != "group" and key not in flat_group_attr:
+            raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"there is no `{key}` field in `{key_name}`")
 
 
 def _check_empty_values(key: str, current: dict, new: dict) -> bool:
@@ -143,7 +143,7 @@ def _check_str(value: Any, idx: Any, key: str, subkey: str, ref: str, label: str
         )
 
 
-def check_config_type(  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+def check_config_type(
     prototype: StagePrototype | Prototype,
     key: str,
     subkey: str,
@@ -153,17 +153,14 @@ def check_config_type(  # pylint: disable=too-many-branches,too-many-statements,
     inactive: bool = False,
 ) -> None:
     ref = proto_ref(prototype=prototype)
-    if default:
-        label = "Default value"
-    else:
-        label = "Value"
+    label = "Default value" if default else "Value"
 
     tmpl1 = f'{label} of config key "{key}/{subkey}" {{}} ({ref})'
     tmpl2 = f'{label} ("{value}") of config key "{key}/{subkey}" {{}} ({ref})'
     should_not_be_empty = "should be not empty"
 
     if (
-        value is None  # pylint: disable=too-many-boolean-expressions
+        value is None
         or (spec["type"] == "map" and value == {})
         or (spec["type"] == "secretmap" and value == {})
         or (spec["type"] == "list" and value == [])
@@ -176,9 +173,12 @@ def check_config_type(  # pylint: disable=too-many-branches,too-many-statements,
         else:
             return
 
-    if isinstance(value, (list, dict)) and spec["type"] not in settings.STACK_COMPLEX_FIELD_TYPES:
-        if spec["type"] != "group":
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl1.format("should be flat"))
+    if (
+        isinstance(value, (list, dict))
+        and spec["type"] not in settings.STACK_COMPLEX_FIELD_TYPES
+        and spec["type"] != "group"
+    ):
+        raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl1.format("should be flat"))
 
     if spec["type"] == "list":
         if not isinstance(value, list):
@@ -214,9 +214,8 @@ def check_config_type(  # pylint: disable=too-many-branches,too-many-statements,
         if value == "":
             raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl1.format(should_not_be_empty))
 
-        if default:
-            if len(value) > 2048:
-                raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl1.format("is too long"))
+        if default and len(value) > 2048:
+            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl1.format("is too long"))
 
     if spec["type"] == "structure":
         schema = spec["limits"]["yspec"]
@@ -256,12 +255,10 @@ def check_config_type(  # pylint: disable=too-many-branches,too-many-statements,
 
     if spec["type"] == "variant":
         source = spec["limits"]["source"]
-        if source["strict"]:
-            if source["type"] == "inline" and value not in source["value"]:
+        if source["strict"] and source["type"] == "inline" and value not in source["value"]:
+            msg = f'not in variant list: "{source["value"]}"'
+            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))
+
+            if not default and source["type"] in ("config", "builtin") and value not in source["value"]:
                 msg = f'not in variant list: "{source["value"]}"'
                 raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))
-
-            if not default:
-                if source["type"] in ("config", "builtin") and value not in source["value"]:
-                    msg = f'not in variant list: "{source["value"]}"'
-                    raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))

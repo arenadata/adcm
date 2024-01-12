@@ -14,12 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from audit.models import (
-    AuditLog,
-    AuditLogOperationResult,
-    AuditLogOperationType,
-    AuditObjectType,
-)
+from adcm.tests.base import BaseTestCase
 from cm.models import Bundle, Cluster, Prototype
 from django.conf import settings
 from django.urls import reverse
@@ -31,12 +26,15 @@ from rest_framework.status import (
     HTTP_403_FORBIDDEN,
 )
 
-from adcm.tests.base import BaseTestCase
+from audit.models import (
+    AuditLog,
+    AuditLogOperationResult,
+    AuditLogOperationType,
+    AuditObjectType,
+)
 
 
 class TestBundleAudit(BaseTestCase):
-    # pylint: disable=too-many-public-methods
-
     def setUp(self) -> None:
         super().setUp()
 

@@ -11,6 +11,11 @@
 # limitations under the License.
 from operator import itemgetter
 
+from cm.models import Cluster, ClusterBind, ClusterObject, Host, Prototype
+from django.views import View
+from rest_framework.generics import GenericAPIView
+from rest_framework.response import Response
+
 from audit.cases.common import (
     get_obj_name,
     get_or_create_audit_obj,
@@ -24,10 +29,6 @@ from audit.models import (
     AuditObjectType,
     AuditOperation,
 )
-from cm.models import Cluster, ClusterBind, ClusterObject, Host, Prototype
-from django.views import View
-from rest_framework.generics import GenericAPIView
-from rest_framework.response import Response
 
 CONFIGURATION_STR = "configuration "
 
@@ -70,7 +71,6 @@ def make_export_name(cluster_name: str, service_name: str) -> str:
     return export_name
 
 
-# pylint: disable-next=too-many-locals,too-many-branches,too-many-statements
 def cluster_case(
     path: list[str],
     view: GenericAPIView | View,
@@ -143,13 +143,18 @@ def cluster_case(
                     object_type=AuditObjectType.CLUSTER,
                 )
 
-        case ["cluster", cluster_pk, "host", host_pk] | ["clusters", cluster_pk, "hosts", host_pk] | [
-            "cluster",
-            cluster_pk,
-            "host",
-            host_pk,
-            "maintenance-mode",
-        ] | ["clusters", cluster_pk, "hosts", host_pk, "maintenance-mode"]:
+        case (
+            ["cluster", cluster_pk, "host", host_pk]
+            | ["clusters", cluster_pk, "hosts", host_pk]
+            | [
+                "cluster",
+                cluster_pk,
+                "host",
+                host_pk,
+                "maintenance-mode",
+            ]
+            | ["clusters", cluster_pk, "hosts", host_pk, "maintenance-mode"]
+        ):
             if view.request.method == "DELETE":
                 name = "host removed"
                 operation_type = AuditLogOperationType.UPDATE
@@ -446,11 +451,14 @@ def cluster_case(
             ["component", component_pk]
             | ["component", component_pk, _]
             | [
-                "cluster" | "clusters",
+                "cluster"
+                | "clusters",
                 _,
-                "service" | "services",
+                "service"
+                | "services",
                 _,
-                "component" | "components",
+                "component"
+                | "components",
                 component_pk,
                 "maintenance-mode",
             ]

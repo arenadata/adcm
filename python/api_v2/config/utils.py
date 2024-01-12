@@ -9,12 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import copy
-import json
 from abc import ABC, abstractmethod
 from collections import OrderedDict, defaultdict
 from copy import deepcopy
 from typing import Any
+import copy
+import json
 
 from cm.adcm_config.config import get_default
 from cm.errors import AdcmEx
@@ -33,7 +33,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
 
-class Field(ABC):  # pylint: disable=too-many-instance-attributes
+class Field(ABC):
     def __init__(self, prototype_config: PrototypeConfig, object_: ADCMEntity | GroupConfig):
         self.object_ = object_
         self.is_group_config = False
@@ -655,7 +655,7 @@ def get_config_schema(
 
 class ConfigSchemaMixin:
     @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
-    def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def config_schema(self, request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         instance = self.get_object()
         schema = get_config_schema(
             object_=instance,

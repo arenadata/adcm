@@ -11,7 +11,6 @@
 # limitations under the License.
 from unittest.mock import patch
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import Action, Host, HostComponent, HostProvider, ServiceComponent
 from django.urls import reverse
 from rest_framework.status import (
@@ -22,6 +21,8 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestHost(BaseAPITestCase):

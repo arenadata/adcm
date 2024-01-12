@@ -13,8 +13,9 @@
 from cm.errors import raise_adcm_ex
 from django.db import IntegrityError
 from django.db.transaction import atomic
-from rbac.models import Role, RoleTypes
 from rest_framework.exceptions import ValidationError
+
+from rbac.models import Role, RoleTypes
 
 
 def check_role_child(child: list[Role], partial=False):
@@ -65,7 +66,7 @@ def role_create(built_in=False, type_of_role=RoleTypes.ROLE, **kwargs) -> Role |
         )
         role.child.add(*child)
 
-        return role
+        return role  # noqa: TRY300
     except IntegrityError:
         raise_adcm_ex("ROLE_CREATE_ERROR")
 

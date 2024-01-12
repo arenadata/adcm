@@ -12,6 +12,8 @@
 from typing import Iterable
 
 from api_v2.service.utils import bulk_add_services_to_cluster
+from django.contrib.contenttypes.models import ContentType
+
 from cm.inventory import get_inventory_data
 from cm.models import (
     Action,
@@ -23,7 +25,6 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
-from django.contrib.contenttypes.models import ContentType
 
 
 class TestGroupConfigsInInventory(BaseInventoryTestCase):  # pylint: disable=too-many-instance-attributes

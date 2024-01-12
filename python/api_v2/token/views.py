@@ -10,17 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.login.views import BaseLoginView
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from api_v2.login.views import BaseLoginView
+
 
 class TokenView(BaseLoginView):
     authentication_classes = (TokenAuthentication,)
 
-    def post(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def post(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         user = self.perform_login(request=request)
         token, _ = Token.objects.get_or_create(user=user)
 

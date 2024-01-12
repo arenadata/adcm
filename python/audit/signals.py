@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP, AuditObject, AuditUser
 from cm.models import (
     ADCM,
     Bundle,
@@ -28,6 +27,8 @@ from django.utils.timezone import now
 from rbac.models import Group, Policy, Role
 from rbac.models import User as RBACUser
 
+from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP, AuditObject, AuditUser
+
 
 @receiver(signal=post_delete, sender=Cluster)
 @receiver(signal=post_delete, sender=ClusterObject)
@@ -41,7 +42,7 @@ from rbac.models import User as RBACUser
 @receiver(signal=post_delete, sender=Group)
 @receiver(signal=post_delete, sender=Role)
 @receiver(signal=post_delete, sender=Policy)
-def mark_deleted_audit_object_handler(sender, instance, **kwargs) -> None:  # pylint: disable=unused-argument
+def mark_deleted_audit_object_handler(sender, instance, **kwargs) -> None:  # noqa: ARG001
     audit_objs = []
     for audit_obj in AuditObject.objects.filter(
         object_id=instance.pk, object_type=MODEL_TO_AUDIT_OBJECT_TYPE_MAP[sender]
@@ -54,7 +55,7 @@ def mark_deleted_audit_object_handler(sender, instance, **kwargs) -> None:  # py
 
 @receiver(signal=post_save, sender=AuthUser)
 @receiver(signal=post_save, sender=RBACUser)
-def create_audit_user(sender, instance, created, **kwargs):  # pylint: disable=unused-argument
+def create_audit_user(sender, instance, created, **kwargs):  # noqa: ARG001
     if kwargs["raw"]:
         return
 
@@ -68,7 +69,7 @@ def create_audit_user(sender, instance, created, **kwargs):  # pylint: disable=u
 
 @receiver(signal=post_delete, sender=AuthUser)
 @receiver(signal=post_delete, sender=RBACUser)
-def set_deleted_at_audit_user(sender, instance, **kwargs):  # pylint: disable=unused-argument
+def set_deleted_at_audit_user(sender, instance, **kwargs):  # noqa: ARG001
     audit_user = AuditUser.objects.filter(username=instance.username).order_by("-pk").first()
     audit_user.deleted_at = now()
     audit_user.save(update_fields=["deleted_at"])

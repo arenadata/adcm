@@ -12,6 +12,7 @@
 
 from pathlib import Path
 
+from adcm.tests.base import BaseTestCase
 from cm.models import (
     ADCM,
     Action,
@@ -26,8 +27,6 @@ from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
-
-from adcm.tests.base import BaseTestCase
 
 
 class TestActionAPI(BaseTestCase):

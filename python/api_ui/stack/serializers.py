@@ -10,10 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.serializers import EmptySerializer
 from cm.models import Prototype
 from rest_framework.serializers import CharField, IntegerField, SerializerMethodField
-
-from adcm.serializers import EmptySerializer
 
 
 class PrototypeVersionSerializer(EmptySerializer):

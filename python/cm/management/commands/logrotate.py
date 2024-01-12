@@ -9,15 +9,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logging
-import os
-import shutil
 from datetime import datetime, timedelta
 from enum import Enum
+from pathlib import Path
 from subprocess import STDOUT, CalledProcessError, check_output
+import os
+import shutil
+import logging
 
 from audit.models import AuditLogOperationResult
 from audit.utils import make_audit_log
+from django.conf import settings
+from django.core.management.base import BaseCommand
+from django.db import transaction
+from django.utils import timezone
+
 from cm.models import (
     ADCM,
     Cluster,
@@ -31,10 +37,6 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from django.conf import settings
-from django.core.management.base import BaseCommand
-from django.db import transaction
-from django.utils import timezone
 
 logger = logging.getLogger("background_tasks")
 
@@ -79,7 +81,7 @@ class Command(BaseCommand):
         )
         parser.add_argument("--disable_logs", action="store_true", help="Disable logging")
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: ARG002
         __target_method_map = {
             TargetType.ALL.value: [
                 self.__run_nginx_log_rotation,
@@ -91,7 +93,6 @@ class Command(BaseCommand):
             TargetType.NGINX.value: [self.__run_nginx_log_rotation],
         }
 
-        # pylint: disable=attribute-defined-outside-init
         self.verbose = not options["disable_logs"]
         target = options["target"]
         self.config = self.__get_logrotate_config()
@@ -102,7 +103,7 @@ class Command(BaseCommand):
     def __execute_cmd(self, cmd):
         self.__log(f"executing cmd: `{cmd}`", "info")
         try:
-            out = check_output(cmd, shell=True, stderr=STDOUT)
+            out = check_output(cmd, shell=True, stderr=STDOUT)  # noqa: S602
             out = out.decode(settings.ENCODING_UTF_8).strip("\n")
             if out:
                 self.__log(out, "debug")
@@ -131,7 +132,7 @@ class Command(BaseCommand):
             "no_compress": "" if self.config["logrotate"]["nginx"]["compress"] else "#",
             "num_rotations": self.config["logrotate"]["nginx"]["max_history"],
         }
-        with open(self.__nginx_logrotate_conf, "w", encoding=settings.ENCODING_UTF_8) as conf_file:
+        with Path(self.__nginx_logrotate_conf).open("w", encoding=settings.ENCODING_UTF_8) as conf_file:
             conf_file.write(LOGROTATE_CONF_FILE_TEMPLATE.format(**conf_file_args))
         self.__log(f"conf file `{self.__nginx_logrotate_conf}` generated", "debug")
 
@@ -186,7 +187,7 @@ class Command(BaseCommand):
                 "info",
             )
 
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # noqa: BLE001
             make_audit_log("config", AuditLogOperationResult.FAIL, "completed")
             self.__log("Error in ConfigLog rotation", "warning")
             self.__log(e, "exception")
@@ -211,7 +212,7 @@ class Command(BaseCommand):
         return False
 
     def __run_joblog_rotation(self):
-        try:  # pylint: disable=too-many-nested-blocks
+        try:
             days_delta_db = self.config["config"]["log_rotation_in_db"]
             days_delta_fs = self.config["config"]["log_rotation_on_fs"]
             if days_delta_db <= 0 and days_delta_fs <= 0:
@@ -243,20 +244,20 @@ class Command(BaseCommand):
                     if not name.startswith("."):  # a line of code is used for development
                         path = settings.RUN_DIR / name
                         try:
-                            m_time = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.get_current_timezone())
+                            m_time = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.get_current_timezone())  # noqa: PTH204
                             if timezone.now() - m_time > timedelta(days=days_delta_fs):
                                 is_deleted = True
-                                if os.path.isdir(path):
+                                if os.path.isdir(path):  # noqa: PTH112
                                     shutil.rmtree(path)
                                 else:
-                                    os.remove(path)
+                                    os.remove(path)  # noqa: PTH107
                         except FileNotFoundError:
                             pass
                 if is_deleted:
                     make_audit_log("task", AuditLogOperationResult.SUCCESS, "launched")
                     make_audit_log("task", AuditLogOperationResult.SUCCESS, "completed")
                 self.__log("fs JobLog rotated", "info")
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # noqa: BLE001
             make_audit_log("task", AuditLogOperationResult.FAIL, "completed")
             self.__log("Error in JobLog rotation", "warning")
             self.__log(e, "exception")

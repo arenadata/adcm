@@ -9,12 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 from json.decoder import JSONDecodeError
+import json
 
-from audit.cef_logger import cef_logger
-from audit.models import AuditSession, AuditSessionLoginResult, AuditUser
-from audit.utils import get_client_ip
 from cm.models import ADCM, ConfigLog
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
@@ -22,6 +19,10 @@ from django.http.response import HttpResponseForbidden
 from django.urls import resolve
 from django.utils import timezone
 from rbac.models import User as RBACUser
+
+from audit.cef_logger import cef_logger
+from audit.models import AuditSession, AuditSessionLoginResult, AuditUser
+from audit.utils import get_client_ip
 
 
 class LoginMiddleware:
@@ -63,7 +64,7 @@ class LoginMiddleware:
         return user, result
 
     @staticmethod
-    def _process_login_attempts(  # pylint: disable=too-many-branches
+    def _process_login_attempts(
         user: RBACUser | User,
         result: AuditSessionLoginResult,
     ) -> HttpResponseForbidden | None:

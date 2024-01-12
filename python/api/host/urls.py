@@ -11,8 +11,9 @@
 # limitations under the License.
 
 
-from api.host.views import HostList
 from django.urls import include, path
+
+from api.host.views import HostList
 
 urlpatterns = [
     path("", HostList.as_view(), name="host"),

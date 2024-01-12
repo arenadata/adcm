@@ -9,13 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 from functools import partial
 from operator import itemgetter
 from typing import TypeAlias
 from unittest.mock import patch
+import json
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import (
     Action,
     Cluster,
@@ -29,6 +28,8 @@ from cm.models import (
 )
 from django.urls import reverse
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
+
+from api_v2.tests.base import BaseAPITestCase
 
 ObjectWithActions: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
 
@@ -49,7 +50,7 @@ def get_viewname_and_kwargs_for_object(object_: ObjectWithActions) -> tuple[str,
     return f"v2:{classname.replace('hostp', 'p')}-action-list", {f"{classname}_pk": object_.pk}
 
 
-class TestActionsFiltering(BaseAPITestCase):  # pylint: disable=too-many-instance-attributes
+class TestActionsFiltering(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 

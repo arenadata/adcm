@@ -9,11 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import fcntl
-import json
 from collections import defaultdict
 from copy import deepcopy
 from typing import Any
+import json
+import fcntl
 
 # isort: off
 from ansible.errors import AnsibleError
@@ -84,7 +84,7 @@ MSG_NO_MULTI_STATE_TO_DELETE = (
 
 
 def job_lock(job_id):
-    file_descriptor = open(  # pylint: disable=consider-using-with
+    file_descriptor = open(  # noqa: SIM115
         settings.RUN_DIR / f"{job_id}/config.json",
         encoding=settings.ENCODING_UTF_8,
     )
@@ -448,7 +448,7 @@ def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> dict | int | str:
 
             new_attr.update(attr)
 
-    for key in attr.keys():
+    for key in attr:
         for subkey, value in config_log.config[key].items():
             if not new_config[key] or subkey not in new_config[key]:
                 new_config[key][subkey] = value
@@ -512,9 +512,8 @@ def set_component_config(component_id: int, config: dict, attr: dict):
 
 
 def check_missing_ok(obj: ADCMEntity, multi_state: str, missing_ok):
-    if missing_ok is False:
-        if multi_state not in obj.multi_state:
-            raise AnsibleError(MSG_NO_MULTI_STATE_TO_DELETE)
+    if missing_ok is False and multi_state not in obj.multi_state:
+        raise AnsibleError(MSG_NO_MULTI_STATE_TO_DELETE)
 
 
 def _unset_object_multi_state(obj: ADCMEntity, multi_state: str, missing_ok) -> ADCMEntity:
@@ -563,10 +562,7 @@ def log_group_check(group: GroupCheckLog, fail_msg: str, success_msg: str):
     logs = CheckLog.objects.filter(group=group).values("result")
     result = all(log["result"] for log in logs)
 
-    if result:
-        msg = success_msg
-    else:
-        msg = fail_msg
+    msg = success_msg if result else fail_msg
 
     group.message = msg
     group.result = result

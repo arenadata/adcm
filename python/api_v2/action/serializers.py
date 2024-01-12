@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from adcm.serializers import EmptySerializer
 from cm.models import Action
 from rest_framework.fields import IntegerField
 from rest_framework.serializers import (
@@ -19,8 +20,6 @@ from rest_framework.serializers import (
     ModelSerializer,
     SerializerMethodField,
 )
-
-from adcm.serializers import EmptySerializer
 
 
 class ActionListSerializer(ModelSerializer):

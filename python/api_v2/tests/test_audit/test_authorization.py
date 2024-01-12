@@ -12,11 +12,12 @@
 
 from datetime import timedelta
 
-from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditSession
 from rbac.models import User
 from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestAuthorizationAudit(BaseAPITestCase):

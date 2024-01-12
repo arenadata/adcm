@@ -9,14 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.config.utils import ConfigSchemaMixin
-from api_v2.hostprovider.filters import HostProviderFilter
-from api_v2.hostprovider.permissions import HostProviderPermissions
-from api_v2.hostprovider.serializers import (
-    HostProviderCreateSerializer,
-    HostProviderSerializer,
-)
-from api_v2.views import CamelCaseReadOnlyModelViewSet
+from adcm.permissions import VIEW_PROVIDER_PERM
 from audit.utils import audit
 from cm.api import add_host_provider, delete_host_provider
 from cm.errors import AdcmEx
@@ -27,12 +20,17 @@ from guardian.mixins import PermissionListMixin
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
-from adcm.permissions import VIEW_PROVIDER_PERM
+from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.hostprovider.filters import HostProviderFilter
+from api_v2.hostprovider.permissions import HostProviderPermissions
+from api_v2.hostprovider.serializers import (
+    HostProviderCreateSerializer,
+    HostProviderSerializer,
+)
+from api_v2.views import CamelCaseReadOnlyModelViewSet
 
 
-class HostProviderViewSet(  # pylint:disable=too-many-ancestors
-    PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet
-):
+class HostProviderViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet):
     queryset = HostProvider.objects.select_related("prototype").order_by("name")
     serializer_class = HostProviderSerializer
     permission_classes = [HostProviderPermissions]
@@ -47,7 +45,7 @@ class HostProviderViewSet(  # pylint:disable=too-many-ancestors
         return self.serializer_class
 
     @audit
-    def create(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def create(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             raise AdcmEx(code="HOSTPROVIDER_CREATE_ERROR")
@@ -64,7 +62,7 @@ class HostProviderViewSet(  # pylint:disable=too-many-ancestors
         return Response(data=HostProviderSerializer(host_provider).data, status=HTTP_201_CREATED)
 
     @audit
-    def destroy(self, request, *args, **kwargs):  # pylint:disable=unused-argument
+    def destroy(self, request, *args, **kwargs):  # noqa: ARG002
         host_provider = self.get_object()
         delete_host_provider(host_provider)
         return Response(status=HTTP_204_NO_CONTENT)

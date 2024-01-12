@@ -11,12 +11,6 @@
 # limitations under the License.
 
 
-from api_v2.cluster.serializers import ClusterRelatedSerializer
-from api_v2.cluster.utils import get_depend_on
-from api_v2.concern.serializers import ConcernSerializer
-from api_v2.host.serializers import HostShortSerializer
-from api_v2.prototype.serializers import PrototypeRelatedSerializer
-from api_v2.service.serializers import ServiceNameSerializer, ServiceRelatedSerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import Host, HostComponent, MaintenanceMode, ServiceComponent
 from cm.status_api import get_obj_status
@@ -28,6 +22,13 @@ from rest_framework.serializers import (
     ModelSerializer,
     SerializerMethodField,
 )
+
+from api_v2.cluster.serializers import ClusterRelatedSerializer
+from api_v2.cluster.utils import get_depend_on
+from api_v2.concern.serializers import ConcernSerializer
+from api_v2.host.serializers import HostShortSerializer
+from api_v2.prototype.serializers import PrototypeRelatedSerializer
+from api_v2.service.serializers import ServiceNameSerializer, ServiceRelatedSerializer
 
 
 class ComponentMappingSerializer(ModelSerializer):

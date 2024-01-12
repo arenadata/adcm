@@ -15,7 +15,7 @@ from django.http.response import JsonResponse
 from rest_framework.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 
 
-def server_error(request: HttpRequest, *args, **kwargs) -> JsonResponse:  # pylint: disable=unused-argument
+def server_error(request: HttpRequest, *args, **kwargs) -> JsonResponse:  # noqa: ARG001
     data = {
         "code": HTTP_500_INTERNAL_SERVER_ERROR,
         "level": "error",
@@ -24,7 +24,7 @@ def server_error(request: HttpRequest, *args, **kwargs) -> JsonResponse:  # pyli
     return JsonResponse(data=data, status=HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-def page_not_found(request: HttpRequest, *args, **kwargs) -> JsonResponse:  # pylint: disable=unused-argument
+def page_not_found(request: HttpRequest, *args, **kwargs) -> JsonResponse:  # noqa: ARG001
     data = {
         "code": HTTP_404_NOT_FOUND,
         "level": "error",

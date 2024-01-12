@@ -13,6 +13,8 @@ from operator import attrgetter
 from typing import Iterable
 from unittest.mock import patch
 
+from adcm.tests.base import BaseTestCase
+
 from cm.api import add_cluster, add_service_to_cluster
 from cm.hierarchy import Tree
 from cm.issue import (
@@ -35,8 +37,6 @@ from cm.models import (
 )
 from cm.services.cluster import perform_host_to_cluster_map
 from cm.tests.utils import gen_service, generate_hierarchy
-
-from adcm.tests.base import BaseTestCase
 
 mock_issue_check_map = {
     ConcernCause.CONFIG: lambda x: False,

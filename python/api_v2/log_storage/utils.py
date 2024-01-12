@@ -10,12 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=duplicate-code
-import io
-import tarfile
 from datetime import datetime, timezone
 from pathlib import Path
+import io
+import tarfile
 
+from adcm import settings
+from adcm.utils import str_remove_non_alnum
 from cm.models import (
     ActionType,
     ClusterObject,
@@ -25,9 +26,6 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-
-from adcm import settings
-from adcm.utils import str_remove_non_alnum
 
 
 def get_task_download_archive_name(task: TaskLog) -> str:

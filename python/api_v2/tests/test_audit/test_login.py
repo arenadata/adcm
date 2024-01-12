@@ -10,12 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditSession, AuditSessionLoginResult
 from rbac.services.user import create_user
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestLoginAudit(BaseAPITestCase):

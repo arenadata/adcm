@@ -14,18 +14,18 @@ import json
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Subquery
+
 from rbac.models import Role
 
 
 def read_role(role: Role) -> dict:
-    data = {
+    return {
         "name": role.name,
         "type": role.type,
         "parametrized_by_type": role.parametrized_by_type,
         "category": [c.value for c in role.category.all()],
         "child": [read_role(r) for r in role.child.all()],
     }
-    return data
 
 
 class Command(BaseCommand):
@@ -45,7 +45,7 @@ class Command(BaseCommand):
             help="Specifies file to which the output is written.",
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: ARG002
         indent = options["indent"]
         output = options["output"]
         data = []
@@ -57,6 +57,6 @@ class Command(BaseCommand):
         ):
             data.append(read_role(role))
 
-        with open(output, "w", encoding=settings.ENCODING_UTF_8) as f:
+        with open(output, mode="w", encoding=settings.ENCODING_UTF_8) as f:
             json.dump(data, f, indent=indent)
         self.stdout.write(self.style.SUCCESS(f"Result file: {output}"))

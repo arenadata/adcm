@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import Action, ClusterObject, ObjectType
 from rbac.services.user import create_user
 from rest_framework.reverse import reverse
@@ -23,8 +22,10 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
 )
 
+from api_v2.tests.base import BaseAPITestCase
 
-class TestServiceAudit(BaseAPITestCase):  # pylint: disable=too-many-public-methods
+
+class TestServiceAudit(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 

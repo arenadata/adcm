@@ -11,6 +11,11 @@
 # limitations under the License.
 from pathlib import Path
 
+from adcm.tests.base import BaseTestCase
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
+
 from cm.api import add_hc, add_service_to_cluster
 from cm.models import Action, MaintenanceMode, Prototype, ServiceComponent
 from cm.tests.utils import (
@@ -21,11 +26,6 @@ from cm.tests.utils import (
     gen_prototype,
     gen_provider,
 )
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
-
-from adcm.tests.base import BaseTestCase
 
 plausible_action_variants = {
     "unlimited": {
@@ -138,7 +138,6 @@ expected_results = {
 
 
 class ActionAllowTest(BaseTestCase):
-    # pylint: disable=too-many-instance-attributes
     def setUp(self) -> None:
         super().setUp()
         self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"

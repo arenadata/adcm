@@ -9,14 +9,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-lines
 
-import json
 from collections import defaultdict
 from functools import partial, wraps
 from typing import Literal, TypedDict
+import json
 
 from adcm_version import compare_prototype_versions
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import MultipleObjectsReturned
+from django.db.transaction import atomic, on_commit
+from rbac.models import Policy, re_apply_object_policy
+from rbac.roles import apply_policy_for_new_config
+
 from cm.adcm_config.config import (
     init_object_config,
     process_json_config,
@@ -65,11 +70,6 @@ from cm.status_api import (
     send_host_component_map_update_event,
 )
 from cm.utils import obj_ref
-from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import MultipleObjectsReturned
-from django.db.transaction import atomic, on_commit
-from rbac.models import Policy, re_apply_object_policy
-from rbac.roles import apply_policy_for_new_config
 
 
 def check_license(prototype: Prototype) -> None:
@@ -81,19 +81,21 @@ def check_license(prototype: Prototype) -> None:
 
 
 def is_version_suitable(version: str, prototype_import: PrototypeImport) -> bool:
-    if prototype_import.min_strict:
-        if compare_prototype_versions(version, prototype_import.min_version) <= 0:
-            return False
-    elif prototype_import.min_version:
-        if compare_prototype_versions(version, prototype_import.min_version) < 0:
-            return False
+    if (
+        prototype_import.min_strict
+        and compare_prototype_versions(version, prototype_import.min_version) <= 0
+        or prototype_import.min_version
+        and compare_prototype_versions(version, prototype_import.min_version) < 0
+    ):
+        return False
 
-    if prototype_import.max_strict:
-        if compare_prototype_versions(version, prototype_import.max_version) >= 0:
-            return False
-    elif prototype_import.max_version:
-        if compare_prototype_versions(version, prototype_import.max_version) > 0:
-            return False
+    if (
+        prototype_import.max_strict
+        and compare_prototype_versions(version, prototype_import.max_version) >= 0
+        or prototype_import.max_version
+        and compare_prototype_versions(version, prototype_import.max_version) > 0
+    ):
+        return False
 
     return True
 
@@ -446,13 +448,12 @@ def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
         raise_adcm_ex(code="OBJ_TYPE_ERROR", msg=f"Prototype type should be service, not {proto.type}")
 
     check_license(prototype=proto)
-    if not proto.shared:
-        if cluster.prototype.bundle != proto.bundle:
-            raise_adcm_ex(
-                code="SERVICE_CONFLICT",
-                msg=f"{proto_ref(prototype=proto)} does not belong to bundle "
-                f'"{cluster.prototype.bundle.name}" {cluster.prototype.version}',
-            )
+    if not proto.shared and cluster.prototype.bundle != proto.bundle:
+        raise_adcm_ex(
+            code="SERVICE_CONFLICT",
+            msg=f"{proto_ref(prototype=proto)} does not belong to bundle "
+            f'"{cluster.prototype.bundle.name}" {cluster.prototype.version}',
+        )
 
     with atomic():
         service = ClusterObject.objects.create(cluster=cluster, prototype=proto)
@@ -657,8 +658,6 @@ def still_existed_hc(cluster: Cluster, host_comp_list: list[tuple[ClusterObject,
 def save_hc(
     cluster: Cluster, host_comp_list: list[tuple[ClusterObject, Host, ServiceComponent]]
 ) -> list[HostComponent]:
-    # pylint: disable=too-many-locals
-
     hc_queryset = HostComponent.objects.filter(cluster=cluster).order_by("id")
     service_set = {hc.service for hc in hc_queryset}
     old_hosts = {i.host for i in hc_queryset.select_related("host")}
@@ -729,13 +728,36 @@ def save_hc(
     return host_component_list
 
 
+def set_host_component(
+    cluster: Cluster, host_component_objects: list[tuple[ClusterObject, Host, ServiceComponent]]
+) -> list[HostComponent]:
+    """
+    Save given hosts-components mapping if all sanity checks pass
+    """
+
+    check_hc_requires(shc_list=host_component_objects)
+
+    check_bound_components(shc_list=host_component_objects)
+
+    for service in ClusterObject.objects.select_related("prototype").filter(cluster=cluster):
+        check_component_constraint(
+            cluster=cluster,
+            service_prototype=service.prototype,
+            hc_in=[i for i in host_component_objects if i[0] == service],
+        )
+        check_service_requires(cluster=cluster, proto=service.prototype)
+
+    check_maintenance_mode(cluster=cluster, host_comp_list=host_component_objects)
+
+    with atomic():
+        return save_hc(cluster=cluster, host_comp_list=host_component_objects)
+
+
 def add_hc(cluster: Cluster, hc_in: list[dict]) -> list[HostComponent]:
     host_comp_list = check_hc(cluster=cluster, hc_in=hc_in)
 
     with atomic():
-        new_host_component = save_hc(cluster=cluster, host_comp_list=host_comp_list)
-
-    return new_host_component
+        return save_hc(cluster=cluster, host_comp_list=host_comp_list)
 
 
 def get_bind(
@@ -858,9 +880,8 @@ def check_import_default(import_obj: Cluster | ClusterObject, export_obj: Cluste
         return
 
     for name in json.loads(prototype_import.default):
-        if name in config_log.attr:
-            if "active" in config_log.attr[name] and not config_log.attr[name]["active"]:
-                raise_adcm_ex("BIND_ERROR", f'Default import "{name}" for {obj_ref(import_obj)} is inactive')
+        if name in config_log.attr and "active" in config_log.attr[name] and not config_log.attr[name]["active"]:
+            raise_adcm_ex("BIND_ERROR", f'Default import "{name}" for {obj_ref(import_obj)} is inactive')
 
 
 def get_bind_obj(cluster: Cluster, service: ClusterObject | None) -> Cluster | ClusterObject:

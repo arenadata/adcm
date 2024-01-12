@@ -10,11 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.permissions import DjangoModelPermissionsAudit
 from audit.utils import audit
 from guardian.mixins import PermissionListMixin
-from rbac.endpoints.policy.serializers import PolicySerializer
-from rbac.models import Policy
-from rbac.services.policy import policy_create, policy_update
 from rest_framework.response import Response
 from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.status import (
@@ -24,10 +22,12 @@ from rest_framework.status import (
 )
 from rest_framework.viewsets import ModelViewSet
 
-from adcm.permissions import DjangoModelPermissionsAudit
+from rbac.endpoints.policy.serializers import PolicySerializer
+from rbac.models import Policy
+from rbac.services.policy import policy_create, policy_update
 
 
-class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
+class PolicyViewSet(PermissionListMixin, ModelViewSet):
     queryset = Policy.objects.all()
     serializer_class = PolicySerializer
     permission_classes = (DjangoModelPermissionsAudit,)
@@ -37,14 +37,14 @@ class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-m
     schema = AutoSchema()
 
     @audit
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         policy = policy_create(**serializer.validated_data)
         return Response(data=self.get_serializer(policy).data, status=HTTP_201_CREATED)
 
     @audit
-    def update(self, request, *args, **kwargs):
+    def update(self, request, *args, **kwargs):  # noqa: ARG002
         partial = kwargs.pop("partial", False)
         policy = self.get_object()
 
@@ -56,8 +56,7 @@ class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-m
             policy = policy_update(policy, **serializer.validated_data)
 
             return Response(data=self.get_serializer(policy).data)
-        else:
-            return Response(data=serializer.errors, status=HTTP_400_BAD_REQUEST)
+        return Response(data=serializer.errors, status=HTTP_400_BAD_REQUEST)
 
     @audit
     def destroy(self, request, *args, **kwargs):

@@ -35,7 +35,7 @@ def create_flag(obj: ADCMEntity, msg: str = "") -> ConcernItem:
     if msg:
         reason["message"] = f"{reason['message']}: {msg}"
 
-    flag = ConcernItem.objects.create(
+    return ConcernItem.objects.create(
         type=ConcernType.FLAG,
         name=get_flag_name(obj, msg),
         reason=reason,
@@ -43,7 +43,6 @@ def create_flag(obj: ADCMEntity, msg: str = "") -> ConcernItem:
         cause=ConcernCause.CONFIG,
         blocking=False,
     )
-    return flag
 
 
 def remove_flag(obj: ADCMEntity, msg: str = "") -> None:

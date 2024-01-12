@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-import os
 from dataclasses import asdict, dataclass
 from datetime import datetime as dt
 from hashlib import md5
@@ -23,17 +21,20 @@ from tempfile import mkdtemp
 from time import sleep, time
 from typing import NamedTuple
 from urllib.parse import urlunparse
+import os
+import json
 
-import requests
 from audit.models import AuditLogOperationResult
 from audit.utils import make_audit_log
-from cm.adcm_config.config import get_adcm_config
-from cm.models import ADCM, Bundle, Cluster, HostComponent, HostProvider
 from django.conf import settings as adcm_settings
 from django.core.management.base import BaseCommand
 from django.db.models import Count, Prefetch, QuerySet
 from rbac.models import Policy, Role, User
 from rest_framework.status import HTTP_201_CREATED, HTTP_405_METHOD_NOT_ALLOWED
+import requests
+
+from cm.adcm_config.config import get_adcm_config
+from cm.models import ADCM, Bundle, Cluster, HostComponent, HostProvider
 
 
 @dataclass
@@ -100,10 +101,8 @@ class RetryError(Exception):
 logger = getLogger("background_tasks")
 
 
-class StatisticsSettings:  # pylint: disable=too-many-instance-attributes
+class StatisticsSettings:
     def __init__(self):
-        # pylint: disable=invalid-envvar-default
-
         adcm_uuid = str(ADCM.objects.get().uuid)
 
         self.enabled = self._get_enabled()
@@ -119,7 +118,7 @@ class StatisticsSettings:  # pylint: disable=too-many-instance-attributes
         self.adcm_uuid = adcm_uuid
 
         self.date_format = "%Y-%m-%d %H:%M:%S"
-        self.data_name = f"{dt.now().date().strftime('%Y_%m_%d')}_statistics"
+        self.data_name = f"{dt.now().date().strftime('%Y_%m_%d')}_statistics"  # noqa: DTZ005
 
     @staticmethod
     def _get_enabled() -> bool:
@@ -152,18 +151,16 @@ class Command(BaseCommand):
         self.settings = StatisticsSettings()
         super().__init__(*args, **kwargs)
 
-    def handle(self, *args, **options):
-        # pylint: disable=attribute-defined-outside-init
+    def handle(self, *args, **options):  # noqa: ARG002
         try:
             self.tmp_dir = Path(mkdtemp()).absolute()
             self.main()
-        except Exception:  # pylint: disable=broad-exception-caught
+        except Exception:  # noqa: BLE001ion-caught
             self.log(msg="Unexpected error during statistics collection", method="exception")
         finally:
             rmtree(path=self.tmp_dir)
 
     def main(self):
-        # pylint: disable=attribute-defined-outside-init
         if not self.settings.enabled:
             self.log(msg="disabled")
             return
@@ -321,7 +318,7 @@ class Command(BaseCommand):
             out_data.append(
                 asdict(
                     HostComponentData(
-                        host_name=md5(
+                        host_name=md5(  # noqa: S324
                             hostcomponent.host.name.encode(encoding=adcm_settings.ENCODING_UTF_8)
                         ).hexdigest(),
                         component_name=hostcomponent.component.name,

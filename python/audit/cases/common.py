@@ -9,15 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from audit.models import (
-    AUDIT_OBJECT_TYPE_TO_MODEL_MAP,
-    MODEL_TO_AUDIT_OBJECT_TYPE_MAP,
-    PATH_STR_TO_OBJ_CLASS_MAP,
-    AuditLogOperationType,
-    AuditObject,
-    AuditObjectType,
-    AuditOperation,
-)
 from cm.models import (
     ADCM,
     Action,
@@ -30,16 +21,23 @@ from cm.models import (
 )
 from rest_framework.response import Response
 
+from audit.models import (
+    AUDIT_OBJECT_TYPE_TO_MODEL_MAP,
+    MODEL_TO_AUDIT_OBJECT_TYPE_MAP,
+    PATH_STR_TO_OBJ_CLASS_MAP,
+    AuditLogOperationType,
+    AuditObject,
+    AuditObjectType,
+    AuditOperation,
+)
+
 
 def _get_audit_operation(
     obj_type: AuditObjectType,
     operation_type: AuditLogOperationType,
     operation_aux_str: str | None = None,
 ):
-    if obj_type == AuditObjectType.ADCM:
-        operation_name = obj_type.upper()
-    else:
-        operation_name = obj_type.capitalize()
+    operation_name = obj_type.upper() if obj_type == AuditObjectType.ADCM else obj_type.capitalize()
 
     if operation_aux_str:
         operation_name = f"{operation_name} {operation_aux_str}"
@@ -57,10 +55,7 @@ def _task_case(task_pk: str, action: str) -> tuple[AuditOperation, AuditObject |
 
     task = TaskLog.objects.filter(pk=task_pk).first()
 
-    if task and task.action:
-        action_name = task.action.display_name
-    else:
-        action_name = "Task"
+    action_name = task.action.display_name if task and task.action else "Task"
 
     audit_operation = AuditOperation(
         name=f"{action_name} {action}ed",
@@ -118,15 +113,15 @@ def _job_case(job_pk: str, version=1) -> tuple[AuditOperation, AuditObject | Non
 def get_obj_name(obj: ClusterObject | ServiceComponent | ADCMEntity, obj_type: str) -> str:
     if obj_type == "service":
         obj_name = obj.display_name
-        cluster = getattr(obj, "cluster")
+        cluster = obj.cluster
         if cluster:
             obj_name = f"{cluster.name}/{obj_name}"
     elif obj_type == "component":
         obj_name = obj.display_name
-        service = getattr(obj, "service")
+        service = obj.service
         if service:
             obj_name = f"{service.display_name}/{obj_name}"
-            cluster = getattr(service, "cluster")
+            cluster = service.cluster
             if cluster:
                 obj_name = f"{cluster.name}/{obj_name}"
     else:

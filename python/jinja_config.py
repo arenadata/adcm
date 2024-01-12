@@ -36,11 +36,10 @@ def _get_attr(config: dict) -> dict:
 
 
 def _get_limits(config: dict, root_path: Path) -> dict:
-    # pylint: disable=too-many-branches
     limits = {}
 
     if "yspec" in config and config["type"] in settings.STACK_COMPLEX_FIELD_TYPES:
-        with open(file=Path(root_path, config["yspec"]), encoding=settings.ENCODING_UTF_8) as f:
+        with Path(root_path, config["yspec"]).open(encoding=settings.ENCODING_UTF_8) as f:
             data = f.read()
 
         limits["yspec"] = safe_load(stream=data)
@@ -52,19 +51,15 @@ def _get_limits(config: dict, root_path: Path) -> dict:
         variant_type = config["source"]["type"]
         source = {"type": variant_type, "args": None}
 
-        if "strict" in config["source"]:
-            source["strict"] = config["source"]["strict"]
-        else:
-            source["strict"] = True
+        source["strict"] = config["source"].get("strict", True)
 
         if variant_type == "inline":
             source["value"] = config["source"]["value"]
         elif variant_type in ("config", "builtin"):
             source["name"] = config["source"]["name"]
 
-        if variant_type == "builtin":
-            if "args" in config["source"]:
-                source["args"] = config["source"]["args"]
+        if variant_type == "builtin" and "args" in config["source"]:
+            source["args"] = config["source"]["args"]
 
         limits["source"] = source
 
@@ -118,7 +113,6 @@ def _normalize_config(config: dict, root_path: Path, name: str = "", subname: st
 
 
 def get_jinja_config(action: Action, obj: ADCMEntity) -> tuple[list[PrototypeConfig], dict]:
-    # pylint: disable=import-outside-toplevel, cyclic-import
     from cm.inventory import get_inventory_data
 
     inventory_data = get_inventory_data(obj=obj, action=action)

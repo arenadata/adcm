@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.base_view import GenericUIViewSet
-from api.config_log.serializers import ConfigLogSerializer, UIConfigLogSerializer
+from adcm.permissions import DjangoObjectPermissionsAudit, check_config_perm
 from audit.utils import audit
 from cm.models import ConfigLog
 from django.contrib.contenttypes.models import ContentType
@@ -20,10 +19,11 @@ from rest_framework import status
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
 
-from adcm.permissions import DjangoObjectPermissionsAudit, check_config_perm
+from api.base_view import GenericUIViewSet
+from api.config_log.serializers import ConfigLogSerializer, UIConfigLogSerializer
 
 
-class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
+class ConfigLogViewSet(
     PermissionListMixin,
     CreateModelMixin,
     ListModelMixin,
@@ -48,7 +48,7 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
         return super().get_serializer_class()
 
     @audit
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 

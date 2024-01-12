@@ -80,7 +80,7 @@ class TestClusterHosts(BaseInventoryTestCase):
             ),
         }
 
-        for obj, action, expected_topology, expected_data in (
+        for obj, action, topology, data in (
             (self.cluster_1, action_on_cluster, expected_topology, expected_data),
             (
                 host_1,
@@ -90,7 +90,7 @@ class TestClusterHosts(BaseInventoryTestCase):
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                self.assert_inventory(obj, action, expected_topology, expected_data)
+                self.assert_inventory(obj, action, topology, data)
 
     def test_add_2_hosts_on_cluster_actions(self):
         host_1 = self.add_host(
@@ -125,7 +125,7 @@ class TestClusterHosts(BaseInventoryTestCase):
             ),
         }
 
-        for obj, action, expected_topology, expected_data in (
+        for obj, action, topology, data in (
             (self.cluster_1, action_on_cluster, expected_topology, expected_data),
             (
                 host_1,
@@ -141,4 +141,4 @@ class TestClusterHosts(BaseInventoryTestCase):
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                self.assert_inventory(obj, action, expected_topology, expected_data)
+                self.assert_inventory(obj, action, topology, data)

@@ -11,31 +11,7 @@
 # limitations under the License.
 
 
-from api.action.serializers import StackActionSerializer
-from api.base_view import GenericUIViewSet, ModelPermOrReadOnlyForAuth
-from api.stack.serializers import (
-    ADCMPrototypeDetailSerializer,
-    ADCMPrototypeSerializer,
-    BundleSerializer,
-    BundleServiceUIPrototypeSerializer,
-    ClusterPrototypeDetailSerializer,
-    ClusterPrototypeSerializer,
-    ComponentPrototypeDetailSerializer,
-    ComponentPrototypeSerializer,
-    ComponentPrototypeUISerializer,
-    HostPrototypeDetailSerializer,
-    HostPrototypeSerializer,
-    LoadBundleSerializer,
-    PrototypeDetailSerializer,
-    PrototypeSerializer,
-    PrototypeUISerializer,
-    ProviderPrototypeDetailSerializer,
-    ProviderPrototypeSerializer,
-    ServiceDetailPrototypeSerializer,
-    ServicePrototypeSerializer,
-    UploadBundleSerializer,
-)
-from api.utils import check_obj
+from adcm.permissions import DjangoObjectPermissionsAudit, IsAuthenticatedAudit
 from audit.utils import audit
 from cm.api import accept_license, get_license, load_service_map
 from cm.bundle import delete_bundle, load_bundle, update_bundle, upload_file
@@ -68,7 +44,31 @@ from rest_framework.status import (
 )
 from rest_framework.viewsets import ModelViewSet
 
-from adcm.permissions import DjangoObjectPermissionsAudit, IsAuthenticatedAudit
+from api.action.serializers import StackActionSerializer
+from api.base_view import GenericUIViewSet, ModelPermOrReadOnlyForAuth
+from api.stack.serializers import (
+    ADCMPrototypeDetailSerializer,
+    ADCMPrototypeSerializer,
+    BundleSerializer,
+    BundleServiceUIPrototypeSerializer,
+    ClusterPrototypeDetailSerializer,
+    ClusterPrototypeSerializer,
+    ComponentPrototypeDetailSerializer,
+    ComponentPrototypeSerializer,
+    ComponentPrototypeUISerializer,
+    HostPrototypeDetailSerializer,
+    HostPrototypeSerializer,
+    LoadBundleSerializer,
+    PrototypeDetailSerializer,
+    PrototypeSerializer,
+    PrototypeUISerializer,
+    ProviderPrototypeDetailSerializer,
+    ProviderPrototypeSerializer,
+    ServiceDetailPrototypeSerializer,
+    ServicePrototypeSerializer,
+    UploadBundleSerializer,
+)
+from api.utils import check_obj
 
 
 @csrf_exempt
@@ -99,7 +99,7 @@ class PrototypeRetrieveViewSet(RetrieveModelMixin, GenericUIViewSet):
 
         return instance
 
-    def retrieve(self, request: Request, *args, **kwargs) -> Response:
+    def retrieve(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         instance = self.get_object()
         serializer = self.get_serializer(instance)
 
@@ -107,7 +107,7 @@ class PrototypeRetrieveViewSet(RetrieveModelMixin, GenericUIViewSet):
 
 
 class CsrfOffSessionAuthentication(SessionAuthentication):
-    def enforce_csrf(self, request):
+    def enforce_csrf(self, request):  # noqa: ARG002
         return
 
 
@@ -120,7 +120,7 @@ class UploadBundleView(CreateModelMixin, GenericUIViewSet):
     ordering = ["id"]
 
     @audit
-    def create(self, request: Request, *args, **kwargs) -> Response:
+    def create(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
@@ -136,7 +136,7 @@ class LoadBundleView(CreateModelMixin, GenericUIViewSet):
     ordering = ["id"]
 
     @audit
-    def create(self, request: Request, *args, **kwargs) -> Response:
+    def create(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
@@ -146,7 +146,7 @@ class LoadBundleView(CreateModelMixin, GenericUIViewSet):
         )
 
 
-class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
+class BundleViewSet(ModelViewSet):
     queryset = Bundle.objects.all()
     serializer_class = BundleSerializer
     filterset_fields = ("name", "version")
@@ -157,10 +157,7 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
     ordering = ["id"]
 
     def get_permissions(self):
-        if self.action == "list":
-            permission_classes = (IsAuthenticated,)
-        else:
-            permission_classes = (ModelPermOrReadOnlyForAuth,)
+        permission_classes = (IsAuthenticated,) if self.action == "list" else (ModelPermOrReadOnlyForAuth,)
 
         return [permission() for permission in permission_classes]
 
@@ -171,7 +168,7 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
         return super().get_queryset()
 
     @audit
-    def destroy(self, request, *args, **kwargs) -> Response:
+    def destroy(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         bundle = self.get_object()
         delete_bundle(bundle)
 
@@ -179,7 +176,7 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
 
     @audit
     @action(methods=["put"], detail=True)
-    def update_bundle(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def update_bundle(self, request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         bundle = check_obj(Bundle, kwargs["bundle_pk"], "BUNDLE_NOT_FOUND")
         update_bundle(bundle)
         serializer = self.get_serializer(bundle)
@@ -188,7 +185,7 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
 
     @staticmethod
     @action(methods=["get"], detail=True)
-    def license(request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def license(request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002, ARG004
         bundle = check_obj(Bundle, kwargs["bundle_pk"], "BUNDLE_NOT_FOUND")
         proto = Prototype.objects.filter(bundle=bundle, name=bundle.name).first()
         body = get_license(proto)
@@ -198,7 +195,7 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
 
     @audit
     @action(methods=["put"], detail=True)
-    def accept_license(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def accept_license(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         # self is necessary for audit
 
         bundle = check_obj(Bundle, kwargs["bundle_pk"], "BUNDLE_NOT_FOUND")
@@ -208,7 +205,6 @@ class BundleViewSet(ModelViewSet):  # pylint: disable=too-many-ancestors
         return Response()
 
 
-#  pylint:disable-next=too-many-ancestors
 class PrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
     queryset = Prototype.objects.all()
     serializer_class = PrototypeSerializer
@@ -218,11 +214,7 @@ class PrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
     ordering = ["id"]
 
     def get_permissions(self):
-        if self.action == "list":
-            permission_classes = (IsAuthenticated,)
-        else:
-            permission_classes = (ModelPermOrReadOnlyForAuth,)
-
+        permission_classes = (IsAuthenticated,) if self.action == "list" else (ModelPermOrReadOnlyForAuth,)
         return [permission() for permission in permission_classes]
 
     def get_serializer_class(self):
@@ -235,7 +227,7 @@ class PrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
 
     @staticmethod
     @action(methods=["get"], detail=True)
-    def license(request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def license(request: Request, *args, **kwargs) -> Response:  # noqa: ARG002, ARG004
         prototype = check_obj(Prototype, kwargs["prototype_pk"], "PROTOTYPE_NOT_FOUND")
         body = get_license(prototype)
         url = reverse(viewname="v1:accept-license", kwargs={"prototype_pk": prototype.pk}, request=request)
@@ -244,7 +236,7 @@ class PrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
 
     @audit
     @action(methods=["put"], detail=True)
-    def accept_license(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def accept_license(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         # self is necessary for audit
 
         prototype = check_obj(Prototype, kwargs["prototype_pk"], "PROTOTYPE_NOT_FOUND")
@@ -259,7 +251,7 @@ class ProtoActionViewSet(RetrieveModelMixin, GenericUIViewSet):
     lookup_url_kwarg = "action_pk"
     ordering = ["id"]
 
-    def retrieve(self, request: Request, *args, **kwargs) -> Response:
+    def retrieve(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         obj = check_obj(Action, kwargs["action_pk"], "ACTION_NOT_FOUND")
         serializer = self.get_serializer(obj)
 
@@ -283,7 +275,7 @@ class ServicePrototypeViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewS
 
         return super().get_serializer_class()
 
-    def retrieve(self, request, *args, **kwargs) -> Response:
+    def retrieve(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         instance = self.get_object()
         instance.actions = Action.objects.filter(prototype__type="service", prototype__pk=instance.pk)
         instance.components = Prototype.objects.filter(parent=instance, type="component")
@@ -295,7 +287,7 @@ class ServicePrototypeViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewS
         return Response(serializer.data)
 
     @action(methods=["get"], detail=True)
-    def actions(self, request: Request, prototype_pk: int) -> Response:  # pylint: disable=unused-argument
+    def actions(self, request: Request, prototype_pk: int) -> Response:  # noqa: ARG001, ARG002
         return Response(
             StackActionSerializer(
                 Action.objects.filter(prototype__type="service", prototype_id=prototype_pk),
@@ -304,7 +296,6 @@ class ServicePrototypeViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewS
         )
 
 
-#  pylint:disable-next=too-many-ancestors
 class ComponentPrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
     queryset = Prototype.objects.filter(type="component")
     serializer_class = ComponentPrototypeSerializer
@@ -321,7 +312,6 @@ class ComponentPrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
         return super().get_serializer_class()
 
 
-#  pylint:disable-next=too-many-ancestors
 class ProviderPrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
     queryset = Prototype.objects.filter(type="provider")
     serializer_class = ProviderPrototypeSerializer
@@ -337,7 +327,6 @@ class ProviderPrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
         return super().get_serializer_class()
 
 
-#  pylint:disable-next=too-many-ancestors
 class HostPrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
     queryset = Prototype.objects.filter(type="host")
     serializer_class = HostPrototypeSerializer
@@ -352,7 +341,6 @@ class HostPrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
         return super().get_serializer_class()
 
 
-#  pylint:disable-next=too-many-ancestors
 class ClusterPrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
     queryset = Prototype.objects.filter(type="cluster")
     serializer_class = ClusterPrototypeSerializer
@@ -367,7 +355,6 @@ class ClusterPrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
         return super().get_serializer_class()
 
 
-#  pylint:disable-next=too-many-ancestors
 class ADCMPrototypeViewSet(ListModelMixin, PrototypeRetrieveViewSet):
     queryset = Prototype.objects.filter(type="adcm")
     serializer_class = ADCMPrototypeSerializer

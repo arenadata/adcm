@@ -12,9 +12,10 @@
 
 from typing import Any
 
-from api_v2.bundle.serializers import UpgradeBundleSerializer
 from cm.models import Upgrade
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
+
+from api_v2.bundle.serializers import UpgradeBundleSerializer
 
 
 class UpgradeListSerializer(ModelSerializer):

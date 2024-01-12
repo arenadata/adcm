@@ -10,12 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rbac.endpoints.serializers import BaseRelatedSerializer
-from rbac.models import Role
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.fields import RegexField, SerializerMethodField
 from rest_framework.relations import HyperlinkedIdentityField, PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
+
+from rbac.endpoints.serializers import BaseRelatedSerializer
+from rbac.models import Role
 
 
 class RoleChildSerializer(BaseRelatedSerializer):

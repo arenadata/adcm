@@ -11,7 +11,6 @@
 # limitations under the License.
 
 
-from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditObject
 from rbac.models import Policy, Role
 from rbac.services.group import create as create_group
@@ -29,8 +28,10 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
+from api_v2.tests.base import BaseAPITestCase
 
-class TestPolicyAudit(BaseAPITestCase):  # pylint: disable=too-many-instance-attributes
+
+class TestPolicyAudit(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 

@@ -9,11 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.config.utils import ConfigSchemaMixin
-from api_v2.group_config.permissions import GroupConfigPermissions
-from api_v2.group_config.serializers import GroupConfigSerializer
-from api_v2.host.serializers import HostGroupConfigSerializer
-from api_v2.views import CamelCaseModelViewSet
+from adcm.mixins import GetParentObjectMixin
+from adcm.permissions import VIEW_GROUP_CONFIG_PERM, check_config_perm
 from audit.utils import audit
 from cm.models import GroupConfig
 from django.contrib.contenttypes.models import ContentType
@@ -25,13 +22,14 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from adcm.mixins import GetParentObjectMixin
-from adcm.permissions import VIEW_GROUP_CONFIG_PERM, check_config_perm
+from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.group_config.permissions import GroupConfigPermissions
+from api_v2.group_config.serializers import GroupConfigSerializer
+from api_v2.host.serializers import HostGroupConfigSerializer
+from api_v2.views import CamelCaseModelViewSet
 
 
-class GroupConfigViewSet(
-    PermissionListMixin, GetParentObjectMixin, ConfigSchemaMixin, CamelCaseModelViewSet
-):  # pylint: disable=too-many-ancestors
+class GroupConfigViewSet(PermissionListMixin, GetParentObjectMixin, ConfigSchemaMixin, CamelCaseModelViewSet):
     queryset = GroupConfig.objects.order_by("name")
     serializer_class = GroupConfigSerializer
     permission_classes = [GroupConfigPermissions]
@@ -50,7 +48,7 @@ class GroupConfigViewSet(
         )
 
     @audit
-    def create(self, request: Request, *args, **kwargs):
+    def create(self, request: Request, *args, **kwargs):  # noqa: ARG002
         parent_object = self.get_parent_object()
 
         parent_view_perm = f"cm.view_{parent_object.__class__.__name__.lower()}"
@@ -79,7 +77,7 @@ class GroupConfigViewSet(
         return Response(data=self.get_serializer(group_config).data, status=HTTP_201_CREATED)
 
     @action(methods=["get"], detail=True, url_path="host-candidates", url_name="host-candidates")
-    def host_candidates(self, request: Request, *args, **kwargs):  # pylint: disable=unused-argument
+    def host_candidates(self, request: Request, *args, **kwargs):  # noqa: ARG001, ARG002
         group_config: GroupConfig = self.get_object()
         hosts = group_config.host_candidate()
         serializer = HostGroupConfigSerializer(instance=hosts, many=True)

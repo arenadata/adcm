@@ -12,6 +12,7 @@
 from pathlib import Path
 
 from api_v2.service.utils import bulk_add_services_to_cluster
+
 from cm.inventory import get_inventory_data
 from cm.models import ClusterObject, ObjectType, Prototype, ServiceComponent, Upgrade
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets

@@ -10,6 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_409_CONFLICT
+
 from cm.models import (
     Bundle,
     Cluster,
@@ -20,11 +25,6 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_409_CONFLICT
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestService(BaseTestCase):

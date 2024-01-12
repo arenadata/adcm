@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from adcm.tests.base import BaseTestCase
+
 from cm.issue import add_concern_to_object, remove_concern_from_object
 from cm.models import (
     ConcernCause,
@@ -18,8 +20,6 @@ from cm.models import (
     MessageTemplate,
 )
 from cm.tests.utils import gen_concern_item, generate_hierarchy
-
-from adcm.tests.base import BaseTestCase
 
 
 class ADCMEntityConcernTest(BaseTestCase):

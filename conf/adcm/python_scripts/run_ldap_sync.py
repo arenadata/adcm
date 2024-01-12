@@ -19,7 +19,8 @@ import ldap
 os.environ["PYTHONPATH"] = "/adcm/python/"
 sys.path.append("/adcm/python/")
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django  # noqa: F401 # isort:skip
+
 from cm.errors import AdcmEx
 from cm.logger import logger
 from django.db import DataError, IntegrityError
@@ -68,9 +69,7 @@ class SyncLDAP:
 
     @staticmethod
     def _deactivate_extra_users(ldap_usernames: set):
-        django_usernames = set(
-            User.objects.filter(type=OriginType.LDAP).values_list("username", flat=True)
-        )
+        django_usernames = set(User.objects.filter(type=OriginType.LDAP).values_list("username", flat=True))
         for username in django_usernames - ldap_usernames:
             user = User.objects.get(username__iexact=username)
             sys.stdout.write(f"Delete user: {user}\n")
@@ -219,7 +218,7 @@ class SyncLDAP:
                 else:
                     for group in ldap_attributes.get("memberof", []):
                         name = group.split(",")[0][3:]
-                        if not name.lower() in ldap_group_names:
+                        if name.lower() not in ldap_group_names:
                             continue
                         try:
                             group = Group.objects.get(name=f"{name} [ldap]", built_in=False, type=OriginType.LDAP)

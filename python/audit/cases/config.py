@@ -11,6 +11,12 @@
 # limitations under the License.
 from contextlib import suppress
 
+from adcm.utils import get_obj_type
+from cm.models import GroupConfig, Host, ObjectConfig, get_cm_model_by_type
+from django.contrib.contenttypes.models import ContentType
+from rest_framework.response import Response
+from rest_framework.viewsets import ViewSet
+
 from audit.cases.common import get_obj_name, get_or_create_audit_obj
 from audit.models import (
     MODEL_TO_AUDIT_OBJECT_TYPE_MAP,
@@ -19,15 +25,8 @@ from audit.models import (
     AuditObject,
     AuditOperation,
 )
-from cm.models import GroupConfig, Host, ObjectConfig, get_cm_model_by_type
-from django.contrib.contenttypes.models import ContentType
-from rest_framework.response import Response
-from rest_framework.viewsets import ViewSet
-
-from adcm.utils import get_obj_type
 
 
-# pylint: disable-next=too-many-locals,too-many-branches,too-many-statements
 def config_case(
     path: list[str],
     view: ViewSet,
@@ -61,10 +60,7 @@ def config_case(
                     object_name=object_name,
                     object_type=object_type,
                 )
-                if object_type == "adcm":
-                    object_type = "ADCM"
-                else:
-                    object_type = object_type.capitalize()
+                object_type = "ADCM" if object_type == "adcm" else object_type.capitalize()
 
                 operation_name = f"{object_type} {audit_operation.name}"
             else:

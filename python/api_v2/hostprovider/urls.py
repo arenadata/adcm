@@ -9,14 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from rest_framework.routers import SimpleRouter
+from rest_framework_nested.routers import NestedSimpleRouter
+
 from api_v2.action.views import ActionViewSet
 from api_v2.config.views import ConfigLogViewSet
 from api_v2.group_config.views import GroupConfigViewSet
 from api_v2.host.views import HostGroupConfigViewSet
 from api_v2.hostprovider.views import HostProviderViewSet
 from api_v2.upgrade.views import UpgradeViewSet
-from rest_framework.routers import SimpleRouter
-from rest_framework_nested.routers import NestedSimpleRouter
 
 CONFIG_GROUPS_PREFIX = "config-groups"
 

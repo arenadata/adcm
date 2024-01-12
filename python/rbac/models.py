@@ -40,8 +40,9 @@ from django.db.models import (
 )
 from django.db.transaction import atomic
 from guardian.models import GroupObjectPermission
-from rbac.utils import get_query_tuple_str
 from rest_framework.exceptions import ValidationError
+
+from rbac.utils import get_query_tuple_str
 
 
 class ObjectType(TextChoices):
@@ -171,9 +172,7 @@ class Role(Model):
             """,
             params=[role.id],
         )
-        permissions = list(Permission.objects.filter(role__in=role_list).distinct())
-
-        return permissions
+        return list(Permission.objects.filter(role__in=role_list).distinct())
 
 
 class RoleMigration(Model):
@@ -228,7 +227,7 @@ class Policy(Model):
                         SELECT policypermission_id FROM rbac_policy_model_perm 
                         WHERE policypermission_id in {get_query_tuple_str(tuple_items=permission_ids_to_delete)} 
                         AND policy_id != {self.pk};
-                    """
+                    """  # noqa: S608, W291
                 )
 
                 permission_ids_to_keep = {item[0] for item in cursor.fetchall()}
@@ -247,7 +246,7 @@ class Policy(Model):
                                 SELECT permission_id FROM rbac_policypermission WHERE group_id IS NOT NULL 
                                 AND id IN {permission_ids_to_delete_str}
                             ) AND group_id IN {get_query_tuple_str(tuple_items=tuple(group_pks))};
-                        """,
+                        """,  # noqa: S608, W291
                     )
 
                 cursor.execute(
@@ -262,7 +261,7 @@ class Policy(Model):
                         DELETE FROM rbac_policypermission WHERE 
                         (user_id IS NOT NULL OR group_id IS NOT NULL) AND id 
                         IN {get_query_tuple_str(tuple_items=permission_ids_to_delete)};
-                    """,
+                    """,  # noqa: S608, W291
                 )
 
             cursor.execute(
@@ -281,7 +280,7 @@ class Policy(Model):
                         WHERE groupobjectpermission_id 
                         in {get_query_tuple_str(tuple_items=groupobj_permission_ids_to_delete)}
                         AND policy_id != {self.pk};
-                    """
+                    """  # noqa: S608, W291
                 )
 
                 groupobj_permission_ids_to_keep = {item[0] for item in cursor.fetchall()}
@@ -301,11 +300,11 @@ class Policy(Model):
                     f"""
                         DELETE FROM rbac_policy_group_object_perm WHERE groupobjectpermission_id 
                         IN {groupobj_permission_ids_to_delete_str};
-                    """,
+                    """,  # noqa: S608, W291
                 )
 
                 cursor.execute(
-                    f"DELETE FROM guardian_groupobjectpermission WHERE id IN {groupobj_permission_ids_to_delete_str};",
+                    f"DELETE FROM guardian_groupobjectpermission WHERE id IN {groupobj_permission_ids_to_delete_str};",  # noqa: S608, W291
                 )
 
     def add_object(self, obj) -> None:
@@ -344,10 +343,7 @@ class Policy(Model):
 
 def get_objects_for_policy(obj: ADCMEntity) -> dict[ADCMEntity, ContentType]:
     obj_type_map = {}
-    if hasattr(obj, "prototype"):
-        obj_type = obj.prototype.type
-    else:
-        obj_type = None
+    obj_type = obj.prototype.type if hasattr(obj, "prototype") else None
 
     if obj_type == "component":
         object_list = [obj, obj.service, obj.cluster]

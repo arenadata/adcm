@@ -11,9 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import adcm.init_django  # noqa: F401, isort:skip
 from django.conf import settings
-
-import adcm.init_django  # pylint: disable=unused-import
 
 if __name__ == "__main__":
     print(settings.ANSIBLE_SECRET)

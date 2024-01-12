@@ -11,12 +11,13 @@
 # limitations under the License.
 from unittest.mock import patch
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.issue import add_concern_to_object
 from cm.models import Action, ConcernType, MaintenanceMode, ServiceComponent
 from cm.tests.utils import gen_concern_item
 from django.urls import reverse
 from rest_framework.status import HTTP_200_OK, HTTP_405_METHOD_NOT_ALLOWED
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestComponentAPI(BaseAPITestCase):

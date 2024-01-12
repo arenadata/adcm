@@ -10,12 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-locals
-
+from pathlib import Path
+import sys
+import json
 import base64
 import getpass
-import json
-import sys
+
+from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from django.conf import settings
+from django.core.management.base import BaseCommand
 
 from cm.models import (
     Bundle,
@@ -30,12 +36,6 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
-from cryptography.fernet import Fernet
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from django.conf import settings
-from django.core.management.base import BaseCommand
 
 
 def serialize_datetime_fields(obj, fields=None):
@@ -89,8 +89,7 @@ def get_bundle(prototype_id):
     """
     fields = ("name", "version", "edition", "hash", "description")
     prototype = Prototype.objects.get(id=prototype_id)
-    bundle = get_object(Bundle, prototype.bundle_id, fields)
-    return bundle
+    return get_object(Bundle, prototype.bundle_id, fields)
 
 
 def get_bundle_hash(prototype_id):
@@ -292,8 +291,7 @@ def get_host_component(host_component_id):
         "component",
         "state",
     )
-    host_component = get_object(HostComponent, host_component_id, fields)
-    return host_component
+    return get_object(HostComponent, host_component_id, fields)
 
 
 def encrypt_data(pass_from_user, result):
@@ -307,8 +305,7 @@ def encrypt_data(pass_from_user, result):
     )
     key = base64.urlsafe_b64encode(kdf.derive(password))
     f = Fernet(key)
-    encrypted = f.encrypt(result)
-    return encrypted
+    return f.encrypt(result)
 
 
 def dump(cluster_id, output):
@@ -380,7 +377,7 @@ def dump(cluster_id, output):
     encrypted = encrypt_data(password, result)
 
     if output is not None:
-        with open(output, "wb") as f:
+        with Path(output).open(mode="wb") as f:
             f.write(encrypted)
         sys.stdout.write(f"Dump successfully done to file {output}\n")
     else:
@@ -412,7 +409,7 @@ class Command(BaseCommand):
         )
         parser.add_argument("-o", "--output", help="Specifies file to which the output is written.")
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: ARG002
         """Handler method"""
         cluster_id = options["cluster_id"]
         output = options["output"]

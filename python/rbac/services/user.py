@@ -14,10 +14,11 @@ from cm.errors import AdcmEx
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
+from rest_framework.authtoken.models import Token
+
 from rbac.models import Group, OriginType, User
 from rbac.utils import Empty, set_not_empty_attr
 from rbac.validators import ADCMLengthPasswordValidator
-from rest_framework.authtoken.models import Token
 
 
 def _set_password(user: User, value: str) -> None:
@@ -90,8 +91,6 @@ def update_user(
     groups: list = Empty,
     is_active: bool = Empty,
 ) -> User:
-    # pylint: disable=too-many-locals
-
     if (username is not Empty) and (username != user.username):
         raise AdcmEx(code="USER_CONFLICT", msg="Username could not be changed")
 
@@ -159,10 +158,7 @@ def create_user(
     groups: list = None,
     is_active: bool = True,
 ) -> User:
-    if is_superuser:
-        func = User.objects.create_superuser
-    else:
-        func = User.objects.create_user
+    func = User.objects.create_superuser if is_superuser else User.objects.create_user
 
     user_exist = User.objects.filter(email=email).exists()
     if user_exist and (email != ""):

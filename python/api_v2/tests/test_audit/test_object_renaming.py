@@ -10,13 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.tests.base import BaseAPITestCase
 from django.urls import reverse
 from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestAuditObjectNameChanged(BaseAPITestCase):

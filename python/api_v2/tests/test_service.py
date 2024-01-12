@@ -13,7 +13,6 @@
 from typing import Callable, NamedTuple
 from unittest.mock import patch
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.job import ActionRunPayload, run_action
 from cm.models import (
     Action,
@@ -37,6 +36,8 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_409_CONFLICT,
 )
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class FakePopenResponse(NamedTuple):

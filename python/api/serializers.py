@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.config.serializers import ConfigSerializerUI
-from api.utils import UrlField, check_obj, hlink
+from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_action_variant, get_prototype_config, ui_config
 from cm.errors import raise_adcm_ex
 from cm.models import Cluster, GroupConfig, HostProvider, PrototypeConfig, Upgrade
@@ -28,7 +27,8 @@ from rest_framework.serializers import (
 )
 from rest_framework_extensions.settings import extensions_api_settings
 
-from adcm.serializers import EmptySerializer
+from api.config.serializers import ConfigSerializerUI
+from api.utils import UrlField, check_obj, hlink
 
 
 class UpgradeSerializer(EmptySerializer):
@@ -77,7 +77,7 @@ class UpgradeSerializer(EmptySerializer):
         conf = ConfigSerializerUI(action_conf, many=True, context=self.context, read_only=True)
         return {"attr": attr, "config": conf.data}
 
-    def get_upgradable(self, instance: Upgrade) -> bool:  # pylint: disable=unused-argument
+    def get_upgradable(self, instance: Upgrade) -> bool:  # noqa: ARG001, ARG002
         return self.context.get("upgradable", False)
 
 

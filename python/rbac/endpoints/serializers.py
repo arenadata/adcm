@@ -10,9 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.serializers import ValidationError
-
 from adcm.serializers import EmptySerializer
+from rest_framework.serializers import ValidationError
 
 
 class BaseRelatedSerializer(EmptySerializer):

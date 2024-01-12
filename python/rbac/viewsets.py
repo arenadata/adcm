@@ -16,5 +16,5 @@ from rest_framework.permissions import DjangoObjectPermissions
 
 
 class DjangoOnlyObjectPermissions(DjangoObjectPermissions):
-    def has_permission(self, request, view):
+    def has_permission(self, request, view):  # noqa: ARG002
         return True
