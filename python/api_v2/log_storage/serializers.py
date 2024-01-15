@@ -12,13 +12,13 @@
 
 # pylint: disable=duplicate-code
 import json
+from contextlib import suppress
 
 from cm.ansible_plugin import get_checklogs_data_by_job_id
 from cm.models import LogStorage
+from django.conf import settings
 from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer
-
-from adcm import settings
 
 
 class LogStorageSerializer(ModelSerializer):
@@ -34,32 +34,39 @@ class LogStorageSerializer(ModelSerializer):
             "content",
         )
 
-    @staticmethod
-    def _get_ansible_content(obj):
-        path_file = settings.RUN_DIR / f"{obj.job.id}" / f"{obj.name}-{obj.type}.{obj.format}"
-        try:
-            with open(path_file, encoding=settings.ENCODING_UTF_8) as f:
-                content = f.read()
-        except FileNotFoundError:
-            content = ""
-
-        return content
-
     def get_content(self, obj: LogStorage) -> str:
-        if obj.type in {"stdout", "stderr"}:
-            if obj.body is None:
-                obj.body = self._get_ansible_content(obj)
-        elif obj.type == "check":
-            if obj.body is None:
-                obj.body = get_checklogs_data_by_job_id(obj.job_id)
-            if isinstance(obj.body, str):
-                obj.body = json.loads(obj.body)
-        elif obj.type == "custom":
-            if obj.format == "json" and isinstance(obj.body, str):
-                try:
-                    custom_content = json.loads(obj.body)
-                    obj.body = json.dumps(custom_content, indent=4)
-                except json.JSONDecodeError:
-                    pass
+        content = obj.body
+        log_type = obj.type
 
-        return obj.body
+        # retrieve if empty
+        if content is None:
+            if log_type in {"stdout", "stderr"}:
+                logfile = settings.RUN_DIR / f"{obj.job_id}" / f"{obj.name}-{obj.type}.{obj.format}"
+                if logfile.exists():
+                    content = logfile.read_text(encoding="utf-8")
+
+            if log_type == "check":
+                content = get_checklogs_data_by_job_id(obj.job_id)
+
+        # postprocessing
+        if log_type in {"stdout", "stderr"} and len(content or "") >= settings.STDOUT_STDERR_LOG_MAX_UNCUT_LENGTH:
+            cut_lines = "\n".join(
+                (
+                    line
+                    if len(line) <= settings.STDOUT_STDERR_LOG_LINE_CUT_LENGTH
+                    else (
+                        line[: settings.STDOUT_STDERR_LOG_LINE_CUT_LENGTH]
+                        + settings.STDOUT_STDERR_TRUNCATED_LOG_MESSAGE
+                    )
+                    for line in obj.body.splitlines()[-1500:]
+                )
+            )
+            content = f"{settings.STDOUT_STDERR_TRUNCATED_LOG_MESSAGE}\n{cut_lines}\n"
+        elif log_type == "check" and isinstance(content, str):
+            content = json.loads(obj.body)
+        elif log_type == "custom" and obj.format == "json" and isinstance(content, str):
+            with suppress(json.JSONDecodeError):
+                custom_content = json.loads(content)
+                content = json.dumps(custom_content)
+
+        return content or ""

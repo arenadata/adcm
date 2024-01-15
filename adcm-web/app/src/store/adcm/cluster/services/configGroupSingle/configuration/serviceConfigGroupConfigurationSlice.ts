@@ -81,14 +81,14 @@ const createWithUpdateServiceConfigGroupConfigurations = createAsyncThunk(
 
 const getServiceConfigGroupConfiguration = createAsyncThunk(
   'adcm/service/configGroup/configuration/getServiceConfigGroupConfiguration',
-  async ({ clusterId, serviceId, configGroupId, configId }: LoadServiceConfigGroupConfigurationPayload, thunkAPI) => {
+  async (args: LoadServiceConfigGroupConfigurationPayload, thunkAPI) => {
     const startDate = new Date();
     thunkAPI.dispatch(setIsConfigurationLoading(true));
 
     try {
       const [config, schema] = await Promise.all([
-        AdcmClusterServiceConfigGroupConfigsApi.getConfig(clusterId, serviceId, configGroupId, configId),
-        AdcmClusterServiceConfigGroupConfigsApi.getConfigSchema(clusterId, serviceId, configGroupId),
+        AdcmClusterServiceConfigGroupConfigsApi.getConfig(args),
+        AdcmClusterServiceConfigGroupConfigsApi.getConfigSchema(args),
       ]);
       return { config, schema };
     } catch (error) {

@@ -8,6 +8,17 @@ import {
   ConfigurationAttributes,
 } from '@models/adcm';
 
+type GetConfigArgs = {
+  hostProviderId: number;
+  configGroupId: number;
+  configId: number;
+};
+
+type GetConfigSchemaArgs = {
+  hostProviderId: number;
+  configGroupId: number;
+};
+
 export class AdcmHostProviderGroupConfigsConfigsApi {
   public static async getConfigs(hostProviderId: number, configGroupId: number) {
     const response = await httpClient.get<Batch<AdcmConfigShortView>>(
@@ -16,16 +27,16 @@ export class AdcmHostProviderGroupConfigsConfigsApi {
     return response.data;
   }
 
-  public static async getConfig(hostProviderId: number, configGroupId: number, configId: number) {
+  public static async getConfig(args: GetConfigArgs) {
     const response = await httpClient.get<AdcmConfig>(
-      `/api/v2/hostproviders/${hostProviderId}/config-groups/${configGroupId}/configs/${configId}/`,
+      `/api/v2/hostproviders/${args.hostProviderId}/config-groups/${args.configGroupId}/configs/${args.configId}/`,
     );
     return response.data;
   }
 
-  public static async getConfigSchema(hostProviderId: number, configGroupId: number) {
+  public static async getConfigSchema(args: GetConfigSchemaArgs) {
     const response = await httpClient.get<ConfigurationSchema>(
-      `/api/v2/hostproviders/${hostProviderId}/config-groups/${configGroupId}/config-schema/`,
+      `/api/v2/hostproviders/${args.hostProviderId}/config-groups/${args.configGroupId}/config-schema/`,
     );
     return response.data;
   }

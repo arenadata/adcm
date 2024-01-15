@@ -91,19 +91,25 @@ class ServiceViewSet(  # pylint: disable=too-many-ancestors
         )
         check_custom_perm(user=request.user, action_type=ADD_SERVICE_PERM, model=Cluster.__name__.lower(), obj=cluster)
 
+        multiple_services = isinstance(request.data, list)
         serializer = self.get_serializer(
-            data=request.data, many=True, context={"cluster": cluster, **self.get_serializer_context()}
+            data=request.data, many=multiple_services, context={"cluster": cluster, **self.get_serializer_context()}
         )
         serializer.is_valid(raise_exception=True)
 
-        service_prototypes, error = validate_service_prototypes(cluster=cluster, data=serializer.validated_data)
+        service_prototypes, error = validate_service_prototypes(
+            cluster=cluster, data=serializer.validated_data if multiple_services else [serializer.validated_data]
+        )
         if error is not None:
             raise error
         added_services = bulk_add_services_to_cluster(cluster=cluster, prototypes=service_prototypes)
 
-        return Response(
-            status=HTTP_201_CREATED, data=ServiceRetrieveSerializer(instance=added_services, many=True).data
-        )
+        if multiple_services:
+            return Response(
+                status=HTTP_201_CREATED, data=ServiceRetrieveSerializer(instance=added_services, many=True).data
+            )
+
+        return Response(status=HTTP_201_CREATED, data=ServiceRetrieveSerializer(instance=added_services[0]).data)
 
     @audit
     def destroy(self, request: Request, *args, **kwargs):

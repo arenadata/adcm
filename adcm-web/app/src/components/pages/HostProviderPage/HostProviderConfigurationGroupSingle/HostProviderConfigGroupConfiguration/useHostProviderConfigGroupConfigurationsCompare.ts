@@ -4,16 +4,14 @@ import {
   cleanupCompareSlice,
   getLeftConfiguration,
   getRightConfiguration,
-} from '@store/adcm/hostProvider/configurationGroupSingle/configuration/hostProviderConfigGroupConfigurationsCompareSlice.ts';
+} from '@store/adcm/entityConfiguration/compareSlice';
 
 export const useHostProviderConfigGroupConfigurationsCompare = () => {
   const dispatch = useDispatch();
   const hostProvider = useStore(({ adcm }) => adcm.hostProvider.hostProvider);
   const hostProviderConfigGroup = useStore((s) => s.adcm.hostProviderConfigGroup.hostProviderConfigGroup);
-  const leftConfiguration = useStore(({ adcm }) => adcm.hostProviderConfigGroupConfigurationsCompare.leftConfiguration);
-  const rightConfiguration = useStore(
-    ({ adcm }) => adcm.hostProviderConfigGroupConfigurationsCompare.rightConfiguration,
-  );
+  const leftConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.leftConfiguration);
+  const rightConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.rightConfiguration);
 
   useEffect(
     () => () => {
@@ -27,9 +25,12 @@ export const useHostProviderConfigGroupConfigurationsCompare = () => {
       if (hostProvider && hostProviderConfigGroup) {
         dispatch(
           getLeftConfiguration({
-            hostProviderId: hostProvider.id,
-            configGroupId: hostProviderConfigGroup.id,
-            configId,
+            entityType: 'host-provider-config-group',
+            args: {
+              hostProviderId: hostProvider.id,
+              configGroupId: hostProviderConfigGroup.id,
+              configId,
+            },
           }),
         );
       }
@@ -42,9 +43,12 @@ export const useHostProviderConfigGroupConfigurationsCompare = () => {
       if (hostProvider && hostProviderConfigGroup) {
         dispatch(
           getRightConfiguration({
-            hostProviderId: hostProvider.id,
-            configGroupId: hostProviderConfigGroup.id,
-            configId,
+            entityType: 'host-provider-config-group',
+            args: {
+              hostProviderId: hostProvider.id,
+              configGroupId: hostProviderConfigGroup.id,
+              configId,
+            },
           }),
         );
       }

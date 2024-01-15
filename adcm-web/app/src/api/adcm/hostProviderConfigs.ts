@@ -8,6 +8,15 @@ import {
   ConfigurationAttributes,
 } from '@models/adcm';
 
+type GetConfigArgs = {
+  hostProviderId: number;
+  configId: number;
+};
+
+type GetConfigSchemaArgs = {
+  hostProviderId: number;
+};
+
 export class AdcmHostProviderConfigsApi {
   public static async getConfigs(hostProviderId: number) {
     const response = await httpClient.get<Batch<AdcmConfigShortView>>(
@@ -16,14 +25,16 @@ export class AdcmHostProviderConfigsApi {
     return response.data;
   }
 
-  public static async getConfig(hostProviderId: number, configId: number) {
-    const response = await httpClient.get<AdcmConfig>(`/api/v2/hostproviders/${hostProviderId}/configs/${configId}/`);
+  public static async getConfig(args: GetConfigArgs) {
+    const response = await httpClient.get<AdcmConfig>(
+      `/api/v2/hostproviders/${args.hostProviderId}/configs/${args.configId}/`,
+    );
     return response.data;
   }
 
-  public static async getConfigSchema(hostProviderId: number) {
+  public static async getConfigSchema(args: GetConfigSchemaArgs) {
     const response = await httpClient.get<ConfigurationSchema>(
-      `/api/v2/hostproviders/${hostProviderId}/config-schema/`,
+      `/api/v2/hostproviders/${args.hostProviderId}/config-schema/`,
     );
     return response.data;
   }

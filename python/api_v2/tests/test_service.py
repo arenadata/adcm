@@ -131,10 +131,31 @@ class TestServiceAPI(BaseAPITestCase):
 
         response = self.client.post(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data=[{"prototype_id": manual_add_service_proto.pk}],
+            data=[{"prototypeId": manual_add_service_proto.pk}],
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+        data = response.json()
+        self.assertIsInstance(data, list)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["prototype"]["id"], manual_add_service_proto.pk)
+
+        self.assertEqual(ClusterObject.objects.count(), initial_service_count + 1)
+
+    def test_add_one_success(self):
+        initial_service_count = ClusterObject.objects.count()
+        manual_add_service_proto = Prototype.objects.get(type=ObjectType.SERVICE, name="service_3_manual_add")
+
+        response = self.client.post(
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"prototypeId": manual_add_service_proto.pk},
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        data = response.json()
+        self.assertIsInstance(data, dict)
+        self.assertEqual(data["prototype"]["id"], manual_add_service_proto.pk)
+
         self.assertEqual(ClusterObject.objects.count(), initial_service_count + 1)
 
     def test_create_wrong_data_fail(self):
@@ -143,7 +164,7 @@ class TestServiceAPI(BaseAPITestCase):
 
         response = self.client.post(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data={"prototype_id": manual_add_service_proto.pk},
+            data={"somekey": manual_add_service_proto.pk},
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
