@@ -68,8 +68,8 @@ const getHostProviderConfiguration = createAsyncThunk(
 
     try {
       const [config, schema] = await Promise.all([
-        AdcmHostProviderConfigsApi.getConfig(arg.hostProviderId, arg.configId),
-        AdcmHostProviderConfigsApi.getConfigSchema(arg.hostProviderId),
+        AdcmHostProviderConfigsApi.getConfig(arg),
+        AdcmHostProviderConfigsApi.getConfigSchema(arg),
       ]);
       return { config, schema };
     } catch (error) {

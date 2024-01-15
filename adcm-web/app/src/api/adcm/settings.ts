@@ -12,6 +12,10 @@ import {
   AdcmDynamicActionRunConfig,
 } from '@models/adcm';
 
+type GetConfigArgs = {
+  configId: number;
+};
+
 export class AdcmSettingsApi {
   public static async getSettings() {
     const response = await httpClient.get<AdcmSettings>('/api/v2/adcm/');
@@ -23,8 +27,8 @@ export class AdcmSettingsApi {
     return response.data;
   }
 
-  public static async getConfig(configId: number) {
-    const response = await httpClient.get<AdcmConfig>(`/api/v2/adcm/configs/${configId}/`);
+  public static async getConfig(args: GetConfigArgs) {
+    const response = await httpClient.get<AdcmConfig>(`/api/v2/adcm/configs/${args.configId}/`);
     return response.data;
   }
 

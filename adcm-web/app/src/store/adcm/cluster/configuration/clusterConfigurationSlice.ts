@@ -65,8 +65,8 @@ const getClusterConfiguration = createAsyncThunk(
 
     try {
       const [config, schema] = await Promise.all([
-        AdcmClusterConfigsApi.getConfig(arg.clusterId, arg.configId),
-        AdcmClusterConfigsApi.getConfigSchema(arg.clusterId),
+        AdcmClusterConfigsApi.getConfig(arg),
+        AdcmClusterConfigsApi.getConfigSchema(arg),
       ]);
       return { config, schema };
     } catch (error) {

@@ -4,7 +4,7 @@ import {
   getLeftConfiguration,
   getRightConfiguration,
   cleanupCompareSlice,
-} from '@store/adcm/cluster/services/serviceComponents/serviceComponent/configGroupSingle/serviceComponentConfigGroupConfigurationsCompareSlice';
+} from '@store/adcm/entityConfiguration/compareSlice';
 
 export const useServiceComponentConfigGroupConfigurationsCompare = () => {
   const dispatch = useDispatch();
@@ -14,12 +14,8 @@ export const useServiceComponentConfigGroupConfigurationsCompare = () => {
   const serviceComponentConfigGroup = useStore(
     (s) => s.adcm.serviceComponentConfigGroupSingle.serviceComponentConfigGroup,
   );
-  const leftConfiguration = useStore(
-    ({ adcm }) => adcm.serviceComponentConfigGroupConfigurationsCompare.leftConfiguration,
-  );
-  const rightConfiguration = useStore(
-    ({ adcm }) => adcm.serviceComponentConfigGroupConfigurationsCompare.rightConfiguration,
-  );
+  const leftConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.leftConfiguration);
+  const rightConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.rightConfiguration);
 
   useEffect(
     () => () => {
@@ -33,11 +29,14 @@ export const useServiceComponentConfigGroupConfigurationsCompare = () => {
       if (cluster && service && component && serviceComponentConfigGroup) {
         dispatch(
           getLeftConfiguration({
-            clusterId: cluster.id,
-            serviceId: service.id,
-            componentId: component.id,
-            configGroupId: serviceComponentConfigGroup.id,
-            configId,
+            entityType: 'service-component-config-group',
+            args: {
+              clusterId: cluster.id,
+              serviceId: service.id,
+              componentId: component.id,
+              configGroupId: serviceComponentConfigGroup.id,
+              configId,
+            },
           }),
         );
       }
@@ -50,11 +49,14 @@ export const useServiceComponentConfigGroupConfigurationsCompare = () => {
       if (cluster && service && component && serviceComponentConfigGroup) {
         dispatch(
           getRightConfiguration({
-            clusterId: cluster.id,
-            serviceId: service.id,
-            componentId: component.id,
-            configGroupId: serviceComponentConfigGroup.id,
-            configId,
+            entityType: 'service-component-config-group',
+            args: {
+              clusterId: cluster.id,
+              serviceId: service.id,
+              componentId: component.id,
+              configGroupId: serviceComponentConfigGroup.id,
+              configId,
+            },
           }),
         );
       }

@@ -58,7 +58,10 @@ const getSettingsConfiguration = createAsyncThunk(
     thunkAPI.dispatch(setIsConfigurationLoading(true));
 
     try {
-      const [config, schema] = await Promise.all([AdcmSettingsApi.getConfig(id), AdcmSettingsApi.getConfigSchema()]);
+      const [config, schema] = await Promise.all([
+        AdcmSettingsApi.getConfig({ configId: id }),
+        AdcmSettingsApi.getConfigSchema(),
+      ]);
       return { config, schema };
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));

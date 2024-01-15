@@ -87,8 +87,8 @@ const getServiceComponentConfiguration = createAsyncThunk(
 
     try {
       const [config, schema] = await Promise.all([
-        AdcmClusterServiceComponentsConfigsApi.getConfig(arg.clusterId, arg.serviceId, arg.componentId, arg.configId),
-        AdcmClusterServiceComponentsConfigsApi.getConfigSchema(arg.clusterId, arg.serviceId, arg.componentId),
+        AdcmClusterServiceComponentsConfigsApi.getConfig(arg),
+        AdcmClusterServiceComponentsConfigsApi.getConfigSchema(arg),
       ]);
       return { config, schema };
     } catch (error) {
