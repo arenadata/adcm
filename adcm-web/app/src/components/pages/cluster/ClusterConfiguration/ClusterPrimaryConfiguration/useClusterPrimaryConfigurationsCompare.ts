@@ -1,34 +1,46 @@
 import { useDispatch, useStore } from '@hooks';
 import { useCallback, useEffect } from 'react';
 import {
-  cleanupClusterConfigurationsCompareSlice,
+  cleanupCompareSlice,
   getLeftConfiguration,
   getRightConfiguration,
-} from '@store/adcm/cluster/configuration/clusterConfigurationsCompareSlice';
+} from '@store/adcm/entityConfiguration/compareSlice';
 
 export const useClusterPrimaryConfigurationsCompare = () => {
   const dispatch = useDispatch();
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
-  const leftConfiguration = useStore(({ adcm }) => adcm.clusterConfigurationsCompare.leftConfiguration);
-  const rightConfiguration = useStore(({ adcm }) => adcm.clusterConfigurationsCompare.rightConfiguration);
+  const leftConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.leftConfiguration);
+  const rightConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.rightConfiguration);
 
   useEffect(
     () => () => {
-      dispatch(cleanupClusterConfigurationsCompareSlice());
+      dispatch(cleanupCompareSlice());
     },
     [cluster, dispatch],
   );
 
   const getLeftConfig = useCallback(
     (configId: number) => {
-      cluster?.id && dispatch(getLeftConfiguration({ clusterId: cluster.id, configId }));
+      cluster?.id &&
+        dispatch(
+          getLeftConfiguration({
+            entityType: 'cluster',
+            args: { clusterId: cluster.id, configId },
+          }),
+        );
     },
     [cluster, dispatch],
   );
 
   const getRightConfig = useCallback(
     (configId: number) => {
-      cluster?.id && dispatch(getRightConfiguration({ clusterId: cluster.id, configId }));
+      cluster?.id &&
+        dispatch(
+          getRightConfiguration({
+            entityType: 'cluster',
+            args: { clusterId: cluster.id, configId },
+          }),
+        );
     },
     [cluster, dispatch],
   );

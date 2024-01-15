@@ -4,15 +4,15 @@ import {
   getLeftConfiguration,
   cleanupCompareSlice,
   getRightConfiguration,
-} from '@store/adcm/cluster/services/configGroupSingle/configuration/serviceConfigGroupConfigurationsCompareSlice';
+} from '@store/adcm/entityConfiguration/compareSlice';
 
 export const useServiceConfigGroupSingleConfigurationsCompare = () => {
   const dispatch = useDispatch();
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
   const service = useStore(({ adcm }) => adcm.service.service);
   const serviceConfigGroup = useStore((s) => s.adcm.serviceConfigGroup.serviceConfigGroup);
-  const leftConfiguration = useStore(({ adcm }) => adcm.serviceConfigGroupConfigurationsCompare.leftConfiguration);
-  const rightConfiguration = useStore(({ adcm }) => adcm.serviceConfigGroupConfigurationsCompare.rightConfiguration);
+  const leftConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.leftConfiguration);
+  const rightConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.rightConfiguration);
 
   useEffect(
     () => () => {
@@ -26,10 +26,13 @@ export const useServiceConfigGroupSingleConfigurationsCompare = () => {
       if (cluster && service && serviceConfigGroup) {
         dispatch(
           getLeftConfiguration({
-            clusterId: cluster.id,
-            serviceId: service.id,
-            configGroupId: serviceConfigGroup.id,
-            configId,
+            entityType: 'service-config-group',
+            args: {
+              clusterId: cluster.id,
+              serviceId: service.id,
+              configGroupId: serviceConfigGroup.id,
+              configId,
+            },
           }),
         );
       }
@@ -42,10 +45,13 @@ export const useServiceConfigGroupSingleConfigurationsCompare = () => {
       if (cluster && service && serviceConfigGroup) {
         dispatch(
           getRightConfiguration({
-            clusterId: cluster.id,
-            serviceId: service.id,
-            configGroupId: serviceConfigGroup.id,
-            configId,
+            entityType: 'service-config-group',
+            args: {
+              clusterId: cluster.id,
+              serviceId: service.id,
+              configGroupId: serviceConfigGroup.id,
+              configId,
+            },
           }),
         );
       }

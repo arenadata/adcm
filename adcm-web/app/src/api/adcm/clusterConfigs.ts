@@ -8,6 +8,15 @@ import {
   ConfigurationAttributes,
 } from '@models/adcm';
 
+type GetConfigArgs = {
+  clusterId: number;
+  configId: number;
+};
+
+type GetConfigSchemaArgs = {
+  clusterId: number;
+};
+
 export class AdcmClusterConfigsApi {
   public static async getConfigs(clusterId: number) {
     const response = await httpClient.get<Batch<AdcmConfigShortView>>(
@@ -16,13 +25,13 @@ export class AdcmClusterConfigsApi {
     return response.data;
   }
 
-  public static async getConfig(clusterId: number, configId: number) {
-    const response = await httpClient.get<AdcmConfig>(`/api/v2/clusters/${clusterId}/configs/${configId}/`);
+  public static async getConfig(args: GetConfigArgs) {
+    const response = await httpClient.get<AdcmConfig>(`/api/v2/clusters/${args.clusterId}/configs/${args.configId}/`);
     return response.data;
   }
 
-  public static async getConfigSchema(clusterId: number) {
-    const response = await httpClient.get<ConfigurationSchema>(`/api/v2/clusters/${clusterId}/config-schema/`);
+  public static async getConfigSchema(args: GetConfigSchemaArgs) {
+    const response = await httpClient.get<ConfigurationSchema>(`/api/v2/clusters/${args.clusterId}/config-schema/`);
     return response.data;
   }
 

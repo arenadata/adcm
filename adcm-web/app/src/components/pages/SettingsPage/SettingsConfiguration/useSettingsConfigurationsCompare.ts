@@ -1,33 +1,43 @@
 import { useDispatch, useStore } from '@hooks';
 import { useCallback, useEffect } from 'react';
 import {
-  cleanupSettingsConfigurationsCompareSlice,
+  cleanupCompareSlice,
   getLeftConfiguration,
   getRightConfiguration,
-} from '@store/adcm/settings/configuration/settingsConfigurationsCompareSlice';
+} from '@store/adcm/entityConfiguration/compareSlice';
 
 export const useSettingsConfigurationsCompare = () => {
   const dispatch = useDispatch();
-  const leftConfiguration = useStore(({ adcm }) => adcm.settingsConfigurationsCompare.leftConfiguration);
-  const rightConfiguration = useStore(({ adcm }) => adcm.settingsConfigurationsCompare.rightConfiguration);
+  const leftConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.leftConfiguration);
+  const rightConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.rightConfiguration);
 
   useEffect(
     () => () => {
-      dispatch(cleanupSettingsConfigurationsCompareSlice());
+      dispatch(cleanupCompareSlice());
     },
     [dispatch],
   );
 
   const getLeftConfig = useCallback(
     (configId: number) => {
-      dispatch(getLeftConfiguration({ configId }));
+      dispatch(
+        getLeftConfiguration({
+          entityType: 'settings',
+          args: { configId },
+        }),
+      );
     },
     [dispatch],
   );
 
   const getRightConfig = useCallback(
     (configId: number) => {
-      dispatch(getRightConfiguration({ configId }));
+      dispatch(
+        getRightConfiguration({
+          entityType: 'settings',
+          args: { configId },
+        }),
+      );
     },
     [dispatch],
   );
