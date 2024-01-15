@@ -1,0 +1,32 @@
+{
+  "host_1": {
+    "integer": 10,
+    "password": {
+      "__ansible_vault": "{{ host_1_password }}"
+    },
+    "string": "string",
+    "list": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "adcm_hostid": {{ host_1_id }},
+    "state": "created",
+    "multi_state": []
+  },
+  "host_2": {
+    "integer": 10,
+    "password": {
+      "__ansible_vault": "{{ host_2_password }}"
+    },
+    "string": "string",
+    "list": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "adcm_hostid": {{ host_2_id }},
+    "state": "created",
+    "multi_state": []
+  }
+}

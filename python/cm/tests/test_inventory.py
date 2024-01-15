@@ -10,10 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-lines, attribute-defined-outside-init, too-many-locals
+
+from functools import reduce
 from json import loads
 from pathlib import Path
+from typing import Any, Mapping, TypeAlias
 from unittest.mock import Mock, patch
 
+from api_v2.service.utils import bulk_add_services_to_cluster
 from cm.api import add_hc, add_service_to_cluster, update_obj_config
 from cm.inventory import (
     MAINTENANCE_MODE,
@@ -23,6 +28,7 @@ from cm.inventory import (
     get_host,
     get_host_groups,
     get_host_vars,
+    get_inventory_data,
     get_obj_config,
     get_provider_config,
     get_provider_hosts,
@@ -38,6 +44,7 @@ from cm.models import (
     HostComponent,
     JobLog,
     MaintenanceMode,
+    ObjectType,
     Prototype,
     ServiceComponent,
     TaskLog,
@@ -59,10 +66,13 @@ from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 from init_db import init as init_adcm
+from jinja2 import Template
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase, BusinessLogicMixin
+
+TemplatesData: TypeAlias = Mapping[tuple[str, ...], tuple[Path, Mapping[str, Any]]]
 
 
 class TestInventory(BaseTestCase):
@@ -724,3 +734,599 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         )["target"]["hosts"]
 
         self.assertIn(self.host_target_group_2.fqdn, target_hosts_data)
+
+
+class TestInventoryComponents(BusinessLogicMixin, BaseTestCase):
+    def setUp(self) -> None:
+        self.maxDiff = None  # pylint: disable=invalid-name
+
+        bundles_dir = Path(__file__).parent / "bundles"
+        self.templates_dir = Path(__file__).parent / "files/response_templates"
+
+        self.provider_bundle = self.add_bundle(source_dir=bundles_dir / "provider")
+        cluster_bundle = self.add_bundle(source_dir=bundles_dir / "cluster_1")
+
+        self.cluster_1 = self.add_cluster(bundle=cluster_bundle, name="cluster_1")
+        self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
+        self.host_1 = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster_1
+        )
+
+    def _check_hosts_topology(self, data: Mapping[str, dict], expected: Mapping[str, list[str]]) -> None:
+        errors = set(data.keys()).symmetric_difference(set(expected.keys()))
+        self.assertSetEqual(errors, set())
+
+        for group_name, host_names in expected.items():
+            errors = set(data[group_name]["hosts"].keys()).symmetric_difference(set(host_names))
+            self.assertSetEqual(errors, set())
+
+    def _check_data_by_template(self, data: Mapping[str, dict], templates_data: TemplatesData) -> None:
+        for key_chain, template_data in templates_data.items():
+            template_path, kwargs = template_data
+
+            expected_data = loads(
+                Template(source=template_path.read_text(encoding=settings.ENCODING_UTF_8)).render(kwargs), strict=False
+            )
+            actual_data = reduce(dict.get, key_chain, data)
+
+            self.assertDictEqual(actual_data, expected_data)
+
+    def _prepare_two_services(
+        self,
+    ) -> tuple[ClusterObject, ServiceComponent, ServiceComponent, ClusterObject, ServiceComponent, ServiceComponent]:
+        service_two_components: ClusterObject = bulk_add_services_to_cluster(
+            cluster=self.cluster_1,
+            prototypes=Prototype.objects.filter(
+                type=ObjectType.SERVICE, name="service_two_components", bundle=self.cluster_1.prototype.bundle
+            ),
+        ).get()
+        component_1_s1 = ServiceComponent.objects.get(service=service_two_components, prototype__name="component_1")
+        component_2_s1 = ServiceComponent.objects.get(service=service_two_components, prototype__name="component_2")
+
+        another_service_two_components: ClusterObject = bulk_add_services_to_cluster(
+            cluster=self.cluster_1,
+            prototypes=Prototype.objects.filter(
+                type=ObjectType.SERVICE, name="another_service_two_components", bundle=self.cluster_1.prototype.bundle
+            ),
+        ).get()
+        component_1_s2 = ServiceComponent.objects.get(
+            service=another_service_two_components, prototype__name="component_1"
+        )
+        component_2_s2 = ServiceComponent.objects.get(
+            service=another_service_two_components, prototype__name="component_2"
+        )
+
+        return (
+            service_two_components,
+            component_1_s1,
+            component_2_s1,
+            another_service_two_components,
+            component_1_s2,
+            component_2_s2,
+        )
+
+    def _get_action_on_host_expected_template_data_part(self, host: Host) -> TemplatesData:
+        return {
+            ("HOST", "hosts"): (
+                self.templates_dir / "one_host.json.j2",
+                {
+                    "host_fqdn": host.fqdn,
+                    "adcm_hostid": host.pk,
+                    "password": ConfigLog.objects.get(pk=host.config.current).config["password"],
+                },
+            ),
+            ("HOST", "vars", "provider"): (
+                self.templates_dir / "provider.json.j2",
+                {
+                    "id": host.provider.pk,
+                    "password": ConfigLog.objects.get(pk=host.provider.config.current).config["password"],
+                    "host_prototype_id": host.prototype.pk,
+                },
+            ),
+        }
+
+    def test_1_component_1_host(self):
+        service_one_component: ClusterObject = bulk_add_services_to_cluster(
+            cluster=self.cluster_1,
+            prototypes=Prototype.objects.filter(
+                type=ObjectType.SERVICE, name="service_one_component", bundle=self.cluster_1.prototype.bundle
+            ),
+        ).get()
+        component_1 = ServiceComponent.objects.get(service=service_one_component, prototype__name="component_1")
+
+        self.add_hostcomponent_map(
+            cluster=self.cluster_1,
+            hc_map=[
+                {"service_id": service_one_component.pk, "component_id": component_1.pk, "host_id": self.host_1.pk}
+            ],
+        )
+
+        action_on_cluster = Action.objects.get(name="action_on_cluster", prototype=self.cluster_1.prototype)
+        action_on_service = Action.objects.get(name="action_on_service", prototype=service_one_component.prototype)
+        action_on_component = Action.objects.get(name="action_on_component", prototype=component_1.prototype)
+        action_on_host = Action.objects.get(name="action_on_host", prototype=self.host_1.prototype)
+
+        host_names = [self.host_1.fqdn]
+        expected_topology = {
+            "CLUSTER": host_names,
+            f"{service_one_component.name}.{component_1.name}": host_names,
+            service_one_component.name: host_names,
+        }
+
+        expected_data = {
+            ("CLUSTER", "hosts"): (
+                self.templates_dir / "one_host.json.j2",
+                {
+                    "host_fqdn": self.host_1.fqdn,
+                    "adcm_hostid": self.host_1.pk,
+                    "password": ConfigLog.objects.get(pk=self.host_1.config.current).config["password"],
+                },
+            ),
+            ("CLUSTER", "vars", "cluster"): (
+                self.templates_dir / "cluster.json.j2",
+                {
+                    "id": self.cluster_1.pk,
+                    "password": ConfigLog.objects.get(pk=self.cluster_1.config.current).config["password"],
+                },
+            ),
+            ("CLUSTER", "vars", "services"): (
+                self.templates_dir / "service_one_component.json.j2",
+                {
+                    "service_id": service_one_component.pk,
+                    "service_password": ConfigLog.objects.get(pk=service_one_component.config.current).config[
+                        "password"
+                    ],
+                    "component_id": component_1.pk,
+                    "component_password": ConfigLog.objects.get(pk=component_1.config.current).config["password"],
+                },
+            ),
+        }
+
+        for obj, action, expected_topology, expected_data in (
+            (self.cluster_1, action_on_cluster, expected_topology, expected_data),
+            (service_one_component, action_on_service, expected_topology, expected_data),
+            (component_1, action_on_component, expected_topology, expected_data),
+            (
+                self.host_1,
+                action_on_host,
+                {**expected_topology, **{"HOST": host_names}},
+                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_1)},
+            ),
+        ):
+            with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
+                actual_inventory = get_inventory_data(obj=obj, action=action)["all"]["children"]
+
+                self._check_hosts_topology(data=actual_inventory, expected=expected_topology)
+                self._check_data_by_template(data=actual_inventory, templates_data=expected_data)
+
+    def test_2_components_2_hosts_mapped_all_to_all(self):
+        self.host_2 = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
+        )
+
+        service_two_components: ClusterObject = bulk_add_services_to_cluster(
+            cluster=self.cluster_1,
+            prototypes=Prototype.objects.filter(
+                type=ObjectType.SERVICE, name="service_two_components", bundle=self.cluster_1.prototype.bundle
+            ),
+        ).get()
+        component_1 = ServiceComponent.objects.get(service=service_two_components, prototype__name="component_1")
+        component_2 = ServiceComponent.objects.get(service=service_two_components, prototype__name="component_2")
+
+        self.add_hostcomponent_map(
+            cluster=self.cluster_1,
+            hc_map=[
+                {"service_id": service_two_components.pk, "component_id": component_1.pk, "host_id": self.host_1.pk},
+                {"service_id": service_two_components.pk, "component_id": component_1.pk, "host_id": self.host_2.pk},
+                {"service_id": service_two_components.pk, "component_id": component_2.pk, "host_id": self.host_1.pk},
+                {"service_id": service_two_components.pk, "component_id": component_2.pk, "host_id": self.host_2.pk},
+            ],
+        )
+
+        action_on_cluster = Action.objects.get(name="action_on_cluster", prototype=self.cluster_1.prototype)
+        action_on_service = Action.objects.get(name="action_on_service", prototype=service_two_components.prototype)
+        action_on_component_1 = Action.objects.get(name="action_on_component_1", prototype=component_1.prototype)
+        action_on_component_2 = Action.objects.get(name="action_on_component_2", prototype=component_2.prototype)
+        action_on_host_1 = Action.objects.get(name="action_on_host", prototype=self.host_1.prototype)
+        action_on_host_2 = Action.objects.get(name="action_on_host", prototype=self.host_2.prototype)
+
+        host_names = [self.host_1.fqdn, self.host_2.fqdn]
+        expected_hosts_topology = {
+            "CLUSTER": host_names,
+            f"{service_two_components.name}.{component_1.name}": host_names,
+            f"{service_two_components.name}.{component_2.name}": host_names,
+            service_two_components.name: host_names,
+        }
+
+        expected_data = {
+            ("CLUSTER", "hosts"): (
+                self.templates_dir / "two_hosts.json.j2",
+                {
+                    "host_1_id": self.host_1.pk,
+                    "host_1_password": ConfigLog.objects.get(pk=self.host_1.config.current).config["password"],
+                    "host_2_id": self.host_2.pk,
+                    "host_2_password": ConfigLog.objects.get(pk=self.host_2.config.current).config["password"],
+                },
+            ),
+            ("CLUSTER", "vars", "cluster"): (
+                self.templates_dir / "cluster.json.j2",
+                {
+                    "id": self.cluster_1.pk,
+                    "password": ConfigLog.objects.get(pk=self.cluster_1.config.current).config["password"],
+                },
+            ),
+            ("CLUSTER", "vars", "services"): (
+                self.templates_dir / "service_two_components.json.j2",
+                {
+                    "service_id": service_two_components.pk,
+                    "service_password": ConfigLog.objects.get(pk=service_two_components.config.current).config[
+                        "password"
+                    ],
+                    "component_1_id": component_1.pk,
+                    "component_1_password": ConfigLog.objects.get(pk=component_1.config.current).config["password"],
+                    "component_2_id": component_2.pk,
+                    "component_2_password": ConfigLog.objects.get(pk=component_2.config.current).config["password"],
+                },
+            ),
+        }
+
+        for obj, action, expected_topology, expected_data in (
+            (self.cluster_1, action_on_cluster, expected_hosts_topology, expected_data),
+            (service_two_components, action_on_service, expected_hosts_topology, expected_data),
+            (component_1, action_on_component_1, expected_hosts_topology, expected_data),
+            (component_2, action_on_component_2, expected_hosts_topology, expected_data),
+            (
+                self.host_1,
+                action_on_host_1,
+                {**expected_hosts_topology, **{"HOST": [self.host_1.fqdn]}},
+                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_1)},
+            ),
+            (
+                self.host_2,
+                action_on_host_2,
+                {**expected_hosts_topology, **{"HOST": [self.host_2.fqdn]}},
+                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_2)},
+            ),
+        ):
+            with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
+                actual_inventory = get_inventory_data(obj=obj, action=action)["all"]["children"]
+
+                self._check_hosts_topology(data=actual_inventory, expected=expected_topology)
+                self._check_data_by_template(data=actual_inventory, templates_data=expected_data)
+
+    def test_2_components_2_hosts_mapped_in_pairs(self):
+        self.host_2 = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
+        )
+
+        service_two_components: ClusterObject = bulk_add_services_to_cluster(
+            cluster=self.cluster_1,
+            prototypes=Prototype.objects.filter(
+                type=ObjectType.SERVICE, name="service_two_components", bundle=self.cluster_1.prototype.bundle
+            ),
+        ).get()
+        component_1 = ServiceComponent.objects.get(service=service_two_components, prototype__name="component_1")
+        component_2 = ServiceComponent.objects.get(service=service_two_components, prototype__name="component_2")
+
+        self.add_hostcomponent_map(
+            cluster=self.cluster_1,
+            hc_map=[
+                {"service_id": service_two_components.pk, "component_id": component_1.pk, "host_id": self.host_1.pk},
+                {"service_id": service_two_components.pk, "component_id": component_2.pk, "host_id": self.host_2.pk},
+            ],
+        )
+
+        action_on_cluster = Action.objects.get(name="action_on_cluster", prototype=self.cluster_1.prototype)
+        action_on_service = Action.objects.get(name="action_on_service", prototype=service_two_components.prototype)
+        action_on_component_1 = Action.objects.get(name="action_on_component_1", prototype=component_1.prototype)
+        action_on_component_2 = Action.objects.get(name="action_on_component_2", prototype=component_2.prototype)
+        action_on_host_1 = Action.objects.get(name="action_on_host", prototype=self.host_1.prototype)
+        action_on_host_2 = Action.objects.get(name="action_on_host", prototype=self.host_2.prototype)
+
+        host_names = [self.host_1.fqdn, self.host_2.fqdn]
+        expected_hosts_topology = {
+            "CLUSTER": host_names,
+            f"{service_two_components.name}.{component_1.name}": [self.host_1.fqdn],
+            f"{service_two_components.name}.{component_2.name}": [self.host_2.fqdn],
+            service_two_components.name: host_names,
+        }
+
+        expected_data = {
+            ("CLUSTER", "hosts"): (
+                self.templates_dir / "two_hosts.json.j2",
+                {
+                    "host_1_id": self.host_1.pk,
+                    "host_1_password": ConfigLog.objects.get(pk=self.host_1.config.current).config["password"],
+                    "host_2_id": self.host_2.pk,
+                    "host_2_password": ConfigLog.objects.get(pk=self.host_2.config.current).config["password"],
+                },
+            ),
+            ("CLUSTER", "vars", "cluster"): (
+                self.templates_dir / "cluster.json.j2",
+                {
+                    "id": self.cluster_1.pk,
+                    "password": ConfigLog.objects.get(pk=self.cluster_1.config.current).config["password"],
+                },
+            ),
+            ("CLUSTER", "vars", "services"): (
+                self.templates_dir / "service_two_components.json.j2",
+                {
+                    "service_id": service_two_components.pk,
+                    "service_password": ConfigLog.objects.get(pk=service_two_components.config.current).config[
+                        "password"
+                    ],
+                    "component_1_id": component_1.pk,
+                    "component_1_password": ConfigLog.objects.get(pk=component_1.config.current).config["password"],
+                    "component_2_id": component_2.pk,
+                    "component_2_password": ConfigLog.objects.get(pk=component_2.config.current).config["password"],
+                },
+            ),
+        }
+
+        for obj, action, expected_topology, expected_data in (
+            (self.cluster_1, action_on_cluster, expected_hosts_topology, expected_data),
+            (service_two_components, action_on_service, expected_hosts_topology, expected_data),
+            (component_1, action_on_component_1, expected_hosts_topology, expected_data),
+            (component_2, action_on_component_2, expected_hosts_topology, expected_data),
+            (
+                self.host_1,
+                action_on_host_1,
+                {**expected_hosts_topology, **{"HOST": [self.host_1.fqdn]}},
+                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_1)},
+            ),
+            (
+                self.host_2,
+                action_on_host_2,
+                {**expected_hosts_topology, **{"HOST": [self.host_2.fqdn]}},
+                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_2)},
+            ),
+        ):
+            with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
+                actual_inventory = get_inventory_data(obj=obj, action=action)["all"]["children"]
+
+                self._check_hosts_topology(data=actual_inventory, expected=expected_topology)
+                self._check_data_by_template(data=actual_inventory, templates_data=expected_data)
+
+    def test_2_services_2_components_each_on_1_host(self):
+        (
+            service_two_components,
+            component_1_s1,
+            component_2_s1,
+            another_service_two_components,
+            component_1_s2,
+            component_2_s2,
+        ) = self._prepare_two_services()
+        self.add_hostcomponent_map(
+            cluster=self.cluster_1,
+            hc_map=[
+                {"service_id": service_two_components.pk, "component_id": component_1_s1.pk, "host_id": self.host_1.pk},
+                {"service_id": service_two_components.pk, "component_id": component_2_s1.pk, "host_id": self.host_1.pk},
+                {
+                    "service_id": another_service_two_components.pk,
+                    "component_id": component_1_s2.pk,
+                    "host_id": self.host_1.pk,
+                },
+                {
+                    "service_id": another_service_two_components.pk,
+                    "component_id": component_2_s2.pk,
+                    "host_id": self.host_1.pk,
+                },
+            ],
+        )
+
+        action_on_cluster = Action.objects.get(name="action_on_cluster", prototype=self.cluster_1.prototype)
+        action_on_service_1 = Action.objects.get(name="action_on_service", prototype=service_two_components.prototype)
+        action_on_service_2 = Action.objects.get(
+            name="action_on_service", prototype=another_service_two_components.prototype
+        )
+        action_on_component_1_s1 = Action.objects.get(name="action_on_component_1", prototype=component_1_s1.prototype)
+        action_on_component_2_s1 = Action.objects.get(name="action_on_component_2", prototype=component_2_s1.prototype)
+        action_on_component_1_s2 = Action.objects.get(name="action_on_component_1", prototype=component_1_s2.prototype)
+        action_on_component_2_s2 = Action.objects.get(name="action_on_component_1", prototype=component_1_s2.prototype)
+        action_on_host_1 = Action.objects.get(name="action_on_host", prototype=self.host_1.prototype)
+
+        host_names = [self.host_1.fqdn]
+        expected_hosts_topology = {
+            "CLUSTER": host_names,
+            f"{service_two_components.name}.{component_1_s1.name}": host_names,
+            f"{service_two_components.name}.{component_2_s1.name}": host_names,
+            f"{another_service_two_components.name}.{component_1_s2.name}": host_names,
+            f"{another_service_two_components.name}.{component_2_s2.name}": host_names,
+            service_two_components.name: host_names,
+            another_service_two_components.name: host_names,
+        }
+
+        expected_data = {
+            ("CLUSTER", "hosts"): (
+                self.templates_dir / "one_host.json.j2",
+                {
+                    "host_fqdn": self.host_1.fqdn,
+                    "adcm_hostid": self.host_1.pk,
+                    "password": ConfigLog.objects.get(pk=self.host_1.config.current).config["password"],
+                },
+            ),
+            ("CLUSTER", "vars", "cluster"): (
+                self.templates_dir / "cluster.json.j2",
+                {
+                    "id": self.cluster_1.pk,
+                    "password": ConfigLog.objects.get(pk=self.cluster_1.config.current).config["password"],
+                },
+            ),
+            ("CLUSTER", "vars", "services"): (
+                self.templates_dir / "two_services_two_components_each.json.j2",
+                {
+                    "service_1_id": service_two_components.pk,
+                    "service_1_password": ConfigLog.objects.get(pk=service_two_components.config.current).config[
+                        "password"
+                    ],
+                    "component_1_s1_id": component_1_s1.pk,
+                    "component_1_s1_password": ConfigLog.objects.get(pk=component_1_s1.config.current).config[
+                        "password"
+                    ],
+                    "component_2_s1_id": component_2_s1.pk,
+                    "component_2_s1_password": ConfigLog.objects.get(pk=component_2_s1.config.current).config[
+                        "password"
+                    ],
+                    "service_2_id": another_service_two_components.pk,
+                    "service_2_password": ConfigLog.objects.get(
+                        pk=another_service_two_components.config.current
+                    ).config["password"],
+                    "component_1_s2_id": component_1_s2.pk,
+                    "component_1_s2_password": ConfigLog.objects.get(pk=component_1_s2.config.current).config[
+                        "password"
+                    ],
+                    "component_2_s2_id": component_2_s2.pk,
+                    "component_2_s2_password": ConfigLog.objects.get(pk=component_2_s2.config.current).config[
+                        "password"
+                    ],
+                },
+            ),
+        }
+
+        for obj, action, expected_topology, expected_data in (
+            (self.cluster_1, action_on_cluster, expected_hosts_topology, expected_data),
+            (service_two_components, action_on_service_1, expected_hosts_topology, expected_data),
+            (another_service_two_components, action_on_service_2, expected_hosts_topology, expected_data),
+            (component_1_s1, action_on_component_1_s1, expected_hosts_topology, expected_data),
+            (component_2_s1, action_on_component_2_s1, expected_hosts_topology, expected_data),
+            (component_1_s2, action_on_component_1_s2, expected_hosts_topology, expected_data),
+            (component_2_s2, action_on_component_2_s2, expected_hosts_topology, expected_data),
+            (
+                self.host_1,
+                action_on_host_1,
+                {**expected_hosts_topology, **{"HOST": [self.host_1.fqdn]}},
+                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_1)},
+            ),
+        ):
+            with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
+                actual_inventory = get_inventory_data(obj=obj, action=action)["all"]["children"]
+
+                self._check_hosts_topology(data=actual_inventory, expected=expected_topology)
+                self._check_data_by_template(data=actual_inventory, templates_data=expected_data)
+
+    def test_2_services_2_components_each_2_hosts_cross_mapping(self):
+        self.host_2 = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
+        )
+        (
+            service_two_components,
+            component_1_s1,
+            component_2_s1,
+            another_service_two_components,
+            component_1_s2,
+            component_2_s2,
+        ) = self._prepare_two_services()
+        self.add_hostcomponent_map(
+            cluster=self.cluster_1,
+            hc_map=[
+                {"service_id": service_two_components.pk, "component_id": component_1_s1.pk, "host_id": self.host_1.pk},
+                {"service_id": service_two_components.pk, "component_id": component_2_s1.pk, "host_id": self.host_2.pk},
+                {
+                    "service_id": another_service_two_components.pk,
+                    "component_id": component_1_s2.pk,
+                    "host_id": self.host_1.pk,
+                },
+                {
+                    "service_id": another_service_two_components.pk,
+                    "component_id": component_2_s2.pk,
+                    "host_id": self.host_2.pk,
+                },
+            ],
+        )
+
+        action_on_cluster = Action.objects.get(name="action_on_cluster", prototype=self.cluster_1.prototype)
+        action_on_service_1 = Action.objects.get(name="action_on_service", prototype=service_two_components.prototype)
+        action_on_service_2 = Action.objects.get(
+            name="action_on_service", prototype=another_service_two_components.prototype
+        )
+        action_on_component_1_s1 = Action.objects.get(name="action_on_component_1", prototype=component_1_s1.prototype)
+        action_on_component_2_s1 = Action.objects.get(name="action_on_component_2", prototype=component_2_s1.prototype)
+        action_on_component_1_s2 = Action.objects.get(name="action_on_component_1", prototype=component_1_s2.prototype)
+        action_on_component_2_s2 = Action.objects.get(name="action_on_component_1", prototype=component_1_s2.prototype)
+        action_on_host_1 = Action.objects.get(name="action_on_host", prototype=self.host_1.prototype)
+        action_on_host_2 = Action.objects.get(name="action_on_host", prototype=self.host_2.prototype)
+
+        expected_hosts_topology = {
+            "CLUSTER": [self.host_1.fqdn, self.host_2.fqdn],
+            f"{service_two_components.name}.{component_1_s1.name}": [self.host_1.fqdn],
+            f"{service_two_components.name}.{component_2_s1.name}": [self.host_2.fqdn],
+            f"{another_service_two_components.name}.{component_1_s2.name}": [self.host_1.fqdn],
+            f"{another_service_two_components.name}.{component_2_s2.name}": [self.host_2.fqdn],
+            service_two_components.name: [self.host_1.fqdn, self.host_2.fqdn],
+            another_service_two_components.name: [self.host_1.fqdn, self.host_2.fqdn],
+        }
+
+        expected_data = {
+            ("CLUSTER", "hosts"): (
+                self.templates_dir / "two_hosts.json.j2",
+                {
+                    "host_1_id": self.host_1.pk,
+                    "host_1_password": ConfigLog.objects.get(pk=self.host_1.config.current).config["password"],
+                    "host_2_id": self.host_2.pk,
+                    "host_2_password": ConfigLog.objects.get(pk=self.host_2.config.current).config["password"],
+                },
+            ),
+            ("CLUSTER", "vars", "cluster"): (
+                self.templates_dir / "cluster.json.j2",
+                {
+                    "id": self.cluster_1.pk,
+                    "password": ConfigLog.objects.get(pk=self.cluster_1.config.current).config["password"],
+                },
+            ),
+            ("CLUSTER", "vars", "services"): (
+                self.templates_dir / "two_services_two_components_each.json.j2",
+                {
+                    "service_1_id": service_two_components.pk,
+                    "service_1_password": ConfigLog.objects.get(pk=service_two_components.config.current).config[
+                        "password"
+                    ],
+                    "component_1_s1_id": component_1_s1.pk,
+                    "component_1_s1_password": ConfigLog.objects.get(pk=component_1_s1.config.current).config[
+                        "password"
+                    ],
+                    "component_2_s1_id": component_2_s1.pk,
+                    "component_2_s1_password": ConfigLog.objects.get(pk=component_2_s1.config.current).config[
+                        "password"
+                    ],
+                    "service_2_id": another_service_two_components.pk,
+                    "service_2_password": ConfigLog.objects.get(
+                        pk=another_service_two_components.config.current
+                    ).config["password"],
+                    "component_1_s2_id": component_1_s2.pk,
+                    "component_1_s2_password": ConfigLog.objects.get(pk=component_1_s2.config.current).config[
+                        "password"
+                    ],
+                    "component_2_s2_id": component_2_s2.pk,
+                    "component_2_s2_password": ConfigLog.objects.get(pk=component_2_s2.config.current).config[
+                        "password"
+                    ],
+                },
+            ),
+        }
+
+        for obj, action, expected_topology, expected_data in (
+            (self.cluster_1, action_on_cluster, expected_hosts_topology, expected_data),
+            (service_two_components, action_on_service_1, expected_hosts_topology, expected_data),
+            (another_service_two_components, action_on_service_2, expected_hosts_topology, expected_data),
+            (component_1_s1, action_on_component_1_s1, expected_hosts_topology, expected_data),
+            (component_2_s1, action_on_component_2_s1, expected_hosts_topology, expected_data),
+            (component_1_s2, action_on_component_1_s2, expected_hosts_topology, expected_data),
+            (component_2_s2, action_on_component_2_s2, expected_hosts_topology, expected_data),
+            (
+                self.host_1,
+                action_on_host_1,
+                {**expected_hosts_topology, **{"HOST": [self.host_1.fqdn]}},
+                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_1)},
+            ),
+            (
+                self.host_2,
+                action_on_host_2,
+                {**expected_hosts_topology, **{"HOST": [self.host_2.fqdn]}},
+                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_2)},
+            ),
+        ):
+            with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
+                actual_inventory = get_inventory_data(obj=obj, action=action)["all"]["children"]
+
+                self._check_hosts_topology(data=actual_inventory, expected=expected_topology)
+                self._check_data_by_template(data=actual_inventory, templates_data=expected_data)

@@ -1,0 +1,86 @@
+---
+- type: cluster
+  name: cluster_1
+  version: &version '1.0'
+  edition: community
+  config_group_customization: true
+  allow_maintenance_mode: true
+  config: &config
+    - name: integer
+      type: integer
+      required: false
+      default: 10
+    - name: password
+      type: password
+      required: false
+      default: password
+    - name: string
+      type: string
+      required: false
+      default: string
+    - name: list
+      type: list
+      required: false
+      default:
+        - value1
+        - value2
+        - value3
+  actions:
+    action_on_cluster: &action
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      states:
+        available: any
+
+- name: service_one_component
+  type: service
+  version: *version
+  config: *config
+  actions:
+    action_on_service: *action
+
+  components:
+    component_1:
+      constraint: [ 0, + ]
+      config: *config
+      actions:
+        action_on_component: *action
+
+- name: service_two_components
+  type: service
+  version: *version
+  config: *config
+  actions:
+    action_on_service: *action
+
+  components:
+    component_1:
+      constraint: [ 0, + ]
+      config: *config
+      actions:
+        action_on_component_1: *action
+    component_2:
+      constraint: [ 0, + ]
+      config: *config
+      actions:
+        action_on_component_2: *action
+
+- name: another_service_two_components
+  type: service
+  version: *version
+  config: *config
+  actions:
+    action_on_service: *action
+
+  components:
+    component_1:
+      constraint: [ 0, + ]
+      config: *config
+      actions:
+        action_on_component_1: *action
+    component_2:
+      constraint: [ 0, + ]
+      config: *config
+      actions:
+        action_on_component_2: *action
