@@ -13,10 +13,7 @@
 # pylint: disable=attribute-defined-outside-init,too-many-locals
 
 
-from functools import reduce
-from json import loads
 from pathlib import Path
-from typing import Any, Mapping, TypeAlias
 
 from api_v2.service.utils import bulk_add_services_to_cluster
 from cm.inventory import get_inventory_data
@@ -24,20 +21,14 @@ from cm.models import (
     Action,
     ClusterObject,
     ConfigLog,
-    Host,
     ObjectType,
     Prototype,
     ServiceComponent,
 )
-from django.conf import settings
-from jinja2 import Template
-
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin
-
-TemplatesData: TypeAlias = Mapping[tuple[str, ...], tuple[Path, Mapping[str, Any]]]
+from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
-class TestInventoryComponents(BusinessLogicMixin, BaseTestCase):
+class TestInventoryComponents(BaseInventoryTestCase):
     def setUp(self) -> None:
         self.maxDiff = None  # pylint: disable=invalid-name
 
@@ -52,25 +43,6 @@ class TestInventoryComponents(BusinessLogicMixin, BaseTestCase):
         self.host_1 = self.add_host(
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster_1
         )
-
-    def _check_hosts_topology(self, data: Mapping[str, dict], expected: Mapping[str, list[str]]) -> None:
-        errors = set(data.keys()).symmetric_difference(set(expected.keys()))
-        self.assertSetEqual(errors, set())
-
-        for group_name, host_names in expected.items():
-            errors = set(data[group_name]["hosts"].keys()).symmetric_difference(set(host_names))
-            self.assertSetEqual(errors, set())
-
-    def _check_data_by_template(self, data: Mapping[str, dict], templates_data: TemplatesData) -> None:
-        for key_chain, template_data in templates_data.items():
-            template_path, kwargs = template_data
-
-            expected_data = loads(
-                Template(source=template_path.read_text(encoding=settings.ENCODING_UTF_8)).render(kwargs), strict=False
-            )
-            actual_data = reduce(dict.get, key_chain, data)
-
-            self.assertDictEqual(actual_data, expected_data)
 
     def _prepare_two_services(
         self,
@@ -105,26 +77,6 @@ class TestInventoryComponents(BusinessLogicMixin, BaseTestCase):
             component_1_s2,
             component_2_s2,
         )
-
-    def _get_action_on_host_expected_template_data_part(self, host: Host) -> TemplatesData:
-        return {
-            ("HOST", "hosts"): (
-                self.templates_dir / "one_host.json.j2",
-                {
-                    "host_fqdn": host.fqdn,
-                    "adcm_hostid": host.pk,
-                    "password": ConfigLog.objects.get(pk=host.config.current).config["password"],
-                },
-            ),
-            ("HOST", "vars", "provider"): (
-                self.templates_dir / "provider.json.j2",
-                {
-                    "id": host.provider.pk,
-                    "password": ConfigLog.objects.get(pk=host.provider.config.current).config["password"],
-                    "host_prototype_id": host.prototype.pk,
-                },
-            ),
-        }
 
     def test_1_component_1_host(self):
         service_one_component: ClusterObject = bulk_add_services_to_cluster(
@@ -191,14 +143,11 @@ class TestInventoryComponents(BusinessLogicMixin, BaseTestCase):
                 self.host_1,
                 action_on_host,
                 {**expected_topology, **{"HOST": host_names}},
-                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_1)},
+                {**expected_data, **self.get_action_on_host_expected_template_data_part(host=self.host_1)},
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                actual_inventory = get_inventory_data(obj=obj, action=action)["all"]["children"]
-
-                self._check_hosts_topology(data=actual_inventory, expected=expected_topology)
-                self._check_data_by_template(data=actual_inventory, templates_data=expected_data)
+                self.assert_inventory(obj, action, expected_topology, expected_data)
 
     def test_2_components_2_hosts_mapped_all_to_all(self):
         self.host_2 = self.add_host(
@@ -280,20 +229,20 @@ class TestInventoryComponents(BusinessLogicMixin, BaseTestCase):
                 self.host_1,
                 action_on_host_1,
                 {**expected_hosts_topology, **{"HOST": [self.host_1.fqdn]}},
-                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_1)},
+                {**expected_data, **self.get_action_on_host_expected_template_data_part(host=self.host_1)},
             ),
             (
                 self.host_2,
                 action_on_host_2,
                 {**expected_hosts_topology, **{"HOST": [self.host_2.fqdn]}},
-                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_2)},
+                {**expected_data, **self.get_action_on_host_expected_template_data_part(host=self.host_2)},
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
                 actual_inventory = get_inventory_data(obj=obj, action=action)["all"]["children"]
 
-                self._check_hosts_topology(data=actual_inventory, expected=expected_topology)
-                self._check_data_by_template(data=actual_inventory, templates_data=expected_data)
+                self.check_hosts_topology(data=actual_inventory, expected=expected_topology)
+                self.check_data_by_template(data=actual_inventory, templates_data=expected_data)
 
     def test_2_components_2_hosts_mapped_in_pairs(self):
         self.host_2 = self.add_host(
@@ -373,20 +322,17 @@ class TestInventoryComponents(BusinessLogicMixin, BaseTestCase):
                 self.host_1,
                 action_on_host_1,
                 {**expected_hosts_topology, **{"HOST": [self.host_1.fqdn]}},
-                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_1)},
+                {**expected_data, **self.get_action_on_host_expected_template_data_part(host=self.host_1)},
             ),
             (
                 self.host_2,
                 action_on_host_2,
                 {**expected_hosts_topology, **{"HOST": [self.host_2.fqdn]}},
-                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_2)},
+                {**expected_data, **self.get_action_on_host_expected_template_data_part(host=self.host_2)},
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                actual_inventory = get_inventory_data(obj=obj, action=action)["all"]["children"]
-
-                self._check_hosts_topology(data=actual_inventory, expected=expected_topology)
-                self._check_data_by_template(data=actual_inventory, templates_data=expected_data)
+                self.assert_inventory(obj, action, expected_topology, expected_data)
 
     def test_2_services_2_components_each_on_1_host(self):
         (
@@ -496,14 +442,11 @@ class TestInventoryComponents(BusinessLogicMixin, BaseTestCase):
                 self.host_1,
                 action_on_host_1,
                 {**expected_hosts_topology, **{"HOST": [self.host_1.fqdn]}},
-                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_1)},
+                {**expected_data, **self.get_action_on_host_expected_template_data_part(host=self.host_1)},
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                actual_inventory = get_inventory_data(obj=obj, action=action)["all"]["children"]
-
-                self._check_hosts_topology(data=actual_inventory, expected=expected_topology)
-                self._check_data_by_template(data=actual_inventory, templates_data=expected_data)
+                self.assert_inventory(obj, action, expected_topology, expected_data)
 
     def test_2_services_2_components_each_2_hosts_cross_mapping(self):
         self.host_2 = self.add_host(
@@ -617,17 +560,14 @@ class TestInventoryComponents(BusinessLogicMixin, BaseTestCase):
                 self.host_1,
                 action_on_host_1,
                 {**expected_hosts_topology, **{"HOST": [self.host_1.fqdn]}},
-                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_1)},
+                {**expected_data, **self.get_action_on_host_expected_template_data_part(host=self.host_1)},
             ),
             (
                 self.host_2,
                 action_on_host_2,
                 {**expected_hosts_topology, **{"HOST": [self.host_2.fqdn]}},
-                {**expected_data, **self._get_action_on_host_expected_template_data_part(host=self.host_2)},
+                {**expected_data, **self.get_action_on_host_expected_template_data_part(host=self.host_2)},
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                actual_inventory = get_inventory_data(obj=obj, action=action)["all"]["children"]
-
-                self._check_hosts_topology(data=actual_inventory, expected=expected_topology)
-                self._check_data_by_template(data=actual_inventory, templates_data=expected_data)
+                self.assert_inventory(obj, action, expected_topology, expected_data)
