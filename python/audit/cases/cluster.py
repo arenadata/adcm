@@ -120,12 +120,16 @@ def cluster_case(
                 else:
                     host_fqdn = response.data["name"]
 
-            if "host_id" in view.request.data:
-                host = Host.objects.filter(pk=view.request.data["host_id"]).first()
-                if host:
-                    host_fqdn = host.fqdn
+            else:
+                if isinstance(view.request.data, list):
+                    ids = (entry.get("host_id", None) for entry in view.request.data if isinstance(entry, dict))
+                    host_fqdn = ", ".join(sorted(Host.objects.filter(pk__in=ids).values_list("fqdn", flat=True)))
+                elif isinstance(view.request.data, dict) and "host_id" in view.request.data:
+                    host = Host.objects.filter(pk=view.request.data["host_id"]).first()
+                    if host:
+                        host_fqdn = host.fqdn
 
-            operation_name = f"{host_fqdn} host added".strip()
+            operation_name = f"[{host_fqdn}] host(s) added".strip()
 
             audit_operation = AuditOperation(
                 name=operation_name,
@@ -223,12 +227,19 @@ def cluster_case(
                         data["display_name"]
                         for data in (response.data if isinstance(response.data, list) else [response.data])
                     ]
-                elif isinstance(view.request.data, list) and all("prototype_id" in data for data in view.request.data):
+                elif isinstance(view.request.data, list):
                     service_display_name = (
-                        Prototype.objects.filter(pk__in=[data["prototype_id"] for data in view.request.data])
+                        Prototype.objects.filter(pk__in=(data.get("prototype_id", None) for data in view.request.data))
                         .order_by("pk")
                         .values_list("display_name", flat=True)
                     )
+                elif isinstance(view.request.data, dict):
+                    service_display_name = [
+                        Prototype.objects.filter(pk=view.request.data.get("prototype_id"))
+                        .values_list("display_name", flat=True)
+                        .first()
+                        or ""
+                    ]
 
                 service_display_name = f"[{', '.join(service_display_name)}]"
                 operation_name = f"{service_display_name} service(s) added"
