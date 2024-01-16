@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from operator import itemgetter
+
 from audit.cases.common import (
     get_obj_name,
     get_or_create_audit_obj,
@@ -113,6 +115,8 @@ def cluster_case(
             if response and response.data:
                 if api_version == 1:
                     host_fqdn = response.data["fqdn"]
+                elif isinstance(response.data, list):
+                    host_fqdn = ", ".join(map(itemgetter("name"), response.data))
                 else:
                     host_fqdn = response.data["name"]
 
