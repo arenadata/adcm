@@ -1,7 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useDispatch, useStore } from '@hooks';
-import { setLocalMapping, revertChanges } from '@store/adcm/cluster/mapping/mappingSlice';
-import { AdcmMappingComponent, AdcmHostShortView } from '@models/adcm';
+import { AdcmMappingComponent, AdcmHostShortView, AdcmMapping, AdcmServicePrototype } from '@models/adcm';
 import { arrayToHash } from '@utils/arrayUtils';
 import {
   getComponentsMapping,
@@ -20,14 +18,14 @@ import {
   ComponentsDictionary,
 } from './ClusterMapping.types';
 
-export const useClusterMapping = () => {
-  const dispatch = useDispatch();
-
-  const { hosts, components, localMapping, isLoaded, isLoading, hasSaveError, state } = useStore(
-    ({ adcm }) => adcm.clusterMapping,
-  );
-  const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
-
+export const useClusterMapping = (
+  mapping: AdcmMapping[],
+  hosts: AdcmHostShortView[],
+  components: AdcmMappingComponent[],
+  notAddedServicesDictionary: Record<number, AdcmServicePrototype>,
+  isLoaded: boolean,
+  handleSetMapping?: (newMapping: AdcmMapping[]) => void,
+) => {
   const hostsDictionary: HostsDictionary = useMemo(() => arrayToHash(hosts, (h) => h.id), [hosts]);
   const componentsDictionary: ComponentsDictionary = useMemo(() => arrayToHash(components, (c) => c.id), [components]);
 
@@ -41,13 +39,13 @@ export const useClusterMapping = () => {
   });
 
   const componentsMapping: ComponentMapping[] = useMemo(
-    () => (isLoaded ? getComponentsMapping(localMapping, components, hostsDictionary) : []),
-    [components, hostsDictionary, isLoaded, localMapping],
+    () => (isLoaded ? getComponentsMapping(mapping, components, hostsDictionary) : []),
+    [components, hostsDictionary, isLoaded, mapping],
   );
 
   const hostsMapping: HostMapping[] = useMemo(
-    () => (isLoaded ? getHostsMapping(localMapping, hosts, componentsDictionary) : []),
-    [isLoaded, localMapping, hosts, componentsDictionary],
+    () => (isLoaded ? getHostsMapping(mapping, hosts, componentsDictionary) : []),
+    [isLoaded, mapping, hosts, componentsDictionary],
   );
 
   const servicesMapping: ServiceMapping[] = useMemo(
@@ -68,20 +66,20 @@ export const useClusterMapping = () => {
     });
   }, [componentsMapping, servicesMappingDictionary, notAddedServicesDictionary, hosts.length]);
 
-  const handleMapHostsToComponent = useCallback(
+  const handleMap = useCallback(
     (hosts: AdcmHostShortView[], component: AdcmMappingComponent) => {
       const newLocalMapping = mapHostsToComponent(servicesMapping, hosts, component);
-      dispatch(setLocalMapping(newLocalMapping));
+      handleSetMapping?.(newLocalMapping);
     },
-    [dispatch, servicesMapping],
+    [servicesMapping, handleSetMapping],
   );
 
   const handleUnmap = useCallback(
     (hostId: number, componentId: number) => {
-      const newLocalMapping = localMapping.filter((m) => !(m.hostId === hostId && m.componentId === componentId));
-      dispatch(setLocalMapping(newLocalMapping));
+      const newMapping = mapping.filter((m) => !(m.hostId === hostId && m.componentId === componentId));
+      handleSetMapping?.(newMapping);
     },
-    [dispatch, localMapping],
+    [mapping, handleSetMapping],
   );
 
   const handleServicesMappingFilterChange = (changes: Partial<ServiceMappingFilter>) => {
@@ -98,14 +96,8 @@ export const useClusterMapping = () => {
     });
   };
 
-  const handleRevert = useCallback(() => {
-    dispatch(revertChanges());
-  }, [dispatch]);
-
   return {
-    hostComponentMapping: localMapping,
-    isLoading,
-    isLoaded,
+    hostComponentMapping: mapping,
     hosts,
     hostsMapping,
     hostsMappingFilter,
@@ -114,11 +106,8 @@ export const useClusterMapping = () => {
     servicesMapping,
     servicesMappingFilter,
     handleServicesMappingFilterChange,
-    mappingState: state,
     mappingValidation,
-    hasSaveError,
-    handleMapHostsToComponent,
+    handleMap,
     handleUnmap,
-    handleRevert,
   };
 };

@@ -1,12 +1,19 @@
-import { createSlice } from '@reduxjs/toolkit';
-import { AdcmCluster } from '@models/adcm';
+import { PayloadAction, createSlice } from '@reduxjs/toolkit';
+import { AdcmCluster, AdcmHostShortView, AdcmMapping, AdcmMappingComponent, AdcmServicePrototype } from '@models/adcm';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmClustersApi, RequestError } from '@api';
+import { AdcmClusterMappingApi, AdcmClustersApi, RequestError } from '@api';
 import { fulfilledFilter } from '@utils/promiseUtils';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { ActionStatuses } from '@constants';
+import { LoadState } from '@models/loadState';
+import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
+import { arrayToHash } from '@utils/arrayUtils';
+
+type GetClusterMappingArg = {
+  clusterId: number;
+};
 
 const loadClustersDynamicActions = createAsyncThunk(
   'adcm/clustersDynamicActions/loadClustersDynamicActions',
@@ -60,6 +67,28 @@ const openClusterDynamicActionDialog = createAsyncThunk(
   },
 );
 
+const loadMappings = createAsyncThunk(
+  'adcm/clustersDynamicActions/loadMappings',
+  async ({ clusterId }: GetClusterMappingArg, thunkAPI) => {
+    try {
+      const mapping = await AdcmClusterMappingApi.getMapping(clusterId);
+      const hosts = await AdcmClusterMappingApi.getMappingHosts(clusterId);
+      const components = await AdcmClusterMappingApi.getMappingComponents(clusterId);
+      const notAddedServices = await AdcmClusterServicesApi.getClusterServiceCandidates(clusterId);
+      return { mapping, components, hosts, notAddedServices };
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
+const getMappings = createAsyncThunk(
+  'adcm/clustersDynamicActions/getMappings',
+  async (arg: GetClusterMappingArg, thunkAPI) => {
+    await thunkAPI.dispatch(loadMappings(arg));
+  },
+);
+
 interface RunClusterDynamicActionPayload {
   cluster: AdcmCluster;
   actionId: number;
@@ -87,6 +116,12 @@ type AdcmClustersDynamicActionsState = {
   dialog: {
     actionDetails: AdcmDynamicActionDetails | null;
     cluster: AdcmCluster | null;
+    mapping: AdcmMapping[];
+    localMapping: AdcmMapping[];
+    hosts: AdcmHostShortView[];
+    components: AdcmMappingComponent[];
+    notAddedServicesDictionary: Record<number, AdcmServicePrototype>;
+    loadState: LoadState;
   };
   clusterDynamicActions: Record<number, AdcmDynamicAction[]>;
 };
@@ -95,6 +130,12 @@ const createInitialState = (): AdcmClustersDynamicActionsState => ({
   dialog: {
     actionDetails: null,
     cluster: null,
+    mapping: [],
+    localMapping: [],
+    hosts: [],
+    components: [],
+    notAddedServicesDictionary: {},
+    loadState: LoadState.NotLoaded,
   },
   clusterDynamicActions: {},
 });
@@ -103,6 +144,12 @@ const clustersDynamicActionsSlice = createSlice({
   name: 'adcm/clustersDynamicActions',
   initialState: createInitialState(),
   reducers: {
+    setLocalMapping(state, action: PayloadAction<AdcmMapping[]>) {
+      state.dialog.localMapping = action.payload;
+    },
+    revertChanges(state) {
+      state.dialog.localMapping = state.dialog.mapping;
+    },
     cleanupClusterDynamicActions() {
       return createInitialState();
     },
@@ -113,6 +160,19 @@ const clustersDynamicActionsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    builder.addCase(loadMappings.fulfilled, (state, action) => {
+      state.dialog.localMapping = action.payload.mapping;
+      state.dialog.mapping = action.payload.mapping;
+      state.dialog.hosts = action.payload.hosts;
+      state.dialog.components = action.payload.components;
+      state.dialog.notAddedServicesDictionary = arrayToHash(action.payload.notAddedServices, (s) => s.id);
+    });
+    builder.addCase(getMappings.pending, (state) => {
+      state.dialog.loadState = LoadState.Loading;
+    });
+    builder.addCase(getMappings.fulfilled, (state) => {
+      state.dialog.loadState = LoadState.Loaded;
+    });
     builder.addCase(loadClustersDynamicActions.fulfilled, (state, action) => {
       state.clusterDynamicActions = action.payload;
     });
@@ -132,7 +192,8 @@ const clustersDynamicActionsSlice = createSlice({
   },
 });
 
-export const { cleanupClusterDynamicActions, closeClusterDynamicActionDialog } = clustersDynamicActionsSlice.actions;
-export { loadClustersDynamicActions, openClusterDynamicActionDialog, runClusterDynamicAction };
+export const { setLocalMapping, revertChanges, cleanupClusterDynamicActions, closeClusterDynamicActionDialog } =
+  clustersDynamicActionsSlice.actions;
+export { loadClustersDynamicActions, openClusterDynamicActionDialog, getMappings, runClusterDynamicAction };
 
 export default clustersDynamicActionsSlice.reducer;
