@@ -70,7 +70,11 @@ export const useClusterImportsService = () => {
   }, [clusterId, dispatch]);
 
   useEffect(() => {
-    if (serviceId) dispatch(getClusterServiceImports({ clusterId }));
+    if (serviceId) {
+      dispatch(getClusterServiceImports({ clusterId }));
+    } else {
+      dispatch(cleanupClusterServiceImports());
+    }
   }, [serviceId, paginationParams, clusterId, dispatch]);
 
   useEffect(() => {
