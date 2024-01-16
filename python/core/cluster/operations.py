@@ -12,11 +12,11 @@
 
 from typing import Any, Collection, Iterable, Protocol
 
-from core.cluster import HostClusterPair
 from core.cluster.rules import (
     check_all_hosts_exist,
     check_hosts_can_be_added_to_cluster,
 )
+from core.cluster.types import HostClusterPair
 from core.types import ClusterID, HostID
 
 

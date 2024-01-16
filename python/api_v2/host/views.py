@@ -35,7 +35,7 @@ from cm.api import delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.models import Cluster, GroupConfig, Host, HostProvider
 from cm.services.cluster import perform_host_to_cluster_map
-from core.cluster import (
+from core.cluster.errors import (
     HostAlreadyBoundError,
     HostBelongsToAnotherClusterError,
     HostDoesNotExistError,
@@ -68,7 +68,7 @@ from adcm.permissions import (
 # pylint:disable-next=too-many-ancestors
 class HostViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewSet):
     queryset = (
-        Host.objects.select_related("provider", "cluster")
+        Host.objects.select_related("provider", "cluster", "cluster__prototype", "prototype")
         .prefetch_related("concerns", "hostcomponent_set")
         .order_by("fqdn")
     )
@@ -108,7 +108,10 @@ class HostViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewSet)
             provider=request_hostprovider, fqdn=serializer.validated_data["fqdn"], cluster=request_cluster
         )
 
-        return Response(data=HostSerializer(instance=host).data, status=HTTP_201_CREATED)
+        return Response(
+            data=HostSerializer(instance=host).data,
+            status=HTTP_201_CREATED,
+        )
 
     @audit
     def destroy(self, request, *args, **kwargs):
@@ -165,7 +168,11 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  #
             user=self.request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=self.kwargs["cluster_pk"]
         )
 
-        return Host.objects.filter(cluster=cluster).select_related("cluster").prefetch_related("hostcomponent_set")
+        return (
+            Host.objects.filter(cluster=cluster)
+            .select_related("cluster", "cluster__prototype", "provider", "prototype")
+            .prefetch_related("hostcomponent_set", "concerns")
+        )
 
     @audit
     def create(self, request, *_, **kwargs):
@@ -198,10 +205,17 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):  #
             raise AdcmEx("FOREIGN_HOST", "At least one host is already linked to another cluster.") from None
 
         qs_for_added_hosts = self.get_queryset().filter(id__in=added_hosts)
-        if multiple_hosts:
-            return Response(status=HTTP_201_CREATED, data=HostSerializer(instance=qs_for_added_hosts, many=True).data)
 
-        return Response(status=HTTP_201_CREATED, data=HostSerializer(instance=qs_for_added_hosts.first()).data)
+        if multiple_hosts:
+            return Response(
+                status=HTTP_201_CREATED,
+                data=HostSerializer(instance=qs_for_added_hosts, many=True).data,
+            )
+
+        return Response(
+            status=HTTP_201_CREATED,
+            data=HostSerializer(instance=qs_for_added_hosts.first()).data,
+        )
 
     @audit
     def destroy(self, request, *args, **kwargs):  # pylint:disable=unused-argument
