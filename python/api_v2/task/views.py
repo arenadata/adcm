@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from api_v2.log_storage.utils import (
     get_task_download_archive_file_handler,
     get_task_download_archive_name,
@@ -20,6 +19,7 @@ from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
 from audit.utils import audit
 from cm.models import TaskLog
+from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
@@ -41,6 +41,12 @@ class TaskViewSet(
     filter_backends = (DjangoFilterBackend,)
     permission_classes = [TaskPermissions]
     permission_required = [VIEW_TASKLOG_PERMISSION]
+
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+        if not self.request.user.is_superuser:
+            queryset = queryset.exclude(object_type=ContentType.objects.get(app_label="cm", model="adcm"))
+        return queryset
 
     @audit
     @action(methods=["post"], detail=True)
