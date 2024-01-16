@@ -10,7 +10,16 @@ import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 const HostsMapping = () => {
   const dispatch = useDispatch();
 
-  const { hostsMapping, hostsMappingFilter, handleHostsMappingFilterChange, mappingValidation } = useClusterMapping();
+  const { hosts, components, localMapping, isLoaded } = useStore(({ adcm }) => adcm.clusterMapping);
+  const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
+
+  const { hostsMapping, hostsMappingFilter, handleHostsMappingFilterChange, mappingValidation } = useClusterMapping(
+    localMapping,
+    hosts,
+    components,
+    notAddedServicesDictionary,
+    isLoaded,
+  );
 
   const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     handleHostsMappingFilterChange({ componentDisplayName: event.target.value });

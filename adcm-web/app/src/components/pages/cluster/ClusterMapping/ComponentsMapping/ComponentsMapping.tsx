@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { AnchorBar, AnchorBarItem, AnchorList, Button, MarkerIcon, SearchInput, Switch, Text } from '@uikit';
 import { useClusterMapping } from '../useClusterMapping';
 import ComponentContainer from './ComponentContainer/ComponentContainer';
@@ -6,11 +6,11 @@ import ClusterMappingToolbar from '../ClusterMappingToolbar/ClusterMappingToolba
 import s from './ComponentsMapping.module.scss';
 import cn from 'classnames';
 import { Link, useParams } from 'react-router-dom';
-import { saveMapping } from '@store/adcm/cluster/mapping/mappingSlice';
+import { setLocalMapping, saveMapping, revertChanges } from '@store/adcm/cluster/mapping/mappingSlice';
 import { useDispatch, useStore } from '@hooks';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import RequiredServicesDialog from '@pages/cluster/ClusterMapping/ComponentsMapping/RequiredServicesDialog/RequiredServicesDialog';
-import { AdcmEntitySystemState, AdcmMaintenanceMode } from '@models/adcm';
+import { AdcmEntitySystemState, AdcmMaintenanceMode, AdcmMapping } from '@models/adcm';
 
 const buildServiceAnchorId = (id: number) => `anchor_${id}`;
 
@@ -21,6 +21,7 @@ const ComponentsMapping = () => {
   const clusterId = Number(clusterIdFromUrl);
 
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
+
   useEffect(() => {
     if (cluster) {
       dispatch(
@@ -34,19 +35,32 @@ const ComponentsMapping = () => {
     }
   }, [cluster, dispatch]);
 
+  const handleSetMapping = useCallback(
+    (newMapping: AdcmMapping[]) => {
+      dispatch(setLocalMapping(newMapping));
+    },
+    [dispatch],
+  );
+
+  const {
+    hosts,
+    components,
+    localMapping,
+    isLoaded,
+    hasSaveError,
+    state: mappingState,
+  } = useStore(({ adcm }) => adcm.clusterMapping);
+  const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
+
   const {
     hostComponentMapping,
-    hosts,
     servicesMapping,
     servicesMappingFilter,
     handleServicesMappingFilterChange,
-    mappingState,
     mappingValidation,
-    hasSaveError,
-    handleMapHostsToComponent,
+    handleMap,
     handleUnmap,
-    handleRevert,
-  } = useClusterMapping();
+  } = useClusterMapping(localMapping, hosts, components, notAddedServicesDictionary, isLoaded, handleSetMapping);
 
   const anchorItems: AnchorBarItem[] = useMemo(
     () =>
@@ -67,6 +81,10 @@ const ComponentsMapping = () => {
 
   const handleSave = () => {
     dispatch(saveMapping({ clusterId, mapping: hostComponentMapping }));
+  };
+
+  const handleRevert = () => {
+    dispatch(revertChanges());
   };
 
   const isButtonsDisabledByState = mappingState === 'saving' || mappingState === 'no-changes';
@@ -126,7 +144,8 @@ const ComponentsMapping = () => {
                       componentMappingValidation={mappingValidation.byComponents[componentMapping.component.id]}
                       filter={servicesMappingFilter}
                       allHosts={hosts}
-                      onMap={handleMapHostsToComponent}
+                      notAddedServicesDictionary={notAddedServicesDictionary}
+                      onMap={handleMap}
                       onUnmap={handleUnmap}
                       allowActions={isEditableComponent ? undefined : []}
                     />
