@@ -691,7 +691,7 @@ class TestClusterAudit(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.CLUSTER,
-            operation_name=f"{self.host.fqdn} host added",
+            operation_name=f"[{self.host.fqdn}] host(s) added",
             operation_type=AuditLogOperationType.UPDATE,
         )
 
@@ -708,7 +708,7 @@ class TestClusterAudit(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.CLUSTER,
-            operation_name="host added",
+            operation_name="[] host(s) added",
             operation_type=AuditLogOperationType.UPDATE,
             operation_result=AuditLogOperationResult.FAIL,
         )
@@ -726,7 +726,7 @@ class TestClusterAudit(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
-            operation_name=f"{self.host.fqdn} host added",
+            operation_name=f"[{self.host.fqdn}] host(s) added",
             operation_type=AuditLogOperationType.UPDATE,
         )
 
