@@ -1152,7 +1152,7 @@ class GroupConfigRelatedTests(BaseAPITestCase):
                     "cluster_pk": obj.pk,
                 }
             case _:
-                raise NotImplemented(str(obj))
+                raise NotImplementedError(str(obj))
 
         response = self.client.post(
             path=reverse(viewname=viewname_create, kwargs=kwargs),
