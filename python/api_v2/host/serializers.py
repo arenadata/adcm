@@ -144,8 +144,8 @@ class HostCreateSerializer(EmptySerializer):
     cluster_id = IntegerField(required=False)
 
 
-class HostCreateRelatedSerializer(EmptySerializer):
-    host_id = PrimaryKeyRelatedField(queryset=Host.objects.all())
+class HostAddSerializer(EmptySerializer):
+    host_id = IntegerField()
 
 
 class HostMappingSerializer(ModelSerializer):
