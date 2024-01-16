@@ -13,12 +13,12 @@
 from operator import attrgetter
 from typing import Collection
 
-from core.cluster import (
+from core.cluster.errors import (
     HostAlreadyBoundError,
     HostBelongsToAnotherClusterError,
-    HostClusterPair,
     HostDoesNotExistError,
 )
+from core.cluster.types import HostClusterPair
 
 
 def check_all_hosts_exist(host_candidates: Collection[int], existing_hosts: Collection[HostClusterPair]) -> None:

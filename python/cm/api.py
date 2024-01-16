@@ -12,6 +12,7 @@
 # pylint: disable=too-many-lines
 
 import json
+from collections import defaultdict
 from functools import partial, wraps
 from typing import Literal
 
@@ -98,45 +99,35 @@ def is_version_suitable(version: str, prototype_import: PrototypeImport) -> bool
     return True
 
 
-def load_service_map():
-    comps = {}
-    hosts = {}
+def load_service_map() -> None:
+    comps = defaultdict(lambda: defaultdict(list))
+    hosts = defaultdict(list)
     hc_map = {}
-    services = {}
-    passive = {}
-    for service_component in ServiceComponent.objects.filter(prototype__monitoring="passive"):
-        passive[service_component.pk] = True
+    services = defaultdict(list)
 
-    for hostcomponent in HostComponent.objects.order_by("id"):
-        if hostcomponent.component.pk in passive:
-            continue
+    passive = {
+        component_id: True
+        for component_id in ServiceComponent.objects.values_list("id", flat=True).filter(
+            prototype__monitoring="passive"
+        )
+    }
 
-        key = f"{hostcomponent.host.pk}.{hostcomponent.component.pk}"
-        hc_map[key] = {"cluster": hostcomponent.cluster.pk, "service": hostcomponent.service.pk}
-        if str(hostcomponent.cluster.pk) not in comps:
-            comps[str(hostcomponent.cluster.pk)] = {}
+    for cluster_id, service_id, component_id, host_id in (
+        HostComponent.objects.values_list("cluster_id", "service_id", "component_id", "host_id")
+        .exclude(component_id__in=passive.keys())
+        .order_by("id")
+    ):
+        key = f"{host_id}.{component_id}"
+        hc_map[key] = {"cluster": cluster_id, "service": service_id}
+        comps[str(cluster_id)][str(service_id)].append(key)
 
-        if str(hostcomponent.service.pk) not in comps[str(hostcomponent.cluster.pk)]:
-            comps[str(hostcomponent.cluster.pk)][str(hostcomponent.service.pk)] = []
+    for host_id, cluster_id in Host.objects.values_list("id", "cluster_id").filter(prototype__monitoring="active"):
+        hosts[cluster_id or 0].append(host_id)
 
-        comps[str(hostcomponent.cluster.pk)][str(hostcomponent.service.pk)].append(key)
-
-    for host in Host.objects.filter(prototype__monitoring="active"):
-        if host.cluster:
-            cluster_pk = host.cluster.pk
-        else:
-            cluster_pk = 0
-
-        if cluster_pk not in hosts:
-            hosts[cluster_pk] = []
-
-        hosts[cluster_pk].append(host.pk)
-
-    for service in ClusterObject.objects.filter(prototype__monitoring="active"):
-        if service.cluster.pk not in services:
-            services[service.cluster.pk] = []
-
-        services[service.cluster.pk].append(service.pk)
+    for service_id, cluster_id in ClusterObject.objects.values_list("id", "cluster_id").filter(
+        prototype__monitoring="active"
+    ):
+        services[cluster_id].append(service_id)
 
     data = {
         "hostservice": hc_map,
@@ -145,6 +136,7 @@ def load_service_map():
         "host": hosts,
     }
     api_request(method="post", url="servicemap/", data=data)
+
     load_mm_objects()
 
 

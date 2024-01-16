@@ -13,11 +13,9 @@
 from typing import Collection, Iterable
 
 from cm.api import load_service_map
-from cm.api_context import CTX
-from cm.issue import add_concern_to_object, update_hierarchy_issues
 from cm.models import Cluster, Host
-from core.cluster import HostClusterPair
 from core.cluster.operations import add_hosts_to_cluster
+from core.cluster.types import HostClusterPair
 from core.types import ClusterID, HostID
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
@@ -41,10 +39,6 @@ class HostClusterDB:
 def perform_host_to_cluster_map(cluster_id: int, hosts: Collection[int]) -> Collection[int]:
     with atomic():
         add_hosts_to_cluster(cluster_id=cluster_id, hosts=hosts, db=HostClusterDB)
-
-        for host in Host.objects.filter(id__in=hosts):
-            add_concern_to_object(object_=host, concern=CTX.lock)
-            update_hierarchy_issues(host)
 
         re_apply_object_policy(Cluster.objects.get(id=cluster_id))
 
