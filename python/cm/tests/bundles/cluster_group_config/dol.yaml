@@ -1,0 +1,16 @@
+---
+root:
+  match: dict
+  items:
+    integers: integers
+    strings: strings
+integers:
+  match: list
+  item: integer
+strings:
+  match: list
+  item: string
+integer:
+  match: int
+string:
+  match: string

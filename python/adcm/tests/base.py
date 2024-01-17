@@ -65,8 +65,8 @@ class ParallelReadyTestCase:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
-        directories = cls._prepare_temporal_directories_for_adcm()
-        override_settings(**directories)(cls)
+        cls.directories = cls._prepare_temporal_directories_for_adcm()
+        override_settings(**cls.directories)(cls)
 
     @staticmethod
     def _prepare_temporal_directories_for_adcm() -> dict:
