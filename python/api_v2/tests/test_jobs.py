@@ -25,6 +25,7 @@ from cm.models import (
 )
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.http import HttpResponse
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.response import Response
@@ -170,7 +171,8 @@ class TestJob(BaseTestCase):  # pylint: disable=too-many-instance-attributes
             self.assertEqual(response.status_code, HTTP_200_OK)
             log = response.json()["content"].splitlines()
             self.assertEqual(log[0], self.TRUNCATED_LOG_MESSAGE)
-            log_itself = log[1:]
+            self.assertEqual(log[-1], self.TRUNCATED_LOG_MESSAGE)
+            log_itself = log[1:-1]
             self.assertEqual(len(log_itself), settings.STDOUT_STDERR_LOG_CUT_LENGTH)
             self.assertTrue(all(line == self.word_10_symbols for line in log_itself))
 
@@ -216,6 +218,7 @@ class TestJob(BaseTestCase):  # pylint: disable=too-many-instance-attributes
             self.assertEqual(response.status_code, HTTP_200_OK)
             log = response.json()["content"].splitlines()
             self.assertEqual(log[0], self.TRUNCATED_LOG_MESSAGE)
+            self.assertEqual(log[-1], self.TRUNCATED_LOG_MESSAGE)
             expected_last_lines = [
                 "",
                 expected_truncated_line,
@@ -223,8 +226,8 @@ class TestJob(BaseTestCase):  # pylint: disable=too-many-instance-attributes
                 expected_truncated_line,
                 "logline",
             ]
-            self.assertEqual(log[-5:], expected_last_lines)
-            main_log = log[1:-5]
+            self.assertEqual(log[-6:-1], expected_last_lines)
+            main_log = log[1:-6]
             self.assertEqual(len(main_log), settings.STDOUT_STDERR_LOG_CUT_LENGTH - 5)
             self.assertTrue(all(line == self.word_10_symbols for line in main_log))
 
@@ -241,14 +244,49 @@ class TestJob(BaseTestCase):  # pylint: disable=too-many-instance-attributes
                 log,
                 f"{self.TRUNCATED_LOG_MESSAGE}\n"
                 f"{self.long_one_liner_log.body[: settings.STDOUT_STDERR_LOG_LINE_CUT_LENGTH]}"
+                f"{self.TRUNCATED_LOG_MESSAGE}\n"
                 f"{self.TRUNCATED_LOG_MESSAGE}\n",
             )
+
+    def test_adcm_5212_retrieve_log_null_body_cut_success(self) -> None:
+        log_content = self.ansible_stdout_many_lines.body
+        self.ansible_stdout_many_lines.body = None
+        self.ansible_stdout_many_lines.save(update_fields=["body"])
+
+        with patch("api_v2.log_storage.serializers.extract_log_content_from_fs", return_value=log_content):
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:log-detail",
+                    kwargs={"job_pk": self.job_with_logs.pk, "pk": self.ansible_stdout_many_lines.pk},
+                )
+            )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        log = response.json()["content"].splitlines()
+        self.assertEqual(log[0], self.TRUNCATED_LOG_MESSAGE)
+        self.assertEqual(log[-1], self.TRUNCATED_LOG_MESSAGE)
+        log_itself = log[1:-1]
+        self.assertEqual(len(log_itself), settings.STDOUT_STDERR_LOG_CUT_LENGTH)
+        self.assertTrue(all(line == self.word_10_symbols for line in log_itself))
 
     def test_job_log_download_success(self):
         response: Response = self.client.get(
             path=reverse(viewname="v2:log-download", kwargs={"job_pk": self.job_1.pk, "pk": self.log_1.pk})
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_adcm_5212_job_log_download_full_success(self) -> None:
+        response: HttpResponse = self.client.get(
+            path=reverse(
+                viewname="v2:log-download",
+                kwargs={"job_pk": self.job_with_logs.pk, "pk": self.ansible_stdout_many_lines.pk},
+            )
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        log = response.content.decode("utf-8")
+        self.assertNotIn(self.TRUNCATED_LOG_MESSAGE, log)
+        self.assertEqual(self.ansible_stdout_many_lines.body, log)
 
     def test_job_log_not_found_download_fail(self):
         response: Response = self.client.get(
