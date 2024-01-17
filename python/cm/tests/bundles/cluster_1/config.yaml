@@ -32,6 +32,14 @@
       script_type: ansible
       states:
         available: any
+    host_action_on_cluster: &host_action
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      host_action: true
+      states:
+        available: any
+
 
 - name: service_one_component
   type: service
@@ -39,6 +47,7 @@
   config: *config
   actions:
     action_on_service: *action
+    host_action_on_service: *host_action
 
   components:
     component_1:
@@ -46,6 +55,7 @@
       config: *config
       actions:
         action_on_component: *action
+        host_action_on_component: *host_action
 
 - name: service_two_components
   type: service
