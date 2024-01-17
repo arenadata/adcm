@@ -18,15 +18,7 @@ from typing import Any, Iterable, Mapping, TypeAlias
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import add_hc
 from cm.inventory import get_inventory_data
-from cm.models import (
-    Action,
-    ADCMEntity,
-    Cluster,
-    ConfigLog,
-    Host,
-    HostComponent,
-    ServiceComponent,
-)
+from cm.models import Action, ADCMEntity, Cluster, Host, HostComponent, ServiceComponent
 from django.conf import settings
 from jinja2 import Template
 
@@ -65,7 +57,9 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
 
         for group_name, host_names in expected.items():
             errors = set(data[group_name]["hosts"].keys()).symmetric_difference(set(host_names))
-            self.assertSetEqual(errors, set())
+            self.assertSetEqual(
+                errors, set(), msg=f"Host(s): '{', '.join(errors)}' should not be in the '{group_name}' group"
+            )
 
     @staticmethod
     def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, ServiceComponent]]) -> list[HostComponent]:
@@ -95,21 +89,19 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
                 {
                     "host_fqdn": host.fqdn,
                     "adcm_hostid": host.pk,
-                    "password": ConfigLog.objects.get(pk=host.config.current).config["password"],
                 },
             ),
             ("HOST", "vars", "provider"): (
                 self.templates_dir / "provider.json.j2",
                 {
                     "id": host.provider.pk,
-                    "password": ConfigLog.objects.get(pk=host.provider.config.current).config["password"],
                     "host_prototype_id": host.prototype.pk,
                 },
             ),
         }
 
     def assert_inventory(self, obj: ADCMEntity, action: Action, expected_topology: dict, expected_data: dict):
-        actual_inventory = get_inventory_data(obj=obj, action=action)["all"]["children"]
+        actual_inventory = decrypt_secrets(source=get_inventory_data(obj=obj, action=action)["all"]["children"])
 
         self.check_hosts_topology(data=actual_inventory, expected=expected_topology)
         self.check_data_by_template(data=actual_inventory, templates_data=expected_data)

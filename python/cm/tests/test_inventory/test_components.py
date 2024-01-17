@@ -15,15 +15,8 @@
 
 from api_v2.service.utils import bulk_add_services_to_cluster
 from cm.inventory import get_inventory_data
-from cm.models import (
-    Action,
-    ClusterObject,
-    ConfigLog,
-    ObjectType,
-    Prototype,
-    ServiceComponent,
-)
-from cm.tests.test_inventory.base import BaseInventoryTestCase
+from cm.models import Action, ClusterObject, ObjectType, Prototype, ServiceComponent
+from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
 
 
 class TestInventoryComponents(BaseInventoryTestCase):
@@ -107,25 +100,19 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 {
                     "host_fqdn": self.host_1.fqdn,
                     "adcm_hostid": self.host_1.pk,
-                    "password": ConfigLog.objects.get(pk=self.host_1.config.current).config["password"],
                 },
             ),
             ("CLUSTER", "vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
-                    "password": ConfigLog.objects.get(pk=self.cluster_1.config.current).config["password"],
                 },
             ),
             ("CLUSTER", "vars", "services"): (
                 self.templates_dir / "service_one_component.json.j2",
                 {
                     "service_id": service_one_component.pk,
-                    "service_password": ConfigLog.objects.get(pk=service_one_component.config.current).config[
-                        "password"
-                    ],
                     "component_id": component_1.pk,
-                    "component_password": ConfigLog.objects.get(pk=component_1.config.current).config["password"],
                 },
             ),
         }
@@ -188,29 +175,21 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.templates_dir / "two_hosts.json.j2",
                 {
                     "host_1_id": self.host_1.pk,
-                    "host_1_password": ConfigLog.objects.get(pk=self.host_1.config.current).config["password"],
                     "host_2_id": self.host_2.pk,
-                    "host_2_password": ConfigLog.objects.get(pk=self.host_2.config.current).config["password"],
                 },
             ),
             ("CLUSTER", "vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
-                    "password": ConfigLog.objects.get(pk=self.cluster_1.config.current).config["password"],
                 },
             ),
             ("CLUSTER", "vars", "services"): (
                 self.templates_dir / "service_two_components.json.j2",
                 {
                     "service_id": service_two_components.pk,
-                    "service_password": ConfigLog.objects.get(pk=service_two_components.config.current).config[
-                        "password"
-                    ],
                     "component_1_id": component_1.pk,
-                    "component_1_password": ConfigLog.objects.get(pk=component_1.config.current).config["password"],
                     "component_2_id": component_2.pk,
-                    "component_2_password": ConfigLog.objects.get(pk=component_2.config.current).config["password"],
                 },
             ),
         }
@@ -234,7 +213,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                actual_inventory = get_inventory_data(obj=obj, action=action)["all"]["children"]
+                actual_inventory = decrypt_secrets(source=get_inventory_data(obj=obj, action=action)["all"]["children"])
 
                 self.check_hosts_topology(data=actual_inventory, expected=expected_topology)
                 self.check_data_by_template(data=actual_inventory, templates_data=expected_data)
@@ -281,29 +260,21 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.templates_dir / "two_hosts.json.j2",
                 {
                     "host_1_id": self.host_1.pk,
-                    "host_1_password": ConfigLog.objects.get(pk=self.host_1.config.current).config["password"],
                     "host_2_id": self.host_2.pk,
-                    "host_2_password": ConfigLog.objects.get(pk=self.host_2.config.current).config["password"],
                 },
             ),
             ("CLUSTER", "vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
-                    "password": ConfigLog.objects.get(pk=self.cluster_1.config.current).config["password"],
                 },
             ),
             ("CLUSTER", "vars", "services"): (
                 self.templates_dir / "service_two_components.json.j2",
                 {
                     "service_id": service_two_components.pk,
-                    "service_password": ConfigLog.objects.get(pk=service_two_components.config.current).config[
-                        "password"
-                    ],
                     "component_1_id": component_1.pk,
-                    "component_1_password": ConfigLog.objects.get(pk=component_1.config.current).config["password"],
                     "component_2_id": component_2.pk,
-                    "component_2_password": ConfigLog.objects.get(pk=component_2.config.current).config["password"],
                 },
             ),
         }
@@ -384,43 +355,23 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 {
                     "host_fqdn": self.host_1.fqdn,
                     "adcm_hostid": self.host_1.pk,
-                    "password": ConfigLog.objects.get(pk=self.host_1.config.current).config["password"],
                 },
             ),
             ("CLUSTER", "vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
-                    "password": ConfigLog.objects.get(pk=self.cluster_1.config.current).config["password"],
                 },
             ),
             ("CLUSTER", "vars", "services"): (
                 self.templates_dir / "two_services_two_components_each.json.j2",
                 {
                     "service_1_id": service_two_components.pk,
-                    "service_1_password": ConfigLog.objects.get(pk=service_two_components.config.current).config[
-                        "password"
-                    ],
                     "component_1_s1_id": component_1_s1.pk,
-                    "component_1_s1_password": ConfigLog.objects.get(pk=component_1_s1.config.current).config[
-                        "password"
-                    ],
                     "component_2_s1_id": component_2_s1.pk,
-                    "component_2_s1_password": ConfigLog.objects.get(pk=component_2_s1.config.current).config[
-                        "password"
-                    ],
                     "service_2_id": another_service_two_components.pk,
-                    "service_2_password": ConfigLog.objects.get(
-                        pk=another_service_two_components.config.current
-                    ).config["password"],
                     "component_1_s2_id": component_1_s2.pk,
-                    "component_1_s2_password": ConfigLog.objects.get(pk=component_1_s2.config.current).config[
-                        "password"
-                    ],
                     "component_2_s2_id": component_2_s2.pk,
-                    "component_2_s2_password": ConfigLog.objects.get(pk=component_2_s2.config.current).config[
-                        "password"
-                    ],
                 },
             ),
         }
@@ -500,45 +451,24 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.templates_dir / "two_hosts.json.j2",
                 {
                     "host_1_id": self.host_1.pk,
-                    "host_1_password": ConfigLog.objects.get(pk=self.host_1.config.current).config["password"],
                     "host_2_id": self.host_2.pk,
-                    "host_2_password": ConfigLog.objects.get(pk=self.host_2.config.current).config["password"],
                 },
             ),
             ("CLUSTER", "vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
-                    "password": ConfigLog.objects.get(pk=self.cluster_1.config.current).config["password"],
                 },
             ),
             ("CLUSTER", "vars", "services"): (
                 self.templates_dir / "two_services_two_components_each.json.j2",
                 {
                     "service_1_id": service_two_components.pk,
-                    "service_1_password": ConfigLog.objects.get(pk=service_two_components.config.current).config[
-                        "password"
-                    ],
                     "component_1_s1_id": component_1_s1.pk,
-                    "component_1_s1_password": ConfigLog.objects.get(pk=component_1_s1.config.current).config[
-                        "password"
-                    ],
                     "component_2_s1_id": component_2_s1.pk,
-                    "component_2_s1_password": ConfigLog.objects.get(pk=component_2_s1.config.current).config[
-                        "password"
-                    ],
                     "service_2_id": another_service_two_components.pk,
-                    "service_2_password": ConfigLog.objects.get(
-                        pk=another_service_two_components.config.current
-                    ).config["password"],
                     "component_1_s2_id": component_1_s2.pk,
-                    "component_1_s2_password": ConfigLog.objects.get(pk=component_1_s2.config.current).config[
-                        "password"
-                    ],
                     "component_2_s2_id": component_2_s2.pk,
-                    "component_2_s2_password": ConfigLog.objects.get(pk=component_2_s2.config.current).config[
-                        "password"
-                    ],
                 },
             ),
         }

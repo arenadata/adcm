@@ -13,7 +13,7 @@
 
 from pathlib import Path
 
-from cm.models import Action, ConfigLog
+from cm.models import Action
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
@@ -42,7 +42,6 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
-                    "password": ConfigLog.objects.get(pk=self.cluster_1.config.current).config["password"],
                 },
             ),
         }
@@ -71,14 +70,12 @@ class TestClusterHosts(BaseInventoryTestCase):
                 {
                     "host_fqdn": host_1.fqdn,
                     "adcm_hostid": host_1.pk,
-                    "password": ConfigLog.objects.get(pk=host_1.config.current).config["password"],
                 },
             ),
             ("CLUSTER", "vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
-                    "password": ConfigLog.objects.get(pk=self.cluster_1.config.current).config["password"],
                 },
             ),
         }
@@ -117,16 +114,13 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.templates_dir / "two_hosts.json.j2",
                 {
                     "host_1_id": host_1.pk,
-                    "host_1_password": ConfigLog.objects.get(pk=host_1.config.current).config["password"],
                     "host_2_id": host_2.pk,
-                    "host_2_password": ConfigLog.objects.get(pk=host_2.config.current).config["password"],
                 },
             ),
             ("CLUSTER", "vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
-                    "password": ConfigLog.objects.get(pk=self.cluster_1.config.current).config["password"],
                 },
             ),
         }
