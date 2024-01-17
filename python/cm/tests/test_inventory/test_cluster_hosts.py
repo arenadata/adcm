@@ -19,7 +19,9 @@ from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 class TestClusterHosts(BaseInventoryTestCase):
     def setUp(self) -> None:
-        self.maxDiff = None  # pylint: disable=invalid-name
+        super().setUp()
+
+        self.maxDiff = None
 
         bundles_dir = Path(__file__).parent.parent / "bundles"
         self.templates_dir = Path(__file__).parent.parent / "files/response_templates"

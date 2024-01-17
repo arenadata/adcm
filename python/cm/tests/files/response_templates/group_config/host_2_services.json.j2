@@ -1,0 +1,425 @@
+{
+  "not_simple": {
+    "id": {{ not_simple.id }},
+    "version": "4.3",
+    "state": "created",
+    "multi_state": [],
+    "config": {
+      "plain_group": {
+        "simple": "ingroup",
+        "secretmap": {
+          "gk1": "gv1",
+          "gk2": "gv2"
+        },
+        "secretfile": "{{ filedir }}/service.1.plain_group.secretfile",
+        "list_of_dicts": null,
+        "listofstuff": [
+          "x",
+          "y"
+        ]
+      },
+      "activatable_group": null,
+      "just_bool": null,
+      "just_integer": 4,
+      "just_float": 2.3,
+      "just_string": "outofgroup",
+      "just_text": "lineone\nsecond line\n",
+      "just_map": {},
+      "just_list": [
+        "1"
+      ],
+      "just_json": null,
+      "variant_config": null,
+      "variant_inline": null,
+      "variant_builtin": null,
+      "password": "defaultpass",
+      "secrettext": "default\npassword\n",
+      "secretmap": {
+        "k1": "v1",
+        "k2": "v2"
+      },
+      "secretfile": "{{ filedir }}/service.1.secretfile.",
+      "nullist": [],
+      "list_of_dicts": [
+        {
+          "integer": 3,
+          "string": "three"
+        },
+        {
+          "integer": 12,
+          "string": "twelve"
+        }
+      ],
+      "dict_of_lists": {
+        "integers": [
+          1,
+          103
+        ],
+        "strings": [
+          "over",
+          "and",
+          "over"
+        ]
+      }
+    },
+    "maintenance_mode": false,
+    "display_name": "not_simple",
+    "before_upgrade": {
+      "state": null
+    },
+    "not_simple_component": {
+      "component_id": {{ not_simple_component.id }},
+      "config": {
+        "plain_group": {
+          "simple": "ingroup",
+          "secretmap": {
+            "gk1": "gv1",
+            "gk2": "gv2"
+          },
+          "secretfile": "{{ filedir }}/component.1.plain_group.secretfile",
+          "list_of_dicts": null,
+          "listofstuff": [
+            "x",
+            "y"
+          ]
+        },
+        "activatable_group": null,
+        "just_bool": null,
+        "just_integer": 4,
+        "just_float": 2.3,
+        "just_string": "outofgroup",
+        "just_text": "lineone\nsecond line\n",
+        "just_map": {},
+        "just_list": [
+          "1"
+        ],
+        "just_json": null,
+        "variant_config": null,
+        "variant_inline": null,
+        "variant_builtin": null,
+        "password": "defaultpass",
+        "secrettext": "default\npassword\n",
+        "secretmap": {
+          "k1": "v1",
+          "k2": "v2"
+        },
+        "secretfile": "{{ filedir }}/component.1.secretfile.",
+        "nullist": [],
+        "list_of_dicts": [
+          {
+            "integer": 3,
+            "string": "three"
+          },
+          {
+            "integer": 12,
+            "string": "twelve"
+          }
+        ],
+        "dict_of_lists": {
+          "integers": [
+            1,
+            103
+          ],
+          "strings": [
+            "over",
+            "and",
+            "over"
+          ]
+        }
+      },
+      "state": "created",
+      "multi_state": [],
+      "maintenance_mode": false,
+      "display_name": "not_simple_component",
+      "before_upgrade": {
+        "state": null
+      }
+    },
+    "another_not_simple_component": {
+      "component_id": {{ another_not_simple_component.id }},
+      "config": {
+        "plain_group": {
+          "simple": "ingroup",
+          "secretmap": {
+            "gk1": "gv1",
+            "gk2": "gv2"
+          },
+          "secretfile": "{{ filedir }}/component.2.plain_group.secretfile",
+          "list_of_dicts": null,
+          "listofstuff": [
+            "x",
+            "y"
+          ]
+        },
+        "activatable_group": null,
+        "just_bool": null,
+        "just_integer": 4,
+        "just_float": 2.3,
+        "just_string": "outofgroup",
+        "just_text": "lineone\nsecond line\n",
+        "just_map": {},
+        "just_list": [
+          "1"
+        ],
+        "just_json": null,
+        "variant_config": null,
+        "variant_inline": null,
+        "variant_builtin": null,
+        "password": "defaultpass",
+        "secrettext": "default\npassword\n",
+        "secretmap": {
+          "k1": "v1",
+          "k2": "v2"
+        },
+        "secretfile": "{{ filedir }}/component.2.secretfile.",
+        "nullist": [],
+        "list_of_dicts": [
+          {
+            "integer": 3,
+            "string": "three"
+          },
+          {
+            "integer": 12,
+            "string": "twelve"
+          }
+        ],
+        "dict_of_lists": {
+          "integers": [
+            1,
+            103
+          ],
+          "strings": [
+            "over",
+            "and",
+            "over"
+          ]
+        }
+      },
+      "state": "created",
+      "multi_state": [],
+      "maintenance_mode": false,
+      "display_name": "another_not_simple_component",
+      "before_upgrade": {
+        "state": null
+      }
+    }
+  },
+  "thesame": {
+    "id": {{ thesame.id }},
+    "version": "2.1",
+    "state": "created",
+    "multi_state": [],
+    "config": {
+      "plain_group": {
+        "simple": "ingroup",
+        "secretmap": {
+          "gk1": "gv1",
+          "gk2": "gv2"
+        },
+        "secretfile": "{{ filedir }}/service.2.plain_group.secretfile",
+        "list_of_dicts": null,
+        "listofstuff": [
+          "x",
+          "y"
+        ]
+      },
+      "activatable_group": {
+        "simple": "bestgroupever",
+        "secretmap": {
+          "agk1": "agv1",
+          "agk2": "agv2"
+        },
+        "secretfile": "{{ filedir }}/service.2.activatable_group.secretfile"
+      },
+      "just_bool": null,
+      "just_integer": 4,
+      "just_float": 2.3,
+      "just_string": "outofgroup",
+      "just_text": "lineone\nsecond line\n",
+      "just_map": {},
+      "just_list": [
+        "1"
+      ],
+      "just_json": null,
+      "variant_config": null,
+      "variant_inline": null,
+      "variant_builtin": null,
+      "password": "defaultpass",
+      "secrettext": "default\npassword\n",
+      "secretmap": {
+        "k1": "v1",
+        "k2": "v2"
+      },
+      "secretfile": "{{ filedir }}/service.2.secretfile.",
+      "nullist": [],
+      "list_of_dicts": [
+        {
+          "integer": 400,
+          "string": "woo"
+        }
+      ],
+      "dict_of_lists": {
+        "integers": [
+          1,
+          103
+        ],
+        "strings": [
+          "over",
+          "and",
+          "over"
+        ]
+      }
+    },
+    "maintenance_mode": false,
+    "display_name": "thesame",
+    "before_upgrade": {
+      "state": null
+    },
+    "thesame_component": {
+      "component_id": {{ thesame_component.id }},
+      "config": {
+        "plain_group": {
+          "simple": "ingroup",
+          "secretmap": {
+            "gk1": "gv1",
+            "gk2": "gv2"
+          },
+          "secretfile": "{{ filedir }}/component.3.plain_group.secretfile",
+          "list_of_dicts": null,
+          "listofstuff": [
+            "x",
+            "y"
+          ]
+        },
+        "activatable_group": null,
+        "just_bool": null,
+        "just_integer": 4,
+        "just_float": 2.3,
+        "just_string": "outofgroup",
+        "just_text": "lineone\nsecond line\n",
+        "just_map": {},
+        "just_list": [
+          "1"
+        ],
+        "just_json": null,
+        "variant_config": null,
+        "variant_inline": null,
+        "variant_builtin": null,
+        "password": "defaultpass",
+        "secrettext": "default\npassword\n",
+        "secretmap": {
+          "k1": "v1",
+          "k2": "v2"
+        },
+        "secretfile": "{{ filedir }}/component.3.secretfile.",
+        "nullist": [],
+        "list_of_dicts": [
+          {
+            "integer": 3,
+            "string": "three"
+          },
+          {
+            "integer": 12,
+            "string": "twelve"
+          }
+        ],
+        "dict_of_lists": {
+          "integers": [
+            1,
+            103
+          ],
+          "strings": [
+            "over",
+            "and",
+            "over"
+          ]
+        }
+      },
+      "state": "created",
+      "multi_state": [],
+      "maintenance_mode": false,
+      "display_name": "thesame_component",
+      "before_upgrade": {
+        "state": null
+      }
+    },
+    "another_thesame_component": {
+      "component_id": {{ another_thesame_component.id }},
+      "config": {
+        "just_bool": null,
+        "just_integer": 4,
+        "just_float": 2.3,
+        "just_string": "outofgroup",
+        "just_text": "lineone\nsecond line\n",
+        "just_map": {},
+        "just_list": [
+          "1"
+        ],
+        "just_json": null,
+        "variant_config": null,
+        "variant_inline": null,
+        "variant_builtin": null,
+        "password": "defaultpass",
+        "secrettext": "default\npassword\n",
+        "secretmap": {
+          "k1": "v1",
+          "k2": "v2"
+        },
+        "secretfile": "{{ filedir }}/component.4.group.3.secretfile.",
+        "nullist": [],
+        "plain_group": {
+          "simple": "ingroup",
+          "secretmap": {
+            "gk1": "gv1",
+            "gk2": "gv2",
+            "donot": "know",
+            "m": "e"
+          },
+          "secretfile": "{{ filedir }}/component.4.group.3.plain_group.secretfile",
+          "list_of_dicts": null,
+          "listofstuff": [
+            "wind",
+            "vs",
+            "oak"
+          ]
+        },
+        "activatable_group": {
+          "simple": "inactgroup",
+          "secretmap": {
+            "agk1": "agv1",
+            "agk2": "agv2"
+          },
+          "secretfile": "{{ filedir }}/component.4.group.3.activatable_group.secretfile"
+        },
+        "list_of_dicts": [
+          {
+            "integer": 3,
+            "string": "three"
+          },
+          {
+            "integer": 12,
+            "string": "twelve"
+          }
+        ],
+        "dict_of_lists": {
+          "integers": [
+            1,
+            103
+          ],
+          "strings": [
+            "over",
+            "and",
+            "over"
+          ]
+        }
+      },
+      "state": "created",
+      "multi_state": [],
+      "maintenance_mode": false,
+      "display_name": "another_thesame_component",
+      "before_upgrade": {
+        "state": null
+      }
+    }
+  }
+}

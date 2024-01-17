@@ -13,8 +13,6 @@
 # pylint: disable=attribute-defined-outside-init,too-many-locals
 
 
-from pathlib import Path
-
 from api_v2.service.utils import bulk_add_services_to_cluster
 from cm.inventory import get_inventory_data
 from cm.models import (
@@ -30,13 +28,10 @@ from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 class TestInventoryComponents(BaseInventoryTestCase):
     def setUp(self) -> None:
-        self.maxDiff = None  # pylint: disable=invalid-name
+        super().setUp()
 
-        bundles_dir = Path(__file__).parent.parent / "bundles"
-        self.templates_dir = Path(__file__).parent.parent / "files/response_templates"
-
-        self.provider_bundle = self.add_bundle(source_dir=bundles_dir / "provider")
-        cluster_bundle = self.add_bundle(source_dir=bundles_dir / "cluster_1")
+        self.provider_bundle = self.add_bundle(source_dir=self.bundles_dir / "provider")
+        cluster_bundle = self.add_bundle(source_dir=self.bundles_dir / "cluster_1")
 
         self.cluster_1 = self.add_cluster(bundle=cluster_bundle, name="cluster_1")
         self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
