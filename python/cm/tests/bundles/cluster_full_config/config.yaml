@@ -1,0 +1,126 @@
+- type: cluster
+  name: with_all_config_params
+  version: 1.0
+
+  import:
+    very_complex:
+      multibind: true
+    for_export:
+      multibind: true
+
+  actions: &actions
+    dummy:
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      states:
+        available: any
+
+  config: &config
+    - type: boolean
+      name: boolean
+      required: false
+    - type: integer
+      name: integer
+      required: false
+    - type: float
+      name: float
+      required: false
+    - type: string
+      name: string
+      required: false
+    - type: text
+      name: text
+      required: false
+    - type: secrettext
+      name: secrettext
+      required: false
+    - type: password
+      name: password
+      required: false
+    - type: map
+      name: map
+      required: false
+    - type: secretmap
+      name: secretmap
+      required: false
+    - type: json
+      name: json
+      required: false
+    - type: list
+      name: list
+      required: false
+    - type: file
+      name: file
+      required: false
+    - type: secretfile
+      name: secretfile
+      required: false
+    - name: source_list
+      type: list
+      default: ["ok", "fail"]
+    - name: variant_config
+      required: false
+      type: variant
+      source:
+        type: config
+        name: source_list
+    - name: variant_inline
+      type: variant
+      required: false
+      source:
+        type: inline
+        value:
+          - f
+          - c
+    - name: variant_builtin
+      type: variant
+      required: false
+      source:
+        type: builtin
+        name: host_in_cluster
+    - name: plain_group
+      type: group
+      subs:
+        - name: simple
+          type: string
+          required: false
+        - name: map
+          type: map
+          required: false
+        - name: file
+          type: file
+          required: false
+        - name: listofstuff
+          type: list
+          required: false
+    # activatable group
+    - name: activatable_group
+      type: group
+      activatable: true
+      active: false
+      subs:
+        - name: simple
+          type: string
+          required: false
+        - name: list
+          type: list
+          required: false
+
+- type: service
+  name: all_params
+  version: 1.1
+
+  import:
+    very_complex:
+      multibind: false
+    for_export:
+      multibind: false
+
+  actions: *actions
+  config: *config
+
+  components:
+    all_params_component:
+      actions: *actions
+      config: *config

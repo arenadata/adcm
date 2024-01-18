@@ -10,16 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-from typing import Callable, Iterable
+from typing import Iterable
 
-from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from api_v2.service.utils import bulk_add_services_to_cluster
-from cm.api import update_obj_config
 from cm.inventory import get_inventory_data
 from cm.models import (
     Action,
     ADCMModel,
-    ConfigLog,
     GroupConfig,
     Host,
     ObjectType,
@@ -27,7 +24,6 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
-from cm.utils import deep_merge
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
 
@@ -79,29 +75,6 @@ class TestGroupConfigsInInventory(BaseInventoryTestCase):  # pylint: disable=too
         )
         group_config.hosts.set(hosts)
         return group_config
-
-    @staticmethod
-    def change_configuration(
-        target: ADCMModel | GroupConfig,
-        config_diff: dict,
-        meta_diff: dict | None = None,
-        preprocess_config: Callable[[dict], dict] = lambda x: x,
-    ) -> ConfigLog:
-        meta = meta_diff or {}
-
-        target.refresh_from_db()
-        current_config = ConfigLog.objects.get(id=target.config.current)
-
-        new_config = update_obj_config(
-            obj_conf=target.config,
-            config=deep_merge(origin=preprocess_config(current_config.config), renovator=config_diff),
-            attr=convert_adcm_meta_to_attr(
-                deep_merge(origin=convert_attr_to_adcm_meta(current_config.attr), renovator=meta)
-            ),
-            description="",
-        )
-
-        return new_config
 
     def test_group_config_in_inventory(self) -> None:
         self.set_hostcomponent(
