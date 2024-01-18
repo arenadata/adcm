@@ -196,6 +196,17 @@ class TestCluster(BaseAPITestCase):  # pylint:disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
+    def test_create_non_existent_prototype_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-list"),
+            data={
+                "prototypeId": self.get_non_existent_pk(Prototype),
+                "name": "cool name",
+                "description": "Test cluster description",
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
     def test_update_failed(self):
         wrong_cluster_name = "__new_test_cluster_name"
         correct_cluster_name = "new_test_cluster_name"

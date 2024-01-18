@@ -254,12 +254,12 @@ def get_error(code):
 
 
 class AdcmEx(APIException):
-    def __init__(self, code, msg="", http_code="", args=""):
+    def __init__(self, code, msg="", http_code: int | None = None, args=""):
         err_code, err_msg, err_http_code, level = get_error(code)
         if msg != "":
             err_msg = msg
 
-        if http_code != "":
+        if http_code is not None:
             err_http_code = http_code
 
         self.msg = err_msg
