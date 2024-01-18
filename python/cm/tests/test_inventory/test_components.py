@@ -13,10 +13,8 @@
 # pylint: disable=attribute-defined-outside-init,too-many-locals
 
 
-from api_v2.service.utils import bulk_add_services_to_cluster
-from cm.inventory import get_inventory_data
-from cm.models import Action, ClusterObject, ObjectType, Prototype, ServiceComponent
-from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
+from cm.models import Action, ClusterObject, ServiceComponent
+from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
 class TestInventoryComponents(BaseInventoryTestCase):
@@ -35,20 +33,14 @@ class TestInventoryComponents(BaseInventoryTestCase):
     def _prepare_two_services(
         self,
     ) -> tuple[ClusterObject, ServiceComponent, ServiceComponent, ClusterObject, ServiceComponent, ServiceComponent]:
-        service_two_components: ClusterObject = bulk_add_services_to_cluster(
-            cluster=self.cluster_1,
-            prototypes=Prototype.objects.filter(
-                type=ObjectType.SERVICE, name="service_two_components", bundle=self.cluster_1.prototype.bundle
-            ),
+        service_two_components: ClusterObject = self.add_services_to_cluster(
+            service_names=["service_two_components"], cluster=self.cluster_1
         ).get()
         component_1_s1 = ServiceComponent.objects.get(service=service_two_components, prototype__name="component_1")
         component_2_s1 = ServiceComponent.objects.get(service=service_two_components, prototype__name="component_2")
 
-        another_service_two_components: ClusterObject = bulk_add_services_to_cluster(
-            cluster=self.cluster_1,
-            prototypes=Prototype.objects.filter(
-                type=ObjectType.SERVICE, name="another_service_two_components", bundle=self.cluster_1.prototype.bundle
-            ),
+        another_service_two_components: ClusterObject = self.add_services_to_cluster(
+            service_names=["another_service_two_components"], cluster=self.cluster_1
         ).get()
         component_1_s2 = ServiceComponent.objects.get(
             service=another_service_two_components, prototype__name="component_1"
@@ -67,11 +59,8 @@ class TestInventoryComponents(BaseInventoryTestCase):
         )
 
     def test_1_component_1_host(self):
-        service_one_component: ClusterObject = bulk_add_services_to_cluster(
-            cluster=self.cluster_1,
-            prototypes=Prototype.objects.filter(
-                type=ObjectType.SERVICE, name="service_one_component", bundle=self.cluster_1.prototype.bundle
-            ),
+        service_one_component: ClusterObject = self.add_services_to_cluster(
+            service_names=["service_one_component"], cluster=self.cluster_1
         ).get()
         component_1 = ServiceComponent.objects.get(service=service_one_component, prototype__name="component_1")
 
@@ -129,18 +118,17 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                self.assert_inventory(obj, action, expected_topology, expected_data)
+                self.assert_inventory(
+                    obj=obj, action=action, expected_topology=expected_topology, expected_data=expected_data
+                )
 
     def test_2_components_2_hosts_mapped_all_to_all(self):
         self.host_2 = self.add_host(
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
         )
 
-        service_two_components: ClusterObject = bulk_add_services_to_cluster(
-            cluster=self.cluster_1,
-            prototypes=Prototype.objects.filter(
-                type=ObjectType.SERVICE, name="service_two_components", bundle=self.cluster_1.prototype.bundle
-            ),
+        service_two_components: ClusterObject = self.add_services_to_cluster(
+            service_names=["service_two_components"], cluster=self.cluster_1
         ).get()
         component_1 = ServiceComponent.objects.get(service=service_two_components, prototype__name="component_1")
         component_2 = ServiceComponent.objects.get(service=service_two_components, prototype__name="component_2")
@@ -213,21 +201,17 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                actual_inventory = decrypt_secrets(source=get_inventory_data(obj=obj, action=action)["all"]["children"])
-
-                self.check_hosts_topology(data=actual_inventory, expected=expected_topology)
-                self.check_data_by_template(data=actual_inventory, templates_data=expected_data)
+                self.assert_inventory(
+                    obj=obj, action=action, expected_topology=expected_topology, expected_data=expected_data
+                )
 
     def test_2_components_2_hosts_mapped_in_pairs(self):
         self.host_2 = self.add_host(
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
         )
 
-        service_two_components: ClusterObject = bulk_add_services_to_cluster(
-            cluster=self.cluster_1,
-            prototypes=Prototype.objects.filter(
-                type=ObjectType.SERVICE, name="service_two_components", bundle=self.cluster_1.prototype.bundle
-            ),
+        service_two_components: ClusterObject = self.add_services_to_cluster(
+            service_names=["service_two_components"], cluster=self.cluster_1
         ).get()
         component_1 = ServiceComponent.objects.get(service=service_two_components, prototype__name="component_1")
         component_2 = ServiceComponent.objects.get(service=service_two_components, prototype__name="component_2")
@@ -298,7 +282,9 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                self.assert_inventory(obj, action, expected_topology, expected_data)
+                self.assert_inventory(
+                    obj=obj, action=action, expected_topology=expected_topology, expected_data=expected_data
+                )
 
     def test_2_services_2_components_each_on_1_host(self):
         (
@@ -392,7 +378,9 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                self.assert_inventory(obj, action, expected_topology, expected_data)
+                self.assert_inventory(
+                    obj=obj, action=action, expected_topology=expected_topology, expected_data=expected_data
+                )
 
     def test_2_services_2_components_each_2_hosts_cross_mapping(self):
         self.host_2 = self.add_host(
@@ -495,4 +483,6 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                self.assert_inventory(obj, action, expected_topology, expected_data)
+                self.assert_inventory(
+                    obj=obj, action=action, expected_topology=expected_topology, expected_data=expected_data
+                )
