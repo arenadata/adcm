@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 from typing import Iterable
 
 from api_v2.service.utils import bulk_add_services_to_cluster
@@ -25,7 +24,6 @@ from cm.models import (
 )
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
 from django.contrib.contenttypes.models import ContentType
-from jinja2 import Template
 
 
 class TestGroupConfigsInInventory(BaseInventoryTestCase):  # pylint: disable=too-many-instance-attributes
@@ -117,9 +115,7 @@ class TestGroupConfigsInInventory(BaseInventoryTestCase):  # pylint: disable=too
             "filedir": self.directories["FILE_DIR"],
         }
         expected_parts = {
-            file.stem.replace(".json", ""): json.loads(
-                Template(source=file.read_text(encoding="utf-8")).render(**context), strict=False
-            )
+            file.stem.replace(".json", ""): self.render_json_template(file=file, context=context)
             for file in (self.templates_dir / "group_config").iterdir()
         }
 
@@ -197,15 +193,14 @@ class TestGroupConfigsInInventory(BaseInventoryTestCase):  # pylint: disable=too
             self.component_thesame,
             self.component_another_thesame,
         ):
-            actual_inventory = decrypt_secrets(
-                get_inventory_data(obj=object_, action=Action.objects.filter(prototype=object_.prototype).first())[
-                    "all"
-                ]["children"]
-            )
-            self.check_hosts_topology(actual_inventory, expected_topology)
-            for group in actual_inventory.values():
-                for host_name, actual_data in group["hosts"].items():
-                    self.assertDictEqual(
-                        actual_data["cluster"]["config"], expected_parts[f"{host_name}_cluster_config"]
-                    )
-                    self.assertDictEqual(actual_data["services"], expected_parts[f"{host_name}_services"])
+            with self.subTest(object_.__class__.__name__):
+                action = Action.objects.filter(prototype=object_.prototype).first()
+                actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["children"])
+                self.check_hosts_topology(actual_inventory, expected_topology)
+                self.assertDictEqual(actual_inventory["CLUSTER"]["vars"], expected_parts["vars"])
+                for group in actual_inventory.values():
+                    for host_name, actual_data in group["hosts"].items():
+                        self.assertDictEqual(
+                            actual_data["cluster"]["config"], expected_parts[f"{host_name}_cluster_config"]
+                        )
+                        self.assertDictEqual(actual_data["services"], expected_parts[f"{host_name}_services"])

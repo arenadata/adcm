@@ -9,9 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import json
 from functools import reduce
-from json import loads
 from pathlib import Path
 from typing import Any, Callable, Iterable, Literal, Mapping, TypeAlias
 
@@ -31,7 +30,6 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.utils import deep_merge
-from django.conf import settings
 from jinja2 import Template
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
@@ -67,6 +65,13 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
 
         self.bundles_dir = Path(__file__).parent.parent / "bundles"
         self.templates_dir = Path(__file__).parent.parent / "files" / "response_templates"
+
+    @staticmethod
+    def render_template(file: Path, context: dict) -> str:
+        return Template(source=file.read_text(encoding="utf-8")).render(**context)
+
+    def render_json_template(self, file: Path, context: dict) -> list | dict:
+        return json.loads(self.render_template(file=file, context=context))
 
     def check_hosts_topology(self, data: Mapping[str, dict], expected: Mapping[str, list[str]]) -> None:
         errors = set(data.keys()).symmetric_difference(set(expected.keys()))
@@ -115,9 +120,7 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
         for key_chain, template_data in templates_data.items():
             template_path, kwargs = template_data
 
-            expected_data = loads(
-                Template(source=template_path.read_text(encoding=settings.ENCODING_UTF_8)).render(kwargs), strict=False
-            )
+            expected_data = self.render_json_template(file=template_path, context=kwargs)
             actual_data = reduce(dict.get, key_chain, data)
 
             self.assertDictEqual(actual_data, expected_data)

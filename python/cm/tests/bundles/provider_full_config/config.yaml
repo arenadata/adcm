@@ -2,14 +2,6 @@
   name: with_all_config_params_provider
   version: 1.0
 
-  actions: &actions
-    dummy:
-      type: job
-      script: ./playbook.yaml
-      script_type: ansible
-      states:
-        available: any
-
   config: &config
     - type: boolean
       name: boolean
@@ -100,6 +92,18 @@
         - name: list
           type: list
           required: false
+
+  actions: &actions
+    dummy: &job
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      states:
+        available: any
+
+    with_config:
+      <<: *job
+      config: *config
 
 - type: host
   name: all_params_host

@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 from typing import Iterable
 
 from cm.api import DataForMultiBind, multi_bind
@@ -23,7 +22,6 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
-from jinja2 import Template
 
 
 class TestConfigAndImportsInInventory(BaseInventoryTestCase):  # pylint: disable=too-many-instance-attributes
@@ -158,17 +156,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):  # pylint: disable
             (self.host_1, "host_1_full.json.j2"),
             (self.host_2, "host_2_full.json.j2"),
         ):
-            actual_inventory = decrypt_secrets(
-                get_inventory_data(obj=object_, action=Action.objects.filter(prototype=object_.prototype).first())[
-                    "all"
-                ]["children"]
-            )
-            expected_inventory = json.loads(
-                Template(
-                    source=(self.templates_dir / "configs_and_imports" / template).read_text(encoding="utf-8")
-                ).render(**self.context)
-            )
-            self.assertDictEqual(actual_inventory, expected_inventory)
+            with self.subTest(object_.__class__.__name__):
+                action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
+                actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["children"])
+                expected_inventory = self.render_json_template(
+                    file=self.templates_dir / "configs_and_imports" / template, context=self.context
+                )
+                self.assertDictEqual(actual_inventory, expected_inventory)
 
     def test_cluster_objects_no_import_success(self) -> None:
         self.prepare_cluster_hostcomponent()
@@ -176,20 +170,14 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):  # pylint: disable
         self.change_config_full(target=self.cluster)
         self.change_config_partial(target=self.component)
 
-        expected_vars = json.loads(
-            Template(
-                source=(self.templates_dir / "configs_and_imports" / "vars_no_imports.json.j2").read_text(
-                    encoding="utf-8"
-                )
-            ).render(**self.context)
+        expected_vars = self.render_json_template(
+            file=self.templates_dir / "configs_and_imports" / "vars_no_imports.json.j2", context=self.context
         )
 
         for object_ in (self.cluster, self.service, self.component):
-            actual_inventory = decrypt_secrets(
-                get_inventory_data(obj=object_, action=Action.objects.filter(prototype=object_.prototype).first())[
-                    "all"
-                ]["children"]
-            )
+            with self.subTest(object_.__class__.__name__):
+                action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
+                actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["children"])
 
             self.assertDictEqual(actual_inventory["CLUSTER"]["vars"], expected_vars)
 
@@ -215,20 +203,14 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):  # pylint: disable
             (self.service, [self.export_cluster_1, self.export_service_1]),
         )
 
-        expected_vars = json.loads(
-            Template(
-                source=(self.templates_dir / "configs_and_imports" / "vars_single_imports.json.j2").read_text(
-                    encoding="utf-8"
-                )
-            ).render(**self.context)
+        expected_vars = self.render_json_template(
+            file=self.templates_dir / "configs_and_imports" / "vars_single_imports.json.j2", context=self.context
         )
 
         for object_ in (self.cluster, self.service, self.component):
-            actual_inventory = decrypt_secrets(
-                get_inventory_data(obj=object_, action=Action.objects.filter(prototype=object_.prototype).first())[
-                    "all"
-                ]["children"]
-            )
+            with self.subTest(object_.__class__.__name__):
+                action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
+                actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["children"])
             self.assertDictEqual(actual_inventory["CLUSTER"]["vars"], expected_vars)
 
     def test_cluster_objects_multi_import_success(self) -> None:
@@ -263,18 +245,12 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):  # pylint: disable
             preprocess_config=lambda d: {**d, "activatable_group": d["activatable_group"]},
         )
 
-        expected_vars = json.loads(
-            Template(
-                source=(self.templates_dir / "configs_and_imports" / "vars_multiple_imports.json.j2").read_text(
-                    encoding="utf-8"
-                )
-            ).render(**self.context)
+        expected_vars = self.render_json_template(
+            file=self.templates_dir / "configs_and_imports" / "vars_multiple_imports.json.j2", context=self.context
         )
 
         for object_ in (self.cluster, self.service, self.component):
-            actual_inventory = decrypt_secrets(
-                get_inventory_data(obj=object_, action=Action.objects.filter(prototype=object_.prototype).first())[
-                    "all"
-                ]["children"]
-            )
-            self.assertDictEqual(actual_inventory["CLUSTER"]["vars"], expected_vars)
+            with self.subTest(object_.__class__.__name__):
+                action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
+                actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["children"])
+                self.assertDictEqual(actual_inventory["CLUSTER"]["vars"], expected_vars)

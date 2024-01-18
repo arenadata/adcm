@@ -8,14 +8,6 @@
     for_export:
       multibind: true
 
-  actions: &actions
-    dummy:
-      type: job
-      script: ./playbook.yaml
-      script_type: ansible
-      states:
-        available: any
-
   config: &config
     - type: boolean
       name: boolean
@@ -106,6 +98,23 @@
         - name: list
           type: list
           required: false
+
+  actions: &actions
+    dummy: &job
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      states:
+        available: any
+
+    with_config:
+      <<: *job
+      config: *config
+
+    with_config_on_host:
+      <<: *job
+      config: *config
+      host_action: true
 
 - type: service
   name: all_params
