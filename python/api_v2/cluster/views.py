@@ -26,17 +26,13 @@ from api_v2.cluster.serializers import (
     RelatedServicesStatusesSerializer,
     ServicePrototypeSerializer,
 )
+from api_v2.cluster.utils import retrieve_mapping_data, save_mapping
 from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.host.serializers import HostMappingSerializer
 from api_v2.views import CamelCaseModelViewSet
 from audit.utils import audit
-from cm.api import (
-    add_cluster,
-    delete_cluster,
-    retrieve_host_component_objects,
-    set_host_component,
-)
+from cm.api import add_cluster, delete_cluster
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues
 from cm.models import (
@@ -218,10 +214,10 @@ class ClusterViewSet(
         serializer = self.get_serializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
 
-        host_component_objects = retrieve_host_component_objects(cluster=cluster, plain_hc=serializer.validated_data)
-        new_host_component = set_host_component(cluster=cluster, host_component_objects=host_component_objects)
+        mapping_data = retrieve_mapping_data(cluster=cluster, plain_hc=serializer.validated_data)
+        new_mapping = save_mapping(mapping_data=mapping_data)
 
-        return Response(data=self.get_serializer(instance=new_host_component, many=True).data, status=HTTP_201_CREATED)
+        return Response(data=self.get_serializer(instance=new_mapping, many=True).data, status=HTTP_201_CREATED)
 
     @action(methods=["get"], detail=True, url_path="mapping/hosts", url_name="mapping-hosts")
     def mapping_hosts(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
