@@ -13,7 +13,7 @@
 from functools import reduce
 from json import loads
 from pathlib import Path
-from typing import Any, Iterable, Mapping, TypeAlias
+from typing import Any, Iterable, Literal, Mapping, TypeAlias
 
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import add_hc
@@ -25,6 +25,8 @@ from jinja2 import Template
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 
 TemplatesData: TypeAlias = Mapping[tuple[str, ...], tuple[Path, Mapping[str, Any]]]
+MappingEntry: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], int]
+Delta: TypeAlias = dict[Literal["add", "remove"], dict[str, dict[str, Host]]]
 
 
 def decrypt_secrets(source: dict) -> dict:
@@ -100,8 +102,12 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
             ),
         }
 
-    def assert_inventory(self, obj: ADCMEntity, action: Action, expected_topology: dict, expected_data: dict):
-        actual_inventory = decrypt_secrets(source=get_inventory_data(obj=obj, action=action)["all"]["children"])
+    def assert_inventory(
+        self, obj: ADCMEntity, action: Action, expected_topology: dict, expected_data: dict, delta: Delta | None = None
+    ) -> None:
+        actual_inventory = decrypt_secrets(
+            source=get_inventory_data(obj=obj, action=action, delta=delta)["all"]["children"]
+        )
 
         self.check_hosts_topology(data=actual_inventory, expected=expected_topology)
         self.check_data_by_template(data=actual_inventory, templates_data=expected_data)

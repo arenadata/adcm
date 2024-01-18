@@ -39,7 +39,21 @@
       host_action: true
       states:
         available: any
-
+    hc_acl_action_on_cluster: &hc_acl_action
+      <<: *action
+      hc_acl:
+        - service: service_two_components
+          component: component_1
+          action: add
+        - service: service_two_components
+          component: component_1
+          action: remove
+        - service: service_two_components
+          component: component_2
+          action: add
+        - service: service_two_components
+          component: component_2
+          action: remove
 
 - name: service_one_component
   type: service
@@ -63,6 +77,7 @@
   config: *config
   actions:
     action_on_service: *action
+    hc_acl_action_on_service: *hc_acl_action
 
   components:
     component_1:
