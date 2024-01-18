@@ -14,7 +14,6 @@
 import json
 from collections import defaultdict
 from functools import partial, wraps
-from typing import Literal
 
 from adcm_version import compare_prototype_versions
 from cm.adcm_config.config import (
@@ -64,13 +63,12 @@ from cm.status_api import (
     send_delete_service_event,
     send_host_component_map_update_event,
 )
-from cm.utils import build_id_object_mapping, obj_ref
+from cm.utils import obj_ref
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
 from django.db.transaction import atomic, on_commit
 from rbac.models import Policy, re_apply_object_policy
 from rbac.roles import apply_policy_for_new_config
-from rest_framework.status import HTTP_409_CONFLICT
 
 
 def check_license(prototype: Prototype) -> None:
@@ -596,52 +594,6 @@ def check_sub_key(hc_in):
             raise_adcm_ex("INVALID_INPUT", f"duplicate ({item}) in host service list")
 
 
-def retrieve_host_component_objects(
-    cluster: Cluster, plain_hc: list[dict[Literal["host_id", "component_id"], int]]
-) -> list[tuple[ClusterObject, Host, ServiceComponent]]:
-    host_ids: set[int] = set()
-    component_ids: set[int] = set()
-    for record in plain_hc:
-        host_ids.add(record["host_id"])
-        component_ids.add(record["component_id"])
-
-    hosts_in_hc: dict[int, Host] = build_id_object_mapping(
-        objects=Host.objects.select_related("cluster").filter(pk__in=host_ids)
-    )
-    if not_found_host_ids := host_ids.difference(hosts_in_hc.keys()):
-        message = f"Hosts not found: {', '.join([str(host_id) for host_id in not_found_host_ids])}"
-        raise AdcmEx(code="HOST_NOT_FOUND", http_code=HTTP_409_CONFLICT, msg=message)
-
-    components_in_hc: dict[int, ServiceComponent] = build_id_object_mapping(
-        objects=ServiceComponent.objects.select_related("service").filter(pk__in=component_ids, cluster=cluster)
-    )
-    if not_found_component_ids := component_ids.difference(components_in_hc.keys()):
-        message = f"Components not found: {', '.join([str(component_id) for component_id in not_found_component_ids])}"
-        raise AdcmEx(code="COMPONENT_NOT_FOUND", http_code=HTTP_409_CONFLICT, msg=message)
-
-    host_component_objects = []
-
-    for record in plain_hc:
-        host: Host = hosts_in_hc[record["host_id"]]
-
-        if not host.cluster:
-            message = f'Host "{host.fqdn}" does not belong to any cluster'
-            raise AdcmEx(code="FOREIGN_HOST", msg=message)
-
-        if host.cluster.pk != cluster.pk:
-            message = (
-                f'Host "{host.fqdn}" (cluster "{host.cluster.display_name}") '
-                f'does not belong to cluster "{cluster.display_name}"'
-            )
-            raise AdcmEx(code="FOREIGN_HOST", msg=message)
-
-        component: ServiceComponent = components_in_hc[record["component_id"]]
-
-        host_component_objects.append((component.service, host, component))
-
-    return host_component_objects
-
-
 def make_host_comp_list(cluster: Cluster, hc_in: list[dict]) -> list[tuple[ClusterObject, Host, ServiceComponent]]:
     host_comp_list = []
     for item in hc_in:
@@ -774,33 +726,6 @@ def save_hc(
 
     send_host_component_map_update_event(cluster=cluster)
     return host_component_list
-
-
-def set_host_component(
-    cluster: Cluster, host_component_objects: list[tuple[ClusterObject, Host, ServiceComponent]]
-) -> list[HostComponent]:
-    """
-    Save given hosts-components mapping if all sanity checks pass
-    """
-
-    check_hc_requires(shc_list=host_component_objects)
-
-    check_bound_components(shc_list=host_component_objects)
-
-    for service in ClusterObject.objects.select_related("prototype").filter(cluster=cluster):
-        check_component_constraint(
-            cluster=cluster,
-            service_prototype=service.prototype,
-            hc_in=[i for i in host_component_objects if i[0] == service],
-        )
-        check_service_requires(cluster=cluster, proto=service.prototype)
-
-    check_maintenance_mode(cluster=cluster, host_comp_list=host_component_objects)
-
-    with atomic():
-        new_host_component = save_hc(cluster=cluster, host_comp_list=host_component_objects)
-
-    return new_host_component
 
 
 def add_hc(cluster: Cluster, hc_in: list[dict]) -> list[HostComponent]:

@@ -25,7 +25,12 @@ from cm.models import (
 )
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_409_CONFLICT,
+)
 
 
 class TestMapping(BaseAPITestCase):
@@ -63,11 +68,8 @@ class TestMapping(BaseAPITestCase):
     def test_create_mapping_success(self):
         host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_3)
-        component_2 = ServiceComponent.objects.get(
-            cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
-        )
         data = [
-            {"hostId": host_3.pk, "componentId": component_2.pk},
+            {"hostId": host_3.pk, "componentId": self.component_2.pk},
             {"hostId": self.host_1.pk, "componentId": self.component_1.pk},
         ]
 
@@ -76,6 +78,40 @@ class TestMapping(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(HostComponent.objects.count(), 2)
+
+    def test_create_mapping_duplicates_fail(self):
+        host_3 = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3", cluster=self.cluster_1
+        )
+
+        data = [
+            {"hostId": self.host_1.pk, "componentId": self.component_1.pk},
+            {"hostId": self.host_1.pk, "componentId": self.component_1.pk},  # duplicate h1 c1
+            {"hostId": self.host_1.pk, "componentId": self.component_1.pk},  # another duplicate h1 c1
+            {"hostId": self.host_2.pk, "componentId": self.component_2.pk},
+            {"hostId": self.host_2.pk, "componentId": self.component_2.pk},  # duplicate h2 c2
+            {"hostId": self.host_2.pk, "componentId": self.component_2.pk},  # another duplicate h2 c2
+            {"hostId": host_3.pk, "componentId": self.component_1.pk},
+        ]
+
+        duplicate_ids = (
+            (self.host_1.pk, self.component_1.pk, self.component_1.service.pk),
+            (self.host_2.pk, self.component_2.pk, self.component_2.service.pk),
+        )
+        error_msg_part = ", ".join(f"component {map_ids[1]} - host {map_ids[0]}" for map_ids in sorted(duplicate_ids))
+
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}), data=data
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "INVALID_INPUT",
+                "level": "error",
+                "desc": f"Mapping entries duplicates found: {error_msg_part}.",
+            },
+        )
 
     def test_create_empty_mapping_success(self):
         response = self.client.post(
@@ -194,9 +230,10 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
         self.assertDictEqual(
             response.json(),
             {
-                "code": "FOREIGN_HOST",
+                "code": "HOST_NOT_FOUND",
                 "level": "error",
-                "desc": f'Host "{self.host_not_in_cluster.display_name}" does not belong to any cluster',
+                "desc": f'Host(s) "{self.host_not_in_cluster.pk}" '
+                f'do not belong to cluster "{self.cluster.display_name}"',
             },
         )
         self.assertEqual(HostComponent.objects.count(), 0)
@@ -221,12 +258,9 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
         self.assertDictEqual(
             response.json(),
             {
-                "code": "FOREIGN_HOST",
+                "code": "HOST_NOT_FOUND",
                 "level": "error",
-                "desc": (
-                    f'Host "{self.foreign_host.display_name}" (cluster "{self.foreign_host.cluster.display_name}") '
-                    f'does not belong to cluster "{self.cluster.display_name}"'
-                ),
+                "desc": (f'Host(s) "{self.foreign_host.pk}" do not belong to cluster "{self.cluster.display_name}"'),
             },
         )
         self.assertEqual(HostComponent.objects.count(), 0)
@@ -255,7 +289,8 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
             {
                 "code": "HOST_NOT_FOUND",
                 "level": "error",
-                "desc": f"Hosts not found: {non_existent_host_pk}, {non_existent_host_pk + 1}",
+                "desc": f'Host(s) "{non_existent_host_pk}", "{non_existent_host_pk + 1}" '
+                f'do not belong to cluster "{self.cluster.display_name}"',
             },
         )
         self.assertEqual(HostComponent.objects.count(), 0)
@@ -284,7 +319,8 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
             {
                 "code": "COMPONENT_NOT_FOUND",
                 "level": "error",
-                "desc": f"Components not found: {non_existent_component_pk}, {non_existent_component_pk + 1}",
+                "desc": f'Component(s) "{non_existent_component_pk}", "{non_existent_component_pk + 1}" '
+                f'do not belong to cluster "{self.cluster.display_name}"',
             },
         )
         self.assertEqual(HostComponent.objects.count(), 0)
@@ -348,11 +384,20 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
             service=service_requires_component,
             cluster=self.cluster,
         )
+        service_with_component_required = self.add_services_to_cluster(
+            service_names=["service_with_component_required"], cluster=self.cluster
+        ).get()
+        not_required_component = ServiceComponent.objects.get(
+            prototype__name="not_required_component",
+            service=service_with_component_required,
+            cluster=self.cluster,
+        )
 
         response: Response = self.client.post(
             path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster.pk}),
             data=[
                 {"hostId": self.host_1.pk, "componentId": component_1.pk},
+                {"hostId": self.host_1.pk, "componentId": not_required_component.pk},
             ],
         )
 
@@ -465,8 +510,9 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
                 "code": "COMPONENT_CONSTRAINT_ERROR",
                 "level": "error",
                 "desc": (
-                    f'Component "bound_target_component" of service "bound_target_service" not in hc for '
-                    f'component "{bound_component.display_name}" of service "{bound_component.service.display_name}"'
+                    f'No component "bound_target_component" of service "bound_target_service" '
+                    f'on host "{self.host_1.fqdn}" for component "{bound_component.display_name}" '
+                    f'of service "{bound_component.service.display_name}"'
                 ),
             },
         )
@@ -1075,7 +1121,7 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
                 "code": "SERVICE_CONFLICT",
                 "level": "error",
                 "desc": (
-                    f'No required service "service_required" 1.0 for service '
+                    f'No required service "service_required" for service '
                     f'"{service_requires_service.display_name}" {service_requires_service.prototype.version}'
                 ),
             },
