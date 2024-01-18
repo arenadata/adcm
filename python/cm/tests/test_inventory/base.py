@@ -13,12 +13,24 @@
 from functools import reduce
 from json import loads
 from pathlib import Path
-from typing import Any, Iterable, Literal, Mapping, TypeAlias
+from typing import Any, Callable, Iterable, Literal, Mapping, TypeAlias
 
+from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from cm.adcm_config.ansible import ansible_decrypt
-from cm.api import add_hc
+from cm.api import add_hc, update_obj_config
 from cm.inventory import get_inventory_data
-from cm.models import Action, ADCMEntity, Cluster, Host, HostComponent, ServiceComponent
+from cm.models import (
+    Action,
+    ADCMEntity,
+    ADCMModel,
+    Cluster,
+    ConfigLog,
+    GroupConfig,
+    Host,
+    HostComponent,
+    ServiceComponent,
+)
+from cm.utils import deep_merge
 from django.conf import settings
 from jinja2 import Template
 
@@ -33,7 +45,10 @@ def decrypt_secrets(source: dict) -> dict:
     result = {}
     for key, value in source.items():
         if not isinstance(value, dict):
-            result[key] = value
+            if isinstance(value, list):
+                result[key] = [entry if not isinstance(entry, dict) else decrypt_secrets(entry) for entry in value]
+            else:
+                result[key] = value
             continue
 
         if "__ansible_vault" in value:
@@ -72,6 +87,29 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
                 for host, component in entries
             ],
         )
+
+    @staticmethod
+    def change_configuration(
+        target: ADCMModel | GroupConfig,
+        config_diff: dict,
+        meta_diff: dict | None = None,
+        preprocess_config: Callable[[dict], dict] = lambda x: x,
+    ) -> ConfigLog:
+        meta = meta_diff or {}
+
+        target.refresh_from_db()
+        current_config = ConfigLog.objects.get(id=target.config.current)
+
+        new_config = update_obj_config(
+            obj_conf=target.config,
+            config=deep_merge(origin=preprocess_config(current_config.config), renovator=config_diff),
+            attr=convert_adcm_meta_to_attr(
+                deep_merge(origin=convert_attr_to_adcm_meta(current_config.attr), renovator=meta)
+            ),
+            description="",
+        )
+
+        return new_config
 
     def check_data_by_template(self, data: Mapping[str, dict], templates_data: TemplatesData) -> None:
         for key_chain, template_data in templates_data.items():

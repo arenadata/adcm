@@ -1,0 +1,218 @@
+{
+  "cluster": {
+    "config": {
+      "plain_group": {
+        "simple": null,
+        "map": {
+          "k": "v",
+          "key": "val"
+        },
+        "file": "{{ filedir }}/cluster.1.plain_group.file",
+        "listofstuff": []
+      },
+      "activatable_group": null,
+      "boolean": true,
+      "integer": null,
+      "float": null,
+      "string": null,
+      "text": null,
+      "secrettext": "awe\nsopme\n\ttext\n",
+      "password": null,
+      "map": {},
+      "secretmap": {},
+      "json": null,
+      "list": [
+        "1",
+        "5",
+        "baset"
+      ],
+      "file": null,
+      "secretfile": null,
+      "source_list": [
+        "ok",
+        "fail"
+      ],
+      "variant_config": null,
+      "variant_inline": "f",
+      "variant_builtin": null
+    },
+    "name": "Main Cluster",
+    "id": {{ cluster.id }},
+    "version": "1.0",
+    "edition": "community",
+    "state": "created",
+    "multi_state": [],
+    "before_upgrade": {
+      "state": null
+    },
+    "imports": {
+      "for_export": [
+        {
+          "activatable_group": null
+        },
+        {
+          "just_integer": 12
+        },
+        {
+          "plain_group": {
+            "list_of_dicts": null,
+            "listofstuff": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        {
+          "activatable_group": {
+            "simple": "inactgroup",
+            "secretmap": {
+              "agk1": "agv1",
+              "agk2": "agv2",
+              "one": "two"
+            }
+          }
+        },
+        {
+          "just_integer": 100
+        },
+        {
+          "plain_group": {
+            "list_of_dicts": [
+              {
+                "integer": 3,
+                "string": "three"
+              }
+            ],
+            "listofstuff": [
+              "x",
+              "y"
+            ]
+          }
+        }
+      ],
+      "very_complex": [
+        {
+          "just_integer": 4
+        },
+        {
+          "plain_group": {
+            "simple": "ingroup",
+            "secretmap": {
+              "gk1": "gv1",
+              "gk2": "gv2"
+            },
+            "secretfile": "{{ filedir }}/cluster.3.plain_group.secretfile",
+            "list_of_dicts": null,
+            "listofstuff": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        {
+          "variant_inline": null
+        }
+      ]
+    }
+  },
+  "services": {
+    "all_params": {
+      "id": {{ service.id }},
+      "version": "1.1",
+      "state": "created",
+      "multi_state": [],
+      "config": {
+        "plain_group": {
+          "simple": "ingroup",
+          "map": {
+            "k": "v",
+            "key": "val"
+          },
+          "file": "{{ filedir }}/service.1.plain_group.file",
+          "listofstuff": []
+        },
+        "activatable_group": {
+          "simple": "inactive",
+          "list": [
+            "one",
+            "two"
+          ]
+        },
+        "boolean": true,
+        "integer": 4102,
+        "float": 23.43,
+        "string": "outside",
+        "text": null,
+        "secrettext": "awe\nsopme\n\ttext\n",
+        "password": "unbreakable",
+        "map": {
+          "see": "yes",
+          "no": "no"
+        },
+        "secretmap": {
+          "see": "dont",
+          "me": "you"
+        },
+        "json": "{\"hey\": [\"yooo\", 1]}",
+        "list": [
+          "1",
+          "5",
+          "baset"
+        ],
+        "file": "{{ filedir }}/service.1.file.",
+        "secretfile": "{{ filedir }}/service.1.secretfile.",
+        "source_list": [
+          "ok",
+          "fail"
+        ],
+        "variant_config": null,
+        "variant_inline": "f",
+        "variant_builtin": "host-1"
+      },
+      "maintenance_mode": false,
+      "display_name": "all_params",
+      "before_upgrade": {
+        "state": null
+      },
+      "all_params_component": {
+        "component_id": {{ component.id }},
+        "config": {
+          "plain_group": {
+            "simple": null,
+            "map": {},
+            "file": null,
+            "listofstuff": []
+          },
+          "activatable_group": null,
+          "boolean": null,
+          "integer": null,
+          "float": null,
+          "string": null,
+          "text": null,
+          "secrettext": null,
+          "password": null,
+          "map": {},
+          "secretmap": null,
+          "json": null,
+          "list": [],
+          "file": null,
+          "secretfile": null,
+          "source_list": [
+            "ok",
+            "fail"
+          ],
+          "variant_config": null,
+          "variant_inline": null,
+          "variant_builtin": null
+        },
+        "state": "created",
+        "multi_state": [],
+        "maintenance_mode": false,
+        "display_name": "all_params_component",
+        "before_upgrade": {
+          "state": null
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,149 @@
+{
+  "cluster": {
+    "config": {
+      "plain_group": {
+        "simple": "ingroup",
+        "map": {
+          "k": "v",
+          "key": "val"
+        },
+        "file": "{{ filedir }}/cluster.1.plain_group.file",
+        "listofstuff": []
+      },
+      "activatable_group": {
+        "simple": "inactive",
+        "list": [
+          "one",
+          "two"
+        ]
+      },
+      "boolean": true,
+      "integer": 4102,
+      "float": 23.43,
+      "string": "outside",
+      "text": null,
+      "secrettext": "awe\nsopme\n\ttext\n",
+      "password": "unbreakable",
+      "map": {
+        "see": "yes",
+        "no": "no"
+      },
+      "secretmap": {
+        "see": "dont",
+        "me": "you"
+      },
+      "json": "{\"hey\": [\"yooo\", 1]}",
+      "list": [
+        "1",
+        "5",
+        "baset"
+      ],
+      "file": "{{ filedir }}/cluster.1.file.",
+      "secretfile": "{{ filedir }}/cluster.1.secretfile.",
+      "source_list": [
+        "ok",
+        "fail"
+      ],
+      "variant_config": null,
+      "variant_inline": "f",
+      "variant_builtin": "host-1"
+    },
+    "name": "Main Cluster",
+    "id": {{ cluster.id }},
+    "version": "1.0",
+    "edition": "community",
+    "state": "created",
+    "multi_state": [],
+    "before_upgrade": {
+      "state": null
+    }
+  },
+  "services": {
+    "all_params": {
+      "id": {{ service.id }},
+      "version": "1.1",
+      "state": "created",
+      "multi_state": [],
+      "config": {
+        "plain_group": {
+          "simple": null,
+          "map": {},
+          "file": null,
+          "listofstuff": []
+        },
+        "activatable_group": null,
+        "boolean": null,
+        "integer": null,
+        "float": null,
+        "string": null,
+        "text": null,
+        "secrettext": null,
+        "password": null,
+        "map": {},
+        "secretmap": null,
+        "json": null,
+        "list": [],
+        "file": null,
+        "secretfile": null,
+        "source_list": [
+          "ok",
+          "fail"
+        ],
+        "variant_config": null,
+        "variant_inline": null,
+        "variant_builtin": null
+      },
+      "maintenance_mode": false,
+      "display_name": "all_params",
+      "before_upgrade": {
+        "state": null
+      },
+      "all_params_component": {
+        "component_id": {{ component.id }},
+        "config": {
+          "plain_group": {
+            "simple": null,
+            "map": {
+              "k": "v",
+              "key": "val"
+            },
+            "file": "{{ filedir }}/component.1.plain_group.file",
+            "listofstuff": []
+          },
+          "activatable_group": null,
+          "boolean": true,
+          "integer": null,
+          "float": null,
+          "string": null,
+          "text": null,
+          "secrettext": "awe\nsopme\n\ttext\n",
+          "password": null,
+          "map": {},
+          "secretmap": {},
+          "json": null,
+          "list": [
+            "1",
+            "5",
+            "baset"
+          ],
+          "file": null,
+          "secretfile": null,
+          "source_list": [
+            "ok",
+            "fail"
+          ],
+          "variant_config": null,
+          "variant_inline": "f",
+          "variant_builtin": null
+        },
+        "state": "created",
+        "multi_state": [],
+        "maintenance_mode": false,
+        "display_name": "all_params_component",
+        "before_upgrade": {
+          "state": null
+        }
+      }
+    }
+  }
+}

@@ -22,8 +22,8 @@ from api_v2.imports.types import (
     UIObjectImport,
     UIPrototype,
 )
-from cm.api import is_version_suitable
-from cm.errors import raise_adcm_ex
+from cm.api import DataForMultiBind, is_version_suitable
+from cm.errors import AdcmEx, raise_adcm_ex
 from cm.models import (
     Cluster,
     ClusterBind,
@@ -208,19 +208,22 @@ def get_imports(obj: Cluster | ClusterObject) -> list[UIObjectImport]:
     return out_data
 
 
-def cook_data_for_multibind(validated_data: list, obj: Cluster | ClusterObject) -> list:
+def cook_data_for_multibind(validated_data: list, obj: Cluster | ClusterObject) -> list[DataForMultiBind]:
     bind_data = []
 
     for item in validated_data:
         if item["source"]["type"] == ObjectType.CLUSTER:
             export_obj = Cluster.objects.get(pk=item["source"]["id"])
-            cluster_id = export_obj.pk
-            service_id = None
+            cluster_id: int = export_obj.pk
+            service_id: None = None
 
         elif item["source"]["type"] == ObjectType.SERVICE:
             export_obj = ClusterObject.objects.get(pk=item["source"]["id"])
-            cluster_id = export_obj.cluster.pk
-            service_id = export_obj.pk
+            cluster_id: int = export_obj.cluster.pk
+            service_id: int = export_obj.pk
+
+        else:
+            raise AdcmEx("INVALID_INPUT", "Incorrect type of `source`")
 
         proto_import = PrototypeImport.objects.filter(name=export_obj.prototype.name, prototype=obj.prototype).first()
 

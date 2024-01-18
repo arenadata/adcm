@@ -3,6 +3,11 @@
   version: 2.3
   config_group_customization: true
 
+  export:
+    - just_integer
+    - variant_inline
+    - plain_group
+
   config: &config
     - name: just_bool
       type: boolean
@@ -139,6 +144,46 @@
       states:
         available: any
 
+- type: service
+  name: for_export
+  version: 4.3
+  config_group_customization: true
+
+  export:
+    - just_integer
+    - plain_group
+    - activatable_group
+
+  config:
+    - name: just_integer
+      type: integer
+      default: 12
+    # plain group
+    - name: plain_group
+      type: group
+      subs:
+        - name: list_of_dicts
+          display_name: List of Dicts
+          type: structure
+          yspec: ./lod.yaml
+          required: false
+        - name: listofstuff
+          type: list
+          default: [ "x", "y" ]
+    # activatable group
+    - name: activatable_group
+      type: group
+      activatable: true
+      active: false
+      subs:
+        - name: simple
+          type: string
+          default: "inactgroup"
+        - name: secretmap
+          type: secretmap
+          default:
+            agk1: agv1
+            agk2: agv2
 
 - type: service
   name: not_simple
