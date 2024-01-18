@@ -58,6 +58,7 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_403_FORBIDDEN,
+    HTTP_409_CONFLICT,
 )
 
 from adcm.permissions import (
@@ -106,11 +107,12 @@ class ClusterViewSet(
         serializer.is_valid(raise_exception=True)
         valid = serializer.validated_data
 
-        cluster = add_cluster(
-            prototype=Prototype.objects.get(pk=valid["prototype_id"], type=ObjectType.CLUSTER),
-            name=valid["name"],
-            description=valid["description"],
-        )
+        prototype = Prototype.objects.filter(pk=valid["prototype_id"], type=ObjectType.CLUSTER).first()
+
+        if not prototype:
+            raise AdcmEx(code="PROTOTYPE_NOT_FOUND", http_code=HTTP_409_CONFLICT)
+
+        cluster = add_cluster(prototype=prototype, name=valid["name"], description=valid["description"])
 
         return Response(data=ClusterSerializer(cluster).data, status=HTTP_201_CREATED)
 
