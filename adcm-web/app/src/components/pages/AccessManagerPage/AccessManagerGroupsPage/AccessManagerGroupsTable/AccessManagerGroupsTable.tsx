@@ -2,7 +2,7 @@ import { Dispatch, SetStateAction, useCallback } from 'react';
 import { Table, TableRow, TableCell, IconButton, Checkbox } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { columns } from './AccessManagerGroupsTable.constants';
-import { setDeletableId, setSelectedItemsIds as setSelectedIds } from '@store/adcm/groups/groupsSlice';
+import { openDeleteDialog, setSelectedItemsIds as setSelectedIds } from '@store/adcm/groups/groupActionsSlice';
 import { setSortParams } from '@store/adcm/groups/groupsTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { AdcmGroup } from '@models/adcm';
@@ -12,7 +12,8 @@ import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const AccessManagerGroupsTable = () => {
   const dispatch = useDispatch();
-  const { groups, selectedItemsIds } = useStore((s) => s.adcm.groups);
+  const groups = useStore((s) => s.adcm.groups.groups);
+  const selectedItemsIds = useStore((s) => s.adcm.groupsActions.selectedItemsIds);
   const isLoading = useStore((s) => isShowSpinner(s.adcm.groups.loadState));
   const sortParams = useStore((s) => s.adcm.groupsTable.sortParams);
 
@@ -33,7 +34,7 @@ const AccessManagerGroupsTable = () => {
   );
 
   const getHandleDeleteClick = (id: number) => () => {
-    dispatch(setDeletableId(id));
+    dispatch(openDeleteDialog(id));
   };
 
   const handleSorting = (sortParams: SortParams) => {

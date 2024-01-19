@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Button, Dialog } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
-import { deleteGroupsWithUpdate } from '@store/adcm/groups/groupsSlice';
+import { deleteGroupsWithUpdate } from '@store/adcm/groups/groupActionsSlice';
 
 const AccessManagerGroupsDeleteButton: React.FC = () => {
   const dispatch = useDispatch();
 
-  const selectedItemsIds = useStore(({ adcm }) => adcm.groups.selectedItemsIds);
+  const selectedItemsIds = useStore(({ adcm }) => adcm.groupsActions.selectedItemsIds);
   const isSelectedSomeRows = selectedItemsIds.length > 0;
 
   const [isOpenDeleteConfirm, setIsOpenDeleteConfirm] = useState(false);
