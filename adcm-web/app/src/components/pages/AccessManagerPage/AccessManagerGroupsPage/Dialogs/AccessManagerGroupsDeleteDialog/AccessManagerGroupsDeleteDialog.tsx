@@ -1,19 +1,19 @@
 import { useDispatch, useStore } from '@hooks';
-import { deleteGroupsWithUpdate, setDeletableId } from '@store/adcm/groups/groupsSlice';
+import { deleteGroupsWithUpdate, closeDeleteDialog } from '@store/adcm/groups/groupActionsSlice';
 import { Dialog } from '@uikit';
 import React from 'react';
 
 const AccessManagerGroupsDeleteDialog: React.FC = () => {
   const dispatch = useDispatch();
 
-  const deletableId = useStore(({ adcm }) => adcm.groups.itemsForActions.deletableId);
+  const deletableId = useStore(({ adcm }) => adcm.groupsActions.deleteDialog.id);
   const groups = useStore(({ adcm }) => adcm.groups.groups);
 
   const isOpen = deletableId !== null;
   const name = groups.find(({ id }) => id === deletableId)?.displayName;
 
   const handleCloseConfirm = () => {
-    dispatch(setDeletableId(null));
+    dispatch(closeDeleteDialog());
   };
 
   const handleConfirmDialog = () => {
