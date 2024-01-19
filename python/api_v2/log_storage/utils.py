@@ -13,6 +13,7 @@
 # pylint: disable=duplicate-code
 import io
 import tarfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 from cm.models import (
@@ -80,6 +81,7 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                 for log_file in files:
                     tarinfo = tarfile.TarInfo(f'{f"{job.pk}-{dir_name_suffix}".strip("-")}/{log_file.name}')
                     tarinfo.size = log_file.stat().st_size
+                    tarinfo.mtime = log_file.stat().st_mtime
                     tar_file.addfile(tarinfo=tarinfo, fileobj=io.BytesIO(log_file.read_bytes()))
             else:
                 log_storages = LogStorage.objects.filter(job=job, type__in={"stdout", "stderr"})
@@ -89,6 +91,7 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                     )
                     body = io.BytesIO(bytes(log_storage.body, settings.ENCODING_UTF_8))
                     tarinfo.size = body.getbuffer().nbytes
+                    tarinfo.mtime = datetime.now(tz=timezone.utc).timestamp()
                     tar_file.addfile(tarinfo=tarinfo, fileobj=body)
 
     return file_handler
