@@ -14,7 +14,7 @@
         "value3"
       ]
     },
-    "maintenance_mode": false,
+    "maintenance_mode": {{ service_mm }},
     "display_name": "service_one_component",
     "before_upgrade": {
       "state": null
@@ -33,7 +33,7 @@
       },
       "state": "created",
       "multi_state": [],
-      "maintenance_mode": false,
+      "maintenance_mode": {{ component_mm }},
       "display_name": "component_1",
       "before_upgrade": {
         "state": null
