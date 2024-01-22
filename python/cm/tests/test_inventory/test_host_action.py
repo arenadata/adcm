@@ -80,6 +80,8 @@ class TestHostAction(BaseInventoryTestCase):  # pylint: disable=too-many-instanc
                 {
                     "service_id": self.service.pk,
                     "component_id": self.component.pk,
+                    "service_mm": "false",
+                    "component_mm": "false",
                 },
             ),
             ("HOST", "hosts"): (
@@ -114,6 +116,8 @@ class TestHostAction(BaseInventoryTestCase):  # pylint: disable=too-many-instanc
                 {
                     "service_id": self.service.pk,
                     "component_id": self.component.pk,
+                    "service_mm": "false",
+                    "component_mm": "false",
                 },
             ),
         }

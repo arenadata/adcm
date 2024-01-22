@@ -102,6 +102,8 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 {
                     "service_id": service_one_component.pk,
                     "component_id": component_1.pk,
+                    "service_mm": "false",
+                    "component_mm": "false",
                 },
             ),
         }
