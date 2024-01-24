@@ -5,7 +5,6 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmHost, AdcmMaintenanceMode } from '@models/adcm';
 import { AddClusterHostsPayload } from '@models/adcm';
 import { getClusterHosts } from './hostsSlice';
-import { rejectedFilter } from '@utils/promiseUtils';
 
 const loadHosts = createAsyncThunk('adcm/clusterHostsActions/loadHosts', async (arg, thunkAPI) => {
   try {
@@ -52,17 +51,10 @@ const addClusterHosts = createAsyncThunk(
   'adcm/clusterHostsActions/addClusterHosts',
   async ({ clusterId, selectedHostIds }: AddClusterHostsPayload, thunkAPI) => {
     try {
-      const linkHostsPromises = await Promise.allSettled(
-        selectedHostIds.map((id) => AdcmClustersApi.linkHost(clusterId, id)),
-      );
-      const responsesList = rejectedFilter(linkHostsPromises);
+      await AdcmClustersApi.linkHost(clusterId, selectedHostIds);
 
-      if (responsesList.length > 0) {
-        throw responsesList[0];
-      }
       const message = selectedHostIds.length > 1 ? 'All selected hosts have been added' : 'The host has been added';
       thunkAPI.dispatch(showInfo({ message }));
-      return [];
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);

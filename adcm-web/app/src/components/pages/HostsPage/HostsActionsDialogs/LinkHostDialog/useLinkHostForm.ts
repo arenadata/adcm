@@ -40,7 +40,7 @@ export const useLinkHostForm = () => {
   const submit = useCallback(() => {
     const { clusterId, hostId } = formData;
     if (clusterId && hostId) {
-      dispatch(linkHostWithUpdate({ clusterId, hostId }));
+      dispatch(linkHostWithUpdate({ clusterId, hostId: [hostId] }));
     }
   }, [formData, dispatch]);
 
