@@ -35,6 +35,11 @@ const loadHostProviders = createAsyncThunk('adcm/hostsActions/hostProviders', as
   }
 });
 
+interface LinkHostTogglePayload {
+  hostId: number[];
+  clusterId: number;
+}
+
 interface UnlinkHostTogglePayload {
   hostId: number;
   clusterId: number;
@@ -63,7 +68,7 @@ const unlinkHostWithUpdate = createAsyncThunk(
 
 const linkHost = createAsyncThunk(
   'adcm/hostsActions/linkHost',
-  async ({ hostId, clusterId }: UnlinkHostTogglePayload, thunkAPI) => {
+  async ({ hostId, clusterId }: LinkHostTogglePayload, thunkAPI) => {
     try {
       await AdcmClustersApi.linkHost(clusterId, hostId);
       thunkAPI.dispatch(showInfo({ message: 'The host has been linked' }));
@@ -78,7 +83,7 @@ const linkHost = createAsyncThunk(
 
 const linkHostWithUpdate = createAsyncThunk(
   'adcm/hostsActions/linkHostWithUpdate',
-  async (arg: UnlinkHostTogglePayload, thunkAPI) => {
+  async (arg: LinkHostTogglePayload, thunkAPI) => {
     await thunkAPI.dispatch(linkHost(arg)).unwrap();
     thunkAPI.dispatch(getHosts());
   },
