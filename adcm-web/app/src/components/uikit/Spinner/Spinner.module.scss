@@ -5,25 +5,14 @@
   body.theme-light {
     --spinner-overlay-background: rgba(227, 234, 238, 0.9);
   }
-
-}
-
-.spinner {
-  display: inline-block;
-  width: 1.65em;
-  height: 1.65em;
-  border: 1px solid;
-  border-top: none;
-  border-bottom: none;
-  border-radius: 50%;
-  :global {
-    animation: spin 1s linear infinite;
-  }
 }
 
 .spinnerPanel {
   display: flex;
+  justify-content: center;
+  align-items: center;
   position: absolute;
+  border-radius: inherit;
   background: var(--spinner-overlay-background);
   backdrop-filter: blur(5px);
   z-index: var(--z-index-spinner);
@@ -33,9 +22,75 @@
   bottom: 0;
 
   .spinner {
-    margin: auto;
-    position: sticky;
-    top: min(100px, calc(50% - 1.65em));
-    bottom: min(100px, calc(50% - 1.65em));
+    position: absolute;
+  }
+}
+
+.spinner {
+  display: inline-flex;
+  transform: rotate(300deg);
+  color: var(--text-green-color);
+}
+
+.polygon_2 {
+  stroke-dasharray: 65 40%;
+  animation: dash_2 20s infinite linear;
+}
+
+.polygon_1 {
+  animation-name: dash_1;
+  animation-iteration-count: infinite;
+  animation-duration: 2.2s;
+  animation-timing-function: linear;
+}
+
+@keyframes dash_2 {
+  from {
+    stroke-dashoffset: 1200;
+  }
+}
+
+@keyframes dash_1 {
+  0% {
+    stroke-dasharray: 0 57;
+    stroke-dashoffset: 0;
+    animation-timing-function: ease-out;
+  }
+  12.5% {
+    stroke-dasharray: 15 42;
+    stroke-dashoffset: 0;
+    animation-timing-function: ease-out;
+  }
+  25% {
+    stroke-dasharray: 45 12;
+    stroke-dashoffset: 0;
+    animation-timing-function: ease-out;
+  }
+  37.5% {
+    stroke-dasharray: 45 12;
+    stroke-dashoffset: -95%;
+    animation-timing-function: ease-in-out;
+  }
+  50% {
+    stroke-dasharray: 45 12;
+    stroke-dashoffset: -190%;
+    animation-timing-function: ease-in-out;
+  }
+  62.5% {
+    stroke-dasharray: 45 12;
+    stroke-dashoffset: -285%;
+  }
+  75% {
+    stroke-dasharray: 30 27;
+    animation-timing-function: ease-in;
+  }
+  87.5% {
+    stroke-dasharray: 15 42;
+    animation-timing-function: ease-in;
+  }
+  100% {
+    stroke-dasharray: 0 57;
+    stroke-dashoffset: -580%;
+    animation-timing-function: ease-in;
   }
 }
