@@ -27,14 +27,21 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
+from django.utils import timezone
+from rbac.services.user import create_user
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
 
-class TestTask(BaseAPITestCase):
+class TestTask(BaseAPITestCase):  # pylint: disable=too-many-instance-attributes
     def setUp(self) -> None:
         super().setUp()
 
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = create_user(**self.test_user_credentials)
+
+        self.adcm = ADCM.objects.first()
         service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         component_1 = ServiceComponent.objects.filter(service=service_1, prototype__name="component_1").first()
         self.cluster_action = Action.objects.filter(name="action", prototype=self.cluster_1.prototype).first()
@@ -70,12 +77,18 @@ class TestTask(BaseAPITestCase):
             verbose=False,
             post_upgrade_hc=[],
         )
+        self.adcm_task = TaskLog.objects.create(
+            object_id=self.adcm.pk,
+            object_type=ContentType.objects.get(app_label="cm", model="adcm"),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+        )
 
     def test_task_list_success(self):
         response = self.client.get(path=reverse(viewname="v2:tasklog-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.data["results"]), 3)
+        self.assertEqual(len(response.data["results"]), 4)
 
     def test_task_filter_by_job_name(self):
         response = self.client.get(path=reverse(viewname="v2:tasklog-list"), data={"jobName": "comp"})
@@ -135,6 +148,21 @@ class TestTask(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_adcm_5158_adcm_task_view_for_not_superuser_fail(self):
+        self.client.login(username="admin", password="admin")
+        response = self.client.get(path=reverse(viewname="v2:tasklog-detail", kwargs={"pk": self.adcm_task.pk}))
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        response = self.client.get(path=reverse(viewname="v2:tasklog-list"))
+        self.assertIn(self.adcm_task.pk, [task["id"] for task in response.json()["results"]])
+
+        self.client.login(**self.test_user_credentials)
+        response = self.client.get(path=reverse(viewname="v2:tasklog-detail", kwargs={"pk": self.adcm_task.pk}))
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        response = self.client.get(path=reverse(viewname="v2:tasklog-list"))
+        self.assertNotIn(self.adcm_task.pk, [task["id"] for task in response.json()["results"]])
 
 
 class TestTaskObjects(BaseAPITestCase):  # pylint: disable=too-many-instance-attributes

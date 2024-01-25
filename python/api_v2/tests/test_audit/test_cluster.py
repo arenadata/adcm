@@ -534,6 +534,8 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             user__username="admin",
         )
 
+    # add single host
+
     def test_add_host_success(self):
         response = self.client.post(
             path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
@@ -542,7 +544,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         self.check_last_audit_record(
-            operation_name=f"{self.host_2.name} host added",
+            operation_name=f"[{self.host_2.name}] host(s) added",
             operation_type="update",
             operation_result="success",
             **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
@@ -559,7 +561,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
-            operation_name=f"{self.host_2.name} host added",
+            operation_name=f"[{self.host_2.name}] host(s) added",
             operation_type="update",
             operation_result="denied",
             **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
@@ -574,7 +576,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
         self.check_last_audit_record(
-            operation_name="host added",
+            operation_name="[] host(s) added",
             operation_type="update",
             operation_result="fail",
             **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
@@ -589,7 +591,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
         self.check_last_audit_record(
-            operation_name="host added",
+            operation_name="[] host(s) added",
             operation_type="update",
             operation_result="fail",
             **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
@@ -606,7 +608,7 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
-            operation_name=f"{self.host_2.name} host added",
+            operation_name=f"[{self.host_2.name}] host(s) added",
             operation_type="update",
             operation_result="fail",
             **self.prepare_audit_object_arguments(expected_object=None),
@@ -621,7 +623,71 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
         self.check_last_audit_record(
-            operation_name="host added",
+            operation_name="[] host(s) added",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
+        )
+
+    # add multiple hosts
+
+    def test_add_many_hosts_success(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data=[{"hostId": self.host_2.pk}, {"hostId": self.host_3.pk}],
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        self.check_last_audit_record(
+            operation_name=f"[{self.host_2.name}, {self.host_3.name}] host(s) added",
+            operation_type="update",
+            operation_result="success",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
+        )
+
+    def test_add_many_hosts_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.post(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data=[{"hostId": self.host_2.pk}, {"hostId": self.host_3.pk}],
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_record(
+            operation_name=f"[{self.host_2.name}, {self.host_3.name}] host(s) added",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_add_many_hosts_incorrect_body_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data=[{"hey": "you"}, {"hostId": self.host_2.pk}],
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_record(
+            operation_name=f"[{self.host_2.name}] host(s) added",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
+        )
+
+    def test_add_many_non_existing_host_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data=[{"hostId": self.get_non_existent_pk(Host)}],
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_record(
+            operation_name="[] host(s) added",
             operation_type="update",
             operation_result="fail",
             **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
@@ -689,6 +755,8 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             user__username="admin",
         )
 
+    # add multiple services
+
     def test_add_service_success(self):
         response = self.client.post(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
@@ -714,13 +782,13 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
             data=[
                 {"id_of_prototype": self.service_add_prototypes[0].pk},
-                {"id_of_prototype": self.service_add_prototypes[1].pk},
+                {"prototypeId": self.service_add_prototypes[1].pk},
             ],
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
         self.check_last_audit_record(
-            operation_name="[] service(s) added",
+            operation_name=f"[{self.service_add_prototypes[1].display_name}] service(s) added",
             operation_type="update",
             operation_result="fail",
             **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
@@ -763,6 +831,70 @@ class TestClusterAudit(BaseAPITestCase):  # pylint:disable=too-many-public-metho
             operation_name=(
                 f"[{', '.join(proto.display_name for proto in self.service_add_prototypes)}] service(s) added"
             ),
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=None),
+            user__username="admin",
+        )
+
+    # add single service
+
+    def test_add_one_service_success(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"prototypeId": self.service_add_prototypes[0].pk},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        self.check_last_audit_record(
+            operation_name=(f"[{self.service_add_prototypes[0].display_name}] service(s) added"),
+            operation_type="update",
+            operation_result="success",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
+        )
+
+    def test_add_one_service_wrong_data_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"id_of_prototype": self.service_add_prototypes[0].pk},
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        self.check_last_audit_record(
+            operation_name="[] service(s) added",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
+        )
+
+    def test_add_one_service_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.post(
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"prototypeId": self.service_add_prototypes[1].pk},
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_record(
+            operation_name=f"[{self.service_add_prototypes[1].display_name}] service(s) added",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username=self.test_user.username,
+        )
+
+    def test_add_one_service_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.get_non_existent_pk(model=Cluster)}),
+            data={"prototypeId": self.service_add_prototypes[0].pk},
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_record(
+            operation_name=f"[{self.service_add_prototypes[0].display_name}] service(s) added",
             operation_type="update",
             operation_result="fail",
             **self.prepare_audit_object_arguments(expected_object=None),

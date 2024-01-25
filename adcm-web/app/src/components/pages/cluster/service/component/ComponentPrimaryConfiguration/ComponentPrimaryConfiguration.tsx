@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
 import { useDispatch } from '@hooks';
 import { useComponentPrimaryConfiguration } from '@pages/cluster/service/component/ComponentPrimaryConfiguration/useComponentPrimaryConfiguration';
-import { useHostProviderPrimaryConfigurationsCompare } from '@pages/HostProviderPage/HostProviderPrimaryConfiguration/useHostProviderPrimaryConfigurationsCompare';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import ConfigurationHeader from '@commonComponents/configuration/ConfigurationHeader/ConfigurationHeader';
 import ConfigurationFormContextProvider from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContextProvider';
 import ConfigurationSubHeader from '@commonComponents/configuration/ConfigurationSubHeader/ConfigurationSubHeader';
 import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
+import { useComponentPrimaryConfigurationsCompare } from './useComponentPrimaryConfigurationCompare';
 
 const ComponentPrimaryConfiguration: React.FC = () => {
   const dispatch = useDispatch();
@@ -23,7 +23,7 @@ const ComponentPrimaryConfiguration: React.FC = () => {
     isConfigurationLoading,
   } = useComponentPrimaryConfiguration();
 
-  const compareOptions = useHostProviderPrimaryConfigurationsCompare();
+  const compareOptions = useComponentPrimaryConfigurationsCompare();
 
   useEffect(() => {
     if (component) {

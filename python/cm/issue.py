@@ -15,6 +15,7 @@ from typing import Iterable
 from api_v2.concern.serializers import ConcernSerializer
 from cm.adcm_config.config import get_prototype_config
 from cm.adcm_config.utils import proto_ref
+from cm.data_containers import PrototypeData
 from cm.errors import AdcmEx
 from cm.hierarchy import Tree
 from cm.logger import logger
@@ -258,56 +259,69 @@ def get_obj_config(obj: ADCMEntity) -> tuple[dict, dict]:
     return config_log.config, attr
 
 
-def check_min_required_components(count: int, constraint: int, comp: ServiceComponent, ref: str) -> None:
+def check_min_required_components(count: int, constraint: int, component_prototype: Prototype, ref: str) -> None:
     if count < constraint:
         raise AdcmEx(
             code="COMPONENT_CONSTRAINT_ERROR",
-            msg=f'Less then {constraint} required component "{comp.name}" ({count}) {ref}',
+            msg=f'Less then {constraint} required component "{component_prototype.name}" ({count}) {ref}',
         )
 
 
-def check_max_required_components(count: int, constraint: int, comp: ServiceComponent, ref: str) -> None:
+def check_max_required_components(count: int, constraint: int, component_prototype: Prototype, ref: str) -> None:
     if count > constraint:
         raise AdcmEx(
             code="COMPONENT_CONSTRAINT_ERROR",
-            msg=f'Amount ({count}) of component "{comp.name}" more then maximum ({constraint}) {ref}',
+            msg=f'Amount ({count}) of component "{component_prototype.name}" more then maximum ({constraint}) {ref}',
         )
 
 
-def check_components_number_is_odd(count: int, constraint: str, comp: ServiceComponent, ref: str) -> None:
+def check_components_number_is_odd(count: int, constraint: str, component_prototype: Prototype, ref: str) -> None:
     if count % 2 == 0:
         raise AdcmEx(
             code="COMPONENT_CONSTRAINT_ERROR",
-            msg=f'Amount ({count}) of component "{comp.name}" should be odd ({constraint}) {ref}',
+            msg=f'Amount ({count}) of component "{component_prototype.name}" should be odd ({constraint}) {ref}',
         )
 
 
 def check_components_mapping_contraints(
-    cluster: Cluster, service_prototype: Prototype, comp: ServiceComponent, hc_in: list, constraint: list
+    hosts_count: int,
+    target_mapping_count: int,
+    service_prototype: Prototype | PrototypeData,
+    component_prototype: Prototype | PrototypeData,
 ) -> None:
-    all_hosts_number = Host.objects.filter(cluster=cluster).count()
+    constraint = component_prototype.constraint
     ref = f'in host component list for {service_prototype.type} "{service_prototype.name}"'
-    count = 0
-    for _, _, component in hc_in:
-        if comp.name == component.prototype.name:
-            count += 1
 
     if isinstance(constraint[0], int):
-        check_min_required_components(count=count, constraint=constraint[0], comp=comp, ref=ref)
+        check_min_required_components(
+            count=target_mapping_count, constraint=constraint[0], component_prototype=component_prototype, ref=ref
+        )
         if len(constraint) < 2:
-            check_max_required_components(count=count, constraint=constraint[0], comp=comp, ref=ref)
+            check_max_required_components(
+                count=target_mapping_count, constraint=constraint[0], component_prototype=component_prototype, ref=ref
+            )
 
     if len(constraint) > 1:
         if isinstance(constraint[1], int):
-            check_max_required_components(count=count, constraint=constraint[1], comp=comp, ref=ref)
-        elif constraint[1] == "odd" and count:
-            check_components_number_is_odd(count=count, constraint=constraint[1], comp=comp, ref=ref)
+            check_max_required_components(
+                count=target_mapping_count, constraint=constraint[1], component_prototype=component_prototype, ref=ref
+            )
+        elif constraint[1] == "odd" and target_mapping_count:
+            check_components_number_is_odd(
+                count=target_mapping_count, constraint=constraint[1], component_prototype=component_prototype, ref=ref
+            )
 
     if constraint[0] == "+":
-        check_min_required_components(count=count, constraint=all_hosts_number, comp=comp, ref=ref)
+        check_min_required_components(
+            count=target_mapping_count, constraint=hosts_count, component_prototype=component_prototype, ref=ref
+        )
     elif constraint[0] == "odd":  # synonym to [1,odd]
-        check_min_required_components(count=count, constraint=1, comp=comp, ref=ref)
-        check_components_number_is_odd(count=count, constraint=constraint[0], comp=comp, ref=ref)
+        check_min_required_components(
+            count=target_mapping_count, constraint=1, component_prototype=component_prototype, ref=ref
+        )
+        check_components_number_is_odd(
+            count=target_mapping_count, constraint=constraint[0], component_prototype=component_prototype, ref=ref
+        )
 
 
 def check_component_constraint(
@@ -331,11 +345,12 @@ def check_component_constraint(
                 continue
 
         check_components_mapping_contraints(
-            cluster=cluster,
+            hosts_count=Host.objects.filter(cluster=cluster).count(),
+            target_mapping_count=len(
+                [i for i in hc_in if i[0].prototype == service_prototype and i[2].prototype == component_prototype]
+            ),
             service_prototype=service_prototype,
-            comp=component_prototype,
-            hc_in=hc_in,
-            constraint=component_prototype.constraint,
+            component_prototype=component_prototype,
         )
 
 
