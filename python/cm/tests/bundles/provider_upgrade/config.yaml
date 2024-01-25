@@ -1,0 +1,81 @@
+---
+- type: provider
+  name: provider
+  version: &version '2.0'
+  upgrade:
+    - name: upgrade
+      versions: &correct_versions
+        min: '1.0'
+        max: '2.0'
+      states: &always_available
+        available: any
+
+    - name: upgrade_via_action_simple
+      versions: *correct_versions
+      states: *always_available
+      scripts: &upgrade_scripts
+        - name: pre
+          script: ./playbook.yaml
+          script_type: ansible
+        - name: switch
+          script: bundle_switch
+          script_type: internal
+        - name: post
+          script: ./playbook.yaml
+          script_type: ansible
+
+    - name: upgrade_via_action_complex
+      versions: *correct_versions
+      states: *always_available
+      scripts: *upgrade_scripts
+      config:
+        - name: simple
+          type: string
+          required: false
+        - name: grouped
+          type: group
+          subs:
+            - name: simple
+              type: integer
+              default: 4
+            - name: second
+              type: float
+              default: 4.3
+        - name: after
+          type: list
+          default:
+            - "1"
+            - "woohoo"
+      ui_options:
+        disclaimer: "Cool upgrade"
+
+    - name: unfit_version
+      versions:
+        min_strict: '0'
+        max: '0.3'
+      states: *always_available
+
+    - name: unfit_state
+      versions: *correct_versions
+      states:
+        available:
+          - doesnotexist
+
+  actions:
+    provider_action:
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      states:
+        available: any
+- type: host
+  name: host
+  version: *version
+  actions:
+    host_action:
+      display_name: "host_action"
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      states:
+        available: any

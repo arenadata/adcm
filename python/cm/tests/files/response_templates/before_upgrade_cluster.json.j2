@@ -1,0 +1,31 @@
+{
+   "config":{
+      "integer":10,
+      "password":"password",
+      "string":"string",
+      "list":[
+         "value1",
+         "value2",
+         "value3"
+      ]
+   },
+   "name": "{{ object_name }}",
+   "id": {{ id }},
+   "version":"2.0",
+   "edition":"community",
+   "state":"success",
+   "multi_state":[],
+   "before_upgrade":{
+      "state":"created",
+      "config":{
+         "integer":10,
+         "password":"password",
+         "string":"string",
+         "list":[
+            "value1",
+            "value2",
+            "value3"
+         ]
+      }
+   }
+}
