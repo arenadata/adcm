@@ -24,7 +24,7 @@ from cm.models import (
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
 
 
-class TestConfigAndImportsInInventory(BaseInventoryTestCase):  # pylint: disable=too-many-instance-attributes
+class TestConfigAndImportsInInventory(BaseInventoryTestCase):
     PARTIAL_CONFIG = {
         "boolean": True,
         "secrettext": "awe\nsopme\n\ttext\n",

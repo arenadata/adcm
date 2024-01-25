@@ -9,19 +9,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from typing import Callable
+from typing import Iterable
 from unittest.mock import patch
 
+from cm.api import add_hc
 from cm.models import (
     Action,
     ADCMEntityStatus,
     Cluster,
     ClusterObject,
     Host,
+    HostComponent,
     Prototype,
     ServiceComponent,
 )
+from cm.services.status.client import FullStatusMap
+from cm.tests.utils import gen_component, gen_host, gen_service, generate_hierarchy
 from django.urls import reverse
 from guardian.models import GroupObjectPermission
 from rbac.models import User
@@ -38,20 +41,14 @@ from api_v2.tests.base import BaseAPITestCase
 
 
 class TestCluster(BaseAPITestCase):
-    def get_cluster_status_mock(self) -> Callable:
-        def inner(cluster: Cluster) -> int:
-            if cluster.pk == self.cluster_1.pk:
-                return 0
-
-            return 32
-
-        return inner
-
     def test_list_success(self):
-        response = self.client.get(path=reverse(viewname="v2:cluster-list"))
+        with patch("cm.services.status.client.api_request") as patched_request:
+            response = self.client.get(path=reverse(viewname="v2:cluster-list"))
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 2)
+
+        patched_request.assert_called_once()
 
     def test_adcm_4539_ordering_success(self):
         cluster_3 = self.add_cluster(bundle=self.bundle_1, name="cluster_3", description="cluster_3")
@@ -66,12 +63,18 @@ class TestCluster(BaseAPITestCase):
         self.assertListEqual([cluster["name"] for cluster in response.json()["results"]], cluster_list[::-1])
 
     def test_retrieve_success(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
-        )
+        with patch("api_v2.views.retrieve_status_map") as patched_retrieve, patch(
+            "api_v2.views.get_raw_status"
+        ) as patched_raw:
+            response = self.client.get(
+                path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+            )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], self.cluster_1.pk)
+
+        patched_raw.assert_called_once()
+        patched_retrieve.assert_not_called()
 
     def test_filter_by_name_success(self):
         response = self.client.get(
@@ -92,7 +95,13 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 0)
 
     def test_filter_by_status_up_success(self):
-        with patch("api_v2.cluster.filters.get_cluster_status", new_callable=self.get_cluster_status_mock):
+        status_map = FullStatusMap(
+            clusters={
+                str(self.cluster_1.pk): {"services": {}, "status": 0, "hosts": {}},
+                str(self.cluster_2.pk): {"services": {}, "status": 16, "hosts": {}},
+            }
+        )
+        with patch("api_v2.cluster.filters.retrieve_status_map", return_value=status_map):
             response = self.client.get(
                 path=reverse(viewname="v2:cluster-list"),
                 data={"status": ADCMEntityStatus.UP},
@@ -103,7 +112,13 @@ class TestCluster(BaseAPITestCase):
             self.assertEqual(response.json()["results"][0]["id"], self.cluster_1.pk)
 
     def test_filter_by_status_down_success(self):
-        with patch("api_v2.cluster.filters.get_cluster_status", new_callable=self.get_cluster_status_mock):
+        status_map = FullStatusMap(
+            clusters={
+                str(self.cluster_1.pk): {"services": {}, "status": 0, "hosts": {}},
+                str(self.cluster_2.pk): {"services": {}, "status": 16, "hosts": {}},
+            }
+        )
+        with patch("api_v2.cluster.filters.retrieve_status_map", return_value=status_map):
             response = self.client.get(
                 path=reverse(viewname="v2:cluster-list"),
                 data={"status": ADCMEntityStatus.DOWN},
@@ -598,3 +613,195 @@ class TestClusterMM(BaseAPITestCase):
                 response = self.client.post(path=request, data={"maintenance_mode": "on"})
 
                 self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+
+class TestClusterStatuses(BaseAPITestCase):
+    @staticmethod
+    def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, ServiceComponent]]) -> list[HostComponent]:
+        return add_hc(
+            cluster=cluster,
+            hc_in=[
+                {"host_id": host.pk, "component_id": component.pk, "service_id": component.service_id}
+                for host, component in entries
+            ],
+        )
+
+    def setUp(self) -> None:
+        self.client.login(username="admin", password="admin")
+
+        hierarchy_1 = generate_hierarchy()
+        self.cluster_1 = hierarchy_1["cluster"]
+        self.service_11 = hierarchy_1["service"]
+        self.component_111 = hierarchy_1["component"]
+        self.component_112 = gen_component(service=self.service_11)
+        self.service_12 = gen_service(cluster=self.cluster_1)
+        self.component_121 = gen_component(service=self.service_12)
+        self.component_122 = gen_component(service=self.service_12)
+        self.host_1 = hierarchy_1["host"]
+        self.host_2 = gen_host(provider=hierarchy_1["provider"], cluster=self.cluster_1)
+        self.set_hostcomponent(
+            cluster=self.cluster_1,
+            entries=[
+                (self.host_1, self.component_111),
+                (self.host_1, self.component_112),
+                (self.host_1, self.component_121),
+                (self.host_2, self.component_122),
+                (self.host_2, self.component_112),
+            ],
+        )
+
+        hierarchy_2 = generate_hierarchy()
+        self.cluster_2 = hierarchy_2["cluster"]
+        self.service_21 = hierarchy_2["service"]
+        self.component_211 = hierarchy_2["component"]
+        self.host_3 = hierarchy_2["host"]
+
+        self.status_map = FullStatusMap(
+            clusters={
+                str(self.cluster_1.pk): {
+                    "status": 0,
+                    "hosts": {str(self.host_1.pk): {"status": 0}, str(self.host_2.pk): {"status": 16}},
+                    "services": {
+                        str(self.service_11.pk): {
+                            "status": 4,
+                            "components": {
+                                str(self.component_111.pk): {"status": 16},
+                                str(self.component_112.pk): {"status": 0},
+                            },
+                            "details": [
+                                {"host": self.host_1.pk, "component": self.component_111.pk, "status": 0},
+                                {"host": self.host_1.pk, "component": self.component_112.pk, "status": 16},
+                                {"host": self.host_2.pk, "component": self.component_112.pk, "status": 0},
+                            ],
+                        },
+                        str(self.service_12.pk): {
+                            "status": 0,
+                            "components": {
+                                str(self.component_121.pk): {"status": 0},
+                                str(self.component_122.pk): {"status": 2},
+                            },
+                            "details": [
+                                {"host": self.host_1.pk, "component": self.component_121.pk, "status": 0},
+                                {"host": self.host_2.pk, "component": self.component_122.pk, "status": 2},
+                            ],
+                        },
+                    },
+                },
+                str(self.cluster_2.pk): {"status": 16, "hosts": {str(self.host_3.pk): {"status": 0}}, "services": {}},
+            },
+            hosts={
+                str(self.host_1.pk): {"status": 0},
+                str(self.host_2.pk): {"status": 16},
+                str(self.host_3.pk): {"status": 0},
+            },
+        )
+
+    @staticmethod
+    def get_name_status_pairs(entries: list[dict]) -> set[tuple[int, str]]:
+        return {(entry["name"], entry["status"]) for entry in entries}
+
+    def test_services_statuses_success(self) -> None:
+        with patch("api_v2.views.retrieve_status_map", return_value=self.status_map) as patched:
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:cluster-services-statuses",
+                    kwargs={"pk": self.cluster_1.pk},
+                ),
+            )
+
+        patched.assert_called_once()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        services = response.json()["results"]
+        self.assertEqual(len(services), 2)
+        self.assertSetEqual(
+            self.get_name_status_pairs(services), {(self.service_11.name, "down"), (self.service_12.name, "up")}
+        )
+        service_1, service_2 = sorted(services, key=lambda i: i["id"])
+        self.assertEqual(len(service_1["components"]), 2)
+        self.assertSetEqual(
+            self.get_name_status_pairs(service_1["components"]),
+            {(self.component_111.name, "down"), (self.component_112.name, "up")},
+        )
+        self.assertEqual(len(service_2["components"]), 2)
+        self.assertSetEqual(
+            self.get_name_status_pairs(service_2["components"]),
+            {(self.component_121.name, "up"), (self.component_122.name, "down")},
+        )
+
+    def test_hosts_statuses_success(self) -> None:
+        with patch("api_v2.views.retrieve_status_map", return_value=self.status_map) as patched:
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:cluster-hosts-statuses",
+                    kwargs={"pk": self.cluster_1.pk},
+                ),
+            )
+
+        patched.assert_called_once()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        entries = response.json()["results"]
+        self.assertEqual(len(entries), 2)
+        self.assertSetEqual(self.get_name_status_pairs(entries), {(self.host_1.name, "up"), (self.host_2.name, "down")})
+
+    def test_components_of_service_statuses_success(self) -> None:
+        with patch("api_v2.views.retrieve_status_map", return_value=self.status_map) as patched:
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:service-statuses",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_11.pk},
+                ),
+            )
+
+        patched.assert_called_once()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        entries = response.json()["components"]
+        self.assertEqual(len(entries), 2)
+        self.assertSetEqual(
+            self.get_name_status_pairs(entries),
+            {(self.component_111.name, "down"), (self.component_112.name, "up")},
+        )
+
+    def test_hc_statuses_of_component_success(self) -> None:
+        with patch("api_v2.views.retrieve_status_map", return_value=self.status_map) as patched:
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:component-statuses",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_11.pk,
+                        "pk": self.component_112.pk,
+                    },
+                ),
+            )
+
+        patched.assert_called_once()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        entries = response.json()["hostComponents"]
+        self.assertEqual(len(entries), 2)
+        self.assertSetEqual(
+            self.get_name_status_pairs(entries),
+            {(self.host_1.name, "down"), (self.host_2.name, "up")},
+        )
+
+    def test_hc_statuses_of_host_success(self) -> None:
+        with patch("api_v2.views.retrieve_status_map", return_value=self.status_map) as patched:
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:host-cluster-statuses",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk},
+                ),
+            )
+
+        patched.assert_called_once()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        entries = response.json()["hostComponents"]
+        self.assertEqual(len(entries), 3)
+        self.assertSetEqual(
+            self.get_name_status_pairs(entries),
+            {(self.component_111.name, "up"), (self.component_112.name, "down"), (self.component_121.name, "up")},
+        )

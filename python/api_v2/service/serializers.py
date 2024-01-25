@@ -13,7 +13,6 @@
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import ClusterObject, MaintenanceMode, ServiceComponent
-from cm.status_api import get_obj_status
 from rest_framework.serializers import (
     ChoiceField,
     IntegerField,
@@ -24,12 +23,12 @@ from rest_framework.serializers import (
 from api_v2.cluster.serializers import ClusterRelatedSerializer
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
+from api_v2.serializers import WithStatusSerializer
 
 
-class ServiceRetrieveSerializer(ModelSerializer):
+class ServiceRetrieveSerializer(WithStatusSerializer):
     prototype = PrototypeRelatedSerializer(read_only=True)
     cluster = ClusterRelatedSerializer(read_only=True)
-    status = SerializerMethodField()
     concerns = ConcernSerializer(read_only=True, many=True)
     main_info = SerializerMethodField()
 
@@ -51,9 +50,6 @@ class ServiceRetrieveSerializer(ModelSerializer):
             "main_info",
             "multi_state",
         ]
-
-    def get_status(self, instance: ClusterObject) -> str:
-        return get_obj_status(obj=instance)
 
     def get_main_info(self, instance: ClusterObject) -> str | None:
         return get_main_info(obj=instance)
@@ -85,13 +81,7 @@ class ServiceNameSerializer(ModelSerializer):
         fields = ["id", "name", "display_name", "state", "prototype"]
 
 
-class RelatedComponentsStatusesSerializer(ModelSerializer):
-    status = SerializerMethodField()
-
-    @staticmethod
-    def get_status(instance: ClusterObject) -> str:
-        return get_obj_status(obj=instance)
-
+class RelatedComponentsStatusesSerializer(WithStatusSerializer):
     class Meta:
         model = ServiceComponent
         fields = ["id", "name", "display_name", "status"]

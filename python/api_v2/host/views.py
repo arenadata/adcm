@@ -27,6 +27,7 @@ from cm.api import delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.models import Cluster, GroupConfig, Host, HostProvider
 from cm.services.cluster import perform_host_to_cluster_map
+from cm.services.status import notify
 from core.cluster.errors import (
     HostAlreadyBoundError,
     HostBelongsToAnotherClusterError,
@@ -62,10 +63,14 @@ from api_v2.host.serializers import (
     HostUpdateSerializer,
 )
 from api_v2.host.utils import add_new_host_and_map_it, maintenance_mode
-from api_v2.views import CamelCaseModelViewSet, CamelCaseReadOnlyModelViewSet
+from api_v2.views import (
+    CamelCaseModelViewSet,
+    CamelCaseReadOnlyModelViewSet,
+    ObjectWithStatusViewMixin,
+)
 
 
-class HostViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewSet):
+class HostViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMixin, CamelCaseModelViewSet):
     queryset = (
         Host.objects.select_related("provider", "cluster", "cluster__prototype", "prototype")
         .prefetch_related("concerns", "hostcomponent_set")
@@ -108,8 +113,7 @@ class HostViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewSet)
         )
 
         return Response(
-            data=HostSerializer(instance=host).data,
-            status=HTTP_201_CREATED,
+            data=HostSerializer(instance=host, context=self.get_serializer_context()).data, status=HTTP_201_CREATED
         )
 
     @audit
@@ -139,19 +143,27 @@ class HostViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewSet)
 
         serializer.save()
 
-        return Response(status=HTTP_200_OK, data=HostSerializer(instance=instance).data)
+        return Response(
+            status=HTTP_200_OK, data=HostSerializer(instance=instance, context=self.get_serializer_context()).data
+        )
 
     @audit
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
-    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         return maintenance_mode(request=request, host=self.get_object())
 
 
-class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
+class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet, ObjectWithStatusViewMixin):
     permission_required = [VIEW_HOST_PERM]
     permission_classes = [HostsClusterPermissions]
+    # have to define it here for `ObjectWithStatusViewMixin` to be able to determine model related to view
+    # don't use it directly, use `get_queryset`
+    queryset = Host.objects.select_related("cluster", "cluster__prototype", "provider", "prototype").prefetch_related(
+        "hostcomponent_set", "concerns"
+    )
     filterset_class = HostClusterFilter
     audit_model_hint = Host
+    retrieve_status_map_actions = ("list", "statuses")
 
     def get_serializer_class(self):
         if self.action == "maintenance_mode":
@@ -167,14 +179,15 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
             user=self.request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=self.kwargs["cluster_pk"]
         )
 
-        return (
-            Host.objects.filter(cluster=cluster)
-            .select_related("cluster", "cluster__prototype", "provider", "prototype")
-            .prefetch_related("hostcomponent_set", "concerns")
-        )
+        by_cluster_qs = self.queryset.filter(cluster=cluster)
+
+        if self.action == "statuses":
+            return by_cluster_qs.prefetch_related("hostcomponent_set__component__prototype")
+
+        return by_cluster_qs
 
     @audit
-    def create(self, request, *_, **kwargs):  # noqa: ARG002
+    def create(self, request, *_, **kwargs):
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["cluster_pk"]
         )
@@ -195,6 +208,7 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
                     entry["host_id"]
                     for entry in (serializer.validated_data if multiple_hosts else [serializer.validated_data])
                 ],
+                status_service=notify,
             )
         except HostDoesNotExistError:
             raise AdcmEx("BAD_REQUEST", "At least one host does not exist.") from None
@@ -205,15 +219,17 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
 
         qs_for_added_hosts = self.get_queryset().filter(id__in=added_hosts)
 
+        context = self.get_serializer_context()
+
         if multiple_hosts:
             return Response(
                 status=HTTP_201_CREATED,
-                data=HostSerializer(instance=qs_for_added_hosts, many=True).data,
+                data=HostSerializer(instance=qs_for_added_hosts, many=True, context=context).data,
             )
 
         return Response(
             status=HTTP_201_CREATED,
-            data=HostSerializer(instance=qs_for_added_hosts.first()).data,
+            data=HostSerializer(instance=qs_for_added_hosts.first(), context=context).data,
         )
 
     @audit
@@ -226,17 +242,22 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
 
     @audit
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
-    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         return maintenance_mode(request=request, host=self.get_object())
 
     @action(methods=["get"], detail=True, url_path="statuses")
-    def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         host = self.get_object()
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
         if host.cluster != cluster:
             raise AdcmEx(code="FOREIGN_HOST", msg=f"Host #{host.id} doesn't belong to cluster #{cluster.id}")
 
-        return Response(data=ClusterHostStatusSerializer(instance=host).data)
+        return Response(
+            data=ClusterHostStatusSerializer(
+                instance=Host.objects.prefetch_related("hostcomponent_set__component__prototype").get(id=host.id),
+                context=self.get_serializer_context(),
+            ).data
+        )
 
 
 class HostGroupConfigViewSet(PermissionListMixin, GetParentObjectMixin, CamelCaseReadOnlyModelViewSet):
@@ -295,7 +316,7 @@ class HostGroupConfigViewSet(PermissionListMixin, GetParentObjectMixin, CamelCas
         return Response(status=HTTP_201_CREATED, data=HostGroupConfigSerializer(instance=host).data)
 
     @audit
-    def destroy(self, request, *_, **kwargs):  # noqa: ARG001, ARG002
+    def destroy(self, request, *_, **kwargs):  # noqa: ARG002
         group_config = self.get_group_for_change()
 
         host = group_config.hosts.filter(pk=kwargs["pk"]).first()

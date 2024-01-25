@@ -870,9 +870,9 @@ class TestAPI2(BaseTestCase):
             state="installed",
         )
 
-    @patch("cm.api.load_service_map")
+    @patch("cm.api.reset_hc_map")
     @patch("cm.api.update_hierarchy_issues")
-    def test_save_hc(self, mock_update_issues, mock_load_service_map):
+    def test_save_hc(self, mock_update_issues, mock_reset_hc_map):
         cluster_object = ClusterObject.objects.create(prototype=self.prototype, cluster=self.cluster)
         host = Host.objects.create(prototype=self.prototype, cluster=self.cluster)
         component = Prototype.objects.create(
@@ -900,10 +900,10 @@ class TestAPI2(BaseTestCase):
         self.assertListEqual(hc_list, [HostComponent.objects.first()])
 
         mock_update_issues.assert_called()
-        mock_load_service_map.assert_called_once()
+        mock_reset_hc_map.assert_called_once()
 
     @patch("cm.api.CTX")
-    @patch("cm.api.load_service_map")
+    @patch("cm.services.status.notify.reset_hc_map")
     @patch("cm.api.update_hierarchy_issues")
     def test_save_hc__big_update__locked_hierarchy(
         self,
@@ -960,7 +960,7 @@ class TestAPI2(BaseTestCase):
         self.assertFalse(host_2.locked)
         self.assertTrue(host_3.locked)
 
-    @patch("cm.api.load_service_map")
+    @patch("cm.services.status.notify.reset_hc_map")
     @patch("cm.api.update_hierarchy_issues")
     def test_save_hc__big_update__unlocked_hierarchy(self, mock_update, mock_load):  # noqa: ARG001, ARG002
         """

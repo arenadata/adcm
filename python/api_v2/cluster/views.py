@@ -63,14 +63,10 @@ from api_v2.cluster.utils import retrieve_mapping_data, save_mapping
 from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.host.serializers import HostMappingSerializer
-from api_v2.views import CamelCaseModelViewSet
+from api_v2.views import CamelCaseModelViewSet, ObjectWithStatusViewMixin
 
 
-class ClusterViewSet(
-    PermissionListMixin,
-    ConfigSchemaMixin,
-    CamelCaseModelViewSet,
-):
+class ClusterViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewSet, ObjectWithStatusViewMixin):
     queryset = (
         Cluster.objects.prefetch_related("prototype", "concerns")
         .prefetch_related("clusterobject_set__prototype")
@@ -79,6 +75,11 @@ class ClusterViewSet(
     permission_required = [VIEW_CLUSTER_PERM]
     filterset_class = ClusterFilter
     permission_classes = [ClusterPermissions]
+    retrieve_status_map_actions = (
+        "services_statuses",
+        "hosts_statuses",
+        "list",
+    )
 
     def get_serializer_class(self):
         match self.action:
@@ -110,7 +111,9 @@ class ClusterViewSet(
 
         cluster = add_cluster(prototype=prototype, name=valid["name"], description=valid["description"])
 
-        return Response(data=ClusterSerializer(cluster).data, status=HTTP_201_CREATED)
+        return Response(
+            data=ClusterSerializer(cluster, context=self.get_serializer_context()).data, status=HTTP_201_CREATED
+        )
 
     @audit
     def update(self, request, *args, **kwargs):  # noqa: ARG002
@@ -127,7 +130,9 @@ class ClusterViewSet(
         instance.save(update_fields=["name", "description"])
         update_hierarchy_issues(obj=instance)
 
-        return Response(status=HTTP_200_OK, data=ClusterSerializer(instance).data)
+        return Response(
+            status=HTTP_200_OK, data=ClusterSerializer(instance, context=self.get_serializer_context()).data
+        )
 
     @audit
     def destroy(self, request, *args, **kwargs):  # noqa: ARG002
@@ -137,7 +142,7 @@ class ClusterViewSet(
         return Response(status=HTTP_204_NO_CONTENT)
 
     @action(methods=["get"], detail=True, url_path="service-prototypes")
-    def service_prototypes(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    def service_prototypes(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = self.get_object()
         prototypes = Prototype.objects.filter(type=ObjectType.SERVICE, bundle=cluster.prototype.bundle).order_by(
             "display_name"
@@ -147,7 +152,7 @@ class ClusterViewSet(
         return Response(data=serializer.data)
 
     @action(methods=["get"], detail=True, url_path="service-candidates")
-    def service_candidates(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    def service_candidates(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = self.get_object()
         prototypes = (
             Prototype.objects.filter(type=ObjectType.SERVICE, bundle=cluster.prototype.bundle)
@@ -162,16 +167,18 @@ class ClusterViewSet(
         methods=["get"],
         detail=True,
         url_path="statuses/services",
-        queryset=ClusterObject.objects.order_by("prototype__display_name"),
+        queryset=ClusterObject.objects.select_related("prototype").order_by("prototype__display_name"),
         permission_required=[VIEW_SERVICE_PERM],
         filterset_class=ClusterServiceFilter,
     )
-    def services_statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    def services_statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
         queryset = self.filter_queryset(queryset=self.get_queryset().filter(cluster=cluster))
 
         return self.get_paginated_response(
-            data=RelatedServicesStatusesSerializer(instance=self.paginate_queryset(queryset=queryset), many=True).data
+            data=RelatedServicesStatusesSerializer(
+                instance=self.paginate_queryset(queryset=queryset), many=True, context=self.get_serializer_context()
+            ).data
         )
 
     @action(
@@ -182,12 +189,16 @@ class ClusterViewSet(
         permission_required=[VIEW_HOST_PERM],
         filterset_class=ClusterHostFilter,
     )
-    def hosts_statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    def hosts_statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
         queryset = self.filter_queryset(queryset=self.get_queryset().filter(cluster=cluster))
 
         return self.get_paginated_response(
-            data=RelatedHostsStatusesSerializer(instance=self.paginate_queryset(queryset=queryset), many=True).data
+            data=RelatedHostsStatusesSerializer(
+                instance=self.paginate_queryset(queryset=queryset),
+                many=True,
+                context=self.get_serializer_context(),
+            ).data
         )
 
     @audit
@@ -197,7 +208,7 @@ class ClusterViewSet(
         pagination_class=None,
         filter_backends=[],
     )
-    def mapping(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    def mapping(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = self.get_object()
 
         if request.method == "GET":
@@ -222,14 +233,14 @@ class ClusterViewSet(
         return Response(data=self.get_serializer(instance=new_mapping, many=True).data, status=HTTP_201_CREATED)
 
     @action(methods=["get"], detail=True, url_path="mapping/hosts", url_name="mapping-hosts")
-    def mapping_hosts(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    def mapping_hosts(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = self.get_object()
         serializer = self.get_serializer(instance=Host.objects.filter(cluster=cluster), many=True)
 
         return Response(status=HTTP_200_OK, data=serializer.data)
 
     @action(methods=["get"], detail=True, url_path="mapping/components", url_name="mapping-components")
-    def mapping_components(self, request: Request, *args, **kwargs):  # noqa: ARG001, ARG002
+    def mapping_components(self, request: Request, *args, **kwargs):  # noqa: ARG002
         cluster = self.get_object()
         serializer = self.get_serializer(
             instance=ServiceComponent.objects.filter(cluster=cluster).order_by("pk"), many=True

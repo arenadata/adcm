@@ -13,7 +13,6 @@
 from typing import Literal
 
 from cm.adcm_config.config import get_prototype_config, process_file_type
-from cm.api import load_service_map
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues
 from cm.models import (
@@ -26,6 +25,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.status.notify import reset_hc_map
 from django.db import connection, transaction
 from django.db.models import QuerySet
 from rbac.models import re_apply_object_policy
@@ -53,7 +53,7 @@ def bulk_add_services_to_cluster(cluster: Cluster, prototypes: QuerySet[Prototyp
 
     update_hierarchy_issues(obj=cluster)
     re_apply_object_policy(apply_object=cluster)
-    load_service_map()
+    reset_hc_map()
 
     return services
 

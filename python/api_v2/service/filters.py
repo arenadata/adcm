@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from cm.models import ADCMEntityStatus, ClusterObject, ObjectType
-from cm.status_api import get_service_status
 from django.db.models import QuerySet
 from django_filters.rest_framework import (
     CharFilter,
@@ -19,6 +18,8 @@ from django_filters.rest_framework import (
     FilterSet,
     OrderingFilter,
 )
+
+from api_v2.filters import filter_service_status
 
 
 class ServiceFilter(FilterSet):
@@ -35,13 +36,8 @@ class ServiceFilter(FilterSet):
         fields = ["name", "display_name", "status"]
 
     @staticmethod
-    def filter_status(queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG001, ARG004
-        if value == ADCMEntityStatus.UP:
-            exclude_pks = {service.pk for service in queryset if get_service_status(service=service) != 0}
-        else:
-            exclude_pks = {service.pk for service in queryset if get_service_status(service=service) == 0}
-
-        return queryset.exclude(pk__in=exclude_pks)
+    def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
+        return filter_service_status(queryset=queryset, value=value)
 
     @staticmethod
     def filter_name(queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG001, ARG004

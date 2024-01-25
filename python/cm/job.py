@@ -46,7 +46,6 @@ from cm.api import (
     check_maintenance_mode,
     check_sub_key,
     get_hc,
-    load_mm_objects,
     make_host_comp_list,
     save_hc,
 )
@@ -92,6 +91,7 @@ from cm.models import (
     Upgrade,
     get_object_cluster,
 )
+from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import (
     send_object_update_event,
     send_prototype_and_state_update_event,
@@ -872,7 +872,7 @@ def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:
     send_task_status_update_event(object_=task, status=status)
 
     try:
-        load_mm_objects()
+        reset_objects_in_mm()
     except Exception as error:  # noqa: BLE001
         logger.warning("Error loading mm objects on task finish")
         logger.exception(error)

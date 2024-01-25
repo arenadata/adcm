@@ -13,7 +13,7 @@
 from typing import Any, Iterable
 
 from cm.adcm_config.ansible import ansible_decrypt
-from cm.api import cancel_locking_tasks, delete_service, load_mm_objects
+from cm.api import cancel_locking_tasks, delete_service
 from cm.errors import AdcmEx
 from cm.flag import update_flags
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
@@ -35,6 +35,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import send_object_update_event
 from django.conf import settings
 from rest_framework.response import Response
@@ -88,7 +89,7 @@ def _update_mm_hierarchy_issues(obj: Host | ClusterObject | ServiceComponent) ->
     update_hierarchy_issues(obj.cluster)
     update_issue_after_deleting()
     update_flags()
-    load_mm_objects()
+    reset_objects_in_mm()
 
 
 def process_requires(

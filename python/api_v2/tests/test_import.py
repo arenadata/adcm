@@ -90,6 +90,7 @@ class TestImport(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
+        self.maxDiff = None
         self.assertDictEqual(
             response.json()["results"][0],
             {

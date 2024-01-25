@@ -26,8 +26,9 @@ type hostCompStatus struct {
 }
 
 type serviceStatus struct {
-	Status  int              `json:"status"`
-	Details []hostCompStatus `json:"details"`
+	Status     int              `json:"status"`
+	Components map[int]Status   `json:"components"`
+	Details    []hostCompStatus `json:"details"`
 }
 
 type eventMessage struct {
@@ -190,9 +191,15 @@ func getClusterServiceStatus(h Hub, clusterId int) (int, map[int]serviceStatus) 
 	result := 0
 	for _, serviceId := range servList {
 		srvStatus, hcStatus := getServiceStatus(h, clusterId, serviceId)
+		componentStatusMap := make(map[int]Status)
+		for _, hcStatusEntry := range hcStatus {
+			status, _ := getComponentStatus(h, hcStatusEntry.Component)
+			componentStatusMap[hcStatusEntry.Component] = status
+		}
 		services[serviceId] = serviceStatus{
-			Status:  srvStatus.Status,
-			Details: hcStatus,
+			Status:     srvStatus.Status,
+			Components: componentStatusMap,
+			Details:    hcStatus,
 		}
 		if srvStatus.Status != 0 {
 			result = srvStatus.Status

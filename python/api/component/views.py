@@ -13,8 +13,8 @@
 from adcm.permissions import check_custom_perm, get_object_for_user
 from adcm.utils import get_maintenance_mode_response
 from audit.utils import audit
-from cm.api import update_mm_objects
 from cm.models import Cluster, ClusterObject, HostComponent, ServiceComponent
+from cm.services.status.notify import update_mm_objects
 from cm.status_api import make_ui_component_status
 from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions

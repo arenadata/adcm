@@ -19,13 +19,7 @@ from adcm.permissions import (
 )
 from adcm.utils import get_maintenance_mode_response
 from audit.utils import audit
-from cm.api import (
-    add_host_to_cluster,
-    delete_host,
-    load_service_map,
-    remove_host_from_cluster,
-    update_mm_objects,
-)
+from cm.api import add_host_to_cluster, delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.models import (
     Cluster,
@@ -35,6 +29,11 @@ from cm.models import (
     HostComponent,
     HostProvider,
     ServiceComponent,
+)
+from cm.services.status.notify import (
+    reset_hc_map,
+    reset_objects_in_mm,
+    update_mm_objects,
 )
 from cm.status_api import make_ui_host_status
 from django_filters import rest_framework as drf_filters
@@ -257,7 +256,8 @@ class HostDetail(PermissionListMixin, DetailView):
             raise AdcmEx("HOST_UPDATE_ERROR")
 
         serializer.save(**kwargs)
-        load_service_map()
+        reset_hc_map()
+        reset_objects_in_mm()
 
         return Response(self.get_serializer(self.get_object()).data, status=HTTP_200_OK)
 

@@ -23,8 +23,8 @@ from adcm.permissions import (
 )
 from adcm.utils import get_maintenance_mode_response
 from audit.utils import audit
-from cm.api import update_mm_objects
 from cm.models import Cluster, ClusterObject, Host, ServiceComponent
+from cm.services.status.notify import update_mm_objects
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
@@ -40,15 +40,21 @@ from api_v2.component.serializers import (
     HostComponentSerializer,
 )
 from api_v2.config.utils import ConfigSchemaMixin
-from api_v2.views import CamelCaseGenericViewSet, CamelCaseReadOnlyModelViewSet
+from api_v2.views import (
+    CamelCaseGenericViewSet,
+    CamelCaseReadOnlyModelViewSet,
+    ObjectWithStatusViewMixin,
+)
 
 
-class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet):
+class ComponentViewSet(
+    PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet, ObjectWithStatusViewMixin
+):
     queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("pk")
-    serializer_class = ComponentSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_COMPONENT_PERM]
     filterset_class = ComponentFilter
+    retrieve_status_map_actions = ("statuses", "list")
 
     audit_model_hint = ServiceComponent
 
@@ -67,12 +73,12 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnly
             case "maintenance_mode":
                 return ComponentMaintenanceModeSerializer
 
-        return self.serializer_class
+        return ComponentSerializer
 
     @audit
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
-    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         component = get_object_for_user(
             user=request.user, perms=VIEW_COMPONENT_PERM, klass=ServiceComponent, pk=kwargs["pk"]
         )
@@ -90,15 +96,15 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnly
         return response
 
     @action(methods=["get"], detail=True, url_path="statuses")
-    def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         component = get_object_for_user(
             user=request.user, perms=VIEW_COMPONENT_PERM, klass=ServiceComponent, id=kwargs["pk"]
         )
 
-        return Response(data=ComponentStatusSerializer(instance=component).data)
+        return Response(data=ComponentStatusSerializer(instance=component, context=self.get_serializer_context()).data)
 
 
-class HostComponentViewSet(PermissionListMixin, ListModelMixin, CamelCaseGenericViewSet):
+class HostComponentViewSet(PermissionListMixin, ListModelMixin, CamelCaseGenericViewSet, ObjectWithStatusViewMixin):
     queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("prototype__name")
     serializer_class = HostComponentSerializer
     permission_classes = [DjangoModelPermissionsAudit]

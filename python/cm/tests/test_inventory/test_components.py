@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=attribute-defined-outside-init,too-many-locals
-
 
 from cm.models import Action, ClusterObject, ServiceComponent
 from cm.tests.test_inventory.base import BaseInventoryTestCase
