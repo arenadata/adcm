@@ -447,7 +447,7 @@ def get_bundle_root(action: Action) -> str:
     return str(settings.BUNDLE_DIR)
 
 
-def cook_script(action: Action, sub_action: SubAction):
+def cook_script(action: Action, sub_action: SubAction | None):
     prefix = action.prototype.bundle.hash
     script = action.script
 
@@ -521,7 +521,7 @@ def prepare_job(
     hosts: JSONField | None,
     verbose: bool,
 ):
-    prepare_job_config(action, sub_action, job_id, obj, conf, verbose)
+    write_job_config(job_id=job_id, config=prepare_job_config(action, sub_action, job_id, obj, conf, verbose))
     prepare_job_inventory(obj, job_id, action, delta, hosts)
     prepare_ansible_config(job_id, action, sub_action)
 
@@ -576,12 +576,12 @@ def prepare_context(
 
 def prepare_job_config(
     action: Action,
-    sub_action: SubAction,
+    sub_action: SubAction | None,
     job_id: int,
     obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
-    conf: JSONField | None,
+    conf: dict | JSONField | None,
     verbose: bool,
-):
+) -> dict:
     # pylint: disable=too-many-branches,too-many-statements
 
     job_conf = {
@@ -590,7 +590,7 @@ def prepare_job_config(
         "env": {
             "run_dir": str(settings.RUN_DIR),
             "log_dir": str(settings.LOG_DIR),
-            "tmp_dir": str(Path(settings.RUN_DIR, f"{job_id}", "tmp")),
+            "tmp_dir": str(settings.RUN_DIR / f"{job_id}" / "tmp"),
             "stack_dir": str(Path(get_bundle_root(action), action.prototype.bundle.hash)),
             "status_api_token": str(settings.STATUS_SECRET_KEY),
         },
@@ -656,17 +656,20 @@ def prepare_job_config(
     elif action.prototype.type == "adcm":
         job_conf["job"]["hostgroup"] = "127.0.0.1"
     else:
-        raise_adcm_ex("NOT_IMPLEMENTED", f'unknown prototype type "{action.prototype.type}"')
+        raise AdcmEx("NOT_IMPLEMENTED", f'unknown prototype type "{action.prototype.type}"')
 
     if conf:
         job_conf["job"]["config"] = conf
 
-    with open(
-        Path(settings.RUN_DIR, f"{job_id}", "config.json"),
-        "w",
+    return job_conf
+
+
+def write_job_config(job_id: int, config: dict) -> None:
+    with (settings.RUN_DIR / f"{job_id}" / "config.json").open(
+        mode="w",
         encoding=settings.ENCODING_UTF_8,
     ) as file_descriptor:
-        json.dump(job_conf, file_descriptor, sort_keys=True, separators=(",", ":"))
+        json.dump(config, file_descriptor, sort_keys=True, separators=(",", ":"))
 
 
 def create_task(

@@ -14,6 +14,7 @@
 import json
 from collections import defaultdict
 from functools import partial, wraps
+from typing import Literal, TypedDict
 
 from adcm_version import compare_prototype_versions
 from cm.adcm_config.config import (
@@ -898,7 +899,12 @@ def get_prototype_import(import_pk: int, import_obj: Cluster | ClusterObject) ->
     return proto_import
 
 
-def multi_bind(cluster: Cluster, service: ClusterObject | None, bind_list: list[dict]):
+class DataForMultiBind(TypedDict):
+    import_id: int
+    export_id: dict[Literal["cluster_id", "service_id"], int]
+
+
+def multi_bind(cluster: Cluster, service: ClusterObject | None, bind_list: list[DataForMultiBind]):
     check_bind_post(bind_list=bind_list)
     import_obj = get_bind_obj(cluster=cluster, service=service)
     old_bind = {}

@@ -1,0 +1,13 @@
+---
+root:
+  match: list
+  item: variable
+variable:
+  match: dict
+  items:
+    integer: integer
+    string: string
+integer:
+  match: int
+string:
+  match: string

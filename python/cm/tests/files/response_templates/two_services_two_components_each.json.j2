@@ -1,0 +1,124 @@
+{
+  "service_two_components": {
+    "id": {{ service_1_id }},
+    "version": "1.0",
+    "state": "created",
+    "multi_state": [],
+    "config": {
+      "integer": 10,
+      "password": "password",
+      "string": "string",
+      "list": [
+        "value1",
+        "value2",
+        "value3"
+      ]
+    },
+    "maintenance_mode": false,
+    "display_name": "service_two_components",
+    "before_upgrade": {
+      "state": null
+    },
+    "component_1": {
+      "component_id": {{ component_1_s1_id }},
+      "config": {
+        "integer": 10,
+        "password": "password",
+        "string": "string",
+        "list": [
+          "value1",
+          "value2",
+          "value3"
+        ]
+      },
+      "state": "created",
+      "multi_state": [],
+      "maintenance_mode": false,
+      "display_name": "component_1",
+      "before_upgrade": {
+        "state": null
+      }
+    },
+    "component_2": {
+      "component_id": {{ component_2_s1_id }},
+      "config": {
+        "integer": 10,
+        "password": "password",
+        "string": "string",
+        "list": [
+          "value1",
+          "value2",
+          "value3"
+        ]
+      },
+      "state": "created",
+      "multi_state": [],
+      "maintenance_mode": false,
+      "display_name": "component_2",
+      "before_upgrade": {
+        "state": null
+      }
+    }
+  },
+  "another_service_two_components": {
+    "id": {{ service_2_id }},
+    "version": "1.0",
+    "state": "created",
+    "multi_state": [],
+    "config": {
+      "integer": 10,
+      "password": "password",
+      "string": "string",
+      "list": [
+        "value1",
+        "value2",
+        "value3"
+      ]
+    },
+    "maintenance_mode": false,
+    "display_name": "another_service_two_components",
+    "before_upgrade": {
+      "state": null
+    },
+    "component_1": {
+      "component_id": {{ component_1_s2_id }},
+      "config": {
+        "integer": 10,
+        "password": "password",
+        "string": "string",
+        "list": [
+          "value1",
+          "value2",
+          "value3"
+        ]
+      },
+      "state": "created",
+      "multi_state": [],
+      "maintenance_mode": false,
+      "display_name": "component_1",
+      "before_upgrade": {
+        "state": null
+      }
+    },
+    "component_2": {
+      "component_id": {{ component_2_s2_id }},
+      "config": {
+        "integer": 10,
+        "password": "password",
+        "string": "string",
+        "list": [
+          "value1",
+          "value2",
+          "value3"
+        ]
+      },
+      "state": "created",
+      "multi_state": [],
+      "maintenance_mode": false,
+      "display_name": "component_2",
+      "before_upgrade": {
+        "state": null
+      }
+    }
+  }
+}

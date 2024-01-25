@@ -1,0 +1,81 @@
+{
+  "service_two_components": {
+    "id": {{ service_id }},
+    "version": "2.0",
+    "state": "created",
+    "multi_state": [],
+    "config": {
+      "integer": 10,
+      "password": "password",
+      "string": "string",
+      "list": [
+        "value1",
+        "value2",
+        "value3"
+      ]
+    },
+    "maintenance_mode": false,
+    "display_name": "service_two_components",
+    "before_upgrade": {
+        "state": "created",
+        "config": {
+            "integer": 10,
+            "password": "password",
+            "string": "string",
+            "list": ["value1", "value2", "value3"]
+        }
+    },
+    "component_1": {
+      "component_id": {{ component_1_id }},
+      "config": {
+        "integer": 10,
+        "password": "password",
+        "string": "string",
+        "list": [
+          "value1",
+          "value2",
+          "value3"
+        ]
+      },
+      "state": "created",
+      "multi_state": [],
+      "maintenance_mode": false,
+      "display_name": "component_1",
+      "before_upgrade": {
+        "state": "created",
+        "config": {
+            "integer": 10,
+            "password": "password",
+            "string": "string",
+            "list": ["value1", "value2", "value3"]
+        }
+      }
+    },
+    "component_2": {
+      "component_id": {{ component_2_id }},
+      "config": {
+        "integer": 10,
+        "password": "password",
+        "string": "string",
+        "list": [
+          "value1",
+          "value2",
+          "value3"
+        ]
+      },
+      "state": "created",
+      "multi_state": [],
+      "maintenance_mode": false,
+      "display_name": "component_2",
+      "before_upgrade": {
+        "state": "created",
+        "config": {
+            "integer": 10,
+            "password": "password",
+            "string": "string",
+            "list": ["value1", "value2", "value3"]
+        }
+      }
+    }
+  }
+}

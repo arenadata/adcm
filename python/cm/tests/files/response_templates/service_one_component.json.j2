@@ -1,0 +1,43 @@
+{
+  "service_one_component": {
+    "id": {{ service_id }},
+    "version": "1.0",
+    "state": "created",
+    "multi_state": [],
+    "config": {
+      "integer": 10,
+      "password": "password",
+      "string": "string",
+      "list": [
+        "value1",
+        "value2",
+        "value3"
+      ]
+    },
+    "maintenance_mode": {{ service_mm }},
+    "display_name": "service_one_component",
+    "before_upgrade": {
+      "state": null
+    },
+    "component_1": {
+      "component_id": {{ component_id }},
+      "config": {
+        "integer": 10,
+        "password": "password",
+        "string": "string",
+        "list": [
+          "value1",
+          "value2",
+          "value3"
+        ]
+      },
+      "state": "created",
+      "multi_state": [],
+      "maintenance_mode": {{ component_mm }},
+      "display_name": "component_1",
+      "before_upgrade": {
+        "state": null
+      }
+    }
+  }
+}

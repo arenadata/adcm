@@ -32,6 +32,7 @@ from cm.job import (
     restore_hc,
     set_action_state,
     set_job_start_status,
+    write_job_config,
 )
 from cm.models import (
     ADCM,
@@ -311,7 +312,10 @@ class TestJob(BaseTestCase):
     @patch("cm.job.prepare_ansible_config")
     @patch("cm.job.prepare_job_config")
     @patch("cm.job.prepare_job_inventory")
-    def test_prepare_job(self, mock_prepare_job_inventory, mock_prepare_job_config, mock_prepare_ansible_config):
+    @patch("cm.job.write_job_config")
+    def test_prepare_job(
+        self, mock_write_job_config, mock_prepare_job_inventory, mock_prepare_job_config, mock_prepare_ansible_config
+    ):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
         cluster = Cluster.objects.create(prototype=prototype)
@@ -323,6 +327,7 @@ class TestJob(BaseTestCase):
         mock_prepare_job_inventory.assert_called_once_with(cluster, job.id, action, {}, None)
         mock_prepare_job_config.assert_called_once_with(action, None, job.id, cluster, "", False)
         mock_prepare_ansible_config.assert_called_once_with(job.id, action, None)
+        mock_write_job_config.assert_called()
 
     @patch("cm.job.get_obj_config")
     def test_get_adcm_config(self, mock_get_obj_config):
@@ -408,7 +413,7 @@ class TestJob(BaseTestCase):
     @patch("cm.job.prepare_context")
     @patch("cm.job.get_adcm_config")
     @patch("json.dump")
-    @patch("builtins.open")
+    @patch("pathlib.Path.open")
     def test_prepare_job_config(
         self,
         mock_open,
@@ -462,7 +467,8 @@ class TestJob(BaseTestCase):
 
         for prototype_type, obj, action in data:
             with self.subTest(provider_type=prototype_type, obj=obj):
-                prepare_job_config(action, None, job.pk, obj, conf, False)
+                config = prepare_job_config(action, None, job.pk, obj, conf, False)
+                write_job_config(job_id=job.pk, config=config)
 
                 job_config = {
                     "adcm": {"config": {}},
@@ -513,11 +519,6 @@ class TestJob(BaseTestCase):
                 elif prototype_type == "adcm":
                     job_config["job"]["hostgroup"] = "127.0.0.1"
 
-                mock_open.assert_called_with(
-                    settings.RUN_DIR / f"{job.id}" / "config.json",
-                    "w",
-                    encoding=settings.ENCODING_UTF_8,
-                )
                 mock_dump.assert_called_with(
                     job_config, file_mock.__enter__.return_value, separators=(",", ":"), sort_keys=True
                 )

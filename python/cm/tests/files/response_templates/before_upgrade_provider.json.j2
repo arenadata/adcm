@@ -1,0 +1,17 @@
+{
+  "config": {},
+  "name": "provider",
+  "id": {{ id }},
+  "host_prototype_id": {{ host_prototype_id }},
+  "state": "success",
+  "multi_state": [],
+  "before_upgrade": {
+    "state": "created",
+    "config": {
+        "integer": 10,
+        "password": "password",
+        "string": "string",
+        "list": ["value1", "value2", "value3"]
+    }
+  }
+}

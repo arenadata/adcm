@@ -16,6 +16,7 @@ from cm.errors import AdcmEx
 from cm.errors import raise_adcm_ex as err
 from cm.logger import logger
 from cm.models import (
+    Cluster,
     ClusterObject,
     GroupConfig,
     Host,
@@ -47,20 +48,19 @@ def return_empty_on_not_found(func: Callable) -> Callable:
     return with_not_found_handle
 
 
-def get_cluster(obj):
+def get_cluster(obj) -> Cluster | None:
     if isinstance(obj, GroupConfig):
         obj = obj.object
 
-    if obj.prototype.type == "service":
-        cluster = obj.cluster
-    elif obj.prototype.type == "host":
-        cluster = obj.cluster
-    elif obj.prototype.type == "cluster":
-        cluster = obj
-    else:
-        return None
-
-    return cluster
+    match obj.prototype.type:
+        case "cluster":
+            return obj
+        case "service" | "component":
+            return obj.cluster
+        case "host":
+            return obj.cluster
+        case _:
+            return None
 
 
 def variant_service_in_cluster(**kwargs):
