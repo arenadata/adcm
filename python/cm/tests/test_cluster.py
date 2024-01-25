@@ -13,10 +13,14 @@
 import string
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from core.cluster.types import ClusterTopology, ComponentTopology, ServiceTopology
+from core.types import ShortObjectInfo
 from django.urls import reverse
 from rest_framework import status
 
 from cm.models import Bundle, Cluster, Prototype
+from cm.services.cluster import retrieve_clusters_topology
+from cm.tests.utils import gen_component, gen_host, gen_service, generate_hierarchy
 
 
 class TestCluster(BaseTestCase):
@@ -149,3 +153,66 @@ class TestCluster(BaseTestCase):
                 )
 
                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_retrieve_cluster_topology_success(self) -> None:
+        hierarchy = generate_hierarchy()
+        cluster = hierarchy["cluster"]
+        service_1 = hierarchy["service"]
+        component_11 = hierarchy["component"]
+        host_1 = hierarchy["host"]
+        host_2 = gen_host(provider=hierarchy["provider"])
+        self.add_host_to_cluster(cluster_pk=cluster.pk, host_pk=host_2.pk)
+        gen_host(provider=hierarchy["provider"])
+        service_2 = gen_service(cluster=cluster)
+        component_21 = gen_component(service=service_2)
+        component_22 = gen_component(service=service_2)
+
+        component_12 = gen_component(service=service_1)
+
+        lonely_service = gen_service(cluster=cluster)
+
+        host_1_info = ShortObjectInfo(id=host_1.pk, name=host_1.fqdn)
+
+        expected_topology = ClusterTopology(
+            cluster_id=cluster.pk,
+            services={
+                lonely_service.pk: ServiceTopology(
+                    info=ShortObjectInfo(id=lonely_service.pk, name=lonely_service.prototype.name), components={}
+                ),
+                service_1.pk: ServiceTopology(
+                    info=ShortObjectInfo(id=service_1.pk, name=service_1.prototype.name),
+                    components={
+                        component_11.pk: ComponentTopology(
+                            info=ShortObjectInfo(id=component_11.pk, name=component_11.prototype.name),
+                            hosts={host_1.pk: host_1_info},
+                        ),
+                        component_12.pk: ComponentTopology(
+                            info=ShortObjectInfo(id=component_12.pk, name=component_12.prototype.name), hosts={}
+                        ),
+                    },
+                ),
+                service_2.pk: ServiceTopology(
+                    info=ShortObjectInfo(id=service_2.pk, name=service_2.prototype.name),
+                    components={
+                        component_21.pk: ComponentTopology(
+                            info=ShortObjectInfo(id=component_21.pk, name=component_21.prototype.name), hosts={}
+                        ),
+                        component_22.pk: ComponentTopology(
+                            info=ShortObjectInfo(id=component_22.pk, name=component_22.prototype.name), hosts={}
+                        ),
+                    },
+                ),
+            },
+            hosts={host_1.pk: host_1_info, host_2.pk: ShortObjectInfo(id=host_2.pk, name=host_2.fqdn)},
+        )
+
+        with self.assertNumQueries(num=5):
+            actual_topology = next(retrieve_clusters_topology(cluster_ids=[cluster.pk]))
+
+        self.assertEqual(actual_topology, expected_topology)
+
+        second_cluster = generate_hierarchy()["cluster"]
+        with self.assertNumQueries(num=5):
+            result = tuple(retrieve_clusters_topology(cluster_ids=[cluster.pk, second_cluster.pk]))
+
+        self.assertSetEqual({entry.cluster_id for entry in result}, {cluster.pk, second_cluster.pk})

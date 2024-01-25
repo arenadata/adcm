@@ -10,10 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from cm.adcm_config.config import get_main_info
 from cm.models import Host, HostComponent, MaintenanceMode, ServiceComponent
-from cm.status_api import get_obj_status
 from rest_framework.serializers import (
     CharField,
     ChoiceField,
@@ -28,6 +26,7 @@ from api_v2.cluster.utils import get_depend_on
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.host.serializers import HostShortSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
+from api_v2.serializers import WithStatusSerializer
 from api_v2.service.serializers import ServiceNameSerializer, ServiceRelatedSerializer
 
 
@@ -59,8 +58,7 @@ class ComponentMappingSerializer(ModelSerializer):
         return None
 
 
-class ComponentSerializer(ModelSerializer):
-    status = SerializerMethodField()
+class ComponentSerializer(WithStatusSerializer):
     hosts = SerializerMethodField()
     prototype = PrototypeRelatedSerializer(read_only=True)
     cluster = ClusterRelatedSerializer(read_only=True)
@@ -87,9 +85,6 @@ class ComponentSerializer(ModelSerializer):
             "main_info",
         ]
 
-    def get_status(self, instance: ServiceComponent) -> str:
-        return get_obj_status(obj=instance)
-
     def get_hosts(self, instance: ServiceComponent) -> HostShortSerializer:
         host_pks = set()
         for host_component in HostComponent.objects.filter(component=instance).select_related("host"):
@@ -109,18 +104,13 @@ class ComponentMaintenanceModeSerializer(ModelSerializer):
         fields = ["maintenance_mode"]
 
 
-class RelatedHostComponentsStatusSerializer(ModelSerializer):
+class RelatedHostComponentsStatusSerializer(WithStatusSerializer):
     id = IntegerField(source="host.id")
     name = CharField(source="host.name")
-    status = SerializerMethodField()
 
     class Meta:
         model = HostComponent
         fields = ["id", "name", "status"]
-
-    @staticmethod
-    def get_status(instance: HostComponent) -> str:
-        return get_obj_status(obj=instance)
 
 
 class ComponentStatusSerializer(ModelSerializer):
@@ -131,9 +121,8 @@ class ComponentStatusSerializer(ModelSerializer):
         fields = ["host_components"]
 
 
-class HostComponentSerializer(ModelSerializer):
+class HostComponentSerializer(WithStatusSerializer):
     concerns = ConcernSerializer(read_only=True, many=True)
-    status = SerializerMethodField()
     cluster = ClusterRelatedSerializer(read_only=True)
     service = ServiceRelatedSerializer(read_only=True)
     prototype = PrototypeRelatedSerializer(read_only=True)
@@ -152,10 +141,6 @@ class HostComponentSerializer(ModelSerializer):
             "service",
             "prototype",
         ]
-
-    @staticmethod
-    def get_status(instance: ServiceComponent) -> str:
-        return get_obj_status(obj=instance)
 
 
 class ComponentAuditSerializer(ModelSerializer):

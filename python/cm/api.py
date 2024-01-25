@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict
-from functools import partial, wraps
+from functools import partial
 from typing import Literal, TypedDict
 import json
 
@@ -56,15 +55,14 @@ from cm.models import (
     HostProvider,
     MaintenanceMode,
     ObjectConfig,
-    ObjectType,
     Prototype,
     PrototypeExport,
     PrototypeImport,
     ServiceComponent,
     TaskLog,
 )
+from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import (
-    api_request,
     send_config_creation_event,
     send_delete_service_event,
     send_host_component_map_update_event,
@@ -100,84 +98,6 @@ def is_version_suitable(version: str, prototype_import: PrototypeImport) -> bool
     return True
 
 
-def load_service_map() -> None:
-    comps = defaultdict(lambda: defaultdict(list))
-    hosts = defaultdict(list)
-    hc_map = {}
-    services = defaultdict(list)
-
-    passive = {
-        component_id: True
-        for component_id in ServiceComponent.objects.values_list("id", flat=True).filter(
-            prototype__monitoring="passive"
-        )
-    }
-
-    for cluster_id, service_id, component_id, host_id in (
-        HostComponent.objects.values_list("cluster_id", "service_id", "component_id", "host_id")
-        .exclude(component_id__in=passive.keys())
-        .order_by("id")
-    ):
-        key = f"{host_id}.{component_id}"
-        hc_map[key] = {"cluster": cluster_id, "service": service_id}
-        comps[str(cluster_id)][str(service_id)].append(key)
-
-    for host_id, cluster_id in Host.objects.values_list("id", "cluster_id").filter(prototype__monitoring="active"):
-        hosts[cluster_id or 0].append(host_id)
-
-    for service_id, cluster_id in ClusterObject.objects.values_list("id", "cluster_id").filter(
-        prototype__monitoring="active"
-    ):
-        services[cluster_id].append(service_id)
-
-    data = {
-        "hostservice": hc_map,
-        "component": comps,
-        "service": services,
-        "host": hosts,
-    }
-    api_request(method="post", url="servicemap/", data=data)
-
-    load_mm_objects()
-
-
-def load_mm_objects():
-    """send ids of all objects in mm to status server"""
-    clusters = Cluster.objects.filter(prototype__type=ObjectType.CLUSTER, prototype__allow_maintenance_mode=True)
-
-    service_ids = set()
-    component_ids = set()
-    host_ids = []
-
-    for service in ClusterObject.objects.filter(cluster__in=clusters).prefetch_related("servicecomponent_set"):
-        if service.maintenance_mode == MaintenanceMode.ON:
-            service_ids.add(service.pk)
-        for component in service.servicecomponent_set.order_by("id"):
-            if component.maintenance_mode == MaintenanceMode.ON:
-                component_ids.add(component.pk)
-
-    for host in Host.objects.filter(cluster__in=clusters):
-        if host.maintenance_mode == MaintenanceMode.ON:
-            host_ids.append(host.pk)
-
-    data = {
-        "services": list(service_ids),
-        "components": list(component_ids),
-        "hosts": host_ids,
-    }
-    return api_request(method="post", url="object/mm/", data=data)
-
-
-def update_mm_objects(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        res = func(*args, **kwargs)
-        load_mm_objects()
-        return res
-
-    return wrapper
-
-
 def add_cluster(prototype: Prototype, name: str, description: str = "") -> Cluster:
     if prototype.type != "cluster":
         raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {prototype.type}")
@@ -190,7 +110,7 @@ def add_cluster(prototype: Prototype, name: str, description: str = "") -> Clust
         cluster.save()
         update_hierarchy_issues(cluster)
 
-    load_service_map()
+    reset_hc_map()
     logger.info("cluster #%s %s is added", cluster.pk, cluster.name)
 
     return cluster
@@ -217,7 +137,7 @@ def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, descriptio
         update_hierarchy_issues(host.provider)
         re_apply_object_policy(provider)
 
-    load_service_map()
+    reset_hc_map()
     logger.info("host #%s %s is added", host.pk, host.fqdn)
 
     return host
@@ -312,7 +232,8 @@ def delete_host(host: Host, cancel_tasks: bool = True) -> None:
 
     host_pk = host.pk
     host.delete()
-    load_service_map()
+    reset_hc_map()
+    reset_objects_in_mm()
     update_issue_after_deleting()
     logger.info("host #%s is deleted", host_pk)
 
@@ -378,7 +299,7 @@ def delete_service(service: ClusterObject) -> None:
     update_issue_after_deleting()
     update_hierarchy_issues(service.cluster)
     re_apply_object_policy(service.cluster)
-    load_service_map()
+    reset_hc_map()
     on_commit(func=partial(send_delete_service_event, service_id=service_pk))
     logger.info("service #%s is deleted", service_pk)
 
@@ -400,7 +321,8 @@ def delete_cluster(cluster: Cluster) -> None:
     )
     cluster.delete()
     update_issue_after_deleting()
-    load_service_map()
+    reset_hc_map()
+    reset_objects_in_mm()
 
     for task in tasks:
         task.cancel(obj_deletion=True)
@@ -428,7 +350,8 @@ def remove_host_from_cluster(host: Host) -> Host:
         update_hierarchy_issues(obj=cluster)
         re_apply_object_policy(apply_object=cluster)
 
-    load_service_map()
+    reset_hc_map()
+    reset_objects_in_mm()
 
     return host
 
@@ -464,7 +387,7 @@ def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
         update_hierarchy_issues(obj=cluster)
         re_apply_object_policy(apply_object=cluster)
 
-    load_service_map()
+    reset_hc_map()
     logger.info(
         "service #%s %s is added to cluster #%s %s",
         service.pk,
@@ -704,7 +627,8 @@ def save_hc(
         update_hierarchy_issues(provider)
 
     update_issue_after_deleting()
-    load_service_map()
+    reset_hc_map()
+    reset_objects_in_mm()
 
     for host_component_item in host_component_list:
         service_set.add(host_component_item.service)
@@ -1088,7 +1012,7 @@ def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
         update_hierarchy_issues(host)
         re_apply_object_policy(cluster)
 
-    load_service_map()
+    reset_hc_map()
     logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
 
     return host

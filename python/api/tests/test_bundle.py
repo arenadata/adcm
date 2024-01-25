@@ -151,7 +151,7 @@ class TestBundle(BaseTestCase):
         self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
 
     def test_load_servicemap(self):
-        with patch("api.stack.views.load_service_map"):
+        with patch("cm.services.status.notify.reset_hc_map"):
             response: Response = self.client.put(
                 path=reverse(viewname="v1:load-servicemap"),
             )

@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from cm.models import ADCMEntityStatus, Cluster
-from cm.status_api import get_cluster_status, get_host_status, get_service_status
+from cm.services.status.client import retrieve_status_map
 from django.db.models import QuerySet
 from django_filters.rest_framework import (
     CharFilter,
@@ -19,6 +19,8 @@ from django_filters.rest_framework import (
     FilterSet,
     OrderingFilter,
 )
+
+from api_v2.filters import filter_service_status
 
 
 class ClusterFilter(FilterSet):
@@ -44,10 +46,16 @@ class ClusterFilter(FilterSet):
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
+        status_map = retrieve_status_map()
+
         if value == ADCMEntityStatus.UP:
-            exclude_pks = {cluster.pk for cluster in queryset if get_cluster_status(cluster=cluster) != 0}
+            exclude_pks = {
+                cluster_id for cluster_id, status_info in status_map.clusters.items() if status_info.status != 0
+            }
         else:
-            exclude_pks = {cluster.pk for cluster in queryset if get_cluster_status(cluster=cluster) == 0}
+            exclude_pks = {
+                cluster_id for cluster_id, status_info in status_map.clusters.items() if status_info.status == 0
+            }
 
         return queryset.exclude(pk__in=exclude_pks)
 
@@ -57,12 +65,14 @@ class ClusterHostFilter(FilterSet):
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
-        if value == ADCMEntityStatus.UP:
-            exclude_pks = {host.pk for host in queryset if get_host_status(host=host) != 0}
-        else:
-            exclude_pks = {host.pk for host in queryset if get_host_status(host=host) == 0}
+        status_map = retrieve_status_map()
 
-        return queryset.exclude(pk__in=exclude_pks)
+        hosts_up = {host_id for host_id, status_info in status_map.hosts.items() if status_info.status == 0}
+
+        if value == ADCMEntityStatus.UP:
+            return queryset.filter(pk__in=hosts_up)
+
+        return queryset.exclude(pk__in=hosts_up)
 
 
 class ClusterServiceFilter(FilterSet):
@@ -70,9 +80,4 @@ class ClusterServiceFilter(FilterSet):
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:
-        if value == ADCMEntityStatus.UP:
-            exclude_pks = {service.pk for service in queryset if get_service_status(service=service) != 0}
-        else:
-            exclude_pks = {service.pk for service in queryset if get_service_status(service=service) == 0}
-
-        return queryset.exclude(pk__in=exclude_pks)
+        return filter_service_status(queryset=queryset, value=value)

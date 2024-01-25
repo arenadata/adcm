@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, NamedTuple
+from typing import NamedTuple
 from unittest.mock import patch
 
 from cm.job import ActionRunPayload, run_action
@@ -28,6 +28,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.status.client import FullStatusMap
 from django.urls import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -51,15 +52,6 @@ class TestServiceAPI(BaseAPITestCase):
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
         self.action = Action.objects.filter(prototype=self.service_2.prototype).first()
-
-    def get_service_status_mock(self) -> Callable:
-        def inner(service: ClusterObject) -> int:
-            if service.pk == self.service_2.pk:
-                return 0
-
-            return 32
-
-        return inner
 
     def test_list_success(self):
         response = self.client.get(
@@ -190,7 +182,20 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
 
     def test_filter_by_status_success(self):
-        with patch("api_v2.service.filters.get_service_status", new_callable=self.get_service_status_mock):
+        status_map = FullStatusMap(
+            clusters={
+                str(self.cluster_1.pk): {
+                    "status": 16,
+                    "hosts": {},
+                    "services": {
+                        str(self.service_1.pk): {"status": 16, "components": {}, "details": []},
+                        str(self.service_2.pk): {"status": 0, "components": {}, "details": []},
+                    },
+                }
+            }
+        )
+
+        with patch("api_v2.filters.retrieve_status_map", return_value=status_map):
             response = self.client.get(
                 path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
                 data={"status": ADCMEntityStatus.UP},

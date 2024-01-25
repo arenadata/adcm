@@ -19,7 +19,7 @@ from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
 from cm.upgrade import bundle_switch, update_before_upgrade
 
 
-class TestBeforeUpgrade(BaseInventoryTestCase):  # pylint: disable=too-many-instance-attributes
+class TestBeforeUpgrade(BaseInventoryTestCase):
     def setUp(self) -> None:
         bundles_dir = Path(__file__).parent.parent / "bundles"
         self.templates_dir = Path(__file__).parent.parent / "files/response_templates"

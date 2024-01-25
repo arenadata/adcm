@@ -61,7 +61,7 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
     def setUp(self):
         super().setUp()
 
-        self.maxDiff = None  # pylint: disable=invalid-name
+        self.maxDiff = None
 
         self.bundles_dir = Path(__file__).parent.parent / "bundles"
         self.templates_dir = Path(__file__).parent.parent / "files" / "response_templates"

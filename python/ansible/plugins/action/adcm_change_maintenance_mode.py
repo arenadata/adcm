@@ -52,9 +52,9 @@ sys.path.append("/adcm/python")
 import adcm.init_django  # noqa: F401, isort:skip
 
 from cm.ansible_plugin import get_object_id_from_context
-from cm.api import load_mm_objects
 from cm.issue import update_hierarchy_issues
 from cm.models import ClusterObject, Host, ServiceComponent
+from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import send_object_update_event
 
 
@@ -108,6 +108,6 @@ class ActionModule(ActionBase):
         obj.save()
         send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
         update_hierarchy_issues(obj.cluster)
-        load_mm_objects()
+        reset_objects_in_mm()
 
         return {"failed": False, "changed": True}

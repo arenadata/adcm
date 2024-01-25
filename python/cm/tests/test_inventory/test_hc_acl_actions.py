@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-instance-attributes
-
 
 from cm.inventory import HcAclAction
 from cm.models import Action, ClusterObject, Host, HostComponent, ServiceComponent

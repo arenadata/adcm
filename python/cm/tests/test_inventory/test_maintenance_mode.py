@@ -29,7 +29,7 @@ from cm.models import (
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
-class TestMaintenanceMode(BaseInventoryTestCase):  # pylint: disable=too-many-instance-attributes
+class TestMaintenanceMode(BaseInventoryTestCase):
     def setUp(self) -> None:
         bundles_dir = Path(__file__).parent.parent / "bundles"
         self.templates_dir = Path(__file__).parent.parent / "files/response_templates"

@@ -13,11 +13,12 @@
 from adcm.permissions import check_custom_perm
 from adcm.utils import get_maintenance_mode_response
 from cm.adcm_config.config import init_object_config
-from cm.api import check_license, load_service_map
+from cm.api import check_license
 from cm.api_context import CTX
 from cm.issue import add_concern_to_object, update_hierarchy_issues
 from cm.logger import logger
 from cm.models import Cluster, Host, HostProvider, Prototype
+from cm.services.status.notify import reset_hc_map
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
 from rest_framework.request import Request
@@ -45,7 +46,7 @@ def add_new_host_and_map_it(provider: HostProvider, fqdn: str, cluster: Cluster 
         if cluster:
             re_apply_object_policy(apply_object=cluster)
 
-    load_service_map()
+    reset_hc_map()
     logger.info("host #%s %s is added", host.pk, host.fqdn)
     if cluster:
         logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)

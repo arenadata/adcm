@@ -19,7 +19,7 @@ from cm.models import Action, ClusterObject, ObjectType, Prototype, ServiceCompo
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
 
 
-class TestHostAction(BaseInventoryTestCase):  # pylint: disable=too-many-instance-attributes
+class TestHostAction(BaseInventoryTestCase):
     def setUp(self) -> None:
         bundles_dir = Path(__file__).parent.parent / "bundles"
         self.templates_dir = Path(__file__).parent.parent / "files/response_templates"

@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.api import DataForMultiBind, is_version_suitable
-from cm.errors import AdcmEx, raise_adcm_ex
+from cm.api import is_version_suitable
+from cm.errors import raise_adcm_ex
 from cm.models import (
     Cluster,
     ClusterBind,
@@ -21,7 +21,8 @@ from cm.models import (
     PrototypeExport,
     PrototypeImport,
 )
-from cm.status_api import get_obj_status
+from cm.services.status.client import retrieve_status_map
+from cm.services.status.convert import convert_to_entity_status
 from django.db.models import QuerySet
 
 from api_v2.imports.types import (
@@ -49,10 +50,6 @@ def _format_binds(binds: QuerySet[ClusterBind]) -> list[UIBind]:
         binds_data.append(UIBind(id=bind.pk, source=UIBindSource(id=source.pk, type=source.prototype.type)))
 
     return binds_data
-
-
-def _format_cluster(cluster: Cluster) -> UICluster:
-    return UICluster(id=cluster.pk, name=cluster.name, status=get_obj_status(obj=cluster), state=cluster.state)
 
 
 def _format_import_cluster(cluster: Cluster, prototype_import: PrototypeImport | None) -> UIImportCluster | None:
@@ -194,12 +191,22 @@ def get_imports(obj: Cluster | ClusterObject) -> list[UIObjectImport]:
         .order_by("pk")
     )
 
+    status_map = retrieve_status_map()
+
     for import_candidate in sorted(import_candidates, key=lambda candidate: candidate["obj"].name):
+        cluster_candidate = import_candidate["obj"]
         out_data.append(
             UIObjectImport(
-                cluster=_format_cluster(cluster=import_candidate["obj"]),
+                cluster=UICluster(
+                    id=cluster_candidate.pk,
+                    name=cluster_candidate.name,
+                    status=convert_to_entity_status(
+                        raw_status=status_map.get_for_cluster(cluster_id=cluster_candidate.pk)
+                    ),
+                    state=cluster_candidate.state,
+                ),
                 import_cluster=_format_import_cluster(
-                    cluster=import_candidate["obj"], prototype_import=import_candidate["prototype_import"]
+                    cluster=cluster_candidate, prototype_import=import_candidate["prototype_import"]
                 ),
                 import_services=_format_import_services(service_candidates=import_candidate["services"]),
                 binds=_format_binds(binds=binds.filter(source_cluster=import_candidate["obj"]).order_by("pk")),
@@ -209,22 +216,19 @@ def get_imports(obj: Cluster | ClusterObject) -> list[UIObjectImport]:
     return out_data
 
 
-def cook_data_for_multibind(validated_data: list, obj: Cluster | ClusterObject) -> list[DataForMultiBind]:
+def cook_data_for_multibind(validated_data: list, obj: Cluster | ClusterObject) -> list:
     bind_data = []
 
     for item in validated_data:
         if item["source"]["type"] == ObjectType.CLUSTER:
             export_obj = Cluster.objects.get(pk=item["source"]["id"])
-            cluster_id: int = export_obj.pk
-            service_id: None = None
+            cluster_id = export_obj.pk
+            service_id = None
 
         elif item["source"]["type"] == ObjectType.SERVICE:
             export_obj = ClusterObject.objects.get(pk=item["source"]["id"])
-            cluster_id: int = export_obj.cluster.pk
-            service_id: int = export_obj.pk
-
-        else:
-            raise AdcmEx("INVALID_INPUT", "Incorrect type of `source`")
+            cluster_id = export_obj.cluster.pk
+            service_id = export_obj.pk
 
         proto_import = PrototypeImport.objects.filter(name=export_obj.prototype.name, prototype=obj.prototype).first()
 

@@ -36,6 +36,7 @@ from cm.models import (
     PrototypeImport,
 )
 from cm.services.cluster import perform_host_to_cluster_map
+from cm.services.status import notify
 from cm.tests.utils import gen_service, generate_hierarchy
 
 mock_issue_check_map = {
@@ -359,7 +360,7 @@ class TestConcernsRedistribution(BaseTestCase):
         )
 
         with patch("cm.issue._issue_check_map", self.MOCK_ISSUE_CHECK_MAP_ALL_FALSE):
-            perform_host_to_cluster_map(self.cluster.id, [self.host.id])
+            perform_host_to_cluster_map(self.cluster.id, [self.host.id], status_service=notify)
 
         self.host.refresh_from_db()
         concerns_after = self.host.concerns.all()

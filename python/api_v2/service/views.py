@@ -20,8 +20,8 @@ from adcm.permissions import (
 )
 from adcm.utils import delete_service_from_api, get_maintenance_mode_response
 from audit.utils import audit
-from cm.api import update_mm_objects
 from cm.models import Cluster, ClusterObject
+from cm.services.status.notify import update_mm_objects
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
@@ -48,7 +48,7 @@ from api_v2.service.utils import (
     bulk_add_services_to_cluster,
     validate_service_prototypes,
 )
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import CamelCaseGenericViewSet, ObjectWithStatusViewMixin
 
 
 class ServiceViewSet(
@@ -59,14 +59,15 @@ class ServiceViewSet(
     ListModelMixin,
     RetrieveModelMixin,
     CamelCaseGenericViewSet,
+    ObjectWithStatusViewMixin,
 ):
     queryset = ClusterObject.objects.select_related("cluster").order_by("pk")
-    serializer_class = ServiceRetrieveSerializer
     filterset_class = ServiceFilter
     filter_backends = (DjangoFilterBackend,)
     permission_required = [VIEW_SERVICE_PERM]
     permission_classes = [ServicePermissions]
     audit_model_hint = ClusterObject
+    retrieve_status_map_actions = ("list", "statuses")
 
     def get_queryset(self, *args, **kwargs):
         cluster = get_object_for_user(
@@ -82,7 +83,7 @@ class ServiceViewSet(
             case "maintenance_mode":
                 return ServiceMaintenanceModeSerializer
 
-        return self.serializer_class
+        return ServiceRetrieveSerializer
 
     @audit
     def create(self, request: Request, *args, **kwargs):  # noqa: ARG002
@@ -92,9 +93,7 @@ class ServiceViewSet(
         check_custom_perm(user=request.user, action_type=ADD_SERVICE_PERM, model=Cluster.__name__.lower(), obj=cluster)
 
         multiple_services = isinstance(request.data, list)
-        serializer = self.get_serializer(
-            data=request.data, many=multiple_services, context={"cluster": cluster, **self.get_serializer_context()}
-        )
+        serializer = self.get_serializer(data=request.data, many=multiple_services, context={"cluster": cluster})
         serializer.is_valid(raise_exception=True)
 
         service_prototypes, error = validate_service_prototypes(
@@ -104,12 +103,18 @@ class ServiceViewSet(
             raise error
         added_services = bulk_add_services_to_cluster(cluster=cluster, prototypes=service_prototypes)
 
+        context = self.get_serializer_context()
+
         if multiple_services:
             return Response(
-                status=HTTP_201_CREATED, data=ServiceRetrieveSerializer(instance=added_services, many=True).data
+                status=HTTP_201_CREATED,
+                data=ServiceRetrieveSerializer(instance=added_services, many=True, context=context).data,
             )
 
-        return Response(status=HTTP_201_CREATED, data=ServiceRetrieveSerializer(instance=added_services[0]).data)
+        return Response(
+            status=HTTP_201_CREATED,
+            data=ServiceRetrieveSerializer(instance=added_services[0], context=context).data,
+        )
 
     @audit
     def destroy(self, request: Request, *args, **kwargs):  # noqa: ARG002
@@ -119,7 +124,7 @@ class ServiceViewSet(
     @audit
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
-    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         service = get_object_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, pk=kwargs["pk"])
         check_custom_perm(
             user=request.user, action_type=CHANGE_MM_PERM, model=service.__class__.__name__.lower(), obj=service
@@ -135,7 +140,7 @@ class ServiceViewSet(
         return response
 
     @action(methods=["get"], detail=True, url_path="statuses")
-    def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         service = get_object_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, id=kwargs["pk"])
 
-        return Response(data=ServiceStatusSerializer(instance=service).data)
+        return Response(data=ServiceStatusSerializer(instance=service, context=self.get_serializer_context()).data)

@@ -14,7 +14,6 @@ from collections import defaultdict
 from itertools import chain
 from typing import Literal
 
-from cm.api import load_service_map
 from cm.api_context import CTX
 from cm.data_containers import (
     ClusterData,
@@ -45,6 +44,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import send_host_component_map_update_event
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import QuerySet
@@ -220,7 +220,7 @@ def _check_mapping_data(mapping_data: MappingData) -> None:
 
     hosts_mm_states_in_add_remove_groups = {
         diff.host.maintenance_mode for diff in mapping_data.mapping_difference["add"]
-    }.union({diff.host.maintenance_mode for diff in mapping_data.mapping_difference["remove"]})
+    } | {diff.host.maintenance_mode for diff in mapping_data.mapping_difference["remove"]}
     if MaintenanceMode.ON.value in hosts_mm_states_in_add_remove_groups:
         raise AdcmEx("INVALID_HC_HOST_IN_MM")
 
@@ -256,7 +256,8 @@ def _check_mapping_data(mapping_data: MappingData) -> None:
 
 @atomic
 def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
-    on_commit(func=load_service_map)
+    on_commit(func=reset_hc_map)
+    on_commit(func=reset_objects_in_mm)
 
     for removed_host in mapping_data.removed_hosts:
         remove_concern_from_object(object_=removed_host, concern=CTX.lock)

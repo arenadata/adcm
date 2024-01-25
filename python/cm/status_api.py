@@ -23,7 +23,6 @@ import requests
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
-    ADCMEntityStatus,
     Cluster,
     ClusterObject,
     Host,
@@ -189,30 +188,6 @@ def get_host_comp_status(host: Host, component: ServiceComponent) -> int:
 
 def get_component_status(component: ServiceComponent) -> int:
     return get_status(obj=component, url=f"component/{component.id}/")
-
-
-def get_obj_status(obj: Cluster | ClusterObject | Host | HostComponent | ServiceComponent) -> str:
-    match obj.__class__.__name__:
-        case Cluster.__name__:
-            url = f"cluster/{obj.pk}/"
-        case ClusterObject.__name__:
-            url = f"cluster/{obj.cluster.pk}/service/{obj.pk}/"
-        case Host.__name__:
-            url = f"host/{obj.pk}/"
-        case HostComponent.__name__:
-            url = f"host/{obj.host_id}/component/{obj.component_id}/"
-            obj = obj.component
-        case ServiceComponent.__name__:
-            url = f"component/{obj.pk}/"
-        case _:
-            raise ValueError("Wrong obj type")
-
-    int_status = get_status(obj=obj, url=url)
-
-    if int_status == 0:
-        return ADCMEntityStatus.UP
-
-    return ADCMEntityStatus.DOWN
 
 
 def get_object_map(obj: ADCMEntity, url_type: str) -> dict | None:

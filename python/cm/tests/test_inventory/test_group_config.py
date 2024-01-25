@@ -27,7 +27,7 @@ from cm.models import (
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
 
 
-class TestGroupConfigsInInventory(BaseInventoryTestCase):  # pylint: disable=too-many-instance-attributes
+class TestGroupConfigsInInventory(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 

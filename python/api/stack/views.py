@@ -13,7 +13,7 @@
 
 from adcm.permissions import DjangoObjectPermissionsAudit, IsAuthenticatedAudit
 from audit.utils import audit
-from cm.api import accept_license, get_license, load_service_map
+from cm.api import accept_license, get_license
 from cm.bundle import delete_bundle, load_bundle, update_bundle, upload_file
 from cm.models import (
     Action,
@@ -24,6 +24,7 @@ from cm.models import (
     PrototypeImport,
     Upgrade,
 )
+from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
@@ -76,7 +77,8 @@ def load_servicemap_view(request: Request) -> HttpResponse:
     if request.method != "PUT":
         return HttpResponse(status=HTTP_405_METHOD_NOT_ALLOWED)
 
-    load_service_map()
+    reset_hc_map()
+    reset_objects_in_mm()
 
     return HttpResponse(status=HTTP_200_OK)
 

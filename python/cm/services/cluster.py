@@ -10,19 +10,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Collection, Iterable
+from collections import defaultdict
+from typing import Collection, Generator, Iterable, Protocol
 
-from core.cluster.operations import add_hosts_to_cluster
-from core.cluster.types import HostClusterPair
-from core.types import ClusterID, HostID
+from core.cluster.operations import add_hosts_to_cluster, build_clusters_topology
+from core.cluster.types import (
+    ClusterTopology,
+    HostClusterPair,
+    HostComponentEntry,
+    MaintenanceModeOfObjects,
+    ObjectMaintenanceModeState,
+)
+from core.types import ClusterID, HostID, ShortObjectInfo
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
 
-from cm.api import load_service_map
-from cm.models import Cluster, Host
+from cm.models import Cluster, ClusterObject, Host, HostComponent, ServiceComponent
 
 
-class HostClusterDB:
+class ClusterDB:
     __slots__ = ()
 
     @staticmethod
@@ -36,13 +42,91 @@ class HostClusterDB:
     def set_cluster_id_for_hosts(cluster_id: ClusterID, hosts: Iterable[HostID]) -> None:
         Host.objects.filter(pk__in=hosts).update(cluster_id=cluster_id)
 
+    @staticmethod
+    def get_clusters_hosts(cluster_ids: Iterable[ClusterID]) -> dict[ClusterID, list[ShortObjectInfo]]:
+        query = Host.objects.filter(cluster_id__in=cluster_ids).values_list("id", "fqdn", "cluster_id")
 
-def perform_host_to_cluster_map(cluster_id: int, hosts: Collection[int]) -> Collection[int]:
+        result = defaultdict(list)
+        for host_id, name, cluster_id in query:
+            result[cluster_id].append(ShortObjectInfo(id=host_id, name=name))
+
+        return result
+
+    @staticmethod
+    def get_clusters_services_with_components(
+        cluster_ids: Iterable[ClusterID],
+    ) -> dict[ClusterID, list[tuple[ShortObjectInfo, Collection[ShortObjectInfo]]]]:
+        services = (
+            ClusterObject.objects.select_related("prototype")
+            .prefetch_related("servicecomponent_set__prototype")
+            .filter(cluster_id__in=cluster_ids)
+        )
+
+        result = defaultdict(list)
+        for service in services:
+            result[service.cluster_id].append(
+                (
+                    ShortObjectInfo(id=service.pk, name=service.name),
+                    tuple(
+                        ShortObjectInfo(id=component.pk, name=component.name)
+                        for component in service.servicecomponent_set.all()
+                    ),
+                )
+            )
+
+        return result
+
+    @staticmethod
+    def get_host_component_entries(cluster_ids: Iterable[ClusterID]) -> dict[ClusterID, list[HostComponentEntry]]:
+        query = HostComponent.objects.filter(cluster_id__in=cluster_ids).values_list(
+            "host_id", "component_id", "cluster_id"
+        )
+
+        result = defaultdict(list)
+        for host_id, component_id, cluster_id in query:
+            result[cluster_id].append(HostComponentEntry(host_id=host_id, component_id=component_id))
+
+        return result
+
+
+class _StatusServerService(Protocol):
+    def reset_hc_map(self) -> None:
+        ...
+
+
+def perform_host_to_cluster_map(
+    cluster_id: int, hosts: Collection[int], status_service: _StatusServerService
+) -> Collection[int]:
     with atomic():
-        add_hosts_to_cluster(cluster_id=cluster_id, hosts=hosts, db=HostClusterDB)
+        add_hosts_to_cluster(cluster_id=cluster_id, hosts=hosts, db=ClusterDB)
 
         re_apply_object_policy(Cluster.objects.get(id=cluster_id))
 
-    load_service_map()
+    status_service.reset_hc_map()
 
     return hosts
+
+
+def retrieve_clusters_topology(cluster_ids: Iterable[ClusterID]) -> Generator[ClusterTopology, None, None]:
+    return build_clusters_topology(cluster_ids=cluster_ids, db=ClusterDB)
+
+
+def retrieve_clusters_objects_maintenance_mode(cluster_ids: Iterable[ClusterID]) -> MaintenanceModeOfObjects:
+    return MaintenanceModeOfObjects(
+        hosts={
+            host_id: ObjectMaintenanceModeState(mm)
+            for host_id, mm in Host.objects.values_list("id", "maintenance_mode").filter(cluster_id__in=cluster_ids)
+        },
+        services={
+            service_id: ObjectMaintenanceModeState(mm)
+            for service_id, mm in ClusterObject.objects.values_list("id", "_maintenance_mode").filter(
+                cluster_id__in=cluster_ids
+            )
+        },
+        components={
+            component_id: ObjectMaintenanceModeState(mm)
+            for component_id, mm in ServiceComponent.objects.values_list("id", "_maintenance_mode").filter(
+                cluster_id__in=cluster_ids
+            )
+        },
+    )
