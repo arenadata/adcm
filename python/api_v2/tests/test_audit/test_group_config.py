@@ -10,9 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines
-
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import GroupConfig, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
 from rbac.services.user import create_user
@@ -26,8 +23,10 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
 )
 
+from api_v2.tests.base import BaseAPITestCase
 
-class TestGroupConfigAudit(BaseAPITestCase):  # pylint: disable=too-many-public-methods,too-many-instance-attributes
+
+class TestGroupConfigAudit(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 

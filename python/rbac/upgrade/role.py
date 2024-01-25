@@ -19,11 +19,12 @@ from cm.models import Action, Bundle, Host, ProductCategory, get_model_by_type
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from rbac.models import Permission, Policy, Role, RoleMigration, RoleTypes
-from rbac.settings import api_settings
 from ruyaml import round_trip_load
 from ruyaml.parser import ParserError
 from ruyaml.scanner import ScannerError
+
+from rbac.models import Permission, Policy, Role, RoleMigration, RoleTypes
+from rbac.settings import api_settings
 
 
 def upgrade(data: dict) -> None:
@@ -128,7 +129,7 @@ def get_role_spec(data: str, schema: str) -> dict:
     """
 
     try:
-        with open(file=data, encoding=settings.ENCODING_UTF_8) as f:
+        with open(data, encoding=settings.ENCODING_UTF_8) as f:
             data = round_trip_load(stream=f)
     except FileNotFoundError:
         raise_adcm_ex(code="INVALID_ROLE_SPEC", msg=f'Can not open role file "{data}"')
@@ -136,7 +137,7 @@ def get_role_spec(data: str, schema: str) -> dict:
     except (ParserError, ScannerError, NotImplementedError) as e:
         raise_adcm_ex(code="INVALID_ROLE_SPEC", msg=f'YAML decode "{data}" error: {e}')
 
-    with open(file=schema, encoding=settings.ENCODING_UTF_8) as f:
+    with open(schema, encoding=settings.ENCODING_UTF_8) as f:
         rules = round_trip_load(stream=f)
 
     try:
@@ -163,10 +164,7 @@ def prepare_hidden_roles(bundle: Bundle) -> dict:
         name = f"{name_prefix} {action.display_name}"
         model = get_model_by_type(action.prototype.type)
 
-        if action.prototype.type == "component":
-            serv_name = f"service_{action.prototype.parent.name}_"
-        else:
-            serv_name = ""
+        serv_name = f"service_{action.prototype.parent.name}_" if action.prototype.type == "component" else ""
 
         role_name = (
             f"{bundle.name}_{bundle.version}_{bundle.edition}_{serv_name}"

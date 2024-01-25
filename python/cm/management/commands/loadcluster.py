@@ -10,15 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-locals, global-statement
-
+from datetime import datetime
+from pathlib import Path
+import sys
+import json
 import base64
 import getpass
-import json
-import sys
-from datetime import datetime
 
 from ansible.parsing.vault import VaultAES256, VaultSecret
+from cryptography.fernet import Fernet, InvalidToken
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.core.management.base import BaseCommand
+from django.db.transaction import atomic
+from django.db.utils import IntegrityError
+
 from cm.adcm_config.config import save_file_type
 from cm.errors import AdcmEx
 from cm.models import (
@@ -35,15 +44,6 @@ from cm.models import (
     PrototypeConfig,
     ServiceComponent,
 )
-from cryptography.fernet import Fernet, InvalidToken
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from django.core.management.base import BaseCommand
-from django.db.transaction import atomic
-from django.db.utils import IntegrityError
 
 OLD_ADCM_PASSWORD = None
 
@@ -71,8 +71,7 @@ def get_prototype(**kwargs):
     :rtype: models.Prototype
     """
     bundle = Bundle.objects.get(hash=kwargs.pop("bundle_hash"))
-    prototype = Prototype.objects.get(bundle=bundle, **kwargs)
-    return prototype
+    return Prototype.objects.get(bundle=bundle, **kwargs)
 
 
 def create_config(config, prototype=None):
@@ -104,8 +103,7 @@ def create_config(config, prototype=None):
         conf.previous = previous_id
         conf.save()
         return conf
-    else:
-        return None
+    return None
 
 
 def create_group(group, ex_hosts_list, obj):
@@ -210,7 +208,7 @@ def create_provider(provider):
         same_name_provider = HostProvider.objects.get(name=provider["name"])
         if same_name_provider.prototype.bundle.hash != bundle_hash:
             raise IntegrityError("Name of provider already in use in another bundle")
-        create_file_from_config(same_name_provider, provider["config"])
+        create_file_from_config(same_name_provider, provider["config"])  # noqa: TRY300
         return ex_id, same_name_provider
     except HostProvider.DoesNotExist:
         prototype = get_prototype(bundle_hash=bundle_hash, type="provider")
@@ -335,14 +333,13 @@ def create_host_component(host_component, cluster, host, service, component):
     :rtype: models.HostComponent
     """
     host_component.pop("cluster")
-    host_component = HostComponent.objects.create(
+    return HostComponent.objects.create(
         cluster=cluster,
         host=host,
         service=service,
         component=component,
         **host_component,
     )
-    return host_component
 
 
 def check(data):
@@ -352,7 +349,7 @@ def check(data):
     :param data: Data from file
     :type data: dict
     """
-    if settings.ADCM_VERSION != data["ADCM_VERSION"]:
+    if data["ADCM_VERSION"] != settings.ADCM_VERSION:
         raise AdcmEx(
             "DUMP_LOAD_ADCM_VERSION_ERROR",
             msg=(
@@ -381,9 +378,7 @@ def decrypt_file(pass_from_user, file):
         backend=default_backend(),
     )
     key = base64.urlsafe_b64encode(kdf.derive(password))
-    f = Fernet(key)
-    decrypted = f.decrypt(file.encode())
-    return decrypted
+    return Fernet(key).decrypt(file.encode())
 
 
 def set_old_password(password):
@@ -401,7 +396,7 @@ def load(file_path):
     """
     try:
         password = getpass.getpass()
-        with open(file_path, encoding=settings.ENCODING_UTF_8) as f:
+        with Path(file_path).open(encoding=settings.ENCODING_UTF_8) as f:
             encrypted = f.read()
             decrypted = decrypt_file(password, encrypted)
             data = json.loads(decrypted.decode(settings.ENCODING_UTF_8))
@@ -473,7 +468,7 @@ class Command(BaseCommand):
         """Parsing command line arguments"""
         parser.add_argument("file_path", nargs="?")
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: ARG002
         """Handler method"""
         file_path = options.get("file_path")
         load(file_path)

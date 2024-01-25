@@ -10,16 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.base_view import GenericUIViewSet
-from api.group_config.serializers import (
-    GroupConfigConfigLogSerializer,
-    GroupConfigConfigSerializer,
-    GroupConfigHostCandidateSerializer,
-    GroupConfigHostSerializer,
-    GroupConfigSerializer,
-    UIGroupConfigConfigLogSerializer,
-    revert_model_name,
-)
+from adcm.permissions import DjangoObjectPermissionsAudit, check_config_perm
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, GroupConfig, Host, ObjectConfig
@@ -44,7 +35,16 @@ from rest_framework.status import (
 from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from adcm.permissions import DjangoObjectPermissionsAudit, check_config_perm
+from api.base_view import GenericUIViewSet
+from api.group_config.serializers import (
+    GroupConfigConfigLogSerializer,
+    GroupConfigConfigSerializer,
+    GroupConfigHostCandidateSerializer,
+    GroupConfigHostSerializer,
+    GroupConfigSerializer,
+    UIGroupConfigConfigLogSerializer,
+    revert_model_name,
+)
 
 
 class GroupConfigFilterSet(FilterSet):
@@ -69,7 +69,7 @@ class GroupConfigHostViewSet(
     RetrieveModelMixin,
     DestroyModelMixin,
     GenericViewSet,
-):  # pylint: disable=too-many-ancestors
+):
     queryset = Host.objects.all()
     serializer_class = GroupConfigHostSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
@@ -79,7 +79,7 @@ class GroupConfigHostViewSet(
     ordering = ["id"]
 
     @audit
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
 
         if serializer.is_valid(raise_exception=True):
@@ -94,7 +94,7 @@ class GroupConfigHostViewSet(
             return Response(data=serializer.errors, status=HTTP_400_BAD_REQUEST)
 
     @audit
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request, *args, **kwargs):  # noqa: ARG002
         group_config = GroupConfig.obj.get(id=self.kwargs.get("parent_lookup_group_config"))
         host = self.get_object()
         group_config.hosts.remove(host)
@@ -118,14 +118,14 @@ class GroupConfigHostCandidateViewSet(
     PermissionListMixin,
     NestedViewSetMixin,
     ReadOnlyModelViewSet,
-):  # pylint: disable=too-many-ancestors
+):
     serializer_class = GroupConfigHostCandidateSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
     lookup_url_kwarg = "host_id"
     permission_required = ["cm.view_host"]
     schema = AutoSchema()
 
-    def get_queryset(self, *args, **kwargs):
+    def get_queryset(self, *args, **kwargs):  # noqa: ARG002
         group_config_id = self.kwargs.get("parent_lookup_group_config")
         if group_config_id is None:
             return Host.objects.none()
@@ -152,7 +152,7 @@ class GroupConfigConfigViewSet(
     NestedViewSetMixin,
     RetrieveModelMixin,
     GenericViewSet,
-):  # pylint: disable=too-many-ancestors
+):
     queryset = ObjectConfig.objects.all()
     serializer_class = GroupConfigConfigSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
@@ -186,7 +186,7 @@ class GroupConfigConfigLogViewSet(
     ListModelMixin,
     CreateModelMixin,
     GenericUIViewSet,
-):  # pylint: disable=too-many-ancestors
+):
     serializer_class = GroupConfigConfigLogSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
     permission_required = ["view_configlog"]
@@ -198,7 +198,7 @@ class GroupConfigConfigLogViewSet(
             return UIGroupConfigConfigLogSerializer
         return super().get_serializer_class()
 
-    def get_queryset(self, *args, **kwargs):
+    def get_queryset(self, *args, **kwargs):  # noqa: ARG002
         kwargs = {
             "obj_ref__group_config": self.kwargs.get("parent_lookup_obj_ref__group_config"),
             "obj_ref": self.kwargs.get("parent_lookup_obj_ref"),
@@ -232,7 +232,7 @@ class GroupConfigConfigLogViewSet(
         return super().create(request, *args, **kwargs)
 
 
-class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
+class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
     queryset = GroupConfig.objects.all()
     serializer_class = GroupConfigSerializer
     filterset_class = GroupConfigFilterSet
@@ -242,7 +242,7 @@ class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
     ordering = ["id"]
 
     @audit
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         try:
             serializer.is_valid(raise_exception=True)
@@ -261,7 +261,7 @@ class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
         return Response(serializer.data, status=HTTP_201_CREATED, headers=headers)
 
     @audit
-    def update(self, request, *args, **kwargs):
+    def update(self, request, *args, **kwargs):  # noqa: ARG002
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
         model = type(instance.object).__name__.lower()
@@ -274,13 +274,12 @@ class GroupConfigViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
         if getattr(instance, "_prefetched_objects_cache", None):
             # If 'prefetch_related' has been applied to a queryset, we need to
             # forcibly invalidate the prefetch cache on the instance.
-            # pylint: disable=protected-access
             instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
 
     @audit
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request, *args, **kwargs):  # noqa: ARG002
         instance = self.get_object()
         model = type(instance.object).__name__.lower()
         check_config_perm(user=self.request.user, action_type="change", model=model, obj=instance.object)

@@ -9,14 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.rbac.user.filters import UserFilterSet
-from api_v2.rbac.user.serializers import (
-    UserCreateSerializer,
-    UserSerializer,
-    UserUpdateSerializer,
-)
-from api_v2.rbac.user.utils import unblock_user
-from api_v2.views import CamelCaseModelViewSet
+from adcm.permissions import VIEW_USER_PERMISSION, CustomModelPermissionsByMethod
 from audit.utils import audit
 from cm.errors import AdcmEx
 from django.conf import settings
@@ -33,10 +26,17 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from adcm.permissions import VIEW_USER_PERMISSION, CustomModelPermissionsByMethod
+from api_v2.rbac.user.filters import UserFilterSet
+from api_v2.rbac.user.serializers import (
+    UserCreateSerializer,
+    UserSerializer,
+    UserUpdateSerializer,
+)
+from api_v2.rbac.user.utils import unblock_user
+from api_v2.views import CamelCaseModelViewSet
 
 
-class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disable=too-many-ancestors
+class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):
     queryset = (
         User.objects.prefetch_related(Prefetch(lookup="groups", queryset=AuthGroup.objects.select_related("group")))
         .exclude(username__in=settings.ADCM_HIDDEN_USERS)
@@ -61,7 +61,7 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
         return UserSerializer
 
     @audit
-    def create(self, request: Request, *args, **kwargs) -> Response:
+    def create(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -71,7 +71,7 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
         return Response(data=UserSerializer(instance=user).data, status=HTTP_201_CREATED)
 
     @audit
-    def partial_update(self, request: Request, *args, **kwargs) -> Response:
+    def partial_update(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         instance: User = self.get_object()
         serializer = self.get_serializer(instance=instance, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -91,7 +91,7 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
 
     @audit
     @action(methods=["post"], detail=True)
-    def unblock(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def unblock(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         if not request.user.is_superuser:
             raise AdcmEx(code="USER_UNBLOCK_ERROR")
 
@@ -105,4 +105,4 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
         if user.built_in:
             raise AdcmEx(code="USER_DELETE_ERROR")
 
-        return super().destroy(request=request, *args, **kwargs)
+        return super().destroy(*args, request=request, **kwargs)

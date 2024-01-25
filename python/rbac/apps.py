@@ -18,6 +18,6 @@ class RBACConfig(AppConfig):
     verbose_name = "Arenadata Web Platform role-based access control"
 
     def ready(self):
-        from rbac.signals import (  # pylint: disable=import-outside-toplevel,unused-import
+        from rbac.signals import (  # noqa: F401, PLC0415
             handle_name_type_display_name,
         )

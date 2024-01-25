@@ -10,18 +10,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=wrong-import-order
 
-from django.utils import timezone
 import os
 import sqlite3
+
+import adcm.init_django  # noqa: F401, isort:skip
+
+from cm.logger import logger
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.migrations.executor import MigrationExecutor
-
-import adcm.init_django  # pylint: disable=unused-import
-from cm.logger import logger
+from django.utils import timezone
 
 
 def check_migrations():

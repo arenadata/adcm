@@ -10,15 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.permissions import DjangoModelPermissionsAudit
 from audit.utils import audit
 from cm.models import ProductCategory
 from django.db.models import Prefetch, Q
 from django_filters import rest_framework as filters
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
-from rbac.endpoints.role.serializers import RoleSerializer
-from rbac.models import Role, RoleTypes
-from rbac.services.role import role_create, role_update
 from rest_flex_fields import is_expanded
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -31,7 +29,9 @@ from rest_framework.status import (
 )
 from rest_framework.viewsets import ModelViewSet
 
-from adcm.permissions import DjangoModelPermissionsAudit
+from rbac.endpoints.role.serializers import RoleSerializer
+from rbac.models import Role, RoleTypes
+from rbac.services.role import role_create, role_update
 
 
 class _CategoryFilter(filters.CharFilter):
@@ -56,7 +56,7 @@ class RoleFilter(filters.FilterSet):
         )
 
 
-class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
+class RoleViewSet(PermissionListMixin, ModelViewSet):
     serializer_class = RoleSerializer
     permission_classes = (DjangoModelPermissionsAudit,)
     permission_required = ["rbac.view_role"]
@@ -65,7 +65,7 @@ class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
     search_fields = ("name", "display_name")
     schema = AutoSchema()
 
-    def get_queryset(self, *args, **kwargs):
+    def get_queryset(self, *args, **kwargs):  # noqa: ARG002
         queryset = get_objects_for_user(**self.get_get_objects_for_user_kwargs(Role.objects.all()))
         if is_expanded(self.request, "child"):
             return queryset.prefetch_related(
@@ -74,17 +74,16 @@ class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
         return queryset
 
     @audit
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             role = role_create(**serializer.validated_data)
 
             return Response(self.get_serializer(role).data, status=HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
     @audit
-    def update(self, request, *args, **kwargs):
+    def update(self, request, *args, **kwargs):  # noqa: ARG002
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
 
@@ -97,8 +96,7 @@ class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
             role = role_update(instance, partial, **serializer.validated_data)
 
             return Response(self.get_serializer(role).data, status=HTTP_200_OK)
-        else:
-            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
     @audit
     def destroy(self, request, *args, **kwargs):
@@ -108,5 +106,5 @@ class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
         return super().destroy(request, *args, **kwargs)
 
     @action(methods=["get"], detail=False)
-    def category(self, request):  # pylint: disable=unused-argument
+    def category(self, request):  # noqa: ARG002
         return Response(sorted(b.value for b in ProductCategory.objects.all()))

@@ -10,11 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.serializers import UIConfigField
 from cm.api import update_obj_config
 from cm.models import ConfigLog
 from django.db.transaction import atomic
 from rest_framework.serializers import HyperlinkedIdentityField, ModelSerializer
+
+from api.serializers import UIConfigField
 
 
 class ConfigLogSerializer(ModelSerializer):
@@ -31,9 +32,7 @@ class ConfigLogSerializer(ModelSerializer):
         config = validated_data.get("config")
         attr = validated_data.get("attr", {})
         description = validated_data.get("description", "")
-        config_log = update_obj_config(object_config, config, attr, description)
-
-        return config_log
+        return update_obj_config(object_config, config, attr, description)
 
 
 class UIConfigLogSerializer(ConfigLogSerializer):

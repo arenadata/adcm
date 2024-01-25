@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import (
     ClusterObject,
     ObjectConfig,
@@ -18,11 +19,10 @@ from cm.models import (
     ServiceComponent,
 )
 from django.urls import reverse
-from rbac.models import Group
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from rbac.models import Group
 
 
 class PolicyWithServiceAdminRoleTestCase(BaseTestCase):

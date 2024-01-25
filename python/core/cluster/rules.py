@@ -27,7 +27,7 @@ def check_all_hosts_exist(host_candidates: Collection[int], existing_hosts: Coll
 
 
 def check_hosts_can_be_added_to_cluster(cluster_id: int, hosts: Collection[HostClusterPair]) -> None:
-    bound_hosts = set(entry for entry in hosts if entry.cluster_id)
+    bound_hosts = {entry for entry in hosts if entry.cluster_id}
     if not bound_hosts:
         return
 

@@ -12,7 +12,7 @@
 
 from typing import Any, Optional
 
-from pydantic import BaseModel  # pylint: disable=no-name-in-module
+from pydantic import BaseModel
 
 
 class DBModel(BaseModel):

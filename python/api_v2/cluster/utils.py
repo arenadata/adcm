@@ -14,8 +14,6 @@ from collections import defaultdict
 from itertools import chain
 from typing import Literal
 
-from api_v2.cluster.data_containers import MappingData, MappingEntryData
-from api_v2.prototype.utils import get_license_text
 from cm.api import load_service_map
 from cm.api_context import CTX
 from cm.data_containers import (
@@ -53,6 +51,9 @@ from django.db.models import QuerySet
 from django.db.transaction import atomic, on_commit
 from rbac.models import Policy
 from rest_framework.status import HTTP_409_CONFLICT
+
+from api_v2.cluster.data_containers import MappingData, MappingEntryData
+from api_v2.prototype.utils import get_license_text
 
 
 def get_requires(requires: list[dict]) -> dict:
@@ -214,14 +215,12 @@ def _check_mapping_data(mapping_data: MappingData) -> None:
         seen.add(ids)
 
     if duplicates:
-        error_mapping_repr = ", ".join(
-            (f"component {map_ids[1]} - host {map_ids[0]}" for map_ids in sorted(duplicates))
-        )
+        error_mapping_repr = ", ".join(f"component {map_ids[1]} - host {map_ids[0]}" for map_ids in sorted(duplicates))
         raise AdcmEx(code="INVALID_INPUT", msg=f"Mapping entries duplicates found: {error_mapping_repr}.")
 
-    hosts_mm_states_in_add_remove_groups = set(
+    hosts_mm_states_in_add_remove_groups = {
         diff.host.maintenance_mode for diff in mapping_data.mapping_difference["add"]
-    ).union(set(diff.host.maintenance_mode for diff in mapping_data.mapping_difference["remove"]))
+    }.union({diff.host.maintenance_mode for diff in mapping_data.mapping_difference["remove"]})
     if MaintenanceMode.ON.value in hosts_mm_states_in_add_remove_groups:
         raise AdcmEx("INVALID_HC_HOST_IN_MM")
 
@@ -282,7 +281,7 @@ def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
     HostComponent.objects.bulk_create(objs=mapping_objects)
 
     update_hierarchy_issues(obj=mapping_data.orm_objects["cluster"])
-    for provider_id in set(host.provider_id for host in mapping_data.hosts.values()):
+    for provider_id in {host.provider_id for host in mapping_data.hosts.values()}:
         update_hierarchy_issues(obj=mapping_data.orm_objects["providers"][provider_id])
     update_issue_after_deleting()
 
@@ -293,7 +292,7 @@ def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
 
 
 def _handle_mapping_config_groups(mapping_data: MappingData) -> None:
-    remaining_host_service = set((diff.host.id, diff.service.id) for diff in mapping_data.mapping_difference["remain"])
+    remaining_host_service = {(diff.host.id, diff.service.id) for diff in mapping_data.mapping_difference["remain"]}
     removed_hosts_not_in_mapping = {
         mapping_data.orm_objects["hosts"][removed_mapping.host.id]
         for removed_mapping in mapping_data.mapping_difference["remove"]

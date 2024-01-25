@@ -11,13 +11,13 @@
 # limitations under the License.
 
 
-from rbac.models import Policy, Role
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from rbac.models import Policy, Role
 
 
 class ApiTests(BaseTestCase):
@@ -327,7 +327,7 @@ class ApiTests(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        response = self.client.patch(path=path, data={**data_valid, **{"role": {}}}, content_type=APPLICATION_JSON)
+        response = self.client.patch(path=path, data={**data_valid, **{"role": {}}}, content_type=APPLICATION_JSON)  # noqa: PIE800
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["desc"], "role - This field may not be empty.;")

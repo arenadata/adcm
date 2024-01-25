@@ -12,6 +12,8 @@
 from pathlib import Path
 from typing import Mapping, Union
 
+from django.conf import settings
+
 from cm.errors import raise_adcm_ex
 from cm.models import (
     Action,
@@ -21,7 +23,6 @@ from cm.models import (
     PrototypeConfig,
     StagePrototype,
 )
-from django.conf import settings
 
 
 def group_keys_to_flat(origin: dict, spec: dict) -> dict:
@@ -98,7 +99,6 @@ def cook_file_type_name(obj: Union["ADCMEntity", "GroupConfig"], key: str, sub_k
 
 
 def config_is_ro(obj: ADCMEntity | Action, key: str, limits: dict) -> bool:
-    # pylint: disable=too-many-return-statements
     if not limits:
         return False
 
@@ -143,9 +143,8 @@ def key_is_required(obj: ADCMEntity | Action, key: str, subkey: str, spec: dict)
 
 
 def is_inactive(key: str, attr: dict, flat_spec: dict) -> bool:
-    if attr and flat_spec[f"{key}/"].type == "group":
-        if key in attr and "active" in attr[key]:
-            return not bool(attr[key]["active"])
+    if attr and flat_spec[f"{key}/"].type == "group" and key in attr and "active" in attr[key]:
+        return not bool(attr[key]["active"])
 
     return False
 
@@ -154,8 +153,4 @@ def sub_key_is_required(key: str, attr: dict, flat_spec: dict, spec: dict, obj: 
     if is_inactive(key=key, attr=attr, flat_spec=flat_spec):
         return False
 
-    for subkey in spec[key]:
-        if key_is_required(obj=obj, key=key, subkey=subkey, spec=spec):
-            return True
-
-    return False
+    return any(key_is_required(obj=obj, key=key, subkey=subkey, spec=spec) for subkey in spec[key])

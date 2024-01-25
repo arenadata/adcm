@@ -9,13 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 from collections import defaultdict
 from hashlib import sha256
 from itertools import compress
 from typing import Iterable, Iterator, List, Literal
+import json
 
-from api_v2.config.utils import convert_attr_to_adcm_meta, get_config_schema
+from adcm.permissions import RUN_ACTION_PERM_PREFIX
 from cm.adcm_config.config import get_default
 from cm.models import (
     Action,
@@ -31,7 +31,7 @@ from django.conf import settings
 from jinja_config import get_jinja_config
 from rbac.models import User
 
-from adcm.permissions import RUN_ACTION_PERM_PREFIX
+from api_v2.config.utils import convert_attr_to_adcm_meta, get_config_schema
 
 
 def get_str_hash(value: str) -> str:
@@ -53,7 +53,7 @@ def check_run_perms(user: User, action: Action, obj: ADCMEntity) -> bool:
 
 
 def insert_service_ids(
-    hc_create_data: List[dict[Literal["host_id", "component_id"], int]]
+    hc_create_data: List[dict[Literal["host_id", "component_id"], int]],
 ) -> List[dict[Literal["host_id", "component_id", "service_id"], int]]:
     component_ids = {single_hc["component_id"] for single_hc in hc_create_data}
     component_service_map = {

@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=wrong-import-order,wrong-import-position
 DOCUMENTATION = """
 ---
 module: adcm_change_flag
@@ -24,11 +23,15 @@ options:
       - up
       - down
   msg:
-    description: Additional flag message, to use in pattern "<object> has an outdated configuration: <msg>". It might be used if you want several different flags in the same objects. In case of down operation, if message specified then down only flag with specified message. 
+    description: Additional flag message, to use in pattern "<object> has an outdated configuration: <msg>".
+    It might be used if you want several different flags in the same objects. In case of down operation,
+    if message specified then down only flag with specified message.
     required: False
     type: string
   objects:
-    description: List of Services or Components on which you need to raise/lower the flag. If this parameter not specified raise or lower flag on action context object. If you want to raise or lower flag on cluster you needed action in cluster context.
+    description: List of Services or Components on which you need to raise/lower the flag.
+    If this parameter not specified raise or lower flag on action context object.
+    If you want to raise or lower flag on cluster you needed action in cluster context.
     required: False
     type: list
     elements: dict
@@ -38,7 +41,7 @@ options:
       - type: component
         service_name: service
         component_name: component
-      - type: cluster 
+      - type: cluster
 """
 
 EXAMPLES = r"""
@@ -50,7 +53,7 @@ EXAMPLES = r"""
   - type: component
     service_name: service
     component_name: component
-  - type: cluster 
+  - type: cluster
 
 - adcm_change_flag:
   operation: down
@@ -65,7 +68,8 @@ from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
 
 sys.path.append("/adcm/python")
-import adcm.init_django  # pylint: disable=unused-import
+
+import adcm.init_django  # noqa: F401, isort:skip
 
 from cm.ansible_plugin import check_context_type, get_context_object
 from cm.flag import remove_flag, update_object_flag

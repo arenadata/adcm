@@ -12,9 +12,10 @@
 
 import re
 
-from cm.errors import AdcmEx
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
+
+from cm.errors import AdcmEx
 
 
 class HostUniqueValidator(UniqueValidator):

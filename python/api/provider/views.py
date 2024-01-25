@@ -10,16 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.base_view import DetailView, GenericUIView, PaginatedView
-from api.provider.serializers import (
-    DoProviderUpgradeSerializer,
-    ProviderDetailSerializer,
-    ProviderDetailUISerializer,
-    ProviderSerializer,
-    ProviderUISerializer,
-)
-from api.serializers import ProviderUpgradeSerializer
-from api.utils import AdcmFilterBackend, AdcmOrderingFilter, check_obj, create
+from adcm.permissions import check_custom_perm, get_object_for_user
 from audit.utils import audit
 from cm.api import delete_host_provider
 from cm.issue import update_hierarchy_issues
@@ -30,7 +21,16 @@ from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework import permissions, status
 from rest_framework.response import Response
 
-from adcm.permissions import check_custom_perm, get_object_for_user
+from api.base_view import DetailView, GenericUIView, PaginatedView
+from api.provider.serializers import (
+    DoProviderUpgradeSerializer,
+    ProviderDetailSerializer,
+    ProviderDetailUISerializer,
+    ProviderSerializer,
+    ProviderUISerializer,
+)
+from api.serializers import ProviderUpgradeSerializer
+from api.utils import AdcmFilterBackend, AdcmOrderingFilter, check_obj, create
 
 
 class ProviderList(PermissionListMixin, PaginatedView):
@@ -52,7 +52,7 @@ class ProviderList(PermissionListMixin, PaginatedView):
     ordering = ["id"]
 
     @audit
-    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def post(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         serializer = self.get_serializer(data=request.data)
 
         return create(serializer)
@@ -75,7 +75,7 @@ class ProviderDetail(PermissionListMixin, DetailView):
     ordering = ["id"]
 
     @audit
-    def delete(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def delete(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         """
         Remove host provider
         """
@@ -98,7 +98,7 @@ class ProviderUpgrade(GenericUIView):
 
         return order.get_ordering(self.request, self.get_queryset(), self)
 
-    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def get(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         """
         List all available upgrades for specified host provider
         """
@@ -118,7 +118,7 @@ class ProviderUpgradeDetail(GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     ordering = ["id"]
 
-    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def get(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         """
         List all available upgrades for specified host provider
         """
@@ -138,7 +138,7 @@ class DoProviderUpgrade(GenericUIView):
     ordering = ["id"]
 
     @audit
-    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def post(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         provider = get_object_for_user(request.user, "cm.view_hostprovider", HostProvider, id=kwargs["provider_id"])
         check_custom_perm(request.user, "do_upgrade_of", "hostprovider", provider)
         serializer = self.get_serializer(data=request.data)

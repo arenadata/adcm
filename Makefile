@@ -52,18 +52,16 @@ ng_tests:
 
 pretty:
 	poetry install --no-root --with lint
-	black license_checker.py python
-	autoflake -r -i --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python
-	isort license_checker.py python
-	python license_checker.py --fix --folders python go
+	poetry run ruff format license_checker.py python
+	poetry run ruff check --fix license_checker.py python
+	poetry run ruff format license_checker.py python
+	poetry run python license_checker.py --fix --folders python go
 
 lint:
 	poetry install --no-root --with lint
-	poetry run black --check license_checker.py python
-	poetry run autoflake --check --quiet -r --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python
-	poetry run isort --check license_checker.py python
-	python license_checker.py --folders python go
-	poetry run pylint -j 0 --rcfile pyproject.toml --recursive y python
+	poetry run python license_checker.py --folders python go
+	poetry run ruff check license_checker.py python
+	poetry run ruff format --check
 
 version:
 	@echo $(ADCM_VERSION)

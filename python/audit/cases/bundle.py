@@ -10,6 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.models import Bundle
+from django.views import View
+
 from audit.cases.common import get_or_create_audit_obj
 from audit.models import (
     AuditLogOperationType,
@@ -17,8 +20,6 @@ from audit.models import (
     AuditObjectType,
     AuditOperation,
 )
-from cm.models import Bundle
-from django.views import View
 
 
 def bundle_case(
@@ -30,7 +31,7 @@ def bundle_case(
     audit_object = None
 
     match path:
-        case (["bundles", bundle_pk]):
+        case ["bundles", bundle_pk]:
             if view.request.method != "DELETE":
                 return audit_operation, audit_object
 
@@ -54,7 +55,7 @@ def bundle_case(
                     object_type=AuditObjectType.BUNDLE,
                 )
 
-        case (["bundles"]):
+        case ["bundles"]:
             if view.request.method == "POST":
                 audit_operation = AuditOperation(
                     name="Bundle uploaded",

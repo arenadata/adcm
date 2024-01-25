@@ -9,12 +9,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=wrong-import-order
 
 from pathlib import Path
 from signal import SIGTERM
 from unittest.mock import Mock, patch
 from urllib.parse import urljoin
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from django.conf import settings
+from django.urls import reverse
+from django.utils import timezone
+from init_db import init
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
 
 from cm.api import add_cluster, add_service_to_cluster
 from cm.issue import lock_affected_objects
@@ -57,19 +64,9 @@ from cm.tests.utils import (
     gen_prototype,
     gen_task_log,
 )
-from django.conf import settings
-from django.urls import reverse
-from django.utils import timezone
-from init_db import init
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestJob(BaseTestCase):
-    # pylint: disable=too-many-public-methods
-
     def setUp(self):
         super().setUp()
 
@@ -215,8 +212,6 @@ class TestJob(BaseTestCase):
             self.assertListEqual(m_state_unset, exp_m_state_unset)
 
     def test_set_action_state(self):
-        # pylint: disable=too-many-locals
-
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
         cluster = Cluster.objects.create(prototype=prototype)
@@ -423,8 +418,6 @@ class TestJob(BaseTestCase):
         mock_get_bundle_root,
         mock_cook_script,
     ):
-        # pylint: disable=too-many-locals
-
         bundle = Bundle.objects.create()
         proto1 = Prototype.objects.create(bundle=bundle, type="cluster")
         cluster = Cluster.objects.create(prototype=proto1)
@@ -532,8 +525,6 @@ class TestJob(BaseTestCase):
     @patch("cm.job.get_actual_hc")
     @patch("cm.job.prepare_job")
     def test_re_prepare_job(self, mock_prepare_job, mock_get_actual_hc, mock_get_old_hc, mock_cook_delta):
-        # pylint: disable=too-many-locals
-
         new_hc = Mock()
         mock_get_actual_hc.return_value = new_hc
         old_hc = Mock()

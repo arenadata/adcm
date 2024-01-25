@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import ADCM, Action
 from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestADCM(BaseAPITestCase):

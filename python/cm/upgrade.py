@@ -13,6 +13,10 @@
 import functools
 
 from adcm_version import compare_prototype_versions
+from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
+from rbac.models import Policy
+
 from cm.adcm_config.config import (
     init_object_config,
     make_object_config,
@@ -51,9 +55,6 @@ from cm.models import (
 )
 from cm.status_api import send_prototype_and_state_update_event
 from cm.utils import obj_ref
-from django.contrib.contenttypes.models import ContentType
-from django.db import transaction
-from rbac.models import Policy
 
 
 def switch_object(obj: Host | ClusterObject, new_prototype: Prototype) -> None:
@@ -151,7 +152,7 @@ def check_upgrade_state(obj: Cluster | HostProvider, upgrade: Upgrade) -> tuple[
 
     if upgrade.allowed(obj):
         return True, ""
-    else:
+    else:  # noqa: RET505
         return False, "no available states"
 
 
@@ -353,7 +354,7 @@ def revert_object(obj: ADCMEntity, old_proto: Prototype) -> None:
     obj.save(update_fields=["prototype", "config", "state", "before_upgrade"])
 
 
-def bundle_revert(obj: Cluster | HostProvider) -> None:  # pylint: disable=too-many-locals
+def bundle_revert(obj: Cluster | HostProvider) -> None:
     upgraded_bundle = obj.prototype.bundle
     old_bundle = Bundle.objects.get(pk=obj.before_upgrade["bundle_id"])
     old_proto = Prototype.objects.filter(bundle=old_bundle, name=old_bundle.name).first()

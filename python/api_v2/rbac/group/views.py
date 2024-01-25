@@ -10,13 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.rbac.group.filters import GroupFilter
-from api_v2.rbac.group.serializers import (
-    GroupCreateSerializer,
-    GroupSerializer,
-    GroupUpdateSerializer,
-)
-from api_v2.views import CamelCaseModelViewSet
+from adcm.permissions import VIEW_GROUP_PERMISSION, CustomModelPermissionsByMethod
 from audit.utils import audit
 from cm.errors import AdcmEx
 from guardian.mixins import PermissionListMixin
@@ -29,10 +23,16 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from adcm.permissions import VIEW_GROUP_PERMISSION, CustomModelPermissionsByMethod
+from api_v2.rbac.group.filters import GroupFilter
+from api_v2.rbac.group.serializers import (
+    GroupCreateSerializer,
+    GroupSerializer,
+    GroupUpdateSerializer,
+)
+from api_v2.views import CamelCaseModelViewSet
 
 
-class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disable=too-many-ancestors
+class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):
     queryset = Group.objects.order_by("display_name").prefetch_related("user_set")
     filterset_class = GroupFilter
     permission_classes = (CustomModelPermissionsByMethod,)
@@ -52,7 +52,7 @@ class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disabl
         return GroupSerializer
 
     @audit
-    def create(self, request: Request, *args, **kwargs) -> Response:
+    def create(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -66,7 +66,7 @@ class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disabl
         return Response(data=GroupSerializer(instance=group).data, status=HTTP_201_CREATED)
 
     @audit
-    def update(self, request: Request, *args, **kwargs) -> Response:
+    def update(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -94,4 +94,4 @@ class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint:disabl
         if instance.policy_set.exists():
             raise AdcmEx(code="GROUP_DELETE_ERROR", msg="Group with policy should not be deleted")
 
-        return super().destroy(request=request, *args, **kwargs)
+        return super().destroy(*args, request=request, **kwargs)

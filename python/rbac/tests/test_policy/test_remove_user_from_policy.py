@@ -12,16 +12,16 @@
 
 from cm.models import ClusterObject, ObjectType
 from django.urls import reverse
-from rbac.models import Group
-from rbac.tests.test_policy.base import PolicyBaseTestCase
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
+
+from rbac.models import Group
+from rbac.tests.test_policy.base import PolicyBaseTestCase
 
 APPLICATION_JSON = "application/json"
 
 
 class RemoveUserFromPolicyTestCase(PolicyBaseTestCase):
-    # pylint: disable=too-many-instance-attributes
     def setUp(self) -> None:
         super().setUp()
 

@@ -10,6 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.urls import path
+from rest_framework.routers import SimpleRouter
+
 from api.stack.root import StackRoot
 from api.stack.views import (
     ADCMPrototypeViewSet,
@@ -25,8 +28,6 @@ from api.stack.views import (
     UploadBundleView,
     load_servicemap_view,
 )
-from django.urls import path
-from rest_framework.routers import SimpleRouter
 
 router = SimpleRouter()
 router.register("bundle", BundleViewSet)

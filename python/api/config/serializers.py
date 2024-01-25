@@ -12,7 +12,7 @@
 
 from typing import Any
 
-from api.utils import CommonAPIURL, get_api_url_kwargs
+from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_default, restore_cluster_config, ui_config
 from cm.adcm_config.utils import group_is_activatable
 from cm.api import update_obj_config
@@ -31,7 +31,7 @@ from rest_framework.serializers import (
 )
 from rest_framework.status import HTTP_400_BAD_REQUEST
 
-from adcm.serializers import EmptySerializer
+from api.utils import CommonAPIURL, get_api_url_kwargs
 
 
 class ConfigVersionURL(HyperlinkedIdentityField):
@@ -135,7 +135,7 @@ class ConfigSerializer(EmptySerializer):
     def get_default_field(obj: PrototypeConfig) -> Any:
         return get_default(obj)
 
-    def get_value(self, obj: PrototypeConfig) -> Any:  # pylint: disable=arguments-renamed
+    def get_value(self, obj: PrototypeConfig) -> Any:
         proto = self.context.get("prototype", None)
         return get_default(obj, proto)
 

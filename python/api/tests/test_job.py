@@ -14,6 +14,7 @@ from datetime import timedelta
 from pathlib import Path
 from unittest.mock import patch
 
+from adcm.tests.base import BaseTestCase
 from cm.models import ADCM, Action, ActionType, Cluster, JobLog, Prototype, TaskLog
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
@@ -21,8 +22,6 @@ from django.utils import timezone
 from rbac.models import Policy, Role
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
-
-from adcm.tests.base import BaseTestCase
 
 
 class TestJobAPI(BaseTestCase):

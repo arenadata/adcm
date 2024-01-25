@@ -33,16 +33,15 @@ class ProfileSerializer(ModelSerializer):
         read_only_fields = ["username", "email", "first_name", "last_name", "is_super_user", "auth_settings"]
 
     @staticmethod
-    def get_auth_settings(user: User) -> dict:  # pylint: disable=unused-argument
+    def get_auth_settings(user: User) -> dict:  # noqa: ARG001, ARG004
         adcm = ADCM.objects.first()
         auth_policy = ConfigLog.objects.filter(obj_ref=adcm.config).last().config["auth_policy"]
-        auth_settings = {
+        return {
             "minPasswordLength": auth_policy["min_password_length"],
             "maxPasswordLength": auth_policy["max_password_length"],
             "loginAttemptLimit": auth_policy["login_attempt_limit"],
             "blockTime": auth_policy["block_time"],
         }
-        return auth_settings
 
 
 class ProfileUpdateSerializer(ModelSerializer):

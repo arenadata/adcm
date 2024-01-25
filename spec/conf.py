@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Arenadata documentation build configuration file, created by
 # sphinx-quickstart on Mon Jul 31 16:56:10 2017.
@@ -16,8 +15,8 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
-import datetime
 from string import Template
+import datetime
 
 # import sphinx_markdown_tables
 import sphinx_rtd_theme
@@ -29,7 +28,7 @@ version = ""  # substituted via -D option
 # The full version, including alpha/beta/rc tags.
 release = version
 
-now = datetime.datetime.now()
+now = datetime.datetime.now()  # noqa: DTZ005
 
 
 title = Template(
@@ -102,9 +101,9 @@ master_doc = "index"
 # General information about the project.
 
 
-project = u"Arenadata Cluster Manager Specs"
-copyright = u"{}, Arenadata.io".format(now.year)
-author = u"Arenadata.io"
+project = "Arenadata Cluster Manager Specs"
+copyright = "{}, Arenadata.io".format(now.year)  # noqa: A001, UP032
+author = "Arenadata.io"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -170,7 +169,7 @@ html_sidebars = {
 # Output file base name for HTML help builder.
 htmlhelp_basename = "Arenadatadoc"
 
-today = "{}, Arenadata™".format(now.year)
+today = "{}, Arenadata™".format(now.year)  # noqa: UP032
 latex_keep_old_macro_names = True
 
 latex_logo = "_static/logo.png"
@@ -293,14 +292,14 @@ numfig_format = {"figure": "Рис. %s.", "table": "Табл. %s.", "code-block"
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "Arenadata.tex", u"Arenadata Documentation", u"Arenadata", "manual"),
+    (master_doc, "Arenadata.tex", "Arenadata Documentation", "Arenadata", "manual"),
 ]
 
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "arenadata", u"Arenadata Documentation", [author], 1)]
+man_pages = [(master_doc, "arenadata", "Arenadata Documentation", [author], 1)]
 
 # -- Options for Texinfo output -------------------------------------------
 
@@ -311,7 +310,7 @@ texinfo_documents = [
     (
         master_doc,
         "Arenadata",
-        u"Arenadata Documentation",
+        "Arenadata Documentation",
         author,
         "Arenadata",
         "One line description of project.",
@@ -342,9 +341,7 @@ epub_exclude_files = ["search.html"]
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {"https://docs.python.org/": None}
 
-extlinks = {
-    'issue': ('https://arenadata.atlassian.net/browse/%s', '')
-}
+extlinks = {"issue": ("https://arenadata.atlassian.net/browse/%s", "")}
 
 
 def setup(app):

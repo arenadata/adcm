@@ -79,10 +79,10 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
 
     @staticmethod
     def _get_mapping_delta(cluster, new_mapping: list[MappingEntry]) -> Delta:
-        existing_mapping_ids = set(
+        existing_mapping_ids = {
             (hc.host.pk, hc.component.pk, hc.service.pk) for hc in HostComponent.objects.filter(cluster=cluster)
-        )
-        new_mapping_ids = set((hc["host_id"], hc["component_id"], hc["service_id"]) for hc in new_mapping)
+        }
+        new_mapping_ids = {(hc["host_id"], hc["component_id"], hc["service_id"]) for hc in new_mapping}
 
         added = {}
         for host_id, component_id, service_id in new_mapping_ids.difference(existing_mapping_ids):

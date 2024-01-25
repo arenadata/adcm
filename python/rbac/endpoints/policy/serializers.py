@@ -10,10 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import jsonschema
+from adcm.utils import get_obj_type
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
-from rbac.endpoints.serializers import BaseRelatedSerializer
-from rbac.models import Group, Policy, Role, RoleTypes
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import (
@@ -24,8 +22,10 @@ from rest_framework.fields import (
 )
 from rest_framework.relations import HyperlinkedIdentityField, PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
+import jsonschema
 
-from adcm.utils import get_obj_type
+from rbac.endpoints.serializers import BaseRelatedSerializer
+from rbac.models import Group, Policy, Role, RoleTypes
 
 
 class ObjectField(JSONField):

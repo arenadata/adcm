@@ -13,6 +13,7 @@
 from datetime import timedelta
 from unittest.mock import patch
 
+from adcm.tests.base import BaseTestCase
 from cm.models import (
     ADCM,
     Action,
@@ -31,10 +32,8 @@ from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
-from adcm.tests.base import BaseTestCase
 
-
-class TestJob(BaseTestCase):  # pylint: disable=too-many-instance-attributes
+class TestJob(BaseTestCase):
     TRUNCATED_LOG_MESSAGE = settings.STDOUT_STDERR_TRUNCATED_LOG_MESSAGE
 
     def setUp(self) -> None:
@@ -89,7 +88,7 @@ class TestJob(BaseTestCase):  # pylint: disable=too-many-instance-attributes
             name="ansible",
             type="stdout",
             format="txt",
-            body="\n".join((self.word_10_symbols for _ in range(200_000))),
+            body="\n".join(self.word_10_symbols for _ in range(200_000)),
         )
         self.long_line = "word" * 1000
         self.short_line = "word" * 4

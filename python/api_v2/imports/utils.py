@@ -10,18 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.imports.types import (
-    ClusterImportCandidate,
-    CommonImportCandidate,
-    ServiceImportCandidate,
-    UIBind,
-    UIBindSource,
-    UICluster,
-    UIImportCluster,
-    UIImportServices,
-    UIObjectImport,
-    UIPrototype,
-)
 from cm.api import DataForMultiBind, is_version_suitable
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.models import (
@@ -35,6 +23,19 @@ from cm.models import (
 )
 from cm.status_api import get_obj_status
 from django.db.models import QuerySet
+
+from api_v2.imports.types import (
+    ClusterImportCandidate,
+    CommonImportCandidate,
+    ServiceImportCandidate,
+    UIBind,
+    UIBindSource,
+    UICluster,
+    UIImportCluster,
+    UIImportServices,
+    UIObjectImport,
+    UIPrototype,
+)
 
 
 def _format_binds(binds: QuerySet[ClusterBind]) -> list[UIBind]:
@@ -183,7 +184,7 @@ def get_imports(obj: Cluster | ClusterObject) -> list[UIObjectImport]:
         cluster = obj
         service = None
     else:
-        raise ValueError("Wrong obj type")
+        raise TypeError("Wrong obj type")
 
     out_data = []
     import_candidates = _get_import_candidates(prototype=obj.prototype)

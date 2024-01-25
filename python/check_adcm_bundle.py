@@ -11,23 +11,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
 import os
-import shutil
 import sys
+import shutil
 import tarfile
+import argparse
 
 from check_adcm_config import check_config
 from django.conf import settings
 
-TMP_DIR = "/tmp/adcm_bundle_tmp"
+TMP_DIR = "/tmp/adcm_bundle_tmp"  # noqa: S108
 
 
 def untar(bundle_file):
     if os.path.isdir(TMP_DIR):
         shutil.rmtree(TMP_DIR)
 
-    tar = tarfile.open(bundle_file)  # pylint: disable=consider-using-with
+    tar = tarfile.open(bundle_file)  # noqa: SIM115
     tar.extractall(path=TMP_DIR)
     tar.close()
 

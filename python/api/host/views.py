@@ -10,19 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.base_view import DetailView, GenericUIView, PaginatedView
-from api.host.serializers import (
-    ClusterHostSerializer,
-    HostChangeMaintenanceModeSerializer,
-    HostDetailSerializer,
-    HostDetailUISerializer,
-    HostSerializer,
-    HostStatusSerializer,
-    HostUISerializer,
-    HostUpdateSerializer,
-    ProvideHostSerializer,
+from adcm.permissions import (
+    VIEW_CLUSTER_PERM,
+    VIEW_HOST_PERM,
+    VIEW_PROVIDER_PERM,
+    check_custom_perm,
+    get_object_for_user,
 )
-from api.utils import create
+from adcm.utils import get_maintenance_mode_response
 from audit.utils import audit
 from cm.api import (
     add_host_to_cluster,
@@ -57,14 +52,19 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from adcm.permissions import (
-    VIEW_CLUSTER_PERM,
-    VIEW_HOST_PERM,
-    VIEW_PROVIDER_PERM,
-    check_custom_perm,
-    get_object_for_user,
+from api.base_view import DetailView, GenericUIView, PaginatedView
+from api.host.serializers import (
+    ClusterHostSerializer,
+    HostChangeMaintenanceModeSerializer,
+    HostDetailSerializer,
+    HostDetailUISerializer,
+    HostSerializer,
+    HostStatusSerializer,
+    HostUISerializer,
+    HostUpdateSerializer,
+    ProvideHostSerializer,
 )
-from adcm.utils import get_maintenance_mode_response
+from api.utils import create
 
 
 class NumberInFilter(drf_filters.BaseInFilter, drf_filters.NumberFilter):
@@ -162,7 +162,7 @@ class HostList(PermissionListMixin, PaginatedView):
         return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
 
     @audit
-    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def post(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         serializer = self.serializer_class(
             data=request.data,
             context={
@@ -193,7 +193,7 @@ class HostListCluster(HostList):
     serializer_class = ClusterHostSerializer
 
     @audit
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             validated_data = serializer.validated_data
@@ -231,10 +231,10 @@ class HostDetail(PermissionListMixin, DetailView):
     error_code = "HOST_NOT_FOUND"
     ordering = ["id"]
 
-    def _update_host_object(  # pylint: disable=unused-argument
+    def _update_host_object(
         self,
         request,
-        *args,
+        *args,  # noqa: ARG002
         partial=True,
         **kwargs,
     ):
@@ -268,7 +268,7 @@ class HostDetail(PermissionListMixin, DetailView):
         return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
 
     @audit
-    def delete(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def delete(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         host = self.get_object()
         if "cluster_id" in kwargs:
             cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
@@ -287,7 +287,7 @@ class HostDetail(PermissionListMixin, DetailView):
 
     @audit
     def put(self, request, *args, **kwargs):
-        return self._update_host_object(request, partial=False, *args, **kwargs)
+        return self._update_host_object(request, *args, partial=False, **kwargs)
 
 
 class HostMaintenanceModeView(GenericUIView):
@@ -323,7 +323,7 @@ class StatusList(GenericUIView):
     serializer_class = HostStatusSerializer
     ordering = ["id"]
 
-    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def get(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         cluster = None
         host = get_object_for_user(request.user, VIEW_HOST_PERM, Host, id=kwargs["host_id"])
         if "cluster_id" in kwargs:

@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import (
     KnownNames,
     MessageTemplate,
@@ -21,6 +20,8 @@ from cm.models import (
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestConcernsResponse(BaseAPITestCase):

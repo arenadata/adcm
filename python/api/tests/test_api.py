@@ -9,11 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-lines
 
 from unittest.mock import patch
 from uuid import uuid4
 
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.api import save_hc
 from cm.hierarchy import Tree
 from cm.issue import lock_affected_objects
@@ -50,8 +50,6 @@ from rest_framework.status import (
     HTTP_405_METHOD_NOT_ALLOWED,
     HTTP_409_CONFLICT,
 )
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestAPI(BaseTestCase):
@@ -498,7 +496,7 @@ class TestAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-    def test_hostcomponent(self):  # pylint: disable=too-many-statements,too-many-locals
+    def test_hostcomponent(self):
         self.upload_and_load_bundle(path=self.test_files_dir / self.bundle_adh_name)
         self.upload_and_load_bundle(path=self.test_files_dir / self.bundle_ssh_name)
 
@@ -680,7 +678,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "BUNDLE_CONFLICT")
 
-    def test_config(self):  # pylint: disable=too-many-statements
+    def test_config(self):
         self.upload_and_load_bundle(path=self.test_files_dir / self.bundle_adh_name)
         adh_bundle_id, proto_id = self.get_cluster_proto_id()
         service_proto_id = self.get_service_proto_id()
@@ -837,45 +835,39 @@ class TestAPI2(BaseTestCase):
     def setUp(self):
         gen_adcm()
         self.bundle = Bundle.objects.create(
-            **{
-                "name": "ADB",
-                "version": "2.5",
-                "version_order": 4,
-                "edition": "community",
-                "hash": "2232f33c6259d44c23046fce4382f16c450f8ba5",
-                "description": "",
-                "date": timezone.now(),
-            },
+            name="ADB",
+            version="2.5",
+            version_order=4,
+            edition="community",
+            hash="2232f33c6259d44c23046fce4382f16c450f8ba5",
+            description="",
+            date=timezone.now(),
         )
 
         self.prototype = Prototype.objects.create(
-            **{
-                "bundle_id": self.bundle.id,
-                "type": "cluster",
-                "name": "ADB",
-                "display_name": "ADB",
-                "version": "2.5",
-                "license": "absent",
-                "license_path": None,
-                "license_hash": None,
-                "version_order": 11,
-                "required": False,
-                "shared": False,
-                "adcm_min_version": None,
-                "monitoring": "active",
-                "description": "",
-            },
+            bundle_id=self.bundle.id,
+            type="cluster",
+            name="ADB",
+            display_name="ADB",
+            version="2.5",
+            license="absent",
+            license_path=None,
+            license_hash=None,
+            version_order=11,
+            required=False,
+            shared=False,
+            adcm_min_version=None,
+            monitoring="active",
+            description="",
         )
-        self.object_config = ObjectConfig.objects.create(**{"current": 0, "previous": 0})
+        self.object_config = ObjectConfig.objects.create(current=0, previous=0)
 
         self.cluster = Cluster.objects.create(
-            **{
-                "prototype_id": self.prototype.id,
-                "name": "Fear Limpopo",
-                "description": "",
-                "config_id": self.object_config.id,
-                "state": "installed",
-            },
+            prototype_id=self.prototype.id,
+            name="Fear Limpopo",
+            description="",
+            config_id=self.object_config.id,
+            state="installed",
         )
 
     @patch("cm.api.load_service_map")
@@ -915,10 +907,10 @@ class TestAPI2(BaseTestCase):
     @patch("cm.api.update_hierarchy_issues")
     def test_save_hc__big_update__locked_hierarchy(
         self,
-        mock_issue,
-        mock_load,
+        mock_issue,  # noqa: ARG002
+        mock_load,  # noqa: ARG002
         ctx,
-    ):  # pylint: disable=unused-argument
+    ):
         """
         Update bigger HC map - move `component_2` from `host_2` to `host_3`
         On locked hierarchy (from ansible task)
@@ -970,7 +962,7 @@ class TestAPI2(BaseTestCase):
 
     @patch("cm.api.load_service_map")
     @patch("cm.api.update_hierarchy_issues")
-    def test_save_hc__big_update__unlocked_hierarchy(self, mock_update, mock_load):  # pylint: disable=unused-argument
+    def test_save_hc__big_update__unlocked_hierarchy(self, mock_update, mock_load):  # noqa: ARG001, ARG002
         """
         Update bigger HC map - move `component_2` from `host_2` to `host_3`
         On unlocked hierarchy (from API)

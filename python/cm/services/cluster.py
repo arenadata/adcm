@@ -12,13 +12,14 @@
 
 from typing import Collection, Iterable
 
-from cm.api import load_service_map
-from cm.models import Cluster, Host
 from core.cluster.operations import add_hosts_to_cluster
 from core.cluster.types import HostClusterPair
 from core.types import ClusterID, HostID
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
+
+from cm.api import load_service_map
+from cm.models import Cluster, Host
 
 
 class HostClusterDB:

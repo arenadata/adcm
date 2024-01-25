@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.bundle.serializers import BundleRelatedSerializer
-from api_v2.prototype.utils import get_license_text
+from adcm.serializers import EmptySerializer
 from cm.models import Prototype
 from rest_framework.fields import CharField, IntegerField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
-from adcm.serializers import EmptySerializer
+from api_v2.bundle.serializers import BundleRelatedSerializer
+from api_v2.prototype.utils import get_license_text
 
 
 class PrototypeListSerializer(ModelSerializer):

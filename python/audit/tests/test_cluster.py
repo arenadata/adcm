@@ -9,19 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-lines
 
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from audit.models import (
-    AuditLog,
-    AuditLogOperationResult,
-    AuditLogOperationType,
-    AuditObject,
-    AuditObjectType,
-)
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import (
     Action,
     Bundle,
@@ -50,12 +43,16 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
 )
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from audit.models import (
+    AuditLog,
+    AuditLogOperationResult,
+    AuditLogOperationType,
+    AuditObject,
+    AuditObjectType,
+)
 
 
 class TestClusterAudit(BaseTestCase):
-    # pylint: disable=too-many-instance-attributes,too-many-public-methods
-
     def setUp(self) -> None:
         super().setUp()
 

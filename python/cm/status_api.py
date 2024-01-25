@@ -10,12 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from collections import defaultdict
 from collections.abc import Iterable
 from urllib.parse import urljoin
+import json
 
+from django.conf import settings
+from requests import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 import requests
+
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
@@ -27,9 +31,6 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from django.conf import settings
-from requests import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 
 class EventTypes:
@@ -58,7 +59,7 @@ def api_request(method: str, url: str, data: dict = None) -> Response | None:
         response = requests.request(method, url, **kwargs)
         if response.status_code not in {HTTP_200_OK, HTTP_201_CREATED}:
             logger.error("%s %s error %d: %s", method, url, response.status_code, response.text)
-        return response
+        return response  # noqa: TRY300
     except requests.exceptions.Timeout:
         logger.error("%s request to %s timed out", method, url)
         return None
@@ -153,8 +154,7 @@ def get_raw_status(url: str) -> int:
 
     if "status" in json_data:
         return json_data["status"]
-    else:
-        return settings.EMPTY_STATUS_STATUS_CODE
+    return settings.EMPTY_STATUS_STATUS_CODE
 
 
 def get_status(obj: ADCMEntity, url: str) -> int:

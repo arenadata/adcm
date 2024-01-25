@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.rbac.policy.views import PolicyViewSet
 from rest_framework.routers import SimpleRouter
+
+from api_v2.rbac.policy.views import PolicyViewSet
 
 policy_router = SimpleRouter()
 policy_router.register(prefix="policies", viewset=PolicyViewSet)

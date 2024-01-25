@@ -10,12 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.base_view import GenericUIView
-from api.stats.serializers import StatsSerializer
 from cm.models import JobLog, JobStatus, TaskLog
 from guardian.mixins import PermissionListMixin
 from rest_framework import permissions
 from rest_framework.response import Response
+
+from api.base_view import GenericUIView
+from api.stats.serializers import StatsSerializer
 
 
 class JobStats(PermissionListMixin, GenericUIView):
@@ -25,7 +26,7 @@ class JobStats(PermissionListMixin, GenericUIView):
     permission_required = ["cm.view_joblog"]
     ordering = ["id"]
 
-    def get(self, request, pk):  # pylint: disable=unused-argument
+    def get(self, request, pk):  # noqa: ARG002
         jobs = self.get_queryset().filter(id__gt=pk)
 
         return Response(
@@ -47,7 +48,7 @@ class TaskStats(PermissionListMixin, GenericUIView):
     permission_required = ["cm.view_tasklog"]
     ordering = ["id"]
 
-    def get(self, request, pk):  # pylint: disable=unused-argument
+    def get(self, request, pk):  # noqa: ARG001, ARG002
         tasks = self.get_queryset().filter(id__gt=pk)
 
         return Response(

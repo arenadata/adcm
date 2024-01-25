@@ -121,11 +121,10 @@ class Tree:
         cached = self._nodes.get(Node.get_obj_key(obj))
         if cached:
             return cached
-        else:
-            node = Node(value=obj)
-            self._nodes[node.key] = node
+        node = Node(value=obj)
+        self._nodes[node.key] = node
 
-            return node
+        return node
 
     def _build_tree_down(self, node: Node) -> None:
         children_values = []
@@ -165,15 +164,9 @@ class Tree:
         if node.type == "cluster":
             parent_values = [None]
         elif node.type == "service":
-            if node.value.maintenance_mode == MaintenanceMode.OFF:
-                parent_values = [node.value.cluster]
-            else:
-                parent_values = []
+            parent_values = [node.value.cluster] if node.value.maintenance_mode == MaintenanceMode.OFF else []
         elif node.type == "component":
-            if node.value.maintenance_mode == MaintenanceMode.OFF:
-                parent_values = [node.value.service]
-            else:
-                parent_values = []
+            parent_values = [node.value.service] if node.value.maintenance_mode == MaintenanceMode.OFF else []
         elif node.type == "host":
             parent_values = [
                 hc.component
@@ -198,8 +191,7 @@ class Tree:
         cached = self._nodes.get(key)
         if cached:
             return cached
-        else:
-            raise HierarchyError(f"Object {key} is not part of tree")
+        raise HierarchyError(f"Object {key} is not part of tree")
 
     def get_directly_affected(self, node: Node) -> set[Node]:
         """Collect directly affected nodes for issues re-calc"""

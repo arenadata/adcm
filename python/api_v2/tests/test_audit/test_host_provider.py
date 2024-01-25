@@ -11,7 +11,6 @@
 # limitations under the License.
 
 
-from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditObject
 from cm.models import Action, HostProvider, Prototype, Upgrade
 from rbac.services.user import create_user
@@ -26,8 +25,10 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
+from api_v2.tests.base import BaseAPITestCase
 
-class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public-methods
+
+class TestHostProviderAudit(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 

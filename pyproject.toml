@@ -50,11 +50,7 @@ drf-spectacular = {version = "^0.27.0", extras = ["sidecar"]}
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-autoflake = "^2.2.0"
-black = "^23.3.0"
-flake8 = "^6.0.0"
-isort = "^5.12.0"
-pylint = "^3.0.0"
+ruff = "^0.1.13"
 
 [tool.poetry.group.unittests]
 optional = true
@@ -78,27 +74,46 @@ django-silk = "^5.0.4"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.black]
+[tool.ruff]
 line-length = 120
+exclude = ["python/cm/migrations/*", "python/audit/migrations/*", "python/rbac/migrations/*"]
 
-[tool.isort]
-profile = "black"
-skip_glob = ["python/ansible/plugins"]
-skip = ["python/init_db.py", "python/task_runner.py", "python/backupdb.py", "python/job_runner.py",
-    "python/drf_docs.py"]
+[tool.ruff.format]
+exclude = ["python/cm/migrations/*", "python/audit/migrations/*", "python/rbac/migrations/*"]
 
-[tool.pylint.master]
-ignore = ["migrations"]
-enable = ["useless-suppression"]
-fail-on = ["useless-suppression"]
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+length-sort-straight = true
+order-by-type = true
 
-[tool.pylint."messages control"]
-disable = ["missing-docstring", "missing-timeout", "no-else-return", "no-member", "too-few-public-methods",
-    "too-many-arguments", "too-many-ancestors"]
-good-names = ["db", "e", "f", "i", "pk"]
-
-[tool.pylint.format]
-max-line-length = 120
-
-[tool.pylint.similarities]
-min-similarity-lines = 30
+[tool.ruff.lint]
+ignore = [
+    "E402",
+    "SIM117",
+    "A003",
+    "ANN001", "ANN201","ANN101", "ANN102", "ANN401", "ANN002", "ANN003", "ANN202", "ANN204", "ANN205", "ANN206",
+    "COM812",
+    "ARG005",
+    "S105",
+    "TRY003", "TRY201", "TRY301", "TRY300",
+    "S106",
+    "RET503", "RET505",
+    "FBT001", "FBT002", "FBT003",
+    "PIE800",
+    "PTH103", "PTH107", "PTH110", "PTH112", "PTH118", "PTH119", "PTH120","PTH123",
+    "S107"
+]
+select = [
+    # Pyflakes
+    "F",
+    # Pycodestyle
+    "E", "W",
+    # isort
+    "I",
+    # "COM" - The following rules may cause conflicts when used with the formatter: `COM812`.
+    # To avoid unexpected behavior, we recommend disabling these rules
+    "N", "UP", "YTT", "ANN",
+    "S", "BLE", "FBT", "B", "COM", "A", "C4",
+    "DTZ", "ICN", "PIE", "Q", "RET",
+    "SIM", "ARG", "PTH", "PLE", "TRY"
+]

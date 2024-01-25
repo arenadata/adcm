@@ -10,11 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.action.serializers import ActionShort
-from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
-from api.serializers import StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL
+from adcm.serializers import EmptySerializer
+from adcm.utils import filter_actions
 from cm.adcm_config.config import get_main_info
 from cm.models import MAINTENANCE_MODE_BOTH_CASES_CHOICES, Action, ServiceComponent
 from cm.status_api import get_component_status
@@ -29,8 +26,11 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
-from adcm.serializers import EmptySerializer
-from adcm.utils import filter_actions
+from api.action.serializers import ActionShort
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.serializers import StringListSerializer
+from api.utils import CommonAPIURL, ObjectURL
 
 
 class ComponentSerializer(EmptySerializer):

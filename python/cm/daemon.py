@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import atexit
+from signal import SIGTERM
 import os
 import sys
 import time
-from signal import SIGTERM
+import atexit
 
 from django.conf import settings
 
@@ -64,7 +64,7 @@ class Daemon:
             sys.exit(1)
 
         try:
-            pidfile = open(self.pidfile, "w+", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+            pidfile = open(self.pidfile, "w+", encoding=settings.ENCODING_UTF_8)  # noqa: SIM115
         except OSError as e:
             sys.stderr.write(f"Can't open pid file {self.pidfile}\n")
             sys.stderr.write(f"{e.strerror}\n")
@@ -72,9 +72,9 @@ class Daemon:
 
         sys.stdout.flush()
         sys.stderr.flush()
-        stdin_file = open(self.stdin, encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
-        stdout_file = open(self.stdout, "a+", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
-        stderr_file = open(self.stderr, "w+", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+        stdin_file = open(self.stdin, encoding=settings.ENCODING_UTF_8)  # noqa: SIM115
+        stdout_file = open(self.stdout, "a+", encoding=settings.ENCODING_UTF_8)  # noqa: SIM115
+        stderr_file = open(self.stderr, "w+", encoding=settings.ENCODING_UTF_8)  # noqa: SIM115
         os.dup2(stdin_file.fileno(), sys.stdin.fileno())
         os.dup2(stdout_file.fileno(), sys.stdout.fileno())
         os.dup2(stderr_file.fileno(), sys.stderr.fileno())
@@ -88,7 +88,7 @@ class Daemon:
 
     def getpid(self):
         try:
-            file_handler = open(self.pidfile, encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+            file_handler = open(self.pidfile, encoding=settings.ENCODING_UTF_8)  # noqa: SIM115
             try:
                 pid = int(file_handler.read().strip())
             except ValueError:
@@ -102,9 +102,7 @@ class Daemon:
 
     def checkpid(self):
         pid = self.getpid()
-        if pid is None:
-            return False
-        elif pid == 0:
+        if pid is None or pid == 0:
             return False
 
         try:

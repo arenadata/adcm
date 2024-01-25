@@ -10,11 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.permissions import DjangoModelPermissionsAudit
 from audit.utils import audit
 from cm.errors import raise_adcm_ex
 from guardian.mixins import PermissionListMixin
-from rbac.endpoints.user.serializers import UserSerializer
-from rbac.models import User
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -22,10 +21,11 @@ from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.status import HTTP_400_BAD_REQUEST
 from rest_framework.viewsets import ModelViewSet
 
-from adcm.permissions import DjangoModelPermissionsAudit
+from rbac.endpoints.user.serializers import UserSerializer
+from rbac.models import User
 
 
-class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
+class UserViewSet(PermissionListMixin, ModelViewSet):
     queryset = User.objects.prefetch_related("groups").all()
     serializer_class = UserSerializer
     permission_classes = (DjangoModelPermissionsAudit,)

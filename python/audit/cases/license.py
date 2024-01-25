@@ -10,6 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.models import Bundle, Prototype
+from django.views import View
+from rest_framework.response import Response
+
 from audit.cases.common import get_or_create_audit_obj
 from audit.models import (
     AuditLogOperationType,
@@ -17,9 +21,6 @@ from audit.models import (
     AuditObjectType,
     AuditOperation,
 )
-from cm.models import Bundle, Prototype
-from django.views import View
-from rest_framework.response import Response
 
 
 def license_case(
@@ -31,7 +32,7 @@ def license_case(
     audit_object = None
 
     match path:
-        case (["bundles", bundle_pk]):
+        case ["bundles", bundle_pk]:
             if view.request.method == "PUT" and "accept" in path and response.status_code == 200:
                 audit_operation = AuditOperation(
                     name="Bundle license accepted",
@@ -43,7 +44,7 @@ def license_case(
                     object_name=bundle.name,
                     object_type=AuditObjectType.BUNDLE,
                 )
-        case (["prototypes", prototype_pk, "license", "accept"]):
+        case ["prototypes", prototype_pk, "license", "accept"]:
             if view.request.method == "POST":
                 prototype = Prototype.objects.filter(pk=prototype_pk).first()
                 audit_operation = AuditOperation(

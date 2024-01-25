@@ -54,11 +54,9 @@ class CamelCaseGenericViewSet(GenericViewSet):
 
 class CamelCaseModelViewSet(
     CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, ListModelMixin, CamelCaseGenericViewSet
-):  # pylint: disable=too-many-ancestors
+):
     pass
 
 
-class CamelCaseReadOnlyModelViewSet(
-    RetrieveModelMixin, ListModelMixin, CamelCaseGenericViewSet
-):  # pylint: disable=too-many-ancestors
+class CamelCaseReadOnlyModelViewSet(RetrieveModelMixin, ListModelMixin, CamelCaseGenericViewSet):
     pass

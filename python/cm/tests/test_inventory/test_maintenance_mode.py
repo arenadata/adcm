@@ -12,7 +12,9 @@
 from pathlib import Path
 from typing import Mapping
 
+from adcm.settings import ADCM_TURN_ON_MM_ACTION_NAME
 from api_v2.service.utils import bulk_add_services_to_cluster
+
 from cm.models import (
     Action,
     Cluster,
@@ -25,8 +27,6 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.tests.test_inventory.base import BaseInventoryTestCase
-
-from adcm.settings import ADCM_TURN_ON_MM_ACTION_NAME
 
 
 class TestMaintenanceMode(BaseInventoryTestCase):  # pylint: disable=too-many-instance-attributes
@@ -65,12 +65,15 @@ class TestMaintenanceMode(BaseInventoryTestCase):  # pylint: disable=too-many-in
 
     def get_service_mm_config(self, obj: ClusterObject, component: ServiceComponent):
         mm_state = {MaintenanceMode.ON: "true", MaintenanceMode.OFF: "false"}
-        path, ids = self.templates_dir / "service_one_component.json.j2", {
-            "service_id": obj.id,
-            "service_mm": mm_state[obj.maintenance_mode],
-            "component_id": component.pk,
-            "component_mm": mm_state[component.maintenance_mode],
-        }
+        path, ids = (
+            self.templates_dir / "service_one_component.json.j2",
+            {
+                "service_id": obj.id,
+                "service_mm": mm_state[obj.maintenance_mode],
+                "component_id": component.pk,
+                "component_mm": mm_state[component.maintenance_mode],
+            },
+        )
 
         return self.render_json_template(path, ids)
 
@@ -218,7 +221,7 @@ class TestMaintenanceMode(BaseInventoryTestCase):  # pylint: disable=too-many-in
             ),
         }
 
-        for obj, action, expected_topology, expected_data in (
+        for obj, action, topology, data in (
             (
                 service_one_component,
                 action_on_service_mm_on,
@@ -279,7 +282,7 @@ class TestMaintenanceMode(BaseInventoryTestCase):  # pylint: disable=too-many-in
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
                 obj.maintenance_mode = MaintenanceMode.ON
                 obj.save()
-                self.assert_inventory(obj, action, expected_topology, expected_data)
+                self.assert_inventory(obj, action, topology, data)
                 obj.maintenance_mode = MaintenanceMode.OFF
                 obj.save()
 
@@ -414,7 +417,7 @@ class TestMaintenanceMode(BaseInventoryTestCase):  # pylint: disable=too-many-in
             ),
         }
 
-        for obj, action, expected_topology, expected_data in (
+        for obj, action, topology, data in (
             (self.service_two_components, action_on_service_mm_on, expected_hosts_topology, expected_data),
             (self.component_1, action_on_component_1_mm_on, expected_hosts_topology, expected_data),
             (self.component_2, action_on_component_2_mm_on, expected_hosts_topology, expected_data),
@@ -434,6 +437,6 @@ class TestMaintenanceMode(BaseInventoryTestCase):  # pylint: disable=too-many-in
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
                 obj.maintenance_mode = MaintenanceMode.ON
                 obj.save()
-                self.assert_inventory(obj, action, expected_topology, expected_data)
+                self.assert_inventory(obj, action, topology, data)
                 obj.maintenance_mode = MaintenanceMode.OFF
                 obj.save()

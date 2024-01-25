@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import ClusterBind
 from django.urls import reverse
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestImport(BaseAPITestCase):

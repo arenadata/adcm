@@ -10,14 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
-from api_v2.config.utils import (
-    convert_adcm_meta_to_attr,
-    convert_attr_to_adcm_meta,
-    represent_json_type_as_string,
-    represent_string_as_json_type,
-)
-from api_v2.views import CamelCaseGenericViewSet
+from adcm.mixins import GetParentObjectMixin
+from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
 from audit.utils import audit
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
@@ -29,8 +23,14 @@ from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveMode
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from adcm.mixins import GetParentObjectMixin
-from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
+from api_v2.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
+from api_v2.config.utils import (
+    convert_adcm_meta_to_attr,
+    convert_attr_to_adcm_meta,
+    represent_json_type_as_string,
+    represent_string_as_json_type,
+)
+from api_v2.views import CamelCaseGenericViewSet
 
 
 class ConfigLogViewSet(
@@ -40,7 +40,7 @@ class ConfigLogViewSet(
     RetrieveModelMixin,
     GetParentObjectMixin,
     CamelCaseGenericViewSet,
-):  # pylint: disable=too-many-ancestors
+):
     queryset = ConfigLog.objects.select_related(
         "obj_ref__cluster__prototype",
         "obj_ref__clusterobject__prototype",
@@ -68,7 +68,7 @@ class ConfigLogViewSet(
         return ConfigLogSerializer
 
     @audit
-    def create(self, request, *args, **kwargs) -> Response:
+    def create(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         parent_object = self.get_parent_object()
 
         parent_view_perm = f"cm.view_{parent_object.__class__.__name__.lower()}"
@@ -106,7 +106,7 @@ class ConfigLogViewSet(
 
         return Response(data=self.get_serializer(config_log).data, status=HTTP_201_CREATED)
 
-    def retrieve(self, request, *args, **kwargs) -> Response:
+    def retrieve(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         parent_object = self.get_parent_object()
         instance = self.get_object()
         instance.attr = convert_attr_to_adcm_meta(attr=instance.attr)

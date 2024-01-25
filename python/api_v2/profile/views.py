@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.profile.serializers import ProfileSerializer, ProfileUpdateSerializer
 from audit.utils import audit
 from django.conf import settings
 from djangorestframework_camel_case.parser import (
@@ -25,6 +24,8 @@ from rbac.models import User
 from rbac.services.user import update_user
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.response import Response
+
+from api_v2.profile.serializers import ProfileSerializer, ProfileUpdateSerializer
 
 
 class ProfileView(RetrieveUpdateAPIView):
@@ -42,7 +43,7 @@ class ProfileView(RetrieveUpdateAPIView):
         return ProfileSerializer
 
     @audit
-    def update(self, request, *args, **kwargs):
+    def update(self, request, *args, **kwargs):  # noqa: ARG002
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)

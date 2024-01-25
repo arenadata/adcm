@@ -9,8 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.prototype.views import PrototypeViewSet
 from rest_framework.routers import SimpleRouter
+
+from api_v2.prototype.views import PrototypeViewSet
 
 router = SimpleRouter()
 router.register("", PrototypeViewSet)

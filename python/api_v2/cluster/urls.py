@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rest_framework_nested.routers import NestedSimpleRouter, SimpleRouter
+
 from api_v2.action.views import ActionViewSet
 from api_v2.cluster.views import ClusterViewSet
 from api_v2.component.views import ComponentViewSet, HostComponentViewSet
@@ -19,7 +21,6 @@ from api_v2.host.views import HostClusterViewSet, HostGroupConfigViewSet
 from api_v2.imports.views import ImportViewSet
 from api_v2.service.views import ServiceViewSet
 from api_v2.upgrade.views import UpgradeViewSet
-from rest_framework_nested.routers import NestedSimpleRouter, SimpleRouter
 
 CLUSTER_PREFIX = ""
 ACTION_PREFIX = "actions"

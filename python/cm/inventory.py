@@ -10,9 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from itertools import chain
 from typing import Iterable
+import json
+
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 
 from cm.adcm_config.config import get_prototype_config, process_config
 from cm.logger import logger
@@ -38,8 +41,6 @@ from cm.models import (
     get_default_before_upgrade,
     get_object_cluster,
 )
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 
 
 class HcAclAction:
@@ -61,10 +62,7 @@ def fix_fields_for_inventory(prototype_configs: Iterable[PrototypeConfig], confi
         name = prototype_config.name
         sub_name = prototype_config.subname
 
-        if prototype_config.type == "map":
-            fix_value = {}
-        else:
-            fix_value = []
+        fix_value = {} if prototype_config.type == "map" else []
 
         if sub_name and name in config and sub_name in config[name]:
             if config[name][sub_name] is None:
@@ -82,10 +80,7 @@ def process_config_and_attr(
     flat_spec: dict | None = None,
 ) -> dict:
     if not spec:
-        if isinstance(obj, GroupConfig):
-            prototype = obj.object.prototype
-        else:
-            prototype = obj.prototype
+        prototype = obj.object.prototype if isinstance(obj, GroupConfig) else obj.prototype
 
         spec, flat_spec, _, _ = get_prototype_config(prototype=prototype)
 
@@ -121,27 +116,21 @@ def get_prototype_imports(obj: Cluster | ClusterObject, imports: dict) -> dict:
     return imports
 
 
-def get_import(cluster: Cluster) -> dict:  # pylint: disable=too-many-branches
+def get_import(cluster: Cluster) -> dict:
     imports = {}
     for obj in chain([cluster], ClusterObject.objects.filter(cluster=cluster)):
         imports = get_prototype_imports(obj=obj, imports=imports)
 
     first = True
     for bind in ClusterBind.objects.filter(cluster=cluster):
-        if bind.source_service:
-            obj = bind.source_service
-        else:
-            obj = bind.source_cluster
+        obj = bind.source_service if bind.source_service else bind.source_cluster
 
         conf_ref = obj.config
         export_proto = obj.prototype
         config_log = ConfigLog.objects.get(obj_ref=conf_ref, id=conf_ref.current)
         conf = process_config_and_attr(obj=obj, conf=config_log.config, attr=config_log.attr)
 
-        if bind.service:
-            proto = bind.service.prototype
-        else:
-            proto = bind.cluster.prototype
+        proto = bind.service.prototype if bind.service else bind.cluster.prototype
 
         actual_import = PrototypeImport.objects.get(prototype=proto, name=obj.prototype.name)
 
@@ -369,7 +358,7 @@ def get_provider_config(provider_id: int) -> dict:
     return {"provider": get_provider_variables(provider=provider)}
 
 
-def get_host_groups(  # pylint: disable=too-many-branches
+def get_host_groups(
     cluster: Cluster,
     delta: dict | None = None,
     action_host: Host | None = None,
@@ -475,25 +464,22 @@ def get_provider_hosts(provider: HostProvider, action_host: list[Host] | None = 
 
 def get_host(host_id: int) -> dict:
     host = Host.objects.get(id=host_id)
-    groups = {
+    return {
         "HOST": {
             "hosts": get_hosts(host_list=[host], obj=host),
             "vars": get_provider_config(provider_id=host.provider.id),
         }
     }
-    return groups
 
 
 def get_target_host(host_id: int) -> dict:
     host = Host.objects.get(id=host_id)
-    groups = {
+    return {
         "target": {
             "hosts": get_hosts(host_list=[host], obj=host, include_mm_hosts=True),
             "vars": get_cluster_config(cluster=host.cluster),
         }
     }
-
-    return groups
 
 
 def get_inventory_data(
@@ -540,9 +526,7 @@ def prepare_job_inventory(
     logger.info("prepare inventory for job #%s, object: %s", job_id, obj)
 
     with open(
-        file=settings.RUN_DIR / f"{job_id}/inventory.json",
-        mode="w",
-        encoding=settings.ENCODING_UTF_8,
+        settings.RUN_DIR / f"{job_id}/inventory.json", mode="w", encoding=settings.ENCODING_UTF_8
     ) as file_descriptor:
         inventory_data = get_inventory_data(obj=obj, action=action, action_host=action_host, delta=delta)
         json.dump(obj=inventory_data, fp=file_descriptor, separators=(",", ":"))

@@ -11,11 +11,10 @@
 # limitations under the License.
 
 
+from contextlib import contextmanager, suppress
 import os
 import re
-from contextlib import contextmanager, suppress
 
-import ldap
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
@@ -24,6 +23,8 @@ from django.contrib.auth.models import Group as DjangoGroup
 from django.db.transaction import atomic
 from django_auth_ldap.backend import LDAPBackend, _LDAPUser
 from django_auth_ldap.config import LDAPSearch, MemberDNGroupType
+import ldap
+
 from rbac.models import Group, OriginType, User
 
 CERT_ENV_KEY = "LDAPTLS_CACERT"
@@ -40,9 +41,8 @@ def _process_extra_filter(filterstr: str) -> str:
     # simple single filter ex: `primaryGroupID=513`
     if "(" not in filterstr and ")" not in filterstr:
         return f"({filterstr})"
-    else:
-        # assume that composed filter is syntactically valid
-        return filterstr
+    # assume that composed filter is syntactically valid
+    return filterstr
 
 
 def configure_tls(
@@ -185,7 +185,7 @@ def get_ldap_default_settings() -> tuple[dict, str | None]:
 
         if is_tls(ldap_config["ldap_uri"]):
             cert_filepath = ldap_config.get("tls_ca_cert_file", "")
-            if not cert_filepath or not os.path.exists(cert_filepath):
+            if not cert_filepath or not os.path.exists(cert_filepath):  # noqa: PTH110
                 msg = "NO_CERT_FILE"
                 logger.warning(msg)
                 return {}, msg
@@ -211,10 +211,9 @@ class CustomLDAPBackend(LDAPBackend):
         try:
             if not self._check_user(ldap_user):
                 return None
-            # pylint: disable=protected-access
             user_local_groups = self._get_local_groups_by_username(ldap_user._username)
             user_or_none = super().authenticate_ldap_user(ldap_user, password)
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # noqa: BLE001
             logger.exception(e)
             return None
 
@@ -232,11 +231,9 @@ class CustomLDAPBackend(LDAPBackend):
 
     @staticmethod
     def _get_local_groups_by_username(username: str) -> list[Group]:
-        groups = []
         with suppress(User.DoesNotExist):
             user = User.objects.get(username__iexact=username, type=OriginType.LDAP)
-            groups = [g.group for g in user.groups.order_by("id") if g.group.type == OriginType.LOCAL]
-        return groups
+            return [g.group for g in user.groups.order_by("id") if g.group.type == OriginType.LOCAL]
 
     def get_user_model(self) -> type[User]:
         return User
@@ -292,7 +289,7 @@ class CustomLDAPBackend(LDAPBackend):
         user_dn = ldap_user.dn
         if user_dn is None:
             return False
-        username = ldap_user._username  # pylint: disable=protected-access
+        username = ldap_user._username
 
         if User.objects.filter(username__iexact=username, type=OriginType.LOCAL).exists():
             logger.exception("usernames collision: `%s`", username)
@@ -310,10 +307,8 @@ class CustomLDAPBackend(LDAPBackend):
 
     @staticmethod
     def _get_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
-        group_dn = ""
         with suppress(IndexError):
-            group_dn = [i for i in ldap_groups if i[0] == group_name][0][1]
-        return group_dn
+            return [i for i in ldap_groups if i[0] == group_name][0][1]
 
     @staticmethod
     def _get_rbac_group(group: Group | DjangoGroup, ldap_group_dn: str) -> Group:
@@ -322,17 +317,16 @@ class CustomLDAPBackend(LDAPBackend):
         """
         if isinstance(group, Group):
             return group
-        elif isinstance(group, DjangoGroup):
+        elif isinstance(group, DjangoGroup):  # noqa: RET505
             try:
                 # maybe we'll need more accurate filtering here
                 return Group.objects.get(name=f"{group.name} [{OriginType.LDAP.value}]", type=OriginType.LDAP.value)
             except Group.DoesNotExist:
                 with atomic():
-                    rbac_group = Group.objects.create(
+                    return Group.objects.create(
                         name=group.name,
                         type=OriginType.LDAP,
                         description=ldap_group_dn,
                     )
-                    return rbac_group
         else:
-            raise ValueError("wrong group type")
+            raise TypeError("wrong group type")

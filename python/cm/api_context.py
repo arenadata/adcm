@@ -19,8 +19,8 @@ here during WSGI call or Ansible run
 Implemented as singleton module, just `import ctx from cm.api_context` and use `ctx.*` when needed
 """
 
-import os
 from pathlib import Path
+import os
 
 from cm import models
 from cm.logger import logger

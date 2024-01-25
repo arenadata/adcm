@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.config_log.views import ConfigLogViewSet
 from rest_framework.routers import SimpleRouter
+
+from api.config_log.views import ConfigLogViewSet
 
 router = SimpleRouter()
 router.register("", ConfigLogViewSet, basename="config-log")

@@ -9,8 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=wrong-import-order
 
+
+from adcm.tests.base import BaseTestCase
 
 from cm.hierarchy import HierarchyError, Tree
 from cm.tests.utils import (
@@ -24,10 +25,8 @@ from cm.tests.utils import (
     gen_service,
 )
 
-from adcm.tests.base import BaseTestCase
 
-
-def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
+def generate_hierarchy():
     """
     Generates two hierarchies:
     cluster_1 - service_11 - component_111 - host_11 - provider_1
@@ -165,7 +164,7 @@ class HierarchyTest(BaseTestCase):
             "host_31",
         )
         for name in expected:
-            assert tree.get_node(hierarchy_objects[name])
+            assert tree.get_node(hierarchy_objects[name])  # noqa: S101
 
         not_expected = (
             "cluster_2",

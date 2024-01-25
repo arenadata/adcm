@@ -10,10 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines
-
-from api_v2.cluster.utils import get_requires
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import (
     Cluster,
     ClusterObject,
@@ -31,6 +27,9 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_409_CONFLICT,
 )
+
+from api_v2.cluster.utils import get_requires
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestMapping(BaseAPITestCase):
@@ -190,7 +189,7 @@ class TestMapping(BaseAPITestCase):
         self.assertDictEqual(new_requires, {"service1": ["component1"]})
 
 
-class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-public-methods
+class TestMappingConstraints(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 

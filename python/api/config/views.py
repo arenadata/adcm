@@ -10,15 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.base_view import GenericUIView
-from api.config.serializers import (
-    ConfigHistorySerializer,
-    ConfigObjectConfigSerializer,
-    HistoryCurrentPreviousConfigSerializer,
-    ObjectConfigRestoreSerializer,
-    ObjectConfigUpdateSerializer,
-)
-from api.utils import check_obj, create, update
+from adcm.permissions import check_config_perm
 from audit.utils import audit
 from cm.adcm_config.ansible import ansible_encrypt_and_format
 from cm.adcm_config.config import ui_config
@@ -31,7 +23,15 @@ from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from adcm.permissions import check_config_perm
+from api.base_view import GenericUIView
+from api.config.serializers import (
+    ConfigHistorySerializer,
+    ConfigObjectConfigSerializer,
+    HistoryCurrentPreviousConfigSerializer,
+    ObjectConfigRestoreSerializer,
+    ObjectConfigUpdateSerializer,
+)
+from api.utils import check_obj, create, update
 
 
 def get_config_version(queryset, objconf, version) -> ConfigLog:
@@ -84,7 +84,7 @@ class ConfigView(GenericUIView):
     permission_classes = (IsAuthenticated,)
     ordering = ["id"]
 
-    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def get(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         model = get_model_by_type(object_type)
         obj = model.obj.get(id=object_id)
@@ -103,7 +103,7 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
     def get_queryset(self, *args, **kwargs) -> QuerySet:
         return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
 
-    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def get(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         obj, object_config = get_obj(object_type, object_id)
         config_log = self.get_queryset().filter(obj_ref=object_config).order_by("-id")
@@ -112,7 +112,7 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
         return Response(serializer.data)
 
     @audit
-    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def post(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         obj, object_config = get_obj(object_type, object_id)
         check_config_perm(user=request.user, action_type="change", model=type_to_model(object_type), obj=obj)
@@ -136,7 +136,7 @@ class ConfigVersionView(PermissionListMixin, GenericUIView):
     def get_queryset(self, *args, **kwargs) -> QuerySet:
         return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(obj_ref__adcm__isnull=False)
 
-    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def get(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         object_type, object_id, version = get_object_type_id_version(**kwargs)
         obj, object_config = get_obj(object_type, object_id)
         config_log = get_config_version(self.get_queryset(), object_config, version)
@@ -175,7 +175,7 @@ class ConfigHistoryRestoreView(PermissionListMixin, GenericUIView):
     ordering = ["id"]
 
     @audit
-    def patch(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def patch(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         object_type, object_id, version = get_object_type_id_version(**kwargs)
         obj, object_config = get_obj(object_type, object_id)
         check_config_perm(user=request.user, action_type="change", model=type_to_model(object_type), obj=obj)

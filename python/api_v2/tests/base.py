@@ -13,6 +13,7 @@ from pathlib import Path
 from shutil import rmtree
 from typing import Any, TypeAlias
 
+from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
 from audit.models import AuditLog, AuditSession
 from cm.models import (
     ADCM,
@@ -29,8 +30,6 @@ from init_db import init
 from rbac.models import Group, Policy, Role, User
 from rbac.upgrade.role import init_roles
 from rest_framework.test import APITestCase
-
-from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
 
 AuditTarget: TypeAlias = (
     Bundle | Cluster | ClusterObject | ServiceComponent | HostProvider | Host | User | Group | Role | Policy

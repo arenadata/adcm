@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.job.views import JobViewSet
-from api_v2.log_storage.views import LogStorageViewSet
 from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
+
+from api_v2.job.views import JobViewSet
+from api_v2.log_storage.views import LogStorageViewSet
 
 router = SimpleRouter()
 router.register("", JobViewSet)

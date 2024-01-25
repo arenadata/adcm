@@ -12,11 +12,11 @@
 
 from uuid import uuid4
 
+from adcm.tests.base import BaseTestCase
+
 from cm.errors import AdcmEx
 from cm.models import KnownNames, MessageTemplate
 from cm.tests.utils import gen_adcm
-
-from adcm.tests.base import BaseTestCase
 
 
 class MessageTemplateTest(BaseTestCase):

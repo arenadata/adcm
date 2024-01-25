@@ -45,6 +45,18 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
+OBJECT_TYPES_DICT = {
+    "adcm": "adcm",
+    "cluster": "cluster",
+    "service": "clusterobject",
+    "cluster object": "service",
+    "component": "servicecomponent",
+    "service component": "servicecomponent",
+    "provider": "hostprovider",
+    "host provider": "hostprovider",
+    "host": "host",
+}
+
 
 def _change_mm_via_action(
     prototype: Prototype,
@@ -113,14 +125,14 @@ def process_requires(
 
 
 def get_obj_type(obj_type: str) -> str:
-    if obj_type == "cluster object":
-        return "service"
-    elif obj_type == "service component":
-        return "component"
-    elif obj_type == "host provider":
-        return "provider"
-
-    return obj_type
+    object_names_to_object_types = {
+        "adcm": "adcm",
+        "cluster": "cluster",
+        "cluster object": "service",
+        "service component": "component",
+        "host provider": "provider",
+    }
+    return object_names_to_object_types[obj_type]
 
 
 def str_remove_non_alnum(value: str) -> str:
@@ -212,8 +224,6 @@ def get_maintenance_mode_response(
     obj: Host | ClusterObject | ServiceComponent,
     serializer: Serializer,
 ) -> Response:
-    # pylint: disable=too-many-branches, too-many-return-statements
-
     turn_on_action_name = settings.ADCM_TURN_ON_MM_ACTION_NAME
     turn_off_action_name = settings.ADCM_TURN_OFF_MM_ACTION_NAME
     prototype = obj.prototype
@@ -320,7 +330,7 @@ def get_maintenance_mode_response(
     )
 
 
-def delete_service_from_api(service: ClusterObject) -> Response:  # pylint: disable=too-many-branches
+def delete_service_from_api(service: ClusterObject) -> Response:
     delete_action = Action.objects.filter(
         prototype=service.prototype,
         name=settings.ADCM_DELETE_SERVICE_ACTION_NAME,

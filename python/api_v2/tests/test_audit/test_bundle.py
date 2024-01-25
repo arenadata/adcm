@@ -11,7 +11,6 @@
 # limitations under the License.
 
 
-from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditLogOperationType, AuditObject
 from cm.models import Bundle, Prototype
 from django.conf import settings
@@ -25,6 +24,8 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestBundleAudit(BaseAPITestCase):

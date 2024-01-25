@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import Bundle
 from django.conf import settings
 from rest_framework.reverse import reverse
@@ -22,6 +21,8 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestBundle(BaseAPITestCase):

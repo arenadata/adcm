@@ -9,6 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from adcm.utils import OBJECT_TYPES_DICT
+from cm import models
+from cm.errors import AdcmEx
+from django.contrib.contenttypes.models import ContentType
+from django_filters import rest_framework as drf_filters
+from rest_framework.permissions import IsAuthenticated
 
 from api.base_view import DetailView, PaginatedView
 from api.concern.serializers import (
@@ -16,21 +22,8 @@ from api.concern.serializers import (
     ConcernItemSerializer,
     ConcernItemUISerializer,
 )
-from cm import models
-from cm.errors import AdcmEx
-from django.contrib.contenttypes.models import ContentType
-from django_filters import rest_framework as drf_filters
-from rest_framework.permissions import IsAuthenticated
 
-OBJECT_TYPES = {
-    "adcm": "adcm",
-    "cluster": "cluster",
-    "service": "clusterobject",
-    "component": "servicecomponent",
-    "provider": "hostprovider",
-    "host": "host",
-}
-CHOICES = list(zip(OBJECT_TYPES, OBJECT_TYPES))
+CHOICES = list(zip(OBJECT_TYPES_DICT, OBJECT_TYPES_DICT))
 
 
 class ConcernFilter(drf_filters.FilterSet):
@@ -52,17 +45,17 @@ class ConcernFilter(drf_filters.FilterSet):
             "owner_id",
         ]
 
-    def _filter_by_owner_type(self, queryset, name, value: str):  # pylint: disable=unused-argument
-        owner_type = ContentType.objects.get(app_label="cm", model=OBJECT_TYPES[value])
+    def _filter_by_owner_type(self, queryset, name, value: str):  # noqa: ARG001, ARG002
+        owner_type = ContentType.objects.get(app_label="cm", model=OBJECT_TYPES_DICT[value])
         return queryset.filter(owner_type=owner_type)
 
-    def _pass(self, queryset, name, value):  # pylint: disable=unused-argument
+    def _pass(self, queryset, name, value):  # noqa: ARG001, ARG002
         # do not pass to filter directly
         return queryset
 
-    def _filter_by_object(self, queryset, name, value):  # pylint: disable=unused-argument
+    def _filter_by_object(self, queryset, name, value):  # noqa: ARG001, ARG002
         object_id = self.request.query_params.get("object_id")
-        filters = {f"{OBJECT_TYPES[value]}_entities__id": object_id}
+        filters = {f"{OBJECT_TYPES_DICT[value]}_entities__id": object_id}
 
         return queryset.filter(**filters)
 

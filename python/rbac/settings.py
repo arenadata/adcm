@@ -29,14 +29,14 @@ import os
 from django.conf import settings
 from django.test.signals import setting_changed
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # noqa: PTH120, PTH100
 
 
 DEFAULTS = {
     # File with role specification
-    "ROLE_SPEC": os.path.join(BASE_DIR, "upgrade", "role_spec.yaml"),
+    "ROLE_SPEC": os.path.join(BASE_DIR, "upgrade", "role_spec.yaml"),  # noqa: PTH118
     # Schema for role specification file
-    "ROLE_SCHEMA": os.path.join(BASE_DIR, "upgrade", "role_schema.yaml"),
+    "ROLE_SCHEMA": os.path.join(BASE_DIR, "upgrade", "role_schema.yaml"),  # noqa: PTH118
 }
 
 
@@ -89,7 +89,7 @@ class APISettings:
 api_settings = APISettings(None, DEFAULTS)
 
 
-def reload_api_settings(*args, **kwargs):  # pylint: disable=unused-argument
+def reload_api_settings(*args, **kwargs):  # noqa: ARG001
     setting = kwargs["setting"]
     if setting == "ADWP_RBAC":
         api_settings.reload()

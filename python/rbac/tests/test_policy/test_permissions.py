@@ -12,6 +12,7 @@
 
 from django.contrib.auth.models import Group, Permission
 from guardian.models import GroupObjectPermission
+
 from rbac.models import Group as RBACGroup
 from rbac.models import Policy
 from rbac.roles import assign_group_perm

@@ -10,15 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 from datetime import timedelta
+import logging
 
 from audit.models import AuditLogOperationResult
 from audit.utils import make_audit_log
-from cm.job import ActionRunPayload, run_action
-from cm.models import ADCM, Action, ConfigLog, JobStatus, TaskLog
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+
+from cm.job import ActionRunPayload, run_action
+from cm.models import ADCM, Action, ConfigLog, JobStatus, TaskLog
 
 logger = logging.getLogger("background_tasks")
 
@@ -34,7 +35,7 @@ def get_settings(adcm_object):
 class Command(BaseCommand):
     help = "Run synchronization with ldap if sync_interval is specified in ADCM settings"
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: ARG002
         adcm_object = ADCM.objects.first()
         action = Action.objects.get(name="run_ldap_sync", prototype=adcm_object.prototype)
         period = get_settings(adcm_object)

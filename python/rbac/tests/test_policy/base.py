@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.tests.base import BaseTestCase
 from cm.models import Bundle, ClusterObject, Host, ObjectType, Prototype
+
 from rbac.models import Group
 
-from adcm.tests.base import BaseTestCase
 
-
-class PolicyBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-attributes
+class PolicyBaseTestCase(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 

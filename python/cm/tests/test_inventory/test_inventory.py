@@ -15,6 +15,14 @@ from json import loads
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from django.conf import settings
+from django.urls import reverse
+from django.utils import timezone
+from init_db import init as init_adcm
+from rest_framework.response import Response
+from rest_framework.status import HTTP_201_CREATED
+
 from cm.api import add_hc, add_service_to_cluster, update_obj_config
 from cm.inventory import (
     MAINTENANCE_MODE,
@@ -56,19 +64,9 @@ from cm.tests.utils import (
     gen_provider,
     gen_service,
 )
-from django.conf import settings
-from django.urls import reverse
-from django.utils import timezone
-from init_db import init as init_adcm
-from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestInventory(BaseTestCase):
-    # pylint: disable=too-many-instance-attributes
-
     def setUp(self):
         super().setUp()
 
@@ -319,8 +317,6 @@ class TestInventory(BaseTestCase):
                 mock_dump.reset_mock()
 
     def test_host_vars(self):
-        # pylint: disable=too-many-locals
-
         service_pt_1 = gen_prototype(self.cluster_bundle, "service", "service_1")
         service_pt_2 = gen_prototype(self.cluster_bundle, "service", "service_2")
         component_pt_11 = gen_prototype(self.cluster_bundle, "component", "component_11")
@@ -426,8 +422,6 @@ class TestInventory(BaseTestCase):
 
 
 class TestInventoryAndMaintenanceMode(BaseTestCase):
-    # pylint: disable=too-many-instance-attributes
-
     def setUp(self):
         super().setUp()
         init_adcm()
@@ -568,10 +562,8 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         re_prepare_job(task=task, job=job)
 
         inventory_file = settings.RUN_DIR / str(job.pk) / "inventory.json"
-        with open(file=inventory_file, encoding=settings.ENCODING_UTF_8) as f:
-            inventory_data = loads(s=f.read())["all"]["children"]
-
-        return inventory_data
+        with Path(inventory_file).open(encoding=settings.ENCODING_UTF_8) as f:
+            return loads(s=f.read())["all"]["children"]
 
     def test_groups_remove_host_not_in_mm_success(self):
         self.host_hc_acl_3.maintenance_mode = MaintenanceMode.ON

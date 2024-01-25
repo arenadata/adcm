@@ -35,7 +35,7 @@ class ServiceFilter(FilterSet):
         fields = ["name", "display_name", "status"]
 
     @staticmethod
-    def filter_status(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument
+    def filter_status(queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG001, ARG004
         if value == ADCMEntityStatus.UP:
             exclude_pks = {service.pk for service in queryset if get_service_status(service=service) != 0}
         else:
@@ -44,5 +44,5 @@ class ServiceFilter(FilterSet):
         return queryset.exclude(pk__in=exclude_pks)
 
     @staticmethod
-    def filter_name(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument
+    def filter_name(queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG001, ARG004
         return queryset.filter(prototype__type=ObjectType.SERVICE, prototype__name__icontains=value)

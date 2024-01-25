@@ -10,14 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.models import ADCM
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+
 from api.adcm.serializers import (
     ADCMRetrieveSerializer,
     ADCMSerializer,
     ADCMUISerializer,
 )
 from api.base_view import GenericUIViewSet
-from cm.models import ADCM
-from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 
 
 class ADCMViewSet(ListModelMixin, RetrieveModelMixin, GenericUIViewSet):

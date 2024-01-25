@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
+from adcm.permissions import check_custom_perm
+from adcm.utils import get_maintenance_mode_response
 from cm.adcm_config.config import init_object_config
 from cm.api import check_license, load_service_map
 from cm.api_context import CTX
@@ -23,8 +24,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 
-from adcm.permissions import check_custom_perm
-from adcm.utils import get_maintenance_mode_response
+from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
 
 
 def add_new_host_and_map_it(provider: HostProvider, fqdn: str, cluster: Cluster | None = None) -> Host:

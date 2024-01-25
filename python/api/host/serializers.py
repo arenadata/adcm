@@ -10,10 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.action.serializers import ActionShort
-from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.serializers import StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL, check_obj
+from adcm.serializers import EmptySerializer
+from adcm.utils import filter_actions
 from cm.adcm_config.config import get_main_info
 from cm.api import add_host
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
@@ -38,8 +36,10 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
-from adcm.serializers import EmptySerializer
-from adcm.utils import filter_actions
+from api.action.serializers import ActionShort
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.serializers import StringListSerializer
+from api.utils import CommonAPIURL, ObjectURL, check_obj
 
 
 class HostSerializer(EmptySerializer):

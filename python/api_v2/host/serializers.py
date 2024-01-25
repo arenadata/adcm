@@ -10,9 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.cluster.serializers import RelatedComponentStatusSerializer
-from api_v2.concern.serializers import ConcernSerializer
-from api_v2.prototype.serializers import PrototypeRelatedSerializer
+from adcm import settings
+from adcm.serializers import EmptySerializer
 from cm.models import Cluster, Host, HostProvider, MaintenanceMode, ServiceComponent
 from cm.status_api import get_obj_status
 from cm.validators import HostUniqueValidator, StartMidEndValidator
@@ -25,8 +24,9 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
-from adcm import settings
-from adcm.serializers import EmptySerializer
+from api_v2.cluster.serializers import RelatedComponentStatusSerializer
+from api_v2.concern.serializers import ConcernSerializer
+from api_v2.prototype.serializers import PrototypeRelatedSerializer
 
 
 class HostProviderSerializer(ModelSerializer):

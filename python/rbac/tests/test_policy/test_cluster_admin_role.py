@@ -12,9 +12,9 @@
 
 from unittest.mock import patch
 
+from adcm.tests.base import APPLICATION_JSON
 from cm.models import Action, Host
 from django.urls import reverse
-from rbac.tests.test_policy.base import PolicyBaseTestCase
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
@@ -24,7 +24,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
 )
 
-from adcm.tests.base import APPLICATION_JSON
+from rbac.tests.test_policy.base import PolicyBaseTestCase
 
 
 class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
@@ -35,7 +35,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
 
         self.another_user_log_in(username=self.new_user.username, password=self.new_user_password)
 
-    def test_policy_with_cluster_admin_role(self):  # pylint: disable=too-many-statements
+    def test_policy_with_cluster_admin_role(self):
         required_perms = {perm.codename for perm in self.new_user_group.permissions.all()}
         required_perms.update(
             {perm.permission.codename for perm in self.new_user_group.groupobjectpermission_set.all()}

@@ -12,10 +12,10 @@
 
 from collections import defaultdict
 
+from adcm.permissions import DjangoObjectPermissionsAudit
+from adcm.serializers import EmptySerializer
 from api.base_view import GenericUIViewSet
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ObjectType
-from rbac.models import ObjectType as RBACObjectType
-from rbac.models import Role, RoleTypes
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
 from rest_framework.response import Response
@@ -26,8 +26,8 @@ from rest_framework.serializers import (
     JSONField,
 )
 
-from adcm.permissions import DjangoObjectPermissionsAudit
-from adcm.serializers import EmptySerializer
+from rbac.models import ObjectType as RBACObjectType
+from rbac.models import Role, RoleTypes
 
 
 class RoleUISerializer(EmptySerializer):
@@ -43,7 +43,7 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
     permission_classes = (DjangoObjectPermissionsAudit,)
 
     @action(methods=["get"], detail=True)
-    def object_candidate(self, request, **kwargs):  # pylint: disable=unused-argument
+    def object_candidate(self, request, **kwargs):  # noqa: ARG002
         role = self.get_object()
         if role.type != RoleTypes.ROLE:
             return Response({"cluster": [], "provider": [], "service": [], "host": []})

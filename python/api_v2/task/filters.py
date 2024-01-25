@@ -51,15 +51,13 @@ class TaskFilter(FilterSet):
         providers = HostProvider.objects.filter(name__icontains=value).values_list("id")
         hosts = Host.objects.filter(fqdn__icontains=value).values_list("id")
 
-        queryset = (
+        return (
             queryset.filter(object_type=ContentType.objects.get_for_model(Cluster), object_id__in=clusters)
             | queryset.filter(object_type=ContentType.objects.get_for_model(ClusterObject), object_id__in=services)
             | queryset.filter(object_type=ContentType.objects.get_for_model(ServiceComponent), object_id__in=components)
             | queryset.filter(object_type=ContentType.objects.get_for_model(HostProvider), object_id__in=providers)
             | queryset.filter(object_type=ContentType.objects.get_for_model(Host), object_id__in=hosts)
         )
-
-        return queryset
 
     class Meta:
         model = TaskLog

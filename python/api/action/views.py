@@ -10,17 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import hashlib
 from itertools import compress
+import hashlib
 
-from api.action.serializers import (
-    ActionDetailSerializer,
-    ActionSerializer,
-    ActionUISerializer,
-)
-from api.base_view import GenericUIView
-from api.job.serializers import RunTaskRetrieveSerializer
-from api.utils import AdcmFilterBackend, create
+from adcm.permissions import VIEW_ACTION_PERM, get_object_for_user
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import (
@@ -42,7 +35,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from adcm.permissions import VIEW_ACTION_PERM, get_object_for_user
+from api.action.serializers import (
+    ActionDetailSerializer,
+    ActionSerializer,
+    ActionUISerializer,
+)
+from api.base_view import GenericUIView
+from api.job.serializers import RunTaskRetrieveSerializer
+from api.utils import AdcmFilterBackend, create
 
 
 def get_object_type_id(**kwargs) -> tuple[str, int, int]:
@@ -73,7 +73,7 @@ class ActionList(PermissionListMixin, GenericUIView):
     filter_backends = (AdcmFilterBackend,)
     permission_required = [VIEW_ACTION_PERM]
 
-    def get(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def get(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         obj, _ = get_obj(**kwargs)
 
         if obj.concerns.filter(type=ConcernType.LOCK).exists():
@@ -130,7 +130,7 @@ class ActionDetail(PermissionListMixin, GenericUIView):
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = [VIEW_ACTION_PERM]
 
-    def get(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def get(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         object_type, object_id, action_id = get_object_type_id(**kwargs)
         model = get_model_by_type(object_type)
         content_type = ContentType.objects.get_for_model(model)
@@ -146,10 +146,7 @@ class ActionDetail(PermissionListMixin, GenericUIView):
             self.get_queryset(),
             id=action_id,
         )
-        if isinstance(obj, Host) and action.host_action:
-            objects = {"host": obj}
-        else:
-            objects = {action.prototype.type: obj}
+        objects = {"host": obj} if isinstance(obj, Host) and action.host_action else {action.prototype.type: obj}
 
         serializer = self.get_serializer(action, context={"request": request, "objects": objects, "obj": obj})
 
@@ -177,7 +174,7 @@ class RunTask(GenericUIView):
             raise PermissionDenied()
 
     @audit
-    def post(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def post(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         object_type, object_id, action_id = get_object_type_id(**kwargs)
         model = get_model_by_type(object_type)
         content_type = ContentType.objects.get_for_model(model)

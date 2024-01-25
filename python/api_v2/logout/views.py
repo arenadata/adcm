@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.serializers import EmptySerializer
 from django.contrib.auth import logout
 from djangorestframework_camel_case.parser import (
     CamelCaseFormParser,
@@ -26,8 +27,6 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
-from adcm.serializers import EmptySerializer
-
 
 class LogoutView(GenericAPIView):
     permission_classes = (IsAuthenticated,)
@@ -36,7 +35,7 @@ class LogoutView(GenericAPIView):
     parser_classes = [CamelCaseJSONParser, CamelCaseMultiPartParser, CamelCaseFormParser]
     renderer_classes = [CamelCaseJSONRenderer, CamelCaseBrowsableAPIRenderer]
 
-    def post(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def post(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         logout(request)
 
         return Response(status=HTTP_200_OK)

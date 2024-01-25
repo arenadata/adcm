@@ -9,20 +9,33 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=line-too-long,too-many-statements, too-many-lines
 
-import hashlib
-import json
-import os
-import re
-import warnings
 from copy import copy, deepcopy
 from pathlib import Path
 from typing import Any, List, Literal
+import os
+import re
+import json
+import hashlib
+import warnings
 
-import ruyaml
-import yaml
 from adcm_version import compare_prototype_versions
+from django.conf import settings
+from django.db import IntegrityError
+from jinja2 import Template
+from jinja2.exceptions import TemplateError
+from rest_framework import status
+from rest_framework.exceptions import NotFound
+from ruyaml.composer import ComposerError
+from ruyaml.constructor import DuplicateKeyError
+from ruyaml.error import ReusedAnchorWarning
+from ruyaml.parser import ParserError as RuYamlParserError
+from ruyaml.scanner import ScannerError as RuYamlScannerError
+from yaml.parser import ParserError as YamlParserError
+from yaml.scanner import ScannerError as YamlScannerError
+import yaml
+import ruyaml
+
 from cm.adcm_config.checks import check_config_type
 from cm.adcm_config.config import read_bundle_file
 from cm.adcm_config.utils import proto_ref
@@ -41,19 +54,6 @@ from cm.models import (
     StageSubAction,
     StageUpgrade,
 )
-from django.conf import settings
-from django.db import IntegrityError
-from jinja2 import Template
-from jinja2.exceptions import TemplateError
-from rest_framework import status
-from rest_framework.exceptions import NotFound
-from ruyaml.composer import ComposerError
-from ruyaml.constructor import DuplicateKeyError
-from ruyaml.error import ReusedAnchorWarning
-from ruyaml.parser import ParserError as RuYamlParserError
-from ruyaml.scanner import ScannerError as RuYamlScannerError
-from yaml.parser import ParserError as YamlParserError
-from yaml.scanner import ScannerError as YamlScannerError
 
 ANY = "any"
 AVAILABLE = "available"
@@ -193,10 +193,10 @@ def check_adcm_config(conf_file: Path) -> Any:
     warnings.simplefilter(action="error", category=ReusedAnchorWarning)
     schema_file = Path(settings.CODE_DIR, "cm", "adcm_schema.yaml")
 
-    with open(schema_file, encoding=settings.ENCODING_UTF_8) as f:
+    with Path(schema_file).open(encoding=settings.ENCODING_UTF_8) as f:
         rules = ruyaml.round_trip_load(f)
     try:
-        with open(conf_file, encoding=settings.ENCODING_UTF_8) as f:
+        with Path(conf_file).open(encoding=settings.ENCODING_UTF_8) as f:
             data = round_trip_load(f, version="1.1", allow_duplicate_keys=True)
     except (RuYamlParserError, RuYamlScannerError, NotImplementedError) as e:
         raise_adcm_ex(code="STACK_LOAD_ERROR", msg=f'YAML decode "{conf_file}" error: {e}')
@@ -209,7 +209,7 @@ def check_adcm_config(conf_file: Path) -> Any:
         raise_adcm_ex(code="STACK_LOAD_ERROR", msg=f"YAML Composer error: {e}")
     try:
         check(data, rules)
-        return data
+        return data  # noqa: TRY300
     except FormatError as e:
         error_msgs = []
         if e.errors:
@@ -554,7 +554,7 @@ def save_import(proto: StagePrototype, conf: dict) -> None:
         if "versions" in conf["import"][key]:
             check_versions(proto, conf["import"][key], f'import "{key}"')
             set_version(stage_prototype_import, conf["import"][key])
-            if stage_prototype_import.min_version and stage_prototype_import.max_version:
+            if stage_prototype_import.min_version and stage_prototype_import.max_version:  # noqa: SIM102
                 if (
                     compare_prototype_versions(
                         str(stage_prototype_import.min_version),
@@ -579,10 +579,9 @@ def check_action_hc(proto: StagePrototype, conf: dict) -> None:
         return
 
     for idx, item in enumerate(conf["hc_acl"]):
-        if "service" not in item:
-            if proto.type == "service":
-                item["service"] = proto.name
-                conf["hc_acl"][idx]["service"] = proto.name
+        if "service" not in item and proto.type == "service":
+            item["service"] = proto.name
+            conf["hc_acl"][idx]["service"] = proto.name
 
 
 def save_sub_actions(conf, action):
@@ -814,19 +813,15 @@ def check_variant(config: dict) -> dict:
     vtype = config["source"]["type"]
     source = {"type": vtype, "args": None}
 
-    if "strict" in config["source"]:
-        source["strict"] = config["source"]["strict"]
-    else:
-        source["strict"] = True
+    source["strict"] = config["source"].get("strict", True)
 
     if vtype == "inline":
         source["value"] = config["source"]["value"]
     elif vtype in ("config", "builtin"):
         source["name"] = config["source"]["name"]
 
-    if vtype == "builtin":
-        if "args" in config["source"]:
-            source["args"] = config["source"]["args"]
+    if vtype == "builtin" and "args" in config["source"]:
+        source["args"] = config["source"]["args"]
 
     return source
 
@@ -849,13 +844,12 @@ def process_limits(config: dict, name: str, subname: str, prototype: StageProtot
         limits["yspec"] = get_yspec(
             prototype=prototype, bundle_hash=bundle_hash, conf=config, name=name, subname=subname
         )
-    elif config["type"] == "group":
-        if "activatable" in config:
-            limits["activatable"] = config["activatable"]
-            limits["active"] = False
+    elif config["type"] == "group" and "activatable" in config:
+        limits["activatable"] = config["activatable"]
+        limits["active"] = False
 
-            if "active" in config:
-                limits["active"] = config["active"]
+        if "active" in config:
+            limits["active"] = config["active"]
 
     if "read_only" in config and "writable" in config:
         key_ref = f'(config key "{name}/{subname}" of {proto_ref(prototype=prototype)})'
@@ -919,7 +913,8 @@ def cook_conf(
     except IntegrityError:
         raise_adcm_ex(
             code="INVALID_CONFIG_DEFINITION",
-            msg=f"Duplicate config on {prototype.type} {prototype}, action {action}, with name {name} and subname {subname}",
+            msg=f"Duplicate config on {prototype.type} {prototype}, action {action}, "
+            f"with name {name} and subname {subname}",
         )
 
 
@@ -1013,7 +1008,8 @@ def check_display_name(obj: StagePrototype) -> None:
     if another_comps:
         raise_adcm_ex(
             code="WRONG_NAME",
-            msg=f"Display name for component within one service must be unique. Incorrect definition of {proto_ref(prototype=obj)}",
+            msg=f"Display name for component within one service must be unique. "
+            f"Incorrect definition of {proto_ref(prototype=obj)}",
         )
 
 
@@ -1031,9 +1027,8 @@ def in_dict(dictionary: dict, key: str) -> bool:
     if key in dictionary:
         if dictionary[key] is None:
             return False
-        else:
-            return True
-    else:
+        return True
+    else:  # noqa: RET505
         return False
 
 
@@ -1044,15 +1039,13 @@ def dict_to_obj(dictionary, key, obj, obj_key=None):
     if not isinstance(dictionary, dict):
         return
 
-    if key in dictionary:
-        if dictionary[key] is not None:
-            setattr(obj, obj_key, dictionary[key])
+    if key in dictionary and dictionary[key] is not None:
+        setattr(obj, obj_key, dictionary[key])
 
 
 def dict_json_to_obj(dictionary: dict, key: str, obj: StagePrototypeConfig) -> None:
-    if isinstance(dictionary, dict):
-        if key in dictionary:
-            setattr(obj, key, json.dumps(dictionary[key]))
+    if isinstance(dictionary, dict) and key in dictionary:
+        setattr(obj, key, json.dumps(dictionary[key]))
 
 
 def _deep_get(deep_dict: dict, *nested_keys: str, default: Any) -> Any:

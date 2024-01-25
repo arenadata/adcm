@@ -12,12 +12,11 @@
 
 from pathlib import Path
 
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import HostComponent, ObjectType, Prototype, ServiceComponent
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestHostComponentOrdering(BaseTestCase):

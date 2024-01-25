@@ -12,9 +12,10 @@
 
 from cm.models import ObjectType
 from django.urls import reverse
-from rbac.tests.test_policy.base import PolicyBaseTestCase
 from rest_framework.response import Response
 from rest_framework.status import HTTP_204_NO_CONTENT
+
+from rbac.tests.test_policy.base import PolicyBaseTestCase
 
 APPLICATION_JSON = "application/json"
 

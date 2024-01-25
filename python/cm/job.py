@@ -10,15 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
-import json
-import subprocess
 from collections.abc import Hashable
 from configparser import ConfigParser
 from dataclasses import dataclass, field
 from functools import partial
 from pathlib import Path
 from typing import Any, Literal
+import copy
+import json
+import subprocess
 
 from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
@@ -28,6 +28,12 @@ from audit.models import (
     AuditLogOperationResult,
     AuditLogOperationType,
 )
+from django.conf import settings
+from django.db.models import JSONField
+from django.db.transaction import atomic, on_commit
+from django.utils import timezone
+from rbac.roles import re_apply_policy_for_jobs
+
 from cm.adcm_config.checks import check_attr
 from cm.adcm_config.config import (
     check_config_spec,
@@ -93,11 +99,6 @@ from cm.status_api import (
 )
 from cm.utils import get_env_with_venv_path
 from cm.variant import process_variant
-from django.conf import settings
-from django.db.models import JSONField
-from django.db.transaction import atomic, on_commit
-from django.utils import timezone
-from rbac.roles import re_apply_policy_for_jobs
 
 
 @dataclass
@@ -119,10 +120,7 @@ def run_action(
     if hosts:
         check_action_hosts(action=action, obj=obj, cluster=cluster, hosts=hosts)
 
-    if action.host_action:
-        action_target = get_host_object(action=action, cluster=cluster)
-    else:
-        action_target = obj
+    action_target = get_host_object(action=action, cluster=cluster) if action.host_action else obj
 
     object_locks = action_target.concerns.filter(type=ConcernType.LOCK)
 
@@ -261,9 +259,8 @@ def check_action_hc(
     action: Action,
 ) -> bool:
     for item in action_hc:
-        if item["service"] == service and item["component"] == component:
-            if item["action"] == action:
-                return True
+        if item["service"] == service and item["component"] == component and item["action"] == action:
+            return True
 
     return False
 
@@ -272,7 +269,7 @@ def cook_comp_key(name, subname):
     return f"{name}.{subname}"
 
 
-def cook_delta(  # pylint: disable=too-many-branches
+def cook_delta(
     cluster: Cluster,
     new_hc: list[tuple[ClusterObject, Host, ServiceComponent]],
     action_hc: list[dict],
@@ -427,8 +424,7 @@ def check_upgrade_hc(action, new_hc):
 def check_service_task(cluster_id: int, action: Action) -> ClusterObject | None:
     cluster = Cluster.obj.get(id=cluster_id)
     try:
-        service = ClusterObject.objects.get(cluster=cluster, prototype=action.prototype)
-        return service
+        return ClusterObject.objects.get(cluster=cluster, prototype=action.prototype)  # noqa: TRY300
     except ClusterObject.DoesNotExist:
         msg = f"service #{action.prototype.pk} for action " f'"{action.name}" is not installed in cluster #{cluster.pk}'
         raise_adcm_ex("CLUSTER_SERVICE_NOT_FOUND", msg)
@@ -582,8 +578,6 @@ def prepare_job_config(
     conf: dict | JSONField | None,
     verbose: bool,
 ) -> dict:
-    # pylint: disable=too-many-branches,too-many-statements
-
     job_conf = {
         "adcm": {"config": get_adcm_config()},
         "context": prepare_context(action, obj),
@@ -825,10 +819,7 @@ def audit_task(
         object_name=object_.name,
         object_type=obj_type,
     )
-    if status == "success":
-        operation_result = AuditLogOperationResult.SUCCESS
-    else:
-        operation_result = AuditLogOperationResult.FAIL
+    operation_result = AuditLogOperationResult.SUCCESS if status == "success" else AuditLogOperationResult.FAIL
 
     audit_log = AuditLog.objects.create(
         audit_object=audit_object,
@@ -882,13 +873,13 @@ def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:
 
     try:
         load_mm_objects()
-    except Exception as error:  # pylint: disable=broad-except
+    except Exception as error:  # noqa: BLE001
         logger.warning("Error loading mm objects on task finish")
         logger.exception(error)
 
 
 def run_task(task: TaskLog, args: str = ""):
-    err_file = open(  # pylint: disable=consider-using-with
+    err_file = open(  # noqa: SIM115
         Path(settings.LOG_DIR, "task_runner.err"),
         "a+",
         encoding=settings.ENCODING_UTF_8,
@@ -899,7 +890,7 @@ def run_task(task: TaskLog, args: str = ""):
         args,
     ]
     logger.info("task run cmd: %s", " ".join(cmd))
-    proc = subprocess.Popen(  # pylint: disable=consider-using-with
+    proc = subprocess.Popen(  # noqa: SIM115
         args=cmd, stderr=err_file, env=get_env_with_venv_path(venv=task.action.venv)
     )
     logger.info("task run #%s, python process %s", task.pk, proc.pid)
@@ -929,10 +920,8 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
     if "jinja2_native" in params:
         config_parser["defaults"]["jinja2_native"] = str(params["jinja2_native"])
 
-    with open(
-        Path(settings.RUN_DIR, f"{job_id}", "ansible.cfg"),
-        "w",
-        encoding=settings.ENCODING_UTF_8,
+    with Path(settings.RUN_DIR, f"{job_id}", "ansible.cfg").open(
+        mode="w", encoding=settings.ENCODING_UTF_8
     ) as config_file:
         config_parser.write(config_file)
 
@@ -977,5 +966,4 @@ def getattr_first(attr: str, *objects: Any, default: Any = None) -> Any:
             return result
     if default is not None:
         return default
-    else:
-        return result  # it could any falsy value from objects
+    return result  # it could any falsy value from objects

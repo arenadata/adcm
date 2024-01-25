@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.adcm.views import ADCMViewSet
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
+
+from api.adcm.views import ADCMViewSet
 
 router = SimpleRouter()
 router.register("", ADCMViewSet)

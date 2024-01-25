@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_ui.stack.root import StackUIRoot
-from api_ui.stack.views import ClusterPrototypeUIViewSet, ProviderPrototypeUIViewSet
 from django.urls import path
 from rest_framework.routers import SimpleRouter
+
+from api_ui.stack.root import StackUIRoot
+from api_ui.stack.views import ClusterPrototypeUIViewSet, ProviderPrototypeUIViewSet
 
 router = SimpleRouter()
 router.register("cluster", ClusterPrototypeUIViewSet, basename="cluster")

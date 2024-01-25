@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.tests.base import BaseTestCase
 from cm.models import Bundle, Prototype
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from rbac.models import Role
 
-from adcm.tests.base import BaseTestCase
+from rbac.models import Role
 
 
 def cook_perm(codename, model, app="cm"):
@@ -38,7 +38,7 @@ def cook_role(name, class_name, obj_type=None):
     )
 
 
-class RBACBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-attributes
+class RBACBaseTestCase(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_bundles_and_prototypes()

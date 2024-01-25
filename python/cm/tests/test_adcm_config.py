@@ -12,8 +12,7 @@
 
 from unittest.mock import Mock, call, patch
 
-from cm.adcm_config.config import process_config
-from cm.models import ADCM, ConfigLog
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
@@ -21,7 +20,8 @@ from rbac.models import Policy, Role
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_403_FORBIDDEN
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from cm.adcm_config.config import process_config
+from cm.models import ADCM, ConfigLog
 
 
 class TestAdcmConfig(BaseTestCase):

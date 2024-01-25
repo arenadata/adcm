@@ -108,7 +108,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         }
 
-        for obj, action, expected_topology, expected_data in (
+        for obj, action, topology, data in (
             (self.cluster_1, action_on_cluster, expected_topology, expected_data),
             (service_one_component, action_on_service, expected_topology, expected_data),
             (component_1, action_on_component, expected_topology, expected_data),
@@ -120,9 +120,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                self.assert_inventory(
-                    obj=obj, action=action, expected_topology=expected_topology, expected_data=expected_data
-                )
+                self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_2_components_2_hosts_mapped_all_to_all(self):
         self.host_2 = self.add_host(
@@ -184,7 +182,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         }
 
-        for obj, action, expected_topology, expected_data in (
+        for obj, action, topology, data in (
             (self.cluster_1, action_on_cluster, expected_hosts_topology, expected_data),
             (service_two_components, action_on_service, expected_hosts_topology, expected_data),
             (component_1, action_on_component_1, expected_hosts_topology, expected_data),
@@ -203,9 +201,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                self.assert_inventory(
-                    obj=obj, action=action, expected_topology=expected_topology, expected_data=expected_data
-                )
+                self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_2_components_2_hosts_mapped_in_pairs(self):
         self.host_2 = self.add_host(
@@ -265,7 +261,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         }
 
-        for obj, action, expected_topology, expected_data in (
+        for obj, action, topology, data in (
             (self.cluster_1, action_on_cluster, expected_hosts_topology, expected_data),
             (service_two_components, action_on_service, expected_hosts_topology, expected_data),
             (component_1, action_on_component_1, expected_hosts_topology, expected_data),
@@ -284,9 +280,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                self.assert_inventory(
-                    obj=obj, action=action, expected_topology=expected_topology, expected_data=expected_data
-                )
+                self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_2_services_2_components_each_on_1_host(self):
         (
@@ -364,7 +358,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         }
 
-        for obj, action, expected_topology, expected_data in (
+        for obj, action, topology, data in (
             (self.cluster_1, action_on_cluster, expected_hosts_topology, expected_data),
             (service_two_components, action_on_service_1, expected_hosts_topology, expected_data),
             (another_service_two_components, action_on_service_2, expected_hosts_topology, expected_data),
@@ -380,9 +374,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                self.assert_inventory(
-                    obj=obj, action=action, expected_topology=expected_topology, expected_data=expected_data
-                )
+                self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_2_services_2_components_each_2_hosts_cross_mapping(self):
         self.host_2 = self.add_host(
@@ -463,7 +455,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         }
 
-        for obj, action, expected_topology, expected_data in (
+        for obj, action, topology, data in (
             (self.cluster_1, action_on_cluster, expected_hosts_topology, expected_data),
             (service_two_components, action_on_service_1, expected_hosts_topology, expected_data),
             (another_service_two_components, action_on_service_2, expected_hosts_topology, expected_data),
@@ -485,6 +477,4 @@ class TestInventoryComponents(BaseInventoryTestCase):
             ),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                self.assert_inventory(
-                    obj=obj, action=action, expected_topology=expected_topology, expected_data=expected_data
-                )
+                self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)

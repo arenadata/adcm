@@ -28,7 +28,7 @@ class ADCMLengthPasswordValidator:
             self.min_password_length = config_log.config["auth_policy"]["min_password_length"]
             self.max_password_length = config_log.config["auth_policy"]["max_password_length"]
 
-    def validate(self, password: str, user: None = None) -> None:  # pylint: disable=unused-argument
+    def validate(self, password: str, user: None = None) -> None:  # noqa: ARG002
         if not all((self.min_password_length, self.max_password_length)):
             return
 

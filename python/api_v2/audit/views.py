@@ -10,16 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.audit.filters import AuditLogFilterSet, AuditSessionFilterSet
-from api_v2.audit.serializers import AuditLogSerializer, AuditSessionSerializer
-from api_v2.views import CamelCaseReadOnlyModelViewSet
 from audit.models import AuditLog, AuditSession
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_framework.permissions import DjangoObjectPermissions
 
+from api_v2.audit.filters import AuditLogFilterSet, AuditSessionFilterSet
+from api_v2.audit.serializers import AuditLogSerializer, AuditSessionSerializer
+from api_v2.views import CamelCaseReadOnlyModelViewSet
 
-# pylint: disable=too-many-ancestors
+
 class AuditSessionViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
     queryset = AuditSession.objects.select_related("user").order_by("-login_time")
     serializer_class = AuditSessionSerializer

@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-import logging
-import os
-import string
-import sys
 from pathlib import Path
+import os
+import sys
+import json
+import string
+import logging
 
 from cm.utils import dict_json_get_or_create, get_adcm_token
 from django.core.management.utils import get_random_secret_key
@@ -24,10 +24,7 @@ ENCODING_UTF_8 = "utf-8"
 
 API_URL = "http://localhost:8020/api/v1/"
 BASE_DIR = os.getenv("ADCM_BASE_DIR")
-if BASE_DIR:
-    BASE_DIR = Path(BASE_DIR)
-else:
-    BASE_DIR = Path(__file__).absolute().parent.parent.parent
+BASE_DIR = Path(BASE_DIR) if BASE_DIR else Path(__file__).absolute().parent.parent.parent
 
 STACK_DIR = os.getenv("ADCM_STACK_DIR", BASE_DIR)
 BUNDLE_DIR = STACK_DIR / "data" / "bundle"

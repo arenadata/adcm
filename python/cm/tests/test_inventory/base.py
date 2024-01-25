@@ -9,12 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 from functools import reduce
 from pathlib import Path
 from typing import Any, Callable, Iterable, Literal, Mapping, TypeAlias
+import json
 
+from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from jinja2 import Template
+
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import add_hc, update_obj_config
 from cm.inventory import get_inventory_data
@@ -30,9 +33,6 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.utils import deep_merge
-from jinja2 import Template
-
-from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 
 TemplatesData: TypeAlias = Mapping[tuple[str, ...], tuple[Path, Mapping[str, Any]]]
 MappingEntry: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], int]
@@ -105,7 +105,7 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
         target.refresh_from_db()
         current_config = ConfigLog.objects.get(id=target.config.current)
 
-        new_config = update_obj_config(
+        return update_obj_config(
             obj_conf=target.config,
             config=deep_merge(origin=preprocess_config(current_config.config), renovator=config_diff),
             attr=convert_adcm_meta_to_attr(
@@ -113,8 +113,6 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
             ),
             description="",
         )
-
-        return new_config
 
     def check_data_by_template(self, data: Mapping[str, dict], templates_data: TemplatesData) -> None:
         for key_chain, template_data in templates_data.items():

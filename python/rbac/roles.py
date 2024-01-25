@@ -30,6 +30,7 @@ from django.db import connection
 from django.db.models import QuerySet
 from django.db.transaction import atomic
 from guardian.models import GroupObjectPermission
+
 from rbac.models import (
     Permission,
     Policy,
@@ -61,7 +62,7 @@ class AbstractRole:
 
 
 class ModelRole(AbstractRole):
-    def apply(self, policy: Policy, role: Role, param_obj=None) -> None:
+    def apply(self, policy: Policy, role: Role, param_obj=None) -> None:  # noqa: ARG002
         for perm in role.get_permissions():
             for group in policy.group.all():
                 group.permissions.add(perm)
@@ -337,7 +338,7 @@ class ParentRole(AbstractRole):
         policy: Policy,
         role: Role,
         param_obj=None,
-    ):  # pylint: disable=too-many-branches, too-many-nested-blocks
+    ):
         for child_role in role.child.filter(class_name__in=("ModelRole", "ParentRole")):
             child_role.apply(policy=policy, obj=param_obj)
 

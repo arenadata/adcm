@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import ConfigLog, GroupConfig, Host, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.reverse import reverse
@@ -22,6 +21,8 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class BaseClusterGroupConfigTestCase(BaseAPITestCase):
@@ -42,7 +43,7 @@ class BaseClusterGroupConfigTestCase(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.new_host)
 
 
-class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):  # pylint: disable=too-many-ancestors
+class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -76,7 +77,7 @@ class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):  # pylint:
         )
 
 
-class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable=too-many-ancestors
+class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):
     def test_list_success(self):
         response = self.client.get(
             path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk})
@@ -196,7 +197,7 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):  # pylint: disable
         self.assertNotIn(self.host, self.cluster_1_group_config.hosts.all())
 
 
-class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable=too-many-ancestors
+class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):
     def test_list_success(self):
         response = self.client.get(
             path=reverse(
@@ -469,7 +470,7 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable
         self.assertEqual(response.json()[0]["name"], self.host_for_service.name)
 
 
-class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):  # pylint: disable=too-many-ancestors
+class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):
     def setUp(self) -> None:
         super().setUp()
 

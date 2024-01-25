@@ -11,7 +11,6 @@
 # limitations under the License.
 
 
-from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditObject
 from rbac.models import Role
 from rbac.services.role import role_create
@@ -26,6 +25,8 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestRoleAudit(BaseAPITestCase):

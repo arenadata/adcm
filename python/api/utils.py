@@ -19,12 +19,8 @@ from rest_framework.serializers import HyperlinkedIdentityField
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 
 
-def check_obj(model, req, error=None):  # pylint: disable=unused-argument
-    if isinstance(req, dict):
-        kwargs = req
-    else:
-        kwargs = {"id": req}
-
+def check_obj(model, req, error=None):  # noqa: ARG001
+    kwargs = req if isinstance(req, dict) else {"id": req}
     return model.obj.get(**kwargs)
 
 
@@ -52,10 +48,7 @@ def update(serializer, **kwargs):
 def get_api_url_kwargs(obj, request, no_obj_type=False):
     obj_type = obj.prototype.type
 
-    if obj_type == "adcm":
-        kwargs = {"adcm_pk": obj.pk}
-    else:
-        kwargs = {f"{obj_type}_id": obj.id}
+    kwargs = {"adcm_pk": obj.pk} if obj_type == "adcm" else {f"{obj_type}_id": obj.id}
 
     # Do not include object_type in kwargs if no_obj_type == True
     if not no_obj_type:
@@ -92,9 +85,8 @@ def fix_ordering(field, view):
     if view.__class__.__name__ not in ("BundleList",):
         fix = fix.replace("version", "version_order")
 
-    if view.__class__.__name__ in ["ServiceListView", "ComponentListView"]:
-        if "display_name" in fix:
-            fix = fix.replace("display_name", "prototype__display_name")
+    if view.__class__.__name__ in ["ServiceListView", "ComponentListView"] and "display_name" in fix:
+        fix = fix.replace("display_name", "prototype__display_name")
 
     return fix
 
@@ -114,10 +106,10 @@ class ObjectURL(HyperlinkedIdentityField):
 
 
 class UrlField(HyperlinkedIdentityField):
-    def get_kwargs(self, obj):  # pylint: disable=unused-argument
+    def get_kwargs(self, obj):  # noqa: ARG002
         return {}
 
-    def get_url(self, obj, view_name, request, _format):
+    def get_url(self, obj, view_name, request, _format):  # noqa: ARG002
         kwargs = self.get_kwargs(obj)
 
         return reverse(self.view_name, kwargs=kwargs, request=request, format=_format)

@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.task.views import TaskViewSet
 from rest_framework.routers import SimpleRouter
+
+from api_v2.task.views import TaskViewSet
 
 router = SimpleRouter()
 router.register("", TaskViewSet)

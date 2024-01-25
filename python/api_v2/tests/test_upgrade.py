@@ -13,7 +13,6 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import (
     ADCM,
     ConfigLog,
@@ -33,8 +32,10 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from rest_framework.test import APIClient, APITestCase
 
+from api_v2.tests.base import BaseAPITestCase
 
-class TestUpgrade(BaseAPITestCase):  # pylint:disable=too-many-public-methods, too-many-instance-attributes
+
+class TestUpgrade(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 

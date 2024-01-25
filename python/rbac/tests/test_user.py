@@ -12,12 +12,12 @@
 
 from datetime import timedelta
 
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import ADCM, ConfigLog
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils import timezone
-from rbac.models import OriginType, User
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
@@ -28,7 +28,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from rbac.models import OriginType, User
 
 
 class BaseUserTestCase(BaseTestCase):
