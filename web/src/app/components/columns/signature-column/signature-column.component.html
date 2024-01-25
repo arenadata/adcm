@@ -1,5 +1,0 @@
-<div [ngClass]="{
-  valid: row['signature_status'] === signatureStatus.Valid,
-  invalid: row['signature_status'] === signatureStatus.Invalid,
-  absent: row['signature_status'] === signatureStatus.Absent}"
->{{ firstCharToUpperCase(row['signature_status']) }}</div>

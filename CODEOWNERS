@@ -4,7 +4,6 @@
 /os/ @aas @d.skrynnik @aer
 /python/ @aas @d.skrynnik @a.starovoitov @aer
 /spec/ @aas @d.skrynnik @aer
-/web/ @v.remizov @d.bardin @k.fedorenko
 .dockerignore @aas @v.remizov @d.skrynnik @aer
 .gitignore @aas @d.skrynnik @v.remizov @d.bardin @k.fedorenko @aer
 .gitlab-ci.yaml @aas @v.remizov @d.skrynnik @aer

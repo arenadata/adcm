@@ -10,27 +10,14 @@ ADCM_VERSION = "2.0.0"
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-describe_old:
-	@echo '{"version": "$(shell date '+%Y.%m.%d.%H')","commit_id": "$(shell git log --pretty=format:'%h' -n 1)"}' > config.json
-	cp config.json web/src/assets/config.json
-
 buildss:
 	@docker run -i --rm -v $(CURDIR)/go:/code -w /code golang sh -c "make"
-
-buildjs_old:
-	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./build.sh
 
 buildjs:
 	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/adcm-web/app:/code -e ADCM_VERSION=$(ADCM_VERSION) -w /code node:18.16-alpine ./build.sh
 
-build_base_old:
-	@docker build . -t $(APP_IMAGE):$(APP_TAG)_old
-
 build_base:
 	@docker build . -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
-
-# build ADCM_v1
-build_old: describe_old buildss buildjs_old build_base_old
 
 # build ADCM_v2
 build: buildss buildjs build_base
@@ -45,10 +32,6 @@ unittests_postgresql:
 	poetry install --no-root --with unittests
 	poetry run python/manage.py test python -v 2 --parallel
 	docker stop postgres
-
-ng_tests:
-	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64 ./ng_test.sh
 
 pretty:
 	poetry install --no-root --with lint
