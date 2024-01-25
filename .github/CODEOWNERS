@@ -2,4 +2,3 @@
 /tests/functional/ @arenadata/python-web-qa
 /tests/ui_tests/ @arenadata/python-web-qa
 /tests/api/ @arenadata/python-web-qa
-/web/ @arenadata/angular

@@ -28,7 +28,7 @@ Re-run them when needed/applicable.
 * go - golang part of application. There is a status server here now.
 * test 
 * spec - specification in form of Sphinx RST 
-* web - UI source
+* adcm-web - UI source
 
 # Build logic
 
@@ -81,26 +81,6 @@ pre-commit install
 ```
 
 After this you will see invocation of black and pylint on every commit.
-
-## Link ADWP_UI packages
-
-If you need to debug packages from ADWP_UI, you should do:
-
-In ADWP_UI repository:
-```sh
-delete dist folder
-yarn run watch:widgets
-cd dist/widgets
-yarn link
-```
-
-In ADCM repository:
-```sh
-cd web
-sudo rm -rf ./node_modules OR rmdir -force ./node_modules(WIN)
-yarn link "@adwp-ui/widgets"
-yarn install
-```
 
 ## Running ADCM using SQLite
 
