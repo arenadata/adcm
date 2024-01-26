@@ -132,6 +132,7 @@ def get_obj_type(obj_type: str) -> str:
         "cluster object": "service",
         "service component": "component",
         "host provider": "provider",
+        "host": "host",
     }
     return object_names_to_object_types[obj_type]
 
