@@ -1,3 +1,4 @@
+/adcm-web/ @frontend
 /data/ @aas @d.skrynnik @aer
 /conf/ @aas @d.skrynnik @a.starovoitov @aer
 /go/ @aas @d.skrynnik @aer
