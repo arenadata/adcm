@@ -235,6 +235,8 @@ class CustomLDAPBackend(LDAPBackend):
             user = User.objects.get(username__iexact=username, type=OriginType.LDAP)
             return [g.group for g in user.groups.order_by("id") if g.group.type == OriginType.LOCAL]
 
+        return []
+
     def get_user_model(self) -> type[User]:
         return User
 
@@ -309,6 +311,8 @@ class CustomLDAPBackend(LDAPBackend):
     def _get_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
         with suppress(IndexError):
             return [i for i in ldap_groups if i[0] == group_name][0][1]
+
+        return ""
 
     @staticmethod
     def _get_rbac_group(group: Group | DjangoGroup, ldap_group_dn: str) -> Group:
