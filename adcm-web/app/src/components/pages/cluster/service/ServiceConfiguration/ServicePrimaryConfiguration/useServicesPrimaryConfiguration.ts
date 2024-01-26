@@ -1,29 +1,34 @@
 import { useDispatch, useStore } from '@hooks';
 import {
-  cleanupClusterServicesConfiguration,
-  createWithUpdateClusterServicesConfigurations,
-  getClusterServicesConfiguration,
-  getClusterServicesConfigurationsVersions,
-} from '@store/adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationSlice';
+  cleanup,
+  createWithUpdateConfigurations,
+  getConfiguration,
+  getConfigurationsVersions,
+} from '@store/adcm/entityConfiguration/configurationSlice';
 import { useCallback, useEffect } from 'react';
 import { useConfigurations } from '@commonComponents/configuration/useConfigurations';
 
 export const useServicesPrimaryConfiguration = () => {
   const dispatch = useDispatch();
   const service = useStore(({ adcm }) => adcm.service.service);
-  const configVersions = useStore(({ adcm }) => adcm.clusterServicesConfiguration.configVersions);
-  const loadedConfiguration = useStore(({ adcm }) => adcm.clusterServicesConfiguration.loadedConfiguration);
-  const isConfigurationLoading = useStore(({ adcm }) => adcm.clusterServicesConfiguration.isConfigurationLoading);
-  const isVersionsLoading = useStore(({ adcm }) => adcm.clusterServicesConfiguration.isVersionsLoading);
+  const configVersions = useStore(({ adcm }) => adcm.entityConfiguration.configVersions);
+  const loadedConfiguration = useStore(({ adcm }) => adcm.entityConfiguration.loadedConfiguration);
+  const isConfigurationLoading = useStore(({ adcm }) => adcm.entityConfiguration.isConfigurationLoading);
+  const isVersionsLoading = useStore(({ adcm }) => adcm.entityConfiguration.isVersionsLoading);
 
   useEffect(() => {
     if (service) {
       // load all configurations for current HostProvider
-      dispatch(getClusterServicesConfigurationsVersions({ clusterId: service.cluster.id, serviceId: service.id }));
+      dispatch(
+        getConfigurationsVersions({
+          entityType: 'service',
+          args: { clusterId: service.cluster.id, serviceId: service.id },
+        }),
+      );
     }
 
     return () => {
-      dispatch(cleanupClusterServicesConfiguration());
+      dispatch(cleanup());
     };
   }, [service, dispatch]);
 
@@ -36,10 +41,13 @@ export const useServicesPrimaryConfiguration = () => {
     if (service && selectedConfigId) {
       // load full config for selected configuration
       dispatch(
-        getClusterServicesConfiguration({
-          clusterId: service.cluster.id,
-          serviceId: service.id,
-          configId: selectedConfigId,
+        getConfiguration({
+          entityType: 'service',
+          args: {
+            clusterId: service.cluster.id,
+            serviceId: service.id,
+            configId: selectedConfigId,
+          },
         }),
       );
     }
@@ -52,12 +60,15 @@ export const useServicesPrimaryConfiguration = () => {
       if (service?.id && selectedConfiguration) {
         const { configurationData, attributes } = selectedConfiguration;
         dispatch(
-          createWithUpdateClusterServicesConfigurations({
-            configurationData,
-            attributes,
-            clusterId: service.cluster.id,
-            serviceId: service.id,
-            description,
+          createWithUpdateConfigurations({
+            entityType: 'service',
+            args: {
+              configurationData,
+              attributes,
+              clusterId: service.cluster.id,
+              serviceId: service.id,
+              description,
+            },
           }),
         )
           .unwrap()

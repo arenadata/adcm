@@ -8,47 +8,53 @@ import {
   ConfigurationAttributes,
 } from '@models/adcm';
 
-type GetConfigArgs = {
+export interface GetHostProviderConfigsArgs {
+  hostProviderId: number;
+}
+
+export interface GetHostProviderConfigArgs {
   hostProviderId: number;
   configId: number;
-};
+}
 
-type GetConfigSchemaArgs = {
+interface GetHostProviderConfigSchemaArgs {
   hostProviderId: number;
-};
+}
+
+export interface CreateHostProviderConfigArgs {
+  hostProviderId: number;
+  description?: string;
+  configurationData: ConfigurationData;
+  attributes: ConfigurationAttributes;
+}
 
 export class AdcmHostProviderConfigsApi {
-  public static async getConfigs(hostProviderId: number) {
+  public static async getConfigs(args: GetHostProviderConfigsArgs) {
     const response = await httpClient.get<Batch<AdcmConfigShortView>>(
-      `/api/v2/hostproviders/${hostProviderId}/configs/?offset=0&limit=1000`,
+      `/api/v2/hostproviders/${args.hostProviderId}/configs/?offset=0&limit=1000`,
     );
     return response.data;
   }
 
-  public static async getConfig(args: GetConfigArgs) {
+  public static async getConfig(args: GetHostProviderConfigArgs) {
     const response = await httpClient.get<AdcmConfig>(
       `/api/v2/hostproviders/${args.hostProviderId}/configs/${args.configId}/`,
     );
     return response.data;
   }
 
-  public static async getConfigSchema(args: GetConfigSchemaArgs) {
+  public static async getConfigSchema(args: GetHostProviderConfigSchemaArgs) {
     const response = await httpClient.get<ConfigurationSchema>(
       `/api/v2/hostproviders/${args.hostProviderId}/config-schema/`,
     );
     return response.data;
   }
 
-  public static async createConfiguration(
-    hostProviderId: number,
-    configurationData: ConfigurationData,
-    attributes: ConfigurationAttributes,
-    description = '',
-  ) {
-    const response = await httpClient.post<AdcmConfig>(`/api/v2/hostproviders/${hostProviderId}/configs/`, {
-      description,
-      adcmMeta: attributes,
-      config: configurationData,
+  public static async createConfiguration(args: CreateHostProviderConfigArgs) {
+    const response = await httpClient.post<AdcmConfig>(`/api/v2/hostproviders/${args.hostProviderId}/configs/`, {
+      description: args.description ?? '',
+      adcmMeta: args.attributes,
+      config: args.configurationData,
     });
     return response.data;
   }

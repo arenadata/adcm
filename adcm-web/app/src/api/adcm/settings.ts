@@ -12,9 +12,15 @@ import {
   AdcmDynamicActionRunConfig,
 } from '@models/adcm';
 
-type GetConfigArgs = {
+export interface GetSettingsConfigArgs {
   configId: number;
-};
+}
+
+export interface CreateSettingsConfigArgs {
+  description?: string;
+  configurationData: ConfigurationData;
+  attributes: ConfigurationAttributes;
+}
 
 export class AdcmSettingsApi {
   public static async getSettings() {
@@ -27,7 +33,7 @@ export class AdcmSettingsApi {
     return response.data;
   }
 
-  public static async getConfig(args: GetConfigArgs) {
+  public static async getConfig(args: GetSettingsConfigArgs) {
     const response = await httpClient.get<AdcmConfig>(`/api/v2/adcm/configs/${args.configId}/`);
     return response.data;
   }
@@ -37,15 +43,11 @@ export class AdcmSettingsApi {
     return response.data;
   }
 
-  public static async createConfiguration(
-    configurationData: ConfigurationData,
-    attributes: ConfigurationAttributes,
-    description = '',
-  ) {
+  public static async createConfiguration(args: CreateSettingsConfigArgs) {
     const response = await httpClient.post<AdcmConfig>('/api/v2/adcm/configs/', {
-      description,
-      adcmMeta: attributes,
-      config: configurationData,
+      description: args.description ?? '',
+      adcmMeta: args.attributes,
+      config: args.configurationData,
     });
     return response.data;
   }

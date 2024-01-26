@@ -2,24 +2,24 @@ import { useDispatch, useStore } from '@hooks';
 import { useCallback, useEffect } from 'react';
 import { useConfigurations } from '@commonComponents/configuration/useConfigurations';
 import {
-  cleanupSettings,
-  createWithUpdateSettingsConfiguration,
-  getSettingsConfiguration,
-  getSettingsConfigurationVersions,
-} from '@store/adcm/settings/configuration/settingsConfigurationSlice';
+  cleanup,
+  createWithUpdateConfigurations,
+  getConfiguration,
+  getConfigurationsVersions,
+} from '@store/adcm/entityConfiguration/configurationSlice';
 
 export const useSettingsConfiguration = () => {
   const dispatch = useDispatch();
-  const configVersions = useStore(({ adcm }) => adcm.settingsConfigurations.configVersions);
-  const loadedConfiguration = useStore(({ adcm }) => adcm.settingsConfigurations.loadedConfiguration);
-  const isConfigurationLoading = useStore(({ adcm }) => adcm.settingsConfigurations.isConfigurationLoading);
-  const isVersionsLoading = useStore(({ adcm }) => adcm.settingsConfigurations.isVersionsLoading);
+  const configVersions = useStore(({ adcm }) => adcm.entityConfiguration.configVersions);
+  const loadedConfiguration = useStore(({ adcm }) => adcm.entityConfiguration.loadedConfiguration);
+  const isConfigurationLoading = useStore(({ adcm }) => adcm.entityConfiguration.isConfigurationLoading);
+  const isVersionsLoading = useStore(({ adcm }) => adcm.entityConfiguration.isVersionsLoading);
 
   useEffect(() => {
-    dispatch(getSettingsConfigurationVersions());
+    dispatch(getConfigurationsVersions({ entityType: 'settings', args: {} }));
 
     return () => {
-      dispatch(cleanupSettings());
+      dispatch(cleanup());
     };
   }, [dispatch]);
 
@@ -30,7 +30,12 @@ export const useSettingsConfiguration = () => {
 
   useEffect(() => {
     if (selectedConfigId) {
-      dispatch(getSettingsConfiguration(selectedConfigId));
+      dispatch(
+        getConfiguration({
+          entityType: 'settings',
+          args: { configId: selectedConfigId },
+        }),
+      );
     }
   }, [dispatch, selectedConfigId]);
 
@@ -41,10 +46,13 @@ export const useSettingsConfiguration = () => {
       if (selectedConfiguration) {
         const { configurationData, attributes } = selectedConfiguration;
         dispatch(
-          createWithUpdateSettingsConfiguration({
-            configurationData,
-            attributes,
-            description,
+          createWithUpdateConfigurations({
+            entityType: 'settings',
+            args: {
+              configurationData,
+              attributes,
+              description,
+            },
           }),
         )
           .unwrap()
