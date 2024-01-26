@@ -10,13 +10,10 @@ import clusterHostsActionsSlice from '@store/adcm/cluster/hosts/hostsActionsSlic
 import clusterHostsDynamicActionsSlice from '@store/adcm/cluster/hosts/hostsDynamicActionsSlice';
 import hostComponentsDynamicActionsSlice from '@store/adcm/cluster/hosts/host/hostComponentsDynamicActionsSlice';
 import clustersTableSlice from '@store/adcm/clusters/clustersTableSlice';
-import clusterConfigurationSlice from '@store/adcm/cluster/configuration/clusterConfigurationSlice';
 import clusterConfigGroupsSlice from '@store/adcm/cluster/configGroups/clusterConfigGroupsSlice';
 import clusterConfigGroupsTableSlice from '@store/adcm/cluster/configGroups/clusterConfigGroupsTableSlice';
 import clusterConfigGroupActionsSlice from '@store/adcm/cluster/configGroups/clusterConfigGroupActionsSlice';
 import clusterConfigGroupSlice from '@store/adcm/cluster/configGroupSingle/clusterConfigGroup';
-import clusterConfigGroupConfigurationSlice from '@store/adcm/cluster/configGroupSingle/configuration/clusterConfigGroupConfigurationSlice';
-import hostProviderConfigurationSlice from '@store/adcm/hostProvider/configuration/hostProviderConfigurationSlice';
 import hostProviderConfigGroupsSlice from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupsSlice';
 import hostProviderConfigGroupsTableSlice from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupsTableSlice';
 import bundlesSlice from '@store/adcm/bundles/bundlesSlice';
@@ -74,7 +71,6 @@ import serviceComponentConfigGroupsSlice from './adcm/cluster/services/serviceCo
 import serviceComponentConfigGroupsTableSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configGroups/serviceComponentConfigGroupsTableSlice';
 import serviceComponentConfigGroupsActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configGroups/serviceComponentConfigGroupsActionsSlice';
 import serviceComponentConfigGroupSingleSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configGroupSingle/serviceComponentConfigGroupSingleSlice';
-import serviceComponentConfigGroupConfigurationSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configGroupSingle/serviceComponentConfigGroupConfigurationSlice';
 
 import clustersActionsSlice from './adcm/clusters/clustersActionsSlice';
 import clusterHostSlice from './adcm/cluster/hosts/host/clusterHostSlice';
@@ -87,24 +83,19 @@ import hostProvidersActionsSlice from './adcm/hostProviders/hostProvidersActions
 import hostProvidersDynamicActionsSlice from './adcm/hostProviders/hostProvidersDynamicActionsSlice';
 import hostProviderUpgradesSlice from './adcm/hostProviders/hostProviderUpgradesSlice';
 import serviceComponentsDynamicActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponentsDynamicActionsSlice';
-import serviceComponentConfigurationSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configuration/serviceComponentConfigurationSlice';
 import hostSlice from './adcm/host/hostSlice';
-import clusterServicesConfigurationSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationSlice.ts';
-import hostsConfigurationSlice from './adcm/host/configuration/hostsConfigurationSlice.ts';
 import serviceConfigGroupsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsSlice.ts';
 import serviceConfigGroupsTableSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsTableSlice.ts';
 import serviceConfigGroupsActionsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsActionsSlice.ts';
 import serviceConfigGroupSlice from './adcm/cluster/services/configGroupSingle/configGroupSingle.ts';
-import serviceConfigGroupConfigurationSlice from './adcm/cluster/services/configGroupSingle/configuration/serviceConfigGroupConfigurationSlice';
-import settingsConfigurationsSlice from './adcm/settings/configuration/settingsConfigurationSlice.ts';
 import hostProviderConfigGroupActionsSlice from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupActionsSlice';
 import hostProviderConfigGroupSlice from '@store/adcm/hostProvider/configurationGroupSingle/hostProviderConfigGroupSlice';
-import hostProviderConfigGroupConfigurationSlice from '@store/adcm/hostProvider/configurationGroupSingle/configuration/hostProviderConfigGroupConfigurationSlice';
 import bellSlice from '@store/adcm/bell/bellSlice';
 import adcmSettingsSlice from '@store/adcm/settings/settingsSlice';
 import adcmSettingsDynamicActionsSlice from '@store/adcm/settings/settingsDynamicActionsSlice';
 import bundlesActionsSlice from './adcm/bundles/bundlesActionsSlice.ts';
 
+import adcmEntityConfigurationSlice from '@store/adcm/entityConfiguration/configurationSlice.ts';
 import adcmEntityConfigurationCompareSlice from '@store/adcm/entityConfiguration/compareSlice.ts';
 
 const rootReducer = combineReducers({
@@ -124,13 +115,10 @@ const rootReducer = combineReducers({
     hostComponentsDynamicActions: hostComponentsDynamicActionsSlice,
     clusterHostsTable: clusterHostsTableSlice,
     clusterMapping: clusterMappingSlice,
-    clusterConfiguration: clusterConfigurationSlice,
     clusterConfigGroups: clusterConfigGroupsSlice,
     clusterConfigGroupsTable: clusterConfigGroupsTableSlice,
     clusterConfigGroupActions: clusterConfigGroupActionsSlice,
     clusterConfigGroup: clusterConfigGroupSlice,
-    clusterConfigGroupConfiguration: clusterConfigGroupConfigurationSlice,
-    clusterServicesConfiguration: clusterServicesConfigurationSlice,
     bundle: bundleSlice,
     bundles: bundlesSlice,
     bundlesActions: bundlesActionsSlice,
@@ -139,12 +127,10 @@ const rootReducer = combineReducers({
     hostComponents: hostComponentsSlice,
     hostComponentsTable: hostComponentsTableSlice,
     hostProvider: hostProviderSlice,
-    hostProviderConfiguration: hostProviderConfigurationSlice,
     hostProviderConfigGroupActions: hostProviderConfigGroupActionsSlice,
     hostProviderConfigGroups: hostProviderConfigGroupsSlice,
     hostProviderConfigGroupsTable: hostProviderConfigGroupsTableSlice,
     hostProviderConfigGroup: hostProviderConfigGroupSlice,
-    hostProviderConfigGroupConfiguration: hostProviderConfigGroupConfigurationSlice,
     hostProviders: hostProvidersSlice,
     hostProvidersActions: hostProvidersActionsSlice,
     hostProvidersTable: hostProvidersTableSlice,
@@ -156,7 +142,6 @@ const rootReducer = combineReducers({
     host: hostSlice,
     hostsTable: hostsTableSlice,
     hostsActions: hostsActionsSlice,
-    hostsConfiguration: hostsConfigurationSlice,
     service: serviceSlice,
     services: servicesSlice,
     servicesTable: servicesTableSlice,
@@ -166,14 +151,11 @@ const rootReducer = combineReducers({
     serviceConfigGroupsTable: serviceConfigGroupsTableSlice,
     serviceConfigGroupsActions: serviceConfigGroupsActionsSlice,
     serviceConfigGroup: serviceConfigGroupSlice,
-    serviceConfigGroupConfiguration: serviceConfigGroupConfigurationSlice,
     serviceComponents: serviceComponentsSlice,
-    serviceComponentConfiguration: serviceComponentConfigurationSlice,
     serviceComponentConfigGroups: serviceComponentConfigGroupsSlice,
     serviceComponentConfigGroupsTable: serviceComponentConfigGroupsTableSlice,
     serviceComponentConfigGroupsActions: serviceComponentConfigGroupsActionsSlice,
     serviceComponentConfigGroupSingle: serviceComponentConfigGroupSingleSlice,
-    serviceComponentConfigGroupConfiguration: serviceComponentConfigGroupConfigurationSlice,
     serviceComponentsTable: serviceComponentsTableSlice,
     serviceComponentsActions: serviceComponentsActionsSlice,
     serviceComponentsDynamicActions: serviceComponentsDynamicActionsSlice,
@@ -208,10 +190,10 @@ const rootReducer = combineReducers({
     roles: rolesSlice,
     rolesTable: rolesTableSlice,
     rolesActions: rolesActionsSlice,
-    settingsConfigurations: settingsConfigurationsSlice,
     adcmSettings: adcmSettingsSlice,
     adcmSettingsDynamicActions: adcmSettingsDynamicActionsSlice,
     entityConfigurationCompare: adcmEntityConfigurationCompareSlice,
+    entityConfiguration: adcmEntityConfigurationSlice,
   }),
 });
 

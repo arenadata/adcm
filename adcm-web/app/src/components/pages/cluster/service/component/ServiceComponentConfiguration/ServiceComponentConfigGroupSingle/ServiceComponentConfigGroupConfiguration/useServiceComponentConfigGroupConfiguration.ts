@@ -2,11 +2,11 @@ import { useDispatch, useStore } from '@hooks';
 import { useCallback, useEffect } from 'react';
 import { useConfigurations } from '@commonComponents/configuration/useConfigurations';
 import {
-  cleanupServiceComponentConfigGroupConfiguration,
-  createWithUpdateServiceComponentConfigGroupConfigurations,
-  getServiceComponentConfigGroupConfiguration,
-  getServiceComponentConfigGroupConfigurationsVersions,
-} from '@store/adcm/cluster/services/serviceComponents/serviceComponent/configGroupSingle/serviceComponentConfigGroupConfigurationSlice';
+  cleanup,
+  createWithUpdateConfigurations,
+  getConfiguration,
+  getConfigurationsVersions,
+} from '@store/adcm/entityConfiguration/configurationSlice';
 
 export const useServiceComponentConfigGroupConfiguration = () => {
   const dispatch = useDispatch();
@@ -16,28 +16,29 @@ export const useServiceComponentConfigGroupConfiguration = () => {
   const serviceComponentConfigGroup = useStore(
     (s) => s.adcm.serviceComponentConfigGroupSingle.serviceComponentConfigGroup,
   );
-  const configVersions = useStore(({ adcm }) => adcm.serviceComponentConfigGroupConfiguration.configVersions);
-  const loadedConfiguration = useStore(({ adcm }) => adcm.serviceComponentConfigGroupConfiguration.loadedConfiguration);
-  const isConfigurationLoading = useStore(
-    ({ adcm }) => adcm.serviceComponentConfigGroupConfiguration.isConfigurationLoading,
-  );
-  const isVersionsLoading = useStore(({ adcm }) => adcm.serviceComponentConfigGroupConfiguration.isVersionsLoading);
+  const configVersions = useStore(({ adcm }) => adcm.entityConfiguration.configVersions);
+  const loadedConfiguration = useStore(({ adcm }) => adcm.entityConfiguration.loadedConfiguration);
+  const isConfigurationLoading = useStore(({ adcm }) => adcm.entityConfiguration.isConfigurationLoading);
+  const isVersionsLoading = useStore(({ adcm }) => adcm.entityConfiguration.isVersionsLoading);
 
   useEffect(() => {
     if (cluster && service && component && serviceComponentConfigGroup) {
       // load all configurations for current Cluster
       dispatch(
-        getServiceComponentConfigGroupConfigurationsVersions({
-          clusterId: cluster.id,
-          serviceId: service.id,
-          componentId: component.id,
-          configGroupId: serviceComponentConfigGroup.id,
+        getConfigurationsVersions({
+          entityType: 'service-component-config-group',
+          args: {
+            clusterId: cluster.id,
+            serviceId: service.id,
+            componentId: component.id,
+            configGroupId: serviceComponentConfigGroup.id,
+          },
         }),
       );
     }
 
     return () => {
-      dispatch(cleanupServiceComponentConfigGroupConfiguration());
+      dispatch(cleanup());
     };
   }, [cluster, service, component, serviceComponentConfigGroup, dispatch]);
 
@@ -50,12 +51,15 @@ export const useServiceComponentConfigGroupConfiguration = () => {
     if (cluster && service && component && serviceComponentConfigGroup && selectedConfigId) {
       // load full config for selected configuration
       dispatch(
-        getServiceComponentConfigGroupConfiguration({
-          clusterId: cluster.id,
-          serviceId: service.id,
-          componentId: component.id,
-          configGroupId: serviceComponentConfigGroup.id,
-          configId: selectedConfigId,
+        getConfiguration({
+          entityType: 'service-component-config-group',
+          args: {
+            clusterId: cluster.id,
+            serviceId: service.id,
+            componentId: component.id,
+            configGroupId: serviceComponentConfigGroup.id,
+            configId: selectedConfigId,
+          },
         }),
       );
     }
@@ -68,14 +72,17 @@ export const useServiceComponentConfigGroupConfiguration = () => {
       if (cluster && service && component && serviceComponentConfigGroup && selectedConfiguration) {
         const { configurationData, attributes } = selectedConfiguration;
         dispatch(
-          createWithUpdateServiceComponentConfigGroupConfigurations({
-            configurationData,
-            attributes,
-            clusterId: cluster.id,
-            serviceId: service.id,
-            componentId: component.id,
-            configGroupId: serviceComponentConfigGroup.id,
-            description,
+          createWithUpdateConfigurations({
+            entityType: 'service-component-config-group',
+            args: {
+              configurationData,
+              attributes,
+              clusterId: cluster.id,
+              serviceId: service.id,
+              componentId: component.id,
+              configGroupId: serviceComponentConfigGroup.id,
+              description,
+            },
           }),
         )
           .unwrap()

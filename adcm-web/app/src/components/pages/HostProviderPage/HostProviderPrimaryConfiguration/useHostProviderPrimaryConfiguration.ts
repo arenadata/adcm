@@ -1,29 +1,29 @@
 import { useDispatch, useStore } from '@hooks';
 import {
-  cleanupHostProviderConfiguration,
-  createWithUpdateHostProviderConfigurations,
-  getHostProviderConfiguration,
-  getHostProviderConfigurationsVersions,
-} from '@store/adcm/hostProvider/configuration/hostProviderConfigurationSlice';
+  cleanup,
+  createWithUpdateConfigurations,
+  getConfiguration,
+  getConfigurationsVersions,
+} from '@store/adcm/entityConfiguration/configurationSlice';
 import { useCallback, useEffect } from 'react';
 import { useConfigurations } from '@commonComponents/configuration/useConfigurations';
 
 export const useHostProviderPrimaryConfiguration = () => {
   const dispatch = useDispatch();
   const hostProvider = useStore(({ adcm }) => adcm.hostProvider.hostProvider);
-  const configVersions = useStore(({ adcm }) => adcm.hostProviderConfiguration.configVersions);
-  const loadedConfiguration = useStore(({ adcm }) => adcm.hostProviderConfiguration.loadedConfiguration);
-  const isConfigurationLoading = useStore(({ adcm }) => adcm.hostProviderConfiguration.isConfigurationLoading);
-  const isVersionsLoading = useStore(({ adcm }) => adcm.hostProviderConfiguration.isVersionsLoading);
+  const configVersions = useStore(({ adcm }) => adcm.entityConfiguration.configVersions);
+  const loadedConfiguration = useStore(({ adcm }) => adcm.entityConfiguration.loadedConfiguration);
+  const isConfigurationLoading = useStore(({ adcm }) => adcm.entityConfiguration.isConfigurationLoading);
+  const isVersionsLoading = useStore(({ adcm }) => adcm.entityConfiguration.isVersionsLoading);
 
   useEffect(() => {
     if (hostProvider) {
       // load all configurations for current HostProvider
-      dispatch(getHostProviderConfigurationsVersions({ hostProviderId: hostProvider.id }));
+      dispatch(getConfigurationsVersions({ entityType: 'host-provider', args: { hostProviderId: hostProvider.id } }));
     }
 
     return () => {
-      dispatch(cleanupHostProviderConfiguration());
+      dispatch(cleanup());
     };
   }, [hostProvider, dispatch]);
 
@@ -35,7 +35,12 @@ export const useHostProviderPrimaryConfiguration = () => {
   useEffect(() => {
     if (hostProvider && selectedConfigId) {
       // load full config for selected configuration
-      dispatch(getHostProviderConfiguration({ hostProviderId: hostProvider.id, configId: selectedConfigId }));
+      dispatch(
+        getConfiguration({
+          entityType: 'host-provider',
+          args: { hostProviderId: hostProvider.id, configId: selectedConfigId },
+        }),
+      );
     }
   }, [dispatch, hostProvider, selectedConfigId]);
 
@@ -46,11 +51,14 @@ export const useHostProviderPrimaryConfiguration = () => {
       if (hostProvider?.id && selectedConfiguration) {
         const { configurationData, attributes } = selectedConfiguration;
         dispatch(
-          createWithUpdateHostProviderConfigurations({
-            configurationData,
-            attributes,
-            hostProviderId: hostProvider.id,
-            description,
+          createWithUpdateConfigurations({
+            entityType: 'host-provider',
+            args: {
+              configurationData,
+              attributes,
+              hostProviderId: hostProvider.id,
+              description,
+            },
           }),
         )
           .unwrap()

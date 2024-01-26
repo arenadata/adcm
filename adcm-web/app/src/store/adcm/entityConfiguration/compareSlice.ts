@@ -4,8 +4,8 @@ import { RequestError } from '@api';
 import { showError } from '@store/notificationsSlice.ts';
 import { getErrorMessage } from '@utils/httpResponseUtils.ts';
 import { createSlice } from '@reduxjs/toolkit';
-import { LoadEntityConfigurationArgs } from './compareSlice.types';
-import { ApiRequests } from './compareSlice.constants';
+import { LoadEntityConfigurationArgs } from './entityConfiguration.types';
+import { ApiRequests } from './entityConfiguration.constants';
 
 type AdcmEntityCompareConfigurationsState = {
   leftConfiguration: AdcmFullConfigurationInfo | null;

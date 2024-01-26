@@ -2,11 +2,11 @@ import { useDispatch, useStore } from '@hooks';
 import { useCallback, useEffect } from 'react';
 import { useConfigurations } from '@commonComponents/configuration/useConfigurations';
 import {
-  cleanupServiceComponentConfiguration,
-  createWithUpdateServiceComponentConfigurations,
-  getServiceComponentConfiguration,
-  getServiceComponentConfigurationsVersions,
-} from '@store/adcm/cluster/services/serviceComponents/serviceComponent/configuration/serviceComponentConfigurationSlice';
+  cleanup,
+  createWithUpdateConfigurations,
+  getConfiguration,
+  getConfigurationsVersions,
+} from '@store/adcm/entityConfiguration/configurationSlice';
 import { useServiceComponentParams } from '@pages/cluster/service/component/useServiceComponentParams';
 
 export const useComponentPrimaryConfiguration = () => {
@@ -14,25 +14,28 @@ export const useComponentPrimaryConfiguration = () => {
   const { clusterId, serviceId, componentId } = useServiceComponentParams();
 
   const component = useStore(({ adcm }) => adcm.serviceComponent.serviceComponent);
-  const configVersions = useStore(({ adcm }) => adcm.serviceComponentConfiguration.configVersions);
-  const loadedConfiguration = useStore(({ adcm }) => adcm.serviceComponentConfiguration.loadedConfiguration);
-  const isConfigurationLoading = useStore(({ adcm }) => adcm.serviceComponentConfiguration.isConfigurationLoading);
-  const isVersionsLoading = useStore(({ adcm }) => adcm.serviceComponentConfiguration.isVersionsLoading);
+  const configVersions = useStore(({ adcm }) => adcm.entityConfiguration.configVersions);
+  const loadedConfiguration = useStore(({ adcm }) => adcm.entityConfiguration.loadedConfiguration);
+  const isConfigurationLoading = useStore(({ adcm }) => adcm.entityConfiguration.isConfigurationLoading);
+  const isVersionsLoading = useStore(({ adcm }) => adcm.entityConfiguration.isVersionsLoading);
 
   useEffect(() => {
     if (componentId) {
       // load all configurations for current component
       dispatch(
-        getServiceComponentConfigurationsVersions({
-          clusterId: clusterId,
-          serviceId: serviceId,
-          componentId: componentId,
+        getConfigurationsVersions({
+          entityType: 'service-component',
+          args: {
+            clusterId: clusterId,
+            serviceId: serviceId,
+            componentId: componentId,
+          },
         }),
       );
     }
 
     return () => {
-      dispatch(cleanupServiceComponentConfiguration());
+      dispatch(cleanup());
     };
   }, [clusterId, componentId, dispatch, serviceId]);
 
@@ -45,11 +48,14 @@ export const useComponentPrimaryConfiguration = () => {
     if (componentId && selectedConfigId) {
       // load full config for selected configuration
       dispatch(
-        getServiceComponentConfiguration({
-          clusterId: clusterId,
-          serviceId: serviceId,
-          componentId: componentId,
-          configId: selectedConfigId,
+        getConfiguration({
+          entityType: 'service-component',
+          args: {
+            clusterId: clusterId,
+            serviceId: serviceId,
+            componentId: componentId,
+            configId: selectedConfigId,
+          },
         }),
       );
     }
@@ -62,13 +68,16 @@ export const useComponentPrimaryConfiguration = () => {
       if (componentId && selectedConfiguration) {
         const { configurationData, attributes } = selectedConfiguration;
         dispatch(
-          createWithUpdateServiceComponentConfigurations({
-            configurationData,
-            attributes,
-            clusterId: clusterId,
-            serviceId: serviceId,
-            componentId: componentId,
-            description,
+          createWithUpdateConfigurations({
+            entityType: 'service-component',
+            args: {
+              configurationData,
+              attributes,
+              clusterId: clusterId,
+              serviceId: serviceId,
+              componentId: componentId,
+              description,
+            },
           }),
         )
           .unwrap()

@@ -1,37 +1,32 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmSettingsApi, RequestError } from '@api';
+import { RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import {
-  AdcmConfiguration,
-  ConfigurationData,
-  ConfigurationAttributes,
-  AdcmConfigShortView,
-} from '@models/adcm/configuration';
+import { AdcmConfiguration, AdcmConfigShortView } from '@models/adcm/configuration';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
-import { checkSession } from '@store/authSlice';
+import { ApiRequests } from './entityConfiguration.constants';
+import {
+  LoadEntityConfigurationVersionsArgs,
+  LoadEntityConfigurationArgs,
+  CreateEntityConfigurationArgs,
+} from './entityConfiguration.types';
 
-type AdcmSettingsState = {
+type AdcmEntityConfigurationState = {
   isConfigurationLoading: boolean;
   loadedConfiguration: AdcmConfiguration | null;
   configVersions: AdcmConfigShortView[];
   isVersionsLoading: boolean;
 };
 
-type SaveSettingsPayload = {
-  description?: string;
-  configurationData: ConfigurationData;
-  attributes: ConfigurationAttributes;
-};
-
-const createSettingsConfiguration = createAsyncThunk(
-  'adcm/settings/configuration/createSettingsConfiguration',
-  async ({ configurationData, attributes, description }: SaveSettingsPayload, thunkAPI) => {
+const createConfiguration = createAsyncThunk(
+  'adcm/entityConfiguration/createClusterConfiguration',
+  async ({ entityType, args }: CreateEntityConfigurationArgs, thunkAPI) => {
     try {
-      const configuration = await AdcmSettingsApi.createConfiguration(configurationData, attributes, description);
-      return configuration;
+      const requests = ApiRequests[entityType];
+      const config = await requests.createConfig(args);
+      return config;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -39,29 +34,23 @@ const createSettingsConfiguration = createAsyncThunk(
   },
 );
 
-const createWithUpdateSettingsConfiguration = createAsyncThunk(
-  'adcm/settings/configuration/createWithUpdateSettingsConfiguration',
-  async (arg: SaveSettingsPayload, thunkAPI) => {
-    await thunkAPI.dispatch(createSettingsConfiguration(arg)).unwrap();
-    // TODO: rework in future. We can save password [min,max] settings in adcm settings. And it should influence o user Create/Edit forms
-    // settings for this form we get from auth.profile.
-    // as fast fix: check session and update auth.profile
-    thunkAPI.dispatch(checkSession());
-    thunkAPI.dispatch(getSettingsConfigurationVersions());
+const createWithUpdateConfigurations = createAsyncThunk(
+  'adcm/entityConfiguration/createWithUpdateConfigurations',
+  async (args: CreateEntityConfigurationArgs, thunkAPI) => {
+    await thunkAPI.dispatch(createConfiguration(args)).unwrap();
+    await thunkAPI.dispatch(getConfigurationsVersions(args));
   },
 );
 
-const getSettingsConfiguration = createAsyncThunk(
-  'adcm/settings/configuration/getSettings',
-  async (id: number, thunkAPI) => {
+const getConfiguration = createAsyncThunk(
+  'adcm/entityConfiguration/getConfiguration',
+  async ({ entityType, args }: LoadEntityConfigurationArgs, thunkAPI) => {
     const startDate = new Date();
     thunkAPI.dispatch(setIsConfigurationLoading(true));
 
     try {
-      const [config, schema] = await Promise.all([
-        AdcmSettingsApi.getConfig({ configId: id }),
-        AdcmSettingsApi.getConfigSchema(),
-      ]);
+      const requests = ApiRequests[entityType];
+      const [config, schema] = await Promise.all([requests.getConfig(args), requests.getConfigSchema(args)]);
       return { config, schema };
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
@@ -78,14 +67,16 @@ const getSettingsConfiguration = createAsyncThunk(
   },
 );
 
-const getSettingsConfigurationVersions = createAsyncThunk(
-  'adcm/settings/configuration/getSettingsConfigurationVersions',
-  async (arg, thunkAPI) => {
+const getConfigurationsVersions = createAsyncThunk(
+  'adcm/entityConfiguration/getConfigurationsVersions',
+  async ({ entityType, args }: LoadEntityConfigurationVersionsArgs, thunkAPI) => {
     const startDate = new Date();
     thunkAPI.dispatch(setIsVersionsLoading(true));
 
     try {
-      return await AdcmSettingsApi.getConfigs();
+      const requests = ApiRequests[entityType];
+      const versions = await requests.getConfigVersions(args);
+      return versions;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -101,18 +92,18 @@ const getSettingsConfigurationVersions = createAsyncThunk(
   },
 );
 
-const createInitialState = (): AdcmSettingsState => ({
+const createInitialState = (): AdcmEntityConfigurationState => ({
   isVersionsLoading: false,
   isConfigurationLoading: false,
   loadedConfiguration: null,
   configVersions: [],
 });
 
-const SettingsConfigurationsSlice = createSlice({
-  name: 'adcm/settings/configuration',
+const entityConfigurationSlice = createSlice({
+  name: 'adcm/entityConfiguration',
   initialState: createInitialState(),
   reducers: {
-    cleanupSettings() {
+    cleanup() {
       return createInitialState();
     },
     setIsConfigurationLoading(state, action) {
@@ -123,7 +114,7 @@ const SettingsConfigurationsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(getSettingsConfiguration.fulfilled, (state, action) => {
+    builder.addCase(getConfiguration.fulfilled, (state, action) => {
       const {
         config: { config: configurationData, adcmMeta: attributes },
         schema,
@@ -140,23 +131,18 @@ const SettingsConfigurationsSlice = createSlice({
 
       state.isConfigurationLoading = false;
     });
-    builder.addCase(getSettingsConfiguration.rejected, (state) => {
+    builder.addCase(getConfiguration.rejected, (state) => {
       state.loadedConfiguration = null;
     });
-    builder.addCase(getSettingsConfigurationVersions.fulfilled, (state, action) => {
+    builder.addCase(getConfigurationsVersions.fulfilled, (state, action) => {
       state.configVersions = action.payload.results;
     });
-    builder.addCase(getSettingsConfigurationVersions.rejected, (state) => {
+    builder.addCase(getConfigurationsVersions.rejected, (state) => {
       state.configVersions = [];
     });
   },
 });
 
-const { cleanupSettings, setIsConfigurationLoading, setIsVersionsLoading } = SettingsConfigurationsSlice.actions;
-export {
-  getSettingsConfiguration,
-  getSettingsConfigurationVersions,
-  cleanupSettings,
-  createWithUpdateSettingsConfiguration,
-};
-export default SettingsConfigurationsSlice.reducer;
+const { cleanup, setIsConfigurationLoading, setIsVersionsLoading } = entityConfigurationSlice.actions;
+export { getConfiguration, getConfigurationsVersions, cleanup, createWithUpdateConfigurations };
+export default entityConfigurationSlice.reducer;
