@@ -8,9 +8,36 @@ type UsePersistSettingsProps<T> = {
   settings: T;
   isReadyToLoad: boolean;
   onSettingsLoaded: (settings: T) => void;
+  loadedDataValidator?: (loadedData: T, data: T) => boolean;
 };
 
 const getTableSettingKey = (userName: string, tableKey: string) => `${userName}_${tableKey}`;
+
+const defaultLoadedDataValidator = (loadedData: unknown, data: unknown) => {
+  const dataType = typeof data;
+  const loadedDataType = typeof loadedData;
+  if (dataType !== loadedDataType) {
+    return false;
+  }
+
+  // check 1st level keys similarity
+  if (loadedData && loadedDataType === 'object' && data && dataType === 'object') {
+    const loadedDataKeys = new Set(Object.keys(loadedData));
+    const dataKeys = Object.keys(data);
+
+    if (loadedDataKeys.size === dataKeys.length) {
+      for (const key of dataKeys) {
+        if (!loadedDataKeys.has(key)) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+  }
+
+  return false;
+};
 
 const mergePaginationParams = (perPage: number | undefined, paginationParams: PaginationParams): PaginationParams => {
   return perPage === undefined
@@ -32,12 +59,18 @@ export const usePersistSettings = <T>(props: UsePersistSettingsProps<T>, deps: u
   });
 
   useEffect(() => {
-    if (props.isReadyToLoad && dataFromLocalStorage && !isLoaded) {
-      props.onSettingsLoaded(dataFromLocalStorage);
-      setIsLoaded(true);
+    if (props.isReadyToLoad && !isLoaded) {
+      const loadedDataValidator = props.loadedDataValidator ?? defaultLoadedDataValidator;
+      const isValid = loadedDataValidator(dataFromLocalStorage as T, props.settings);
+      const validData = isValid ? dataFromLocalStorage : props.settings;
+
+      if (validData) {
+        props.onSettingsLoaded(validData);
+        setIsLoaded(true);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.isReadyToLoad, dataFromLocalStorage, isLoaded]);
+  }, [props.isReadyToLoad, props.loadedDataValidator, dataFromLocalStorage, isLoaded]);
 
   useEffect(() => {
     if (isLoaded) {
