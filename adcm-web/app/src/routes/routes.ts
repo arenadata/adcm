@@ -255,23 +255,7 @@ const routes: RoutesConfigs = {
       },
     ],
   },
-  '/clusters/:clusterId/mapping/hosts': {
-    pageTitle: 'Clusters',
-    breadcrumbs: [
-      {
-        href: '/clusters',
-        label: 'Clusters',
-      },
-      {
-        href: '/clusters/:clusterId',
-        label: ':clusterId',
-      },
-      {
-        label: 'Mapping',
-      },
-    ],
-  },
-  '/clusters/:clusterId/mapping/components': {
+  '/clusters/:clusterId/mapping': {
     pageTitle: 'Clusters',
     breadcrumbs: [
       {

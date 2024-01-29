@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { Button, ButtonGroup, SearchInput, SpinnerPanel, ToolbarPanel } from '@uikit';
 import { DynamicActionCommonOptions } from '@commonComponents/DynamicActionDialog/DynamicAction.types';
 import s from '@commonComponents/DynamicActionDialog/DynamicActionDialog.module.scss';
 import { useClusterMapping } from '@pages/cluster/ClusterMapping/useClusterMapping';
 import ComponentContainer from '@pages/cluster/ClusterMapping/ComponentsMapping/ComponentContainer/ComponentContainer';
-import { AdcmMapping, AdcmMappingComponent, AdcmMappingComponentService } from '@models/adcm';
-import { getMappings, setLocalMapping, revertChanges } from '@store/adcm/clusters/clustersDynamicActionsSlice';
+import { AdcmMappingComponent, AdcmMappingComponentService } from '@models/adcm';
+import { getMappings } from '@store/adcm/clusters/clustersDynamicActionsSlice';
 import { Link } from 'react-router-dom';
 import { LoadState } from '@models/loadState';
 
@@ -31,32 +31,26 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
   }, [clusterId, dispatch]);
 
   const {
-    dialog: { hosts, components, localMapping, loadState },
+    dialog: { hosts, components, mapping, loadState },
   } = useStore(({ adcm }) => adcm.clustersDynamicActions);
 
   const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
 
-  const handleSetMapping = useCallback(
-    (newMapping: AdcmMapping[]) => {
-      dispatch(setLocalMapping(newMapping));
-    },
-    [dispatch],
-  );
-
   const {
-    hostComponentMapping,
+    localMapping,
     servicesMapping,
-    servicesMappingFilter,
-    handleServicesMappingFilterChange,
+    mappingFilter,
+    handleMappingFilterChange,
     mappingValidation,
     handleMap,
     handleUnmap,
-  } = useClusterMapping(localMapping, hosts, components, notAddedServicesDictionary, true, handleSetMapping);
+    handleReset,
+  } = useClusterMapping(mapping, hosts, components, notAddedServicesDictionary, true);
 
   const isServicesMappingEmpty = servicesMapping.length === 0;
 
   const handleSubmit = () => {
-    onSubmit({ hostComponentMap: hostComponentMapping });
+    onSubmit({ hostComponentMap: localMapping });
   };
 
   const getMapRules = (service: AdcmMappingComponentService, component: AdcmMappingComponent) => {
@@ -66,11 +60,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
   };
 
   const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    handleServicesMappingFilterChange({ hostName: event.target.value });
-  };
-
-  const handleRevertMappingChanges = () => {
-    dispatch(revertChanges());
+    handleMappingFilterChange({ hostName: event.target.value });
   };
 
   return (
@@ -78,7 +68,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
       <ToolbarPanel className={s.dynamicActionDialog__toolbar}>
         <SearchInput onChange={handleFilterChange} placeholder="Search host" />
         <ButtonGroup>
-          <Button variant="tertiary" iconLeft="g1-return" onClick={handleRevertMappingChanges} title="Reset" />
+          <Button variant="tertiary" iconLeft="g1-return" onClick={handleReset} title="Reset" />
           <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
@@ -113,7 +103,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
                 <ComponentContainer
                   key={componentMapping.component.id}
                   componentMapping={componentMapping}
-                  filter={servicesMappingFilter}
+                  filter={mappingFilter}
                   allHosts={hosts}
                   notAddedServicesDictionary={notAddedServicesDictionary}
                   componentMappingValidation={mappingValidation.byComponents[componentMapping.component.id]}

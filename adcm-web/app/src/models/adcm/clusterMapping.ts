@@ -7,6 +7,8 @@ export interface AdcmMapping {
   componentId: number;
 }
 
+export type HostId = AdcmHostShortView['id'];
+
 export interface AdcmHostShortView {
   id: number;
   name: string;
@@ -29,6 +31,8 @@ export interface AdcmComponentDependency {
 
 export type AdcmComponentConstraint = number | string;
 
+export type ServiceId = AdcmMappingComponentService['id'];
+
 export interface AdcmMappingComponentService {
   id: number;
   name: string;
@@ -36,6 +40,8 @@ export interface AdcmMappingComponentService {
   state: AdcmEntityState;
   prototype: AdcmPrototypeShortView;
 }
+
+export type ComponentId = AdcmMappingComponent['id'];
 
 export interface AdcmMappingComponent {
   id: number;

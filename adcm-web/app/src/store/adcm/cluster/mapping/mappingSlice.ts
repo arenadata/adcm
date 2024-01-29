@@ -1,13 +1,20 @@
-import { PayloadAction, createSlice } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 import { RequestError, AdcmClusterMappingApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showInfo } from '@store/notificationsSlice';
-import { AdcmMappingComponent, AdcmHostShortView, AdcmMapping, AdcmError, AdcmServicePrototype } from '@models/adcm';
-import { ServiceId } from '@pages/cluster/ClusterMapping/ClusterMapping.types';
+import {
+  AdcmMappingComponent,
+  AdcmHostShortView,
+  AdcmMapping,
+  AdcmError,
+  AdcmServicePrototype,
+  ServiceId,
+} from '@models/adcm';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
 import { arrayToHash } from '@utils/arrayUtils';
+import { ActionState } from '@models/loadState';
 
-type MappingState = 'no-changes' | 'editing' | 'saving';
+export type NotAddedServicesDictionary = Record<ServiceId, AdcmServicePrototype>;
 
 type GetClusterMappingArg = {
   clusterId: number;
@@ -20,15 +27,17 @@ type SaveClusterMappingArg = {
 
 type AdcmClusterMappingsState = {
   mapping: AdcmMapping[];
-  state: MappingState;
-  localMapping: AdcmMapping[];
   hosts: AdcmHostShortView[];
   components: AdcmMappingComponent[];
-  isLoading: boolean;
-  isLoaded: boolean;
-  hasSaveError: boolean;
+  loading: {
+    state: ActionState;
+  };
+  saving: {
+    state: ActionState;
+    hasError: boolean;
+  };
   relatedData: {
-    notAddedServicesDictionary: Record<ServiceId, AdcmServicePrototype>;
+    notAddedServicesDictionary: NotAddedServicesDictionary;
   };
   requiredServicesDialog: {
     component: AdcmMappingComponent | null;
@@ -109,13 +118,15 @@ const getNotAddedServices = createAsyncThunk(
 
 const createInitialState = (): AdcmClusterMappingsState => ({
   mapping: [],
-  state: 'no-changes',
-  localMapping: [],
   hosts: [],
   components: [],
-  isLoading: false,
-  isLoaded: false,
-  hasSaveError: false,
+  loading: {
+    state: 'not-started',
+  },
+  saving: {
+    state: 'not-started',
+    hasError: false,
+  },
   relatedData: {
     notAddedServicesDictionary: {},
   },
@@ -128,14 +139,6 @@ const mappingSlice = createSlice({
   name: 'adcm/cluster/mapping',
   initialState: createInitialState(),
   reducers: {
-    setLocalMapping(state, action: PayloadAction<AdcmMapping[]>) {
-      state.localMapping = action.payload;
-      state.state = 'editing';
-    },
-    revertChanges(state) {
-      state.localMapping = state.mapping;
-      state.state = 'no-changes';
-    },
     cleanupMappings() {
       return createInitialState();
     },
@@ -148,19 +151,16 @@ const mappingSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(getMappings.pending, (state) => {
-      state.isLoading = true;
+      state.loading.state = 'in-progress';
     });
     builder.addCase(getMappings.fulfilled, (state) => {
-      state.isLoading = false;
-      state.isLoaded = true;
+      state.loading.state = 'completed';
     });
     builder.addCase(getMappings.rejected, (state) => {
-      state.isLoading = false;
-      state.isLoaded = true;
+      state.loading.state = 'completed';
     });
     builder.addCase(loadMapping.fulfilled, (state, action) => {
       state.mapping = action.payload;
-      state.localMapping = action.payload;
     });
     builder.addCase(loadMappingHosts.fulfilled, (state, action) => {
       state.hosts = action.payload;
@@ -169,16 +169,14 @@ const mappingSlice = createSlice({
       state.components = action.payload;
     });
     builder.addCase(saveMapping.pending, (state) => {
-      state.state = 'saving';
+      state.saving.state = 'in-progress';
     });
     builder.addCase(saveMapping.fulfilled, (state) => {
-      state.hasSaveError = false;
-      state.state = 'no-changes';
-      state.mapping = state.localMapping;
+      state.saving.state = 'completed';
     });
     builder.addCase(saveMapping.rejected, (state) => {
-      state.hasSaveError = true;
-      state.state = 'editing';
+      state.saving.state = 'completed';
+      state.saving.hasError = true;
     });
     builder.addCase(getNotAddedServices.fulfilled, (state, action) => {
       state.relatedData.notAddedServicesDictionary = arrayToHash(action.payload, (s) => s.id);
@@ -189,13 +187,10 @@ const mappingSlice = createSlice({
   },
 });
 
-const { setLocalMapping, revertChanges, cleanupMappings, openRequiredServicesDialog, closeRequiredServicesDialog } =
-  mappingSlice.actions;
+const { cleanupMappings, openRequiredServicesDialog, closeRequiredServicesDialog } = mappingSlice.actions;
 export {
   getMappings,
   saveMapping,
-  setLocalMapping,
-  revertChanges,
   cleanupMappings,
   getNotAddedServices,
   openRequiredServicesDialog,

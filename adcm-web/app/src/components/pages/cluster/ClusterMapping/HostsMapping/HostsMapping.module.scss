@@ -1,14 +1,9 @@
 .hostsMapping {
-  &__toolbar {
-    margin-bottom: 24px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
+  display: grid;
+  grid-template-columns: 4fr 1fr;
+  gap: 20px;
+}
 
-  &__content {
-    display: grid;
-    grid-template-columns: 4fr 1fr;
-    gap: 20px;
-  }
+.hostContainer {
+  grid-column: 1;
 }
