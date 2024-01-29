@@ -48,6 +48,7 @@
   --switch-button-width: 16px;
   --switch-button-height: 16px;
   --switch-button-padding: 2px;
+  --switch-gap: 16px;
 }
 
 .switch_small {
@@ -56,6 +57,7 @@
   --switch-button-width: 10px;
   --switch-button-height: 10px;
   --switch-button-padding: 1px;
+  --switch-gap: 8px;
 }
 
 .switch_green {
@@ -71,7 +73,7 @@
 .switch {
   display: inline-flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--switch-gap);
   font-weight: 500;
 }
 

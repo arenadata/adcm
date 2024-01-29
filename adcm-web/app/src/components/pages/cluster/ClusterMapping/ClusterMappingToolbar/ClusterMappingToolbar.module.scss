@@ -9,7 +9,16 @@
 }
 
 .clusterMappingToolbar {
-  border-radius: 12px;
-  background: var(--cluster-mapping-toolbar-background);
-  padding: 8px;
+  gap: 40px;
+  margin-bottom: 24px;
+
+  &__inputAndSwitches {
+    width: 100%;
+    gap: 20px;
+    display: flex;
+  }
+
+  &__searchInput {
+    flex: 1;
+  }
 }

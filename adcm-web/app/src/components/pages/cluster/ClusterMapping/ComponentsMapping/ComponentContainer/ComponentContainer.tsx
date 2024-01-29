@@ -9,21 +9,20 @@ import {
   AdcmHostShortView,
   AdcmMaintenanceMode,
   AdcmMappingComponent,
-  AdcmServicePrototype,
 } from '@models/adcm';
-import { ComponentMapping, ComponentMappingValidation, ServiceMappingFilter } from '../../ClusterMapping.types';
+import { ComponentMapping, ComponentMappingValidation, MappingFilter } from '../../ClusterMapping.types';
 import { getConstraintsLimit, isComponentDependOnNotAddedServices } from '../../ClusterMapping.utils';
 import s from './ComponentContainer.module.scss';
 import cn from 'classnames';
 import { useDispatch } from '@hooks';
-import { openRequiredServicesDialog } from '@store/adcm/cluster/mapping/mappingSlice';
+import { NotAddedServicesDictionary, openRequiredServicesDialog } from '@store/adcm/cluster/mapping/mappingSlice';
 
 export interface ComponentContainerProps {
   componentMapping: ComponentMapping;
   componentMappingValidation: ComponentMappingValidation;
-  filter: ServiceMappingFilter;
+  filter: MappingFilter;
   allHosts: AdcmHostShortView[];
-  notAddedServicesDictionary: Record<number, AdcmServicePrototype>;
+  notAddedServicesDictionary: NotAddedServicesDictionary;
   onMap: (hosts: AdcmHostShortView[], component: AdcmMappingComponent) => void;
   onUnmap: (hostId: number, componentId: number) => void;
   allowActions?: AdcmHostComponentMapRuleAction[];
@@ -106,7 +105,7 @@ const ComponentContainer = ({
 
   const limit = getConstraintsLimit(component.constraints);
 
-  if (visibleHosts.length === 0 && filter.isHideEmptyComponents) {
+  if (visibleHosts.length === 0 && filter.isHideEmpty) {
     return null;
   }
 

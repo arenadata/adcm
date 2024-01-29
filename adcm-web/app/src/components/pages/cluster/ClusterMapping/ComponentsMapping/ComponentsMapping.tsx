@@ -1,66 +1,37 @@
-import { useCallback, useEffect, useMemo } from 'react';
-import { AnchorBar, AnchorBarItem, AnchorList, Button, MarkerIcon, SearchInput, Switch, Text } from '@uikit';
-import { useClusterMapping } from '../useClusterMapping';
+import { useMemo } from 'react';
+import { AnchorBar, AnchorBarItem, AnchorList, MarkerIcon, Text } from '@uikit';
 import ComponentContainer from './ComponentContainer/ComponentContainer';
-import ClusterMappingToolbar from '../ClusterMappingToolbar/ClusterMappingToolbar';
+import { Link, useParams } from 'react-router-dom';
+import RequiredServicesDialog from '@pages/cluster/ClusterMapping/ComponentsMapping/RequiredServicesDialog/RequiredServicesDialog';
+import { AdcmEntitySystemState, AdcmHostShortView, AdcmMaintenanceMode, AdcmMappingComponent } from '@models/adcm';
+import { MappingFilter, MappingValidation, ServiceMapping } from '../ClusterMapping.types';
 import s from './ComponentsMapping.module.scss';
 import cn from 'classnames';
-import { Link, useParams } from 'react-router-dom';
-import { setLocalMapping, saveMapping, revertChanges } from '@store/adcm/cluster/mapping/mappingSlice';
-import { useDispatch, useStore } from '@hooks';
-import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
-import RequiredServicesDialog from '@pages/cluster/ClusterMapping/ComponentsMapping/RequiredServicesDialog/RequiredServicesDialog';
-import { AdcmEntitySystemState, AdcmMaintenanceMode, AdcmMapping } from '@models/adcm';
+import { NotAddedServicesDictionary } from '@store/adcm/cluster/mapping/mappingSlice';
 
 const buildServiceAnchorId = (id: number) => `anchor_${id}`;
 
-const ComponentsMapping = () => {
-  const dispatch = useDispatch();
+export interface ComponentsMappingProps {
+  hosts: AdcmHostShortView[];
+  servicesMapping: ServiceMapping[];
+  mappingValidation: MappingValidation;
+  mappingFilter: MappingFilter;
+  notAddedServicesDictionary: NotAddedServicesDictionary;
+  onMap: (hosts: AdcmHostShortView[], component: AdcmMappingComponent) => void;
+  onUnmap: (hostId: number, componentId: number) => void;
+}
 
+const ComponentsMapping = ({
+  hosts,
+  servicesMapping,
+  mappingValidation,
+  mappingFilter,
+  notAddedServicesDictionary,
+  onMap,
+  onUnmap,
+}: ComponentsMappingProps) => {
   const { clusterId: clusterIdFromUrl } = useParams();
   const clusterId = Number(clusterIdFromUrl);
-
-  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
-
-  useEffect(() => {
-    if (cluster) {
-      dispatch(
-        setBreadcrumbs([
-          { href: '/clusters', label: 'Clusters' },
-          { href: `/clusters/${cluster.id}`, label: cluster.name },
-          { label: 'Mapping' },
-          { label: 'Components' },
-        ]),
-      );
-    }
-  }, [cluster, dispatch]);
-
-  const handleSetMapping = useCallback(
-    (newMapping: AdcmMapping[]) => {
-      dispatch(setLocalMapping(newMapping));
-    },
-    [dispatch],
-  );
-
-  const {
-    hosts,
-    components,
-    localMapping,
-    isLoaded,
-    hasSaveError,
-    state: mappingState,
-  } = useStore(({ adcm }) => adcm.clusterMapping);
-  const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
-
-  const {
-    hostComponentMapping,
-    servicesMapping,
-    servicesMappingFilter,
-    handleServicesMappingFilterChange,
-    mappingValidation,
-    handleMap,
-    handleUnmap,
-  } = useClusterMapping(localMapping, hosts, components, notAddedServicesDictionary, isLoaded, handleSetMapping);
 
   const anchorItems: AnchorBarItem[] = useMemo(
     () =>
@@ -71,102 +42,59 @@ const ComponentsMapping = () => {
     [servicesMapping],
   );
 
-  const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    handleServicesMappingFilterChange({ hostName: event.target.value });
-  };
-
-  const handleHideEmptyComponentsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    handleServicesMappingFilterChange({ isHideEmptyComponents: event.target.checked });
-  };
-
-  const handleSave = () => {
-    dispatch(saveMapping({ clusterId, mapping: hostComponentMapping }));
-  };
-
-  const handleRevert = () => {
-    dispatch(revertChanges());
-  };
-
-  const isButtonsDisabledByState = mappingState === 'saving' || mappingState === 'no-changes';
-
   return (
     <div className={s.componentsMapping}>
-      <ClusterMappingToolbar className={s.componentsMapping__toolbar}>
-        <SearchInput placeholder="Search hosts" value={servicesMappingFilter.hostName} onChange={handleFilterChange} />
-        <div className={s.componentsMapping__toolbarButtonsAndSwitch}>
-          <Switch
-            isToggled={servicesMappingFilter.isHideEmptyComponents}
-            onChange={handleHideEmptyComponentsChange}
-            label="Hide empty components"
-          />
-          <div className={s.componentsMapping__toolbarButtons}>
-            <Button disabled={isButtonsDisabledByState} variant="secondary" onClick={handleRevert}>
-              Reset
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={isButtonsDisabledByState || !mappingValidation.isAllMappingValid}
-              hasError={hasSaveError}
-              iconLeft={mappingState === 'saving' ? { name: 'g1-load', className: 'spin' } : undefined}
-            >
-              Save
-            </Button>
-          </div>
-        </div>
-      </ClusterMappingToolbar>
-      <div className={s.componentsMapping__content}>
-        <div data-test="mapping-container">
-          {servicesMapping.map(({ service, componentsMapping }) => {
-            const isServiceValid = componentsMapping.every(
-              (cm) => mappingValidation.byComponents[cm.component.id].isValid,
-            );
-            const titleClassName = cn(s.serviceMapping__title, {
-              [s['serviceMapping__title_error']]: !isServiceValid,
-            });
+      <div data-test="mapping-container">
+        {servicesMapping.map(({ service, componentsMapping }) => {
+          const isServiceValid = componentsMapping.every(
+            (cm) => mappingValidation.byComponents[cm.component.id].isValid,
+          );
+          const titleClassName = cn(s.serviceMapping__title, {
+            [s['serviceMapping__title_error']]: !isServiceValid,
+          });
 
-            const markerType = isServiceValid ? 'check' : 'alert';
+          const markerType = isServiceValid ? 'check' : 'alert';
 
-            return (
-              <div key={service.id} className={s.serviceMapping}>
-                <Text className={titleClassName} variant="h2" id={buildServiceAnchorId(service.id)}>
-                  {service.displayName}
-                  <MarkerIcon type={markerType} variant="square" size="medium" />
-                </Text>
-                {componentsMapping.map((componentMapping) => {
-                  const isEditableComponent =
-                    componentMapping.component.service.state === AdcmEntitySystemState.Created &&
-                    componentMapping.component.maintenanceMode !== AdcmMaintenanceMode.On;
+          return (
+            <div key={service.id} className={s.serviceMapping}>
+              <Text className={titleClassName} variant="h2" id={buildServiceAnchorId(service.id)}>
+                {service.displayName}
+                <MarkerIcon type={markerType} variant="square" size="medium" />
+              </Text>
+              {componentsMapping.map((componentMapping) => {
+                const isEditableComponent =
+                  componentMapping.component.service.state === AdcmEntitySystemState.Created &&
+                  componentMapping.component.maintenanceMode !== AdcmMaintenanceMode.On;
 
-                  return (
-                    <ComponentContainer
-                      key={componentMapping.component.id}
-                      componentMapping={componentMapping}
-                      componentMappingValidation={mappingValidation.byComponents[componentMapping.component.id]}
-                      filter={servicesMappingFilter}
-                      allHosts={hosts}
-                      notAddedServicesDictionary={notAddedServicesDictionary}
-                      onMap={handleMap}
-                      onUnmap={handleUnmap}
-                      allowActions={isEditableComponent ? undefined : []}
-                    />
-                  );
-                })}
-              </div>
-            );
-          })}
-          {servicesMapping.length === 0 && (
-            <div>
-              Add services on the{' '}
-              <Link className="text-link" to={`/clusters/${clusterId}/services`}>
-                services page
-              </Link>
+                return (
+                  <ComponentContainer
+                    key={componentMapping.component.id}
+                    componentMapping={componentMapping}
+                    componentMappingValidation={mappingValidation.byComponents[componentMapping.component.id]}
+                    filter={mappingFilter}
+                    allHosts={hosts}
+                    notAddedServicesDictionary={notAddedServicesDictionary}
+                    onMap={onMap}
+                    onUnmap={onUnmap}
+                    allowActions={isEditableComponent ? undefined : []}
+                  />
+                );
+              })}
             </div>
-          )}
-        </div>
-        <AnchorBar>
-          <AnchorList items={anchorItems} />
-        </AnchorBar>
+          );
+        })}
+        {servicesMapping.length === 0 && (
+          <div>
+            Add services on the{' '}
+            <Link className="text-link" to={`/clusters/${clusterId}/services`}>
+              services page
+            </Link>
+          </div>
+        )}
       </div>
+      <AnchorBar>
+        <AnchorList items={anchorItems} />
+      </AnchorBar>
 
       <RequiredServicesDialog />
     </div>

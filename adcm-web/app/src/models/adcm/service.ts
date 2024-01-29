@@ -37,6 +37,8 @@ export interface AdcmService {
   };
 }
 
+export type ServicePrototypeId = AdcmServicePrototype['id'];
+
 export interface AdcmServicePrototype {
   id: number;
   name: string;

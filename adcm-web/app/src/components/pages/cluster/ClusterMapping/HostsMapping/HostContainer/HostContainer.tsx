@@ -1,16 +1,18 @@
 import { useMemo } from 'react';
 import { Tags } from '@uikit';
 import MappingItemTag from '../../MappingItemTag/MappingItemTag';
-import { MappingValidation, HostMapping, HostMappingFilter } from '../../ClusterMapping.types';
+import { MappingValidation, HostMapping, MappingFilter } from '../../ClusterMapping.types';
 import s from './HostContainer.module.scss';
+import cn from 'classnames';
 
 export interface HostContainerProps {
   hostMapping: HostMapping;
   mappingValidation: MappingValidation;
-  filter: HostMappingFilter;
+  filter: MappingFilter;
+  className?: string;
 }
 
-const HostContainer = ({ hostMapping, mappingValidation, filter }: HostContainerProps) => {
+const HostContainer = ({ hostMapping, mappingValidation, filter, className }: HostContainerProps) => {
   const { host, components } = hostMapping;
 
   const visibleHostComponents = useMemo(
@@ -21,13 +23,13 @@ const HostContainer = ({ hostMapping, mappingValidation, filter }: HostContainer
     [components, filter.componentDisplayName],
   );
 
-  if (visibleHostComponents.length === 0 && filter.isHideEmptyHosts) {
+  if (visibleHostComponents.length === 0 && filter.isHideEmpty) {
     return null;
   }
 
   return (
     <>
-      <div className={s.hostContainer}>
+      <div className={cn(className, s.hostContainer)}>
         <div className={s.hostContainerHeader}>
           <span className={s.hostContainerHeader__title}>{host.name}</span>
           <span className={s.hostContainerHeader__count}>{components.length}</span>

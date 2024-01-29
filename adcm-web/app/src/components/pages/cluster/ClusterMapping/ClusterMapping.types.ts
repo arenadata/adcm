@@ -3,26 +3,20 @@ import {
   AdcmMappingComponent,
   AdcmMappingComponentService,
   AdcmServicePrototype,
+  HostId,
+  ComponentId,
+  ServiceId,
+  ServicePrototypeId,
 } from '@models/adcm';
 
 export type ValidationError = { isValid: false; errors: string[] };
 export type ValidationSuccess = { isValid: true };
 export type ValidationResult = ValidationError | ValidationSuccess;
 
-export type HostId = AdcmHostShortView['id'];
-export type ComponentId = AdcmMappingComponent['id'];
-export type ServiceId = AdcmMappingComponentService['id'];
-export type ServicePrototypeId = AdcmServicePrototype['id'];
-
 export type HostsDictionary = Record<HostId, AdcmHostShortView>;
 export type ComponentHostsDictionary = Record<ComponentId, AdcmHostShortView[]>;
 export type ComponentsDictionary = Record<ComponentId, AdcmMappingComponent>;
 export type ServicesDictionary = Record<ServiceId, AdcmServicePrototype>;
-
-export type HostMappingFilter = {
-  componentDisplayName: string;
-  isHideEmptyHosts: boolean;
-};
 
 export type HostMapping = {
   host: AdcmHostShortView;
@@ -40,9 +34,10 @@ export type ComponentMappingValidation = {
   isValid: boolean;
 };
 
-export type ServiceMappingFilter = {
+export type MappingFilter = {
   hostName: string;
-  isHideEmptyComponents: boolean;
+  componentDisplayName: string;
+  isHideEmpty: boolean;
 };
 
 export type ServiceMapping = {
@@ -54,8 +49,6 @@ export type ComponentMapping = {
   component: AdcmMappingComponent;
   hosts: AdcmHostShortView[];
 };
-
-export type MappingState = 'no-changes' | 'editing' | 'saved';
 
 export type ComponentValidateResult = {
   constraintsValidationResult: ValidationResult;

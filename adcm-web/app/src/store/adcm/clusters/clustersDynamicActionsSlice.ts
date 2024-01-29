@@ -1,5 +1,5 @@
-import { PayloadAction, createSlice } from '@reduxjs/toolkit';
-import { AdcmCluster, AdcmHostShortView, AdcmMapping, AdcmMappingComponent, AdcmServicePrototype } from '@models/adcm';
+import { createSlice } from '@reduxjs/toolkit';
+import { AdcmCluster, AdcmHostShortView, AdcmMapping, AdcmMappingComponent } from '@models/adcm';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmClusterMappingApi, AdcmClustersApi, RequestError } from '@api';
 import { fulfilledFilter } from '@utils/promiseUtils';
@@ -10,6 +10,7 @@ import { ActionStatuses } from '@constants';
 import { LoadState } from '@models/loadState';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
 import { arrayToHash } from '@utils/arrayUtils';
+import { NotAddedServicesDictionary } from '../cluster/mapping/mappingSlice';
 
 type GetClusterMappingArg = {
   clusterId: number;
@@ -117,10 +118,9 @@ type AdcmClustersDynamicActionsState = {
     actionDetails: AdcmDynamicActionDetails | null;
     cluster: AdcmCluster | null;
     mapping: AdcmMapping[];
-    localMapping: AdcmMapping[];
     hosts: AdcmHostShortView[];
     components: AdcmMappingComponent[];
-    notAddedServicesDictionary: Record<number, AdcmServicePrototype>;
+    notAddedServicesDictionary: NotAddedServicesDictionary;
     loadState: LoadState;
   };
   clusterDynamicActions: Record<number, AdcmDynamicAction[]>;
@@ -131,7 +131,6 @@ const createInitialState = (): AdcmClustersDynamicActionsState => ({
     actionDetails: null,
     cluster: null,
     mapping: [],
-    localMapping: [],
     hosts: [],
     components: [],
     notAddedServicesDictionary: {},
@@ -144,12 +143,6 @@ const clustersDynamicActionsSlice = createSlice({
   name: 'adcm/clustersDynamicActions',
   initialState: createInitialState(),
   reducers: {
-    setLocalMapping(state, action: PayloadAction<AdcmMapping[]>) {
-      state.dialog.localMapping = action.payload;
-    },
-    revertChanges(state) {
-      state.dialog.localMapping = state.dialog.mapping;
-    },
     cleanupClusterDynamicActions() {
       return createInitialState();
     },
@@ -161,7 +154,6 @@ const clustersDynamicActionsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(loadMappings.fulfilled, (state, action) => {
-      state.dialog.localMapping = action.payload.mapping;
       state.dialog.mapping = action.payload.mapping;
       state.dialog.hosts = action.payload.hosts;
       state.dialog.components = action.payload.components;
@@ -192,8 +184,7 @@ const clustersDynamicActionsSlice = createSlice({
   },
 });
 
-export const { setLocalMapping, revertChanges, cleanupClusterDynamicActions, closeClusterDynamicActionDialog } =
-  clustersDynamicActionsSlice.actions;
+export const { cleanupClusterDynamicActions, closeClusterDynamicActionDialog } = clustersDynamicActionsSlice.actions;
 export { loadClustersDynamicActions, openClusterDynamicActionDialog, getMappings, runClusterDynamicAction };
 
 export default clustersDynamicActionsSlice.reducer;
