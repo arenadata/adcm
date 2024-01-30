@@ -51,6 +51,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.job.utils import JobScope
 from cm.tests.utils import (
     gen_bundle,
     gen_cluster,
@@ -556,10 +557,9 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        task = TaskLog.objects.last()
         job = JobLog.objects.last()
 
-        re_prepare_job(task=task, job=job)
+        re_prepare_job(job_scope=JobScope(job_id=job.pk))
 
         inventory_file = settings.RUN_DIR / str(job.pk) / "inventory.json"
         with Path(inventory_file).open(encoding=settings.ENCODING_UTF_8) as f:

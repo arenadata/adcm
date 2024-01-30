@@ -10,9 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from django.conf import settings
+from django.utils import timezone
 
-from cm.job import prepare_job_config
-from cm.models import Action, ServiceComponent
+from cm.models import Action, JobLog, ServiceComponent, TaskLog
+from cm.services.job.config import get_job_config
+from cm.services.job.utils import JobScope
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
@@ -97,15 +99,22 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             (self.hostprovider, self.FULL_CONFIG, "hostprovider"),
             (self.host_1, self.CONFIG_WITH_NONES, "host"),
         ):
+            action = Action.objects.filter(prototype=object_.prototype, name="with_config").first()
+            task = TaskLog.objects.create(
+                task_object=object_,
+                action=action,
+                config=config,
+                start_date=timezone.now(),
+                finish_date=timezone.now(),
+            )
+            job = JobLog.objects.create(task=task, action=action, start_date=timezone.now(), finish_date=timezone.now())
+
             with self.subTest(f"Own Action for {object_.__class__.__name__}"):
                 expected_data = self.render_json_template(
-                    file=self.templates_dir / "action_configs" / f"{type_name}.json.j2", context=self.context
+                    file=self.templates_dir / "action_configs" / f"{type_name}.json.j2",
+                    context={**self.context, "job_id": job.pk},
                 )
-
-                action = Action.objects.filter(prototype=object_.prototype, name="with_config").first()
-                job_config = prepare_job_config(
-                    action=action, sub_action=None, job_id=1, obj=object_, conf=config, verbose=False
-                )
+                job_config = get_job_config(job_scope=JobScope(job_id=job.pk))
 
                 self.assertDictEqual(job_config, expected_data)
 
@@ -114,14 +123,22 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             (self.service, self.CONFIG_WITH_NONES, "service"),
             (self.component, None, "component"),
         ):
+            action = Action.objects.filter(prototype=object_.prototype, name="with_config_on_host").first()
+            task = TaskLog.objects.create(
+                task_object=self.host_1,
+                action=action,
+                config=config,
+                start_date=timezone.now(),
+                finish_date=timezone.now(),
+                verbose=True,
+            )
+            job = JobLog.objects.create(task=task, action=action, start_date=timezone.now(), finish_date=timezone.now())
+
             with self.subTest(f"Host Action for {object_.__class__.__name__}"):
                 expected_data = self.render_json_template(
-                    file=self.templates_dir / "action_configs" / f"{type_name}_on_host.json.j2", context=self.context
+                    file=self.templates_dir / "action_configs" / f"{type_name}_on_host.json.j2",
+                    context={**self.context, "job_id": job.pk},
                 )
-
-                action = Action.objects.filter(prototype=object_.prototype, name="with_config_on_host").first()
-                job_config = prepare_job_config(
-                    action=action, sub_action=action, job_id=100, obj=self.host_1, conf=config, verbose=True
-                )
+                job_config = get_job_config(job_scope=JobScope(job_id=job.pk))
 
                 self.assertDictEqual(job_config, expected_data)

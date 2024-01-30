@@ -43,12 +43,12 @@
   "env": {
     "run_dir": "{{ datadir }}/run",
     "log_dir": "{{ datadir }}/log",
-    "tmp_dir": "{{ datadir }}/run/1/tmp",
+    "tmp_dir": "{{ datadir }}/run/{{ job_id }}/tmp",
     "stack_dir": "{{ stackdir }}/data/bundle/{{ hostprovider_bundle.hash }}",
     "status_api_token": "{{ token }}"
   },
   "job": {
-    "id": 1,
+    "id": {{ job_id }},
     "action": "with_config",
     "job_name": "with_config",
     "command": "with_config",

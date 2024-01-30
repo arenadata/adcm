@@ -10,21 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import NamedTuple, TypeAlias
+from typing import TypeAlias
 
-ObjectID: TypeAlias = int
-ClusterID: TypeAlias = ObjectID
-ServiceID: TypeAlias = ObjectID
-ComponentID: TypeAlias = ObjectID
-HostID: TypeAlias = ObjectID
-PrototypeID: TypeAlias = ObjectID
-HostProviderID: TypeAlias = ObjectID
+from cm.models import ADCM, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 
-
-class ADCMCoreError(Exception):
-    ...
-
-
-class ShortObjectInfo(NamedTuple):
-    id: int
-    name: str
+ADCMEntityType: TypeAlias = ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host

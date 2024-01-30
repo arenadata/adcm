@@ -12,7 +12,7 @@
 
 from pathlib import Path
 from signal import SIGTERM
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, mock_open, patch
 from urllib.parse import urljoin
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
@@ -28,18 +28,12 @@ from cm.issue import lock_affected_objects
 from cm.job import (
     check_cluster,
     check_service_task,
-    cook_script,
-    get_adcm_config,
-    get_bundle_root,
     get_state,
-    prepare_context,
     prepare_job,
-    prepare_job_config,
     re_prepare_job,
     restore_hc,
     set_action_state,
     set_job_start_status,
-    write_job_config,
 )
 from cm.models import (
     ADCM,
@@ -56,6 +50,11 @@ from cm.models import (
     SubAction,
     TaskLog,
 )
+from cm.services.job.config import (
+    get_context,
+    get_job_config,
+)
+from cm.services.job.utils import JobScope, get_bundle_root, get_script_path, get_selector
 from cm.tests.utils import (
     gen_action,
     gen_bundle,
@@ -70,6 +69,7 @@ class TestJob(BaseTestCase):
     def setUp(self):
         super().setUp()
 
+        self.maxDiff = None  # pylint: disable=invalid-name
         self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
         self.multijob_bundle = "multijob_cluster.tar"
         self.multijob_cluster_name = "multijob_cluster"
@@ -305,34 +305,31 @@ class TestJob(BaseTestCase):
         self.assertEqual(mock_err.call_count, 0)
 
     @patch("cm.job.prepare_ansible_config")
-    @patch("cm.job.prepare_job_config")
+    @patch("cm.job.get_job_config")
     @patch("cm.job.prepare_job_inventory")
-    @patch("cm.job.write_job_config")
-    def test_prepare_job(
-        self, mock_write_job_config, mock_prepare_job_inventory, mock_prepare_job_config, mock_prepare_ansible_config
-    ):
+    def test_prepare_job(self, mock_prepare_job_inventory, mock_get_job_config, mock_prepare_ansible_config):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
         cluster = Cluster.objects.create(prototype=prototype)
         action = Action.objects.create(prototype=prototype)
-        job = JobLog.objects.create(action=action, start_date=timezone.now(), finish_date=timezone.now())
+        task = TaskLog.objects.create(
+            task_object=cluster,
+            action=action,
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+        )
+        job = JobLog.objects.create(action=action, start_date=timezone.now(), finish_date=timezone.now(), task=task)
+        job_scope = JobScope(job_id=job.pk)
 
-        prepare_job(action, None, job.id, cluster, "", {}, None, False)
+        mocked_open = mock_open()
+        with patch.object(Path, "open", mocked_open), patch("cm.job.json.dump"):
+            prepare_job(job_scope=job_scope, delta={})
 
-        mock_prepare_job_inventory.assert_called_once_with(cluster, job.id, action, {}, None)
-        mock_prepare_job_config.assert_called_once_with(action, None, job.id, cluster, "", False)
-        mock_prepare_ansible_config.assert_called_once_with(job.id, action, None)
-        mock_write_job_config.assert_called()
-
-    @patch("cm.job.get_obj_config")
-    def test_get_adcm_config(self, mock_get_obj_config):
-        adcm = ADCM.objects.first()
-        mock_get_obj_config.return_value = {}
-
-        conf = get_adcm_config()
-
-        self.assertEqual(conf, {})
-        mock_get_obj_config.assert_called_once_with(adcm)
+        mock_prepare_job_inventory.assert_called_once_with(
+            obj=cluster, job_id=job.id, action=action, delta={}, action_host=None
+        )
+        mock_get_job_config.assert_called_once_with(job_scope=job_scope)
+        mock_prepare_ansible_config.assert_called_once_with(job_id=job.id, action=action, sub_action=None)
 
     def test_prepare_context(self):
         bundle = Bundle.objects.create()
@@ -340,14 +337,18 @@ class TestJob(BaseTestCase):
         action1 = Action.objects.create(prototype=proto1)
         add_cluster(proto1, "Garbage")
         cluster = add_cluster(proto1, "Ontario")
-        context = prepare_context(action1, cluster)
+        context = get_context(
+            action=action1, object_type=cluster.prototype.type, selector=get_selector(obj=cluster, action=action1)
+        )
 
         self.assertDictEqual(context, {"type": "cluster", "cluster_id": cluster.id})
 
         proto2 = Prototype.objects.create(bundle=bundle, type="service")
         action2 = Action.objects.create(prototype=proto2)
         service = add_service_to_cluster(cluster, proto2)
-        context = prepare_context(action2, service)
+        context = get_context(
+            action=action2, object_type=service.prototype.type, selector=get_selector(obj=service, action=action2)
+        )
 
         self.assertDictEqual(context, {"type": "service", "service_id": service.id, "cluster_id": cluster.id})
 
@@ -366,7 +367,7 @@ class TestJob(BaseTestCase):
 
             self.assertEqual(path, test_path)
 
-    @patch("cm.job.get_bundle_root")
+    @patch("cm.services.job.utils.get_bundle_root")
     def test_cook_script(self, mock_get_bundle_root):
         bundle = Bundle.objects.create(hash="6525d392dc9d1fb3273fb4244e393672579d75f3")
         prototype = Prototype.objects.create(bundle=bundle)
@@ -397,26 +398,22 @@ class TestJob(BaseTestCase):
                 action.script = script
                 action.save()
 
-                path = cook_script(action, data_sub_action)
+                path = get_script_path(action, data_sub_action)
 
             self.assertEqual(path, test_path)
-            mock_get_bundle_root.assert_called_once_with(action)
+            mock_get_bundle_root.assert_called_once_with(action=action)
             mock_get_bundle_root.reset_mock()
 
-    @patch("cm.job.cook_script")
-    @patch("cm.job.get_bundle_root")
-    @patch("cm.job.prepare_context")
-    @patch("cm.job.get_adcm_config")
-    @patch("json.dump")
-    @patch("pathlib.Path.open")
+    @patch("cm.services.job.config.get_script_path")
+    @patch("cm.services.job.config.get_bundle_root")
+    @patch("cm.services.job.config.get_context")
+    @patch("cm.services.job.config.get_obj_config")
     def test_prepare_job_config(
         self,
-        mock_open,
-        mock_dump,
-        mock_get_adcm_config,
-        mock_prepare_context,
+        mock_get_obj_config,
+        mock_get_context,
         mock_get_bundle_root,
-        mock_cook_script,
+        mock_get_script_path,
     ):
         bundle = Bundle.objects.create()
         proto1 = Prototype.objects.create(bundle=bundle, type="cluster")
@@ -425,30 +422,23 @@ class TestJob(BaseTestCase):
         service = add_service_to_cluster(cluster, proto2)
         cluster_action = Action.objects.create(prototype=proto1)
         service_action = Action.objects.create(prototype=proto2)
-        proto3 = Prototype.objects.create(bundle=bundle, type="adcm")
-        adcm_action = Action.objects.create(prototype=proto3)
-        adcm = ADCM.objects.create(prototype=proto3)
+        adcm_prototype = Prototype.objects.get(type="adcm")
+        adcm_action = Action.objects.create(prototype=adcm_prototype)
+        adcm = ADCM.objects.get()
 
-        file_mock = Mock()
-        file_mock.__enter__ = Mock(return_value=(Mock(), None))
-        file_mock.__exit__ = Mock(return_value=None)
-        mock_open.return_value = file_mock
-        mock_get_adcm_config.return_value = {}
-        mock_prepare_context.return_value = {"type": "cluster", "cluster_id": 1}
+        mock_get_obj_config.return_value = {}
+        mock_get_context.return_value = {"type": "cluster", "cluster_id": 1}
         mock_get_bundle_root.return_value = str(settings.BUNDLE_DIR)
-        mock_cook_script.return_value = str(
+        mock_get_script_path.return_value = str(
             Path(settings.BUNDLE_DIR, cluster_action.prototype.bundle.hash, cluster_action.script),
         )
 
-        job = JobLog.objects.create(action=cluster_action, start_date=timezone.now(), finish_date=timezone.now())
-
-        conf = "test"
         proto4 = Prototype.objects.create(bundle=bundle, type="provider")
         provider_action = Action.objects.create(prototype=proto4)
-        provider = HostProvider(prototype=proto4)
+        provider = HostProvider.objects.create(prototype=proto4, name="hostprovider")
         proto5 = Prototype.objects.create(bundle=bundle, type="host")
         host_action = Action.objects.create(prototype=proto5)
-        host = Host(prototype=proto5, provider=provider)
+        host = Host.objects.create(prototype=proto5, provider=provider)
 
         data = [
             ("service", service, service_action),
@@ -459,19 +449,23 @@ class TestJob(BaseTestCase):
         ]
 
         for prototype_type, obj, action in data:
-            with self.subTest(provider_type=prototype_type, obj=obj):
-                config = prepare_job_config(action, None, job.pk, obj, conf, False)
-                write_job_config(job_id=job.pk, config=config)
+            task = TaskLog.objects.create(
+                task_object=obj, action=action, start_date=timezone.now(), finish_date=timezone.now(), config="test"
+            )
+            job = JobLog.objects.create(action=action, start_date=timezone.now(), finish_date=timezone.now(), task=task)
+
+            with self.subTest(prototype_type=prototype_type, obj=obj):
+                actual_job_config = get_job_config(job_scope=JobScope(job_id=job.pk))
 
                 job_config = {
                     "adcm": {"config": {}},
                     "context": {"type": "cluster", "cluster_id": 1},
                     "env": {
-                        "run_dir": mock_dump.call_args[0][0]["env"]["run_dir"],
-                        "log_dir": mock_dump.call_args[0][0]["env"]["log_dir"],
+                        "run_dir": str(settings.RUN_DIR),
+                        "log_dir": str(settings.LOG_DIR),
                         "tmp_dir": str(Path(settings.RUN_DIR, f"{job.id}", "tmp")),
-                        "stack_dir": mock_dump.call_args[0][0]["env"]["stack_dir"],
-                        "status_api_token": mock_dump.call_args[0][0]["env"]["status_api_token"],
+                        "stack_dir": str(Path(settings.BUNDLE_DIR, action.prototype.bundle.hash)),
+                        "status_api_token": str(settings.STATUS_SECRET_KEY),
                     },
                     "job": {
                         "id": job.pk,
@@ -480,7 +474,7 @@ class TestJob(BaseTestCase):
                         "command": "",
                         "script": "",
                         "verbose": False,
-                        "playbook": mock_dump.call_args[0][0]["job"]["playbook"],
+                        "playbook": str(settings.BUNDLE_DIR),
                         "config": "test",
                     },
                 }
@@ -512,13 +506,13 @@ class TestJob(BaseTestCase):
                 elif prototype_type == "adcm":
                     job_config["job"]["hostgroup"] = "127.0.0.1"
 
-                mock_dump.assert_called_with(
-                    job_config, file_mock.__enter__.return_value, separators=(",", ":"), sort_keys=True
+                self.assertDictEqual(job_config, actual_job_config)
+                mock_get_obj_config.assert_called()
+                mock_get_context.assert_called_with(
+                    action=action, object_type=obj.prototype.type, selector=get_selector(obj=obj, action=action)
                 )
-                mock_get_adcm_config.assert_called()
-                mock_prepare_context.assert_called_with(action, obj)
-                mock_get_bundle_root.assert_called_with(action)
-                mock_cook_script.assert_called_with(action, None)
+                mock_get_bundle_root.assert_called_with(action=action)
+                mock_get_script_path.assert_called_with(action=action, sub_action=None)
 
     @patch("cm.job.cook_delta")
     @patch("cm.job.get_old_hc")
@@ -571,12 +565,15 @@ class TestJob(BaseTestCase):
             finish_date=timezone.now(),
         )
 
-        re_prepare_job(task, job)
+        job_scope = JobScope(job_id=job.pk)
+        re_prepare_job(job_scope=job_scope)
 
-        mock_get_actual_hc.assert_called_once_with(cluster)
-        mock_get_old_hc.assert_called_once_with(task.hostcomponentmap)
-        mock_cook_delta.assert_called_once_with(cluster, new_hc, action.hostcomponentmap, old_hc)
-        mock_prepare_job.assert_called_once_with(action, sub_action, job.id, cluster, task.config, delta, None, False)
+        mock_get_actual_hc.assert_called_once_with(cluster=cluster)
+        mock_get_old_hc.assert_called_once_with(saved_hostcomponent=task.hostcomponentmap)
+        mock_cook_delta.assert_called_once_with(
+            cluster=cluster, new_hc=new_hc, action_hc=action.hostcomponentmap, old=old_hc
+        )
+        mock_prepare_job.assert_called_once_with(job_scope=job_scope, delta=delta)
 
     def test_job_termination_allowed_action_termination_allowed(self):
         self.init_adcm()
