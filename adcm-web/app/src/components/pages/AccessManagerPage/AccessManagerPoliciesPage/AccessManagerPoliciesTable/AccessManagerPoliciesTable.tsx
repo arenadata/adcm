@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { Button, ExpandableRowComponent, IconButton, Table, TableCell } from '@uikit';
+import { Button, ExpandableRowComponent, IconButton, Table, TableCell, TableBigTextCell } from '@uikit';
 import { columns } from './AccessManagerPoliciesTable.constants';
 import { orElseGet } from '@utils/checkUtils';
 import { openDeleteDialog, openPoliciesEditDialog } from '@store/adcm/policies/policiesActionsSlice';
 import { setSortParams } from '@store/adcm/policies/policiesTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { AdcmPolicy } from '@models/adcm';
-import cn from 'classnames';
-import s from './AccessManagerPoliciesTable.module.scss';
 import AccessManagerPoliciesTableExpandedContent from './AccessManagerPoliciesTableExpandedContent/AccessManagerPoliciesTableExpandedContent';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
+import s from './AccessManagerPoliciesTable.module.scss';
 
 const AccessManagerPoliciesTable: React.FC = () => {
   const dispatch = useDispatch();
@@ -47,7 +46,7 @@ const AccessManagerPoliciesTable: React.FC = () => {
       isLoading={isLoading}
       sortParams={sortParams}
       onSorting={handleSorting}
-      className={s.policiesTable}
+      className={s.tablePolicies}
     >
       {policies.map((policy) => {
         return (
@@ -56,14 +55,12 @@ const AccessManagerPoliciesTable: React.FC = () => {
             colSpan={columns.length}
             isExpanded={expandableRows[policy.id] || false}
             expandedContent={<AccessManagerPoliciesTableExpandedContent objects={policy.objects} />}
-            className={cn(s.policiesTable__policyRow, { [s.expandedRow]: expandableRows[policy.id] })}
-            expandedClassName={s.policiesTable__expandedRow}
           >
             <TableCell>{policy.name}</TableCell>
             <TableCell>{orElseGet(policy.description)}</TableCell>
             <TableCell>{orElseGet(policy.role?.displayName)}</TableCell>
-            <TableCell>{policy.groups.map((group) => group.displayName).join(', ')}</TableCell>
-            <TableCell>{policy.objects.map((object) => object.displayName).join(', ')}</TableCell>
+            <TableBigTextCell value={policy.groups.map((group) => group.displayName).join(', ')} />
+            <TableBigTextCell value={policy.objects.map((object) => object.displayName).join(', ')} />
             <TableCell>
               <Button
                 className={expandableRows[policy.id] ? 'is-active' : ''}

@@ -31,6 +31,12 @@
     display: flex;
     gap: 4px;
   }
+
+  &__textWrap {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
 }
 
 .tableHeadCellCheckbox {
