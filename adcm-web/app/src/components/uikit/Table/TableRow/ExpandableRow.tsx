@@ -4,13 +4,13 @@ import Collapse from '@uikit/Collapse/Collapse';
 import TableRow from '@uikit/Table/TableRow/TableRow';
 import cn from 'classnames';
 import s from './ExpandableRow.module.scss';
+import t from '../Table.module.scss';
 
 export interface ExpandableRowProps extends React.PropsWithChildren {
   isExpanded: boolean;
   expandedContent?: React.ReactNode;
   colSpan: number;
   className?: string;
-  expandedClassName?: string;
   isInactive?: boolean;
 }
 
@@ -20,7 +20,6 @@ const ExpandableRow = ({
   expandedContent = undefined,
   colSpan,
   className = '',
-  expandedClassName = '',
   isInactive = false,
 }: ExpandableRowProps) => {
   const [rowWidth, setRowWidth] = useState(0);
@@ -29,9 +28,10 @@ const ExpandableRow = ({
   const rowClasses = cn(className, s.expandableRowMain, {
     [s.expanded]: isExpanded,
     [s.expandableRowMain_inactive]: isInactive,
+    [t.expandedRow]: isExpanded,
   });
 
-  const expandedRowClasses = cn(s.expandableRowContent, expandedClassName);
+  const expandedRowClasses = cn(s.expandableRowContent, t.expandedBlock);
 
   const setRowNewWidth = useCallback(() => {
     if (!refRow.current) return;
