@@ -13,7 +13,6 @@ from pathlib import Path
 import json
 
 from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
-from cm.inventory import get_obj_config
 from cm.models import (
     ADCM,
     ConfigLog,
@@ -23,6 +22,7 @@ from cm.models import (
     ServiceComponent,
     Upgrade,
 )
+from cm.services.job.inventory._steps import get_obj_config
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.reverse import reverse

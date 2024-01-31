@@ -12,7 +12,6 @@
 from typing import Iterable
 
 from cm.api import DataForMultiBind, multi_bind
-from cm.inventory import get_inventory_data
 from cm.models import (
     Action,
     ADCMModel,
@@ -21,6 +20,7 @@ from cm.models import (
     PrototypeImport,
     ServiceComponent,
 )
+from cm.services.job.inventory import get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
 
 

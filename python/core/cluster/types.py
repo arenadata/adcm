@@ -45,6 +45,10 @@ class ClusterTopology(NamedTuple):
     services: dict[ServiceID, ServiceTopology]
     hosts: dict[HostID, ShortObjectInfo]
 
+    @property
+    def component_ids(self) -> Generator[ComponentID, None, None]:
+        return chain.from_iterable(service.components for service in self.services.values())
+
 
 class ObjectMaintenanceModeState(Enum):
     ON = "on"

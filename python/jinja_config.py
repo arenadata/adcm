@@ -113,7 +113,7 @@ def _normalize_config(config: dict, root_path: Path, name: str = "", subname: st
 
 
 def get_jinja_config(action: Action, obj: ADCMEntity) -> tuple[list[PrototypeConfig], dict]:
-    from cm.inventory import get_inventory_data
+    from cm.services.job.inventory import get_inventory_data
 
     inventory_data = get_inventory_data(obj=obj, action=action)
     jinja_conf_file = Path(settings.BUNDLE_DIR, action.prototype.bundle.hash, action.config_jinja)

@@ -50,7 +50,7 @@ from cm.api import (
 )
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.hierarchy import Tree
-from cm.inventory import HcAclAction, prepare_job_inventory, process_config_and_attr
+from cm.inventory import HcAclAction
 from cm.issue import (
     check_bound_components,
     check_component_constraint,
@@ -85,6 +85,8 @@ from cm.models import (
     get_object_cluster,
 )
 from cm.services.job.config import get_job_config
+from cm.services.job.inventory import get_inventory_data
+from cm.services.job.inventory._steps import process_config_and_attr
 from cm.services.job.utils import JobScope, get_selector
 from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import (
@@ -473,9 +475,14 @@ def prepare_job(job_scope: JobScope, delta: dict):
     with config_path.open(mode="w", encoding=settings.ENCODING_UTF_8) as config_file:
         json.dump(obj=get_job_config(job_scope=job_scope), fp=config_file, sort_keys=True, separators=(",", ":"))
 
-    prepare_job_inventory(
-        obj=job_scope.object, job_id=job_scope.job_id, action=job_scope.action, delta=delta, action_host=job_scope.hosts
+    inventory = get_inventory_data(
+        obj=job_scope.object, action=job_scope.action, action_host=job_scope.hosts, delta=delta
     )
+    with (settings.RUN_DIR / f"{job_scope.job_id}" / "inventory.json").open(
+        mode="w", encoding=settings.ENCODING_UTF_8
+    ) as file_descriptor:
+        json.dump(obj=inventory, fp=file_descriptor, separators=(",", ":"))
+
     prepare_ansible_config(job_id=job_scope.job_id, action=job_scope.action, sub_action=job_scope.sub_action)
 
 

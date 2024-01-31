@@ -15,7 +15,6 @@ from typing import Any
 
 from django.conf import settings
 
-from cm.inventory import get_obj_config
 from cm.models import (
     ADCM,
     Action,
@@ -27,6 +26,7 @@ from cm.models import (
     ServiceComponent,
     get_object_cluster,
 )
+from cm.services.job.inventory._steps import get_obj_config
 from cm.services.job.types import (
     ADCMActionType,
     ClusterActionType,

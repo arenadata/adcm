@@ -306,8 +306,8 @@ class TestJob(BaseTestCase):
 
     @patch("cm.job.prepare_ansible_config")
     @patch("cm.job.get_job_config")
-    @patch("cm.job.prepare_job_inventory")
-    def test_prepare_job(self, mock_prepare_job_inventory, mock_get_job_config, mock_prepare_ansible_config):
+    @patch("cm.job.get_inventory_data")
+    def test_prepare_job(self, mock_get_inventory_data, mock_get_job_config, mock_prepare_ansible_config):
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
         cluster = Cluster.objects.create(prototype=prototype)
@@ -325,9 +325,7 @@ class TestJob(BaseTestCase):
         with patch.object(Path, "open", mocked_open), patch("cm.job.json.dump"):
             prepare_job(job_scope=job_scope, delta={})
 
-        mock_prepare_job_inventory.assert_called_once_with(
-            obj=cluster, job_id=job.id, action=action, delta={}, action_host=None
-        )
+        mock_get_inventory_data.assert_called_once_with(obj=cluster, action=action, delta={}, action_host=None)
         mock_get_job_config.assert_called_once_with(job_scope=job_scope)
         mock_prepare_ansible_config.assert_called_once_with(job_id=job.id, action=action, sub_action=None)
 
