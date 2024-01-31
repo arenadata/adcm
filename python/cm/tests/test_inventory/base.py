@@ -20,7 +20,6 @@ from jinja2 import Template
 
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import add_hc, update_obj_config
-from cm.inventory import get_inventory_data
 from cm.models import (
     Action,
     ADCMEntity,
@@ -32,6 +31,7 @@ from cm.models import (
     HostComponent,
     ServiceComponent,
 )
+from cm.services.job.inventory import get_inventory_data
 from cm.utils import deep_merge
 
 TemplatesData: TypeAlias = Mapping[tuple[str, ...], tuple[Path, Mapping[str, Any]]]

@@ -10,10 +10,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-class HcAclAction:
-    ADD = "add"
-    REMOVE = "remove"
-
-
-MAINTENANCE_MODE = "maintenance_mode"
+MAINTENANCE_MODE_GROUP_SUFFIX = "maintenance_mode"

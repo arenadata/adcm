@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from enum import Enum
 from typing import NamedTuple, TypeAlias
 
 ObjectID: TypeAlias = int
@@ -21,10 +22,26 @@ PrototypeID: TypeAlias = ObjectID
 HostProviderID: TypeAlias = ObjectID
 
 
+HostName: TypeAlias = str
+
+
 class ADCMCoreError(Exception):
     ...
+
+
+class ADCMCoreType(Enum):
+    CLUSTER = "cluster"
+    SERVICE = "service"
+    COMPONENT = "component"
+    HOSTPROVIDER = "hostprovider"
+    HOST = "host"
 
 
 class ShortObjectInfo(NamedTuple):
     id: int
     name: str
+
+
+class ObjectDescriptor(NamedTuple):
+    id: ObjectID
+    type: ADCMCoreType

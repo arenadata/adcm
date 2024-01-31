@@ -14,7 +14,6 @@ from typing import Iterable
 from api_v2.service.utils import bulk_add_services_to_cluster
 from django.contrib.contenttypes.models import ContentType
 
-from cm.inventory import get_inventory_data
 from cm.models import (
     Action,
     ADCMModel,
@@ -24,6 +23,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.job.inventory import get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
 
 
