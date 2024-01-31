@@ -137,7 +137,7 @@ class MappingData:
 
         return service_prototype, component_prototype
 
-    def entry_bound_targets(self, entry: MappingEntryData) -> list[MappingEntryData]:
+    def get_bound_entries(self, entry: MappingEntryData) -> list[MappingEntryData]:
         _, component_prototype = self.entry_prototypes(entry=entry)
         bound_to = component_prototype.bound_to
 
@@ -148,7 +148,6 @@ class MappingData:
                 (
                     service_prototype.name == bound_to.service,
                     component_prototype.name == bound_to.component,
-                    entry.host.id == mapping_entry.host.id,
                 )
             ):
                 bound_targets.append(mapping_entry)
