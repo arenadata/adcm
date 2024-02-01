@@ -15,7 +15,7 @@ from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
 from audit.utils import audit
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
-from cm.models import ConfigLog, PrototypeConfig
+from cm.models import ConfigLog, GroupConfig, PrototypeConfig
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
 from rest_framework.exceptions import NotFound
@@ -81,11 +81,12 @@ class ConfigLogViewSet(
         if parent_object.config is None:
             raise AdcmEx(code="CONFIG_NOT_FOUND", msg="This object has no config")
 
+        this_object = parent_object.object if isinstance(parent_object, GroupConfig) else parent_object
         check_config_perm(
             user=request.user,
             action_type="change",
-            model=ContentType.objects.get_for_model(model=parent_object).model,
-            obj=parent_object,
+            model=ContentType.objects.get_for_model(model=this_object).model,
+            obj=this_object,
         )
         serializer = self.get_serializer(data=request.data, context={"object_": parent_object})
         serializer.is_valid(raise_exception=True)
