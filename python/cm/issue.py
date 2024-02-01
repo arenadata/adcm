@@ -230,19 +230,23 @@ def check_bound_components(shc_list: list[tuple[ClusterObject, Host, ServiceComp
         service_name = component_prototype.bound_to["service"]
         component_name = component_prototype.bound_to["component"]
 
-        bound_target_ref = f'component "{component_name}" of service "{service_name}"'
-        bound_requester_ref = f'component "{shc[2].display_name}" of service "{shc[0].display_name}"'
-
         bound_targets_shc = [
             i for i in shc_list if i[0].prototype.name == service_name and i[2].prototype.name == component_name
         ]
+
         if not bound_targets_shc:
+            bound_target_ref = f'component "{component_name}" of service "{service_name}"'
+            bound_requester_ref = f'component "{shc[2].display_name}" of service "{shc[0].display_name}"'
             msg = f"{bound_target_ref.capitalize()} not in hc for {bound_requester_ref}"
             raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=msg)
 
         for target_shc in bound_targets_shc:
             if not [i for i in shc_list if i[1] == target_shc[1] and i[2].prototype == component_prototype]:
-                msg = f'No {bound_target_ref} on host "{shc[1].fqdn}" for {bound_requester_ref}'
+                bound_target_ref = f'component "{shc[2].prototype.name}" of service "{shc[0].prototype.name}"'
+                bound_requester_ref = (
+                    f'component "{target_shc[2].prototype.name}" of service "{target_shc[0].prototype.name}"'
+                )
+                msg = f'No {bound_target_ref} on host "{target_shc[1].fqdn}" for {bound_requester_ref}'
                 raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=msg)
 
 

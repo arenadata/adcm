@@ -368,19 +368,38 @@ def _check_single_mapping_requires(mapping_entry: MappingEntryData, mapping_data
 
 
 def _check_single_mapping_bound_to(mapping_entry: MappingEntryData, mapping_data: MappingData) -> None:
-    if not mapping_data.entry_bound_targets(entry=mapping_entry):
-        service_prototype, component_prototype = mapping_data.entry_prototypes(entry=mapping_entry)
+    service_prototype, component_prototype = mapping_data.entry_prototypes(entry=mapping_entry)
+    bound_entries = mapping_data.get_bound_entries(entry=mapping_entry)
 
-        bound_service_name = component_prototype.bound_to.service
-        bound_component_name = component_prototype.bound_to.component
-
-        bound_target_ref = f'component "{bound_component_name}" of service "{bound_service_name}"'
+    if not bound_entries:
+        bound_target_ref = (
+            f'component "{component_prototype.bound_to.component}" of service "{component_prototype.bound_to.service}"'
+        )
         bound_requester_ref = (
             f'component "{component_prototype.display_name}" of service "{service_prototype.display_name}"'
         )
 
         msg = f'No {bound_target_ref} on host "{mapping_entry.host.fqdn}" for {bound_requester_ref}'
         raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=msg)
+
+    for bound_entry in bound_entries:
+        if not any(
+            map_
+            for map_ in mapping_data.mapping
+            if map_.host.id == bound_entry.host.id and map_.component.prototype_id == component_prototype.id
+        ):
+            bound_target_ref = f'component "{component_prototype.name}" of service "{service_prototype.name}"'
+            requester_service_prototype, requester_component_prototype = mapping_data.entry_prototypes(
+                entry=bound_entry
+            )
+            bound_requester_ref = (
+                f'component "{requester_component_prototype.name}" of service "{requester_service_prototype.name}"'
+            )
+
+            raise AdcmEx(
+                code="COMPONENT_CONSTRAINT_ERROR",
+                msg=f'No {bound_target_ref} on host "{bound_entry.host.fqdn}" for {bound_requester_ref}',
+            )
 
 
 def _check_single_service_requires(
