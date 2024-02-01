@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import unittest
 
 from audit.models import AuditObject
 from django.utils import timezone
@@ -294,7 +293,6 @@ class TestUserAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-    @unittest.skip("Skip until RBAC issues are fixed")
     def test_user_unblock_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
