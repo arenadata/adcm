@@ -20,6 +20,7 @@ from adcm.permissions import (
 )
 from adcm.utils import delete_service_from_api, get_maintenance_mode_response
 from audit.utils import audit
+from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject
 from cm.services.status.notify import update_mm_objects
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -125,7 +126,13 @@ class ServiceViewSet(
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        service = get_object_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, pk=kwargs["pk"])
+        service: ClusterObject = get_object_for_user(
+            user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, pk=kwargs["pk"]
+        )
+
+        if not service.is_maintenance_mode_available:
+            raise AdcmEx(code="MAINTENANCE_MODE_NOT_AVAILABLE", msg="Service does not support maintenance mode")
+
         check_custom_perm(
             user=request.user, action_type=CHANGE_MM_PERM, model=service.__class__.__name__.lower(), obj=service
         )
