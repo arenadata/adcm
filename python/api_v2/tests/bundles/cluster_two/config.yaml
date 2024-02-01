@@ -4,6 +4,7 @@
   version: &version '1.0'
   edition: community
   config_group_customization: true
+  allow_maintenance_mode: false
   config: &config
     - name: string
       type: string

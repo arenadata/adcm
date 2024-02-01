@@ -23,6 +23,7 @@ from adcm.permissions import (
 )
 from adcm.utils import get_maintenance_mode_response
 from audit.utils import audit
+from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, ServiceComponent
 from cm.services.status.notify import update_mm_objects
 from guardian.mixins import PermissionListMixin
@@ -79,9 +80,13 @@ class ComponentViewSet(
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        component = get_object_for_user(
+        component: ServiceComponent = get_object_for_user(
             user=request.user, perms=VIEW_COMPONENT_PERM, klass=ServiceComponent, pk=kwargs["pk"]
         )
+
+        if not component.is_maintenance_mode_available:
+            raise AdcmEx(code="MAINTENANCE_MODE_NOT_AVAILABLE", msg="Component does not support maintenance mode")
+
         check_custom_perm(
             user=request.user, action_type=CHANGE_MM_PERM, model=component.__class__.__name__.lower(), obj=component
         )
