@@ -10,13 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Collection, Iterable, NamedTuple
+from typing import Collection, Iterable, NamedTuple, TypeAlias
 
-from core.types import ADCMCoreType, HostID, ObjectDescriptor, ObjectID, ShortObjectInfo
+from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, ObjectID, ShortObjectInfo
 from django.db.models import F
 
 from cm.converters import core_type_to_model, model_name_to_core_type
 from cm.models import GroupConfig
+
+GroupConfigName: TypeAlias = str
 
 
 class GroupConfigInfo(NamedTuple):
@@ -26,7 +28,7 @@ class GroupConfigInfo(NamedTuple):
     hosts: set[ShortObjectInfo]
 
     current_config_id: int
-    owner: ObjectDescriptor
+    owner: CoreObjectDescriptor
 
 
 def retrieve_group_configs_for_hosts(
@@ -57,7 +59,9 @@ def retrieve_group_configs_for_hosts(
                 id=record["id"],
                 name=record["name"],
                 current_config_id=record["current_config_id"],
-                owner=ObjectDescriptor(id=record["owner_id"], type=model_name_to_core_type(record["owner_model_type"])),
+                owner=CoreObjectDescriptor(
+                    id=record["owner_id"], type=model_name_to_core_type(record["owner_model_type"])
+                ),
                 hosts=set(),
             ),
         )

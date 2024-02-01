@@ -18,9 +18,12 @@ ClusterID: TypeAlias = ObjectID
 ServiceID: TypeAlias = ObjectID
 ComponentID: TypeAlias = ObjectID
 HostID: TypeAlias = ObjectID
-PrototypeID: TypeAlias = ObjectID
 HostProviderID: TypeAlias = ObjectID
 
+BundleID: TypeAlias = int
+PrototypeID: TypeAlias = int
+
+ConfigID: TypeAlias = int
 
 HostName: TypeAlias = str
 
@@ -42,6 +45,11 @@ class ShortObjectInfo(NamedTuple):
     name: str
 
 
-class ObjectDescriptor(NamedTuple):
+class GeneralEntityDescriptor(NamedTuple):
+    id: int
+    type: str
+
+
+class CoreObjectDescriptor(NamedTuple):
     id: ObjectID
     type: ADCMCoreType
