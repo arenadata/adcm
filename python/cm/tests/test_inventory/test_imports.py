@@ -211,7 +211,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             with self.subTest(object_.__class__.__name__):
                 action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
                 actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["children"])
-            self.assertDictEqual(actual_inventory["CLUSTER"]["vars"], expected_vars)
+                self.assertDictEqual(actual_inventory["CLUSTER"]["vars"], expected_vars)
 
     def test_cluster_objects_multi_import_success(self) -> None:
         self.prepare_cluster_hostcomponent()

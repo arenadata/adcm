@@ -12,6 +12,7 @@
 from pathlib import Path
 from typing import Mapping, Union
 
+from core.types import ADCMCoreType, CoreObjectDescriptor, GeneralEntityDescriptor
 from django.conf import settings
 
 from cm.errors import raise_adcm_ex
@@ -96,6 +97,39 @@ def cook_file_type_name(obj: Union["ADCMEntity", "GroupConfig"], key: str, sub_k
         filename = ["task", str(obj.id), key, sub_key]
 
     return str(Path(settings.FILE_DIR, ".".join(filename)))
+
+
+def build_string_path_for_file(
+    object_itself: CoreObjectDescriptor | GeneralEntityDescriptor,
+    config_key: str,
+    config_subkey: str = "",
+    group_config_id: int | None = None,
+) -> str:
+    """
+    In most cases you want to pass CoreObjectDescriptor.
+    When it's about group config, pass its id alongside CoreObjectDescription (from owner of the group).
+    When it's task, pass GeneralEntryDescriptor(id=task_id, type="task"),
+    """
+    if not isinstance(object_itself, CoreObjectDescriptor):
+        type_as_string = object_itself.type
+    elif object_itself.type == ADCMCoreType.HOSTPROVIDER:
+        type_as_string = "provider"
+    else:
+        type_as_string = object_itself.type.value
+
+    if group_config_id is not None:
+        filename = [
+            type_as_string,
+            str(object_itself.id),
+            "group",
+            str(group_config_id),
+            config_key,
+            config_subkey,
+        ]
+    else:
+        filename = [type_as_string, str(object_itself.id), config_key, config_subkey]
+
+    return str(settings.FILE_DIR / ".".join(filename))
 
 
 def config_is_ro(obj: ADCMEntity | Action, key: str, limits: dict) -> bool:

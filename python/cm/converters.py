@@ -33,6 +33,32 @@ def core_type_to_model(
             raise ValueError(f"Can't convert {core_type} to ORM model")
 
 
+def core_type_to_db_record_type(core_type: ADCMCoreType) -> str:
+    match core_type:
+        case ADCMCoreType.CLUSTER:
+            return "cluster"
+        case ADCMCoreType.SERVICE:
+            return "service"
+        case ADCMCoreType.COMPONENT:
+            return "component"
+        case ADCMCoreType.HOSTPROVIDER:
+            return "provider"
+        case ADCMCoreType.HOST:
+            return "host"
+        case _:
+            raise ValueError(f"Can't convert {core_type} to type name in DB")
+
+
+def db_record_type_to_core_type(db_record_type: str) -> ADCMCoreType:
+    try:
+        return ADCMCoreType(db_record_type)
+    except ValueError:
+        if db_record_type == "provider":
+            return ADCMCoreType.HOSTPROVIDER
+
+        raise
+
+
 def model_name_to_core_type(model_name: str) -> ADCMCoreType:
     try:
         return ADCMCoreType(model_name)

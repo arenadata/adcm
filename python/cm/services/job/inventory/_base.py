@@ -11,24 +11,20 @@
 # limitations under the License.
 
 from collections import defaultdict
-from copy import deepcopy
 from itertools import chain
-from operator import attrgetter, itemgetter
-from typing import Iterable
+from operator import itemgetter
 
 from core.cluster.operations import calculate_maintenance_mode_for_cluster_objects
 from core.cluster.types import ClusterTopology, MaintenanceModeOfObjects, ObjectMaintenanceModeState
-from core.types import ADCMCoreType, HostID, HostName, ObjectID
+from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, HostName, ObjectID
 from django.db.models import F
 
-from cm.converters import core_type_to_model
 from cm.models import (
     Action,
     Cluster,
     ClusterBind,
     ClusterObject,
     ConfigLog,
-    GroupConfig,
     Host,
     HostProvider,
     MaintenanceMode,
@@ -39,7 +35,12 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.services.cluster import retrieve_clusters_objects_maintenance_mode, retrieve_clusters_topology
-from cm.services.group_config import GroupConfigInfo, retrieve_group_configs_for_hosts
+from cm.services.group_config import GroupConfigName, retrieve_group_configs_for_hosts
+from cm.services.job.inventory._before_upgrade import extract_objects_before_upgrade, get_before_upgrades
+from cm.services.job.inventory._config import (
+    get_group_config_alternatives_for_hosts_in_cluster_groups,
+    get_objects_configurations,
+)
 from cm.services.job.inventory._constants import MAINTENANCE_MODE_GROUP_SUFFIX
 from cm.services.job.inventory._groups import detect_host_groups, detect_host_groups_for_action_on_host
 from cm.services.job.inventory._steps import (
@@ -49,18 +50,15 @@ from cm.services.job.inventory._steps import (
     process_config_and_attr,
 )
 from cm.services.job.inventory._types import (
+    ClusterNode,
     ClusterVars,
+    ComponentNode,
     HostGroupName,
-    InventoryORMObject,
-    _ClusterNode,
-    _ComponentNode,
-    _HostNode,
-    _HostProviderNode,
-    _ServiceNode,
+    HostNode,
+    HostProviderNode,
+    ObjectsInInventoryMap,
+    ServiceNode,
 )
-
-_ObjectsInInventoryMap = dict[type[InventoryORMObject], set[ObjectID]]
-
 
 _STATIC_CLUSTER_VARS_GROUPS: frozenset[str] = frozenset({"CLUSTER", "target"})
 # PROVIDER not in here, because provider group doesn't have vars
@@ -95,7 +93,7 @@ def get_inventory_data(
         Host.objects.filter(maintenance_mode=MaintenanceMode.ON).values_list("id", flat=True)
     )
     host_groups: dict[HostGroupName, set[tuple[HostID, HostName]]] = {}
-    objects_in_inventory: _ObjectsInInventoryMap = defaultdict(set)
+    objects_in_inventory: ObjectsInInventoryMap = defaultdict(set)
 
     if isinstance(obj, Host):
         host_groups |= detect_host_groups_for_action_on_host(
@@ -105,27 +103,36 @@ def get_inventory_data(
             action_belongs_to_this_host=not action.host_action,
             cluster_topology=cluster_topology,
         )
-        objects_in_inventory[HostProvider] = {obj.provider_id}
+        objects_in_inventory[ADCMCoreType.HOSTPROVIDER] = {obj.provider_id}
 
     objects_in_maintenance_mode = MaintenanceModeOfObjects({}, {}, {})
     if cluster_topology:
         host_groups |= detect_host_groups(
             cluster_topology=cluster_topology, hosts_in_maintenance_mode=hosts_in_maintenance_mode, hc_delta=delta or {}
         )
-        objects_in_inventory[Cluster] = {cluster_topology.cluster_id}
-        objects_in_inventory[ClusterObject] = set(cluster_topology.services)
-        objects_in_inventory[ServiceComponent] = set(cluster_topology.component_ids)
+        objects_in_inventory[ADCMCoreType.CLUSTER] = {cluster_topology.cluster_id}
+        objects_in_inventory[ADCMCoreType.SERVICE] = set(cluster_topology.services)
+        objects_in_inventory[ADCMCoreType.COMPONENT] = set(cluster_topology.component_ids)
         objects_in_maintenance_mode = calculate_maintenance_mode_for_cluster_objects(
             topology=cluster_topology,
             own_maintenance_mode=retrieve_clusters_objects_maintenance_mode(cluster_ids=[cluster_topology.cluster_id]),
         )
 
-    objects_in_inventory[Host] = set(map(itemgetter(0), chain.from_iterable(host_groups.values())))
+    objects_in_inventory[ADCMCoreType.HOST] = set(map(itemgetter(0), chain.from_iterable(host_groups.values())))
+
+    group_configs = retrieve_group_configs_for_hosts(
+        hosts=objects_in_inventory[ADCMCoreType.HOST],
+        restrict_by_owner_type=(ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT),
+    )
+    objects_before_upgrades = get_before_upgrades(
+        before_upgrades=extract_objects_before_upgrade(objects=objects_in_inventory),
+        group_configs=group_configs.values(),
+    )
 
     basic_nodes = _get_objects_basic_info(
         objects_in_inventory=objects_in_inventory,
-        objects_configuration=_get_objects_configurations(objects_in_inventory),
-        objects_before_upgrade=_get_objects_before_upgrade(objects_in_inventory),
+        objects_configuration=get_objects_configurations(objects_in_inventory),
+        objects_before_upgrade=objects_before_upgrades,
         objects_maintenance_mode=objects_in_maintenance_mode,
     )
 
@@ -133,21 +140,23 @@ def get_inventory_data(
         _prepare_cluster_vars(topology=cluster_topology, objects_information=basic_nodes).dict(
             by_alias=True, exclude_defaults=True
         )
-        if Cluster in objects_in_inventory
+        if ADCMCoreType.CLUSTER in objects_in_inventory
         else {}
     )
 
     hostprovider_vars_dict = {}
-    if hostprovider_id := next(iter(objects_in_inventory.get(HostProvider, (None,)))):
+    if hostprovider_id := next(iter(objects_in_inventory.get(ADCMCoreType.HOSTPROVIDER, (None,)))):
         hostprovider_vars_dict = {
-            "provider": basic_nodes[HostProvider, hostprovider_id].dict(by_alias=True, exclude_defaults=True)
+            "provider": basic_nodes[ADCMCoreType.HOSTPROVIDER, hostprovider_id].dict(
+                by_alias=True, exclude_defaults=True
+            )
         }
 
     children = {}
     for group_name, host_tuples in host_groups.items():
         # group configs will be calculated here
         hosts = {
-            host_name: basic_nodes[Host, host_id].dict(by_alias=True, exclude_defaults=True)
+            host_name: basic_nodes[ADCMCoreType.HOST, host_id].dict(by_alias=True, exclude_defaults=True)
             for host_id, host_name in host_tuples
         }
         children[group_name] = {"hosts": hosts}
@@ -158,13 +167,12 @@ def get_inventory_data(
         if is_host_provider_vars_required_for_group(group_name):
             children[group_name]["vars"] = hostprovider_vars_dict
 
-    group_configs = retrieve_group_configs_for_hosts(
-        hosts=objects_in_inventory[Host],
-        restrict_by_owner_type=(ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT),
-    )
     if group_configs:
-        alternative_host_nodes = _get_group_config_alternatives_for_hosts_in_cluster_groups(
-            group_configs=group_configs.values(), cluster_vars=cluster_vars_dict, topology=cluster_topology
+        alternative_host_nodes = get_group_config_alternatives_for_hosts_in_cluster_groups(
+            group_configs=group_configs.values(),
+            cluster_vars=cluster_vars_dict,
+            objects_before_upgrade=objects_before_upgrades,
+            topology=cluster_topology,
         )
 
         for node in children.values():
@@ -176,17 +184,21 @@ def get_inventory_data(
 
 def get_cluster_vars(topology: ClusterTopology) -> ClusterVars:
     objects_required_for_vars = {
-        Cluster: {topology.cluster_id},
-        ClusterObject: set(topology.services),
-        ServiceComponent: set(topology.component_ids),
+        ADCMCoreType.CLUSTER: {topology.cluster_id},
+        ADCMCoreType.SERVICE: set(topology.services),
+        ADCMCoreType.COMPONENT: set(topology.component_ids),
     }
 
     return _prepare_cluster_vars(
         topology=topology,
         objects_information=_get_objects_basic_info(
             objects_in_inventory=objects_required_for_vars,
-            objects_configuration=_get_objects_configurations(objects_required_for_vars),
-            objects_before_upgrade=_get_objects_before_upgrade(objects_required_for_vars),
+            objects_configuration=get_objects_configurations(objects_required_for_vars),
+            objects_before_upgrade=get_before_upgrades(
+                before_upgrades=extract_objects_before_upgrade(objects=objects_required_for_vars),
+                # group configs aren't important for vars, so they can be just ignored
+                group_configs=(),
+            ),
             objects_maintenance_mode=retrieve_clusters_objects_maintenance_mode(cluster_ids=[topology.cluster_id]),
         ),
     )
@@ -194,45 +206,43 @@ def get_cluster_vars(topology: ClusterTopology) -> ClusterVars:
 
 def _prepare_cluster_vars(
     topology: ClusterTopology,
-    objects_information: dict[
-        tuple[type[Cluster | ClusterObject | ServiceComponent], ObjectID], _ClusterNode | _ServiceNode | _ComponentNode
-    ],
+    objects_information: dict[tuple[ADCMCoreType, ObjectID], ClusterNode | ServiceNode | ComponentNode],
 ) -> ClusterVars:
-    result = ClusterVars(cluster=objects_information[Cluster, topology.cluster_id], services={})
+    result = ClusterVars(cluster=objects_information[ADCMCoreType.CLUSTER, topology.cluster_id], services={})
 
     for service in topology.services.values():
-        service_node = objects_information[ClusterObject, service.info.id]
+        service_node = objects_information[ADCMCoreType.SERVICE, service.info.id]
         for component in service.components.values():
-            setattr(service_node, component.info.name, objects_information[ServiceComponent, component.info.id])
+            setattr(service_node, component.info.name, objects_information[ADCMCoreType.COMPONENT, component.info.id])
         result.services[service.info.name] = service_node
 
     return result
 
 
 def _get_objects_basic_info(
-    objects_in_inventory: _ObjectsInInventoryMap,
-    objects_configuration: dict[tuple[type[InventoryORMObject], ObjectID], dict],
-    objects_before_upgrade: dict[tuple[type[InventoryORMObject], ObjectID], dict],
+    objects_in_inventory: ObjectsInInventoryMap,
+    objects_configuration: dict[tuple[ADCMCoreType, ObjectID], dict],
+    objects_before_upgrade: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, GroupConfigName], dict],
     objects_maintenance_mode: MaintenanceModeOfObjects,
 ) -> dict[
-    tuple[type[InventoryORMObject], ObjectID],
-    _ClusterNode | _ServiceNode | _ComponentNode | _HostNode | _HostProviderNode,
+    tuple[ADCMCoreType, ObjectID],
+    ClusterNode | ServiceNode | ComponentNode | HostNode | HostProviderNode,
 ]:
     result = {}
     basic_fields = ("id", "state")
     basic_spec_fields = {"multi_state": F("_multi_state")}
 
-    if hosts := objects_in_inventory.get(Host):
+    if hosts := objects_in_inventory.get(ADCMCoreType.HOST):
         result |= {
-            (Host, host_info["id"]): _HostNode(
+            (ADCMCoreType.HOST, host_info["id"]): HostNode(
                 **host_info,
                 # it should be placed in basic_nodes already, see comment for function that retrieves those
-                **objects_configuration[Host, host_info["id"]],
+                **objects_configuration[ADCMCoreType.HOST, host_info["id"]],
             )
             for host_info in Host.objects.filter(id__in=hosts).values(*basic_fields, **basic_spec_fields)
         }
 
-    if hostproviders := objects_in_inventory.get(HostProvider):
+    if hostproviders := objects_in_inventory.get(ADCMCoreType.HOSTPROVIDER):
         # for actions that really rely on provider there will be always 1 provider, right?
         hostprovider_id = next(iter(hostproviders))
         info = HostProvider.objects.values(*basic_fields, "name", "prototype__bundle_id", **basic_spec_fields).get(
@@ -241,18 +251,20 @@ def _get_objects_basic_info(
         host_prototype_id = Prototype.objects.values_list("id", flat=True).get(
             type=ObjectType.HOST, bundle_id=info.pop("prototype__bundle_id")
         )
-        result[(HostProvider, hostprovider_id)] = _HostProviderNode(
+        result[(ADCMCoreType.HOSTPROVIDER, hostprovider_id)] = HostProviderNode(
             **info,
             host_prototype_id=host_prototype_id,
-            config=objects_configuration[HostProvider, hostprovider_id],
-            before_upgrade=objects_before_upgrade[HostProvider, hostprovider_id],
+            config=objects_configuration[ADCMCoreType.HOSTPROVIDER, hostprovider_id],
+            before_upgrade=objects_before_upgrade[
+                CoreObjectDescriptor(type=ADCMCoreType.HOSTPROVIDER, id=hostprovider_id)
+            ],
         )
 
-    if clusters := objects_in_inventory.get(Cluster):
+    if clusters := objects_in_inventory.get(ADCMCoreType.CLUSTER):
         # if there's an action, there will be exactly one cluster
         cluster_id = next(iter(clusters))
         imports = _get_import(Cluster.objects.get(id=cluster_id))
-        result[(Cluster, cluster_id)] = _ClusterNode(
+        result[(ADCMCoreType.CLUSTER, cluster_id)] = ClusterNode(
             **Cluster.objects.values(
                 *basic_fields,
                 "name",
@@ -260,19 +272,21 @@ def _get_objects_basic_info(
                 version=F("prototype__version"),
                 edition=F("prototype__bundle__edition"),
             ).get(id=cluster_id),
-            config=objects_configuration[Cluster, cluster_id],
-            before_upgrade=objects_before_upgrade[Cluster, cluster_id],
+            config=objects_configuration[ADCMCoreType.CLUSTER, cluster_id],
+            before_upgrade=objects_before_upgrade[CoreObjectDescriptor(type=ADCMCoreType.CLUSTER, id=cluster_id)],
             imports=imports or None,  # none for it to be thrown out of result dict
         )
 
-        if services := objects_in_inventory.get(ClusterObject):
+        if services := objects_in_inventory.get(ADCMCoreType.SERVICE):
             result |= {
-                (ClusterObject, service_info["id"]): _ServiceNode(
+                (ADCMCoreType.SERVICE, service_info["id"]): ServiceNode(
                     **service_info,
                     maintenance_mode=objects_maintenance_mode.services[service_info["id"]]
                     == ObjectMaintenanceModeState.ON,
-                    config=objects_configuration[ClusterObject, service_info["id"]],
-                    before_upgrade=objects_before_upgrade[ClusterObject, service_info["id"]],
+                    config=objects_configuration[ADCMCoreType.SERVICE, service_info["id"]],
+                    before_upgrade=objects_before_upgrade[
+                        CoreObjectDescriptor(type=ADCMCoreType.SERVICE, id=service_info["id"])
+                    ],
                 )
                 for service_info in ClusterObject.objects.values(
                     *basic_fields,
@@ -282,14 +296,16 @@ def _get_objects_basic_info(
                 ).filter(id__in=services)
             }
 
-        if components := objects_in_inventory.get(ServiceComponent):
+        if components := objects_in_inventory.get(ADCMCoreType.COMPONENT):
             result |= {
-                (ServiceComponent, component_info["id"]): _ComponentNode(
+                (ADCMCoreType.COMPONENT, component_info["id"]): ComponentNode(
                     **component_info,
                     maintenance_mode=objects_maintenance_mode.components[component_info["id"]]
                     == ObjectMaintenanceModeState.ON,
-                    config=objects_configuration[ServiceComponent, component_info["id"]],
-                    before_upgrade=objects_before_upgrade[ServiceComponent, component_info["id"]],
+                    config=objects_configuration[ADCMCoreType.COMPONENT, component_info["id"]],
+                    before_upgrade=objects_before_upgrade[
+                        CoreObjectDescriptor(type=ADCMCoreType.COMPONENT, id=component_info["id"])
+                    ],
                 )
                 for component_info in ServiceComponent.objects.values(
                     *basic_fields, **basic_spec_fields, display_name=F("prototype__display_name")
@@ -372,80 +388,6 @@ def _get_provider_config(provider_id: int) -> dict:
 
 
 # fixme NOT OPTIMIZED CHAOS SECTION
-
-
-def _get_group_config_alternatives_for_hosts_in_cluster_groups(
-    group_configs: Iterable[GroupConfigInfo], cluster_vars: dict, topology: ClusterTopology
-) -> dict[str, dict]:
-    # this whole recollection should be avoided, there is enough information already
-    hosts = {
-        host.id: host
-        for host in Host.objects.filter(
-            id__in=chain.from_iterable(map(attrgetter("id"), group.hosts) for group in group_configs)
-        )
-    }
-
-    result = defaultdict(lambda: deepcopy(cluster_vars))
-
-    for group in group_configs:
-        if not group.hosts:
-            continue
-
-        object_ = core_type_to_model(group.owner.type).objects.select_related("prototype").get(id=group.owner.id)
-
-        orm_group = GroupConfig.objects.get(id=group.id)
-        # `get_config_and_attr` is a suspicious function to call at that point
-        # probably should be avoided during config of group config retrieval optimization
-        conf, attr = orm_group.get_config_and_attr()
-        group_config = process_config_and_attr(obj=orm_group, conf=conf, attr=attr)
-
-        for host_info in group.hosts:
-            before_upgrade = get_before_upgrade(obj=object_, host=hosts[host_info.id])
-
-            node = None
-            match group.owner.type:
-                case ADCMCoreType.CLUSTER:
-                    node = result[host_info.name]["cluster"]
-                case ADCMCoreType.SERVICE:
-                    node = result[host_info.name]["services"][topology.services[group.owner.id].info.name]
-                case ADCMCoreType.COMPONENT:
-                    service = next(
-                        (service_ for service_ in topology.services.values() if group.owner.id in service_.components),
-                        None,
-                    )
-                    if service:
-                        node = result[host_info.name]["services"][service.info.name][
-                            service.components[group.owner.id].info.name
-                        ]
-
-            if not node:
-                raise RuntimeError(f"Failed to determine node in `vars` for {group.owner}")
-
-            node["before_upgrade"] = before_upgrade
-            node["config"] = group_config
-
-    return result
-
-
-def _get_objects_before_upgrade(
-    objects_in_inventory: _ObjectsInInventoryMap,
-) -> dict[tuple[type[InventoryORMObject], ObjectID], dict]:
-    return {
-        (type_, object_id): get_before_upgrade(obj=type_.objects.get(pk=object_id), host=None)
-        for type_, ids in objects_in_inventory.items()
-        for object_id in ids
-        if type_ != Host
-    }
-
-
-def _get_objects_configurations(
-    objects_in_inventory: _ObjectsInInventoryMap,
-) -> dict[tuple[type[InventoryORMObject], ObjectID], dict]:
-    return {
-        (type_, object_id): get_obj_config(type_.objects.get(pk=object_id))
-        for type_, ids in objects_in_inventory.items()
-        for object_id in ids
-    }
 
 
 # fixme this function may be useful as a public one

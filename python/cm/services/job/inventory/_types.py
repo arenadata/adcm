@@ -12,13 +12,12 @@
 
 from typing import TypeAlias
 
-from core.types import ComponentID, HostID, ObjectID
+from core.types import ADCMCoreType, ComponentID, HostID, ObjectID
 from pydantic import BaseModel, Extra, Field
 
-from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
-
 HostGroupName: TypeAlias = str
-InventoryORMObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | Host | HostProvider
+
+ObjectsInInventoryMap: TypeAlias = dict[ADCMCoreType, set[ObjectID]]
 
 # Inventory/Vars models
 
@@ -54,7 +53,7 @@ class _GenericInventoryNode(_MultiStateConversionModel):
     config: dict
 
 
-class _ClusterNode(_GenericInventoryNode):
+class ClusterNode(_GenericInventoryNode):
     name: str
     version: str
     edition: str
@@ -63,7 +62,7 @@ class _ClusterNode(_GenericInventoryNode):
     imports: dict | list | None = None
 
 
-class _ServiceNode(_GenericInventoryNode):
+class ServiceNode(_GenericInventoryNode):
     display_name: str
     version: str
 
@@ -74,7 +73,7 @@ class _ServiceNode(_GenericInventoryNode):
         extra = Extra.allow
 
 
-class _ComponentNode(_GenericInventoryNode):
+class ComponentNode(_GenericInventoryNode):
     id: ComponentID = Field(alias="component_id")
     display_name: str
 
@@ -84,7 +83,7 @@ class _ComponentNode(_GenericInventoryNode):
         allow_population_by_field_name = True
 
 
-class _HostProviderNode(_MultiStateConversionModel):
+class HostProviderNode(_MultiStateConversionModel):
     id: ObjectID
     host_prototype_id: ObjectID
     name: str
@@ -95,13 +94,13 @@ class _HostProviderNode(_MultiStateConversionModel):
     config: dict
 
 
-class _HostNode(_MultiStateConversionModel):
+class HostNode(_MultiStateConversionModel):
     id: HostID = Field(alias="adcm_hostid")
     state: str
     multi_state: list[str]
 
-    cluster: _ClusterNode | None = None
-    services: dict[str, _ServiceNode] | None = None
+    cluster: ClusterNode | None = None
+    services: dict[str, ServiceNode] | None = None
 
     class Config:
         # config fields are right in the root
@@ -110,5 +109,5 @@ class _HostNode(_MultiStateConversionModel):
 
 
 class ClusterVars(BaseModel):
-    cluster: _ClusterNode
-    services: dict[str, _ServiceNode]
+    cluster: ClusterNode
+    services: dict[str, ServiceNode]
