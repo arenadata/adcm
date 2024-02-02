@@ -22,16 +22,12 @@ from django.db.models import F
 from cm.models import (
     Action,
     Cluster,
-    ClusterBind,
     ClusterObject,
-    ConfigLog,
     Host,
     HostProvider,
     MaintenanceMode,
     ObjectType,
     Prototype,
-    PrototypeExport,
-    PrototypeImport,
     ServiceComponent,
 )
 from cm.services.cluster import retrieve_clusters_objects_maintenance_mode, retrieve_clusters_topology
@@ -43,9 +39,7 @@ from cm.services.job.inventory._config import (
 )
 from cm.services.job.inventory._constants import MAINTENANCE_MODE_GROUP_SUFFIX
 from cm.services.job.inventory._groups import detect_host_groups, detect_host_groups_for_action_on_host
-from cm.services.job.inventory._steps import (
-    process_config_and_attr,
-)
+from cm.services.job.inventory._imports import get_imports_for_inventory
 from cm.services.job.inventory._types import (
     ClusterNode,
     ClusterVars,
@@ -314,7 +308,7 @@ def _get_objects_basic_info(
     if clusters := objects_in_inventory.get(ADCMCoreType.CLUSTER):
         # if there's an action, there will be exactly one cluster
         cluster_id = next(iter(clusters))
-        imports = _get_import(Cluster.objects.get(id=cluster_id))
+        imports = get_imports_for_inventory(cluster_id=cluster_id)
         result[(ADCMCoreType.CLUSTER, cluster_id)] = ClusterNode(
             **Cluster.objects.values(
                 *basic_fields,
@@ -364,66 +358,3 @@ def _get_objects_basic_info(
             }
 
     return result
-
-
-# fixme NOT OPTIMIZED CHAOS SECTION
-
-
-# fixme this function may be useful as a public one
-#  if it'll return some ImportedConfig object
-#  otherwise it should stay protected AS IS
-def _get_import(cluster: Cluster) -> dict:
-    imports = {}
-    for obj in chain([cluster], ClusterObject.objects.filter(cluster=cluster)):
-        imports = _get_prototype_imports(obj=obj, imports=imports)
-
-    first = True
-    for bind in ClusterBind.objects.filter(cluster=cluster):
-        obj = bind.source_service if bind.source_service else bind.source_cluster
-
-        conf_ref = obj.config
-        export_proto = obj.prototype
-        config_log = ConfigLog.objects.get(obj_ref=conf_ref, id=conf_ref.current)
-        conf = process_config_and_attr(obj=obj, conf=config_log.config, attr=config_log.attr)
-
-        proto = bind.service.prototype if bind.service else bind.cluster.prototype
-
-        actual_import = PrototypeImport.objects.get(prototype=proto, name=obj.prototype.name)
-
-        if actual_import.multibind:
-            if export_proto.name not in imports:
-                imports[export_proto.name] = []
-            elif actual_import.default and first:
-                imports[export_proto.name] = []
-                first = False
-        else:
-            imports[export_proto.name] = {}
-
-        for export in PrototypeExport.objects.filter(prototype=export_proto):
-            if actual_import.multibind:
-                imports[export_proto.name].append({export.name: conf[export.name]})
-            else:
-                imports[export_proto.name][export.name] = conf[export.name]
-
-    return imports
-
-
-def _get_prototype_imports(obj: Cluster | ClusterObject, imports: dict) -> dict:
-    for imp in PrototypeImport.objects.filter(prototype=obj.prototype):
-        if not imp.default:
-            continue
-
-        if imp.multibind:
-            imports[imp.name] = []
-        else:
-            imports[imp.name] = {}
-
-        for group in imp.default:
-            config_log = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-            conf = process_config_and_attr(obj=obj, conf=config_log.config, attr=config_log.attr)
-            if imp.multibind:
-                imports[imp.name].append({group: conf[group]})
-            else:
-                imports[imp.name][group] = conf[group]
-
-    return imports
