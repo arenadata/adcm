@@ -48,6 +48,7 @@ class APIRoot(APIRootView):
         "jobs": "joblog-list",
         "tasks": "tasklog-list",
         "rbac": "rbac:root",
+        "versions": "versions",
     }
 
 
