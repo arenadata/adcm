@@ -2,13 +2,13 @@ import { useCallback, useState } from 'react';
 import ConfigurationTree from './ConfigurationTree/ConfigurationTree';
 import AddConfigurationFieldDialog from './Dialogs/AddConfigurationFieldDialog/AddConfigurationFieldDialog';
 import EditConfigurationFieldDialog from './Dialogs/EditConfigurationFieldDialog/EditConfigurationFieldDialog';
-import { ConfigurationNode, ConfigurationNodeFilter } from './ConfigurationEditor.types';
+import { ConfigurationNodeView, ConfigurationTreeFilter } from './ConfigurationEditor.types';
 import { editField, addField, deleteField, addArrayItem, deleteArrayItem } from './ConfigurationEditor.utils';
 import { ConfigurationData, ConfigurationSchema, ConfigurationAttributes, FieldAttributes } from '@models/adcm';
 import { JSONPrimitive, JSONValue } from '@models/json';
 
 type SelectedNode = {
-  node: ConfigurationNode;
+  node: ConfigurationNodeView;
   ref: React.RefObject<HTMLElement>;
 };
 
@@ -16,7 +16,7 @@ export interface ConfigurationEditorProps {
   schema: ConfigurationSchema;
   attributes: ConfigurationAttributes;
   configuration: ConfigurationData;
-  filter: ConfigurationNodeFilter;
+  filter: ConfigurationTreeFilter;
   areExpandedAll: boolean;
   onConfigurationChange: (configuration: ConfigurationData) => void;
   onAttributesChange: (attributes: ConfigurationAttributes) => void;
@@ -37,18 +37,21 @@ const ConfigurationEditor = ({
   const [isEditFieldDialogOpen, setIsEditFieldDialogOpen] = useState(false);
   const [isAddFieldDialogOpen, setIsAddFieldDialogOpen] = useState(false);
 
-  const handleOpenEditFieldDialog = useCallback((node: ConfigurationNode, nodeRef: React.RefObject<HTMLElement>) => {
-    setSelectedNode({ node, ref: nodeRef });
-    setIsEditFieldDialogOpen(true);
-  }, []);
+  const handleOpenEditFieldDialog = useCallback(
+    (node: ConfigurationNodeView, nodeRef: React.RefObject<HTMLElement>) => {
+      setSelectedNode({ node, ref: nodeRef });
+      setIsEditFieldDialogOpen(true);
+    },
+    [],
+  );
 
-  const handleOpenAddFieldDialog = useCallback((node: ConfigurationNode, nodeRef: React.RefObject<HTMLElement>) => {
+  const handleOpenAddFieldDialog = useCallback((node: ConfigurationNodeView, nodeRef: React.RefObject<HTMLElement>) => {
     setSelectedNode({ node, ref: nodeRef });
     setIsAddFieldDialogOpen(true);
   }, []);
 
   const handleAddArrayItem = useCallback(
-    (node: ConfigurationNode) => {
+    (node: ConfigurationNodeView) => {
       const newConfiguration = addArrayItem(configuration, node.data.path, node.data.fieldSchema);
       onConfigurationChange(newConfiguration);
     },
@@ -62,7 +65,7 @@ const ConfigurationEditor = ({
   };
 
   const handleValueChange = useCallback(
-    (node: ConfigurationNode, value: JSONPrimitive) => {
+    (node: ConfigurationNodeView, value: JSONPrimitive) => {
       const newConfiguration = editField(configuration, node.data.path, value);
       onConfigurationChange(newConfiguration);
     },
@@ -70,7 +73,7 @@ const ConfigurationEditor = ({
   );
 
   const handleAddEmptyObject = useCallback(
-    (node: ConfigurationNode) => {
+    (node: ConfigurationNodeView) => {
       const newConfiguration = editField(configuration, node.data.path, node.data.fieldSchema.default as JSONValue);
       onConfigurationChange(newConfiguration);
     },
@@ -78,7 +81,7 @@ const ConfigurationEditor = ({
   );
 
   const handleAddField = useCallback(
-    (node: ConfigurationNode, fieldName: string, value: JSONPrimitive) => {
+    (node: ConfigurationNodeView, fieldName: string, value: JSONPrimitive) => {
       const newFieldPath = [...node.data.path, fieldName];
       const newConfiguration = addField(configuration, newFieldPath, value);
       onConfigurationChange(newConfiguration);
@@ -87,7 +90,7 @@ const ConfigurationEditor = ({
   );
 
   const handleClearField = useCallback(
-    (node: ConfigurationNode) => {
+    (node: ConfigurationNodeView) => {
       const newConfiguration = editField(configuration, node.data.path, null);
       onConfigurationChange(newConfiguration);
     },
@@ -95,7 +98,7 @@ const ConfigurationEditor = ({
   );
 
   const handleDeleteField = useCallback(
-    (node: ConfigurationNode) => {
+    (node: ConfigurationNodeView) => {
       const parentNodeData = node.data.parentNode.data;
 
       const isParentArray = parentNodeData.type === 'array';
