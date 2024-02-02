@@ -1,8 +1,7 @@
 import { useDispatch, useRequestTimer, useDebounce, useStore } from '@hooks';
 import { defaultDebounceDelay } from '@constants';
 import { useParams } from 'react-router-dom';
-import { cleanupService, getService } from '@store/adcm/services/serviceSlice';
-import { getRelatedServiceComponentsStatuses } from '@store/adcm/services/serviceSlice';
+import { cleanupService, getService, getRelatedServiceComponentsStatuses } from '@store/adcm/services/serviceSlice';
 import { useEffect } from 'react';
 import {
   cleanupClusterServiceDynamicActions,

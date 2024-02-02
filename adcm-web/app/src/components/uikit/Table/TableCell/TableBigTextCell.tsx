@@ -1,5 +1,5 @@
 import React from 'react';
-import { TableCell, TableCellProps } from '@uikit';
+import TableCell, { TableCellProps } from '@uikit/Table/TableCell/TableCell';
 import s from './TableCell.module.scss';
 import { orElseGet } from '@utils/checkUtils';
 

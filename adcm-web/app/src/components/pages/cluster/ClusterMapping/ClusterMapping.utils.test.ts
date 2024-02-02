@@ -14,9 +14,9 @@ import {
   mapHostsToComponent,
   getConstraintsLimit,
   validate,
+  validateConstraints,
 } from './ClusterMapping.utils';
 import { arrayToHash } from '@utils/arrayUtils';
-import { validateConstraints } from './ClusterMapping.utils';
 
 const servicesDictionaryByName = {
   HBase: {
