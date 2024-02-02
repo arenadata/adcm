@@ -75,7 +75,9 @@ export type ConfigurationNewArrayItem = {
   path: ConfigurationNodePath;
 };
 
-export type ConfigurationNode = Node<
+export type ConfigurationNode = Node<ConfigurationField | ConfigurationObject | ConfigurationArray>;
+
+export type ConfigurationNodeView = Node<
   | ConfigurationField
   | ConfigurationNewField
   | ConfigurationNewEmptyObject
@@ -84,7 +86,7 @@ export type ConfigurationNode = Node<
   | ConfigurationNewArrayItem
 >;
 
-export type ConfigurationNodeFilter = {
+export type ConfigurationTreeFilter = {
   title: string;
   showInvisible: boolean; // false
   showAdvanced: boolean;
