@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from cm.models import ADCM, ConfigLog, PrototypeConfig
 from rest_framework.decorators import action
 from rest_framework.mixins import RetrieveModelMixin
