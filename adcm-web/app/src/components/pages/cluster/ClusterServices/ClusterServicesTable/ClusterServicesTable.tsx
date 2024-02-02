@@ -6,12 +6,11 @@ import { useDispatch, useStore } from '@hooks';
 import { columns, servicesStatusesMap } from './ClusterServicesTable.constants';
 import { setSortParams } from '@store/adcm/cluster/services/servicesTableSlice';
 import { SortParams } from '@uikit/types/list.types';
-import { openDeleteDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
+import { openDeleteDialog, openMaintenanceModeDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
 import ClusterServiceDynamicActionsButton from '@pages/cluster/ClusterServices/ClusterServiceDynamicActionsButton/ClusterServiceDynamicActionsButton';
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 import MaintenanceModeButton from '@commonComponents/MaintenanceModeButton/MaintenanceModeButton';
 import { AdcmService } from '@models/adcm';
-import { openMaintenanceModeDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const ClusterServicesTable = () => {

@@ -1,4 +1,8 @@
-import { AdcmCluster, AdcmConcerns, AdcmHost, AdcmHostProvider, AdcmServiceComponent } from '.';
+import { AdcmConcerns } from './concern';
+import { AdcmCluster } from './cluster';
+import { AdcmHostProvider } from './hostProvider';
+import { AdcmHost } from './host';
+import { AdcmServiceComponent } from './clusterServiceComponent';
 import { AdcmTask } from './jobs';
 import { AdcmService } from './service';
 

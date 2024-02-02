@@ -1,5 +1,6 @@
 import { Action, Middleware } from 'redux';
 import { wsHost } from '@constants';
+// eslint-disable-next-line import/no-cycle
 import { StoreState } from '../store';
 import { wsActions } from './wsMiddleware.constants';
 import { ActionCreatorWithPayload } from '@reduxjs/toolkit';

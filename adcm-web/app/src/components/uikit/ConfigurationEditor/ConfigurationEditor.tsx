@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
-import ConfigurationTree from './ConfigurationTree/ConfigurationTree';
-import AddConfigurationFieldDialog from './Dialogs/AddConfigurationFieldDialog/AddConfigurationFieldDialog';
-import EditConfigurationFieldDialog from './Dialogs/EditConfigurationFieldDialog/EditConfigurationFieldDialog';
+import ConfigurationTree from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree';
+import AddConfigurationFieldDialog from '@uikit/ConfigurationEditor/Dialogs/AddConfigurationFieldDialog/AddConfigurationFieldDialog';
+import EditConfigurationFieldDialog from '@uikit/ConfigurationEditor/Dialogs/EditConfigurationFieldDialog/EditConfigurationFieldDialog';
 import { ConfigurationNodeView, ConfigurationTreeFilter } from './ConfigurationEditor.types';
 import { editField, addField, deleteField, addArrayItem, deleteArrayItem } from './ConfigurationEditor.utils';
 import { ConfigurationData, ConfigurationSchema, ConfigurationAttributes, FieldAttributes } from '@models/adcm';
