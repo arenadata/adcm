@@ -198,6 +198,8 @@ class TestInventory(BaseTestCase):
         host2 = Host.objects.create(prototype=self.host_pt, fqdn="h2", cluster=self.cluster, provider=self.provider)
         action = Action.objects.create(prototype=self.cluster_pt)
 
+        self.maxDiff = None
+
         cluster_inv = {
             "all": {
                 "children": {
