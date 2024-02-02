@@ -32,7 +32,7 @@ from cm.models import (
 from cm.services.config import retrieve_config_attr_pairs
 from cm.services.config.spec import retrieve_flat_spec_for_objects
 from cm.services.group_config import GroupConfigInfo, GroupConfigName
-from cm.services.job.inventory._config import _update_configuration_for_inventory_inplace
+from cm.services.job.inventory._config import update_configuration_for_inventory_inplace
 from cm.services.job.inventory._types import ObjectsInInventoryMap
 
 
@@ -170,7 +170,7 @@ def get_before_upgrades(
         except KeyError:
             continue
 
-        result[unprocessed_object]["config"] = _update_configuration_for_inventory_inplace(
+        result[unprocessed_object]["config"] = update_configuration_for_inventory_inplace(
             configuration=configuration,
             attributes=attributes,
             specification=specification,
@@ -190,7 +190,7 @@ def get_before_upgrades(
 
             result[unprocessed_object, group_config_name] = {
                 "state": before_upgrade_info.before_upgrade.get("state"),
-                "config": _update_configuration_for_inventory_inplace(
+                "config": update_configuration_for_inventory_inplace(
                     configuration=configuration,
                     attributes=attributes,
                     specification=specification,

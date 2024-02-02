@@ -62,7 +62,7 @@ def get_objects_configurations(
         configuration, attributes = configurations[info.config_id]
         specification = specifications_for_prototypes[info.prototype_id]
 
-        objects_configurations[object_] = _update_configuration_for_inventory_inplace(
+        objects_configurations[object_] = update_configuration_for_inventory_inplace(
             configuration=configuration, attributes=attributes, specification=specification, config_owner=object_
         )
 
@@ -97,7 +97,7 @@ def _get_config_info(objects: ObjectsInInventoryMap) -> dict[CoreObjectDescripto
     }
 
 
-def _update_configuration_for_inventory_inplace(
+def update_configuration_for_inventory_inplace(
     configuration: ConfigDict,
     attributes: AttrDict,
     specification: FlatSpec,
@@ -187,7 +187,7 @@ def get_group_config_alternatives_for_hosts_in_cluster_groups(
     for group in groups_with_hosts:
         configuration, attributes = configurations[group.current_config_id]
         specification = specifications_for_prototypes[objects_config_info[group.owner].prototype_id]
-        updated_config = _update_configuration_for_inventory_inplace(
+        updated_config = update_configuration_for_inventory_inplace(
             configuration=configuration,
             attributes=attributes,
             specification=specification,
