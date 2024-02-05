@@ -20,8 +20,9 @@ export const useRbacUserUpdateDialog = () => {
   const user = useStore((s) => s.adcm.usersActions.updateDialog.user);
   const isUpdating = useStore((s) => s.adcm.usersActions.updateDialog.isUpdating);
   const groups = useStore((s) => s.adcm.usersActions.relatedData.groups);
-  const isOpen = !!user;
   const authSettings = useStore((s) => s.auth.profile.authSettings);
+  const isOpen = !!user;
+  const isPersonalDataEditForbidden = user?.type === 'ldap';
 
   const { formData, handleChangeFormData, setFormData, errors, setErrors, isValid } =
     useForm<RbacUserFormData>(initialFormData);
@@ -95,5 +96,6 @@ export const useRbacUserUpdateDialog = () => {
     onClose: handleClose,
     onSubmit: handleCreate,
     errors,
+    isPersonalDataEditForbidden,
   };
 };
