@@ -12,6 +12,7 @@ interface RbacUserFormProps {
   formData: RbacUserFormData;
   groups: AdcmGroup[];
   errors: Partial<Record<keyof RbacUserFormData, string | undefined>>;
+  isPersonalDataEditForbidden?: boolean;
   isCreate?: boolean;
 }
 
@@ -21,6 +22,7 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
   groups,
   errors,
   isCreate = false,
+  isPersonalDataEditForbidden = false,
 }) => {
   const groupsOptions = useMemo(() => {
     return groups.map(({ displayName, id }) => ({ value: id, label: displayName }));
@@ -82,6 +84,7 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
           placeholder="Enter password"
           autoComplete="new-password"
           areAsterisksShown={!isCreate}
+          disabled={!isCreate && isPersonalDataEditForbidden}
         />
       </FormField>
       <FormField label="Confirm password" error={errors.confirmPassword} className={s.rbacUserForm__confirmPassword}>
@@ -90,6 +93,7 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
           onChange={handleConfirmPasswordChange}
           placeholder="Enter password"
           areAsterisksShown={!isCreate}
+          disabled={!isCreate && isPersonalDataEditForbidden}
         />
       </FormField>
 
@@ -100,6 +104,7 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
           onChange={handleFirstNameChange}
           placeholder="Enter"
           autoComplete="off"
+          disabled={!isCreate && isPersonalDataEditForbidden}
         />
       </FormField>
       <FormField label="Last name" className={s.rbacUserForm__lastName} error={errors.lastName}>
@@ -109,6 +114,7 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
           onChange={handleLastNameChange}
           placeholder="Enter"
           autoComplete="off"
+          disabled={!isCreate && isPersonalDataEditForbidden}
         />
       </FormField>
       <FormField label="" className={s.rbacUserForm__isSuperUser}>
@@ -116,6 +122,7 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
           label="Grant ADCM Administrator’s rights"
           checked={formData.isSuperUser}
           onChange={handleIsSuperUserChange}
+          disabled={!isCreate && isPersonalDataEditForbidden}
         />
       </FormField>
 
@@ -131,6 +138,7 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
           onChange={handleEmailChange}
           placeholder="User’s email"
           autoComplete="email"
+          disabled={!isCreate && isPersonalDataEditForbidden}
         />
       </FormField>
       <FormField label="Add groups" className={s.rbacUserForm__groups}>

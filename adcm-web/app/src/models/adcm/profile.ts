@@ -11,7 +11,7 @@ export interface AdcmProfileUser {
   email: string;
   firstName: string;
   lastName: string;
-  isSuperuser: boolean;
+  isSuperUser: boolean;
   authSettings: AdcmProfileUserAuthSettings;
 }
 

@@ -4,7 +4,17 @@ import { useRbacUserUpdateDialog } from './useRbacUserUpdateDialog';
 import RbacUserForm from '@pages/AccessManagerPage/AccessManagerUsersPage/RbacUserForm/RbacUserForm';
 
 const RbacUserUpdateDialog: React.FC = () => {
-  const { isOpen, isValid, onClose, formData, onChangeFormData, onSubmit, groups, errors } = useRbacUserUpdateDialog();
+  const {
+    isOpen,
+    isValid,
+    onClose,
+    formData,
+    onChangeFormData,
+    onSubmit,
+    groups,
+    errors,
+    isPersonalDataEditForbidden,
+  } = useRbacUserUpdateDialog();
 
   return (
     <Dialog
@@ -16,7 +26,13 @@ const RbacUserUpdateDialog: React.FC = () => {
       isActionDisabled={!isValid}
       actionButtonLabel="Save"
     >
-      <RbacUserForm onChangeFormData={onChangeFormData} formData={formData} groups={groups} errors={errors} />
+      <RbacUserForm
+        isPersonalDataEditForbidden={isPersonalDataEditForbidden}
+        onChangeFormData={onChangeFormData}
+        formData={formData}
+        groups={groups}
+        errors={errors}
+      />
     </Dialog>
   );
 };
