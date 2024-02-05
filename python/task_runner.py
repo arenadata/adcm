@@ -24,7 +24,7 @@ from cm.errors import AdcmEx
 from cm.job import finish_task, re_prepare_job
 from cm.logger import logger
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
-from cm.services.job import JobScope
+from cm.services.job.utils import JobScope
 from cm.status_api import send_task_status_update_event
 from cm.utils import get_env_with_venv_path
 from django.conf import settings
