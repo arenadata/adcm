@@ -35,10 +35,10 @@ unittests_postgresql:
 
 pretty:
 	poetry install --no-root --with lint
+	poetry run python license_checker.py --fix --folders python go
 	poetry run ruff format license_checker.py python
 	poetry run ruff check --fix license_checker.py python
 	poetry run ruff format license_checker.py python
-	poetry run python license_checker.py --fix --folders python go
 
 lint:
 	poetry install --no-root --with lint
