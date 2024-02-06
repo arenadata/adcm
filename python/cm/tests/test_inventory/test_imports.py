@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from typing import Iterable
-import unittest
 
 from cm.api import DataForMultiBind, multi_bind
 from cm.models import (
@@ -300,7 +299,6 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         result = decrypt_secrets(get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk))
         self.assertDictEqual(result, expected)
 
-    @unittest.skip(reason="import bug with multibind")
     def test_imports_have_default_all_imported_success(self) -> None:
         self.bind_objects(
             (self.service_with_defaults, [self.export_cluster_1, self.export_service_1, self.export_service_2])

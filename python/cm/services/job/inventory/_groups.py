@@ -56,7 +56,6 @@ def detect_host_groups(
 
     for service in cluster_topology.services.values():
         service_name = service.info.name
-        # groups[service_name] = set() <- todo looks redundant (ensure)
         for component in service.components.values():
             hosts_in_mm = {
                 (host_id, component.hosts[host_id].name)

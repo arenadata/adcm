@@ -58,7 +58,6 @@ class ClusterNode(_GenericInventoryNode):
     version: str
     edition: str
 
-    # todo define type correctly
     imports: dict | list | None = None
 
 

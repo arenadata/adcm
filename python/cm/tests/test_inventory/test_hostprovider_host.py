@@ -9,8 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from cm.inventory import get_inventory_data
 from cm.models import Action
+from cm.services.job.inventory import get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
 
 

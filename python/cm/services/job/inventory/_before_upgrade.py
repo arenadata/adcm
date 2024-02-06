@@ -37,7 +37,7 @@ from cm.services.job.inventory._types import ObjectsInInventoryMap
 
 
 @dataclass(slots=True)
-class ProcessedBeforeUpgrade:  # todo think about naming of this and "extract" function
+class ProcessedBeforeUpgrade:
     # raw before upgrade "as is" from database
     before_upgrade: dict
 
@@ -95,7 +95,6 @@ def extract_objects_before_upgrade(
             prototype_name=row["prototype_name"],
             bundle_id=raw_before_upgrade.get("bundle_id", row["parent_before_upgrade"].get("bundle_id")),
             group_configs_info={
-                # todo can here be something non-convertable to `int`?
                 group_name: int(group_info["group_config_id"])
                 for group_name, group_info in raw_before_upgrade.get("groups", {}).items()
             },

@@ -155,9 +155,15 @@ class TestHostAction(BaseInventoryTestCase):
                 },
             ),
             ("HOST", "hosts", f"{self.host_1.fqdn}"): (
-                self.templates_dir / "host.json.j2",
+                self.templates_dir / "host_with_vars_service_one_component.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "cluster_id": self.cluster.pk,
+                    "service_id": self.service.pk,
+                    "component_id": self.component.pk,
+                    "cluster_config_integer": 101,
+                    "service_config_integer": 102,
+                    "component_config_integer": 103,
                 },
             ),
             ("HOST", "vars", "provider"): (
@@ -168,26 +174,21 @@ class TestHostAction(BaseInventoryTestCase):
                 },
             ),
             ("target", "hosts", f"{self.host_1.fqdn}"): (
-                self.templates_dir / "host.json.j2",
+                self.templates_dir / "host_with_vars_service_one_component.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "cluster_id": self.cluster.pk,
+                    "service_id": self.service.pk,
+                    "component_id": self.component.pk,
+                    "cluster_config_integer": 101,
+                    "service_config_integer": 102,
+                    "component_config_integer": 103,
                 },
             ),
-            ("target", "vars", "cluster"): (
-                self.templates_dir / "cluster.json.j2",
-                {
-                    "id": self.cluster.pk,
-                    # TODO: target vars must have from group-config
-                },
-            ),
+            ("target", "vars", "cluster"): (self.templates_dir / "cluster.json.j2", {"id": self.cluster.pk}),
             ("target", "vars", "services"): (
                 self.templates_dir / "service_one_component.json.j2",
-                {
-                    "service_id": self.service.pk,
-                    # TODO: target vars must have from group-config
-                    "component_id": self.component.pk,
-                    # TODO: target vars must have from group-config
-                },
+                {"service_id": self.service.pk, "component_id": self.component.pk},
             ),
         }
 
