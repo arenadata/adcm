@@ -13,7 +13,6 @@ from typing import Iterable
 import unittest
 
 from cm.api import DataForMultiBind, multi_bind
-from cm.inventory import get_import, get_inventory_data
 from cm.models import (
     Action,
     ADCMModel,
@@ -22,7 +21,7 @@ from cm.models import (
     PrototypeImport,
     ServiceComponent,
 )
-from cm.services.job.inventory import get_inventory_data
+from cm.services.job.inventory import get_imports_for_inventory, get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
 
 
@@ -272,7 +271,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             "for_export": [{"another_stuff": {"hehe": 30.43}}],
             "very_complex": {"activatable_group": None, "plain_group": {"listofstuff": ["204"]}},
         }
-        result = decrypt_secrets(get_import(cluster=self.cluster_with_defaults))
+        result = decrypt_secrets(get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk))
         self.assertDictEqual(result, expected)
 
     def test_imports_have_default_one_import_succeess(self) -> None:
@@ -298,7 +297,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             "for_export": [{"another_stuff": {"hehe": 500.5}}],
         }
 
-        result = decrypt_secrets(get_import(cluster=self.cluster_with_defaults))
+        result = decrypt_secrets(get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk))
         self.assertDictEqual(result, expected)
 
     @unittest.skip(reason="import bug with multibind")
@@ -337,7 +336,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 },
             ],
         }
-        result = decrypt_secrets(get_import(cluster=self.cluster_with_defaults))
+        result = decrypt_secrets(get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk))
         self.assertDictEqual(result, expected)
 
     def test_group_config_effect_on_import_with_default(self) -> None:
