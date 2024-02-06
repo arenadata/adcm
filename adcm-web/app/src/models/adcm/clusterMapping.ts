@@ -1,5 +1,7 @@
 import { AdcmMaintenanceMode } from './maintenanceMode';
-import { AdcmDependOnService, AdcmEntityState, AdcmPrototypeShortView } from '@models/adcm/index';
+import { AdcmDependOnService } from './service';
+import { AdcmPrototypeShortView } from './prototype';
+import { AdcmEntityState } from './common';
 
 export interface AdcmMapping {
   id?: number;
