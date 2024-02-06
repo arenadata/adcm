@@ -111,7 +111,7 @@ def update_configuration_for_inventory_inplace(
 
         if field_.type == "group":
             is_regular_or_active_group = attributes.get(key, {}).get("active", True)
-            if not is_regular_or_active_group:
+            if not is_regular_or_active_group and key in configuration:
                 configuration[key] = None
                 skip_deactivated_groups.add(key)
 
@@ -170,6 +170,9 @@ def get_group_config_alternatives_for_hosts_in_cluster_groups(
 ) -> dict[str, dict]:
     groups_with_hosts = tuple(group for group in group_configs if group.hosts)
 
+    if not groups_with_hosts:
+        return {}
+
     configurations = retrieve_config_attr_pairs(configurations=(group.current_config_id for group in groups_with_hosts))
 
     objects_with_groups = defaultdict(set)
@@ -216,6 +219,59 @@ def get_group_config_alternatives_for_hosts_in_cluster_groups(
 
             if not node:
                 raise RuntimeError(f"Failed to determine node in `vars` for {group.owner}")
+
+            if group_before_upgrade:
+                node["before_upgrade"] = group_before_upgrade
+
+            node["config"] = updated_config
+
+    return result
+
+
+# todo unite with one above
+def get_group_config_alternatives_for_hosts_in_hostprovider_groups(
+    group_configs: Iterable[GroupConfigInfo],
+    hostprovider_vars: dict,
+    objects_before_upgrade: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, GroupConfigName], dict],
+) -> dict[str, dict]:
+    groups_of_hostprovider_with_hosts = tuple(
+        group for group in group_configs if group.hosts and group.owner.type == ADCMCoreType.HOSTPROVIDER
+    )
+
+    if not groups_of_hostprovider_with_hosts:
+        return {}
+
+    configurations = retrieve_config_attr_pairs(
+        configurations=(group.current_config_id for group in groups_of_hostprovider_with_hosts)
+    )
+
+    objects_with_groups = defaultdict(set)
+    for group in groups_of_hostprovider_with_hosts:
+        objects_with_groups[group.owner.type].add(group.owner.id)
+
+    objects_config_info = _get_config_info(objects=objects_with_groups)
+
+    specifications_for_prototypes = retrieve_flat_spec_for_objects(
+        prototypes=(entry.prototype_id for entry in objects_config_info.values())
+    )
+
+    result = defaultdict(lambda: deepcopy(hostprovider_vars))
+
+    for group in groups_of_hostprovider_with_hosts:
+        configuration, attributes = configurations[group.current_config_id]
+        specification = specifications_for_prototypes[objects_config_info[group.owner].prototype_id]
+        updated_config = update_configuration_for_inventory_inplace(
+            configuration=configuration,
+            attributes=attributes,
+            specification=specification,
+            config_owner=group.owner,
+            group_config_id=group.id,
+        )
+
+        group_before_upgrade = objects_before_upgrade.get((group.owner, group.name), None)
+
+        for host_info in group.hosts:
+            node = result[host_info.name]["provider"]
 
             if group_before_upgrade:
                 node["before_upgrade"] = group_before_upgrade

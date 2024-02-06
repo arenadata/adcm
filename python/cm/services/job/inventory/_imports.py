@@ -30,13 +30,25 @@ ImportedObjectName: TypeAlias = str
 class _ImportTarget(NamedTuple):
     prototype_id: PrototypeID
     multibind: bool
-    default: list[str] | None
+    default: tuple[str, ...] | None
 
 
 def get_imports_for_inventory(cluster_id: int) -> dict:
     targets = _get_import_targets_for_bundle(
         bundle_id=Cluster.objects.values_list("prototype__bundle_id", flat=True).get(id=cluster_id)
     )
+
+    if not targets:
+        return {}
+
+    existing_objects_prototypes = set(
+        Cluster.objects.values_list("prototype_id", flat=True)
+        .filter(id=cluster_id)
+        .union(ClusterObject.objects.filter(cluster_id=cluster_id).values_list("prototype_id", flat=True))
+    )
+    targets = {
+        core_type: target for core_type, target in targets.items() if target.prototype_id in existing_objects_prototypes
+    }
 
     if not targets:
         return {}
@@ -56,7 +68,7 @@ def get_imports_for_inventory(cluster_id: int) -> dict:
 
     fill_with_defaults = set()
 
-    for (import_type, import_name), target in targets.items():
+    for (import_type, import_name, _), target in targets.items():
         sources = binds_info.get((import_type, import_name))
 
         if not sources:
@@ -87,11 +99,15 @@ def get_imports_for_inventory(cluster_id: int) -> dict:
     return imports
 
 
-def _get_import_targets_for_bundle(bundle_id: int) -> dict[tuple[ADCMCoreType, ImportedObjectName], _ImportTarget]:
+def _get_import_targets_for_bundle(
+    bundle_id: int,
+) -> dict[tuple[ADCMCoreType, ImportedObjectName, PrototypeID], _ImportTarget]:
     """Information about what can be imported to cluster and its services"""
     return {
-        (db_record_type_to_core_type(row["prototype__type"]), row["name"]): _ImportTarget(
-            prototype_id=row["prototype_id"], multibind=row["multibind"], default=row["default"]
+        (db_record_type_to_core_type(row["prototype__type"]), row["name"], row["prototype_id"]): _ImportTarget(
+            prototype_id=row["prototype_id"],
+            multibind=row["multibind"],
+            default=tuple(default) if (default := row["default"]) is not None else None,
         )
         for row in PrototypeImport.objects.values(
             "prototype_id", "prototype__type", "name", "multibind", "default"
@@ -176,13 +192,13 @@ def _fill_imports_with_defaults_inplace(
     required_prototypes = set(map(itemgetter(1), still_required_to_fill))
     specifications = retrieve_flat_spec_for_objects(prototypes=required_prototypes)
     objects = {
-        prototype: (CoreObjectDescriptor(id_, type_), config)
-        for id_, prototype, config, type_ in Cluster.objects.values_list(
+        row["prototype_id"]: (CoreObjectDescriptor(row["id"], row["type"]), row["config__current"])
+        for row in Cluster.objects.values(
             "id", "config__current", "prototype_id", type=Value(ADCMCoreType.CLUSTER.value)
         )
         .filter(prototype_id__in=required_prototypes)
         .union(
-            ClusterObject.objects.values_list(
+            ClusterObject.objects.values(
                 "id", "config__current", "prototype_id", type=Value(ADCMCoreType.SERVICE.value)
             ).filter(prototype_id__in=required_prototypes)
         )
