@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from adcm.utils import OBJECT_TYPES_DICT
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, GroupConfig, Host, ObjectConfig
@@ -46,15 +45,22 @@ def check_object_type(type_name):
         raise AdcmEx("GROUP_CONFIG_TYPE_ERROR")
 
 
+MODEL_NAME_TRANSLATIONS = {
+    "clusterobject": "service",
+    "servicecomponent": "component",
+    "hostprovider": "provider",
+}
+
+
 def translate_model_name(model_name):
     """Translating model name to display model name"""
-    model_names = {value: key for key, value in OBJECT_TYPES_DICT.items()}
-    return model_names[model_name]
+    return MODEL_NAME_TRANSLATIONS.get(model_name, model_name)
 
 
 def revert_model_name(name):
     """Translating display model name to model name"""
-    return OBJECT_TYPES_DICT[name]
+    reverse_translations = {value: key for key, value in MODEL_NAME_TRANSLATIONS.items()}
+    return reverse_translations.get(name, name)
 
 
 class ObjectTypeField(serializers.Field):

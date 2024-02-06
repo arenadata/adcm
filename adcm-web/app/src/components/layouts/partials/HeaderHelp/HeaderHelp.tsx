@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { ConditionalWrapper, Tooltip } from '@uikit';
 import AboutAdcm from './AboutAdcm/AboutAdcm.tsx';
 import AboutAdcmModal from './AboutAdcm/AboutAdcmModal/AboutAdcmModal.tsx';
-import { DefaultSelectListItemProps } from '@uikit/Select/SingleSelect/SingleSelectList/SingleSelectList.tsx';
+import { DefaultSelectListItemProps } from '@uikit/Select/Select.types.ts';
 
 enum HelperLinkActions {
   Help = 'https://t.me/arenadata_cm',

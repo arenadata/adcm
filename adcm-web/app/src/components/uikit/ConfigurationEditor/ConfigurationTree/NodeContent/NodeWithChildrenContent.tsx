@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { IconButton, MarkerIcon, Tooltip } from '@uikit';
 import { isValueSet } from '@models/json';
-import { ConfigurationArray, ConfigurationObject, ConfigurationNode } from '../../ConfigurationEditor.types';
+import { ConfigurationArray, ConfigurationObject, ConfigurationNodeView } from '../../ConfigurationEditor.types';
 import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
 import s from '../ConfigurationTree.module.scss';
 import cn from 'classnames';
@@ -10,7 +10,7 @@ import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
 import { nullStub } from '../ConfigurationTree.constants';
 
 interface NodeWithChildrenContentProps {
-  node: ConfigurationNode;
+  node: ConfigurationNodeView;
   error?: string;
   isExpanded: boolean;
   onClear: ChangeConfigurationNodeHandler;

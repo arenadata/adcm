@@ -1,6 +1,6 @@
 {
   "config": {
-    "integer": 10,
+    "integer": {{ config_integer | default(10) }},
     "password": "password",
     "string": "string",
     "list": [

@@ -85,6 +85,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             "datadir": self.directories["DATA_DIR"],
             "stackdir": self.directories["STACK_DIR"],
             "token": settings.STATUS_SECRET_KEY,
+            "component_type_id": self.component.prototype_id,
         }
 
     def test_action_config(self) -> None:

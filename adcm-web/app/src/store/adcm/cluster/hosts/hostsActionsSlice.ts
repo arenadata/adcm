@@ -2,8 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { AdcmClusterHostsApi, AdcmClustersApi, AdcmHostsApi, RequestError } from '@api';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { AdcmHost, AdcmMaintenanceMode } from '@models/adcm';
-import { AddClusterHostsPayload } from '@models/adcm';
+import { AdcmHost, AdcmMaintenanceMode, AddClusterHostsPayload } from '@models/adcm';
 import { getClusterHosts } from './hostsSlice';
 
 const loadHosts = createAsyncThunk('adcm/clusterHostsActions/loadHosts', async (arg, thunkAPI) => {

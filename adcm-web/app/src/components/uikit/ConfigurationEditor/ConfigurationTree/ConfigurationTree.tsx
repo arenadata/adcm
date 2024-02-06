@@ -4,13 +4,14 @@ import FieldNodeContent from './NodeContent/FieldNodeContent';
 import AddItemNodeContent from './NodeContent/AddItemNodeContent';
 import NodeWithChildrenContent from './NodeContent/NodeWithChildrenContent';
 import {
+  ConfigurationNode,
+  ConfigurationNodeView,
   ConfigurationArray,
   ConfigurationField,
-  ConfigurationNode,
-  ConfigurationNodeFilter,
+  ConfigurationTreeFilter,
   ConfigurationObject,
 } from '../ConfigurationEditor.types';
-import { buildTreeNodes, filterTreeNodes, validate } from './ConfigurationTree.utils';
+import { buildConfigurationNodes, buildConfigurationTree, validate } from './ConfigurationTree.utils';
 import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from './ConfigurationTree.types';
 import s from './ConfigurationTree.module.scss';
@@ -21,7 +22,7 @@ export interface ConfigurationTreeProps {
   schema: ConfigurationSchema;
   configuration: ConfigurationData;
   attributes: ConfigurationAttributes;
-  filter: ConfigurationNodeFilter;
+  filter: ConfigurationTreeFilter;
   areExpandedAll: boolean;
   onEditField: ChangeConfigurationNodeHandler;
   onAddEmptyObject: ChangeConfigurationNodeHandler;
@@ -33,7 +34,7 @@ export interface ConfigurationTreeProps {
   onChangeIsValid?: (isValid: boolean) => void;
 }
 
-const getNodeClassName = (node: ConfigurationNode, hasError: boolean, isSelected: boolean) => {
+const getNodeClassName = (node: ConfigurationNodeView, hasError: boolean, isSelected: boolean) => {
   const isReadonly = (node.data as ConfigurationArray | ConfigurationObject | ConfigurationField).isReadonly;
 
   return cn(s.collapseNode, {
@@ -60,9 +61,11 @@ const ConfigurationTree = memo(
     onFieldAttributesChange,
     onChangeIsValid,
   }: ConfigurationTreeProps) => {
-    const tree: ConfigurationNode = buildTreeNodes(schema, configuration, attributes);
-    const [selectedNode, setSelectedNode] = useState<ConfigurationNode | null>(null);
-    const filteredTree = filterTreeNodes(tree, filter);
+    const configNode: ConfigurationNode = buildConfigurationNodes(schema, configuration, attributes);
+    const [selectedNode, setSelectedNode] = useState<ConfigurationNodeView | null>(null);
+
+    const viewConfigTree = buildConfigurationTree(configNode, filter);
+
     const { isValid, errorsPaths } = validate(schema, configuration, attributes);
     // todo: remove commented for debugging process
     // !isValid && console.error(errorsPaths);
@@ -71,19 +74,19 @@ const ConfigurationTree = memo(
       onChangeIsValid?.(isValid);
     }, [isValid, onChangeIsValid]);
 
-    const handleClick = (node: ConfigurationNode, ref: React.RefObject<HTMLElement>) => {
+    const handleClick = (node: ConfigurationNodeView, ref: React.RefObject<HTMLElement>) => {
       setSelectedNode(node);
       onEditField(node, ref);
     };
 
-    const handleGetNodeClassName = (node: ConfigurationNode) => {
+    const handleGetNodeClassName = (node: ConfigurationNodeView) => {
       const hasError = errorsPaths[node.key] !== undefined;
       const isSelected = node.key === selectedNode?.key;
       return getNodeClassName(node, hasError, isSelected);
     };
 
     const handleRenderNodeContent = (
-      node: ConfigurationNode,
+      node: ConfigurationNodeView,
       isExpanded: boolean,
       onExpand: (isOpen: boolean) => void,
     ) => {
@@ -128,8 +131,8 @@ const ConfigurationTree = memo(
 
     return (
       <CollapseNode
-        node={filteredTree}
-        isInitiallyExpanded={filteredTree.key === rootNodeKey}
+        node={viewConfigTree}
+        isInitiallyExpanded={viewConfigTree.key === rootNodeKey}
         areExpandedAll={areExpandedAll}
         getNodeClassName={handleGetNodeClassName}
         renderNodeContent={handleRenderNodeContent}

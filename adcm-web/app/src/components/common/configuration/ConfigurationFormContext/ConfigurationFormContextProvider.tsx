@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { ConfigurationFormContextContext } from './ConfigurationFormContext.context';
-import { ConfigurationNodeFilter } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
+import { ConfigurationTreeFilter } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
 
 interface ConfigurationContextProviderProps {
   children: React.ReactNode;
@@ -8,7 +8,7 @@ interface ConfigurationContextProviderProps {
 
 const ConfigurationFormContextProvider: React.FC<ConfigurationContextProviderProps> = ({ children }) => {
   const [isValid, setIsValid] = useState(true);
-  const [filter, setFilter] = useState<ConfigurationNodeFilter>({
+  const [filter, setFilter] = useState<ConfigurationTreeFilter>({
     title: '',
     showAdvanced: false,
     showInvisible: false,
@@ -16,7 +16,7 @@ const ConfigurationFormContextProvider: React.FC<ConfigurationContextProviderPro
   const [areExpandedAll, setAreExpandedAll] = useState(false);
 
   const handleFilterChange = useCallback(
-    (changes: Partial<ConfigurationNodeFilter>) => {
+    (changes: Partial<ConfigurationTreeFilter>) => {
       setFilter((prevFilter) => ({ ...prevFilter, ...changes }));
     },
     [setFilter],

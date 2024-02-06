@@ -8,6 +8,7 @@ import {
   ActionReducerMapBuilder,
   Draft,
 } from '@reduxjs/toolkit';
+// eslint-disable-next-line import/no-cycle
 import { StoreState, AppDispatch } from './store';
 import { ListState, PaginationParams, SortParams } from '@models/table';
 

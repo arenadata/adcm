@@ -6,8 +6,6 @@ import { setSortParams } from '@store/adcm/jobs/jobsTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { openStopDialog } from '@store/adcm/jobs/jobsActionsSlice';
 import { AdcmJob } from '@models/adcm';
-import s from './JobPageChildJobsTable.module.scss';
-import cn from 'classnames';
 import JobPageLog from '../JobPageLog/JobPageLog';
 import { orElseGet } from '@utils/checkUtils';
 import TaskChildRow from './TaskChildRow/TaskChildRow';
@@ -62,8 +60,6 @@ const JobPageChildJobsTable = () => {
             colSpan={columns.length}
             isExpanded={expandableRows.has(job.id)}
             expandedContent={<JobPageLog id={job.id} />}
-            className={cn(s.rolesTable__roleRow)}
-            expandedClassName={s.rolesTable__expandedRoleRow}
           >
             <TaskChildRow job={job} handleExpandClick={handleExpandClick} handleStopClick={handleStopClick} />
           </ExpandableRowComponent>

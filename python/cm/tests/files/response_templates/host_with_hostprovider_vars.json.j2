@@ -1,0 +1,33 @@
+{
+  "integer": {{ config_integer | default(10) }},
+  "password": "password",
+  "string": "string",
+  "list": [
+    "value1",
+    "value2",
+    "value3"
+  ],
+  "adcm_hostid": {{ adcm_hostid }},
+  "state": "created",
+  "multi_state": [],
+  "provider": {
+    "config": {
+      "integer": {{ hostprovider_config_integer }},
+      "password": "password",
+      "string": "string",
+      "list": [
+        "value1",
+        "value2",
+        "value3"
+      ]
+    },
+    "name": "provider",
+    "id": 1,
+    "host_prototype_id": {{ host_prototype_id }},
+    "state": "created",
+    "multi_state": [],
+    "before_upgrade": {
+      "state": null
+    }
+  }
+}

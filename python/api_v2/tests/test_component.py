@@ -15,7 +15,7 @@ from cm.issue import add_concern_to_object
 from cm.models import Action, ConcernType, MaintenanceMode, ServiceComponent
 from cm.tests.utils import gen_concern_item
 from django.urls import reverse
-from rest_framework.status import HTTP_200_OK, HTTP_405_METHOD_NOT_ALLOWED
+from rest_framework.status import HTTP_200_OK, HTTP_405_METHOD_NOT_ALLOWED, HTTP_409_CONFLICT
 
 from api_v2.tests.base import BaseAPITestCase
 
@@ -143,17 +143,55 @@ class TestComponentAPI(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_change_mm(self):
+
+class TestComponentMaintenanceMode(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.service_1_cl_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        self.component_1_cl_1 = ServiceComponent.objects.get(
+            prototype__name="component_1", service=self.service_1_cl_1, cluster=self.cluster_1
+        )
+
+        self.service_cl_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
+        self.component_cl_1 = ServiceComponent.objects.get(
+            prototype__name="component", service=self.service_cl_2, cluster=self.cluster_2
+        )
+
+    def test_change_mm_success(self):
         response = self.client.post(
             path=reverse(
                 "v2:component-maintenance-mode",
                 kwargs={
                     "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "pk": self.component_1.pk,
+                    "service_pk": self.service_1_cl_1.pk,
+                    "pk": self.component_1_cl_1.pk,
                 },
             ),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_chamge_mm_not_available_fail(self):
+        response = self.client.post(
+            path=reverse(
+                "v2:component-maintenance-mode",
+                kwargs={
+                    "cluster_pk": self.cluster_2.pk,
+                    "service_pk": self.service_cl_2.pk,
+                    "pk": self.component_cl_1.pk,
+                },
+            ),
+            data={"maintenance_mode": MaintenanceMode.ON},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "MAINTENANCE_MODE_NOT_AVAILABLE",
+                "level": "error",
+                "desc": "Component does not support maintenance mode",
+            },
+        )

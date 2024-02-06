@@ -11,9 +11,10 @@ import { JSONValue, JSONObject, JSONPrimitive } from '@models/json';
 import {
   ConfigurationObject,
   ConfigurationNode,
-  ConfigurationNodeFilter,
+  ConfigurationTreeFilter,
   ConfigurationNodePath,
   ConfigurationArray,
+  ConfigurationNodeView,
 } from '../ConfigurationEditor.types';
 import { validate as validateJsonSchema } from '@utils/jsonSchemaUtils';
 import { primitiveFieldTypes, rootNodeKey, rootNodeTitle } from './ConfigurationTree.constants';
@@ -124,7 +125,7 @@ const getNodeProps = (
   };
 };
 
-export const buildTreeNodes = (
+export const buildConfigurationNodes = (
   schema: ConfigurationSchema,
   configuration: ConfigurationData,
   attributes: ConfigurationAttributes,
@@ -265,15 +266,6 @@ const buildObjectNode = (
         }
       }
     }
-
-    if (!nodeData.isReadonly) {
-      if (nodeData.objectType === 'map') {
-        children.push(buildAddFieldNode(path, node));
-      }
-      if (nodeData.objectType === 'structure' && objectValue === null) {
-        children.push(buildAddEmptyObjectNode(path, fieldSchema, parentNode));
-      }
-    }
   }
 
   if (children.length) {
@@ -328,7 +320,7 @@ const buildAddEmptyObjectNode = (
   fieldSchema: SingleSchemaDefinition,
   parentNode: ConfigurationNode,
 ) => {
-  const node: ConfigurationNode = {
+  const node: ConfigurationNodeView = {
     key: buildKey([...path, 'addEmptyObjectButton']),
     data: {
       type: 'addEmptyObject',
@@ -345,7 +337,7 @@ const buildAddEmptyObjectNode = (
 const buildAddFieldNode = (path: ConfigurationNodePath, parentNode: ConfigurationNode) => {
   const fieldSchema: SingleSchemaDefinition = getDefaultFieldSchema(parentNode.data.fieldSchema);
 
-  const node: ConfigurationNode = {
+  const node: ConfigurationNodeView = {
     key: buildKey([...path, 'addFieldButton']),
     data: {
       type: 'addField',
@@ -398,7 +390,6 @@ const buildArrayNode = (
     },
   };
 
-  const nodeData = node.data as ConfigurationArray;
   const itemsSchema = fieldSchema.items as SingleSchemaDefinition;
   node.children = [];
 
@@ -409,10 +400,6 @@ const buildArrayNode = (
     }
   }
 
-  if (!nodeData.isReadonly) {
-    node.children.push(buildAddArrayItemNode(path, node, itemsSchema));
-  }
-
   return node;
 };
 
@@ -421,7 +408,7 @@ const buildAddArrayItemNode = (
   parentNode: ConfigurationNode,
   fieldSchema: SingleSchemaDefinition,
 ) => {
-  const node: ConfigurationNode = {
+  const node: ConfigurationNodeView = {
     key: buildKey([...path, 'addArrayItemButton']),
     data: {
       type: 'addArrayItem',
@@ -462,36 +449,87 @@ const buildUnknownNode = (
 
 const buildKey = (path: ConfigurationNodePath) => `/${path.join('/')}`;
 
-export const filterTreeNodes = (tree: ConfigurationNode, filter: ConfigurationNodeFilter) => {
-  tree.children = tree.children?.filter((node) => filterRecursively(node, filter));
-  return tree;
-};
+export const buildConfigurationTree = (
+  rootNode: ConfigurationNode,
+  filter: ConfigurationTreeFilter,
+): ConfigurationNodeView => {
+  if (rootNode.children) {
+    const filteredChildren = [];
+    for (const child of rootNode.children) {
+      const childNodeView = buildConfigurationTreeRecursively(child, filter);
+      if (childNodeView) {
+        filteredChildren.push(childNodeView);
+      }
+    }
 
-const filterRecursively = (tree: ConfigurationNode, filter: ConfigurationNodeFilter) => {
-  if (tree.data.type === 'addArrayItem' || tree.data.type === 'addField') {
-    return true;
-  }
-
-  const foundInTitle = tree.data.title.toLowerCase().includes(filter.title.toLowerCase());
-  const isVisible =
-    (filter.showInvisible ? true : !tree.data.fieldSchema.adcmMeta.isInvisible) &&
-    (filter.showAdvanced ? true : !tree.data.fieldSchema.adcmMeta.isAdvanced);
-
-  tree.children = tree.children?.filter((node) => filterRecursively(node, filter));
-
-  if (!foundInTitle && tree.children?.length === 1) {
-    const singleChildType = tree.children[0].data.type;
-    if (singleChildType === 'addArrayItem' || singleChildType === 'addField') {
-      tree.children = undefined;
+    if (filteredChildren.length) {
+      (rootNode as ConfigurationNodeView).children = filteredChildren;
     }
   }
 
-  const foundInChildren = Boolean(tree.children?.length);
-  if ((foundInTitle || foundInChildren) && isVisible) {
-    return true;
+  return rootNode;
+};
+
+const buildConfigurationTreeRecursively = (
+  node: ConfigurationNode,
+  filter: ConfigurationTreeFilter,
+): ConfigurationNodeView | undefined => {
+  const treeNode = node as ConfigurationNodeView;
+
+  const isVisible =
+    (filter.showInvisible ? true : !treeNode.data.fieldSchema.adcmMeta.isInvisible) &&
+    (filter.showAdvanced ? true : !treeNode.data.fieldSchema.adcmMeta.isAdvanced);
+
+  if (!isVisible) {
+    return undefined;
   }
 
-  return false;
+  const filteredChildren = [];
+  if (node.children) {
+    for (const child of node.children) {
+      const childNodeView = buildConfigurationTreeRecursively(child, filter);
+      if (childNodeView) {
+        filteredChildren.push(childNodeView);
+      }
+    }
+  }
+
+  treeNode.children = filteredChildren.length ? filteredChildren : undefined;
+
+  const foundInTitle = treeNode.data.title.toLowerCase().includes(filter.title.toLowerCase());
+  const foundInChildren = Boolean(treeNode.children?.length);
+
+  if (!foundInTitle && !foundInChildren) {
+    return undefined;
+  }
+
+  const nodeData = node.data;
+  if (nodeData.type === 'object' && !nodeData.isReadonly) {
+    let addNode: ConfigurationNodeView | undefined = undefined;
+    if (nodeData.objectType === 'map') {
+      addNode = buildAddFieldNode(nodeData.path, node);
+    }
+    if (nodeData.objectType === 'structure' && nodeData.value === null) {
+      addNode = buildAddEmptyObjectNode(nodeData.path, nodeData.fieldSchema, nodeData.parentNode);
+    }
+
+    if (addNode) {
+      if (treeNode.children === undefined) {
+        treeNode.children = [];
+      }
+      treeNode.children.push(addNode);
+    }
+  }
+
+  if (nodeData.type === 'array' && !nodeData.isReadonly) {
+    const itemsSchema = nodeData.fieldSchema.items as SingleSchemaDefinition;
+    if (treeNode.children === undefined) {
+      treeNode.children = [];
+    }
+    treeNode.children.push(buildAddArrayItemNode(nodeData.path, node, itemsSchema));
+  }
+
+  return treeNode;
 };
 
 const isSingleSchemaDefinition = (fieldSchema: SchemaDefinition): fieldSchema is SingleSchemaDefinition => {

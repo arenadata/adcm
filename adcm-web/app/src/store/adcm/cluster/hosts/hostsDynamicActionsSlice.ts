@@ -1,11 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { RequestError } from '@api';
+import { AdcmClusterHostsApi, RequestError } from '@api';
 import { fulfilledFilter } from '@utils/promiseUtils';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { AdcmClusterHostsApi } from '@api';
 import { AdcmCluster, AdcmClusterHost } from '@models/adcm';
 import { ActionStatuses } from '@constants';
 

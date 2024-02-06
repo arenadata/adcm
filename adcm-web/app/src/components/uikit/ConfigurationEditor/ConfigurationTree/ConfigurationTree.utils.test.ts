@@ -24,14 +24,15 @@ import {
   readonlyFieldSchema,
   // validate schemas
   validateInactiveGroupSchema,
+  emptyFilter,
 } from './ConfigurationTree.utils.test.constants';
-import { buildTreeNodes, filterTreeNodes, validate } from './ConfigurationTree.utils';
+import { buildConfigurationNodes, buildConfigurationTree, validate } from './ConfigurationTree.utils';
 import { ConfigurationArray, ConfigurationField, ConfigurationObject } from '../ConfigurationEditor.types';
 import { rootNodeKey } from './ConfigurationTree.constants';
 
 describe('structure node tests', () => {
   test('structure', () => {
-    const tree = buildTreeNodes(structureSchema, {}, {});
+    const tree = buildConfigurationNodes(structureSchema, {}, {});
     const structureNode = tree.children?.[0]!;
     const structureNodeData = structureNode.data as ConfigurationObject;
 
@@ -46,8 +47,9 @@ describe('structure node tests', () => {
       structure: null,
     };
 
-    const tree = buildTreeNodes(nullableStructureSchema, configuration, {});
-    const structureNode = tree.children?.[0]!;
+    const tree = buildConfigurationNodes(nullableStructureSchema, configuration, {});
+    const viewTree = buildConfigurationTree(tree, emptyFilter);
+    const structureNode = viewTree.children?.[0]!;
     const structureNodeData = structureNode.data as ConfigurationObject;
 
     expect(structureNodeData.isNullable).toBe(true);
@@ -60,12 +62,12 @@ describe('structure node tests', () => {
   });
 
   test('title', () => {
-    const tree = buildTreeNodes(structureSchemaWithTitle, {}, {});
+    const tree = buildConfigurationNodes(structureSchemaWithTitle, {}, {});
     const structureNodeWithTitle = tree.children?.[0]!;
 
     expect(structureNodeWithTitle.data.title).toBe('Structure title');
 
-    const tree2 = buildTreeNodes(structureSchema, {}, {});
+    const tree2 = buildConfigurationNodes(structureSchema, {}, {});
     const structureNodeWithDefaultTitle = tree2.children?.[0]!;
 
     expect(structureNodeWithDefaultTitle.data.title).toBe('structure');
@@ -78,7 +80,7 @@ describe('structure node tests', () => {
         someField2: 'value2',
       },
     };
-    const tree = buildTreeNodes(structureSchema, configuration, {});
+    const tree = buildConfigurationNodes(structureSchema, configuration, {});
     const structureNode = tree.children?.[0]!;
 
     expect(structureNode.children?.length).toBe(2);
@@ -89,8 +91,9 @@ describe('structure node tests', () => {
 
 describe('map node tests', () => {
   test('map', () => {
-    const tree = buildTreeNodes(mapSchema, {}, {});
-    const mapNode = tree.children?.[0]!;
+    const tree = buildConfigurationNodes(mapSchema, {}, {});
+    const treeView = buildConfigurationTree(tree, emptyFilter);
+    const mapNode = treeView.children?.[0]!;
     const mapNodeData = mapNode.data as ConfigurationObject;
 
     expect(mapNodeData.objectType).toBe('map');
@@ -102,8 +105,9 @@ describe('map node tests', () => {
   });
 
   test('nullable', () => {
-    const tree = buildTreeNodes(nullableMapSchema, {}, {});
-    const mapNode = tree.children?.[0]!;
+    const tree = buildConfigurationNodes(nullableMapSchema, {}, {});
+    const viewTree = buildConfigurationTree(tree, emptyFilter);
+    const mapNode = viewTree.children?.[0]!;
     const mapNodeData = mapNode.data as ConfigurationObject;
 
     expect(mapNodeData.isNullable).toBe(true);
@@ -117,8 +121,9 @@ describe('map node tests', () => {
 
   test('map with data', () => {
     const config = { map: { someField1: 'someField1Value', someField2: 'someField2Value' } };
-    const tree = buildTreeNodes(mapSchema, config, {});
-    const mapNode = tree.children?.[0]!;
+    const tree = buildConfigurationNodes(mapSchema, config, {});
+    const treeView = buildConfigurationTree(tree, emptyFilter);
+    const mapNode = treeView.children?.[0]!;
     const nodeData = mapNode.data as ConfigurationObject;
 
     expect(nodeData.isReadonly).toBe(false);
@@ -137,8 +142,9 @@ describe('map node tests', () => {
 
   test('predefined data', () => {
     const config = { map: { someField1: 'someField1Value', someField2: 'someField2Value' } };
-    const tree = buildTreeNodes(mapSchemaWithPredefinedData, config, {});
-    const mapNode = tree.children?.[0]!;
+    const tree = buildConfigurationNodes(mapSchemaWithPredefinedData, config, {});
+    const treeView = buildConfigurationTree(tree, emptyFilter);
+    const mapNode = treeView.children?.[0]!;
     const nodeData = mapNode.data as ConfigurationObject;
 
     expect(nodeData.isReadonly).toBe(false);
@@ -157,7 +163,7 @@ describe('map node tests', () => {
 
   test('readonly map', () => {
     const config = { map: { someField1: 'someField1Value', someField2: 'someField2Value' } };
-    const tree = buildTreeNodes(readonlyMapSchema, config, {});
+    const tree = buildConfigurationNodes(readonlyMapSchema, config, {});
     const mapNode = tree.children?.[0]!;
     const nodeData = mapNode.data as ConfigurationObject;
 
@@ -179,7 +185,7 @@ describe('map node tests', () => {
 
 describe('array node tests', () => {
   test('array', () => {
-    const tree = buildTreeNodes(listSchema, {}, {});
+    const tree = buildConfigurationNodes(listSchema, {}, {});
     const arrayNode = tree.children?.[0]!;
     const arrayNodeData = arrayNode.data as ConfigurationArray;
 
@@ -189,7 +195,7 @@ describe('array node tests', () => {
   });
 
   test('nullable array', () => {
-    const tree = buildTreeNodes(nullableListSchema, {}, {});
+    const tree = buildConfigurationNodes(nullableListSchema, {}, {});
     const arrayNode = tree.children?.[0]!;
     const arrayNodeData = arrayNode.data as ConfigurationArray;
 
@@ -202,14 +208,14 @@ describe('array node tests', () => {
     const configuration = {
       list: ['value1', 'value2'],
     };
-    const tree = buildTreeNodes(listSchemaWithTitle, configuration, {});
+    const tree = buildConfigurationNodes(listSchemaWithTitle, configuration, {});
     const arrayNodeWithTitle = tree.children?.[0]!;
     const item1NodeWithTitle = arrayNodeWithTitle.children?.[0]!;
 
     expect(arrayNodeWithTitle.data.title).toBe('Strings');
     expect(item1NodeWithTitle.data.title).toBe('Strings [0]');
 
-    const tree2 = buildTreeNodes(listSchema, configuration, {});
+    const tree2 = buildConfigurationNodes(listSchema, configuration, {});
     const arrayNodeWithDefaultTitle = tree2.children?.[0]!;
     const item1NodeWithDefaultTitle = arrayNodeWithDefaultTitle.children?.[0]!;
 
@@ -218,8 +224,9 @@ describe('array node tests', () => {
   });
 
   test('empty array', () => {
-    const tree = buildTreeNodes(listSchema, {}, {});
-    const arrayNode = tree.children?.[0]!;
+    const tree = buildConfigurationNodes(listSchema, {}, {});
+    const treeView = buildConfigurationTree(tree, emptyFilter);
+    const arrayNode = treeView.children?.[0]!;
 
     expect(arrayNode.children?.length).toBe(1);
     expect(arrayNode.children?.[0].data.type).toBe('addArrayItem');
@@ -229,8 +236,9 @@ describe('array node tests', () => {
     const config = {
       list: ['value1', 'value2'],
     };
-    const tree = buildTreeNodes(listSchema, config, {});
-    const arrayNode = tree.children?.[0]!;
+    const tree = buildConfigurationNodes(listSchema, config, {});
+    const treeView = buildConfigurationTree(tree, emptyFilter);
+    const arrayNode = treeView.children?.[0]!;
     const arrayNodeData = arrayNode.data as ConfigurationArray;
 
     expect(arrayNodeData.type).toBe('array');
@@ -252,7 +260,7 @@ describe('array node tests', () => {
     const config = {
       list: ['value1', 'value2'],
     };
-    const tree = buildTreeNodes(readonlyListSchema, config, {});
+    const tree = buildConfigurationNodes(readonlyListSchema, config, {});
     const arrayNode = tree.children?.[0]!;
     const arrayNodeData = arrayNode.data as ConfigurationArray;
 
@@ -274,7 +282,7 @@ describe('array node tests', () => {
 
 describe('field node', () => {
   test('field', () => {
-    const tree = buildTreeNodes(fieldSchema, {}, {});
+    const tree = buildConfigurationNodes(fieldSchema, {}, {});
     const fieldNode = tree.children?.[0]!;
     const fieldNodeData = fieldNode.data as ConfigurationField;
 
@@ -284,7 +292,7 @@ describe('field node', () => {
   });
 
   test('nullable field', () => {
-    const tree = buildTreeNodes(nullableFieldSchema, {}, {});
+    const tree = buildConfigurationNodes(nullableFieldSchema, {}, {});
     const fieldNode = tree.children?.[0]!;
     const fieldNodeData = fieldNode.data as ConfigurationField;
 
@@ -294,19 +302,19 @@ describe('field node', () => {
   });
 
   test('title', () => {
-    const tree = buildTreeNodes(fieldSchemaWithTitle, {}, {});
+    const tree = buildConfigurationNodes(fieldSchemaWithTitle, {}, {});
     const fieldNodeWithDefinedTitle = tree.children?.[0]!;
 
     expect(fieldNodeWithDefinedTitle.data.title).toBe('Field title');
 
-    const tree2 = buildTreeNodes(fieldSchema, {}, {});
+    const tree2 = buildConfigurationNodes(fieldSchema, {}, {});
     const fieldNodeWithDefaultTitle = tree2.children?.[0]!;
 
     expect(fieldNodeWithDefaultTitle.data.title).toBe('someField1');
   });
 
   test('readonly field', () => {
-    const tree = buildTreeNodes(readonlyFieldSchema, {}, {});
+    const tree = buildConfigurationNodes(readonlyFieldSchema, {}, {});
     const fieldNode = tree.children?.[0]!;
     const fieldNodeData = fieldNode.data as ConfigurationField;
 
@@ -360,8 +368,8 @@ describe('validate', () => {
 
 describe('filter', () => {
   test('find something', () => {
-    const tree = buildTreeNodes(clusterConfigurationSchema, clusterConfiguration, {});
-    const filteredTree = filterTreeNodes(tree, { title: 'Name', showAdvanced: false, showInvisible: false });
+    const tree = buildConfigurationNodes(clusterConfigurationSchema, clusterConfiguration, {});
+    const filteredTree = buildConfigurationTree(tree, { title: 'Name', showAdvanced: false, showInvisible: false });
     const rootNode = filteredTree;
 
     expect(rootNode).not.toBe(undefined);
@@ -394,7 +402,7 @@ describe('fillFieldAttributes', () => {
       '/cluster_config/auth': authAttributes,
     };
 
-    const tree = buildTreeNodes(clusterConfigurationSchema, clusterConfiguration, attributes);
+    const tree = buildConfigurationNodes(clusterConfigurationSchema, clusterConfiguration, attributes);
 
     const rootNode = tree;
 

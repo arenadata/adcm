@@ -551,9 +551,10 @@ class TestMappingConstraints(BaseAPITestCase):
                 "code": "COMPONENT_CONSTRAINT_ERROR",
                 "level": "error",
                 "desc": (
-                    f'No component "{bound_target_component.display_name}" of service '
-                    f'"{bound_target_component.service.display_name}" on host "{self.host_1.display_name}" for '
-                    f'component "{bound_component.display_name}" of service "{bound_component.service.display_name}"'
+                    f'No component "{bound_component.display_name}" of service '
+                    f'"{bound_component.service.display_name}" on host "{self.host_2.display_name}" for '
+                    f'component "{bound_target_component.display_name}" '
+                    f'of service "{bound_target_component.service.display_name}"'
                 ),
             },
         )

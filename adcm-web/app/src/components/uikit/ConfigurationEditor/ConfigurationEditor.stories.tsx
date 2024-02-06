@@ -11,7 +11,7 @@ import {
   nullableSchema,
 } from './ConfigurationEditor.stories.constants';
 import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
-import { ConfigurationNodeFilter } from './ConfigurationEditor.types';
+import { ConfigurationTreeFilter } from './ConfigurationEditor.types';
 import { Checkbox, Input, Switch } from '@uikit';
 import { generateFromSchema } from '@utils/jsonSchemaUtils';
 
@@ -60,7 +60,7 @@ const ConfigurationEditorStoryWithHooks = ({ initialConfigurationData, initialAt
   const [configuration, setConfiguration] = useState<ConfigurationData>(safeConfigurationData as any);
   const [attributes, setAttributes] = useState<ConfigurationAttributes>(initialAttributes ?? {});
   const [areExpandedAll, setAreExpandedAll] = useState(false);
-  const [filter, setFilter] = useState<ConfigurationNodeFilter>({
+  const [filter, setFilter] = useState<ConfigurationTreeFilter>({
     title: '',
     showAdvanced: false,
     showInvisible: false,

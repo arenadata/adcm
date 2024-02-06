@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import ConfigurationEditorDialog from '../ConfigurationEditorDialog/ConfigurationEditorDialog';
 import { Node } from '@uikit/CollapseTree2/CollapseNode.types';
 import { JSONPrimitive } from '@models/json';
-import { ConfigurationField, ConfigurationNode } from '../../ConfigurationEditor.types';
+import { ConfigurationField, ConfigurationNodeView } from '../../ConfigurationEditor.types';
 import EnumControl from '../FieldControls/EnumControl';
 import StringControl from '../FieldControls/StringControl';
 import MultilineStringControl from '../FieldControls/MultilineStringControl';
@@ -11,11 +11,11 @@ import NumberControl from '../FieldControls/NumberControl';
 import SecretControl from '../FieldControls/SecretControl';
 
 export interface ConfigurationEditInputFieldDialogProps {
-  node: ConfigurationNode;
+  node: ConfigurationNodeView;
   triggerRef: React.RefObject<HTMLElement>;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onChange: (node: ConfigurationNode, value: JSONPrimitive) => void;
+  onChange: (node: ConfigurationNodeView, value: JSONPrimitive) => void;
 }
 
 const multilineWidthProps = { width: '100%', maxWidth: '1280px' };

@@ -6133,6 +6133,7 @@ __metadata:
     date-fns: "npm:2.30.0"
     eslint: "npm:8.38.0"
     eslint-config-prettier: "npm:8.8.0"
+    eslint-import-resolver-alias: "npm:1.1.2"
     eslint-plugin-import: "npm:2.27.5"
     eslint-plugin-jsx-a11y: "npm:6.7.1"
     eslint-plugin-prettier: "npm:4.2.1"
@@ -8604,6 +8605,15 @@ __metadata:
   bin:
     eslint-config-prettier: bin/cli.js
   checksum: 3638144cecada897105ff9442bc85aba71c4f44d7d25b576cb34d50a207f6655f7cc55e729aad1a934a9f15e55c88e7adcbd1067d6582325fc89864c879b52f1
+  languageName: node
+  linkType: hard
+
+"eslint-import-resolver-alias@npm:1.1.2":
+  version: 1.1.2
+  resolution: "eslint-import-resolver-alias@npm:1.1.2"
+  peerDependencies:
+    eslint-plugin-import: ">=1.4.0"
+  checksum: 3fbb9aeda98335060bb438ed8446a060d282f80a365838a82edb1f8743b1d54c89303009c7717e3c915d5d722e57148082c5ada4455e811acdc8ed3a65059fa1
   languageName: node
   linkType: hard
 

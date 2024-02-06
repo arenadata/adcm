@@ -15,8 +15,7 @@ from pathlib import Path
 from api_v2.service.utils import bulk_add_services_to_cluster
 
 from cm.models import Action, ClusterObject, ObjectType, Prototype, ServiceComponent
-from cm.services.job.inventory import get_inventory_data
-from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
+from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
 class TestHostAction(BaseInventoryTestCase):
@@ -52,6 +51,10 @@ class TestHostAction(BaseInventoryTestCase):
             ],
         )
 
+        self.cluster_action = Action.objects.get(name="host_action_on_cluster", prototype=self.cluster.prototype)
+        self.service_action = Action.objects.get(name="host_action_on_service", prototype=self.service.prototype)
+        self.component_action = Action.objects.get(name="host_action_on_component", prototype=self.component.prototype)
+
     def test_host_action(self):
         host_names = [self.host_1.fqdn, self.host_2.fqdn]
         expected_topology = {
@@ -63,11 +66,16 @@ class TestHostAction(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("CLUSTER", "hosts"): (
-                self.templates_dir / "two_hosts.json.j2",
+            ("CLUSTER", "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
                 {
-                    "host_1_id": self.host_1.pk,
-                    "host_2_id": self.host_2.pk,
+                    "adcm_hostid": self.host_1.pk,
+                },
+            ),
+            ("CLUSTER", "hosts", self.host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
                 },
             ),
             ("CLUSTER", "vars", "cluster"): (
@@ -81,14 +89,35 @@ class TestHostAction(BaseInventoryTestCase):
                 {
                     "service_id": self.service.pk,
                     "component_id": self.component.pk,
-                    "service_mm": "false",
-                    "component_mm": "false",
                 },
             ),
-            ("HOST", "hosts"): (
-                self.templates_dir / "one_host.json.j2",
+            (self.service.name, "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
                 {
-                    "host_fqdn": self.host_1.fqdn,
+                    "adcm_hostid": self.host_1.pk,
+                },
+            ),
+            (self.service.name, "hosts", self.host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                },
+            ),
+            (f"{self.service.name}.{self.component.name}", "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_1.pk,
+                },
+            ),
+            (f"{self.service.name}.{self.component.name}", "hosts", self.host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                },
+            ),
+            ("HOST", "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
                     "adcm_hostid": self.host_1.pk,
                 },
             ),
@@ -99,10 +128,9 @@ class TestHostAction(BaseInventoryTestCase):
                     "host_prototype_id": self.host_1.prototype.pk,
                 },
             ),
-            ("target", "hosts"): (
-                self.templates_dir / "one_host.json.j2",
+            ("target", "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
                 {
-                    "host_fqdn": self.host_1.fqdn,
                     "adcm_hostid": self.host_1.pk,
                 },
             ),
@@ -117,23 +145,16 @@ class TestHostAction(BaseInventoryTestCase):
                 {
                     "service_id": self.service.pk,
                     "component_id": self.component.pk,
-                    "service_mm": "false",
-                    "component_mm": "false",
                 },
             ),
         }
-        actions = [
-            Action.objects.get(name="host_action_on_cluster", prototype=self.cluster.prototype),
-            Action.objects.get(name="host_action_on_service", prototype=self.service.prototype),
-            Action.objects.get(name="host_action_on_component", prototype=self.component.prototype),
-        ]
-        for action in actions:
-            with self.subTest(
-                msg=f"Object: {self.host_1.prototype.type} #{self.host_1.pk} {self.host_1.name}, action: {action.name}"
-            ):
-                actual_inventory = decrypt_secrets(
-                    source=get_inventory_data(obj=self.host_1, action=action)["all"]["children"]
-                )
 
-                self.check_hosts_topology(data=actual_inventory, expected=expected_topology)
-                self.check_data_by_template(data=actual_inventory, templates_data=expected_data)
+        for obj, action in [
+            (self.host_1, self.cluster_action),
+            (self.host_1, self.service_action),
+            (self.host_1, self.component_action),
+        ]:
+            with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
+                self.assert_inventory(
+                    obj=obj, action=action, expected_data=expected_data, expected_topology=expected_topology
+                )

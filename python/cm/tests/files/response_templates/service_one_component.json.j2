@@ -5,7 +5,7 @@
     "state": "created",
     "multi_state": [],
     "config": {
-      "integer": 10,
+      "integer": {{ service_config_integer | default(10) }},
       "password": "password",
       "string": "string",
       "list": [
@@ -14,7 +14,7 @@
         "value3"
       ]
     },
-    "maintenance_mode": {{ service_mm }},
+    "maintenance_mode": {{ service_maintenance_mode | default("false") }},
     "display_name": "service_one_component",
     "before_upgrade": {
       "state": null
@@ -22,7 +22,7 @@
     "component_1": {
       "component_id": {{ component_id }},
       "config": {
-        "integer": 10,
+        "integer": {{ component_config_integer | default(10) }},
         "password": "password",
         "string": "string",
         "list": [
@@ -33,7 +33,7 @@
       },
       "state": "created",
       "multi_state": [],
-      "maintenance_mode": {{ component_mm }},
+      "maintenance_mode": {{ component_maintenance_mode | default("false") }},
       "display_name": "component_1",
       "before_upgrade": {
         "state": null

@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { FormField, Input } from '@uikit';
 import ConfigurationEditorDialog from '../ConfigurationEditorDialog/ConfigurationEditorDialog';
-import { ConfigurationNode } from '../../ConfigurationEditor.types';
+import { ConfigurationNodeView } from '../../ConfigurationEditor.types';
 import { JSONPrimitive } from '@models/json';
 import StringControl from '../FieldControls/StringControl';
 import SecretControl from '../FieldControls/SecretControl';
 import s from './AddConfigurationFieldDialog.module.scss';
 
 export interface AddConfigurationFieldDialogProps {
-  node: ConfigurationNode;
+  node: ConfigurationNodeView;
   triggerRef: React.RefObject<HTMLElement>;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onAddField: (node: ConfigurationNode, fieldName: string, value: JSONPrimitive) => void;
+  onAddField: (node: ConfigurationNodeView, fieldName: string, value: JSONPrimitive) => void;
 }
 
 const AddConfigurationFieldDialog = ({

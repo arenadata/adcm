@@ -10,8 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from typing import Iterable
+import unittest
 
 from cm.api import DataForMultiBind, multi_bind
+from cm.inventory import get_import, get_inventory_data
 from cm.models import (
     Action,
     ADCMModel,
@@ -90,6 +92,11 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             "hostprovider": self.hostprovider,
             "filedir": self.directories["FILE_DIR"],
         }
+
+        self.cluster_with_defaults = self.add_cluster(bundle=self.cluster.prototype.bundle, name="With Default Imports")
+        self.service_with_defaults = self.add_services_to_cluster(
+            service_names=["imports_with_defaults"], cluster=self.cluster_with_defaults
+        ).get()
 
     def prepare_cluster_hostcomponent(self) -> None:
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
@@ -254,3 +261,129 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
                 actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["children"])
                 self.assertDictEqual(actual_inventory["CLUSTER"]["vars"], expected_vars)
+
+    def test_imports_have_default_no_import_success(self) -> None:
+        self.change_configuration(
+            target=self.service_with_defaults,
+            config_diff={"another_stuff": {"hehe": 30.43}, "plain_group": {"listofstuff": ["204"]}},
+        )
+
+        expected = {
+            "for_export": [{"another_stuff": {"hehe": 30.43}}],
+            "very_complex": {"activatable_group": None, "plain_group": {"listofstuff": ["204"]}},
+        }
+        result = decrypt_secrets(get_import(cluster=self.cluster_with_defaults))
+        self.assertDictEqual(result, expected)
+
+    def test_imports_have_default_one_import_succeess(self) -> None:
+        self.change_configuration(
+            target=self.service_with_defaults,
+            config_diff={"another_stuff": {"hehe": 500.5}, "plain_group": {"listofstuff": ["204"]}},
+            meta_diff={"/activatable_group": {"isActive": True}},
+        )
+        self.bind_objects((self.service_with_defaults, [self.export_cluster_1]))
+
+        expected = {
+            "very_complex": {
+                "just_integer": 4,
+                "plain_group": {
+                    "simple": "ingroup",
+                    "secretmap": {"gk1": "gv1", "gk2": "gv2"},
+                    "secretfile": f"{self.directories['FILE_DIR']}/cluster.2.plain_group.secretfile",
+                    "list_of_dicts": None,
+                    "listofstuff": ["x", "y"],
+                },
+                "variant_inline": None,
+            },
+            "for_export": [{"another_stuff": {"hehe": 500.5}}],
+        }
+
+        result = decrypt_secrets(get_import(cluster=self.cluster_with_defaults))
+        self.assertDictEqual(result, expected)
+
+    @unittest.skip(reason="import bug with multibind")
+    def test_imports_have_default_all_imported_success(self) -> None:
+        self.bind_objects(
+            (self.service_with_defaults, [self.export_cluster_1, self.export_service_1, self.export_service_2])
+        )
+        self.change_configuration(
+            target=self.export_service_2,
+            config_diff={"just_integer": 400},
+            meta_diff={"/activatable_group": {"isActive": True}},
+        )
+
+        expected = {
+            "very_complex": {
+                "just_integer": 4,
+                "plain_group": {
+                    "simple": "ingroup",
+                    "secretmap": {"gk1": "gv1", "gk2": "gv2"},
+                    "secretfile": f"{self.directories['FILE_DIR']}/cluster.2.plain_group.secretfile",
+                    "list_of_dicts": None,
+                    "listofstuff": ["x", "y"],
+                },
+                "variant_inline": None,
+            },
+            "for_export": [
+                {
+                    "activatable_group": None,
+                    "just_integer": 12,
+                    "plain_group": {"list_of_dicts": None, "listofstuff": ["x", "y"]},
+                },
+                {
+                    "activatable_group": {"simple": "inactgroup", "secretmap": {"agk1": "agv1", "agk2": "agv2"}},
+                    "just_integer": 400,
+                    "plain_group": {"list_of_dicts": None, "listofstuff": ["x", "y"]},
+                },
+            ],
+        }
+        result = decrypt_secrets(get_import(cluster=self.cluster_with_defaults))
+        self.assertDictEqual(result, expected)
+
+    def test_group_config_effect_on_import_with_default(self) -> None:
+        host_3 = self.add_host(bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-3")
+        host_4 = self.add_host(bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-4")
+
+        self.add_host_to_cluster(cluster=self.cluster_with_defaults, host=host_3)
+        self.add_host_to_cluster(cluster=self.cluster_with_defaults, host=host_4)
+        component = ServiceComponent.objects.filter(service=self.service_with_defaults).get()
+        self.set_hostcomponent(cluster=self.cluster_with_defaults, entries=[(host_3, component), (host_4, component)])
+        group = self.add_group_config(parent=self.service_with_defaults, hosts=[host_3])
+        self.change_configuration(
+            target=self.service_with_defaults,
+            config_diff={"another_stuff": {"hehe": 500.5}, "plain_group": {"listofstuff": ["204"]}},
+            meta_diff={"/activatable_group": {"isActive": True}},
+        )
+        self.change_configuration(
+            target=group,
+            config_diff={
+                "another_stuff": {"hehe": 2000},
+                "plain_group": {"listofstuff": ["ooo"]},
+                "activatable_group": {"simple": "ch"},
+            },
+            meta_diff={"/activatable_group": {"isActive": True}},
+        )
+        self.bind_objects((self.service_with_defaults, [self.export_cluster_1]))
+
+        action = Action.objects.filter(prototype=self.service_with_defaults.prototype, name="dummy").first()
+        result = decrypt_secrets(get_inventory_data(obj=self.service_with_defaults, action=action))["all"]["children"]
+        expected_vars_imports = {
+            "very_complex": {
+                "just_integer": 4,
+                "plain_group": {
+                    "simple": "ingroup",
+                    "secretmap": {"gk1": "gv1", "gk2": "gv2"},
+                    "secretfile": f"{self.directories['FILE_DIR']}/cluster.2.plain_group.secretfile",
+                    "list_of_dicts": None,
+                    "listofstuff": ["x", "y"],
+                },
+                "variant_inline": None,
+            },
+            "for_export": [{"another_stuff": {"hehe": 500.5}}],
+        }
+
+        self.assertDictEqual(result["CLUSTER"]["vars"]["cluster"]["imports"], expected_vars_imports)
+        for node in ("CLUSTER", "imports_with_defaults", "imports_with_defaults.just_component"):
+            # note that imports ignore group configs
+            self.assertDictEqual(result[node]["hosts"]["host-3"]["cluster"]["imports"], expected_vars_imports)
+            self.assertNotIn("cluster", result[node]["hosts"]["host-4"])

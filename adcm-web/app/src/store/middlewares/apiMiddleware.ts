@@ -1,5 +1,6 @@
 import { Middleware } from 'redux';
 import { isRejectedWithValue } from '@reduxjs/toolkit';
+// eslint-disable-next-line import/no-cycle
 import { logout } from '../authSlice';
 import { StoreState, AppDispatch } from '../store';
 import { RequestError } from '@api/httpClient';

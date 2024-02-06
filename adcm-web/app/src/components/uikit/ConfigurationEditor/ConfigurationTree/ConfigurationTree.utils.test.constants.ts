@@ -1,4 +1,7 @@
 import { ConfigurationSchema } from '@models/adcm';
+import { ConfigurationTreeFilter } from '../ConfigurationEditor.types';
+
+export const emptyFilter: ConfigurationTreeFilter = { title: '', showAdvanced: true, showInvisible: true };
 
 export const clusterConfigurationSchema: ConfigurationSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',

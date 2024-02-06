@@ -3,6 +3,7 @@ import { Table, TableRow, TableCell, IconButton, Checkbox } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { columns } from './AccessManagerUsersTable.constants';
 import {
+  openDeleteDialog,
   openUnblockDialog,
   openUserUpdateDialog,
   setSelectedItemsIds as setSelectedUsersIds,
@@ -11,7 +12,6 @@ import { setSortParams } from '@store/adcm/users/usersTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { AdcmUser, AdcmUserStatus } from '@models/adcm';
 import { useSelectedItems } from '@uikit/hooks/useSelectedItems';
-import { openDeleteDialog } from '@store/adcm/users/usersActionsSlice';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const AccessManagerUsersTable = () => {

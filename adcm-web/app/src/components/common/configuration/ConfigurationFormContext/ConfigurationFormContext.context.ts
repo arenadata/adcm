@@ -1,9 +1,9 @@
 import React, { useContext } from 'react';
-import { ConfigurationNodeFilter } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
+import { ConfigurationTreeFilter } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
 
 export type ConfigurationFormContextOptions = {
-  filter: ConfigurationNodeFilter;
-  onFilterChange: (changes: Partial<ConfigurationNodeFilter>) => void;
+  filter: ConfigurationTreeFilter;
+  onFilterChange: (changes: Partial<ConfigurationTreeFilter>) => void;
   areExpandedAll: boolean;
   isValid: boolean;
   onChangeIsValid: (isValid: boolean) => void;

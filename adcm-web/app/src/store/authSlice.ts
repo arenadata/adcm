@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { RequestError, AuthApi, AdcmProfileApi } from '@api';
+// eslint-disable-next-line import/no-cycle
 import { createAsyncThunk } from './redux';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { showError } from './notificationsSlice';

@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from adcm.permissions import VIEW_USER_PERMISSION, CustomModelPermissionsByMethod
+from adcm.permissions import VIEW_USER_PERMISSION
 from audit.utils import audit
 from cm.errors import AdcmEx
 from django.conf import settings
@@ -21,12 +21,12 @@ from rbac.models import User
 from rbac.services.user import create_user, update_user
 from rbac.utils import Empty
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 from api_v2.rbac.user.filters import UserFilterSet
+from api_v2.rbac.user.permissions import UserPermissions
 from api_v2.rbac.user.serializers import (
     UserCreateSerializer,
     UserSerializer,
@@ -45,11 +45,7 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = UserFilterSet
     permission_required = [VIEW_USER_PERMISSION]
-    permission_classes = (CustomModelPermissionsByMethod,)
-    method_permissions_map = {
-        "patch": [(VIEW_USER_PERMISSION, NotFound)],
-        "delete": [(VIEW_USER_PERMISSION, NotFound)],
-    }
+    permission_classes = (UserPermissions,)
 
     def get_serializer_class(self) -> type[UserSerializer] | type[UserUpdateSerializer] | type[UserCreateSerializer]:
         if self.action in ("update", "partial_update"):
@@ -92,10 +88,11 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):
     @audit
     @action(methods=["post"], detail=True)
     def unblock(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+        user = self.get_object()
         if not request.user.is_superuser:
             raise AdcmEx(code="USER_UNBLOCK_ERROR")
 
-        unblock_user(user=self.get_object())
+        unblock_user(user=user)
 
         return Response(status=HTTP_200_OK)
 

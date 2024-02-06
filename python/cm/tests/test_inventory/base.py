@@ -16,19 +16,23 @@ import json
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
 
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import add_hc, update_obj_config
+from cm.inventory import HcAclAction
 from cm.models import (
     Action,
     ADCMEntity,
     ADCMModel,
     Cluster,
+    ClusterObject,
     ConfigLog,
     GroupConfig,
     Host,
     HostComponent,
+    MaintenanceMode,
     ServiceComponent,
 )
 from cm.services.job.inventory import get_inventory_data
@@ -105,7 +109,7 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
         target.refresh_from_db()
         current_config = ConfigLog.objects.get(id=target.config.current)
 
-        return update_obj_config(
+        updated = update_obj_config(
             obj_conf=target.config,
             config=deep_merge(origin=preprocess_config(current_config.config), renovator=config_diff),
             attr=convert_adcm_meta_to_attr(
@@ -113,6 +117,9 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
             ),
             description="",
         )
+        target.refresh_from_db()
+
+        return updated
 
     def check_data_by_template(self, data: Mapping[str, dict], templates_data: TemplatesData) -> None:
         for key_chain, template_data in templates_data.items():
@@ -130,6 +137,7 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
                 {
                     "host_fqdn": host.fqdn,
                     "adcm_hostid": host.pk,
+                    "host_2_multi_state": (["bac", "osscc"] if host.multi_state else []),
                 },
             ),
             ("HOST", "vars", "provider"): (
@@ -150,3 +158,48 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
 
         self.check_hosts_topology(data=actual_inventory, expected=expected_topology)
         self.check_data_by_template(data=actual_inventory, templates_data=expected_data)
+
+    @staticmethod
+    def add_group_config(parent: ADCMModel, hosts: Iterable[Host]) -> GroupConfig:
+        group_config = GroupConfig.objects.create(
+            object_type=ContentType.objects.get_for_model(model=parent),
+            object_id=parent.pk,
+            name=f"Group for {parent.__class__.__name__} {parent.pk}",
+        )
+        group_config.hosts.set(hosts)
+        return group_config
+
+    @staticmethod
+    def get_mapping_delta_for_hc_acl(cluster, new_mapping: list[MappingEntry]) -> Delta:
+        existing_mapping_ids = {
+            (hc.host.pk, hc.component.pk, hc.service.pk) for hc in HostComponent.objects.filter(cluster=cluster)
+        }
+        new_mapping_ids = {(hc["host_id"], hc["component_id"], hc["service_id"]) for hc in new_mapping}
+
+        added = {}
+        for host_id, component_id, service_id in new_mapping_ids.difference(existing_mapping_ids):
+            host = Host.objects.get(pk=host_id, cluster=cluster)
+            service = ClusterObject.objects.get(pk=service_id, cluster=cluster)
+            component = ServiceComponent.objects.get(pk=component_id, cluster=cluster, service=service)
+
+            added.setdefault(f"{service.name}.{component.name}", {}).setdefault(host.fqdn, host)
+
+        removed = {}
+        for host_id, component_id, service_id in existing_mapping_ids.difference(new_mapping_ids):
+            host = Host.objects.get(pk=host_id, cluster=cluster)
+            service = ClusterObject.objects.get(pk=service_id, cluster=cluster)
+            component = ServiceComponent.objects.get(pk=component_id, cluster=cluster, service=service)
+
+            removed.setdefault(f"{service.name}.{component.name}", {}).setdefault(host.fqdn, host)
+
+        return {
+            HcAclAction.ADD: added,
+            HcAclAction.REMOVE: removed,
+        }
+
+    @staticmethod
+    def get_maintenance_mode_for_render(maintenance_mode: MaintenanceMode) -> str:
+        if maintenance_mode == MaintenanceMode.ON:
+            return "true"
+
+        return "false"

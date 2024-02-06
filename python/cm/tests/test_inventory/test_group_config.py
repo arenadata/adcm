@@ -9,16 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Iterable
 
 from api_v2.service.utils import bulk_add_services_to_cluster
-from django.contrib.contenttypes.models import ContentType
 
 from cm.models import (
     Action,
-    ADCMModel,
-    GroupConfig,
-    Host,
     ObjectType,
     Prototype,
     ServiceComponent,
@@ -64,16 +59,6 @@ class TestGroupConfigsInInventory(BaseInventoryTestCase):
         self.component_another_thesame = ServiceComponent.objects.get(
             service=self.service_thesame, prototype__name="another_thesame_component"
         )
-
-    @staticmethod
-    def add_group_config(parent: ADCMModel, hosts: Iterable[Host]) -> GroupConfig:
-        group_config = GroupConfig.objects.create(
-            object_type=ContentType.objects.get_for_model(model=parent),
-            object_id=parent.pk,
-            name=f"Group for {parent.__class__.__name__} {parent.pk}",
-        )
-        group_config.hosts.set(hosts)
-        return group_config
 
     def test_group_config_in_inventory(self) -> None:
         self.set_hostcomponent(

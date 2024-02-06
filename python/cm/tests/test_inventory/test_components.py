@@ -100,8 +100,6 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 {
                     "service_id": service_one_component.pk,
                     "component_id": component_1.pk,
-                    "service_mm": "false",
-                    "component_mm": "false",
                 },
             ),
         }
@@ -130,6 +128,9 @@ class TestInventoryComponents(BaseInventoryTestCase):
         ).get()
         component_1 = ServiceComponent.objects.get(service=service_two_components, prototype__name="component_1")
         component_2 = ServiceComponent.objects.get(service=service_two_components, prototype__name="component_2")
+        component_2.set_multi_state("kat")
+        self.host_2.set_multi_state("bac")
+        self.host_2.set_multi_state("osscc")
 
         self.add_hostcomponent_map(
             cluster=self.cluster_1,
@@ -159,10 +160,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
         expected_data = {
             ("CLUSTER", "hosts"): (
                 self.templates_dir / "two_hosts.json.j2",
-                {
-                    "host_1_id": self.host_1.pk,
-                    "host_2_id": self.host_2.pk,
-                },
+                {"host_1_id": self.host_1.pk, "host_2_id": self.host_2.pk, "host_2_multi_state": ["bac", "osscc"]},
             ),
             ("CLUSTER", "vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
@@ -176,6 +174,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
                     "service_id": service_two_components.pk,
                     "component_1_id": component_1.pk,
                     "component_2_id": component_2.pk,
+                    "component_2_multi_state": ["kat"],
                 },
             ),
         }

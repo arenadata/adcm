@@ -214,3 +214,147 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             expected_topology=expected_topology,
             expected_data=expected_data,
         )
+
+    def test_group_config_effect_on_before_upgrade(self) -> None:
+        self.service_two_components: ClusterObject = bulk_add_services_to_cluster(
+            cluster=self.cluster_1,
+            prototypes=Prototype.objects.filter(
+                type=ObjectType.SERVICE, name="service_two_components", bundle=self.cluster_1.prototype.bundle
+            ),
+        ).get()
+        self.component_1 = ServiceComponent.objects.get(
+            service=self.service_two_components, prototype__name="component_1"
+        )
+        self.component_2 = ServiceComponent.objects.get(
+            service=self.service_two_components, prototype__name="component_2"
+        )
+
+        self.set_hostcomponent(
+            cluster=self.cluster_1,
+            entries=[
+                (self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1), self.component_1),
+                (self.host_1, self.component_2),
+                (self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2), self.component_1),
+                (self.host_2, self.component_2),
+            ],
+        )
+
+        cluster_group = self.add_group_config(parent=self.cluster_1, hosts=[self.host_1, self.host_2])
+        service_group = self.add_group_config(parent=self.service_two_components, hosts=[self.host_2])
+        component_1_group = self.add_group_config(parent=self.component_1, hosts=[self.host_1])
+
+        changed_integer = 40
+        changed_string = "woohoo"
+        changed_list = ["1", "2"]
+
+        self.change_configuration(
+            target=cluster_group,
+            config_diff={"integer": changed_integer},
+            meta_diff={"/integer": {"isSynchronized": False}},
+        )
+        self.change_configuration(
+            target=service_group,
+            config_diff={"string": changed_string},
+            meta_diff={"/string": {"isSynchronized": False}},
+        )
+        self.change_configuration(
+            target=component_1_group, config_diff={"list": changed_list}, meta_diff={"/list": {"isSynchronized": False}}
+        )
+
+        self.cluster_1.before_upgrade["bundle_id"] = self.cluster_1.prototype.bundle.pk
+        update_before_upgrade(obj=self.cluster_1)
+
+        bundle_switch(obj=self.cluster_1, upgrade=self.upgrade_for_cluster)
+        self.cluster_1.refresh_from_db()
+
+        cluster_file = self.templates_dir / "group_config_before_upgrade" / "cluster_section.json.j2"
+        services_file = self.templates_dir / "group_config_before_upgrade" / "services_section.json.j2"
+        expected_hosts_cluster = (
+            cluster_file,
+            {"config_integer": changed_integer, "before_upgrade_integer": changed_integer},
+        )
+        expected_host_1_services = (
+            # list is pre-defined in template, so just True is ok
+            services_file,
+            {"config_list": True, "before_upgrade_list": True},
+        )
+        expected_host_2_services = (
+            services_file,
+            {"config_string": changed_string, "before_upgrade_string": changed_string},
+        )
+        hosts = ["host_1", "host_2"]
+        expected_topology = {
+            "CLUSTER": hosts,
+            "service_two_components": hosts,
+            "service_two_components.component_1": hosts,
+            "service_two_components.component_2": hosts,
+        }
+        expected_data = {
+            ("CLUSTER", "vars", "cluster"): (cluster_file, {}),
+            ("CLUSTER", "vars", "services"): (services_file, {}),
+            ("CLUSTER", "hosts", "host_1", "cluster"): expected_hosts_cluster,
+            ("CLUSTER", "hosts", "host_1", "services"): expected_host_1_services,
+            ("CLUSTER", "hosts", "host_2", "services"): expected_host_2_services,
+            ("service_two_components", "hosts", "host_1", "cluster"): expected_hosts_cluster,
+            ("service_two_components", "hosts", "host_1", "services"): expected_host_1_services,
+            ("service_two_components", "hosts", "host_2", "services"): expected_host_2_services,
+            ("service_two_components.component_1", "hosts", "host_1", "cluster"): expected_hosts_cluster,
+            ("service_two_components.component_1", "hosts", "host_1", "services"): expected_host_1_services,
+            ("service_two_components.component_1", "hosts", "host_2", "services"): expected_host_2_services,
+            ("service_two_components.component_2", "hosts", "host_1", "cluster"): expected_hosts_cluster,
+            ("service_two_components.component_2", "hosts", "host_1", "services"): expected_host_1_services,
+            ("service_two_components.component_2", "hosts", "host_2", "services"): expected_host_2_services,
+        }
+
+        self.maxDiff = None
+        self.assert_inventory(
+            obj=self.cluster_1,
+            action=self.upgrade_for_cluster.action,
+            expected_topology=expected_topology,
+            expected_data=expected_data,
+        )
+
+        new_string = "another-string"
+        component_1_group.delete()
+        self.change_configuration(
+            target=service_group,
+            config_diff={"string": new_string},
+            meta_diff={"/string": {"isSynchronized": False}},
+        )
+
+        expected_hosts_cluster = (
+            cluster_file,
+            {"config_integer": changed_integer, "before_upgrade_integer": changed_integer},
+        )
+        expected_host_1_services = (
+            # group is removed, data is retrieved from "regular" config
+            services_file,
+            {"config_list": False, "before_upgrade_list": False},
+        )
+        expected_host_2_services = (
+            services_file,
+            {"config_string": new_string, "before_upgrade_string": changed_string},
+        )
+        expected_data = {
+            ("CLUSTER", "vars", "cluster"): (cluster_file, {}),
+            ("CLUSTER", "vars", "services"): (services_file, {}),
+            ("CLUSTER", "hosts", "host_1", "cluster"): expected_hosts_cluster,
+            ("CLUSTER", "hosts", "host_1", "services"): expected_host_1_services,
+            ("CLUSTER", "hosts", "host_2", "services"): expected_host_2_services,
+            ("service_two_components", "hosts", "host_1", "cluster"): expected_hosts_cluster,
+            ("service_two_components", "hosts", "host_1", "services"): expected_host_1_services,
+            ("service_two_components", "hosts", "host_2", "services"): expected_host_2_services,
+            ("service_two_components.component_1", "hosts", "host_1", "cluster"): expected_hosts_cluster,
+            ("service_two_components.component_1", "hosts", "host_1", "services"): expected_host_1_services,
+            ("service_two_components.component_1", "hosts", "host_2", "services"): expected_host_2_services,
+            ("service_two_components.component_2", "hosts", "host_1", "cluster"): expected_hosts_cluster,
+            ("service_two_components.component_2", "hosts", "host_1", "services"): expected_host_1_services,
+            ("service_two_components.component_2", "hosts", "host_2", "services"): expected_host_2_services,
+        }
+
+        self.assert_inventory(
+            obj=self.cluster_1,
+            action=self.upgrade_for_cluster.action,
+            expected_topology=expected_topology,
+            expected_data=expected_data,
+        )

@@ -41,7 +41,9 @@ import clusterOverviewHostsSlice from '@store/adcm/cluster/overview/overviewHost
 import clusterOverviewServicesTableSlice from '@store/adcm/cluster/overview/overviewServicesTableSlice';
 import clusterOverviewHostsTableSlice from '@store/adcm/cluster/overview/overviewHostsTableSlice';
 
+// eslint-disable-next-line import/no-cycle
 import { apiMiddleware } from './middlewares/apiMiddleware';
+// eslint-disable-next-line import/no-cycle
 import { wsMiddleware } from './middlewares/wsMiddeware';
 import clusterSlice from './adcm/clusters/clusterSlice';
 import usersSlice from './adcm/users/usersSlice';

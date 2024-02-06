@@ -329,3 +329,41 @@ class TestServiceDeleteAction(BaseAPITestCase):
         task.save(update_fields=["status", "pid"])
 
         return task
+
+
+class TestServiceMaintenanceMode(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.service_2_cl_1 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
+        self.service_cl_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
+
+    def test_change_mm_success(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-maintenance-mode",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2_cl_1.pk},
+            ),
+            data={"maintenance_mode": MaintenanceMode.ON},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_chamge_mm_not_available_fail(self):
+        response = self.client.post(
+            path=reverse(
+                "v2:service-maintenance-mode",
+                kwargs={"cluster_pk": self.cluster_2.pk, "pk": self.service_cl_2.pk},
+            ),
+            data={"maintenance_mode": MaintenanceMode.ON},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "MAINTENANCE_MODE_NOT_AVAILABLE",
+                "level": "error",
+                "desc": "Service does not support maintenance mode",
+            },
+        )

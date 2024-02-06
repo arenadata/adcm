@@ -12,8 +12,8 @@
 
 
 from cm.inventory import HcAclAction
-from cm.models import Action, ClusterObject, Host, HostComponent, ServiceComponent
-from cm.tests.test_inventory.base import BaseInventoryTestCase, Delta, MappingEntry
+from cm.models import Action, ClusterObject, ServiceComponent
+from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
 class TestInventoryHcAclActions(BaseInventoryTestCase):
@@ -75,34 +75,6 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
             ),
         }
 
-    @staticmethod
-    def _get_mapping_delta(cluster, new_mapping: list[MappingEntry]) -> Delta:
-        existing_mapping_ids = {
-            (hc.host.pk, hc.component.pk, hc.service.pk) for hc in HostComponent.objects.filter(cluster=cluster)
-        }
-        new_mapping_ids = {(hc["host_id"], hc["component_id"], hc["service_id"]) for hc in new_mapping}
-
-        added = {}
-        for host_id, component_id, service_id in new_mapping_ids.difference(existing_mapping_ids):
-            host = Host.objects.get(pk=host_id, cluster=cluster)
-            service = ClusterObject.objects.get(pk=service_id, cluster=cluster)
-            component = ServiceComponent.objects.get(pk=component_id, cluster=cluster, service=service)
-
-            added.setdefault(f"{service.name}.{component.name}", {}).setdefault(host.fqdn, host)
-
-        removed = {}
-        for host_id, component_id, service_id in existing_mapping_ids.difference(new_mapping_ids):
-            host = Host.objects.get(pk=host_id, cluster=cluster)
-            service = ClusterObject.objects.get(pk=service_id, cluster=cluster)
-            component = ServiceComponent.objects.get(pk=component_id, cluster=cluster, service=service)
-
-            removed.setdefault(f"{service.name}.{component.name}", {}).setdefault(host.fqdn, host)
-
-        return {
-            HcAclAction.ADD: added,
-            HcAclAction.REMOVE: removed,
-        }
-
     def test_expand(self):
         base_expected_topology = {
             "CLUSTER": [self.host_1.fqdn, self.host_2.fqdn],
@@ -158,7 +130,7 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
                 f"action: {action.name}, action_hc_map: {action_hc_map}"
             ):
                 self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=self.initial_hc_h1_c1)
-                delta = self._get_mapping_delta(cluster=self.cluster_1, new_mapping=action_hc_map)
+                delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=action_hc_map)
 
                 self.assert_inventory(
                     obj=obj,
@@ -212,7 +184,7 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
                 f"action: {action.name}, action_hc_map: {action_hc_map}"
             ):
                 self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=initial_hc_map)
-                delta = self._get_mapping_delta(cluster=self.cluster_1, new_mapping=action_hc_map)
+                delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=action_hc_map)
 
                 self.assert_inventory(
                     obj=obj,
@@ -317,7 +289,7 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
                 f"action: {action.name}, action_hc_map: {action_hc_map}"
             ):
                 self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=self.initial_hc_h1_c1)
-                delta = self._get_mapping_delta(cluster=self.cluster_1, new_mapping=action_hc_map)
+                delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=action_hc_map)
 
                 self.assert_inventory(
                     obj=obj,

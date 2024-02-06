@@ -25,6 +25,7 @@ from cm.models import (
 from cm.services.job.inventory._steps import get_obj_config
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from rbac.services.user import create_user
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -235,6 +236,9 @@ class TestClusterGroupConfig(BaseAPITestCase):
         )
         self.group_config_config = ConfigLog.objects.get(pk=self.group_config.config.current)
 
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = create_user(**self.test_user_credentials)
+
     def test_list_success(self):
         response = self.client.get(
             path=reverse(
@@ -319,6 +323,37 @@ class TestClusterGroupConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
+
+    def test_adcm_5219_create_non_superuser_privileged_success(self):
+        with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
+            data = {
+                "config": {
+                    "activatable_group": {"integer": 100},
+                    "boolean": False,
+                    "group": {"float": 2.1},
+                    "list": ["value1", "value2", "value3", "value4"],
+                    "variant_not_strict": "value5",
+                },
+                "adcmMeta": {
+                    "/activatable_group": {"isActive": True, "isSynchronized": False},
+                    "/boolean": {"isSynchronized": False},
+                    "/group/float": {"isSynchronized": False},
+                    "/variant_not_strict": {"isSynchronized": False},
+                    "/list": {"isSynchronized": False},
+                    "/activatable_group/integer": {"isSynchronized": False},
+                },
+                "description": "new config",
+            }
+
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:cluster-group-config-config-list",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
+                ),
+                data=data,
+            )
+
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def test_cancel_sync(self):
         config = {
