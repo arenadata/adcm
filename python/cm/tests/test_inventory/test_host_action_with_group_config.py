@@ -40,7 +40,7 @@ class TestHostAction(BaseInventoryTestCase):
             prototypes=Prototype.objects.filter(
                 type=ObjectType.SERVICE, name="service_one_component", bundle=self.cluster.prototype.bundle
             ),
-        ).get()
+        ).first()
 
         self.component = ServiceComponent.objects.get(service=self.service, prototype__name="component_1")
         self.add_hostcomponent_map(
@@ -51,9 +51,30 @@ class TestHostAction(BaseInventoryTestCase):
             ],
         )
 
-        self.cluster_action = Action.objects.get(name="host_action_on_cluster", prototype=self.cluster.prototype)
-        self.service_action = Action.objects.get(name="host_action_on_service", prototype=self.service.prototype)
-        self.component_action = Action.objects.get(name="host_action_on_component", prototype=self.component.prototype)
+        self.cluster_host_action = Action.objects.get(name="host_action_on_cluster", prototype=self.cluster.prototype)
+        self.service_host_action = Action.objects.get(name="host_action_on_service", prototype=self.service.prototype)
+        self.component_host_action = Action.objects.get(
+            name="host_action_on_component", prototype=self.component.prototype
+        )
+
+        self.cluster_group_config = self.add_group_config(parent=self.cluster, hosts=[self.host_1])
+        self.change_configuration(
+            target=self.cluster_group_config,
+            config_diff={"integer": 101},
+            meta_diff={"/integer": {"isSynchronized": False}},
+        )
+        self.service_group_config = self.add_group_config(parent=self.service, hosts=[self.host_1])
+        self.change_configuration(
+            target=self.service_group_config,
+            config_diff={"integer": 102},
+            meta_diff={"/integer": {"isSynchronized": False}},
+        )
+        self.component_group_config = self.add_group_config(parent=self.component, hosts=[self.host_1])
+        self.change_configuration(
+            target=self.component_group_config,
+            config_diff={"integer": 103},
+            meta_diff={"/integer": {"isSynchronized": False}},
+        )
 
     def test_host_action(self):
         host_names = [self.host_1.fqdn, self.host_2.fqdn]
@@ -66,13 +87,19 @@ class TestHostAction(BaseInventoryTestCase):
         }
 
         expected_data = {
-            ("CLUSTER", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
+            ("CLUSTER", "hosts", f"{self.host_1.fqdn}"): (
+                self.templates_dir / "host_with_vars_service_one_component.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "cluster_config_integer": 101,
+                    "cluster_id": self.cluster.pk,
+                    "service_id": self.service.pk,
+                    "service_config_integer": 102,
+                    "component_id": self.component.pk,
+                    "component_config_integer": 103,
                 },
             ),
-            ("CLUSTER", "hosts", self.host_2.fqdn): (
+            ("CLUSTER", "hosts", f"{self.host_2.fqdn}"): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
@@ -91,31 +118,43 @@ class TestHostAction(BaseInventoryTestCase):
                     "component_id": self.component.pk,
                 },
             ),
-            (self.service.name, "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
+            (f"{self.service.name}.{self.component.name}", "hosts", f"{self.host_1.fqdn}"): (
+                self.templates_dir / "host_with_vars_service_one_component.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "cluster_config_integer": 101,
+                    "cluster_id": self.cluster.pk,
+                    "service_id": self.service.pk,
+                    "service_config_integer": 102,
+                    "component_id": self.component.pk,
+                    "component_config_integer": 103,
                 },
             ),
-            (self.service.name, "hosts", self.host_2.fqdn): (
+            (f"{self.service.name}.{self.component.name}", "hosts", f"{self.host_2.fqdn}"): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
                 },
             ),
-            (f"{self.service.name}.{self.component.name}", "hosts", self.host_1.fqdn): (
-                self.templates_dir / "host.json.j2",
+            (self.service.name, "hosts", f"{self.host_1.fqdn}"): (
+                self.templates_dir / "host_with_vars_service_one_component.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "cluster_config_integer": 101,
+                    "cluster_id": self.cluster.pk,
+                    "service_id": self.service.pk,
+                    "service_config_integer": 102,
+                    "component_id": self.component.pk,
+                    "component_config_integer": 103,
                 },
             ),
-            (f"{self.service.name}.{self.component.name}", "hosts", self.host_2.fqdn): (
+            (self.service.name, "hosts", f"{self.host_2.fqdn}"): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
                 },
             ),
-            ("HOST", "hosts", self.host_1.fqdn): (
+            ("HOST", "hosts", f"{self.host_1.fqdn}"): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
@@ -128,7 +167,7 @@ class TestHostAction(BaseInventoryTestCase):
                     "host_prototype_id": self.host_1.prototype.pk,
                 },
             ),
-            ("target", "hosts", self.host_1.fqdn): (
+            ("target", "hosts", f"{self.host_1.fqdn}"): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
@@ -138,23 +177,24 @@ class TestHostAction(BaseInventoryTestCase):
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster.pk,
+                    # TODO: target vars must have from group-config
                 },
             ),
             ("target", "vars", "services"): (
                 self.templates_dir / "service_one_component.json.j2",
                 {
                     "service_id": self.service.pk,
+                    # TODO: target vars must have from group-config
                     "component_id": self.component.pk,
+                    # TODO: target vars must have from group-config
                 },
             ),
         }
 
-        for obj, action in [
-            (self.host_1, self.cluster_action),
-            (self.host_1, self.service_action),
-            (self.host_1, self.component_action),
-        ]:
-            with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
+        for action in [self.cluster_host_action, self.service_host_action, self.component_host_action]:
+            with self.subTest(
+                msg=f"Object: {self.host_1.prototype.type} #{self.host_1.pk} {self.host_1.name}, action: {action.name}"
+            ):
                 self.assert_inventory(
-                    obj=obj, action=action, expected_data=expected_data, expected_topology=expected_topology
+                    obj=self.host_1, action=action, expected_topology=expected_topology, expected_data=expected_data
                 )

@@ -30,6 +30,7 @@
       type: job
       script: ./playbook.yaml
       script_type: ansible
+      allow_in_maintenance_mode: true
       states:
         available: any
     host_action_on_cluster: &host_action
@@ -37,6 +38,7 @@
       script: ./playbook.yaml
       script_type: ansible
       host_action: true
+      allow_in_maintenance_mode: true
       states:
         available: any
     hc_acl_action_on_cluster: &hc_acl_action
@@ -78,6 +80,7 @@
   actions:
     action_on_service: *action
     hc_acl_action_on_service: *hc_acl_action
+    host_action_on_service: *host_action
 
   components:
     component_1:
@@ -85,11 +88,15 @@
       config: *config
       actions:
         action_on_component_1: *action
+        host_action_on_component_1: *host_action
+        hc_acl_action_on_component_1: *hc_acl_action
     component_2:
       constraint: [ 0, + ]
       config: *config
       actions:
         action_on_component_2: *action
+        host_action_on_component_2: *host_action
+        hc_acl_action_on_component_2: *hc_acl_action
 
 - name: another_service_two_components
   type: service

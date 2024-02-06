@@ -133,3 +133,50 @@
     all_params_component:
       actions: *actions
       config: *config
+
+- type: service
+  name: imports_with_defaults
+  version: 4.3
+
+  import:
+    very_complex: # same default names
+      multibind: false
+      default:
+        # only groups can be included here
+        # - just_integer
+        - plain_group
+        - activatable_group
+    for_export: # unmatching default names
+      multibind: true
+      default:
+        - another_stuff
+
+  actions: *actions
+
+  config:
+    - name: just_integer
+      type: integer
+      default: 10000
+    - name: plain_group
+      type: group
+      subs:
+        - name: listofstuff
+          type: list
+          default: [ "o", "o", "p" ]
+    - name: activatable_group
+      type: group
+      activatable: true
+      active: false
+      subs:
+        - name: simple
+          type: string
+          default: "alsohere"
+    - name: another_stuff
+      type: group
+      subs:
+        - name: hehe
+          type: float
+          default: 4.3030
+
+  components:
+    just_component:
