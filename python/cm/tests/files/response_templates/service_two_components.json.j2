@@ -14,7 +14,7 @@
         "value3"
       ]
     },
-    "maintenance_mode": false,
+    "maintenance_mode": {{ service_maintenance_mode | default("false") }},
     "display_name": "service_two_components",
     "before_upgrade": {
       "state": null
@@ -33,7 +33,7 @@
       },
       "state": "created",
       "multi_state": [],
-      "maintenance_mode": false,
+      "maintenance_mode": {{ component_1_maintenance_mode | default("false") }},
       "display_name": "component_1",
       "before_upgrade": {
         "state": null
@@ -52,8 +52,12 @@
         ]
       },
       "state": "created",
-      "multi_state": [],
-      "maintenance_mode": false,
+      "multi_state": [
+        {% if component_2_multi_state %}
+        {% for state in component_2_multi_state %}"{{ state }}"{% if not loop.last %},{% endif %}{% endfor %}
+        {% endif %}
+      ],
+      "maintenance_mode": {{ component_2_maintenance_mode | default("false") }},
       "display_name": "component_2",
       "before_upgrade": {
         "state": null

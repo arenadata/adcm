@@ -652,31 +652,6 @@ def save_hc(
     return host_component_list
 
 
-def set_host_component(
-    cluster: Cluster, host_component_objects: list[tuple[ClusterObject, Host, ServiceComponent]]
-) -> list[HostComponent]:
-    """
-    Save given hosts-components mapping if all sanity checks pass
-    """
-
-    check_hc_requires(shc_list=host_component_objects)
-
-    check_bound_components(shc_list=host_component_objects)
-
-    for service in ClusterObject.objects.select_related("prototype").filter(cluster=cluster):
-        check_component_constraint(
-            cluster=cluster,
-            service_prototype=service.prototype,
-            hc_in=[i for i in host_component_objects if i[0] == service],
-        )
-        check_service_requires(cluster=cluster, proto=service.prototype)
-
-    check_maintenance_mode(cluster=cluster, host_comp_list=host_component_objects)
-
-    with atomic():
-        return save_hc(cluster=cluster, host_comp_list=host_component_objects)
-
-
 def add_hc(cluster: Cluster, hc_in: list[dict]) -> list[HostComponent]:
     host_comp_list = check_hc(cluster=cluster, hc_in=hc_in)
 

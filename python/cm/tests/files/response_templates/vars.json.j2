@@ -1,0 +1,86 @@
+{
+  "cluster": {
+    "config": {
+      "integer": {{ cluster_config_integer }},
+      "password": "password",
+      "string": "string",
+      "list": [
+        "value1",
+        "value2",
+        "value3"
+      ]
+    },
+    "name": "cluster",
+    "id": {{ cluster_id }},
+    "version": "1.0",
+    "edition": "community",
+    "state": "created",
+    "multi_state": [],
+    "before_upgrade": {
+      "state": null
+    }
+  },
+  "services": {
+    "service_two_components": {
+      "id": {{ service_id }},
+      "version": "1.0",
+      "state": "created",
+      "multi_state": [],
+      "config": {
+        "integer": {{ service_config_integer }},
+        "password": "password",
+        "string": "string",
+        "list": [
+          "value1",
+          "value2",
+          "value3"
+        ]
+      },
+      "maintenance_mode": {{ service_maintenance_mode }},
+      "display_name": "service_two_components",
+      "before_upgrade": {
+        "state": null
+      },
+      "component_1": {
+        "component_id": {{ component_1_id }},
+        "config": {
+          "integer": {{ component_1_config_integer }},
+          "password": "password",
+          "string": "string",
+          "list": [
+            "value1",
+            "value2",
+            "value3"
+          ]
+        },
+        "state": "created",
+        "multi_state": [],
+        "maintenance_mode": {{ component_1_maintenance_mode }},
+        "display_name": "component_1",
+        "before_upgrade": {
+          "state": null
+        }
+      },
+      "component_2": {
+        "component_id": {{ component_2_id }},
+        "config": {
+          "integer": {{ component_2_config_integer }},
+          "password": "password",
+          "string": "string",
+          "list": [
+            "value1",
+            "value2",
+            "value3"
+          ]
+        },
+        "state": "created",
+        "multi_state": [],
+        "maintenance_mode": {{ component_2_maintenance_mode }},
+        "display_name": "component_2",
+        "before_upgrade": {
+          "state": null
+        }
+      }
+    }
+  }
+}

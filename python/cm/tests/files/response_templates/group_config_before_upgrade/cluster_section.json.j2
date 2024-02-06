@@ -10,12 +10,22 @@
     ]
   },
   "name": "cluster_1",
-  "id": {{ id }},
-  "version": "1.0",
+  "id": 1,
+  "version": "2.0",
   "edition": "community",
   "state": "created",
   "multi_state": [],
   "before_upgrade": {
-    "state": null
+    "state": "created",
+    "config": {
+      "integer": {{ before_upgrade_integer | default(10) }},
+      "password": "password",
+      "string": "string",
+      "list": [
+        "value1",
+        "value2",
+        "value3"
+      ]
+    }
   }
 }
