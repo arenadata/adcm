@@ -177,7 +177,7 @@ def get_before_upgrades(
             config_owner=unprocessed_object,
         )
 
-        for group_config_name, config_id in before_upgrade_info.group_configs_info:
+        for group_config_name, config_id in before_upgrade_info.group_configs_info.items():
             if group_config_name not in group_config_name_id_map:
                 # if group for some reason doesn't exist in "inventory scope" it's of no interest to us
                 continue

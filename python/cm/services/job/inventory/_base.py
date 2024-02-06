@@ -35,6 +35,7 @@ from cm.services.group_config import GroupConfigName, retrieve_group_configs_for
 from cm.services.job.inventory._before_upgrade import extract_objects_before_upgrade, get_before_upgrades
 from cm.services.job.inventory._config import (
     get_group_config_alternatives_for_hosts_in_cluster_groups,
+    get_group_config_alternatives_for_hosts_in_hostprovider_groups,
     get_objects_configurations,
 )
 from cm.services.job.inventory._constants import MAINTENANCE_MODE_GROUP_SUFFIX
@@ -144,11 +145,19 @@ def get_inventory_data(
             )
         }
 
+    alternative_host_nodes = get_group_config_alternatives_for_hosts_in_cluster_groups(
+        group_configs=group_configs.values(),
+        cluster_vars=cluster_vars_dict,
+        objects_before_upgrade=objects_before_upgrades,
+        topology=cluster_topology,
+    )
+
     children = {}
     for group_name, host_tuples in host_groups.items():
         # group configs will be calculated here
         hosts = {
             host_name: basic_nodes[ADCMCoreType.HOST, host_id].dict(by_alias=True, exclude_defaults=True)
+            | alternative_host_nodes.get(host_name, {})
             for host_id, host_name in host_tuples
         }
         children[group_name] = {"hosts": hosts}
@@ -158,18 +167,6 @@ def get_inventory_data(
 
         if is_host_provider_vars_required_for_group(group_name):
             children[group_name]["vars"] = hostprovider_vars_dict
-
-    if group_configs:
-        alternative_host_nodes = get_group_config_alternatives_for_hosts_in_cluster_groups(
-            group_configs=group_configs.values(),
-            cluster_vars=cluster_vars_dict,
-            objects_before_upgrade=objects_before_upgrades,
-            topology=cluster_topology,
-        )
-
-        for node in children.values():
-            for host_name, host_node in node["hosts"].items():
-                host_node.update(alternative_host_nodes.get(host_name, cluster_vars_dict))
 
     return {"all": {"children": children}}
 
@@ -212,20 +209,35 @@ def _get_inventory_for_hostprovider(hostprovider: HostProvider) -> dict:
         ADCMCoreType.HOST: set(map(itemgetter(0), hosts_group)),
     }
 
+    group_configs = retrieve_group_configs_for_hosts(
+        hosts=objects_in_inventory[ADCMCoreType.HOST],
+        restrict_by_owner_type=[ADCMCoreType.HOSTPROVIDER],
+    )
+
+    objects_before_upgrades = get_before_upgrades(
+        before_upgrades=extract_objects_before_upgrade(objects=objects_in_inventory),
+        group_configs=group_configs.values(),
+    )
+
     nodes_info = _get_objects_basic_info(
         objects_in_inventory=objects_in_inventory,
         objects_configuration=get_objects_configurations(objects_in_inventory),
-        objects_before_upgrade=get_before_upgrades(
-            before_upgrades=extract_objects_before_upgrade(objects=objects_in_inventory),
-            # todo IMO group configs are unimportant to provider and host own actions
-            #  as well as topology, so no need to consider them here
-            group_configs=(),
-        ),
+        objects_before_upgrade=objects_before_upgrades,
         objects_maintenance_mode=MaintenanceModeOfObjects(
             services={},
             components={},
             hosts={host_id: ObjectMaintenanceModeState.ON for host_id in hosts_in_maintenance_mode},
         ),
+    )
+
+    hostprovider_vars = {
+        "provider": nodes_info[ADCMCoreType.HOSTPROVIDER, hostprovider.pk].dict(by_alias=True, exclude_defaults=True)
+    }
+
+    alternative_host_nodes = get_group_config_alternatives_for_hosts_in_hostprovider_groups(
+        group_configs=group_configs.values(),
+        hostprovider_vars=hostprovider_vars,
+        objects_before_upgrade=objects_before_upgrades,
     )
 
     return {
@@ -234,17 +246,14 @@ def _get_inventory_for_hostprovider(hostprovider: HostProvider) -> dict:
                 "PROVIDER": {
                     "hosts": {
                         host_name: nodes_info[ADCMCoreType.HOST, host_id].dict(by_alias=True, exclude_defaults=True)
+                        | alternative_host_nodes.get(host_name, {})
                         for host_id, host_name in hosts_group
                         # should it be filtered out?
                         if host_id not in hosts_in_maintenance_mode
                     },
                 }
             },
-            "vars": {
-                "provider": nodes_info[ADCMCoreType.HOSTPROVIDER, hostprovider.pk].dict(
-                    by_alias=True, exclude_defaults=True
-                )
-            },
+            "vars": hostprovider_vars,
         }
     }
 
