@@ -1,5 +1,5 @@
-import { AdcmMapping } from '@models/adcm/clusterMapping';
-import { AdcmConfig, ConfigurationSchema } from '@models/adcm/configuration';
+import { AdcmMapping } from './clusterMapping';
+import { AdcmConfig, ConfigurationSchema } from './configuration';
 
 export enum AdcmHostComponentMapRuleAction {
   Add = 'add',

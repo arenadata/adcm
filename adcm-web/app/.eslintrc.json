@@ -3,8 +3,8 @@
     "import/resolver": {
       "alias": {
         "map": [
-          ["@uikit", "./src/components/uikit/"]
-          // ["@models", "./src/models/"],
+          ["@uikit", "./src/components/uikit/"],
+          ["@models", "./src/models/"]
           // ["@utils", "./src/utils/"],
           // ["@store", "./src/store/"],
           // ["@constants", "./src/constants"],

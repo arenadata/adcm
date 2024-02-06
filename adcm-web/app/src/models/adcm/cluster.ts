@@ -1,5 +1,5 @@
 import { AdcmConcerns } from './concern';
-import { AdcmEntityState } from '@models/adcm';
+import { AdcmEntityState } from './common';
 
 export enum AdcmClusterStatus {
   Up = 'up',
