@@ -1,0 +1,28 @@
+---
+root:
+  match: dict
+  items:
+    string: string
+    integer: integer
+    boolean: boolean
+    float: float
+    none: none
+    any: any
+
+string:
+  match: string
+
+integer:
+  match: int
+
+boolean:
+  match: bool
+
+float:
+  match: float
+
+none:
+  match: none
+
+any:
+  match: any

@@ -1,0 +1,6 @@
+---
+root:
+  match: set
+  variants:
+    - 1
+    - 2
