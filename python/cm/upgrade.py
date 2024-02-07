@@ -469,6 +469,7 @@ def do_upgrade(
     config: dict,
     attr: dict,
     hostcomponent: list,
+    verbose: bool = False,
 ) -> dict:
     check_license(prototype=obj.prototype)
     upgrade_prototype = Prototype.objects.filter(
@@ -499,7 +500,7 @@ def do_upgrade(
         task = run_action(
             action=upgrade.action,
             obj=obj,
-            payload=ActionRunPayload(conf=config, attr=attr, hostcomponent=hostcomponent, verbose=False),
+            payload=ActionRunPayload(conf=config, attr=attr, hostcomponent=hostcomponent, verbose=verbose),
             hosts=[],
         )
         task_id = task.id

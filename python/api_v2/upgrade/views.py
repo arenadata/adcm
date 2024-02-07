@@ -153,6 +153,7 @@ class UpgradeViewSet(
         upgrade = self.get_upgrade(parent=parent)
 
         configuration = serializer.validated_data["configuration"]
+        verbose = serializer.validated_data["is_verbose"]
         config = {}
         adcm_meta = {}
 
@@ -176,6 +177,7 @@ class UpgradeViewSet(
             config=config,
             attr=attr,
             hostcomponent=insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),
+            verbose=verbose,
         )
 
         if (task_id := result["task_id"]) is None:

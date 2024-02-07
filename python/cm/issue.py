@@ -350,7 +350,11 @@ def check_component_constraint(
         check_components_mapping_contraints(
             hosts_count=Host.objects.filter(cluster=cluster).count(),
             target_mapping_count=len(
-                [i for i in hc_in if i[0].prototype == service_prototype and i[2].prototype == component_prototype]
+                [
+                    i
+                    for i in hc_in
+                    if i[0].prototype.name == service_prototype.name and i[2].prototype.name == component_prototype.name
+                ]
             ),
             service_prototype=service_prototype,
             component_prototype=component_prototype,
