@@ -21,9 +21,10 @@ import subprocess
 import adcm.init_django  # noqa: F401, isort:skip
 
 from cm.errors import AdcmEx
-from cm.job import finish_task, re_prepare_job
+from cm.job import finish_task, re_prepare_job, write_job_config
 from cm.logger import logger
-from cm.models import JobLog, JobStatus, LogStorage, TaskLog
+from cm.models import ADCM, JobLog, JobStatus, LogStorage, TaskLog
+from cm.services.job.config import get_job_config
 from cm.services.job.utils import JobScope
 from cm.status_api import send_task_status_update_event
 from cm.utils import get_env_with_venv_path
@@ -141,7 +142,18 @@ def run_task(task_id: int, args: str | None = None) -> None:
                     continue
 
                 task.refresh_from_db()
-                re_prepare_job(job_scope=JobScope(job_id=job.pk))
+
+                job_scope = JobScope(job_id=job.pk)
+                # This should be reworked somehow,
+                # because preparation of job depends on its type,
+                # not parent object.
+                # For now, I don't see another point where it can be patched
+                # without reworking the whole job preparation tree
+                if not isinstance(job_scope.object, ADCM):
+                    re_prepare_job(job_scope=job_scope)
+                else:
+                    write_job_config(job_id=job_scope.job_id, config=get_job_config(job_scope=job_scope))
+
                 res = run_job(task.id, job.id, err_file)
                 set_log_body(job)
 

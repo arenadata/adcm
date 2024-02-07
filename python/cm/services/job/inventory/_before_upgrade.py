@@ -128,7 +128,10 @@ def get_before_upgrades(
         for group_config_name, config_id in before_upgrade_info.group_configs_info.items():
             required_configs[object_, group_config_name] = config_id
 
-    if not (required_configs and required_configs):
+    if not (required_configs and required_prototypes):
+        for missed_key in set(before_upgrades) - result.keys():
+            result[missed_key] = {"state": before_upgrades[missed_key].before_upgrade.get("state"), "config": None}
+
         return result
 
     configurations = retrieve_config_attr_pairs(required_configs.values())
