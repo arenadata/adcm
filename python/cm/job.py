@@ -470,10 +470,14 @@ def re_prepare_job(job_scope: JobScope) -> None:
     prepare_job(job_scope=job_scope, delta=delta)
 
 
-def prepare_job(job_scope: JobScope, delta: dict):
-    config_path = Path(settings.RUN_DIR, str(job_scope.job_id), "config.json")
+def write_job_config(job_id: int, config: dict[str, Any]) -> None:
+    config_path = Path(settings.RUN_DIR, str(job_id), "config.json")
     with config_path.open(mode="w", encoding=settings.ENCODING_UTF_8) as config_file:
-        json.dump(obj=get_job_config(job_scope=job_scope), fp=config_file, sort_keys=True, separators=(",", ":"))
+        json.dump(obj=config, fp=config_file, sort_keys=True, separators=(",", ":"))
+
+
+def prepare_job(job_scope: JobScope, delta: dict):
+    write_job_config(job_id=job_scope.job_id, config=get_job_config(job_scope=job_scope))
 
     inventory = get_inventory_data(
         obj=job_scope.object, action=job_scope.action, action_host=job_scope.hosts, delta=delta
