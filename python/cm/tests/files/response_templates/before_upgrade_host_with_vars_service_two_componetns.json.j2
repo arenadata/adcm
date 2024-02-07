@@ -1,0 +1,113 @@
+{
+  "adcm_hostid": {{ adcm_hostid }},
+  "state": "created",
+  "multi_state": [],
+  "password": "password",
+  "list": [
+    "value1",
+    "value2",
+    "value3"
+  ],
+  "string": "string",
+  "integer": 10,
+  "cluster": {
+    "id": 1,
+    "state": "success",
+    "multi_state": [],
+    "before_upgrade": {
+      "state": "created",
+      "config": {
+        "integer": {{ before_upgrade_cluster_config_integer }},
+        "password": "password",
+        "string": "string",
+        "list": [
+          "value1",
+          "value2",
+          "value3"
+        ]
+      }
+    },
+    "config": {
+      "integer": 40,
+      "string": "string"
+    },
+    "name": "cluster_1",
+    "version": "2.0",
+    "edition": "community"
+  },
+  "services": {
+    "service_two_components": {
+      "id": 1,
+      "state": "created",
+      "multi_state": [],
+      "before_upgrade": {
+        "state": "created",
+        "config": {
+          "integer": 10,
+          "password": "password",
+          "string": "woohoo",
+          "list": [
+            "value1",
+            "value2",
+            "value3"
+          ]
+        }
+      },
+      "config": {
+        "integer": 100,
+        "string": "woohoo"
+      },
+      "display_name": "service_two_components",
+      "version": "2.0",
+      "maintenance_mode": False,
+      "component_1": {
+        "component_id": 1,
+        "state": "created",
+        "multi_state": [],
+        "before_upgrade": {
+          "state": "created",
+          "config": {
+            "integer": 10,
+            "password": "password",
+            "string": "string",
+            "list": [
+              "value1",
+              "value2",
+              "value3"
+            ]
+          }
+        },
+        "config": {
+          "integer": 100,
+          "string": "string"
+        },
+        "display_name": "component_1",
+        "maintenance_mode": False
+      },
+      "component_2": {
+        "component_id": 2,
+        "state": "created",
+        "multi_state": [],
+        "before_upgrade": {
+          "state": "created",
+          "config": {
+            "integer": 10,
+            "password": "password",
+            "string": "string",
+            "list": [
+              "value1",
+              "value2",
+              "value3"
+            ]
+          }
+        },
+        "config": {
+          "integer": 100,
+          "string": "string"
+        },
+        "display_name": "component_2",
+        "maintenance_mode": False
+      }
+    }
+  }
+}

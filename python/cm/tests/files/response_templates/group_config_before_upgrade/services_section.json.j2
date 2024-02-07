@@ -5,8 +5,7 @@
     "state": "created",
     "multi_state": [],
     "config": {
-      "integer": 10,
-      "password": "password",
+      "integer": {{ service_config_integer | default(100) }},
       "string": "{{ config_string | default('string') }}",
       "list": [
         "value1",
@@ -32,8 +31,7 @@
     "component_1": {
       "component_id": 1,
       "config": {
-        "integer": 10,
-        "password": "password",
+        "integer": {{ component_1_config_integer | default(100) }},
         "string": "string",
         {% if config_list %}
         "list": [
@@ -76,8 +74,7 @@
     "component_2": {
       "component_id": 2,
       "config": {
-        "integer": 10,
-        "password": "password",
+        "integer": 100,
         "string": "string",
         "list": [
           "value1",

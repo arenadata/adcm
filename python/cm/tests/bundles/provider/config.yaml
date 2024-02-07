@@ -28,7 +28,6 @@
       type: job
       script: ./playbook.yaml
       script_type: ansible
-      allow_in_maintenance_mode: true
       states:
         available: any
 
