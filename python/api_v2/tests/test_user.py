@@ -69,6 +69,24 @@ class TestUserAPI(BaseAPITestCase):
             ),
         )
 
+    def test_list_no_perms_empty_list_success(self) -> None:
+        self.create_user(user_data={"username": "test_user", "password": "test_user_password"})
+        self.client.login(username="test_user", password="test_user_password")
+
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-list"))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 0)
+        self.assertEqual(len(response.json()["results"]), 0)
+
+    def test_retrieve_no_perms_not_found_fail(self) -> None:
+        user = self.create_user(user_data={"username": "test_user", "password": "test_user_password"})
+        self.client.login(username="test_user", password="test_user_password")
+
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}))
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
     def test_create_success(self):
         response = self.client.post(
             path=reverse(viewname="v2:rbac:user-list"),
