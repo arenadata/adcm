@@ -1,0 +1,8 @@
+---
+root:
+  match: list
+  item: variable
+  extra: field
+
+variable:
+  match: string

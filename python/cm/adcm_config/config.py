@@ -55,18 +55,25 @@ from cm.utils import deep_merge, dict_to_obj, obj_to_dict
 from cm.variant import get_variant, process_variant
 
 
+def get_path_file_from_bundle(file_name: str, bundle_hash: str, path: str, is_adcm: bool = False) -> Path:
+    if is_adcm:
+        return settings.BASE_DIR / "conf/adcm" / file_name
+
+    if file_name.startswith("./"):
+        return Path(settings.BUNDLE_DIR, bundle_hash, path, file_name)
+
+    return Path(settings.BUNDLE_DIR, bundle_hash, file_name)
+
+
 def read_bundle_file(proto: Prototype | StagePrototype, fname: str, bundle_hash: str, ref=None) -> str | None:
     if not ref:
         ref = proto_ref(proto)
 
     file_descriptor = None
 
-    if proto.type == ObjectType.ADCM:
-        path = settings.BASE_DIR / "conf/adcm" / fname
-    elif fname.startswith("./"):
-        path = Path(settings.BUNDLE_DIR, bundle_hash, proto.path, fname)
-    else:
-        path = Path(settings.BUNDLE_DIR, bundle_hash, fname)
+    path = get_path_file_from_bundle(
+        file_name=fname, bundle_hash=bundle_hash, path=proto.path, is_adcm=proto.type == ObjectType.ADCM
+    )
 
     try:
         file_descriptor = open(path, encoding=settings.ENCODING_UTF_8)  # noqa: SIM115
