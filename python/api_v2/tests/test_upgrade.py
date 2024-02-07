@@ -42,14 +42,22 @@ class TestUpgrade(BaseAPITestCase):
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
 
         cluster_bundle_1_upgrade_path = self.test_bundles_dir / "cluster_one_upgrade"
+        cluster_bundle_1_upgrade_other_constraints_path = (
+            self.test_bundles_dir / "cluster_one_upgrade_other_constraints"
+        )
         provider_bundle_upgrade_path = self.test_bundles_dir / "provider_upgrade"
         cluster_bundle_upgrade = self.add_bundle(source_dir=cluster_bundle_1_upgrade_path)
+        cluster_bundle_upgrade_2 = self.add_bundle(source_dir=cluster_bundle_1_upgrade_other_constraints_path)
         provider_bundle_upgrade = self.add_bundle(source_dir=provider_bundle_upgrade_path)
         self.add_bundle(source_dir=self.test_bundles_dir / "cluster_two_upgrade_from_any")
 
         self.cluster_upgrade = Upgrade.objects.get(
             name="upgrade",
             bundle=cluster_bundle_upgrade,
+        )
+        self.cluster_upgrade_2 = Upgrade.objects.get(
+            name="upgrade",
+            bundle=cluster_bundle_upgrade_2,
         )
         self.provider_upgrade = Upgrade.objects.get(
             name="upgrade",
@@ -78,7 +86,7 @@ class TestUpgrade(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 3)
+        self.assertEqual(len(response.json()), 6)
 
     def test_upgrade_visibility_from_edition_any_success(self):
         response: Response = self.client.get(
@@ -218,6 +226,50 @@ class TestUpgrade(BaseAPITestCase):
                     "hostComponentMap": [{"hostId": host.pk, "componentId": component_1.pk}],
                     "configuration": {
                         "config": {"simple": "val", "grouped": {"simple": 5, "second": 4.3}, "after": ["x", "y"]},
+                        "adcmMeta": {},
+                    },
+                    "isVerbose": True,
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        data = response.json()
+        self.assertTrue(set(data.keys()).issuperset({"id", "childJobs", "startTime"}))
+        self.assertEqual(data["id"], tasklog.id)
+
+    def test_adcm_5246_cluster_upgrade_other_constraints_run_success(self):
+        tasklog = TaskLog.objects.create(
+            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+            action=self.upgrade_cluster_via_action_simple.action,
+        )
+
+        host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="first_host")
+        host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second_host")
+        self.add_host_to_cluster(cluster=self.cluster_1, host=host_1)
+        self.add_host_to_cluster(cluster=self.cluster_1, host=host_2)
+        component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
+        component_2 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_2")
+        HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_2, host=host_1)
+        HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_1, host=host_1)
+        HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_1, host=host_2)
+
+        with patch("cm.upgrade.run_action", return_value=tasklog):
+            response: Response = self.client.post(
+                path=reverse(
+                    viewname="v2:upgrade-run",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.upgrade_cluster_via_action_complex.pk},
+                ),
+                data={
+                    "hostComponentMap": [
+                        {"hostId": host_1.pk, "componentId": component_1.pk},
+                        {"hostId": host_2.pk, "componentId": component_1.pk},
+                        {"hostId": host_1.pk, "componentId": component_2.pk},
+                    ],
+                    "configuration": {
+                        "config": {},
                         "adcmMeta": {},
                     },
                     "isVerbose": True,
@@ -488,7 +540,7 @@ class TestUpgrade(BaseAPITestCase):
         response: Response = self.client.get(
             path=reverse(
                 viewname="v2:upgrade-detail",
-                kwargs={"hostprovider_pk": self.provider.pk, "pk": self.cluster_upgrade.pk + 10},
+                kwargs={"hostprovider_pk": self.provider.pk, "pk": self.cluster_upgrade.pk + 100},
             ),
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
