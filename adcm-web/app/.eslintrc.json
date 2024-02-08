@@ -4,11 +4,11 @@
       "alias": {
         "map": [
           ["@uikit", "./src/components/uikit/"],
-          ["@models", "./src/models/"]
-          // ["@utils", "./src/utils/"],
-          // ["@store", "./src/store/"],
-          // ["@constants", "./src/constants"],
-          // ["@api", "./src/api/"]
+          ["@models", "./src/models/"],
+          ["@utils", "./src/utils/"],
+          ["@store", "./src/store/"],
+          ["@constants", "./src/constants"],
+          ["@api", "./src/api/"]
         ],
         "extensions": [".ts", ".js", ".jsx", ".json"]
       }
@@ -38,6 +38,19 @@
       {
         "maxDepth": 10,
         "ignoreExternal": true
+      }
+    ],
+    "no-restricted-imports": "off",
+    "@typescript-eslint/no-restricted-imports": [
+      "warn",
+      {
+        "paths": [
+          {
+            "name": "react-redux",
+            "importNames": ["useSelector", "useDispatch"],
+            "message": "Use typed `useStore` and `useDispatch` from '@hooks' instead."
+          }
+        ]
       }
     ],
     "@typescript-eslint/no-unused-vars": ["error", { "ignoreRestSiblings": true }],

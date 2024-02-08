@@ -3,6 +3,7 @@ import { AdcmClusterHostsApi, AdcmClustersApi, AdcmHostsApi, RequestError } from
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmHost, AdcmMaintenanceMode, AddClusterHostsPayload } from '@models/adcm';
+// eslint-disable-next-line import/no-cycle
 import { getClusterHosts } from './hostsSlice';
 
 const loadHosts = createAsyncThunk('adcm/clusterHostsActions/loadHosts', async (arg, thunkAPI) => {

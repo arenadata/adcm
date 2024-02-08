@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
+// eslint-disable-next-line import/no-cycle
 import { getServices } from '@store/adcm/cluster/services/servicesSlice';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';

@@ -6,6 +6,7 @@ import { defaultSpinnerDelay } from '@constants';
 import { AdcmClusterHost } from '@models/adcm/clusterHosts';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { updateIfExists } from '@utils/objectUtils';
+// eslint-disable-next-line import/no-cycle
 import { toggleMaintenanceMode } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 import { LoadState } from '@models/loadState';
 

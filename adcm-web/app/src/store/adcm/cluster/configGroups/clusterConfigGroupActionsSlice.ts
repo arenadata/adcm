@@ -6,7 +6,7 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmConfigGroup, AdcmHostCandidate } from '@models/adcm';
 import { AdcmClusterConfigGroupCreateData } from '@api/adcm/clusterGroupConfig';
 import { getClusterConfigGroups } from '@store/adcm/cluster/configGroups/clusterConfigGroupsSlice';
-import { mappedHostsToConfigGroup } from '@utils/configGroupUtils';
+import { mappedHostsToConfigGroup } from '@store/adcm/entityConfiguration/configGroupSlice.utils';
 
 interface AdcmClusterConfigGroupActionsState {
   deleteDialog: {

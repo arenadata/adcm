@@ -1,4 +1,5 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import type { Action, ThunkAction } from '@reduxjs/toolkit';
 import authSlice from '@store/authSlice';
 import notificationsSlice from '@store/notificationsSlice';
 import clustersSlice from '@store/adcm/clusters/clustersSlice';
@@ -41,10 +42,9 @@ import clusterOverviewHostsSlice from '@store/adcm/cluster/overview/overviewHost
 import clusterOverviewServicesTableSlice from '@store/adcm/cluster/overview/overviewServicesTableSlice';
 import clusterOverviewHostsTableSlice from '@store/adcm/cluster/overview/overviewHostsTableSlice';
 
-// eslint-disable-next-line import/no-cycle
 import { apiMiddleware } from './middlewares/apiMiddleware';
-// eslint-disable-next-line import/no-cycle
 import { wsMiddleware } from './middlewares/wsMiddeware';
+
 import clusterSlice from './adcm/clusters/clusterSlice';
 import usersSlice from './adcm/users/usersSlice';
 import usersTableSlice from './adcm/users/usersTableSlice';
@@ -199,10 +199,26 @@ const rootReducer = combineReducers({
   }),
 });
 
-export const store = configureStore({
-  reducer: rootReducer,
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(apiMiddleware, wsMiddleware),
-});
+// The store setup is wrapped in `makeStore` to allow reuse
+// when setting up tests that need the same store config
+export const makeStore = (preloadedState?: Partial<RootState>) => {
+  const store = configureStore({
+    reducer: rootReducer,
+    middleware: (getDefaultMiddleware) => {
+      return getDefaultMiddleware().concat(apiMiddleware, wsMiddleware);
+    },
+    preloadedState,
+  });
+  return store;
+};
 
-export type StoreState = ReturnType<typeof rootReducer>;
+export const store = makeStore();
+
+// Infer the `RootState` type from the root reducer
+export type RootState = ReturnType<typeof rootReducer>;
+// Infer the type of `store`
+export type AppStore = ReturnType<typeof store.getState>;
+// Infer the `AppDispatch` type from the store itself
 export type AppDispatch = typeof store.dispatch;
+
+export type AppThunk<ThunkReturnType = void> = ThunkAction<ThunkReturnType, RootState, unknown, Action>;
