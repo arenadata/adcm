@@ -6,6 +6,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { AdcmHostsApi } from '@api';
 import { updateIfExists } from '@utils/objectUtils';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+// eslint-disable-next-line import/no-cycle
 import { toggleMaintenanceMode } from '@store/adcm/hosts/hostsActionsSlice';
 import { LoadState } from '@models/loadState';
 

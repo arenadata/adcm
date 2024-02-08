@@ -9,6 +9,7 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { updateIfExists } from '@utils/objectUtils';
 import { AdcmPrototypesApi, RequestError } from '@api';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+// eslint-disable-next-line import/no-cycle
 import { toggleMaintenanceMode } from '@store/adcm/cluster/services/servicesActionsSlice';
 import { LoadState } from '@models/loadState';
 
