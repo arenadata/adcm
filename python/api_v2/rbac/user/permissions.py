@@ -28,7 +28,7 @@ class UserPermissions(DjangoModelPermissions):
 
     @audit
     def has_permission(self, request, view):
-        if view.action != "create" and not request.user.has_perm(VIEW_USER_PERMISSION):
+        if view.action not in ("create", "list") and not request.user.has_perm(VIEW_USER_PERMISSION):
             raise NotFound()
 
         if not request.user.has_perms(self.get_required_permissions(request.method, view.queryset.model)):
