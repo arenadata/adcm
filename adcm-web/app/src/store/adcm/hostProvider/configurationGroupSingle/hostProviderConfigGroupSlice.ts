@@ -1,6 +1,7 @@
 import { AdcmHostProviderConfigGroupsApi } from '@api';
 import { AdcmConfigGroup } from '@models/adcm';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk } from '@store/redux';
 
 type GetHostProviderConfigGroupPayload = {
   hostProviderId: number;

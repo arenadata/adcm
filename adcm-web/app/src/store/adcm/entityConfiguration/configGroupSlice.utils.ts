@@ -1,7 +1,7 @@
 import { AdcmConfigGroup } from '@models/adcm';
 import { fulfilledFilter } from '@utils/promiseUtils';
 import { showError, showInfo } from '@store/notificationsSlice';
-import { AppDispatch } from '@store';
+import type { AppDispatch } from '@store/store';
 
 interface MappedHostsToConfigGroupProps {
   configGroup: AdcmConfigGroup | null;

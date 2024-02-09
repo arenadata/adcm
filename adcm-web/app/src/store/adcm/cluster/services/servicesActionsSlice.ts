@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { getServices } from '@store/adcm/cluster/services/servicesSlice';
+import { getServices, setServiceMaintenanceMode } from '@store/adcm/cluster/services/servicesSlice';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { RequestError } from '@api';
@@ -102,6 +102,7 @@ const toggleMaintenanceMode = createAsyncThunk(
       const data = await AdcmClusterServicesApi.toggleMaintenanceMode(clusterId, serviceId, maintenanceMode);
       const maintenanceModeStatus = maintenanceMode === AdcmMaintenanceMode.Off ? 'disabled' : 'enabled';
       thunkAPI.dispatch(showInfo({ message: `The maintenance mode has been ${maintenanceModeStatus}` }));
+      thunkAPI.dispatch(setServiceMaintenanceMode({ serviceId, maintenanceMode }));
       return data;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));

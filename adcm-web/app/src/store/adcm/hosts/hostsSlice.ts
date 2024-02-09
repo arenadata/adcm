@@ -6,7 +6,6 @@ import { createSlice } from '@reduxjs/toolkit';
 import { AdcmHostsApi } from '@api';
 import { updateIfExists } from '@utils/objectUtils';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
-import { toggleMaintenanceMode } from '@store/adcm/hosts/hostsActionsSlice';
 import { LoadState } from '@models/loadState';
 
 type AdcmHostsState = {
@@ -65,6 +64,12 @@ const hostsSlice = createSlice({
     cleanupHosts() {
       return createInitialState();
     },
+    setHostMaintenanceMode(state, action) {
+      const changedHost = state.hosts.find(({ id }) => id === action.payload.hostId);
+      if (changedHost) {
+        changedHost.maintenanceMode = action.payload.maintenanceMode;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(loadHosts.fulfilled, (state, action) => {
@@ -73,12 +78,6 @@ const hostsSlice = createSlice({
     });
     builder.addCase(loadHosts.rejected, (state) => {
       state.hosts = [];
-    });
-    builder.addCase(toggleMaintenanceMode.fulfilled, (state, action) => {
-      const changedHost = state.hosts.find(({ id }) => id === action.meta.arg.hostId);
-      if (changedHost) {
-        changedHost.maintenanceMode = action.payload.maintenanceMode;
-      }
     });
     builder.addCase(wsActions.update_host, (state, action) => {
       const { id, changes } = action.payload.object;
@@ -111,7 +110,7 @@ const hostsSlice = createSlice({
   },
 });
 
-export const { setLoadState, cleanupHosts } = hostsSlice.actions;
+export const { setLoadState, cleanupHosts, setHostMaintenanceMode } = hostsSlice.actions;
 export { getHosts, refreshHosts };
 
 export default hostsSlice.reducer;

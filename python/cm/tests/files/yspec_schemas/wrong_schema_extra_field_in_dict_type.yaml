@@ -1,0 +1,4 @@
+---
+root:
+  match: dict
+  extra: field

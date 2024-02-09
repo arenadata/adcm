@@ -24,7 +24,7 @@ from cm.api import get_hc, save_hc
 from cm.errors import AdcmEx
 from cm.job import check_hostcomponentmap, set_job_final_status, set_job_start_status
 from cm.logger import logger
-from cm.models import JobLog, JobStatus, LogStorage, Prototype, ServiceComponent
+from cm.models import JobLog, JobStatus, Prototype, ServiceComponent
 from cm.status_api import send_prototype_and_state_update_event
 from cm.upgrade import bundle_revert, bundle_switch
 from cm.utils import get_env_with_venv_path
@@ -85,10 +85,6 @@ def get_configured_env(job_config: dict) -> dict:
     return env
 
 
-def post_log(job_id, log_type, log_name):
-    LogStorage.objects.filter(job__id=job_id, type=log_type, name=log_name).first()
-
-
 def get_venv(job_id: int) -> str:
     return JobLog.objects.get(id=job_id).action.venv
 
@@ -96,8 +92,6 @@ def get_venv(job_id: int) -> str:
 def process_err_out_file(job_id, job_type):
     out_file = open_file(settings.RUN_DIR, f"{job_type}-stdout", job_id)
     err_file = open_file(settings.RUN_DIR, f"{job_type}-stderr", job_id)
-    post_log(job_id, "stdout", f"{job_type}")
-    post_log(job_id, "stderr", f"{job_type}")
     return out_file, err_file
 
 

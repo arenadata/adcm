@@ -1,5 +1,6 @@
 import {
   createSlice,
+  // eslint-disable-next-line @typescript-eslint/no-restricted-imports
   createAsyncThunk as createReduxAsyncThunk,
   AsyncThunkPayloadCreator,
   SliceCaseReducers,
@@ -8,11 +9,10 @@ import {
   ActionReducerMapBuilder,
   Draft,
 } from '@reduxjs/toolkit';
-// eslint-disable-next-line import/no-cycle
-import { StoreState, AppDispatch } from './store';
+import type { AppStore, AppDispatch } from './store';
 import { ListState, PaginationParams, SortParams } from '@models/table';
 
-type ThunkApiConfig = { state: StoreState; dispatch: AppDispatch };
+type ThunkApiConfig = { state: AppStore; dispatch: AppDispatch };
 
 export function createAsyncThunk<Returned, ThunkArg = void>(
   typePrefix: string,

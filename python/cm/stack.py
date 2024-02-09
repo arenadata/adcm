@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from copy import copy, deepcopy
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, List, Literal
 import os
@@ -37,7 +38,7 @@ import yaml
 import ruyaml
 
 from cm.adcm_config.checks import check_config_type
-from cm.adcm_config.config import read_bundle_file
+from cm.adcm_config.config import get_path_file_from_bundle, read_bundle_file
 from cm.adcm_config.utils import proto_ref
 from cm.checker import FormatError, check, check_rule, round_trip_load
 from cm.errors import AdcmEx, raise_adcm_ex
@@ -779,7 +780,31 @@ def save_action(proto: StagePrototype, config: dict, bundle_hash: str, action_na
     return action
 
 
+@lru_cache
+def get_rules_for_yspec_schema():
+    with Path(settings.CODE_DIR, "cm", "yspec_schema.yaml").open(encoding=settings.ENCODING_UTF_8) as f:
+        return ruyaml.round_trip_load(stream=f)
+
+
+def check_yspec_schema(conf_file: Path) -> None:
+    with Path(conf_file).open(encoding=settings.ENCODING_UTF_8) as f:
+        data = ruyaml.round_trip_load(stream=f)
+
+    check(data=data, rules=get_rules_for_yspec_schema())
+
+
 def get_yspec(prototype: StagePrototype | Prototype, bundle_hash: str, conf: dict, name: str, subname: str) -> Any:
+    try:
+        check_yspec_schema(
+            conf_file=get_path_file_from_bundle(file_name=conf["yspec"], bundle_hash=bundle_hash, path=prototype.path)
+        )
+    except FormatError as error:
+        msg = (
+            f"Line {error.line} error in '{conf['yspec']}' file of config key '{name}/{subname}' from"
+            f" '{prototype.display_name}' {prototype.type}: {error}"
+        )
+        raise AdcmEx(code="INVALID_OBJECT_DEFINITION", msg=msg) from error
+
     schema = None
     yspec_body = read_bundle_file(
         proto=prototype,

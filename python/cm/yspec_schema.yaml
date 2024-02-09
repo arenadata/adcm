@@ -1,0 +1,82 @@
+---
+root:
+  match: dict
+  items:
+    root: type
+  default_item: type
+  required_items:
+    - root
+
+type:
+  match: dict_key_selection
+  selector: match
+  variants:
+    string: simple_type
+    bool: simple_type
+    int: simple_type
+    float: simple_type
+    none: simple_type
+    any: simple_type
+    list: list_type
+    dict: dict_type
+    one_of: set_type
+    set: set_type
+    dict_key_selection: dict_key_selection_type
+
+simple_type:
+  match: dict
+  items:
+    match: string
+    required_items:
+      - match
+
+list_type:
+  match: dict
+  items:
+    match: string
+    item: string
+  required_items:
+    - match
+    - item
+
+dict_type:
+  match: dict
+  items:
+    match: string
+    items: items
+    default_item: string
+    required_items: list_of_string
+    invisible_items: list_of_string
+  required_items:
+    - match
+
+items:
+  match: dict
+  default_item: string
+
+set_type:
+  match: dict
+  items:
+    match: string
+    variants: list_of_string
+  required_items:
+    - match
+    - variants
+
+dict_key_selection_type:
+  match: dict
+  items:
+    match: string
+    selector: string
+    variants: items
+  required_items:
+    - match
+    - selector
+    - variants
+
+string:
+  match: string
+
+list_of_string:
+  match: list
+  item: string

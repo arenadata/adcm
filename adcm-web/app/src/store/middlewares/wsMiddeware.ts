@@ -1,7 +1,6 @@
 import { Action, Middleware } from 'redux';
 import { wsHost } from '@constants';
-// eslint-disable-next-line import/no-cycle
-import { StoreState } from '../store';
+import type { RootState } from '../store';
 import { wsActions } from './wsMiddleware.constants';
 import { ActionCreatorWithPayload } from '@reduxjs/toolkit';
 import { AdcmBackendEvent } from '@models/adcm';
@@ -12,7 +11,11 @@ const wsClient = new WsClient(`${wsHost}/ws/event/`);
 
 type WsActions = { [key: string]: ActionCreatorWithPayload<unknown> };
 
-export const wsMiddleware: Middleware<object, StoreState> = (storeApi) => {
+export const wsMiddleware: Middleware<
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  {},
+  RootState
+> = (storeApi) => {
   wsClient.onMessage = (event: MessageEvent<string>) => {
     const message: AdcmBackendEvent = JSON.parse(event.data);
     const wsAction = (wsActions as WsActions)[message.event];

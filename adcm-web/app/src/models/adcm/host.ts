@@ -1,5 +1,6 @@
-import { AdcmConcerns } from '@models/adcm/concern';
-import { AdcmEntityState, AdcmHostProvider } from '@models/adcm';
+import { AdcmConcerns } from './concern';
+import { AdcmEntityState } from './common';
+import { AdcmHostProvider } from './hostProvider';
 
 export enum AdcmHostStatus {
   Up = 'up',

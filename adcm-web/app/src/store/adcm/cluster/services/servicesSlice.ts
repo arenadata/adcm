@@ -9,7 +9,6 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { updateIfExists } from '@utils/objectUtils';
 import { AdcmPrototypesApi, RequestError } from '@api';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
-import { toggleMaintenanceMode } from '@store/adcm/cluster/services/servicesActionsSlice';
 import { LoadState } from '@models/loadState';
 
 type AdcmServicesState = {
@@ -94,6 +93,12 @@ const servicesSlice = createSlice({
     cleanupServiceLicense(state) {
       state.serviceLicense = [];
     },
+    setServiceMaintenanceMode(state, action) {
+      const changedService = state.services.find(({ id }) => id === action.payload.serviceId);
+      if (changedService) {
+        changedService.maintenanceMode = action.payload.maintenanceMode;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(loadClusterServiceFromBackend.fulfilled, (state, action) => {
@@ -102,12 +107,6 @@ const servicesSlice = createSlice({
     });
     builder.addCase(loadClusterServiceFromBackend.rejected, (state) => {
       state.services = [];
-    });
-    builder.addCase(toggleMaintenanceMode.fulfilled, (state, action) => {
-      const changedService = state.services.find(({ id }) => id === action.meta.arg.serviceId);
-      if (changedService) {
-        changedService.maintenanceMode = action.payload.maintenanceMode;
-      }
     });
     builder.addCase(acceptServiceLicense.fulfilled, (state, action) => {
       const serviceId = action.meta.arg;
@@ -149,7 +148,8 @@ const servicesSlice = createSlice({
   },
 });
 
-export const { setLoadState, cleanupServices, cleanupServiceLicense } = servicesSlice.actions;
+export const { setLoadState, cleanupServices, cleanupServiceLicense, setServiceMaintenanceMode } =
+  servicesSlice.actions;
 export { getServices, refreshServices, acceptServiceLicense };
 
 export default servicesSlice.reducer;
