@@ -1,44 +1,48 @@
 {
-  "HOST": {
-    "hosts": {
-      "host-1": {
-        "plain_group": {
-          "simple": null,
-          "map": {
-            "k": "v",
-            "key": "val"
-          },
-          "file": "{{ filedir }}/host.1.plain_group.file",
-          "listofstuff": []
-        },
-        "activatable_group": null,
-        "boolean": true,
-        "integer": null,
-        "float": null,
-        "string": null,
-        "text": null,
-        "secrettext": "awe\nsopme\n\ttext\n",
-        "password": null,
-        "map": {},
-        "secretmap": {},
-        "json": null,
-        "list": [
-          "1",
-          "5",
-          "baset"
-        ],
-        "file": null,
-        "secretfile": null,
-        "source_list": [
-          "ok",
-          "fail"
-        ],
-        "variant_config": null,
-        "variant_inline": "f",
-        "variant_builtin": null,
-        "adcm_hostid": {{ host_1.id }},
-        "state": "created",
-        "multi_state": []
+  "all": {
+    "children": {
+      "HOST": {
+        "hosts": {
+          "host-1": {
+            "plain_group": {
+              "simple": null,
+              "map": {
+                "k": "v",
+                "key": "val"
+              },
+              "file": "{{ filedir }}/host.1.plain_group.file",
+              "listofstuff": []
+            },
+            "activatable_group": null,
+            "boolean": true,
+            "integer": null,
+            "float": null,
+            "string": null,
+            "text": null,
+            "secrettext": "awe\nsopme\n\ttext\n",
+            "password": null,
+            "map": {},
+            "secretmap": {},
+            "json": null,
+            "list": [
+              "1",
+              "5",
+              "baset"
+            ],
+            "file": null,
+            "secretfile": null,
+            "source_list": [
+              "ok",
+              "fail"
+            ],
+            "variant_config": null,
+            "variant_inline": "f",
+            "variant_builtin": null,
+            "adcm_hostid": {{ host_1.id }},
+            "state": "created",
+            "multi_state": []
+          }
+        }
       }
     },
     "vars": {

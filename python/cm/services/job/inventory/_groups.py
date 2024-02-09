@@ -20,39 +20,14 @@ from cm.services.job.inventory._constants import MAINTENANCE_MODE_GROUP_SUFFIX
 from cm.services.job.inventory._types import HostGroupName
 
 
-def detect_host_groups_for_action_on_host(
-    host_id: HostID,
-    host_name: HostName,
-    host_is_in_maintenance_mode: bool,
-    action_belongs_to_this_host: bool,
-    cluster_topology: ClusterTopology | None,
-) -> dict[HostGroupName, set[tuple[HostID, HostName]]]:
-    groups = defaultdict(set)
-
-    groups["HOST"] = {(host_id, host_name)} if not host_is_in_maintenance_mode else {}
-
-    if action_belongs_to_this_host:
-        return groups
-
-    if not cluster_topology:
-        message = (
-            "Cluster topology is required for actions with `host_action: true`, " f"but it's absent: {cluster_topology}"
-        )
-        raise ValueError(message)
-
-    groups["target"] = {(host_id, host_name)}
-
-    return groups
-
-
-def detect_host_groups(
+def detect_host_groups_for_cluster_bundle_action(
     cluster_topology: ClusterTopology, hosts_in_maintenance_mode: set[int], hc_delta: dict
 ) -> dict[HostGroupName, set[tuple[HostID, HostName]]]:
     groups = defaultdict(set)
 
-    groups["CLUSTER"] = {
-        (host.id, host.name) for host in cluster_topology.hosts.values() if host.id not in hosts_in_maintenance_mode
-    }
+    for host in cluster_topology.hosts.values():
+        group = "CLUSTER" if host.id not in hosts_in_maintenance_mode else f"CLUSTER.{MAINTENANCE_MODE_GROUP_SUFFIX}"
+        groups[group].add((host.id, host.name))
 
     for service in cluster_topology.services.values():
         service_name = service.info.name
@@ -85,10 +60,11 @@ def detect_host_groups(
             host_group_prefix: HostGroupName
             group_full_name = f"{host_group_prefix}.{hc_acl_action}"
 
-            # here we assign unconditionally, because empty `remove` group is considered valid
-            groups[group_full_name] = {
+            hosts_not_in_mm = {
                 (host.pk, host.fqdn) for host in hosts_in_group.values() if host.pk not in hosts_in_maintenance_mode
             }
+            if hosts_not_in_mm:
+                groups[group_full_name] = hosts_not_in_mm
 
             if hc_acl_action == "remove":
                 hosts_in_mm = {

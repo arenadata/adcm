@@ -14,10 +14,8 @@ from cm.services.job.inventory import _steps
 from cm.services.job.inventory._base import (
     get_cluster_vars,
     get_inventory_data,
-    is_cluster_vars_required_for_group,
-    is_host_provider_vars_required_for_group,
 )
-from cm.services.job.inventory._groups import detect_host_groups, detect_host_groups_for_action_on_host
+from cm.services.job.inventory._groups import detect_host_groups_for_cluster_bundle_action
 from cm.services.job.inventory._imports import get_imports_for_inventory
 from cm.services.job.inventory._types import ClusterVars
 
@@ -26,9 +24,6 @@ __all__ = [
     "get_cluster_vars",
     "get_inventory_data",
     "get_imports_for_inventory",
-    "is_cluster_vars_required_for_group",
-    "is_host_provider_vars_required_for_group",
-    "detect_host_groups",
-    "detect_host_groups_for_action_on_host",
+    "detect_host_groups_for_cluster_bundle_action",
     "_steps",
 ]

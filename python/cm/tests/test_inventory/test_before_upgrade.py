@@ -20,6 +20,8 @@ from cm.upgrade import bundle_switch, update_before_upgrade
 
 class TestBeforeUpgrade(BaseInventoryTestCase):
     def setUp(self) -> None:
+        super().setUp()
+
         bundles_dir = Path(__file__).parent.parent / "bundles"
         self.templates_dir = Path(__file__).parent.parent / "files/response_templates"
 
@@ -59,6 +61,8 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
 
         self.host_1.refresh_from_db()
         self.host_2.refresh_from_db()
+        self.provider.refresh_from_db()
+        self.provider.prototype.refresh_from_db()
 
         provider_action = Action.objects.get(name="provider_action", prototype=self.provider.prototype)
         host_1_action = Action.objects.get(name="host_action", prototype=self.host_1.prototype)
@@ -96,7 +100,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
                 self.templates_dir / "before_upgrade_provider.json.j2",
                 {
                     "id": self.host_1.provider.pk,
-                    "host_prototype_id": self.provider.prototype.pk,
+                    "host_prototype_id": self.host_1.prototype.pk,
                 },
             ),
         }
@@ -111,7 +115,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
                 self.templates_dir / "before_upgrade_provider.json.j2",
                 {
                     "id": self.host_2.provider.pk,
-                    "host_prototype_id": self.provider.prototype.pk,
+                    "host_prototype_id": self.host_2.prototype.pk,
                 },
             ),
         }

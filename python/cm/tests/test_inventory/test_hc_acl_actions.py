@@ -130,6 +130,9 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
             {"host_id": self.host_2.pk, "component_id": self.component_2.pk, "service_id": self.service.pk},
         ]
 
+        delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=hc_map_add)
+        self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=hc_map_add)
+
         for obj, action in [
             (self.cluster_1, self.hc_acl_action_cluster),
             (self.service, self.hc_acl_action_service),
@@ -139,9 +142,6 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
                 msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, "
                 f"action: {action.name}, action_hc_map: {hc_map_add}"
             ):
-                delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=hc_map_add)
-                self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=hc_map_add)
-
                 self.assert_inventory(
                     obj=obj,
                     action=action,
@@ -210,6 +210,8 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
                 },
             ),
         }
+        delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=self.initial_hc)
+        self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=self.initial_hc)
 
         for obj, action in (
             (self.cluster_1, self.hc_acl_action_cluster),
@@ -220,9 +222,6 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
                 msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, "
                 f"action: {action.name}, action_hc_map: {self.initial_hc}"
             ):
-                delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=self.initial_hc)
-                self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=self.initial_hc)
-
                 self.assert_inventory(
                     obj=obj,
                     action=action,
@@ -343,6 +342,9 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
             },
         ]
 
+        delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=hc_map_move)
+        self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=hc_map_move)
+
         for obj, action in [
             (self.cluster_1, self.hc_acl_action_cluster),
             (self.service, self.hc_acl_action_service),
@@ -352,9 +354,6 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
                 msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, "
                 f"action: {action.name}, action_hc_map: {hc_map_move}"
             ):
-                delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=hc_map_move)
-                self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=hc_map_move)
-
                 self.assert_inventory(
                     obj=obj,
                     action=action,

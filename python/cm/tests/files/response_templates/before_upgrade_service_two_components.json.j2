@@ -6,24 +6,38 @@
     "multi_state": [],
     "config": {
       "integer": 100,
-      "string": "string"
+      "string": "string",
+      "list": [
+        "value1",
+        "value2",
+        "value3"
+      ]
     },
     "maintenance_mode": false,
     "display_name": "service_two_components",
     "before_upgrade": {
-        "state": "created",
-        "config": {
-            "integer": 10,
-            "password": "password",
-            "string": "string",
-            "list": ["value1", "value2", "value3"]
-        }
+      "state": "created",
+      "config": {
+        "integer": 10,
+        "password": "password",
+        "string": "string",
+        "list": [
+          "value1",
+          "value2",
+          "value3"
+        ]
+      }
     },
     "component_1": {
       "component_id": {{ component_1_id }},
       "config": {
-        "integer": 10,
-        "string": "string"
+        "integer": 100,
+        "string": "string",
+        "list": [
+          "value1",
+          "value2",
+          "value3"
+        ]
       },
       "state": "created",
       "multi_state": [],
@@ -32,18 +46,27 @@
       "before_upgrade": {
         "state": "created",
         "config": {
-            "integer": 10,
-            "password": "password",
-            "string": "string",
-            "list": ["value1", "value2", "value3"]
+          "integer": 10,
+          "password": "password",
+          "string": "string",
+          "list": [
+            "value1",
+            "value2",
+            "value3"
+          ]
         }
       }
     },
     "component_2": {
       "component_id": {{ component_2_id }},
       "config": {
-        "integer": 10,
-        "string": "string"
+        "integer": 100,
+        "string": "string",
+        "list": [
+          "value1",
+          "value2",
+          "value3"
+        ]
       },
       "state": "created",
       "multi_state": [],
@@ -52,10 +75,14 @@
       "before_upgrade": {
         "state": "created",
         "config": {
-            "integer": 10,
-            "password": "password",
-            "string": "string",
-            "list": ["value1", "value2", "value3"]
+          "integer": 10,
+          "password": "password",
+          "string": "string",
+          "list": [
+            "value1",
+            "value2",
+            "value3"
+          ]
         }
       }
     }

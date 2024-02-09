@@ -73,28 +73,20 @@ class TestInventory(BaseTestCase):
         cluster_inv = {
             "all": {
                 "children": {
-                    "CLUSTER": {
-                        "hosts": {
-                            host2.fqdn: {
-                                "adcm_hostid": host2.pk,
-                                "state": "created",
-                                "multi_state": [],
-                            },
-                        },
-                        "vars": {
-                            "cluster": {
-                                "config": {},
-                                "name": "cluster",
-                                "id": self.cluster.pk,
-                                "version": "1.0.0",
-                                "edition": "community",
-                                "state": "created",
-                                "multi_state": [],
-                                "before_upgrade": {"state": None},
-                            },
-                            "services": {},
-                        },
+                    "CLUSTER": {"hosts": {host2.fqdn: {"adcm_hostid": host2.pk, "state": "created", "multi_state": []}}}
+                },
+                "vars": {
+                    "cluster": {
+                        "config": {},
+                        "name": "cluster",
+                        "id": self.cluster.pk,
+                        "version": "1.0.0",
+                        "edition": "community",
+                        "state": "created",
+                        "multi_state": [],
+                        "before_upgrade": {"state": None},
                     },
+                    "services": {},
                 },
             },
         }
@@ -102,25 +94,19 @@ class TestInventory(BaseTestCase):
             "all": {
                 "children": {
                     "HOST": {
-                        "hosts": {
-                            self.host.fqdn: {
-                                "adcm_hostid": self.host.pk,
-                                "state": "created",
-                                "multi_state": [],
-                            },
-                        },
-                        "vars": {
-                            "provider": {
-                                "config": {},
-                                "name": self.provider.name,
-                                "id": self.provider.pk,
-                                "host_prototype_id": self.host_pt.pk,
-                                "state": "created",
-                                "multi_state": [],
-                                "before_upgrade": {"state": None},
-                            },
-                        },
-                    },
+                        "hosts": {self.host.fqdn: {"adcm_hostid": self.host.pk, "state": "created", "multi_state": []}}
+                    }
+                },
+                "vars": {
+                    "provider": {
+                        "config": {},
+                        "name": self.provider.name,
+                        "id": self.provider.pk,
+                        "host_prototype_id": self.host_pt.pk,
+                        "state": "created",
+                        "multi_state": [],
+                        "before_upgrade": {"state": None},
+                    }
                 },
             },
         }
@@ -129,11 +115,7 @@ class TestInventory(BaseTestCase):
                 "children": {
                     "PROVIDER": {
                         "hosts": {
-                            self.host.fqdn: {
-                                "adcm_hostid": self.host.pk,
-                                "state": "created",
-                                "multi_state": [],
-                            },
+                            self.host.fqdn: {"adcm_hostid": self.host.pk, "state": "created", "multi_state": []},
                             "h2": {"adcm_hostid": host2.pk, "state": "created", "multi_state": []},
                         },
                     },
@@ -350,7 +332,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         self.assertEqual(len(remove_keys), 1)
 
         mm_keys = [key for key in inventory_data if key.endswith(f".{MAINTENANCE_MODE}")]
-        self.assertEqual(len(mm_keys), 2)
+        self.assertEqual(len(mm_keys), 3)
 
     def test_groups_remove_host_in_mm_success(self):
         self.host_hc_acl_3.maintenance_mode = MaintenanceMode.ON
@@ -372,12 +354,13 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
             f"{ClusterObject.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
             f".{ServiceComponent.objects.get(pk=self.hc_c1_h3['component_id']).prototype.name}"
             f".{HcAclAction.REMOVE}"
+            f".maintenance_mode"
         )
 
         self.assertIn(target_key_remove, inventory_data)
-        self.assertNotIn(self.host_hc_acl_3.fqdn, inventory_data[target_key_remove]["hosts"])
+        self.assertIn(self.host_hc_acl_3.fqdn, inventory_data[target_key_remove]["hosts"])
 
-        remove_keys = [key for key in inventory_data if key.endswith(f".{HcAclAction.REMOVE}")]
+        remove_keys = [key for key in inventory_data if f".{HcAclAction.REMOVE}" in key]
         self.assertEqual(len(remove_keys), 1)
 
         mm_keys = [key for key in inventory_data if key.endswith(f".{HcAclAction.REMOVE}.{MAINTENANCE_MODE}")]

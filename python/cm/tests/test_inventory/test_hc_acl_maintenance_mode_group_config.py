@@ -196,7 +196,8 @@ class TestInventoryHcAclMaintenanceModeGroupConfig(BaseInventoryTestCase):
             ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
-                    "cluster_id": self.cluster.pk,
+                    "id": self.cluster.pk,
+                    "name": self.cluster.name,
                 },
             ),
             ("vars", "services"): (

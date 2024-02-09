@@ -325,7 +325,7 @@ class TestJob(BaseTestCase):
         with patch.object(Path, "open", mocked_open), patch("cm.job.json.dump"):
             prepare_job(job_scope=job_scope, delta={})
 
-        mock_get_inventory_data.assert_called_once_with(obj=cluster, action=action, delta={}, action_host=None)
+        mock_get_inventory_data.assert_called_once_with(obj=cluster, action=action, delta={})
         mock_get_job_config.assert_called_once_with(job_scope=job_scope)
         mock_prepare_ansible_config.assert_called_once_with(job_id=job.id, action=action, sub_action=None)
 
