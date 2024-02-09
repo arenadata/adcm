@@ -1,5 +1,6 @@
 import {
   createSlice,
+  // eslint-disable-next-line @typescript-eslint/no-restricted-imports
   createAsyncThunk as createReduxAsyncThunk,
   AsyncThunkPayloadCreator,
   SliceCaseReducers,
