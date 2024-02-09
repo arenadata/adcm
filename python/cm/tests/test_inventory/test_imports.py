@@ -163,7 +163,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         ):
             with self.subTest(object_.__class__.__name__):
                 action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
-                actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["children"])
+                actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action))
                 expected_inventory = self.render_json_template(
                     file=self.templates_dir / "configs_and_imports" / template, context=self.context
                 )
@@ -182,9 +182,8 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         for object_ in (self.cluster, self.service, self.component):
             with self.subTest(object_.__class__.__name__):
                 action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
-                actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["children"])
-
-            self.assertDictEqual(actual_inventory["CLUSTER"]["vars"], expected_vars)
+                actual_vars = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["vars"])
+                self.assertDictEqual(actual_vars, expected_vars)
 
     def test_cluster_objects_single_import_success(self) -> None:
         self.prepare_cluster_hostcomponent()
@@ -215,8 +214,8 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         for object_ in (self.cluster, self.service, self.component):
             with self.subTest(object_.__class__.__name__):
                 action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
-                actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["children"])
-                self.assertDictEqual(actual_inventory["CLUSTER"]["vars"], expected_vars)
+                actual_vars = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["vars"])
+                self.assertDictEqual(actual_vars, expected_vars)
 
     def test_cluster_objects_multi_import_success(self) -> None:
         self.prepare_cluster_hostcomponent()
@@ -257,8 +256,8 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         for object_ in (self.cluster, self.service, self.component):
             with self.subTest(object_.__class__.__name__):
                 action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
-                actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["children"])
-                self.assertDictEqual(actual_inventory["CLUSTER"]["vars"], expected_vars)
+                actual_vars = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["vars"])
+                self.assertDictEqual(actual_vars, expected_vars)
 
     def test_imports_have_default_no_import_success(self) -> None:
         self.change_configuration(
@@ -363,7 +362,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.bind_objects((self.service_with_defaults, [self.export_cluster_1]))
 
         action = Action.objects.filter(prototype=self.service_with_defaults.prototype, name="dummy").first()
-        result = decrypt_secrets(get_inventory_data(obj=self.service_with_defaults, action=action))["all"]["children"]
+        result = decrypt_secrets(get_inventory_data(obj=self.service_with_defaults, action=action))["all"]
         expected_vars_imports = {
             "very_complex": {
                 "just_integer": 4,
@@ -379,8 +378,10 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             "for_export": [{"another_stuff": {"hehe": 500.5}}],
         }
 
-        self.assertDictEqual(result["CLUSTER"]["vars"]["cluster"]["imports"], expected_vars_imports)
+        self.assertDictEqual(result["vars"]["cluster"]["imports"], expected_vars_imports)
         for node in ("CLUSTER", "imports_with_defaults", "imports_with_defaults.just_component"):
             # note that imports ignore group configs
-            self.assertDictEqual(result[node]["hosts"]["host-3"]["cluster"]["imports"], expected_vars_imports)
-            self.assertNotIn("cluster", result[node]["hosts"]["host-4"])
+            self.assertDictEqual(
+                result["children"][node]["hosts"]["host-3"]["cluster"]["imports"], expected_vars_imports
+            )
+            self.assertNotIn("cluster", result["children"][node]["hosts"]["host-4"])

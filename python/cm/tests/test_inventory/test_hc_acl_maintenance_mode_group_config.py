@@ -94,12 +94,12 @@ class TestInventoryHcAclMaintenanceModeGroupConfig(BaseInventoryTestCase):
 
         expected_topology = {
             "CLUSTER": [self.host_2.fqdn, self.host_3.fqdn, self.host_4.fqdn],
-            f"{self.service.name}.{self.component_1.name}": [self.host_3.fqdn],
+            "CLUSTER.maintenance_mode": [self.host_1.fqdn],
             f"{self.service.name}": [self.host_3.fqdn, self.host_4.fqdn],
-            f"{self.service.name}.component_2": [self.host_4.fqdn],
+            f"{self.service.name}.{self.component_1.name}": [self.host_3.fqdn],
+            f"{self.service.name}.{self.component_2.name}": [self.host_4.fqdn],
             f"{self.service.name}.{self.component_1.name}.add": [self.host_3.fqdn],
             f"{self.service.name}.{self.component_2.name}.add": [self.host_4.fqdn],
-            f"{self.service.name}.{self.component_1.name}.remove": [],
             f"{self.service.name}.{self.component_1.name}.remove.maintenance_mode": [self.host_1.fqdn],
             f"{self.service.name}.{self.component_2.name}.remove": [self.host_2.fqdn],
         }
@@ -124,51 +124,52 @@ class TestInventoryHcAclMaintenanceModeGroupConfig(BaseInventoryTestCase):
                 self.templates_dir / "host.json.j2",
                 {"adcm_hostid": self.host_4.pk},
             ),
-            ("CLUSTER", "vars"): (
-                self.templates_dir / "vars.json.j2",
+            ("CLUSTER.maintenance_mode", "hosts", f"{self.host_1.fqdn}"): (
+                self.templates_dir / "host_with_vars_service_two_components.json.j2",
                 {
+                    "adcm_hostid": self.host_1.pk,
                     "cluster_id": self.cluster.pk,
-                    "cluster_config_integer": 10,
+                    "cluster_config_integer": 101,
                     "service_id": self.service.pk,
-                    "service_config_integer": 10,
-                    "service_maintenance_mode": self.get_maintenance_mode_for_render(
-                        maintenance_mode=self.service.maintenance_mode
-                    ),
                     "component_1_id": self.component_1.pk,
-                    "component_1_config_integer": 10,
-                    "component_1_maintenance_mode": self.get_maintenance_mode_for_render(
-                        maintenance_mode=self.component_1.maintenance_mode
-                    ),
                     "component_2_id": self.component_2.pk,
-                    "component_2_config_integer": 10,
-                    "component_2_maintenance_mode": self.get_maintenance_mode_for_render(
-                        maintenance_mode=self.component_2.maintenance_mode
-                    ),
                 },
             ),
             (f"{self.service.name}.{self.component_1.name}", "hosts", f"{self.host_3.fqdn}"): (
                 self.templates_dir / "host.json.j2",
-                {"adcm_hostid": self.host_3.pk},
+                {
+                    "adcm_hostid": self.host_3.pk,
+                },
             ),
             (f"{self.service.name}", "hosts", f"{self.host_3.fqdn}"): (
                 self.templates_dir / "host.json.j2",
-                {"adcm_hostid": self.host_3.pk},
+                {
+                    "adcm_hostid": self.host_3.pk,
+                },
             ),
             (f"{self.service.name}", "hosts", f"{self.host_4.fqdn}"): (
                 self.templates_dir / "host.json.j2",
-                {"adcm_hostid": self.host_4.pk},
+                {
+                    "adcm_hostid": self.host_4.pk,
+                },
             ),
             (f"{self.service.name}.{self.component_2.name}", "hosts", f"{self.host_4.fqdn}"): (
                 self.templates_dir / "host.json.j2",
-                {"adcm_hostid": self.host_4.pk},
+                {
+                    "adcm_hostid": self.host_4.pk,
+                },
             ),
             (f"{self.service.name}.{self.component_1.name}.add", "hosts", f"{self.host_3.fqdn}"): (
                 self.templates_dir / "host.json.j2",
-                {"adcm_hostid": self.host_3.pk},
+                {
+                    "adcm_hostid": self.host_3.pk,
+                },
             ),
             (f"{self.service.name}.{self.component_2.name}.add", "hosts", f"{self.host_4.fqdn}"): (
                 self.templates_dir / "host.json.j2",
-                {"adcm_hostid": self.host_4.pk},
+                {
+                    "adcm_hostid": self.host_4.pk,
+                },
             ),
             (f"{self.service.name}.{self.component_1.name}.remove.maintenance_mode", "hosts", f"{self.host_1.fqdn}"): (
                 self.templates_dir / "host_with_vars_service_two_components.json.j2",
@@ -187,6 +188,21 @@ class TestInventoryHcAclMaintenanceModeGroupConfig(BaseInventoryTestCase):
                     "adcm_hostid": self.host_2.pk,
                     "cluster_id": self.cluster.pk,
                     "cluster_config_integer": 101,
+                    "service_id": self.service.pk,
+                    "component_1_id": self.component_1.pk,
+                    "component_2_id": self.component_2.pk,
+                },
+            ),
+            ("vars", "cluster"): (
+                self.templates_dir / "cluster.json.j2",
+                {
+                    "id": self.cluster.pk,
+                    "name": self.cluster.name,
+                },
+            ),
+            ("vars", "services"): (
+                self.templates_dir / "service_two_components.json.j2",
+                {
                     "service_id": self.service.pk,
                     "component_1_id": self.component_1.pk,
                     "component_2_id": self.component_2.pk,

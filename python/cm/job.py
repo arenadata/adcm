@@ -479,9 +479,7 @@ def write_job_config(job_id: int, config: dict[str, Any]) -> None:
 def prepare_job(job_scope: JobScope, delta: dict):
     write_job_config(job_id=job_scope.job_id, config=get_job_config(job_scope=job_scope))
 
-    inventory = get_inventory_data(
-        obj=job_scope.object, action=job_scope.action, action_host=job_scope.hosts, delta=delta
-    )
+    inventory = get_inventory_data(obj=job_scope.object, action=job_scope.action, delta=delta)
     with (settings.RUN_DIR / f"{job_scope.job_id}" / "inventory.json").open(
         mode="w", encoding=settings.ENCODING_UTF_8
     ) as file_descriptor:

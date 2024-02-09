@@ -44,28 +44,78 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
             name="hc_acl_action_on_service", prototype=self.service.prototype
         )
 
-        self.initial_hc_h1_c1 = [
+        self.hc_acl_action_component_1 = Action.objects.get(
+            name="hc_acl_action_on_component_1", prototype=self.component_1.prototype
+        )
+
+        self.initial_hc = [
             {
                 "service_id": self.service.pk,
                 "component_id": self.component_1.pk,
                 "host_id": self.host_1.pk,
             }
         ]
-        self.expected_data = {
-            ("CLUSTER", "hosts"): (
-                self.templates_dir / "two_hosts.json.j2",
+        self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=self.initial_hc)
+
+    def test_expand(self):
+        expected_topology = {
+            "CLUSTER": [self.host_1.fqdn, self.host_2.fqdn],
+            self.service.name: [self.host_1.fqdn, self.host_2.fqdn],
+            f"{self.service.name}.{self.component_1.name}": [self.host_1.fqdn],
+            f"{self.service.name}.{self.component_2.name}": [self.host_2.fqdn],
+            f"{self.service.name}.{self.component_2.name}.{HcAclAction.ADD}": [self.host_2.fqdn],
+        }
+
+        expected_data = {
+            ("CLUSTER", "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
                 {
-                    "host_1_id": self.host_1.pk,
-                    "host_2_id": self.host_2.pk,
+                    "adcm_hostid": self.host_1.pk,
                 },
             ),
-            ("CLUSTER", "vars", "cluster"): (
+            ("CLUSTER", "hosts", self.host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                },
+            ),
+            (self.service.name, "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_1.pk,
+                },
+            ),
+            (self.service.name, "hosts", self.host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                },
+            ),
+            (f"{self.service.name}.{self.component_1.name}", "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_1.pk,
+                },
+            ),
+            (f"{self.service.name}.{self.component_2.name}", "hosts", self.host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                },
+            ),
+            (f"{self.service.name}.{self.component_2.name}.{HcAclAction.ADD}", "hosts", self.host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                },
+            ),
+            ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
                 },
             ),
-            ("CLUSTER", "vars", "services"): (
+            ("vars", "services"): (
                 self.templates_dir / "service_two_components.json.j2",
                 {
                     "service_id": self.service.pk,
@@ -75,226 +125,239 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
             ),
         }
 
-    def test_expand(self):
-        base_expected_topology = {
-            "CLUSTER": [self.host_1.fqdn, self.host_2.fqdn],
-            self.service.name: [self.host_1.fqdn],
-            f"{self.service.name}.{self.component_1.name}": [self.host_1.fqdn],
-        }
-
-        action_hc_map_add_h2_c2 = [
-            *self.initial_hc_h1_c1,
+        hc_map_add = [
+            *self.initial_hc,
             {"host_id": self.host_2.pk, "component_id": self.component_2.pk, "service_id": self.service.pk},
         ]
-        expected_topology_add_h2_c2 = {
-            **base_expected_topology,
-            **{f"{self.service.name}.{self.component_2.name}.{HcAclAction.ADD}": [self.host_2.fqdn]},
-        }
-        action_hc_map_add_h2_c1 = [
-            *self.initial_hc_h1_c1,
-            {"host_id": self.host_2.pk, "component_id": self.component_1.pk, "service_id": self.service.pk},
-        ]
-        expected_topology_add_h2_c1 = {
-            **base_expected_topology,
-            **{f"{self.service.name}.{self.component_1.name}.{HcAclAction.ADD}": [self.host_2.fqdn]},
-        }
 
-        for obj, action, action_hc_map, expected_topology in (
-            (
-                self.cluster_1,
-                self.hc_acl_action_cluster,
-                action_hc_map_add_h2_c2,
-                expected_topology_add_h2_c2,
-            ),
-            (
-                self.service,
-                self.hc_acl_action_service,
-                action_hc_map_add_h2_c2,
-                expected_topology_add_h2_c2,
-            ),
-            (
-                self.cluster_1,
-                self.hc_acl_action_cluster,
-                action_hc_map_add_h2_c1,
-                expected_topology_add_h2_c1,
-            ),
-            (
-                self.service,
-                self.hc_acl_action_service,
-                action_hc_map_add_h2_c1,
-                expected_topology_add_h2_c1,
-            ),
-        ):
+        delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=hc_map_add)
+        self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=hc_map_add)
+
+        for obj, action in [
+            (self.cluster_1, self.hc_acl_action_cluster),
+            (self.service, self.hc_acl_action_service),
+            (self.component_1, self.hc_acl_action_component_1),
+        ]:
             with self.subTest(
                 msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, "
-                f"action: {action.name}, action_hc_map: {action_hc_map}"
+                f"action: {action.name}, action_hc_map: {hc_map_add}"
             ):
-                self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=self.initial_hc_h1_c1)
-                delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=action_hc_map)
-
                 self.assert_inventory(
                     obj=obj,
                     action=action,
                     expected_topology=expected_topology,
-                    expected_data=self.expected_data,
+                    expected_data=expected_data,
                     delta=delta,
                 )
 
     def test_shrink(self):
-        base_expected_topology = {
-            "CLUSTER": [self.host_1.fqdn, self.host_2.fqdn],
-            f"{self.service.name}.{self.component_1.name}": [self.host_1.fqdn],
-        }
-
-        initial_hc_h1_c1_h2_c2 = [
-            *self.initial_hc_h1_c1,
+        initial_hc = [
+            *self.initial_hc,
             {"service_id": self.service.pk, "component_id": self.component_2.pk, "host_id": self.host_2.pk},
         ]
-        expected_topology_remove_h2_c2 = {
-            **base_expected_topology,
-            **{
-                self.service.name: [self.host_1.fqdn, self.host_2.fqdn],
-                f"{self.service.name}.{self.component_2.name}": [self.host_2.fqdn],
-                f"{self.service.name}.{self.component_2.name}.{HcAclAction.REMOVE}": [self.host_2.fqdn],
-            },
+        self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=initial_hc)
+
+        expected_topology = {
+            "CLUSTER": [self.host_1.fqdn, self.host_2.fqdn],
+            f"{self.service.name}.{self.component_1.name}": [self.host_1.fqdn],
+            self.service.name: [self.host_1.fqdn],
+            f"{self.service.name}.{self.component_2.name}.{HcAclAction.REMOVE}": [self.host_2.fqdn],
         }
 
-        initial_hc_h1_c1_h1_c2 = [
-            *self.initial_hc_h1_c1,
-            {"service_id": self.service.pk, "component_id": self.component_2.pk, "host_id": self.host_1.pk},
-        ]
-        expected_topology_remove_h1_c2 = {
-            **base_expected_topology,
-            **{
-                self.service.name: [self.host_1.fqdn],
-                f"{self.service.name}.{self.component_2.name}": [self.host_1.fqdn],
-                f"{self.service.name}.{self.component_2.name}.{HcAclAction.REMOVE}": [self.host_1.fqdn],
-            },
+        expected_data = {
+            ("CLUSTER", "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_1.pk,
+                },
+            ),
+            ("CLUSTER", "hosts", self.host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                },
+            ),
+            (self.service.name, "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_1.pk,
+                },
+            ),
+            (f"{self.service.name}.{self.component_1.name}", "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_1.pk,
+                },
+            ),
+            (f"{self.service.name}.{self.component_2.name}.{HcAclAction.REMOVE}", "hosts", self.host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                },
+            ),
+            ("vars", "cluster"): (
+                self.templates_dir / "cluster.json.j2",
+                {
+                    "id": self.cluster_1.pk,
+                },
+            ),
+            ("vars", "services"): (
+                self.templates_dir / "service_two_components.json.j2",
+                {
+                    "service_id": self.service.pk,
+                    "component_1_id": self.component_1.pk,
+                    "component_2_id": self.component_2.pk,
+                },
+            ),
         }
+        delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=self.initial_hc)
+        self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=self.initial_hc)
 
-        for obj, action, initial_hc_map, expected_topology in (
-            (self.cluster_1, self.hc_acl_action_cluster, initial_hc_h1_c1_h2_c2, expected_topology_remove_h2_c2),
-            (self.service, self.hc_acl_action_service, initial_hc_h1_c1_h2_c2, expected_topology_remove_h2_c2),
-            (self.cluster_1, self.hc_acl_action_cluster, initial_hc_h1_c1_h1_c2, expected_topology_remove_h1_c2),
-            (self.service, self.hc_acl_action_service, initial_hc_h1_c1_h1_c2, expected_topology_remove_h1_c2),
+        for obj, action in (
+            (self.cluster_1, self.hc_acl_action_cluster),
+            (self.service, self.hc_acl_action_service),
+            (self.component_1, self.hc_acl_action_component_1),
         ):
-            action_hc_map = initial_hc_map[:-1]
             with self.subTest(
                 msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, "
-                f"action: {action.name}, action_hc_map: {action_hc_map}"
+                f"action: {action.name}, action_hc_map: {self.initial_hc}"
             ):
-                self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=initial_hc_map)
-                delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=action_hc_map)
-
                 self.assert_inventory(
                     obj=obj,
                     action=action,
                     expected_topology=expected_topology,
-                    expected_data=self.expected_data,
+                    expected_data=expected_data,
                     delta=delta,
                 )
 
-    def test_expand_shrink_move(self):
-        base_expected_topology = {
-            "CLUSTER": [self.host_1.fqdn, self.host_2.fqdn],
-            self.service.name: [self.host_1.fqdn],
-            f"{self.service.name}.{self.component_1.name}": [self.host_1.fqdn],
-        }
-
-        action_hc_map_remove_h1_c1_add_h2_c2 = [
+    def test_move(self):
+        initial_hc = [
+            *self.initial_hc,
             {
                 "service_id": self.service.pk,
                 "component_id": self.component_2.pk,
                 "host_id": self.host_2.pk,
-            }
-        ]
-        expected_topology_remove_h1_c1_add_h2_c2 = {
-            **base_expected_topology,
-            **{
-                f"{self.service.name}.{self.component_1.name}.{HcAclAction.REMOVE}": [self.host_1.fqdn],
-                f"{self.service.name}.{self.component_2.name}.{HcAclAction.ADD}": [self.host_2.fqdn],
             },
+        ]
+        self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=initial_hc)
+
+        expected_topology = {
+            "CLUSTER": [self.host_1.fqdn, self.host_2.fqdn],
+            self.service.name: [self.host_1.fqdn, self.host_2.fqdn],
+            f"{self.service.name}.{self.component_1.name}": [self.host_2.fqdn],
+            f"{self.service.name}.{self.component_2.name}": [self.host_1.fqdn],
+            f"{self.service.name}.{self.component_1.name}.{HcAclAction.ADD}": [self.host_2.fqdn],
+            f"{self.service.name}.{self.component_2.name}.{HcAclAction.ADD}": [self.host_1.fqdn],
+            f"{self.service.name}.{self.component_1.name}.{HcAclAction.REMOVE}": [self.host_1.fqdn],
+            f"{self.service.name}.{self.component_2.name}.{HcAclAction.REMOVE}": [self.host_2.fqdn],
         }
 
-        action_hc_map_remove_h1_c1_add_h1_c2 = [
-            {
-                "service_id": self.service.pk,
-                "component_id": self.component_2.pk,
-                "host_id": self.host_1.pk,
-            }
-        ]
-        expected_topology_remove_h1_c1_add_h1_c2 = {
-            **base_expected_topology,
-            **{
-                f"{self.service.name}.{self.component_1.name}.{HcAclAction.REMOVE}": [self.host_1.fqdn],
-                f"{self.service.name}.{self.component_2.name}.{HcAclAction.ADD}": [self.host_1.fqdn],
-            },
+        expected_data = {
+            ("CLUSTER", "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_1.pk,
+                },
+            ),
+            ("CLUSTER", "hosts", self.host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                },
+            ),
+            (self.service.name, "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_1.pk,
+                },
+            ),
+            (self.service.name, "hosts", self.host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                },
+            ),
+            (f"{self.service.name}.{self.component_1.name}", "hosts", self.host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                },
+            ),
+            (f"{self.service.name}.{self.component_2.name}", "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_1.pk,
+                },
+            ),
+            (f"{self.service.name}.{self.component_1.name}.{HcAclAction.ADD}", "hosts", self.host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                },
+            ),
+            (f"{self.service.name}.{self.component_2.name}.{HcAclAction.ADD}", "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_1.pk,
+                },
+            ),
+            (f"{self.service.name}.{self.component_1.name}.{HcAclAction.REMOVE}", "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_1.pk,
+                },
+            ),
+            (f"{self.service.name}.{self.component_2.name}.{HcAclAction.REMOVE}", "hosts", self.host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                },
+            ),
+            ("vars", "cluster"): (
+                self.templates_dir / "cluster.json.j2",
+                {
+                    "id": self.cluster_1.pk,
+                },
+            ),
+            ("vars", "services"): (
+                self.templates_dir / "service_two_components.json.j2",
+                {
+                    "service_id": self.service.pk,
+                    "component_1_id": self.component_1.pk,
+                    "component_2_id": self.component_2.pk,
+                },
+            ),
         }
 
-        action_hc_map_remove_h1_c1_add_h2_c1 = [
+        hc_map_move = [
             {
                 "service_id": self.service.pk,
                 "component_id": self.component_1.pk,
                 "host_id": self.host_2.pk,
-            }
-        ]
-        expected_topology_remove_h1_c1_add_h2_c1 = {
-            **base_expected_topology,
-            **{
-                f"{self.service.name}.{self.component_1.name}.{HcAclAction.REMOVE}": [self.host_1.fqdn],
-                f"{self.service.name}.{self.component_1.name}.{HcAclAction.ADD}": [self.host_2.fqdn],
             },
-        }
+            {
+                "service_id": self.service.pk,
+                "component_id": self.component_2.pk,
+                "host_id": self.host_1.pk,
+            },
+        ]
 
-        for obj, action, action_hc_map, expected_topology in (
-            (
-                self.cluster_1,
-                self.hc_acl_action_cluster,
-                action_hc_map_remove_h1_c1_add_h2_c2,
-                expected_topology_remove_h1_c1_add_h2_c2,
-            ),
-            (
-                self.service,
-                self.hc_acl_action_service,
-                action_hc_map_remove_h1_c1_add_h2_c2,
-                expected_topology_remove_h1_c1_add_h2_c2,
-            ),
-            (
-                self.cluster_1,
-                self.hc_acl_action_cluster,
-                action_hc_map_remove_h1_c1_add_h1_c2,
-                expected_topology_remove_h1_c1_add_h1_c2,
-            ),
-            (
-                self.service,
-                self.hc_acl_action_service,
-                action_hc_map_remove_h1_c1_add_h1_c2,
-                expected_topology_remove_h1_c1_add_h1_c2,
-            ),
-            (
-                self.cluster_1,
-                self.hc_acl_action_cluster,
-                action_hc_map_remove_h1_c1_add_h2_c1,
-                expected_topology_remove_h1_c1_add_h2_c1,
-            ),
-            (
-                self.service,
-                self.hc_acl_action_service,
-                action_hc_map_remove_h1_c1_add_h2_c1,
-                expected_topology_remove_h1_c1_add_h2_c1,
-            ),
-        ):
+        delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=hc_map_move)
+        self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=hc_map_move)
+
+        for obj, action in [
+            (self.cluster_1, self.hc_acl_action_cluster),
+            (self.service, self.hc_acl_action_service),
+            (self.component_1, self.hc_acl_action_component_1),
+        ]:
             with self.subTest(
                 msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, "
-                f"action: {action.name}, action_hc_map: {action_hc_map}"
+                f"action: {action.name}, action_hc_map: {hc_map_move}"
             ):
-                self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=self.initial_hc_h1_c1)
-                delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=action_hc_map)
-
                 self.assert_inventory(
                     obj=obj,
                     action=action,
                     expected_topology=expected_topology,
-                    expected_data=self.expected_data,
+                    expected_data=expected_data,
                     delta=delta,
                 )

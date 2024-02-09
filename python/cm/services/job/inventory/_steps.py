@@ -14,7 +14,6 @@ from typing import Iterable
 
 from django.contrib.contenttypes.models import ContentType
 
-from cm.adcm_config.config import get_prototype_config, process_config
 from cm.logger import logger
 from cm.models import (
     ADCM,
@@ -92,6 +91,8 @@ def get_before_upgrade(obj: ADCMEntity, host: Host | None) -> dict:  # todo make
             logger.info("Can't get old proto for %s. Old bundle id: %s", obj, bundle_id)
 
         else:
+            from cm.adcm_config.config import get_prototype_config
+
             old_spec, old_flat_spec, _, _ = get_prototype_config(prototype=old_proto)
             config = process_config_and_attr(
                 obj=group_object or obj,
@@ -132,6 +133,8 @@ def process_config_and_attr(
     spec: dict | None = None,
     flat_spec: dict | None = None,
 ) -> dict:
+    from cm.adcm_config.config import get_prototype_config, process_config
+
     if not spec:
         prototype = obj.object.prototype if isinstance(obj, GroupConfig) else obj.prototype
 
