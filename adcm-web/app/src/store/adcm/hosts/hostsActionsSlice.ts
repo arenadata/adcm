@@ -1,7 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-// eslint-disable-next-line import/no-cycle
-import { getHosts } from '@store/adcm/hosts/hostsSlice';
+import { getHosts, setHostMaintenanceMode } from '@store/adcm/hosts/hostsSlice';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmClustersApi, AdcmHostProvidersApi, AdcmHostsApi, RequestError } from '@api';
@@ -126,6 +125,7 @@ const toggleMaintenanceMode = createAsyncThunk(
       const data = await AdcmHostsApi.toggleMaintenanceMode(hostId, maintenanceMode);
       const maintenanceModeStatus = maintenanceMode === AdcmMaintenanceMode.Off ? 'disabled' : 'enabled';
       thunkAPI.dispatch(showInfo({ message: `The maintenance mode has been ${maintenanceModeStatus}` }));
+      thunkAPI.dispatch(setHostMaintenanceMode({ hostId, maintenanceMode }));
       return data;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));

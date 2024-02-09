@@ -6,8 +6,6 @@ import { defaultSpinnerDelay } from '@constants';
 import { AdcmClusterHost } from '@models/adcm/clusterHosts';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { updateIfExists } from '@utils/objectUtils';
-// eslint-disable-next-line import/no-cycle
-import { toggleMaintenanceMode } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 import { LoadState } from '@models/loadState';
 
 type AdcmClusterHostsState = {
@@ -72,6 +70,12 @@ const clusterHostsSlice = createSlice({
     cleanupClusterHosts() {
       return createInitialState();
     },
+    setHostMaintenanceMode(state, action) {
+      const changedHost = state.hosts.find(({ id }) => id === action.payload.hostId);
+      if (changedHost) {
+        changedHost.maintenanceMode = action.payload.maintenanceMode;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(loadClusterHostsFromBackend.fulfilled, (state, action) => {
@@ -80,12 +84,6 @@ const clusterHostsSlice = createSlice({
     });
     builder.addCase(loadClusterHostsFromBackend.rejected, (state) => {
       state.hosts = [];
-    });
-    builder.addCase(toggleMaintenanceMode.fulfilled, (state, action) => {
-      const changedHost = state.hosts.find(({ id }) => id === action.meta.arg.hostId);
-      if (changedHost) {
-        changedHost.maintenanceMode = action.payload.maintenanceMode;
-      }
     });
     builder.addCase(wsActions.update_host, (state, action) => {
       const { id, changes } = action.payload.object;
@@ -118,6 +116,6 @@ const clusterHostsSlice = createSlice({
   },
 });
 
-const { setLoadState, cleanupClusterHosts } = clusterHostsSlice.actions;
-export { getClusterHosts, refreshClusterHosts, cleanupClusterHosts };
+const { setLoadState, cleanupClusterHosts, setHostMaintenanceMode } = clusterHostsSlice.actions;
+export { getClusterHosts, refreshClusterHosts, cleanupClusterHosts, setHostMaintenanceMode };
 export default clusterHostsSlice.reducer;

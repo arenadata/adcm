@@ -42,13 +42,18 @@
     ],
     "no-restricted-imports": "off",
     "@typescript-eslint/no-restricted-imports": [
-      "warn",
+      "error",
       {
         "paths": [
           {
             "name": "react-redux",
             "importNames": ["useSelector", "useDispatch"],
             "message": "Use typed `useStore` and `useDispatch` from '@hooks' instead."
+          },
+          {
+            "name": "@reduxjs/toolkit",
+            "importNames": ["createAsyncThunk"],
+            "message": "Use typed `createAsyncThunk` from '@store/redux' instead."
           }
         ]
       }
