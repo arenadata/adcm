@@ -50,6 +50,7 @@ from cm.api import (
 )
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.hierarchy import Tree
+from cm.inventory import HcAclAction
 from cm.issue import (
     check_bound_components,
     check_component_constraint,
@@ -86,7 +87,6 @@ from cm.models import (
 from cm.services.job.config import get_job_config
 from cm.services.job.inventory import get_inventory_data
 from cm.services.job.inventory._steps import process_config_and_attr
-from cm.services.job.types import HcAclAction
 from cm.services.job.utils import JobScope, get_selector
 from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import (
@@ -293,24 +293,24 @@ def cook_delta(
             key = cook_comp_key(hostcomponent.service.prototype.name, hostcomponent.component.prototype.name)
             add_to_dict(old, key, hostcomponent.host.fqdn, hostcomponent.host)
 
-    delta = {HcAclAction.ADD.value: {}, HcAclAction.REMOVE.value: {}}
+    delta = {HcAclAction.ADD: {}, HcAclAction.REMOVE: {}}
     for key, value in new.items():
         if key in old:
             for host in value:
                 if host not in old[key]:
-                    add_delta(_delta=delta, action=HcAclAction.ADD.value, _key=key, fqdn=host, _host=value[host])
+                    add_delta(_delta=delta, action=HcAclAction.ADD, _key=key, fqdn=host, _host=value[host])
 
             for host in old[key]:
                 if host not in value:
-                    add_delta(_delta=delta, action=HcAclAction.REMOVE.value, _key=key, fqdn=host, _host=old[key][host])
+                    add_delta(_delta=delta, action=HcAclAction.REMOVE, _key=key, fqdn=host, _host=old[key][host])
         else:
             for host in value:
-                add_delta(_delta=delta, action=HcAclAction.ADD.value, _key=key, fqdn=host, _host=value[host])
+                add_delta(_delta=delta, action=HcAclAction.ADD, _key=key, fqdn=host, _host=value[host])
 
     for key, value in old.items():
         if key not in new:
             for host in value:
-                add_delta(_delta=delta, action=HcAclAction.REMOVE.value, _key=key, fqdn=host, _host=value[host])
+                add_delta(_delta=delta, action=HcAclAction.REMOVE, _key=key, fqdn=host, _host=value[host])
 
     logger.debug("OLD: %s", old)
     logger.debug("NEW: %s", new)
@@ -403,7 +403,7 @@ def check_upgrade_hc(action, new_hc):
             for hc_acl in action.hostcomponentmap:
                 if proto.name == hc_acl["component"]:
                     buff += 1
-                    if hc_acl["action"] != HcAclAction.ADD.value:
+                    if hc_acl["action"] != HcAclAction.ADD:
                         raise_adcm_ex(
                             "WRONG_ACTION_HC",
                             "New components from bundle with upgrade you can only add, not remove",

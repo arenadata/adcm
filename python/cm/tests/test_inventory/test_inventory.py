@@ -22,6 +22,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
 
 from cm.api import add_hc, add_service_to_cluster, update_obj_config
+from cm.inventory import MAINTENANCE_MODE, HcAclAction
 from cm.job import re_prepare_job
 from cm.models import (
     Action,
@@ -35,8 +36,6 @@ from cm.models import (
     TaskLog,
 )
 from cm.services.job.inventory import get_inventory_data
-from cm.services.job.inventory._constants import MAINTENANCE_MODE_GROUP_SUFFIX
-from cm.services.job.types import HcAclAction
 from cm.services.job.utils import JobScope
 from cm.tests.utils import (
     gen_bundle,
@@ -309,16 +308,15 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         target_key_remove = (
             f"{ClusterObject.objects.get(pk=self.hc_c1_h2['service_id']).prototype.name}"
             f".{ServiceComponent.objects.get(pk=self.hc_c1_h2['component_id']).prototype.name}"
-            f".{HcAclAction.REMOVE.value}"
+            f".{HcAclAction.REMOVE}"
         )
         target_key_mm_service = (
-            f"{ClusterObject.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}."
-            f"{MAINTENANCE_MODE_GROUP_SUFFIX}"
+            f"{ClusterObject.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}.{MAINTENANCE_MODE}"
         )
         target_key_mm_service_component = (
             f"{ClusterObject.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
             f".{ServiceComponent.objects.get(pk=self.hc_c1_h3['component_id']).prototype.name}"
-            f".{MAINTENANCE_MODE_GROUP_SUFFIX}"
+            f".{MAINTENANCE_MODE}"
         )
 
         self.assertIn(target_key_remove, inventory_data)
@@ -330,10 +328,10 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         self.assertIn(target_key_mm_service_component, inventory_data)
         self.assertIn(self.host_hc_acl_3.fqdn, inventory_data[target_key_mm_service_component]["hosts"])
 
-        remove_keys = [key for key in inventory_data if key.endswith(f".{HcAclAction.REMOVE.value}")]
+        remove_keys = [key for key in inventory_data if key.endswith(f".{HcAclAction.REMOVE}")]
         self.assertEqual(len(remove_keys), 1)
 
-        mm_keys = [key for key in inventory_data if key.endswith(f".{MAINTENANCE_MODE_GROUP_SUFFIX}")]
+        mm_keys = [key for key in inventory_data if key.endswith(f".{MAINTENANCE_MODE}")]
         self.assertEqual(len(mm_keys), 3)
 
     def test_groups_remove_host_in_mm_success(self):
@@ -355,21 +353,17 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         target_key_remove = (
             f"{ClusterObject.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
             f".{ServiceComponent.objects.get(pk=self.hc_c1_h3['component_id']).prototype.name}"
-            f".{HcAclAction.REMOVE.value}"
+            f".{HcAclAction.REMOVE}"
             f".maintenance_mode"
         )
 
         self.assertIn(target_key_remove, inventory_data)
         self.assertIn(self.host_hc_acl_3.fqdn, inventory_data[target_key_remove]["hosts"])
 
-        remove_keys = [key for key in inventory_data if f".{HcAclAction.REMOVE.value}" in key]
+        remove_keys = [key for key in inventory_data if f".{HcAclAction.REMOVE}" in key]
         self.assertEqual(len(remove_keys), 1)
 
-        mm_keys = [
-            key
-            for key in inventory_data
-            if key.endswith(f".{HcAclAction.REMOVE.value}.{MAINTENANCE_MODE_GROUP_SUFFIX}")
-        ]
+        mm_keys = [key for key in inventory_data if key.endswith(f".{HcAclAction.REMOVE}.{MAINTENANCE_MODE}")]
         self.assertEqual(len(mm_keys), 1)
 
     def test_vars_in_mm_group(self):
