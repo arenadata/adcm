@@ -158,7 +158,7 @@ def _get_inventory_for_action_from_cluster_bundle(
                     "hosts": {
                         host_name: basic_nodes[ADCMCoreType.HOST, host_id].dict(by_alias=True, exclude_defaults=True)
                         | alternative_host_nodes.get(host_name, {})
-                        for host_id, host_name in host_tuples
+                        for host_id, host_name in sorted(host_tuples, key=itemgetter(0))
                     }
                 }
                 for group_name, host_tuples in host_groups.items()
@@ -216,7 +216,7 @@ def _get_inventory_for_action_from_hostprovider_bundle(object_: HostProvider | H
                     "hosts": {
                         host_name: nodes_info[ADCMCoreType.HOST, host_id].dict(by_alias=True, exclude_defaults=True)
                         | alternative_host_nodes.get(host_name, {})
-                        for host_id, host_name in hosts_group
+                        for host_id, host_name in sorted(hosts_group, key=itemgetter(0))
                     },
                 }
             },
