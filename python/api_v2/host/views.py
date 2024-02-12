@@ -73,7 +73,7 @@ from api_v2.views import (
 class HostViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMixin, CamelCaseModelViewSet):
     queryset = (
         Host.objects.select_related("provider", "cluster", "cluster__prototype", "prototype")
-        .prefetch_related("concerns", "hostcomponent_set")
+        .prefetch_related("concerns", "hostcomponent_set__component__prototype")
         .order_by("fqdn")
     )
     permission_required = [VIEW_HOST_PERM]
@@ -159,7 +159,7 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet, Obj
     # have to define it here for `ObjectWithStatusViewMixin` to be able to determine model related to view
     # don't use it directly, use `get_queryset`
     queryset = Host.objects.select_related("cluster", "cluster__prototype", "provider", "prototype").prefetch_related(
-        "hostcomponent_set", "concerns"
+        "concerns", "hostcomponent_set__component__prototype"
     )
     filterset_class = HostClusterFilter
     audit_model_hint = Host
