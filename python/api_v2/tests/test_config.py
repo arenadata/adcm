@@ -13,9 +13,11 @@ from pathlib import Path
 import json
 
 from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
+from cm.ansible_plugin import set_cluster_config, set_provider_config
 from cm.inventory import get_obj_config
 from cm.models import (
     ADCM,
+    Action,
     ConfigLog,
     GroupConfig,
     Host,
@@ -180,6 +182,10 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
             service_names=["service_4_save_config_without_required_field"], cluster=self.cluster_1
         ).get()
 
+        self.action = Action.objects.get(prototype=self.provider.prototype, name="provider_action")
+
+        self.cluster_action_with_config = Action.objects.get(prototype=self.cluster_1.prototype, name="with_config")
+
     def test_save_empty_config_success(self):
         response = self.client.post(
             path=reverse(
@@ -210,6 +216,84 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
             },
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_edit_config_run_action_no_changes_success(self):
+        config = {
+            "group": {"map": {"integer_key": "10", "string_key": "string"}},
+            "activatable_group": {
+                "secretmap": {
+                    "integer_key": "10",
+                    "string_key": "string",
+                }
+            },
+            "json": {"key": "value"},
+        }
+        attr = {"activatable_group": {"active": True}}
+
+        current_hostprovider_config = ConfigLog.objects.get(id=self.provider.config.current)
+
+        set_provider_config(self.cluster_1.pk, config, attr)
+        self.provider.refresh_from_db()
+
+        changed_hostprovider_config = ConfigLog.objects.get(id=self.provider.config.current)
+
+        self.assertEqual(current_hostprovider_config.pk, changed_hostprovider_config.pk)
+
+    def test_edit_config_run_action_changed_success(self):
+        config = {
+            "activatable_group": {"integer": 100},
+            "boolean": False,
+            "group": {"float": 0.01},
+            "list": ["value4", "value2", "value3"],
+            "variant_not_strict": "value4",
+        }
+        attr = {"activatable_group": {"active": True}}
+
+        current_cluster_config = ConfigLog.objects.get(id=self.cluster_1.config.current)
+
+        set_cluster_config(self.cluster_1.pk, config, attr)
+        self.cluster_1.refresh_from_db()
+
+        changed_cluster_config = ConfigLog.objects.get(id=self.cluster_1.config.current)
+
+        self.assertNotEqual(current_cluster_config.pk, changed_cluster_config.pk)
+        self.assertDictEqual(config, changed_cluster_config.config)
+
+    def test_edit_config_run_action_changed_secret_success(self):
+        config = {
+            "activatable_group": {"secretmap": {"integer_key": "500"}},
+        }
+        attr = {}
+
+        current_provider_config = ConfigLog.objects.get(id=self.provider.config.current)
+
+        set_provider_config(self.provider.pk, config, attr)
+        self.provider.refresh_from_db()
+
+        changed_provider_config = ConfigLog.objects.get(id=self.provider.config.current)
+
+        self.assertNotEqual(current_provider_config.pk, changed_provider_config.pk)
+        self.assertEqual(
+            "500", ansible_decrypt(changed_provider_config.config["activatable_group"]["secretmap"]["integer_key"])
+        )
+
+    def test_edit_config_run_action_changed_one_field_only_success(self):
+        config = {
+            "activatable_group": {"integer": 100},
+        }
+        attr = {}
+
+        current_cluster_config = ConfigLog.objects.get(id=self.cluster_1.config.current)
+
+        set_cluster_config(self.cluster_1.pk, config, attr)
+        self.cluster_1.refresh_from_db()
+
+        changed_cluster_config = ConfigLog.objects.get(id=self.cluster_1.config.current)
+
+        self.assertNotEqual(current_cluster_config.pk, changed_cluster_config.pk)
+        self.assertNotEqual(
+            current_cluster_config.config["activatable_group"], changed_cluster_config.config["activatable_group"]
+        )
 
     def test_default_success(self):
         processed_config = get_obj_config(obj=self.service)
