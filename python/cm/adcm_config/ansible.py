@@ -28,9 +28,9 @@ def ansible_encrypt_and_format(msg: str) -> str:
     return f"{settings.ANSIBLE_VAULT_HEADER}\n{str(ciphertext, settings.ENCODING_UTF_8)}"
 
 
-def ansible_decrypt(msg: str) -> str:
-    if settings.ANSIBLE_VAULT_HEADER not in msg:
-        return msg
+def ansible_decrypt(msg: str | None) -> str:
+    if not isinstance(msg, str) or (settings.ANSIBLE_VAULT_HEADER not in msg and "__ansible_vault" not in msg):
+        return msg or ""
 
     _, ciphertext = msg.split("\n")
     vault = VaultAES256()
