@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from enum import Enum
 from typing import Any, Literal, Optional, TypeAlias, Union
 
 from core.types import ClusterID, ComponentID, HostID, HostProviderID, ObjectID, PrototypeID, ServiceID
@@ -122,3 +122,8 @@ class JobConfig(BaseModel):
     context: dict[str, Any]
     env: JobEnv
     job: JobData
+
+
+class HcAclAction(Enum):
+    ADD = "add"
+    REMOVE = "remove"

@@ -16,7 +16,6 @@ from typing import Any
 from django.conf import settings
 
 from cm.models import (
-    ADCM,
     Action,
     Cluster,
     ClusterObject,
@@ -26,7 +25,7 @@ from cm.models import (
     ServiceComponent,
     get_object_cluster,
 )
-from cm.services.job.inventory._steps import get_obj_config
+from cm.services.job.inventory import get_adcm_configuration
 from cm.services.job.types import (
     ADCMActionType,
     ClusterActionType,
@@ -57,7 +56,7 @@ def get_job_config(job_scope: JobScope) -> dict[str, Any]:
         raise NotImplementedError(f'Job Config can\'t be generated for action of "{action_proto_type}" object')
 
     return JobConfig(
-        adcm={"config": get_obj_config(obj=ADCM.objects.get())},
+        adcm={"config": get_adcm_configuration()},
         context=get_context(
             action=job_scope.action,
             object_type=job_scope.object.prototype.type,

@@ -16,6 +16,7 @@ from unittest.mock import Mock, mock_open, patch
 from urllib.parse import urljoin
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from core.types import ADCMCoreType
 from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
@@ -405,10 +406,12 @@ class TestJob(BaseTestCase):
     @patch("cm.services.job.config.get_script_path")
     @patch("cm.services.job.config.get_bundle_root")
     @patch("cm.services.job.config.get_context")
-    @patch("cm.services.job.config.get_obj_config")
+    @patch("cm.services.job.inventory._config.get_objects_configurations")
+    @patch("cm.services.job.config.get_adcm_configuration")
     def test_prepare_job_config(
         self,
-        mock_get_obj_config,
+        mock_get_adcm_configuration,
+        mock_get_objects_configurations,
         mock_get_context,
         mock_get_bundle_root,
         mock_get_script_path,
@@ -420,11 +423,7 @@ class TestJob(BaseTestCase):
         service = add_service_to_cluster(cluster, proto2)
         cluster_action = Action.objects.create(prototype=proto1)
         service_action = Action.objects.create(prototype=proto2)
-        adcm_prototype = Prototype.objects.get(type="adcm")
-        adcm_action = Action.objects.create(prototype=adcm_prototype)
-        adcm = ADCM.objects.get()
 
-        mock_get_obj_config.return_value = {}
         mock_get_context.return_value = {"type": "cluster", "cluster_id": 1}
         mock_get_bundle_root.return_value = str(settings.BUNDLE_DIR)
         mock_get_script_path.return_value = str(
@@ -438,12 +437,19 @@ class TestJob(BaseTestCase):
         host_action = Action.objects.create(prototype=proto5)
         host = Host.objects.create(prototype=proto5, provider=provider)
 
+        mock_get_objects_configurations.return_value = {
+            (ADCMCoreType.CLUSTER, cluster.pk): {},
+            (ADCMCoreType.SERVICE, service.pk): {},
+            (ADCMCoreType.HOST, host.pk): {},
+            (ADCMCoreType.HOSTPROVIDER, provider.pk): {},
+        }
+        mock_get_adcm_configuration.return_value = {}
+
         data = [
             ("service", service, service_action),
             ("cluster", cluster, cluster_action),
             ("host", host, host_action),
             ("provider", provider, provider_action),
-            ("adcm", adcm, adcm_action),
         ]
 
         for prototype_type, obj, action in data:
@@ -505,7 +511,7 @@ class TestJob(BaseTestCase):
                     job_config["job"]["hostgroup"] = "127.0.0.1"
 
                 self.assertDictEqual(job_config, actual_job_config)
-                mock_get_obj_config.assert_called()
+                mock_get_adcm_configuration.assert_called()
                 mock_get_context.assert_called_with(
                     action=action, object_type=obj.prototype.type, selector=get_selector(obj=obj, action=action)
                 )
