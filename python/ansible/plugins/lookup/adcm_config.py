@@ -78,11 +78,11 @@ class LookupModule(LookupBase):
                 raise AnsibleError("there is no cluster in hostvars")
             cluster = variables["cluster"]
             if "service_name" in kwargs:
-                res, _ = set_service_config_by_name(
+                res = set_service_config_by_name(
                     cluster_id=cluster["id"], service_name=kwargs["service_name"], config=conf, attr=attr
                 )
             elif "job" in variables and "service_id" in variables["job"]:
-                res, _ = set_service_config(
+                res = set_service_config(
                     cluster_id=cluster["id"], service_id=variables["job"]["service_id"], config=conf, attr=attr
                 )
             else:
