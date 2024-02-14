@@ -420,7 +420,7 @@ class PluginResult(NamedTuple):
 def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> PluginResult:
     config_log = ConfigLog.objects.get(id=obj.config.current)
 
-    if are_configs_identical(config_log.config, conf):
+    if _does_contain(base_dict=config_log.config, part=conf) and _does_contain(base_dict=config_log.attr, part=attr):
         return PluginResult(conf, False)
 
     new_config = deepcopy(config_log.config)
@@ -505,15 +505,19 @@ def set_service_config(cluster_id: int, service_id: int, config: dict, attr: dic
     return update_config(obj=obj, conf=config, attr=attr)
 
 
-def are_configs_identical(old_config: dict, new_config: dict) -> bool:
-    for key, val2 in new_config.items():
-        if key not in old_config:
+def _does_contain(base_dict: dict, part: dict) -> bool:
+    """
+    Check fields in `part` have the same value in `base_dict`
+    """
+
+    for key, val2 in part.items():
+        if key not in base_dict:
             return False
 
-        val1 = old_config[key]
+        val1 = base_dict[key]
 
         if isinstance(val1, dict) and isinstance(val2, dict):
-            if not are_configs_identical(val1, val2):
+            if not _does_contain(val1, val2):
                 return False
         else:
             val1 = ansible_decrypt(val1)
