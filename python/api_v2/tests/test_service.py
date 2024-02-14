@@ -30,6 +30,7 @@ from cm.models import (
 )
 from cm.services.status.client import FullStatusMap
 from django.urls import reverse
+from rbac.services.user import create_user
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -338,6 +339,9 @@ class TestServiceMaintenanceMode(BaseAPITestCase):
         self.service_2_cl_1 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
         self.service_cl_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
 
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = create_user(**self.test_user_credentials)
+
     def test_change_mm_success(self):
         response = self.client.post(
             path=reverse(
@@ -348,6 +352,18 @@ class TestServiceMaintenanceMode(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_adcm_5277_change_mm_service_administrator_success(self):
+        with self.grant_permissions(to=self.test_user, on=self.service_2_cl_1, role_name="Service Administrator"):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:service-maintenance-mode",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2_cl_1.pk},
+                ),
+                data={"maintenance_mode": MaintenanceMode.ON},
+            )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_chamge_mm_not_available_fail(self):
         response = self.client.post(
