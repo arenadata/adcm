@@ -336,7 +336,10 @@ class TestServiceMaintenanceMode(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_2_cl_1 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
+        self.service_1_cl_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        self.component_1_s_1_cl1 = ServiceComponent.objects.filter(
+            cluster_id=self.cluster_1.pk, service_id=self.service_1_cl_1.pk
+        ).last()
         self.service_cl_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
@@ -346,26 +349,46 @@ class TestServiceMaintenanceMode(BaseAPITestCase):
         response = self.client.post(
             path=reverse(
                 viewname="v2:service-maintenance-mode",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2_cl_1.pk},
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1_cl_1.pk},
             ),
             data={"maintenance_mode": MaintenanceMode.ON},
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_adcm_5277_change_mm_service_administrator_success(self):
-        with self.grant_permissions(to=self.test_user, on=self.service_2_cl_1, role_name="Service Administrator"):
+    def test_adcm_5277_change_mm_service_service_administrator_success(self):
+        with self.grant_permissions(to=self.test_user, on=self.service_1_cl_1, role_name="Service Administrator"):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:service-maintenance-mode",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2_cl_1.pk},
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1_cl_1.pk},
                 ),
                 data={"maintenance_mode": MaintenanceMode.ON},
             )
+            self.service_1_cl_1.refresh_from_db()
 
             self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(self.service_1_cl_1.maintenance_mode, MaintenanceMode.ON)
 
-    def test_chamge_mm_not_available_fail(self):
+    def test_adcm_5277_change_mm_component_service_administrator_success(self):
+        with self.grant_permissions(to=self.test_user, on=self.service_1_cl_1, role_name="Service Administrator"):
+            response = self.client.post(
+                path=reverse(
+                    "v2:component-maintenance-mode",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1_cl_1.pk,
+                        "pk": self.component_1_s_1_cl1.pk,
+                    },
+                ),
+                data={"maintenance_mode": MaintenanceMode.ON},
+            )
+            self.component_1_s_1_cl1.refresh_from_db()
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(self.component_1_s_1_cl1.maintenance_mode, MaintenanceMode.ON)
+
+    def test_change_mm_not_available_fail(self):
         response = self.client.post(
             path=reverse(
                 "v2:service-maintenance-mode",
