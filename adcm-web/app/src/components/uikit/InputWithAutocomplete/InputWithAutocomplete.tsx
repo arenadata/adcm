@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
 import Input, { InputProps } from '@uikit/Input/Input';
 import Popover from '@uikit/Popover/Popover';
-import { createChangeEvent } from '@uikit/utils/handlerUtils';
+import { createChangeEvent } from '@utils/handlerUtils';
 import PopoverPanelDefault from '@uikit/Popover/PopoverPanelDefault/PopoverPanelDefault';
 import s from './InputWithAutocomplete.module.scss';
 import cn from 'classnames';

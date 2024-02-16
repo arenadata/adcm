@@ -9,7 +9,7 @@ import IconButton from '@uikit/IconButton/IconButton';
 import React, { ChangeEvent, useEffect, useMemo, useState } from 'react';
 import cn from 'classnames';
 import { SortParams } from '@uikit/types/list.types';
-import { getSortingData } from '@uikit/utils/localFilteredData';
+import { getSortingData } from '@utils/localFilteredData';
 import Statusable from '@uikit/Statusable/Statusable';
 import Checkbox from '@uikit/Checkbox/Checkbox';
 

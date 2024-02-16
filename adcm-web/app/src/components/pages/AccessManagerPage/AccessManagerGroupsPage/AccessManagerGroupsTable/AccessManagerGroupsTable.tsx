@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction, useCallback } from 'react';
 import { Table, TableRow, TableCell, IconButton, Checkbox } from '@uikit';
-import { useDispatch, useStore } from '@hooks';
+import { useDispatch, useStore, useSelectedItems } from '@hooks';
 import { columns } from './AccessManagerGroupsTable.constants';
 import {
   openUpdateDialog,
@@ -10,7 +10,6 @@ import {
 import { setSortParams } from '@store/adcm/groups/groupsTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { AdcmGroup } from '@models/adcm';
-import { useSelectedItems } from '@uikit/hooks/useSelectedItems';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const AccessManagerGroupsTable = () => {

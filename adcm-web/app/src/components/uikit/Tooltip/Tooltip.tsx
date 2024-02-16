@@ -15,7 +15,7 @@ import {
   FloatingPortal,
 } from '@floating-ui/react';
 import { Placement } from '@floating-ui/dom';
-import { useForwardRef } from '@uikit/hooks/useForwardRef';
+import { useForwardRef } from '@hooks';
 import { ChildWithRef } from '@uikit/types/element.types';
 import cn from 'classnames';
 import s from './Tooltip.module.scss';
