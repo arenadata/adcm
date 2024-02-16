@@ -10,26 +10,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from enum import Enum
 from typing import NamedTuple, TypeAlias
 
-ObjectID: TypeAlias = int
-ClusterID: TypeAlias = ObjectID
-ServiceID: TypeAlias = ObjectID
-ComponentID: TypeAlias = ObjectID
-HostID: TypeAlias = ObjectID
+UserID: TypeAlias = int
+GroupID: TypeAlias = int
 
 
-class ADCMCoreError(Exception):
-    ...
+class PasswordRequirements(NamedTuple):
+    min_length: int
+    max_length: int
 
 
-class ADCMMessageError(ADCMCoreError):
-    def __init__(self, message: str):
-        super().__init__()
-
-        self.message = message
+class SourceType(Enum):
+    LOCAL = "local"
+    LDAP = "ldap"
 
 
-class ShortObjectInfo(NamedTuple):
-    id: int
-    name: str
+class GroupBasicInfo(NamedTuple):
+    id: GroupID
+    built_in: bool
+    type: SourceType
+
+
+class UserBasicInfo(NamedTuple):
+    id: UserID
+    built_in: bool
+    type: SourceType
+    is_superuser: bool

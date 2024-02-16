@@ -223,6 +223,7 @@ ERRORS = {
     "USER_BLOCK_ERROR": ("Built-in user could not be blocked", HTTP_409_CONFLICT, ERR),
     "USER_UNBLOCK_ERROR": ("Only superuser can reset login attempts.", HTTP_403_FORBIDDEN, ERR),
     "JOB_TERMINATION_ERROR": ("Can't terminate job", HTTP_409_CONFLICT, ERR),
+    "USER_PASSWORD_ERROR": ("Password doesn't feet requirements", HTTP_409_CONFLICT, ERR),
     "USER_PASSWORD_TOO_SHORT_ERROR": ("This password is shorter than min password length", HTTP_400_BAD_REQUEST, ERR),
     "USER_PASSWORD_TOO_LONG_ERROR": ("This password is longer than max password length", HTTP_400_BAD_REQUEST, ERR),
     "USER_PASSWORD_TOO_COMMON_ERROR": ("This password is too common", HTTP_400_BAD_REQUEST, ERR),

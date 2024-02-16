@@ -10,26 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import NamedTuple, TypeAlias
-
-ObjectID: TypeAlias = int
-ClusterID: TypeAlias = ObjectID
-ServiceID: TypeAlias = ObjectID
-ComponentID: TypeAlias = ObjectID
-HostID: TypeAlias = ObjectID
+from core.types import ADCMCoreError, ADCMMessageError
 
 
-class ADCMCoreError(Exception):
+class PasswordError(ADCMMessageError):
     ...
 
 
-class ADCMMessageError(ADCMCoreError):
-    def __init__(self, message: str):
-        super().__init__()
-
-        self.message = message
+class EmailTakenError(ADCMCoreError):
+    ...
 
 
-class ShortObjectInfo(NamedTuple):
-    id: int
-    name: str
+class UsernameTakenError(ADCMCoreError):
+    ...
+
+
+class ChangeMembershipError(ADCMMessageError):
+    ...
+
+
+class UpdateLDAPUserError(ADCMCoreError):
+    ...
