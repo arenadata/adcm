@@ -16,6 +16,8 @@ from rest_framework.fields import (
     BooleanField,
     CharField,
     EmailField,
+    IntegerField,
+    ListField,
     RegexField,
     SerializerMethodField,
 )
@@ -71,6 +73,7 @@ class UserUpdateSerializer(ModelSerializer):
     last_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False)
     email = EmailField(allow_blank=True, required=False)
     is_super_user = BooleanField(source="is_superuser", required=False)
+    groups = ListField(child=IntegerField(), required=False, allow_null=True)
 
     class Meta:
         model = User
@@ -84,6 +87,7 @@ class UserCreateSerializer(UserUpdateSerializer):
     last_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, default="")
     email = EmailField(allow_blank=True, default="")
     is_super_user = BooleanField(source="is_superuser", default=False)
+    groups = ListField(child=IntegerField(), required=False, allow_null=True)
 
     class Meta:
         model = User

@@ -10,26 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import NamedTuple, TypeAlias
-
-ObjectID: TypeAlias = int
-ClusterID: TypeAlias = ObjectID
-ServiceID: TypeAlias = ObjectID
-ComponentID: TypeAlias = ObjectID
-HostID: TypeAlias = ObjectID
+from pydantic import BaseModel
 
 
-class ADCMCoreError(Exception):
-    ...
+class UserCreateDTO(BaseModel):
+    username: str
+    first_name: str
+    last_name: str
+    email: str
+    is_superuser: bool
+
+    password: str
 
 
-class ADCMMessageError(ADCMCoreError):
-    def __init__(self, message: str):
-        super().__init__()
-
-        self.message = message
-
-
-class ShortObjectInfo(NamedTuple):
-    id: int
-    name: str
+class UserUpdateDTO(BaseModel):
+    first_name: str | None = None
+    last_name: str | None = None
+    email: str | None = None
+    is_superuser: bool | None = None
