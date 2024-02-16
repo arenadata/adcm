@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction, useCallback } from 'react';
 import { Table, TableRow, TableCell, IconButton, Checkbox } from '@uikit';
-import { useDispatch, useStore } from '@hooks';
+import { useDispatch, useStore, useSelectedItems } from '@hooks';
 import { columns } from './AccessManagerUsersTable.constants';
 import {
   openDeleteDialog,
@@ -11,7 +11,6 @@ import {
 import { setSortParams } from '@store/adcm/users/usersTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { AdcmUser, AdcmUserStatus } from '@models/adcm';
-import { useSelectedItems } from '@uikit/hooks/useSelectedItems';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const AccessManagerUsersTable = () => {

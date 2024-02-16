@@ -1,9 +1,8 @@
 import React, { Dispatch, SetStateAction, useCallback } from 'react';
-import { useDispatch, useStore } from '@hooks';
+import { useDispatch, useStore, useSelectedItems } from '@hooks';
 import { columns } from './BundlesTable.constants';
 import { Checkbox, IconButton, Table, TableCell, TableRow } from '@uikit';
 import { orElseGet } from '@utils/checkUtils';
-import { useSelectedItems } from '@uikit/hooks/useSelectedItems';
 import { AdcmBundle } from '@models/adcm';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
 import {

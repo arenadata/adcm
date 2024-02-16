@@ -12,7 +12,7 @@ import {
   useRole,
 } from '@floating-ui/react';
 import { getWidthStyles } from '@uikit/Popover/Popover.utils';
-import { useForwardRef } from '@uikit/hooks/useForwardRef';
+import { useForwardRef } from '@hooks';
 import { ChildWithRef } from '@uikit/types/element.types';
 import { PopoverOptions } from '@uikit/Popover/Popover.types';
 
