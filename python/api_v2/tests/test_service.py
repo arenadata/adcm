@@ -406,3 +406,97 @@ class TestServiceMaintenanceMode(BaseAPITestCase):
                 "desc": "Service does not support maintenance mode",
             },
         )
+
+
+class TestServicePermissions(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = create_user(**self.test_user_credentials)
+
+        self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter", cluster=self.cluster_1)
+        self.host_with_component = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter_2", cluster=self.cluster_1
+        )
+        component = ServiceComponent.objects.filter(cluster_id=self.cluster_1.pk, service_id=self.service.pk).last()
+        self.add_hostcomponent_map(
+            cluster=self.cluster_1,
+            hc_map=[
+                {
+                    "host_id": self.host_with_component.pk,
+                    "service_id": self.service.pk,
+                    "component_id": component.pk,
+                }
+            ],
+        )
+
+    def test_adcm_5278_cluster_hosts_restriction_by_service_administrator_ownership_success(self):
+        response_list = self.client.get(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        )
+
+        response_detail = self.client.get(
+            path=reverse(
+                viewname="v2:host-cluster-detail",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_with_component.pk},
+            ),
+        )
+
+        self.assertEqual(response_list.status_code, HTTP_200_OK)
+        self.assertEqual(response_list.json()["count"], 2)
+
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.service, role_name="Service Administrator"):
+            response = self.client.get(
+                path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(response.json()["count"], 1)
+            self.assertDictEqual(response_list.json()["results"][1], response.json()["results"][0])
+
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:host-cluster-detail",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_with_component.pk},
+                ),
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertDictEqual(response_detail.json(), response.json())
+
+    def test_adcm_5278_hosts_restriction_by_service_administrator_ownership_success(self):
+        response_list = self.client.get(
+            path=reverse(viewname="v2:host-list"),
+        )
+
+        response_detail = self.client.get(
+            path=reverse(
+                viewname="v2:host-detail",
+                kwargs={"pk": self.host_with_component.pk},
+            ),
+        )
+
+        self.assertEqual(response_list.status_code, HTTP_200_OK)
+        self.assertEqual(response_list.json()["count"], 2)
+
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.service, role_name="Service Administrator"):
+            response = self.client.get(
+                path=reverse(viewname="v2:host-list"),
+            )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(response.json()["count"], 1)
+            self.assertDictEqual(response_list.json()["results"][1], response.json()["results"][0])
+
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:host-detail",
+                    kwargs={"pk": self.host_with_component.pk},
+                ),
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertDictEqual(response_detail.json(), response.json())

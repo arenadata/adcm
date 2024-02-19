@@ -35,6 +35,7 @@ from core.cluster.errors import (
 )
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
+from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
@@ -179,7 +180,9 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet, Obj
             user=self.request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=self.kwargs["cluster_pk"]
         )
 
-        by_cluster_qs = self.queryset.filter(cluster=cluster)
+        by_cluster_qs = get_objects_for_user(**self.get_get_objects_for_user_kwargs(self.queryset)).filter(
+            cluster=cluster
+        )
 
         if self.action == "statuses":
             return by_cluster_qs.prefetch_related("hostcomponent_set__component__prototype")
