@@ -125,7 +125,7 @@ def get_jinja_config(action: Action, obj: ADCMEntity) -> tuple[list[PrototypeCon
 
     jinja_conf_file = Path(settings.BUNDLE_DIR, action.prototype.bundle.hash, action.config_jinja)
     template = Template(source=jinja_conf_file.read_text(encoding=settings.ENCODING_UTF_8))
-    data_yaml = template.render(get_cluster_vars(topology=cluster_topology))
+    data_yaml = template.render(get_cluster_vars(topology=cluster_topology).dict(by_alias=True, exclude_defaults=True))
     data = load(stream=data_yaml, Loader=SafeLoader)
 
     configs = []
