@@ -41,12 +41,12 @@ class ADCMCoreType(Enum):
 
 
 class ShortObjectInfo(NamedTuple):
-    id: int
+    id: ObjectID
     name: str
 
 
 class GeneralEntityDescriptor(NamedTuple):
-    id: int
+    id: ObjectID
     type: str
 
 

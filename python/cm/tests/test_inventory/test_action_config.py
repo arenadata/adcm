@@ -14,7 +14,7 @@ from django.utils import timezone
 
 from cm.models import Action, JobLog, ServiceComponent, TaskLog
 from cm.services.job.config import get_job_config
-from cm.services.job.utils import JobScope
+from cm.services.job.utils import JobScope, get_selector
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
@@ -101,21 +101,25 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             (self.host_1, self.CONFIG_WITH_NONES, "host"),
         ):
             action = Action.objects.filter(prototype=object_.prototype, name="with_config").first()
+            selector = get_selector(obj=object_, action=action)
             task = TaskLog.objects.create(
                 task_object=object_,
                 action=action,
                 config=config,
                 start_date=timezone.now(),
                 finish_date=timezone.now(),
+                selector=selector,
             )
-            job = JobLog.objects.create(task=task, action=action, start_date=timezone.now(), finish_date=timezone.now())
+            job = JobLog.objects.create(
+                task=task, action=action, start_date=timezone.now(), finish_date=timezone.now(), selector=selector
+            )
 
             with self.subTest(f"Own Action for {object_.__class__.__name__}"):
                 expected_data = self.render_json_template(
                     file=self.templates_dir / "action_configs" / f"{type_name}.json.j2",
                     context={**self.context, "job_id": job.pk},
                 )
-                job_config = get_job_config(job_scope=JobScope(job_id=job.pk))
+                job_config = get_job_config(job_scope=JobScope(job_id=job.pk, object=object_))
 
                 self.assertDictEqual(job_config, expected_data)
 
@@ -125,6 +129,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             (self.component, None, "component"),
         ):
             action = Action.objects.filter(prototype=object_.prototype, name="with_config_on_host").first()
+            selector = get_selector(obj=self.host_1, action=action)
             task = TaskLog.objects.create(
                 task_object=self.host_1,
                 action=action,
@@ -132,14 +137,17 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 start_date=timezone.now(),
                 finish_date=timezone.now(),
                 verbose=True,
+                selector=selector,
             )
-            job = JobLog.objects.create(task=task, action=action, start_date=timezone.now(), finish_date=timezone.now())
+            job = JobLog.objects.create(
+                task=task, action=action, start_date=timezone.now(), finish_date=timezone.now(), selector=selector
+            )
 
             with self.subTest(f"Host Action for {object_.__class__.__name__}"):
                 expected_data = self.render_json_template(
                     file=self.templates_dir / "action_configs" / f"{type_name}_on_host.json.j2",
                     context={**self.context, "job_id": job.pk},
                 )
-                job_config = get_job_config(job_scope=JobScope(job_id=job.pk))
+                job_config = get_job_config(job_scope=JobScope(job_id=job.pk, object=self.host_1))
 
                 self.assertDictEqual(job_config, expected_data)

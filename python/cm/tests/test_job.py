@@ -320,7 +320,7 @@ class TestJob(BaseTestCase):
             finish_date=timezone.now(),
         )
         job = JobLog.objects.create(action=action, start_date=timezone.now(), finish_date=timezone.now(), task=task)
-        job_scope = JobScope(job_id=job.pk)
+        job_scope = JobScope(job_id=job.pk, object=cluster)
 
         mocked_open = mock_open()
         with patch.object(Path, "open", mocked_open), patch("cm.job.json.dump"):
@@ -453,13 +453,25 @@ class TestJob(BaseTestCase):
         ]
 
         for prototype_type, obj, action in data:
+            selector = get_selector(obj=obj, action=action)
             task = TaskLog.objects.create(
-                task_object=obj, action=action, start_date=timezone.now(), finish_date=timezone.now(), config="test"
+                task_object=obj,
+                action=action,
+                start_date=timezone.now(),
+                finish_date=timezone.now(),
+                config="test",
+                selector=selector,
             )
-            job = JobLog.objects.create(action=action, start_date=timezone.now(), finish_date=timezone.now(), task=task)
+            job = JobLog.objects.create(
+                action=action,
+                start_date=timezone.now(),
+                finish_date=timezone.now(),
+                task=task,
+                selector=selector,
+            )
 
             with self.subTest(prototype_type=prototype_type, obj=obj):
-                actual_job_config = get_job_config(job_scope=JobScope(job_id=job.pk))
+                actual_job_config = get_job_config(job_scope=JobScope(job_id=job.pk, object=obj))
 
                 job_config = {
                     "adcm": {"config": {}},
@@ -513,7 +525,7 @@ class TestJob(BaseTestCase):
                 self.assertDictEqual(job_config, actual_job_config)
                 mock_get_adcm_configuration.assert_called()
                 mock_get_context.assert_called_with(
-                    action=action, object_type=obj.prototype.type, selector=get_selector(obj=obj, action=action)
+                    action=action, object_type=obj.prototype.type, selector=job.selector
                 )
                 mock_get_bundle_root.assert_called_with(action=action)
                 mock_get_script_path.assert_called_with(action=action, sub_action=None)
@@ -569,7 +581,7 @@ class TestJob(BaseTestCase):
             finish_date=timezone.now(),
         )
 
-        job_scope = JobScope(job_id=job.pk)
+        job_scope = JobScope(job_id=job.pk, object=cluster)
         re_prepare_job(job_scope=job_scope)
 
         mock_get_actual_hc.assert_called_once_with(cluster=cluster)

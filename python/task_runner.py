@@ -134,6 +134,10 @@ def run_task(task_id: int, args: str | None = None) -> None:
         job = None
         count = 0
         res = 0
+
+        # It needs to be defined outside of jobs loop, because task_object can be deleted during job execution
+        task_object = task.task_object
+
         for job in jobs:
             try:
                 job.refresh_from_db()
@@ -143,7 +147,7 @@ def run_task(task_id: int, args: str | None = None) -> None:
 
                 task.refresh_from_db()
 
-                job_scope = JobScope(job_id=job.pk)
+                job_scope = JobScope(job_id=job.pk, object=task_object)
                 # This should be reworked somehow,
                 # because preparation of job depends on its type,
                 # not parent object.
