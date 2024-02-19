@@ -13,8 +13,8 @@
 from operator import attrgetter
 from typing import Collection
 
-from core.rbac.errors import ChangeMembershipError, PasswordError
-from core.rbac.types import GroupBasicInfo, GroupID, PasswordRequirements, SourceType
+from core.rbac.errors import ChangeMembershipError, PasswordError, UpdateLDAPUserError
+from core.rbac.types import GroupBasicInfo, GroupID, PasswordRequirements, SourceType, UserBasicInfo
 
 
 def check_password_meet_requirements(password: str, requirements: PasswordRequirements) -> None:
@@ -44,3 +44,8 @@ def check_all_groups_exists(group_candidates: Collection[GroupID], existing_grou
     if not set(group_candidates).issubset(set(map(attrgetter("id"), existing_groups))):
         message = "Some of groups doesn't exist"
         raise ChangeMembershipError(message)
+
+
+def check_users_can_be_blocked(users: Collection[UserBasicInfo]):
+    if any(user.type == SourceType.LDAP for user in users):
+        raise UpdateLDAPUserError()

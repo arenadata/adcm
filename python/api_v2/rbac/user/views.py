@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Any
+
 from adcm.permissions import VIEW_USER_PERMISSION
 from audit.utils import audit
 from cm.errors import AdcmEx
@@ -27,12 +29,18 @@ from django.db.models import Prefetch
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rbac.models import User
-from rbac.services.user import perform_regular_user_update, perform_user_creation, perform_user_update_as_superuser
+from rbac.services.user import (
+    perform_regular_user_update,
+    perform_user_creation,
+    perform_user_update_as_superuser,
+    perform_users_block,
+    perform_users_unblock,
+)
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT
 
 from api_v2.rbac.user.filters import UserFilterSet
 from api_v2.rbac.user.permissions import UserPermissions
@@ -41,7 +49,6 @@ from api_v2.rbac.user.serializers import (
     UserSerializer,
     UserUpdateSerializer,
 )
-from api_v2.rbac.user.utils import unblock_user
 from api_v2.views import CamelCaseModelViewSet
 
 
@@ -92,7 +99,7 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         validated_data = serializer.validated_data
-        user_id = kwargs["pk"]
+        user_id = int(kwargs["pk"])
         new_password = validated_data.get("password", None)
         try:
             if request.user.is_superuser:
@@ -123,12 +130,44 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):
 
     @audit
     @action(methods=["post"], detail=True)
-    def unblock(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
-        user = self.get_object()
-        if not request.user.is_superuser:
-            raise AdcmEx(code="USER_UNBLOCK_ERROR")
+    def block(self, request: Request, *_, **kwargs: Any) -> Response:
+        # to check existence
+        self.get_object()
 
-        unblock_user(user=user)
+        if not request.user.is_superuser:
+            raise AdcmEx(
+                code="USER_BLOCK_ERROR",
+                http_code=HTTP_403_FORBIDDEN,
+                msg="You do not have permission to perform this action.",
+            )
+
+        user_id = int(kwargs["pk"])
+        if request.user.pk == user_id:
+            raise AdcmEx(code="USER_BLOCK_ERROR", http_code=HTTP_409_CONFLICT, msg="You can't block yourself.")
+
+        try:
+            perform_users_block(users=[user_id])
+        except UpdateLDAPUserError:
+            raise AdcmEx(
+                code="USER_BLOCK_ERROR", http_code=HTTP_409_CONFLICT, msg="You can't block LDAP users."
+            ) from None
+
+        return Response(status=HTTP_200_OK)
+
+    @audit
+    @action(methods=["post"], detail=True)
+    def unblock(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+        # to check existence
+        self.get_object()
+
+        if not request.user.is_superuser:
+            raise AdcmEx(
+                code="USER_UNBLOCK_ERROR",
+                http_code=HTTP_403_FORBIDDEN,
+                msg="You do not have permission to perform this action.",
+            )
+
+        perform_users_unblock(users=[int(kwargs["pk"])])
 
         return Response(status=HTTP_200_OK)
 

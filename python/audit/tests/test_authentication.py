@@ -9,10 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from adcm.tests.base import BaseTestCase
 from django.urls import reverse
+from django.utils import timezone
 from rbac.models import User
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
+from rest_framework.test import APIClient
 
 from audit.models import AuditSession, AuditSessionLoginResult
 
@@ -163,3 +166,67 @@ class TestAuthenticationAudit(BaseTestCase):
 
         self.client.post(path=reverse(viewname="v1:rbac:token"), data={"username": 1})
         self.check_audit_session(None, AuditSessionLoginResult.USER_NOT_FOUND, "1")
+
+
+class TestLoginMiddleware(BaseTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.admin: User = User.objects.get(username="admin")
+
+        self.disabled_user_creds = {"username": "disabled_user", "password": "disabled_user"}
+        self.disabled_user: User = User.objects.create_user(**self.disabled_user_creds, is_active=False)
+
+        self.brute_forcer_creds = {"username": "ettubrutus", "password": "ettubrutusettubrutus"}
+        self.brute_user: User = User.objects.create_user(
+            **self.brute_forcer_creds,
+            failed_login_attempts=100,
+            blocked_at=timezone.now() - timezone.timedelta(seconds=1),
+            last_failed_login_at=timezone.now() - timezone.timedelta(seconds=1),
+        )
+
+        self.login_endpoints = (
+            reverse(viewname="v2:login"),
+            reverse(viewname="v2:token"),
+            reverse(viewname="v1:token"),
+            reverse(viewname="v1:rbac:token"),
+        )
+
+    def send_auth_request(self, endpoint: str, data: dict) -> tuple[APIClient, Response]:
+        client = APIClient()
+        response = client.post(path=endpoint, data=data)
+        return client, response
+
+    def send_profile_request(self, client: APIClient) -> Response:
+        return client.get(path=reverse("v2:profile"))
+
+    def test_login_success(self) -> None:
+        data = {"username": "admin", "password": "admin"}
+        for endpoint in self.login_endpoints:
+            with self.subTest(endpoint):
+                client, response = self.send_auth_request(endpoint=endpoint, data=data)
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+
+                self.admin.refresh_from_db()
+                self.assertEqual(self.admin.failed_login_attempts, 0)
+
+                self.assertEqual(self.send_profile_request(client=client).status_code, HTTP_200_OK)
+
+    def test_login_blocked_manually_fail(self) -> None:
+        data = self.disabled_user_creds
+        for endpoint in self.login_endpoints:
+            with self.subTest(endpoint):
+                client, response = self.send_auth_request(endpoint=endpoint, data=data)
+
+                self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+                self.assertEqual(self.send_profile_request(client=client).status_code, HTTP_401_UNAUTHORIZED)
+
+    def test_login_blocked_brute_force_fail(self) -> None:
+        data = self.brute_forcer_creds
+        for endpoint in self.login_endpoints:
+            with self.subTest(endpoint):
+                client, response = self.send_auth_request(endpoint=endpoint, data=data)
+
+                self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+                self.assertEqual(self.send_profile_request(client=client).status_code, HTTP_401_UNAUTHORIZED)
