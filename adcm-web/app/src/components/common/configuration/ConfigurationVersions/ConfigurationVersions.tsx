@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import ConfigVersionPanel from '../ConfigVersionPanel/ConfigVersionPanel';
 import { AdcmConfigShortView } from '@models/adcm';
 import { PaginationParams } from '@models/table';
-import { useLocalPagination } from '@uikit/hooks/useLocalPagination';
+import { useLocalPagination } from '@hooks';
 import { SelectVersionAction } from '../ConfigVersionPanel/ConfigVersionPanel.types';
 
 interface ConfigurationVersionsProps {

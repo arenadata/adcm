@@ -338,3 +338,61 @@ class TestUserAudit(BaseAPITestCase):
             object_changes={},
             user__username="admin",
         )
+
+    def test_user_block_success(self):
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.blocked_user.pk}))
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.check_last_audit_record(
+            operation_name=f"{self.blocked_user.username} user blocked",
+            operation_type="update",
+            operation_result="success",
+            **self.prepare_audit_object_arguments(expected_object=self.blocked_user),
+            user__username="admin",
+        )
+
+    def test_user_block_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.blocked_user.pk}))
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_record(
+            operation_name=f"{self.blocked_user.username} user blocked",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.blocked_user),
+            user__username=self.test_user.username,
+        )
+
+    def test_user_block_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View users"):
+            response = self.client.post(
+                path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.blocked_user.pk})
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_record(
+            operation_name=f"{self.blocked_user.username} user blocked",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.blocked_user),
+            user__username=self.test_user.username,
+        )
+
+    def test_user_block_not_exists_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.get_non_existent_pk(model=User)})
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_record(
+            operation_name="user blocked",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )

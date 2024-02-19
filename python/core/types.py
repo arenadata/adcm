@@ -32,6 +32,13 @@ class ADCMCoreError(Exception):
     ...
 
 
+class ADCMMessageError(ADCMCoreError):
+    def __init__(self, message: str):
+        super().__init__()
+
+        self.message = message
+
+
 class ADCMCoreType(Enum):
     CLUSTER = "cluster"
     SERVICE = "service"

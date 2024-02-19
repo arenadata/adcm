@@ -4,7 +4,7 @@ import { To, useLocation } from 'react-router-dom';
 import { IconsNames } from '@uikit/Icon/sprite';
 import Icon from '@uikit/Icon/Icon';
 import LinkOrEmpty from '@uikit/LinkOrEmpty/LinkOrEmpty';
-import { isCurrentParentPage } from '@uikit/utils/urlUtils';
+import { isCurrentParentPage } from '@utils/urlUtils';
 import Tooltip from '@uikit/Tooltip/Tooltip';
 import s from './LeftBarMenuItem.module.scss';
 import { ConditionalWrapper, MarkerIcon, MarkerIconType } from '@uikit';

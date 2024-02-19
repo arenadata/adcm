@@ -13,3 +13,8 @@ export { useDownloadFile } from './useDownloadFile';
 export { useForm } from './useForm';
 export { usePersistSettings } from './usePersistSettings';
 export { useExpandableTable } from './useExpandableTable';
+export { useDidUpdate } from './useDidUpdate';
+export { useForwardRef } from './useForwardRef';
+export { useLocalPagination } from './useLocalPagination';
+export { useMediaQuery } from './useMediaQuery';
+export { useSelectedItems } from './useSelectedItems';

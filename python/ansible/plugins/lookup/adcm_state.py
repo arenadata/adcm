@@ -65,6 +65,7 @@ class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
         logger.debug("run %s %s", terms, kwargs)
         ret = []
+
         if len(terms) < 2:
             msg = "not enough arguments to set state ({} of 2)"
             raise AnsibleError(msg.format(len(terms)))

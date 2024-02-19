@@ -14,7 +14,7 @@ from audit.models import AuditSession, AuditSessionLoginResult
 from rbac.services.user import create_user
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED
+from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
 from api_v2.tests.base import BaseAPITestCase
 
@@ -65,7 +65,7 @@ class TestLoginAudit(BaseAPITestCase):
             with self.subTest(msg=f"Login account disabled for `{url_path}`"):
                 response: Response = self.client.post(path=url_path, data=self.test_user_credentials)
 
-                self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
+                self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
                 self.check_last_audit_record(
                     model=AuditSession,
                     user__username=self.test_user_credentials["username"],

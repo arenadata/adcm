@@ -105,5 +105,5 @@ class LookupModule(LookupBase):
         else:
             raise AnsibleError(f"unknown object type: {terms[0]}")
 
-        ret.append(res)
+        ret.append(res.value)
         return ret

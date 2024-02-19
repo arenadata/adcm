@@ -3,7 +3,7 @@ import { InputProps } from '@uikit/Input/Input';
 import MultiSelectPanel from './MultiSelectPanel/MultiSelectPanel';
 import Popover from '@uikit/Popover/Popover';
 import { MultiSelectOptions } from '@uikit/Select/Select.types';
-import { useForwardRef } from '@uikit/hooks/useForwardRef';
+import { useForwardRef } from '@hooks';
 import CommonSelectField from '@uikit/Select/CommonSelect/CommonSelectField/CommonSelectField';
 import PopoverPanelDefault from '@uikit/Popover/PopoverPanelDefault/PopoverPanelDefault';
 import { PopoverOptions } from '@uikit/Popover/Popover.types';

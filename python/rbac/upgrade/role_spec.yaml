@@ -1423,6 +1423,8 @@ roles:
       - Get host object
       - Get service object
       - Manage service imports
+      - Manage service Maintenance mode
+      - Manage component Maintenance mode
       - View component config
       - View host config
       - View host-components hidden
