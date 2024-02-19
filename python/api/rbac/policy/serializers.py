@@ -12,6 +12,7 @@
 
 from adcm.utils import get_obj_type
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from rbac.models import Group, Policy, Role, RoleTypes
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import (
@@ -24,8 +25,7 @@ from rest_framework.relations import HyperlinkedIdentityField, PrimaryKeyRelated
 from rest_framework.serializers import ModelSerializer
 import jsonschema
 
-from rbac.endpoints.serializers import BaseRelatedSerializer
-from rbac.models import Group, Policy, Role, RoleTypes
+from api.rbac.serializers import BaseRelatedSerializer
 
 
 class ObjectField(JSONField):
@@ -118,8 +118,8 @@ class PolicySerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "url",
         )
         expandable_fields = {
-            "group": ("rbac.endpoints.group.views.GroupSerializer", {"many": True}),
-            "role": "rbac.endpoints.role.views.RoleSerializer",
+            "group": ("rbac.group.views.GroupSerializer", {"many": True}),
+            "role": "rbac.role.views.RoleSerializer",
         }
 
     @staticmethod

@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rbac.models import Role
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.fields import RegexField, SerializerMethodField
 from rest_framework.relations import HyperlinkedIdentityField, PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
 
-from rbac.endpoints.serializers import BaseRelatedSerializer
-from rbac.models import Role
+from api.rbac.serializers import BaseRelatedSerializer
 
 
 class RoleChildSerializer(BaseRelatedSerializer):
@@ -52,7 +52,7 @@ class RoleSerializer(FlexFieldsSerializerMixin, ModelSerializer):
             "type": {"read_only": True},
             "any_category": {"read_only": True},
         }
-        expandable_fields = {"child": ("rbac.endpoints.role.views.RoleSerializer", {"many": True})}
+        expandable_fields = {"child": ("rbac.role.views.RoleSerializer", {"many": True})}
 
     @staticmethod
     def get_category(obj):

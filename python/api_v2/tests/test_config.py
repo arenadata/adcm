@@ -25,7 +25,6 @@ from cm.models import (
 )
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from rbac.services.user import create_user
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -237,7 +236,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
         self.group_config_config = ConfigLog.objects.get(pk=self.group_config.config.current)
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = create_user(**self.test_user_credentials)
+        self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
         response = self.client.get(

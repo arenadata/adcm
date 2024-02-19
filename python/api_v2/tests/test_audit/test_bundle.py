@@ -14,7 +14,6 @@
 from audit.models import AuditLogOperationType, AuditObject
 from cm.models import Bundle, Prototype
 from django.conf import settings
-from rbac.services.user import create_user
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -32,7 +31,7 @@ class TestBundleAudit(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = create_user(**self.test_user_credentials)
+        self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_audit_upload_success(self):
         new_bundle_file = self.prepare_bundle_file(source_dir=self.test_bundles_dir / "cluster_one")

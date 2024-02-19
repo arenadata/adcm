@@ -27,7 +27,6 @@ from cm.models import (
 from cm.status_api import make_ui_cluster_status
 from cm.upgrade import do_upgrade, get_upgrade
 from guardian.mixins import PermissionListMixin
-from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -54,6 +53,7 @@ from api.cluster.serializers import (
     HostComponentUISerializer,
     PostImportSerializer,
 )
+from api.rbac.viewsets import DjangoOnlyObjectPermissions
 from api.serializers import ClusterUpgradeSerializer
 from api.stack.serializers import (
     BundleServiceUIPrototypeSerializer,

@@ -15,12 +15,12 @@ from audit.utils import audit
 from cm.errors import raise_adcm_ex
 from django_filters.rest_framework import CharFilter, DjangoFilterBackend, FilterSet
 from guardian.mixins import PermissionListMixin
+from rbac.models import Group
 from rest_framework.filters import OrderingFilter
 from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.viewsets import ModelViewSet
 
-from rbac.endpoints.group.serializers import GroupSerializer
-from rbac.models import Group
+from api.rbac.group.serializers import GroupSerializer
 
 
 class GroupFilterSet(FilterSet):

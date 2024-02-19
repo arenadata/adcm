@@ -19,7 +19,6 @@ from cm.models import ConfigLog, ObjectConfig, get_model_by_type
 from django.conf import settings
 from django.db.models.query import QuerySet
 from guardian.mixins import PermissionListMixin
-from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -31,6 +30,7 @@ from api.config.serializers import (
     ObjectConfigRestoreSerializer,
     ObjectConfigUpdateSerializer,
 )
+from api.rbac.viewsets import DjangoOnlyObjectPermissions
 from api.utils import check_obj, create, update
 
 

@@ -17,6 +17,8 @@ from django.db.models import Prefetch, Q
 from django_filters import rest_framework as filters
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
+from rbac.models import Role, RoleTypes
+from rbac.services.role import role_create, role_update
 from rest_flex_fields import is_expanded
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -29,9 +31,7 @@ from rest_framework.status import (
 )
 from rest_framework.viewsets import ModelViewSet
 
-from rbac.endpoints.role.serializers import RoleSerializer
-from rbac.models import Role, RoleTypes
-from rbac.services.role import role_create, role_update
+from api.rbac.role.serializers import RoleSerializer
 
 
 class _CategoryFilter(filters.CharFilter):

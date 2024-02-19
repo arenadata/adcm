@@ -30,7 +30,6 @@ from cm.models import (
 )
 from cm.services.status.client import FullStatusMap
 from django.urls import reverse
-from rbac.services.user import create_user
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -343,7 +342,7 @@ class TestServiceMaintenanceMode(BaseAPITestCase):
         self.service_cl_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = create_user(**self.test_user_credentials)
+        self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_change_mm_success(self):
         response = self.client.post(

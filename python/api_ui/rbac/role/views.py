@@ -16,6 +16,8 @@ from adcm.permissions import DjangoObjectPermissionsAudit
 from adcm.serializers import EmptySerializer
 from api.base_view import GenericUIViewSet
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ObjectType
+from rbac.models import ObjectType as RBACObjectType
+from rbac.models import Role, RoleTypes
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
 from rest_framework.response import Response
@@ -25,9 +27,6 @@ from rest_framework.serializers import (
     IntegerField,
     JSONField,
 )
-
-from rbac.models import ObjectType as RBACObjectType
-from rbac.models import Role, RoleTypes
 
 
 class RoleUISerializer(EmptySerializer):

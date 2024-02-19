@@ -12,7 +12,6 @@
 
 
 from cm.models import ADCM, Action
-from rbac.services.user import create_user
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -31,8 +30,8 @@ class TestADCMAudit(BaseAPITestCase):
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user_credentials_2 = {"username": "test_user_username_2", "password": "test_user_password"}
-        self.test_user = create_user(**self.test_user_credentials)
-        self.test_user_2 = create_user(**self.test_user_credentials_2)
+        self.test_user = self.create_user(**self.test_user_credentials)
+        self.test_user_2 = self.create_user(**self.test_user_credentials_2)
 
         self.adcm = ADCM.objects.first()
         self.data = {

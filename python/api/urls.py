@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from django.urls import include, path, register_converter
-from rbac.endpoints import token
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import (
@@ -23,6 +22,7 @@ from rest_framework.schemas.coreapi import SchemaGenerator
 from rest_framework.schemas.views import SchemaView
 
 from api import docs, views
+from api.rbac import token
 
 register_converter(views.NameConverter, "name")
 generator = SchemaGenerator(title="ArenaData Chapel API", patterns=[path("api/v1/", include("api.urls"))])
@@ -61,6 +61,6 @@ urlpatterns = [
     ),
     path("docs/md/", docs.docs_md),
     path("docs/", docs.docs_html),
-    path("rbac/", include(("rbac.urls", "rbac"))),
+    path("rbac/", include(("api.rbac.urls", "rbac"))),
     path("token/", token.GetAuthToken.as_view(), name="token"),
 ]

@@ -29,7 +29,6 @@ from cm.models import (
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils import timezone
-from rbac.services.user import create_user
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
 from api_v2.tests.base import BaseAPITestCase
@@ -40,7 +39,7 @@ class TestTask(BaseAPITestCase):
         super().setUp()
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = create_user(**self.test_user_credentials)
+        self.test_user = self.create_user(**self.test_user_credentials)
 
         self.adcm = ADCM.objects.first()
         service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()

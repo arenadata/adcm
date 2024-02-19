@@ -10,12 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import include, path
+from rest_framework.routers import SimpleRouter
 
-from api_ui import views
+from api.rbac.role.views import RoleViewSet
 
-urlpatterns = [
-    path("", views.APIRoot.as_view()),
-    path("rbac/", include(("api_ui.rbac.urls", "rbac"), namespace="rbac-ui")),
-    path("stack/", include(("api_ui.stack.urls", "api_ui"), namespace="stack-ui")),
-]
+router = SimpleRouter()
+router.register(r"", RoleViewSet, basename="role")
+urlpatterns = router.urls

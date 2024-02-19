@@ -10,8 +10,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path
-
-from rbac.endpoints.me.views import MyselfView
-
-urlpatterns = [path("", MyselfView.as_view(), name="me")]

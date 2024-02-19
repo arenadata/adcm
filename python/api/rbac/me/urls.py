@@ -10,10 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.routers import SimpleRouter
+from django.urls import path
 
-from rbac.endpoints.group.views import GroupViewSet
+from api.rbac.me.views import MyselfView
 
-router = SimpleRouter()
-router.register("", GroupViewSet, basename="group")
-urlpatterns = router.urls
+urlpatterns = [path("", MyselfView.as_view(), name="me")]

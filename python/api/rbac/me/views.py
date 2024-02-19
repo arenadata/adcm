@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rbac.models import User
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.schemas.coreapi import AutoSchema
 
-from rbac.endpoints.me.serializers import MeUserSerializer
-from rbac.models import User
-from rbac.services.user import update_user
+from api.rbac.me.serializers import MeUserSerializer
+from api.rbac.utils import update_user
 
 
 class MyselfView(RetrieveUpdateAPIView):

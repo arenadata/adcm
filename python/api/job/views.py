@@ -24,7 +24,6 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
 from guardian.mixins import PermissionListMixin
-from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import DjangoModelPermissions
@@ -41,6 +40,7 @@ from api.job.serializers import (
     TaskRetrieveSerializer,
     TaskSerializer,
 )
+from api.rbac.viewsets import DjangoOnlyObjectPermissions
 
 VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"
 VIEW_JOBLOG_PERMISSION = "cm.view_joblog"

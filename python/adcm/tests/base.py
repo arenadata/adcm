@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from contextlib import contextmanager
+from operator import itemgetter
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -38,6 +39,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from core.rbac.dto import UserCreateDTO
 from django.conf import settings
 from django.db.models import QuerySet
 from django.test import Client, TestCase, override_settings
@@ -47,12 +49,22 @@ from rbac.models import Group, Policy, Role, RoleTypes, User
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
-from rbac.services.user import create_user
+from rbac.services.user import perform_user_creation
 from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 APPLICATION_JSON = "application/json"
+
+
+class TestUserCreateDTO(UserCreateDTO):
+    username: str
+    first_name: str = ""
+    last_name: str = ""
+    email: str = ""
+    is_superuser: bool = False
+
+    password: str = ""
 
 
 class HostComponentMapDictType(TypedDict):
@@ -471,8 +483,9 @@ class BusinessLogicMixin:
         except model.DoesNotExist:
             return 1
 
-    def create_user(self, user_data: dict | None = None) -> User:
-        if user_data is None:
+    def create_user(self, user_data: dict | None = None, **kwargs) -> User:
+        user_data = (user_data or {}) | kwargs
+        if not user_data:
             user_data = {
                 "username": "test_user_username",
                 "password": "test_user_password",
@@ -482,7 +495,11 @@ class BusinessLogicMixin:
                 "profile": "",
             }
 
-        return create_user(**user_data)
+        groups = tuple(map(itemgetter("id"), user_data.pop("groups", None) or ()))
+
+        user_id = perform_user_creation(create_data=TestUserCreateDTO(**user_data), groups=groups)
+
+        return User.objects.get(id=user_id)
 
     @contextmanager
     def grant_permissions(self, to: User, on: list[ADCMEntity] | ADCMEntity, role_name: str):

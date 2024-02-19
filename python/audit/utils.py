@@ -17,6 +17,10 @@ import re
 from api.cluster.serializers import ClusterAuditSerializer
 from api.component.serializers import ComponentAuditSerializer
 from api.host.serializers import HostAuditSerializer
+from api.rbac.group.serializers import GroupAuditSerializer
+from api.rbac.policy.serializers import PolicyAuditSerializer
+from api.rbac.role.serializers import RoleAuditSerializer
+from api.rbac.user.serializers import UserAuditSerializer
 from api.service.serializers import ServiceAuditSerializer
 from api_v2.cluster.serializers import (
     ClusterAuditSerializer as ClusterAuditSerializerV2,
@@ -49,10 +53,6 @@ from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import Model, ObjectDoesNotExist
 from django.http.response import Http404
 from django.urls import resolve
-from rbac.endpoints.group.serializers import GroupAuditSerializer
-from rbac.endpoints.policy.serializers import PolicyAuditSerializer
-from rbac.endpoints.role.serializers import RoleAuditSerializer
-from rbac.endpoints.user.serializers import UserAuditSerializer
 from rbac.models import Group, Policy, Role, User, get_rbac_model_by_type
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.generics import GenericAPIView

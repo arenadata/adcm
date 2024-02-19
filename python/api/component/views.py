@@ -17,7 +17,6 @@ from cm.models import Cluster, ClusterObject, HostComponent, ServiceComponent
 from cm.services.status.notify import update_mm_objects
 from cm.status_api import make_ui_component_status
 from guardian.mixins import PermissionListMixin
-from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework import permissions
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -32,6 +31,7 @@ from api.component.serializers import (
     ComponentStatusSerializer,
     ComponentUISerializer,
 )
+from api.rbac.viewsets import DjangoOnlyObjectPermissions
 
 
 def get_component_queryset(queryset, user, kwargs):

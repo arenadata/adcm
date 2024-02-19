@@ -11,9 +11,8 @@
 # limitations under the License.
 
 
-from rest_framework.serializers import CharField, ModelSerializer
-
 from rbac.models import User
+from rest_framework.serializers import CharField, ModelSerializer
 
 
 class MeUserSerializer(ModelSerializer):
