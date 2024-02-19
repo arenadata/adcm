@@ -4,13 +4,13 @@ import { Checkbox, FormField, FormFieldsContainer, Input } from '@uikit';
 import InputPassword from '@uikit/InputPassword/InputPassword';
 import MultiSelect from '@uikit/Select/MultiSelect/MultiSelect';
 import { RbacUserFormData } from './RbacUserForm.types';
-import { AdcmGroup } from '@models/adcm';
+import { AdcmGroup, AdcmUserGroup } from '@models/adcm';
 import TextFormField from '@commonComponents/Forms/TextFormField/TextFormField';
 
 interface RbacUserFormProps {
   onChangeFormData: (prop: Partial<RbacUserFormData>) => void;
   formData: RbacUserFormData;
-  groups: AdcmGroup[];
+  groups: AdcmGroup[] | AdcmUserGroup[];
   errors: Partial<Record<keyof RbacUserFormData, string | undefined>>;
   isPersonalDataEditForbidden?: boolean;
   isCreate?: boolean;

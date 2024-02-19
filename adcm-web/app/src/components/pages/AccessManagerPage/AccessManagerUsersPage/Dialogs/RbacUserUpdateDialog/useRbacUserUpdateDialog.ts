@@ -23,6 +23,7 @@ export const useRbacUserUpdateDialog = () => {
   const authSettings = useStore((s) => s.auth.profile.authSettings);
   const isOpen = !!user;
   const isPersonalDataEditForbidden = user?.type === 'ldap';
+  const userGroups = groups.length > 0 ? groups : user ? user.groups : [];
 
   const { formData, handleChangeFormData, setFormData, errors, setErrors, isValid } =
     useForm<RbacUserFormData>(initialFormData);
@@ -89,7 +90,7 @@ export const useRbacUserUpdateDialog = () => {
 
   return {
     isOpen,
-    groups,
+    groups: userGroups,
     onChangeFormData: handleChangeFormData,
     isValid: isValid && !isUpdating,
     formData,
