@@ -140,6 +140,7 @@ def rbac_case(
                 | "users",
                 user_pk,
                 "reset_failed_login_attempts"
+                | "block"
                 | "unblock",
             ]
         ):
@@ -153,6 +154,9 @@ def rbac_case(
             match view.action:
                 case "reset_failed_login_attempts":
                     audit_operation.name = "User login attempts reset"
+                case "block":
+                    username = f"{audit_object.object_name} " if audit_object is not None else ""
+                    audit_operation.name = f"{username}user blocked"
                 case "unblock":
                     username = f"{audit_object.object_name} " if audit_object is not None else ""
                     audit_operation.name = f"{username}user unblocked"

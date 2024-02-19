@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import datetime
+
 from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
@@ -27,6 +29,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from rest_framework.test import APIClient
+import pytz
 
 from api_v2.rbac.user.constants import UserTypeChoices
 from api_v2.tests.base import BaseAPITestCase
@@ -69,6 +72,7 @@ class TestUserAPI(BaseAPITestCase):
                     "isBuiltIn",
                     "isSuperUser",
                     "groups",
+                    "blockingReason",
                 ]
             ),
         )
@@ -235,6 +239,7 @@ class TestUserAPI(BaseAPITestCase):
                     "isBuiltIn",
                     "isSuperUser",
                     "groups",
+                    "blockingReason",
                 ]
             ),
         )
@@ -295,6 +300,16 @@ class TestUserAPI(BaseAPITestCase):
         self.assertTrue(data["isSuperUser"])
         self.assertEqual(len(data["groups"]), 1)
         self.assertDictEqual(data["groups"][0], expected_group_data)
+
+    def test_update_no_change_email_success(self) -> None:
+        email = "one@em.ail"
+        user = self.create_user(user_data={"username": "test_user", "password": "test_user_password", "email": email})
+
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
+            data={"email": email, "firstName": "test_user_first_name"},
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_update_self_by_regular_user_success(self):
         """
@@ -597,20 +612,6 @@ class TestUserAPI(BaseAPITestCase):
         self.assertIsNone(user.blocked_at)
         self.assertEqual(user.failed_login_attempts, 0)
 
-    def test_unblock_built_in_fail(self):
-        user = self.create_user()
-        user.built_in = True
-        user.save(update_fields=["built_in"])
-
-        response = self.client.post(
-            path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": user.pk}),
-        )
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertDictEqual(
-            response.json(),
-            {"code": "USER_BLOCK_ERROR", "desc": "Built-in user could not be blocked", "level": "error"},
-        )
-
     def test_ordering_success(self):
         user_data = [
             {
@@ -746,3 +747,136 @@ class TestUserAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["results"]), 1)
         self.assertEqual(response.json()["results"][0]["username"], target_user.username)
+
+
+class TestBlockUnblockAPI(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.user = self.create_user(user_data={"username": "someuser", "password": "bestpasseverever"})
+        self.admin = User.objects.get(username="admin")
+
+        creds = {"username": "editor", "password": "bestpasseverever"}
+        self.user_with_edit = self.create_user(user_data=creds)
+        self.user_with_edit.user_permissions.add(
+            Permission.objects.get(content_type=ContentType.objects.get_for_model(model=User), codename="view_user")
+        )
+        self.edit_client = APIClient()
+        self.edit_client.login(**creds)
+
+    def test_retrieve_blocked_by_login_attempts(self) -> None:
+        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.save()
+
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.user.pk}))
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(data["status"], "blocked")
+        self.assertEqual(data["blockingReason"], "Brute-force block: failure login attempt limit exceeded")
+
+    def test_retrieve_blocked_manually(self) -> None:
+        self.user.is_active = False
+        self.user.save()
+
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.user.pk}))
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(data["status"], "blocked")
+        self.assertEqual(data["blockingReason"], "Unlimited block: manual block by ADCM Administrator")
+
+    def test_retrieve_blocked_both_ways(self) -> None:
+        self.user.is_active = False
+        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.save()
+
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.user.pk}))
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(data["status"], "blocked")
+        self.assertEqual(data["blockingReason"], "Unlimited block: manual block by ADCM Administrator")
+
+    def test_retrieve_not_blocked(self) -> None:
+        self.user.failed_login_attempts = 10
+        self.user.save()
+
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.user.pk}))
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(data["status"], "active")
+        self.assertEqual(data["blockingReason"], None)
+
+    def test_block_manually_success(self) -> None:
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.user.pk}))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.user.refresh_from_db()
+        self.assertIsNone(self.user.blocked_at)
+        self.assertFalse(self.user.is_active)
+
+    def test_block_manually_self_fail(self) -> None:
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.admin.pk}))
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["desc"], "You can't block yourself.")
+
+        self.admin.refresh_from_db()
+        self.assertIsNone(self.admin.blocked_at)
+        self.assertTrue(self.admin.is_active)
+
+    def test_block_not_superuser_fail(self) -> None:
+        response = self.edit_client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.user.pk}))
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.json()["detail"], "You do not have permission to perform this action.")
+
+        self.admin.refresh_from_db()
+        self.assertIsNone(self.user.blocked_at)
+        self.assertTrue(self.user.is_active)
+
+    def test_block_ldap_user_fail(self) -> None:
+        self.user.type = OriginType.LDAP
+        self.user.save()
+
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.user.pk}))
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["desc"], "You can't block LDAP users.")
+
+    def test_unblock_success(self) -> None:
+        self.user.is_active = False
+        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.failed_login_attempts = 10
+        self.user.save()
+
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": self.user.pk}))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertIsNone(self.user.blocked_at)
+        self.assertTrue(self.user.is_active)
+        self.assertEqual(self.user.failed_login_attempts, 0)
+
+    def test_unblock_ldap_success(self) -> None:
+        self.user.is_active = False
+        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.failed_login_attempts = 10
+        self.user.type = OriginType.LDAP
+        self.user.save()
+
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": self.user.pk}))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+        self.assertIsNone(self.user.blocked_at)
+        self.assertEqual(self.user.failed_login_attempts, 0)
+
+    def test_unblock_not_superuser_fail(self) -> None:
+        response = self.edit_client.post(path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": self.user.pk}))
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.json()["detail"], "You do not have permission to perform this action.")

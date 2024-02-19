@@ -19,8 +19,10 @@ from core.rbac.dto import UserCreateDTO, UserUpdateDTO
 from core.rbac.errors import UpdateLDAPUserError
 from core.rbac.operations import (
     add_user_to_groups,
+    block_users,
     create_new_user,
     remove_user_from_groups,
+    unblock_users,
     update_user_information,
     update_user_password,
 )
@@ -87,6 +89,18 @@ class UserDB:
         user.save(update_fields=["password"])
         return user_id
 
+    @staticmethod
+    def remove_login_attempts_block(user_ids: Iterable[UserID]) -> None:
+        User.objects.filter(id__in=user_ids).update(failed_login_attempts=0, blocked_at=None)
+
+    @staticmethod
+    def activate_users(user_ids: Iterable[UserID]) -> None:
+        User.objects.filter(id__in=user_ids).update(is_active=True)
+
+    @staticmethod
+    def deactivate_users(user_ids: Iterable[UserID]) -> None:
+        User.objects.filter(id__in=user_ids).update(is_active=False)
+
 
 class GroupDB:
     @staticmethod
@@ -118,9 +132,9 @@ class GroupDB:
         )
 
 
-def drop_user_connections(user_id: UserID) -> UserID:
-    Token.objects.filter(user_id=user_id).delete()
-    return user_id
+def drop_user_connections(user_ids: Iterable[UserID]) -> None:
+    # sessions will expire "by default" Django mechanism
+    Token.objects.filter(user_id__in=user_ids).delete()
 
 
 def perform_user_creation(create_data: UserCreateDTO, groups: Iterable[GroupID]) -> UserID:
@@ -156,6 +170,25 @@ def perform_regular_user_update(user_id: UserID, update_data: UserUpdateDTO, new
     )
 
 
+def perform_users_block(users: Iterable[UserID]) -> Iterable[UserID]:
+    user_ids = tuple(users)
+
+    with atomic():
+        block_users(users=user_ids, db=UserDB)
+        drop_user_connections(user_ids=user_ids)
+
+    return user_ids
+
+
+def perform_users_unblock(users: Iterable[UserID]) -> Iterable[UserID]:
+    user_ids = tuple(users)
+
+    with atomic():
+        unblock_users(users=user_ids, db=UserDB)
+
+    return user_ids
+
+
 def _perform_user_update(
     user_id: UserID, update_data: UserUpdateDTO, new_password: str | None, new_user_groups: set[GroupID] | None
 ) -> UserID:
@@ -177,7 +210,7 @@ def _perform_user_update(
                 db=UserDB,
                 password_requirements=retrieve_password_requirements(),
             )
-            drop_user_connections(user_id=user_id)
+            drop_user_connections(user_ids=[user_id])
 
         if new_user_groups is not None:
             current_groups = set(map(attrgetter("id"), GroupDB.get_user_groups(user_id=user_id)))
