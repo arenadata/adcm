@@ -8,7 +8,7 @@ export enum AdcmUserType {
   Ldap = 'ldap',
 }
 
-interface AdcmUserGroup {
+export interface AdcmUserGroup {
   id: number;
   name: string;
   displayName: string;
