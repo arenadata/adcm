@@ -13,6 +13,7 @@
 
 from adcm.serializers import EmptySerializer
 from django.conf import settings
+from rbac.models import Group, User
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.fields import (
     BooleanField,
@@ -29,8 +30,7 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
-from rbac.models import Group, User
-from rbac.services.user import create_user, update_user
+from api.rbac.utils import create_user, update_user
 
 
 class UserGroupSerializer(EmptySerializer):
@@ -54,7 +54,7 @@ class ExpandedGroupSerializer(FlexFieldsSerializerMixin, ModelSerializer):
         fields = ("id", "name", "type", "user", "url")
         expandable_fields = {
             "user": (
-                "rbac.endpoints.user.views.UserSerializer",
+                "rbac.user.views.UserSerializer",
                 {"many": True, "source": "user_set"},
             ),
         }

@@ -18,7 +18,6 @@ from cm.models import (
     ObjectType,
     ServiceComponent,
 )
-from rbac.services.user import create_user
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK
@@ -31,7 +30,7 @@ class TestBulkAddServices(BaseAPITestCase):
         super().setUp()
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = create_user(**self.test_user_credentials)
+        self.test_user = self.create_user(**self.test_user_credentials)
 
         self.initial_object_config_pks = list(ObjectConfig.objects.values_list("pk", flat=True))
         self.initial_config_log_pks = list(ConfigLog.objects.values_list("pk", flat=True))

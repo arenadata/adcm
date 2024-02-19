@@ -12,7 +12,6 @@
 
 from cm.models import GroupConfig, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
-from rbac.services.user import create_user
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -31,7 +30,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         super().setUp()
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = create_user(**self.test_user_credentials)
+        self.test_user = self.create_user(**self.test_user_credentials)
 
         self.cluster_1_group_config = GroupConfig.objects.create(
             name="group_config",

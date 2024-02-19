@@ -17,7 +17,6 @@ from cm.issue import update_hierarchy_issues
 from cm.models import HostProvider, Upgrade
 from cm.upgrade import get_upgrade
 from guardian.mixins import PermissionListMixin
-from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework import permissions, status
 from rest_framework.response import Response
 
@@ -29,6 +28,7 @@ from api.provider.serializers import (
     ProviderSerializer,
     ProviderUISerializer,
 )
+from api.rbac.viewsets import DjangoOnlyObjectPermissions
 from api.serializers import ProviderUpgradeSerializer
 from api.utils import AdcmFilterBackend, AdcmOrderingFilter, check_obj, create
 

@@ -12,8 +12,8 @@
 
 from rest_framework.routers import SimpleRouter
 
-from rbac.endpoints_ui.role.views import RoleViewSet
+from api.rbac.user.views import UserViewSet
 
 router = SimpleRouter()
-router.register("", RoleViewSet, basename="role")
+router.register("", UserViewSet)
 urlpatterns = router.urls

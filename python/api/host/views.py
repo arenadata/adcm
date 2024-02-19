@@ -39,7 +39,6 @@ from cm.status_api import make_ui_host_status
 from django_filters import rest_framework as drf_filters
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
-from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -63,6 +62,7 @@ from api.host.serializers import (
     HostUpdateSerializer,
     ProvideHostSerializer,
 )
+from api.rbac.viewsets import DjangoOnlyObjectPermissions
 from api.utils import create
 
 

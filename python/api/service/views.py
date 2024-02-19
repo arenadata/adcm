@@ -18,7 +18,6 @@ from cm.models import Cluster, ClusterBind, ClusterObject, HostComponent, Protot
 from cm.services.status.notify import update_mm_objects
 from cm.status_api import make_ui_service_status
 from guardian.mixins import PermissionListMixin
-from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework import permissions
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -26,6 +25,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD
 
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.cluster.serializers import BindSerializer
+from api.rbac.viewsets import DjangoOnlyObjectPermissions
 from api.service.serializers import (
     ClusterServiceSerializer,
     ImportPostSerializer,

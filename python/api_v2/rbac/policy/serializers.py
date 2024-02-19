@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rbac.endpoints.policy.serializers import ObjectField
-from rbac.endpoints.serializers import BaseRelatedSerializer
+from api.rbac.policy.serializers import ObjectField
+from api.rbac.serializers import BaseRelatedSerializer
 from rbac.models import Group, Policy, Role, RoleTypes
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import BooleanField

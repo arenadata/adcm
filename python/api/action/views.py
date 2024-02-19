@@ -29,7 +29,6 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from guardian.mixins import PermissionListMixin
-from rbac.viewsets import DjangoOnlyObjectPermissions
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -42,6 +41,7 @@ from api.action.serializers import (
 )
 from api.base_view import GenericUIView
 from api.job.serializers import RunTaskRetrieveSerializer
+from api.rbac.viewsets import DjangoOnlyObjectPermissions
 from api.utils import AdcmFilterBackend, create
 
 

@@ -13,6 +13,8 @@
 from adcm.permissions import DjangoModelPermissionsAudit
 from audit.utils import audit
 from guardian.mixins import PermissionListMixin
+from rbac.models import Policy
+from rbac.services.policy import policy_create, policy_update
 from rest_framework.response import Response
 from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.status import (
@@ -22,9 +24,7 @@ from rest_framework.status import (
 )
 from rest_framework.viewsets import ModelViewSet
 
-from rbac.endpoints.policy.serializers import PolicySerializer
-from rbac.models import Policy
-from rbac.services.policy import policy_create, policy_update
+from api.rbac.policy.serializers import PolicySerializer
 
 
 class PolicyViewSet(PermissionListMixin, ModelViewSet):
