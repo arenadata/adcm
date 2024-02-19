@@ -34,17 +34,12 @@ from cm.services.types import ADCMEntityType
 @dataclass
 class JobScope:
     job_id: ObjectID
-
-    @cached_property
-    def object(self) -> ADCMEntityType:
-        return self.task.task_object
+    object: ADCMEntityType
 
     @cached_property
     def task(self) -> TaskLog:
-        return (
-            TaskLog.objects.prefetch_related("task_object", "task_object__prototype")
-            .select_related("action", "action__prototype", "action__prototype__bundle")
-            .get(pk=self.job.task_id)
+        return TaskLog.objects.select_related("action", "action__prototype", "action__prototype__bundle").get(
+            pk=self.job.task_id
         )
 
     @cached_property

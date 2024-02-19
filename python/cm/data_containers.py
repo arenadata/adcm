@@ -12,11 +12,12 @@
 
 from typing import Any, Optional
 
+from core.types import ClusterID, ComponentID, HostID, HostProviderID, ObjectID, PrototypeID, ServiceID
 from pydantic import BaseModel
 
 
 class DBModel(BaseModel):
-    id: int
+    id: ObjectID
 
     class Config:
         orm_mode = True
@@ -42,7 +43,7 @@ class PrototypeData(DBModel):
     display_name: str
     type: str
     version: str
-    parent_id: int | None
+    parent_id: PrototypeID | None
     requires: list[RequiresData]
     bound_to: BoundToData | Empty
     constraint: list[Any]
@@ -54,29 +55,29 @@ class PrototypeData(DBModel):
 
 class ClusterData(DBModel):
     name: str
-    prototype_id: int
+    prototype_id: PrototypeID
 
 
 class ServiceData(DBModel):
-    cluster_id: int
-    prototype_id: int
+    cluster_id: ClusterID
+    prototype_id: PrototypeID
 
 
 class ComponentData(DBModel):
-    service_id: int
-    cluster_id: int
-    prototype_id: int
+    service_id: ServiceID
+    cluster_id: ClusterID
+    prototype_id: PrototypeID
 
 
 class HostData(DBModel):
     fqdn: str
-    cluster_id: int
-    prototype_id: int
-    provider_id: int
+    cluster_id: ClusterID
+    prototype_id: PrototypeID
+    provider_id: HostProviderID
     maintenance_mode: str
 
 
 class HostComponentData(DBModel):
-    host_id: int
-    component_id: int
-    service_id: int
+    host_id: HostID
+    component_id: ComponentID
+    service_id: ServiceID

@@ -284,7 +284,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
 
         job = JobLog.objects.last()
 
-        re_prepare_job(job_scope=JobScope(job_id=job.pk))
+        re_prepare_job(job_scope=JobScope(job_id=job.pk, object=job.task.task_object))
 
         inventory_file = settings.RUN_DIR / str(job.pk) / "inventory.json"
         with Path(inventory_file).open(encoding=settings.ENCODING_UTF_8) as f:

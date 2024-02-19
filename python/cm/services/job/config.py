@@ -38,7 +38,7 @@ from cm.services.job.types import (
     Selector,
     ServiceActionType,
 )
-from cm.services.job.utils import JobScope, get_bundle_root, get_script_path, get_selector
+from cm.services.job.utils import JobScope, get_bundle_root, get_script_path
 
 IMPLEMENTED_ACTION_PROTO_TYPES = (
     ObjectType.ADCM,
@@ -60,7 +60,7 @@ def get_job_config(job_scope: JobScope) -> dict[str, Any]:
         context=get_context(
             action=job_scope.action,
             object_type=job_scope.object.prototype.type,
-            selector=get_selector(obj=job_scope.object, action=job_scope.action),
+            selector=job_scope.task.selector,
         ),
         env=JobEnv(
             run_dir=str(settings.RUN_DIR),
