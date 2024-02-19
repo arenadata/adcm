@@ -13,6 +13,7 @@
 from itertools import compress
 
 from adcm.mixins import GetParentObjectMixin
+from adcm.permissions import VIEW_ACTION_PERM
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.job import ActionRunPayload, run_action
@@ -74,7 +75,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
                 self.prototype_objects[hc_item.component.prototype] = hc_item.component
 
         actions = (
-            get_objects_for_user(user=self.request.user, perms=["cm.view_action"])
+            get_objects_for_user(user=self.request.user, perms=[VIEW_ACTION_PERM])
             .select_related("prototype")
             .exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET)
             .filter(upgrade__isnull=True)

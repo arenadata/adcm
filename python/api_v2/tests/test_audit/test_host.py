@@ -321,7 +321,7 @@ class TestHostAudit(BaseAPITestCase):
                 ),
             )
 
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
             operation_name=f"{self.host_1.fqdn} host removed",
