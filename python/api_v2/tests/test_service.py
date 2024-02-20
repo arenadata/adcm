@@ -414,7 +414,7 @@ class TestServicePermissions(BaseAPITestCase):
         self.service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = create_user(**self.test_user_credentials)
+        self.test_user = self.create_user(**self.test_user_credentials)
 
         self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter", cluster=self.cluster_1)
         self.host_with_component = self.add_host(
