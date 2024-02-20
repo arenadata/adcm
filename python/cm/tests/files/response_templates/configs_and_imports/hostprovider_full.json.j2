@@ -1,95 +1,147 @@
 {
-  "PROVIDER": {
-    "hosts": {
-      "host-1": {
-        "plain_group": {
-          "simple": null,
-          "map": {
-            "k": "v",
-            "key": "val"
+  "all": {
+    "children": {
+      "PROVIDER": {
+        "hosts": {
+          "host-1": {
+            "plain_group": {
+              "simple": null,
+              "map": {
+                "k": "v",
+                "key": "val"
+              },
+              "file": "{{ filedir }}/host.1.plain_group.file",
+              "listofstuff": []
+            },
+            "activatable_group": null,
+            "boolean": true,
+            "integer": null,
+            "float": null,
+            "string": null,
+            "text": null,
+            "secrettext": "awe\nsopme\n\ttext\n",
+            "password": null,
+            "map": {},
+            "secretmap": {},
+            "json": null,
+            "list": [
+              "1",
+              "5",
+              "baset"
+            ],
+            "file": null,
+            "secretfile": null,
+            "source_list": [
+              "ok",
+              "fail"
+            ],
+            "variant_config": null,
+            "variant_inline": "f",
+            "variant_builtin": null,
+            "adcm_hostid": {{ host_1.id }},
+            "state": "created",
+            "multi_state": []
           },
-          "file": "{{ filedir }}/host.1.plain_group.file",
-          "listofstuff": []
-        },
-        "activatable_group": null,
-        "boolean": true,
-        "integer": null,
-        "float": null,
-        "string": null,
-        "text": null,
-        "secrettext": "awe\nsopme\n\ttext\n",
-        "password": null,
-        "map": {},
-        "secretmap": {},
-        "json": null,
-        "list": [
-          "1",
-          "5",
-          "baset"
-        ],
-        "file": null,
-        "secretfile": null,
-        "source_list": [
-          "ok",
-          "fail"
-        ],
-        "variant_config": null,
-        "variant_inline": "f",
-        "variant_builtin": null,
-        "adcm_hostid": {{ host_1.id }},
-        "state": "created",
-        "multi_state": []
-      },
-      "host-2": {
-        "plain_group": {
-          "simple": "ingroup",
-          "map": {
-            "k": "v",
-            "key": "val"
+          "host-2": {
+            "plain_group": {
+              "simple": "ingroup",
+              "map": {
+                "k": "v",
+                "key": "val"
+              },
+              "file": "{{ filedir }}/host.2.plain_group.file",
+              "listofstuff": []
+            },
+            "activatable_group": {
+              "simple": "inactive",
+              "list": [
+                "one",
+                "two"
+              ]
+            },
+            "boolean": true,
+            "integer": 4102,
+            "float": 23.43,
+            "string": "outside",
+            "text": null,
+            "secrettext": "awe\nsopme\n\ttext\n",
+            "password": "unbreakable",
+            "map": {
+              "see": "yes",
+              "no": "no"
+            },
+            "secretmap": {
+              "see": "dont",
+              "me": "you"
+            },
+            "json": "{\"hey\": [\"yooo\", 1]}",
+            "list": [
+              "1",
+              "5",
+              "baset"
+            ],
+            "file": "{{ filedir }}/host.2.file.",
+            "secretfile": "{{ filedir }}/host.2.secretfile.",
+            "source_list": [
+              "ok",
+              "fail"
+            ],
+            "variant_config": null,
+            "variant_inline": "f",
+            "variant_builtin": "host-1",
+            "adcm_hostid": {{ host_2.id }},
+            "state": "created",
+            "multi_state": []
+          }
+        }
+      }
+    },
+    "vars": {
+      "provider": {
+        "config": {
+          "plain_group": {
+            "simple": null,
+            "map": {
+              "k": "v",
+              "key": "val"
+            },
+            "file": "{{ filedir }}/provider.1.plain_group.file",
+            "listofstuff": []
           },
-          "file": "{{ filedir }}/host.2.plain_group.file",
-          "listofstuff": []
-        },
-        "activatable_group": {
-          "simple": "inactive",
+          "activatable_group": null,
+          "boolean": true,
+          "integer": null,
+          "float": null,
+          "string": null,
+          "text": null,
+          "secrettext": "awe\nsopme\n\ttext\n",
+          "password": null,
+          "map": {},
+          "secretmap": {},
+          "json": null,
           "list": [
-            "one",
-            "two"
-          ]
+            "1",
+            "5",
+            "baset"
+          ],
+          "file": null,
+          "secretfile": null,
+          "source_list": [
+            "ok",
+            "fail"
+          ],
+          "variant_config": null,
+          "variant_inline": "f",
+          "variant_builtin": null
         },
-        "boolean": true,
-        "integer": 4102,
-        "float": 23.43,
-        "string": "outside",
-        "text": null,
-        "secrettext": "awe\nsopme\n\ttext\n",
-        "password": "unbreakable",
-        "map": {
-          "see": "yes",
-          "no": "no"
-        },
-        "secretmap": {
-          "see": "dont",
-          "me": "you"
-        },
-        "json": "{\"hey\": [\"yooo\", 1]}",
-        "list": [
-          "1",
-          "5",
-          "baset"
-        ],
-        "file": "{{ filedir }}/host.2.file.",
-        "secretfile": "{{ filedir }}/host.2.secretfile.",
-        "source_list": [
-          "ok",
-          "fail"
-        ],
-        "variant_config": null,
-        "variant_inline": "f",
-        "variant_builtin": "host-1",
-        "adcm_hostid": {{ host_2.id }},
+        "name": "Host Provider",
+        "id": {{ hostprovider.id }},
+        "host_prototype_id": {{ host_2.prototype.id }},
         "state": "created",
-        "multi_state": []
+        "multi_state": [],
+        "before_upgrade": {
+          "state": null
+        }
       }
     }
   }

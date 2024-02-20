@@ -46,12 +46,12 @@
   "env": {
     "run_dir": "{{ datadir }}/run",
     "log_dir": "{{ datadir }}/log",
-    "tmp_dir": "{{ datadir }}/run/100/tmp",
+    "tmp_dir": "{{ datadir }}/run/{{ job_id }}/tmp",
     "stack_dir": "{{ stackdir }}/data/bundle/{{ cluster_bundle.hash }}",
     "status_api_token": "{{ token }}"
   },
   "job": {
-    "id": 100,
+    "id": {{ job_id }},
     "action": "with_config_on_host",
     "job_name": "with_config_on_host",
     "command": "with_config_on_host",

@@ -9,9 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from cm.inventory import get_inventory_data
 from cm.models import Action
-from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
+from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
 class TestInventoryHostproviderHost(BaseInventoryTestCase):
@@ -31,39 +30,50 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
         self.action_on_host_2 = Action.objects.get(name="action_on_host", prototype=self.host_2.prototype)
 
     def test_action_on_hostprovider(self):
-        expected_topology = {"PROVIDER": [self.host_1.fqdn, self.host_2.fqdn]}
-        expected_data = {
-            ("all", "children", "PROVIDER", "hosts"): (
-                self.templates_dir / "two_hosts.json.j2",
-                {
-                    "host_1_id": self.host_1.pk,
-                    "host_2_id": self.host_2.pk,
-                },
-            ),
-            ("all", "vars", "provider"): (
-                self.templates_dir / "provider.json.j2",
-                {"id": self.hostprovider.pk, "host_prototype_id": self.host_1.prototype.pk},
-            ),
+        expected_topology = {
+            "PROVIDER": [self.host_1.fqdn, self.host_2.fqdn],
         }
-
-        actual_inventory = decrypt_secrets(
-            source=get_inventory_data(obj=self.hostprovider, action=self.action_on_hostprovider)
-        )
-
-        self.check_hosts_topology(data=actual_inventory["all"]["children"], expected=expected_topology)
-        self.check_data_by_template(data=actual_inventory, templates_data=expected_data)
-
-    def test_action_on_host(self):
-        expected_topology = {"HOST": [self.host_1.fqdn]}
         expected_data = {
-            ("HOST", "hosts"): (
-                self.templates_dir / "one_host.json.j2",
+            ("PROVIDER", "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
                 {
-                    "host_fqdn": self.host_1.fqdn,
                     "adcm_hostid": self.host_1.pk,
                 },
             ),
-            ("HOST", "vars", "provider"): (
+            ("PROVIDER", "hosts", self.host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                },
+            ),
+            ("vars", "provider"): (
+                self.templates_dir / "provider.json.j2",
+                {
+                    "id": self.hostprovider.pk,
+                    "host_prototype_id": self.host_1.prototype.pk,
+                },
+            ),
+        }
+
+        self.assert_inventory(
+            obj=self.hostprovider,
+            action=self.action_on_hostprovider,
+            expected_topology=expected_topology,
+            expected_data=expected_data,
+        )
+
+    def test_action_on_host(self):
+        expected_topology = {
+            "HOST": [self.host_1.fqdn],
+        }
+        expected_data = {
+            ("HOST", "hosts", self.host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_1.pk,
+                },
+            ),
+            ("vars", "provider"): (
                 self.templates_dir / "provider.json.j2",
                 {
                     "id": self.host_1.provider.pk,
@@ -87,23 +97,26 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
             meta_diff={"/integer": {"isSynchronized": False}},
         )
 
-        expected_topology = {"PROVIDER": [self.host_1.fqdn, self.host_2.fqdn]}
+        expected_topology = {
+            "PROVIDER": [self.host_1.fqdn, self.host_2.fqdn],
+        }
         expected_data = {
-            ("all", "children", "PROVIDER", "hosts", f"{self.host_1.fqdn}"): (
+            ("PROVIDER", "hosts", f"{self.host_1.fqdn}"): (
                 self.templates_dir / "host_with_hostprovider_vars.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
                     "host_prototype_id": self.host_1.prototype.pk,
-                    "hostprovider_config_integer": 101,
+                    "provider_config_integer": 101,
+                    "provider_id": self.hostprovider.pk,
                 },
             ),
-            ("all", "children", "PROVIDER", "hosts", f"{self.host_2.fqdn}"): (
+            ("PROVIDER", "hosts", f"{self.host_2.fqdn}"): (
                 self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_2.pk,
                 },
             ),
-            ("all", "vars", "provider"): (
+            ("vars", "provider"): (
                 self.templates_dir / "provider.json.j2",
                 {
                     "id": self.hostprovider.pk,
@@ -112,12 +125,12 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
             ),
         }
 
-        actual_inventory = decrypt_secrets(
-            source=get_inventory_data(obj=self.hostprovider, action=self.action_on_hostprovider)
+        self.assert_inventory(
+            obj=self.hostprovider,
+            action=self.action_on_hostprovider,
+            expected_topology=expected_topology,
+            expected_data=expected_data,
         )
-
-        self.check_hosts_topology(data=actual_inventory["all"]["children"], expected=expected_topology)
-        self.check_data_by_template(data=actual_inventory, templates_data=expected_data)
 
     def test_action_on_host_with_group_config(self):
         host_provider_group_config = self.add_group_config(parent=self.hostprovider, hosts=[self.host_1])
@@ -127,15 +140,20 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
             meta_diff={"/integer": {"isSynchronized": False}},
         )
 
-        expected_topology = {"HOST": [self.host_1.fqdn]}
+        expected_topology = {
+            "HOST": [self.host_1.fqdn],
+        }
         expected_data = {
-            ("HOST", "hosts", f"{self.host_1.fqdn}"): (  # TODO: host_1 added to group-config, but 'provider' vars not
-                self.templates_dir / "host.json.j2",
+            ("HOST", "hosts", f"{self.host_1.fqdn}"): (
+                self.templates_dir / "host_with_hostprovider_vars.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
+                    "host_prototype_id": self.host_1.prototype.pk,
+                    "provider_id": self.hostprovider.pk,
+                    "provider_config_integer": 101,
                 },
             ),
-            ("HOST", "vars", "provider"): (
+            ("vars", "provider"): (
                 self.templates_dir / "provider.json.j2",
                 {
                     "id": self.hostprovider.pk,
@@ -159,7 +177,9 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
             meta_diff={"/integer": {"isSynchronized": False}},
         )
 
-        expected_topology = {"HOST": [self.host_2.fqdn]}
+        expected_topology = {
+            "HOST": [self.host_2.fqdn],
+        }
         expected_data = {
             ("HOST", "hosts", f"{self.host_2.fqdn}"): (
                 self.templates_dir / "host.json.j2",
@@ -167,7 +187,7 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
                     "adcm_hostid": self.host_2.pk,
                 },
             ),
-            ("HOST", "vars", "provider"): (
+            ("vars", "provider"): (
                 self.templates_dir / "provider.json.j2",
                 {
                     "id": self.hostprovider.pk,

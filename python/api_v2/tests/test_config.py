@@ -13,7 +13,6 @@ from pathlib import Path
 import json
 
 from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
-from cm.inventory import get_obj_config
 from cm.models import (
     ADCM,
     ConfigLog,
@@ -190,8 +189,9 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         self.service.refresh_from_db()
-        processed_config = get_obj_config(obj=self.service)
-        self.assertDictEqual(processed_config, {})
+        current_config = ConfigLog.objects.get(obj_ref=self.service.config, id=self.service.config.current).config
+
+        self.assertDictEqual(current_config, {})
 
     def test_save_config_without_not_required_map_in_group_success(self):
         response = self.client.post(
@@ -210,14 +210,15 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    def test_default_success(self):
-        processed_config = get_obj_config(obj=self.service)
-        self.assertDictEqual(processed_config["map_not_required"], {})
+    def test_default_raw_config_success(self):
+        default_config_without_secrets = ConfigLog.objects.get(
+            obj_ref=self.service.config, id=self.service.config.current
+        ).config
         self.assertDictEqual(
-            processed_config,
+            default_config_without_secrets,
             {
-                "group": {"map_not_required": {}, "variant_not_required": None},
-                "map_not_required": {},
+                "group": {"map_not_required": None, "variant_not_required": None},
+                "map_not_required": None,
                 "variant_not_required": None,
                 "list": ["value1", "value2"],
             },

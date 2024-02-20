@@ -15,7 +15,7 @@ from configparser import ConfigParser
 from dataclasses import dataclass, field
 from functools import partial
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 import copy
 import json
 import subprocess
@@ -28,8 +28,8 @@ from audit.models import (
     AuditLogOperationResult,
     AuditLogOperationType,
 )
+from core.types import CoreObjectDescriptor
 from django.conf import settings
-from django.db.models import JSONField
 from django.db.transaction import atomic, on_commit
 from django.utils import timezone
 from rbac.roles import re_apply_policy_for_jobs
@@ -49,14 +49,9 @@ from cm.api import (
     make_host_comp_list,
     save_hc,
 )
+from cm.converters import model_name_to_core_type
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.hierarchy import Tree
-from cm.inventory import (
-    HcAclAction,
-    get_obj_config,
-    prepare_job_inventory,
-    process_config_and_attr,
-)
 from cm.issue import (
     check_bound_components,
     check_component_constraint,
@@ -83,7 +78,6 @@ from cm.models import (
     JobStatus,
     LogStorage,
     MaintenanceMode,
-    ObjectType,
     Prototype,
     ServiceComponent,
     SubAction,
@@ -91,6 +85,12 @@ from cm.models import (
     Upgrade,
     get_object_cluster,
 )
+from cm.services.config.spec import retrieve_flat_spec_for_objects
+from cm.services.job.config import get_job_config
+from cm.services.job.inventory import get_inventory_data
+from cm.services.job.inventory._config import update_configuration_for_inventory_inplace
+from cm.services.job.types import HcAclAction
+from cm.services.job.utils import JobScope, get_selector
 from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import (
     send_object_update_event,
@@ -165,8 +165,13 @@ def run_action(
             save_hc(cluster=cluster, host_comp_list=host_map)
 
         if payload.conf:
-            new_conf = process_config_and_attr(
-                obj=obj, conf=payload.conf, attr=payload.attr, spec=spec, flat_spec=flat_spec
+            new_conf = update_configuration_for_inventory_inplace(
+                configuration=payload.conf,
+                attributes=payload.attr,
+                specification=retrieve_flat_spec_for_objects(prototypes=(obj.prototype.pk,))[obj.prototype.pk],
+                config_owner=CoreObjectDescriptor(
+                    id=obj.pk, type=model_name_to_core_type(model_name=obj._meta.model_name)
+                ),
             )
             process_file_type(obj=task, spec=spec, conf=payload.conf)
             task.config = new_conf
@@ -296,24 +301,24 @@ def cook_delta(
             key = cook_comp_key(hostcomponent.service.prototype.name, hostcomponent.component.prototype.name)
             add_to_dict(old, key, hostcomponent.host.fqdn, hostcomponent.host)
 
-    delta = {HcAclAction.ADD: {}, HcAclAction.REMOVE: {}}
+    delta = {HcAclAction.ADD.value: {}, HcAclAction.REMOVE.value: {}}
     for key, value in new.items():
         if key in old:
             for host in value:
                 if host not in old[key]:
-                    add_delta(_delta=delta, action=HcAclAction.ADD, _key=key, fqdn=host, _host=value[host])
+                    add_delta(_delta=delta, action=HcAclAction.ADD.value, _key=key, fqdn=host, _host=value[host])
 
             for host in old[key]:
                 if host not in value:
-                    add_delta(_delta=delta, action=HcAclAction.REMOVE, _key=key, fqdn=host, _host=old[key][host])
+                    add_delta(_delta=delta, action=HcAclAction.REMOVE.value, _key=key, fqdn=host, _host=old[key][host])
         else:
             for host in value:
-                add_delta(_delta=delta, action=HcAclAction.ADD, _key=key, fqdn=host, _host=value[host])
+                add_delta(_delta=delta, action=HcAclAction.ADD.value, _key=key, fqdn=host, _host=value[host])
 
     for key, value in old.items():
         if key not in new:
             for host in value:
-                add_delta(_delta=delta, action=HcAclAction.REMOVE, _key=key, fqdn=host, _host=value[host])
+                add_delta(_delta=delta, action=HcAclAction.REMOVE.value, _key=key, fqdn=host, _host=value[host])
 
     logger.debug("OLD: %s", old)
     logger.debug("NEW: %s", new)
@@ -406,7 +411,7 @@ def check_upgrade_hc(action, new_hc):
             for hc_acl in action.hostcomponentmap:
                 if proto.name == hc_acl["component"]:
                     buff += 1
-                    if hc_acl["action"] != HcAclAction.ADD:
+                    if hc_acl["action"] != HcAclAction.ADD.value:
                         raise_adcm_ex(
                             "WRONG_ACTION_HC",
                             "New components from bundle with upgrade you can only add, not remove",
@@ -436,30 +441,6 @@ def check_cluster(cluster_id: int) -> Cluster:
     return Cluster.obj.get(id=cluster_id)
 
 
-def get_bundle_root(action: Action) -> str:
-    if action.prototype.type == "adcm":
-        return str(Path(settings.BASE_DIR, "conf"))
-
-    return str(settings.BUNDLE_DIR)
-
-
-def cook_script(action: Action, sub_action: SubAction | None):
-    prefix = action.prototype.bundle.hash
-    script = action.script
-
-    if sub_action:
-        script = sub_action.script
-
-    if script[0:2] == "./":
-        script = Path(action.prototype.path, script[2:])
-
-    return str(Path(get_bundle_root(action), prefix, script))
-
-
-def get_adcm_config():
-    return get_obj_config(ADCM.obj.get())
-
-
 def get_actual_hc(cluster: Cluster):
     new_hc = []
     for hostcomponent in HostComponent.objects.filter(cluster=cluster):
@@ -482,188 +463,37 @@ def get_old_hc(saved_hostcomponent: list[dict]):
     return old_hostcomponent
 
 
-def re_prepare_job(task: TaskLog, job: JobLog):
-    conf = None
-    hosts = None
+def re_prepare_job(job_scope: JobScope) -> None:
+    cluster = get_object_cluster(obj=job_scope.object)
+
     delta = {}
-    if task.config:
-        conf = task.config
+    if job_scope.action.hostcomponentmap:
+        delta = cook_delta(
+            cluster=cluster,
+            new_hc=get_actual_hc(cluster=cluster),
+            action_hc=job_scope.action.hostcomponentmap,
+            old=get_old_hc(saved_hostcomponent=job_scope.task.hostcomponentmap),
+        )
 
-    if task.hosts:
-        hosts = task.hosts
-
-    action = task.action
-    obj = task.task_object
-    cluster = get_object_cluster(obj)
-    sub_action = None
-    if job.sub_action_id:
-        sub_action = job.sub_action
-
-    if action.hostcomponentmap:
-        new_hc = get_actual_hc(cluster)
-        old_hc = get_old_hc(task.hostcomponentmap)
-        delta = cook_delta(cluster, new_hc, action.hostcomponentmap, old_hc)
-
-    prepare_job(action, sub_action, job.pk, obj, conf, delta, hosts, task.verbose)
+    prepare_job(job_scope=job_scope, delta=delta)
 
 
-def prepare_job(
-    action: Action,
-    sub_action: SubAction,
-    job_id: int,
-    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
-    conf: JSONField | None,
-    delta: dict,
-    hosts: JSONField | None,
-    verbose: bool,
-):
-    write_job_config(job_id=job_id, config=prepare_job_config(action, sub_action, job_id, obj, conf, verbose))
-    prepare_job_inventory(obj, job_id, action, delta, hosts)
-    prepare_ansible_config(job_id, action, sub_action)
+def write_job_config(job_id: int, config: dict[str, Any]) -> None:
+    config_path = Path(settings.RUN_DIR, str(job_id), "config.json")
+    with config_path.open(mode="w", encoding=settings.ENCODING_UTF_8) as config_file:
+        json.dump(obj=config, fp=config_file, sort_keys=True, separators=(",", ":"))
 
 
-def get_selector(
-    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host, action: Action
-) -> dict[str | ObjectType, dict[Literal["id", "name"], int | str]]:
-    selector = {obj.prototype.type: {"id": obj.pk, "name": obj.display_name}}
+def prepare_job(job_scope: JobScope, delta: dict):
+    write_job_config(job_id=job_scope.job_id, config=get_job_config(job_scope=job_scope))
 
-    if obj.prototype.type == ObjectType.SERVICE:
-        selector[ObjectType.CLUSTER] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}
-    elif obj.prototype.type == ObjectType.COMPONENT:
-        selector[ObjectType.SERVICE] = {"id": obj.service.pk, "name": obj.service.display_name}
-        selector[ObjectType.CLUSTER] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}
-    elif obj.prototype.type == ObjectType.HOST:
-        if action.host_action:
-            cluster = obj.cluster
-            selector[ObjectType.CLUSTER] = {"id": cluster.pk, "name": cluster.display_name}
-            if action.prototype.type == ObjectType.SERVICE:
-                service = ClusterObject.objects.get(prototype=action.prototype, cluster=cluster)
-                selector[ObjectType.SERVICE] = {"id": service.pk, "name": service.display_name}
-            elif action.prototype.type == ObjectType.COMPONENT:
-                service = ClusterObject.objects.get(prototype=action.prototype.parent, cluster=cluster)
-                selector[ObjectType.SERVICE] = {"id": service.pk, "name": service.display_name}
-                component = ServiceComponent.objects.get(prototype=action.prototype, cluster=cluster, service=service)
-                selector[ObjectType.COMPONENT] = {
-                    "id": component.pk,
-                    "name": component.display_name,
-                }
-        else:
-            selector[ObjectType.PROVIDER] = {
-                "id": obj.provider.pk,
-                "name": obj.provider.display_name,
-            }
-
-    return selector
-
-
-def prepare_context(
-    action: Action,
-    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
-) -> dict:
-    selector = get_selector(obj, action)
-    context = {f"{k}_id": v["id"] for k, v in selector.items()}
-    context["type"] = obj.prototype.type
-
-    if obj.prototype.type == ObjectType.HOST and action.host_action:
-        context["type"] = action.prototype.type
-
-    return context
-
-
-def prepare_job_config(
-    action: Action,
-    sub_action: SubAction | None,
-    job_id: int,
-    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
-    conf: dict | JSONField | None,
-    verbose: bool,
-) -> dict:
-    job_conf = {
-        "adcm": {"config": get_adcm_config()},
-        "context": prepare_context(action, obj),
-        "env": {
-            "run_dir": str(settings.RUN_DIR),
-            "log_dir": str(settings.LOG_DIR),
-            "tmp_dir": str(settings.RUN_DIR / f"{job_id}" / "tmp"),
-            "stack_dir": str(Path(get_bundle_root(action), action.prototype.bundle.hash)),
-            "status_api_token": str(settings.STATUS_SECRET_KEY),
-        },
-        "job": {
-            "id": job_id,
-            "action": action.name,
-            "job_name": action.name,
-            "command": action.name,
-            "script": action.script,
-            "verbose": verbose,
-            "playbook": cook_script(action, sub_action),
-        },
-    }
-
-    if action.params:
-        job_conf["job"]["params"] = action.params
-
-    if sub_action:
-        job_conf["job"]["script"] = sub_action.script
-        job_conf["job"]["job_name"] = sub_action.name
-        job_conf["job"]["command"] = sub_action.name
-        if sub_action.params:
-            job_conf["job"]["params"] = sub_action.params
-
-    cluster = get_object_cluster(obj)
-    if cluster:
-        job_conf["job"]["cluster_id"] = cluster.pk
-
-    if action.prototype.type == "service":
-        if action.host_action:
-            service = ClusterObject.obj.get(prototype=action.prototype, cluster=cluster)
-            job_conf["job"]["hostgroup"] = service.name
-            job_conf["job"]["service_id"] = service.pk
-            job_conf["job"]["service_type_id"] = service.prototype.pk
-        else:
-            job_conf["job"]["hostgroup"] = obj.prototype.name
-            job_conf["job"]["service_id"] = obj.pk
-            job_conf["job"]["service_type_id"] = obj.prototype.pk
-    elif action.prototype.type == "component":
-        if action.host_action:
-            service = ClusterObject.obj.get(prototype=action.prototype.parent, cluster=cluster)
-            comp = ServiceComponent.obj.get(prototype=action.prototype, cluster=cluster, service=service)
-            job_conf["job"]["hostgroup"] = f"{service.name}.{comp.name}"
-            job_conf["job"]["service_id"] = service.pk
-            job_conf["job"]["component_id"] = comp.pk
-            job_conf["job"]["component_type_id"] = comp.prototype.pk
-        else:
-            job_conf["job"]["hostgroup"] = f"{obj.service.prototype.name}.{obj.prototype.name}"
-            job_conf["job"]["service_id"] = obj.service.pk
-            job_conf["job"]["component_id"] = obj.pk
-            job_conf["job"]["component_type_id"] = obj.prototype.pk
-    elif action.prototype.type == "cluster":
-        job_conf["job"]["hostgroup"] = "CLUSTER"
-    elif action.prototype.type == "host":
-        job_conf["job"]["hostgroup"] = "HOST"
-        job_conf["job"]["hostname"] = obj.fqdn
-        job_conf["job"]["host_id"] = obj.pk
-        job_conf["job"]["host_type_id"] = obj.prototype.pk
-        job_conf["job"]["provider_id"] = obj.provider.pk
-    elif action.prototype.type == "provider":
-        job_conf["job"]["hostgroup"] = "PROVIDER"
-        job_conf["job"]["provider_id"] = obj.pk
-    elif action.prototype.type == "adcm":
-        job_conf["job"]["hostgroup"] = "127.0.0.1"
-    else:
-        raise AdcmEx("NOT_IMPLEMENTED", f'unknown prototype type "{action.prototype.type}"')
-
-    if conf:
-        job_conf["job"]["config"] = conf
-
-    return job_conf
-
-
-def write_job_config(job_id: int, config: dict) -> None:
-    with (settings.RUN_DIR / f"{job_id}" / "config.json").open(
-        mode="w",
-        encoding=settings.ENCODING_UTF_8,
+    inventory = get_inventory_data(obj=job_scope.object, action=job_scope.action, delta=delta)
+    with (settings.RUN_DIR / f"{job_scope.job_id}" / "inventory.json").open(
+        mode="w", encoding=settings.ENCODING_UTF_8
     ) as file_descriptor:
-        json.dump(config, file_descriptor, sort_keys=True, separators=(",", ":"))
+        json.dump(obj=inventory, fp=file_descriptor, separators=(",", ":"))
+
+    prepare_ansible_config(job_id=job_scope.job_id, action=job_scope.action, sub_action=job_scope.sub_action)
 
 
 def create_task(
@@ -676,6 +506,7 @@ def create_task(
     verbose: bool,
     post_upgrade_hc: list[dict],
 ) -> TaskLog:
+    selector = get_selector(obj=obj, action=action)
     task = TaskLog.objects.create(
         action=action,
         task_object=obj,
@@ -686,7 +517,7 @@ def create_task(
         post_upgrade_hc_map=post_upgrade_hc,
         verbose=verbose,
         status=JobStatus.CREATED,
-        selector=get_selector(obj, action),
+        selector=selector,
     )
 
     if action.type == ActionType.JOB.value:
@@ -701,7 +532,7 @@ def create_task(
             sub_action=sub_action,
             log_files=action.log_files,
             status=JobStatus.CREATED,
-            selector=get_selector(obj, action),
+            selector=selector,
         )
         log_type = sub_action.script_type if sub_action else action.script_type
         LogStorage.objects.create(job=job, name=log_type, type="stdout", format="txt")

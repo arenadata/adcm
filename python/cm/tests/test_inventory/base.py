@@ -21,7 +21,6 @@ from jinja2 import Template
 
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import add_hc, update_obj_config
-from cm.inventory import HcAclAction, get_inventory_data
 from cm.models import (
     Action,
     ADCMEntity,
@@ -35,6 +34,8 @@ from cm.models import (
     MaintenanceMode,
     ServiceComponent,
 )
+from cm.services.job.inventory import get_inventory_data
+from cm.services.job.types import HcAclAction
 from cm.utils import deep_merge
 
 TemplatesData: TypeAlias = Mapping[tuple[str, ...], tuple[Path, Mapping[str, Any]]]
@@ -77,14 +78,10 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
         return json.loads(self.render_template(file=file, context=context))
 
     def check_hosts_topology(self, data: Mapping[str, dict], expected: Mapping[str, list[str]]) -> None:
-        errors = set(data.keys()).symmetric_difference(set(expected.keys()))
-        self.assertSetEqual(errors, set())
+        self.assertSetEqual(set(data.keys()), set(expected.keys()))
 
         for group_name, host_names in expected.items():
-            errors = set(data[group_name]["hosts"].keys()).symmetric_difference(set(host_names))
-            self.assertSetEqual(
-                errors, set(), msg=f"Host(s): '{', '.join(errors)}' should not be in the '{group_name}' group"
-            )
+            self.assertSetEqual(set(data[group_name]["hosts"].keys()), set(host_names))
 
     @staticmethod
     def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, ServiceComponent]]) -> list[HostComponent]:
@@ -124,38 +121,22 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
         for key_chain, template_data in templates_data.items():
             template_path, kwargs = template_data
 
+            full_key_chain = ("all", "children", *key_chain)
+
+            if "vars" in key_chain:
+                full_key_chain = ("all", *key_chain)
+
             expected_data = self.render_json_template(file=template_path, context=kwargs)
-            actual_data = reduce(dict.get, key_chain, data)
+            actual_data = reduce(dict.get, full_key_chain, data)
 
             self.assertDictEqual(actual_data, expected_data)
-
-    def get_action_on_host_expected_template_data_part(self, host: Host) -> TemplatesData:
-        return {
-            ("HOST", "hosts"): (
-                self.templates_dir / "one_host.json.j2",
-                {
-                    "host_fqdn": host.fqdn,
-                    "adcm_hostid": host.pk,
-                    "host_2_multi_state": (["bac", "osscc"] if host.multi_state else []),
-                },
-            ),
-            ("HOST", "vars", "provider"): (
-                self.templates_dir / "provider.json.j2",
-                {
-                    "id": host.provider.pk,
-                    "host_prototype_id": host.prototype.pk,
-                },
-            ),
-        }
 
     def assert_inventory(
         self, obj: ADCMEntity, action: Action, expected_topology: dict, expected_data: dict, delta: Delta | None = None
     ) -> None:
-        actual_inventory = decrypt_secrets(
-            source=get_inventory_data(obj=obj, action=action, delta=delta)["all"]["children"]
-        )
+        actual_inventory = decrypt_secrets(source=get_inventory_data(obj=obj, action=action, delta=delta))
 
-        self.check_hosts_topology(data=actual_inventory, expected=expected_topology)
+        self.check_hosts_topology(data=actual_inventory["all"]["children"], expected=expected_topology)
         self.check_data_by_template(data=actual_inventory, templates_data=expected_data)
 
     @staticmethod
@@ -192,8 +173,8 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
             removed.setdefault(f"{service.name}.{component.name}", {}).setdefault(host.fqdn, host)
 
         return {
-            HcAclAction.ADD: added,
-            HcAclAction.REMOVE: removed,
+            HcAclAction.ADD.value: added,
+            HcAclAction.REMOVE.value: removed,
         }
 
     @staticmethod

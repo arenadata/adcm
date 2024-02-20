@@ -44,7 +44,7 @@ lint:
 	poetry install --no-root --with lint
 	poetry run python license_checker.py --folders python go
 	poetry run ruff check license_checker.py python
-	poetry run ruff format --check
+	poetry run ruff format --check python
 
 version:
 	@echo $(ADCM_VERSION)

@@ -12,13 +12,13 @@
 
 from api_v2.service.utils import bulk_add_services_to_cluster
 
-from cm.inventory import get_inventory_data
 from cm.models import (
     Action,
     ObjectType,
     Prototype,
     ServiceComponent,
 )
+from cm.services.job.inventory import get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
 
 
@@ -181,10 +181,10 @@ class TestGroupConfigsInInventory(BaseInventoryTestCase):
         ):
             with self.subTest(object_.__class__.__name__):
                 action = Action.objects.filter(prototype=object_.prototype).first()
-                actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["children"])
-                self.check_hosts_topology(actual_inventory, expected_topology)
-                self.assertDictEqual(actual_inventory["CLUSTER"]["vars"], expected_parts["vars"])
-                for group in actual_inventory.values():
+                actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action))
+                self.check_hosts_topology(actual_inventory["all"]["children"], expected_topology)
+                self.assertDictEqual(actual_inventory["all"]["vars"], expected_parts["vars"])
+                for group in actual_inventory["all"]["children"].values():
                     for host_name, actual_data in group["hosts"].items():
                         self.assertDictEqual(
                             actual_data["cluster"]["config"], expected_parts[f"{host_name}_cluster_config"]

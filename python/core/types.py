@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from enum import Enum
 from typing import NamedTuple, TypeAlias
 
 ObjectID: TypeAlias = int
@@ -17,6 +18,14 @@ ClusterID: TypeAlias = ObjectID
 ServiceID: TypeAlias = ObjectID
 ComponentID: TypeAlias = ObjectID
 HostID: TypeAlias = ObjectID
+HostProviderID: TypeAlias = ObjectID
+
+BundleID: TypeAlias = int
+PrototypeID: TypeAlias = int
+
+ConfigID: TypeAlias = int
+
+HostName: TypeAlias = str
 
 
 class ADCMCoreError(Exception):
@@ -30,6 +39,24 @@ class ADCMMessageError(ADCMCoreError):
         self.message = message
 
 
+class ADCMCoreType(Enum):
+    CLUSTER = "cluster"
+    SERVICE = "service"
+    COMPONENT = "component"
+    HOSTPROVIDER = "hostprovider"
+    HOST = "host"
+
+
 class ShortObjectInfo(NamedTuple):
-    id: int
+    id: ObjectID
     name: str
+
+
+class GeneralEntityDescriptor(NamedTuple):
+    id: ObjectID
+    type: str
+
+
+class CoreObjectDescriptor(NamedTuple):
+    id: ObjectID
+    type: ADCMCoreType

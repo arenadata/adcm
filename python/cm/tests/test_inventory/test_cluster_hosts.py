@@ -34,22 +34,22 @@ class TestClusterHosts(BaseInventoryTestCase):
 
     def test_cluster_action_on_cluster(self):
         action_on_cluster = Action.objects.get(name="action_on_cluster", prototype=self.cluster_1.prototype)
-        expected_topology = {
-            "CLUSTER": [],
-        }
+
         expected_data = {
-            ("CLUSTER", "vars", "cluster"): (
+            ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
                 },
             ),
         }
-        with self.subTest(
-            msg=f"Object: {self.cluster_1.prototype.type} #{self.cluster_1.pk} "
-            f"{self.cluster_1.name}, action: {action_on_cluster.name}"
-        ):
-            self.assert_inventory(self.cluster_1, action_on_cluster, expected_topology, expected_data)
+
+        self.assert_inventory(
+            obj=self.cluster_1,
+            action=action_on_cluster,
+            expected_topology={},
+            expected_data=expected_data,
+        )
 
     def test_add_1_host_on_cluster_actions(self):
         host_1 = self.add_host(
@@ -59,20 +59,18 @@ class TestClusterHosts(BaseInventoryTestCase):
         action_on_cluster = Action.objects.get(name="action_on_cluster", prototype=self.cluster_1.prototype)
         action_on_host = Action.objects.get(name="action_on_host", prototype=host_1.prototype)
 
-        host_names = [host_1.fqdn]
         expected_topology = {
-            "CLUSTER": host_names,
+            "CLUSTER": [host_1.fqdn],
         }
 
         expected_data = {
-            ("CLUSTER", "hosts"): (
-                self.templates_dir / "one_host.json.j2",
+            ("CLUSTER", "hosts", host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
                 {
-                    "host_fqdn": host_1.fqdn,
                     "adcm_hostid": host_1.pk,
                 },
             ),
-            ("CLUSTER", "vars", "cluster"): (
+            ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
@@ -80,17 +78,32 @@ class TestClusterHosts(BaseInventoryTestCase):
             ),
         }
 
+        expected_topology_for_host = {
+            "HOST": [host_1.fqdn],
+        }
+
+        expected_data_for_host = {
+            ("HOST", "hosts", host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": host_1.pk,
+                },
+            ),
+            ("vars", "provider"): (
+                self.templates_dir / "provider.json.j2",
+                {
+                    "id": self.provider.pk,
+                    "host_prototype_id": host_1.prototype.pk,
+                },
+            ),
+        }
+
         for obj, action, topology, data in (
             (self.cluster_1, action_on_cluster, expected_topology, expected_data),
-            (
-                host_1,
-                action_on_host,
-                {**expected_topology, **{"HOST": host_names}},
-                {**expected_data, **self.get_action_on_host_expected_template_data_part(host=host_1)},
-            ),
+            (host_1, action_on_host, expected_topology_for_host, expected_data_for_host),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                self.assert_inventory(obj, action, topology, data)
+                self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_add_2_hosts_on_cluster_actions(self):
         host_1 = self.add_host(
@@ -104,20 +117,24 @@ class TestClusterHosts(BaseInventoryTestCase):
         action_on_host_1 = Action.objects.get(name="action_on_host", prototype=host_1.prototype)
         action_on_host_2 = Action.objects.get(name="action_on_host", prototype=host_2.prototype)
 
-        host_names = [host_1.fqdn, host_2.fqdn]
         expected_topology = {
-            "CLUSTER": host_names,
+            "CLUSTER": [host_1.fqdn, host_2.fqdn],
         }
 
         expected_data = {
-            ("CLUSTER", "hosts"): (
-                self.templates_dir / "two_hosts.json.j2",
+            ("CLUSTER", "hosts", host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
                 {
-                    "host_1_id": host_1.pk,
-                    "host_2_id": host_2.pk,
+                    "adcm_hostid": host_1.pk,
                 },
             ),
-            ("CLUSTER", "vars", "cluster"): (
+            ("CLUSTER", "hosts", host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": host_2.pk,
+                },
+            ),
+            ("vars", "cluster"): (
                 self.templates_dir / "cluster.json.j2",
                 {
                     "id": self.cluster_1.pk,
@@ -125,20 +142,50 @@ class TestClusterHosts(BaseInventoryTestCase):
             ),
         }
 
+        expected_topology_for_host_1 = {
+            "HOST": [host_1.fqdn],
+        }
+
+        expected_data_for_host_1 = {
+            ("HOST", "hosts", host_1.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": host_1.pk,
+                },
+            ),
+            ("vars", "provider"): (
+                self.templates_dir / "provider.json.j2",
+                {
+                    "id": self.provider.pk,
+                    "host_prototype_id": host_1.prototype.pk,
+                },
+            ),
+        }
+
+        expected_topology_for_host_2 = {
+            "HOST": [host_2.fqdn],
+        }
+
+        expected_data_for_host_2 = {
+            ("HOST", "hosts", host_2.fqdn): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": host_2.pk,
+                },
+            ),
+            ("vars", "provider"): (
+                self.templates_dir / "provider.json.j2",
+                {
+                    "id": self.provider.pk,
+                    "host_prototype_id": host_2.prototype.pk,
+                },
+            ),
+        }
+
         for obj, action, topology, data in (
             (self.cluster_1, action_on_cluster, expected_topology, expected_data),
-            (
-                host_1,
-                action_on_host_1,
-                {**expected_topology, **{"HOST": [host_1.fqdn]}},
-                {**expected_data, **self.get_action_on_host_expected_template_data_part(host=host_1)},
-            ),
-            (
-                host_2,
-                action_on_host_2,
-                {**expected_topology, **{"HOST": [host_2.fqdn]}},
-                {**expected_data, **self.get_action_on_host_expected_template_data_part(host=host_2)},
-            ),
+            (host_1, action_on_host_1, expected_topology_for_host_1, expected_data_for_host_1),
+            (host_2, action_on_host_2, expected_topology_for_host_2, expected_data_for_host_2),
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
-                self.assert_inventory(obj, action, topology, data)
+                self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)

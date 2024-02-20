@@ -12,7 +12,9 @@
 
 from pathlib import Path
 
-from cm.models import Action, ADCMEntity, PrototypeConfig
+from cm.models import Action, ADCMEntity, Cluster, ClusterObject, Host, PrototypeConfig, ServiceComponent
+from cm.services.cluster import retrieve_clusters_topology
+from cm.services.job.inventory import get_cluster_vars
 from django.conf import settings
 from jinja2 import Template
 from yaml import load, safe_load
@@ -113,12 +115,17 @@ def _normalize_config(config: dict, root_path: Path, name: str = "", subname: st
 
 
 def get_jinja_config(action: Action, obj: ADCMEntity) -> tuple[list[PrototypeConfig], dict]:
-    from cm.inventory import get_inventory_data
+    if isinstance(obj, Cluster):
+        cluster_topology = next(retrieve_clusters_topology([obj.pk]))
+    elif isinstance(obj, (ClusterObject, ServiceComponent, Host)) and obj.cluster_id:
+        cluster_topology = next(retrieve_clusters_topology([obj.cluster_id]))
+    else:
+        message = f"Can't detect cluster variables for {obj}"
+        raise RuntimeError(message)
 
-    inventory_data = get_inventory_data(obj=obj, action=action)
     jinja_conf_file = Path(settings.BUNDLE_DIR, action.prototype.bundle.hash, action.config_jinja)
     template = Template(source=jinja_conf_file.read_text(encoding=settings.ENCODING_UTF_8))
-    data_yaml = template.render(inventory_data["all"]["children"]["CLUSTER"]["vars"])
+    data_yaml = template.render(get_cluster_vars(topology=cluster_topology).dict(by_alias=True, exclude_defaults=True))
     data = load(stream=data_yaml, Loader=SafeLoader)
 
     configs = []

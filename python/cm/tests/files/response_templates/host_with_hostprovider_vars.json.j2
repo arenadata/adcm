@@ -12,7 +12,7 @@
   "multi_state": [],
   "provider": {
     "config": {
-      "integer": {{ hostprovider_config_integer }},
+      "integer": {{ provider_config_integer | default(10) }},
       "password": "password",
       "string": "string",
       "list": [
@@ -22,7 +22,7 @@
       ]
     },
     "name": "provider",
-    "id": 1,
+    "id": {{ provider_id }},
     "host_prototype_id": {{ host_prototype_id }},
     "state": "created",
     "multi_state": [],

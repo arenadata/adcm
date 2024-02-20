@@ -69,11 +69,7 @@
     - name: integer
       type: integer
       required: false
-      default: 10
-    - name: password
-      type: password
-      required: false
-      default: password
+      default: 100
     - name: string
       type: string
       required: false
