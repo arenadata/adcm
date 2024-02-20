@@ -1,0 +1,34 @@
+:global {
+  body.theme-dark {
+    --editor-caret-color: white;
+  }
+  body.theme-light {
+    --editor-caret-color: black;
+  }
+}
+
+.codeEditor {
+  height: inherit;
+  position: relative;
+}
+
+.codeEditor__textArea {
+  background: none;
+  color: transparent;
+  caret-color: var(--editor-caret-color);
+  border: none;
+  outline: none;
+  resize: none;
+  white-space: pre;
+  min-width: 100%;
+  box-sizing: border-box;
+}
+
+.codeEditor__textArea:focus-visible {
+  border: none;
+}
+
+.codeEditor__textAreaWrapper {
+  position: relative;
+  overflow: hidden;
+}
