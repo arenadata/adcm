@@ -48,7 +48,6 @@ from cm.models import (
 from cm.status_api import send_object_update_event, send_config_creation_event
 from rbac.models import Role, Policy
 from rbac.roles import assign_group_perm
-
 # isort: on
 
 MSG_NO_CONFIG = (
@@ -420,12 +419,8 @@ class PluginResult(NamedTuple):
 def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> PluginResult:
     config_log = ConfigLog.objects.get(id=obj.config.current)
 
-    if _does_contain(base_dict=config_log.config, part=conf) and _does_contain(base_dict=config_log.attr, part=attr):
-        return PluginResult(conf, False)
-
     new_config = deepcopy(config_log.config)
-
-    new_attr = config_log.attr if config_log.attr is not None else {}
+    new_attr = deepcopy(config_log.attr) if config_log.attr is not None else {}
 
     for keys, value in conf.items():
         keys_list = keys.split("/")
@@ -465,6 +460,11 @@ def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> PluginResult:
         for subkey, value in config_log.config[key].items():
             if not new_config[key] or subkey not in new_config[key]:
                 new_config[key][subkey] = value
+
+    if _does_contain(base_dict=config_log.config, part=new_config) and _does_contain(
+        base_dict=config_log.attr, part=new_attr
+    ):
+        return PluginResult(conf, False)
 
     set_object_config_with_plugin(obj=obj, config=new_config, attr=new_attr)
     send_config_creation_event(object_=obj)
