@@ -22,6 +22,7 @@ HostProviderID: TypeAlias = ObjectID
 
 BundleID: TypeAlias = int
 PrototypeID: TypeAlias = int
+ActionID: TypeAlias = int
 
 ConfigID: TypeAlias = int
 

@@ -10,10 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict
-from typing import Iterable, NamedTuple, OrderedDict, TypeAlias
+from collections import OrderedDict, defaultdict
+from typing import Any, Iterable, NamedTuple, TypeAlias
 
-from core.types import PrototypeID
+from core.types import ActionID, PrototypeID
 from typing_extensions import Self
 
 from cm.models import PrototypeConfig
@@ -49,13 +49,26 @@ FlatSpec: TypeAlias = OrderedDict[ConfigParamCompositeKey, ConfigParamPlainSpec]
 def retrieve_flat_spec_for_objects(prototypes: Iterable[PrototypeID]) -> dict[PrototypeID, FlatSpec]:
     flat_config_specification = defaultdict(OrderedDict)
 
-    for row in (
-        PrototypeConfig.objects.filter(prototype_id__in=prototypes, action=None)
-        .values("prototype_id", "name", "subname", *ConfigParamPlainSpec.get_fields())
-        .order_by("id")
-    ):
+    for row in _filter_configs(prototype_id__in=prototypes, action=None):
         flat_config_specification[row["prototype_id"]][
             f"{row['name']}/{row['subname']}"
         ] = ConfigParamPlainSpec.from_dict(row)
 
     return flat_config_specification
+
+
+def retrieve_flat_spec_for_action(owner_prototype: PrototypeID, action: ActionID) -> FlatSpec:
+    flat_config_specification = OrderedDict()
+
+    for row in _filter_configs(prototype_id=owner_prototype, action_id=action):
+        flat_config_specification[f"{row['name']}/{row['subname']}"] = ConfigParamPlainSpec.from_dict(row)
+
+    return flat_config_specification
+
+
+def _filter_configs(**filters: Any) -> Iterable[dict]:
+    return (
+        PrototypeConfig.objects.filter(**filters)
+        .values("prototype_id", "name", "subname", *ConfigParamPlainSpec.get_fields())
+        .order_by("id")
+    )
