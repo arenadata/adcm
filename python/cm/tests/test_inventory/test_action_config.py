@@ -9,9 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from unittest.mock import patch
+
 from django.conf import settings
 from django.utils import timezone
 
+from cm.adcm_config.ansible import ansible_decrypt
+from cm.job import ActionRunPayload, run_action
 from cm.models import Action, JobLog, ServiceComponent, TaskLog
 from cm.services.job.config import get_job_config
 from cm.services.job.utils import JobScope, get_selector
@@ -151,3 +155,26 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 job_config = get_job_config(job_scope=JobScope(job_id=job.pk, object=self.host_1))
 
                 self.assertDictEqual(job_config, expected_data)
+
+    def test_action_config_with_secrets_bug_adcm_5305(self):
+        """
+        Actually bug is about `run_action`, because it prepares `config` for task,
+        but it was caught within `get_job_config` generation, so checked here
+        """
+        raw_value = "12345ddd"
+        action = Action.objects.filter(prototype=self.service.prototype, name="name_and_pass").first()
+        with patch("cm.job.run_task"):
+            task = run_action(
+                action=action,
+                obj=self.service,
+                payload=ActionRunPayload(conf={"rolename": "test_user", "rolepass": raw_value}),
+                hosts=[],
+            )
+
+        self.assertIn("__ansible_vault", task.config["rolepass"])
+        self.assertEqual(ansible_decrypt(task.config["rolepass"]["__ansible_vault"]), raw_value)
+
+        job = JobLog.objects.filter(task=task).first()
+        job_config = get_job_config(job_scope=JobScope(job_id=job.pk, object=self.service))
+        self.assertIn("__ansible_vault", job_config["job"]["config"]["rolepass"])
+        self.assertEqual(ansible_decrypt(job_config["job"]["config"]["rolepass"]["__ansible_vault"]), raw_value)

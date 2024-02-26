@@ -116,6 +116,22 @@
       config: *config
       host_action: true
 
+    name_and_pass:
+      script: ./playbook.yaml
+      script_type: ansible
+      states:
+        available: any
+      type: job
+      config:
+        - name: rolename
+          display_name: Role name
+          type: string
+          required: yes
+        - name: rolepass
+          display_name: Role password
+          type: password
+          required: yes
+
 - type: service
   name: all_params
   version: 1.1

@@ -85,7 +85,7 @@ from cm.models import (
     Upgrade,
     get_object_cluster,
 )
-from cm.services.config.spec import retrieve_flat_spec_for_objects
+from cm.services.config.spec import retrieve_flat_spec_for_action
 from cm.services.job.config import get_job_config
 from cm.services.job.inventory import get_inventory_data
 from cm.services.job.inventory._config import update_configuration_for_inventory_inplace
@@ -168,7 +168,7 @@ def run_action(
             new_conf = update_configuration_for_inventory_inplace(
                 configuration=payload.conf,
                 attributes=payload.attr,
-                specification=retrieve_flat_spec_for_objects(prototypes=(obj.prototype.pk,))[obj.prototype.pk],
+                specification=retrieve_flat_spec_for_action(owner_prototype=obj.prototype.pk, action=action.pk),
                 config_owner=CoreObjectDescriptor(
                     id=obj.pk, type=model_name_to_core_type(model_name=obj._meta.model_name)
                 ),
