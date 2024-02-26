@@ -3,6 +3,7 @@ import { Table, TableRow, TableCell, IconButton, Checkbox } from '@uikit';
 import { useDispatch, useStore, useSelectedItems } from '@hooks';
 import { columns } from './AccessManagerUsersTable.constants';
 import {
+  openBlockDialog,
   openDeleteDialog,
   openUnblockDialog,
   openUserUpdateDialog,
@@ -48,6 +49,10 @@ const AccessManagerUsersTable = () => {
     dispatch(openUnblockDialog([id]));
   };
 
+  const handleBlockClick = (id: number) => () => {
+    dispatch(openBlockDialog([id]));
+  };
+
   const handleEditUserClick = (user: AdcmUser) => () => {
     dispatch(openUserUpdateDialog(user));
   };
@@ -77,13 +82,12 @@ const AccessManagerUsersTable = () => {
             <TableCell>{user.type}</TableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-edit" size={32} title="Edit" onClick={handleEditUserClick(user)} />
-              <IconButton
-                disabled={user.status !== AdcmUserStatus.Blocked}
-                icon="g1-unblock"
-                size={32}
-                title="Unblock"
-                onClick={handleUnblockClick(user.id)}
-              />
+              {user.status === AdcmUserStatus.Blocked && (
+                <IconButton icon="g1-unblock" size={32} title="Unblock" onClick={handleUnblockClick(user.id)} />
+              )}
+              {user.status === AdcmUserStatus.Active && (
+                <IconButton icon="g1-block" size={32} title="Block" onClick={handleBlockClick(user.id)} />
+              )}
               <IconButton icon="g1-delete" size={32} onClick={handleDeleteClick(user.id)} title="Delete" />
             </TableCell>
           </TableRow>

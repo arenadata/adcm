@@ -1,25 +1,25 @@
 import { useDispatch, useStore } from '@hooks';
-import { closeUnblockDialog, unblockUsers } from '@store/adcm/users/usersActionsSlice';
+import { closeBlockDialog, blockUsers } from '@store/adcm/users/usersActionsSlice';
 import { Dialog } from '@uikit';
 import React, { useMemo } from 'react';
 
-const AccessManagerUsersUnblockDialog: React.FC = () => {
+const AccessManagerUsersBlockDialog: React.FC = () => {
   const dispatch = useDispatch();
 
   const users = useStore((s) => s.adcm.users.users);
-  const selectedIds = useStore((s) => s.adcm.usersActions.unblockDialog.ids);
+  const selectedIds = useStore((s) => s.adcm.usersActions.blockDialog.ids);
   const selectedUsers = useMemo(() => users.filter(({ id }) => selectedIds.includes(id)), [users, selectedIds]);
 
   const isOpenDialog = !!selectedUsers?.length;
 
   const handleCloseConfirm = () => {
-    dispatch(closeUnblockDialog());
+    dispatch(closeBlockDialog());
   };
 
   const handleConfirmDialog = () => {
     if (!selectedUsers?.length) return;
 
-    dispatch(unblockUsers(selectedUsers.map((user) => user.id)));
+    dispatch(blockUsers(selectedUsers.map((user) => user.id)));
   };
 
   return (
@@ -27,14 +27,14 @@ const AccessManagerUsersUnblockDialog: React.FC = () => {
       <Dialog
         isOpen={isOpenDialog}
         onOpenChange={handleCloseConfirm}
-        title="Unblock user"
+        title="Block user"
         onAction={handleConfirmDialog}
-        actionButtonLabel="Unblock"
+        actionButtonLabel="Block"
       >
-        Selected user will be unblocked and able to access their account
+        Selected user will be blocked and unable to access their account.
       </Dialog>
     </>
   );
 };
 
-export default AccessManagerUsersUnblockDialog;
+export default AccessManagerUsersBlockDialog;
