@@ -1,3 +1,4 @@
+import AccessManagerUsersBlockDialog from './AccessManagerUsersBlockDialog/AccessManagerUsersBlockDialog';
 import AccessManagerUsersDeleteDialog from './AccessManagerUsersDeleteDialog/AccessManagerUsersDeleteDialog';
 import AccessManagerUsersUnblockDialog from './AccessManagerUsersUnblockDialog/AccessManagerUsersUnblockDialog';
 import RbacUserCreateDialog from './RbacUserCreateDialog/RbacUserCreateDialog';
@@ -8,6 +9,7 @@ const AccessManagerUsersDialogs = () => {
     <>
       <AccessManagerUsersDeleteDialog />
       <AccessManagerUsersUnblockDialog />
+      <AccessManagerUsersBlockDialog />
       <RbacUserCreateDialog />
       <RbacUserUpdateDialog />
     </>
