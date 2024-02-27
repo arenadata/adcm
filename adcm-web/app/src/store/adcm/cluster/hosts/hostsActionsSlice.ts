@@ -8,7 +8,13 @@ import { getClusterHosts, setHostMaintenanceMode } from './hostsSlice';
 
 const loadHosts = createAsyncThunk('adcm/clusterHostsActions/loadHosts', async (arg, thunkAPI) => {
   try {
-    const hosts = await AdcmHostsApi.getHosts();
+    const hostsDefault = await AdcmHostsApi.getHosts();
+
+    const hosts = await AdcmHostsApi.getHosts(
+      {},
+      { sortBy: 'name', sortDirection: 'asc' },
+      { pageNumber: 0, perPage: hostsDefault.count },
+    );
     return hosts.results;
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
