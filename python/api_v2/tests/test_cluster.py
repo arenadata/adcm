@@ -323,6 +323,9 @@ class TestClusterActions(BaseAPITestCase):
         self.cluster_action_with_config = Action.objects.get(prototype=self.cluster_1.prototype, name="with_config")
         self.cluster_action_with_hc = Action.objects.get(prototype=self.cluster_1.prototype, name="with_hc")
 
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = self.create_user(**self.test_user_credentials)
+
     def test_list_cluster_actions_success(self):
         response = self.client.get(
             path=reverse(viewname="v2:cluster-action-list", kwargs={"cluster_pk": self.cluster_1.pk}),
@@ -330,6 +333,16 @@ class TestClusterActions(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 3)
+
+    def test_adcm_5271_adcm_user_has_no_action_perms(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[], role_name="ADCM User"):
+            response = self.client.get(
+                path=reverse(viewname="v2:cluster-action-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(len(response.json()), 0)
 
     def test_list_cluster_actions_no_actions_cluster_success(self):
         response = self.client.get(

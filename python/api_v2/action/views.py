@@ -13,7 +13,6 @@
 from itertools import compress
 
 from adcm.mixins import GetParentObjectMixin
-from adcm.permissions import VIEW_ACTION_PERM
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.job import ActionRunPayload, run_action
@@ -53,14 +52,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
     filterset_class = ActionFilter
 
     def get_queryset(self, *args, **kwargs):  # noqa: ARG002
-        self.parent_object = self.get_parent_object()
-
-        if self.parent_object is None or not self.request.user.has_perm(
-            f"cm.view_{self.parent_object.__class__.__name__.lower()}", self.parent_object
-        ):
-            raise NotFound()
-
-        if self.parent_object.concerns.filter(type=ConcernType.LOCK).exists():
+        if self.parent_object is None or self.parent_object.concerns.filter(type=ConcernType.LOCK).exists():
             return Action.objects.none()
 
         self.prototype_objects = {}
@@ -75,7 +67,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
                 self.prototype_objects[hc_item.component.prototype] = hc_item.component
 
         actions = (
-            get_objects_for_user(user=self.request.user, perms=[VIEW_ACTION_PERM])
+            Action.objects.all()
             .select_related("prototype")
             .exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET)
             .filter(upgrade__isnull=True)
@@ -102,6 +94,13 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
         return ActionListSerializer
 
     def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+        self.parent_object = self.get_parent_object()
+        if not self.parent_object or not get_objects_for_user(
+            user=self.request.user,
+            perms=f"cm.view_{self.parent_object.content_type.model}",
+        ):
+            raise NotFound()
+
         actions = self.filter_queryset(self.get_queryset())
         allowed_actions_mask = [act.allowed(self.prototype_objects[act.prototype]) for act in actions]
         actions = list(compress(actions, allowed_actions_mask))
@@ -112,7 +111,18 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
         return Response(data=serializer.data)
 
     def retrieve(self, request, *args, **kwargs):  # noqa: ARG002
+        self.parent_object = self.get_parent_object()
         action_ = self.get_object()
+
+        if (
+            not self.parent_object
+            or not get_objects_for_user(
+                user=self.request.user,
+                perms=f"cm.view_{self.parent_object.content_type.model}",
+            )
+            or not check_run_perms(user=request.user, action=action_, obj=self.parent_object)
+        ):
+            raise NotFound()
 
         config_schema, config, adcm_meta = get_action_configuration(action_=action_, object_=self.parent_object)
 
@@ -131,13 +141,21 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
     @audit
     @action(methods=["post"], detail=True, url_path="run")
     def run(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+        self.parent_object = self.get_parent_object()
         target_action = self.get_object()
+
+        if (
+            not self.parent_object
+            or not get_objects_for_user(
+                user=self.request.user,
+                perms=f"cm.view_{self.parent_object.content_type.model}",
+            )
+            or not check_run_perms(user=request.user, action=target_action, obj=self.parent_object)
+        ):
+            raise NotFound()
 
         if reason := target_action.get_start_impossible_reason(self.parent_object):
             raise AdcmEx("ACTION_ERROR", msg=reason)
-
-        if not check_run_perms(user=request.user, action=target_action, obj=self.parent_object):
-            raise NotFound()
 
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
