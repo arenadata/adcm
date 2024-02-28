@@ -1,7 +1,11 @@
 import React from 'react';
 import { Dialog } from '@uikit';
 import { AdcmMaintenanceMode } from '@models/adcm';
-import { EntityWithMaintenanceModeType, getRevertedMaintenanceModeStatus } from './MaintenanceModeDialog.utils';
+import {
+  EntityWithMaintenanceModeType,
+  getEntityDisplayName,
+  getRevertedMaintenanceModeStatus,
+} from './MaintenanceModeDialog.utils';
 
 interface MaintenanceModeDialogProps {
   entity: EntityWithMaintenanceModeType;
@@ -18,6 +22,7 @@ const statusLabels: {
 
 const MaintenanceModeDialog: React.FC<MaintenanceModeDialogProps> = ({ entity, onCloseDialog, onConfirmDialog }) => {
   const newMaintenanceMode = getRevertedMaintenanceModeStatus(entity);
+  const entityDisplayName = getEntityDisplayName(entity);
 
   return (
     <>
@@ -29,7 +34,7 @@ const MaintenanceModeDialog: React.FC<MaintenanceModeDialogProps> = ({ entity, o
         onAction={onConfirmDialog}
         actionButtonLabel={statusLabels[newMaintenanceMode]}
       >
-        The maintenance mode will be turned {newMaintenanceMode} on {entity?.name}
+        The maintenance mode will be turned {newMaintenanceMode} on {entityDisplayName}
       </Dialog>
     </>
   );
