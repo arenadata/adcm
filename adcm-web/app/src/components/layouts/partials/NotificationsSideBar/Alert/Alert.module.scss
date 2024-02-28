@@ -1,30 +1,42 @@
 :global {
   body.theme-dark {
     // alert-info
-    --alert-border-info: var(--color-xdark);
-    --alert-background-info: #3C4145;
+    --alert-border-info: var(--color-yellow-light);
+    --alert-background-info: var(--color-xdark-light);
     --alert-color-info: var(--color-xwhite-off);
-    --alert-icon-color-info: var(--color-xgreen-saturated);
+    --alert-icon-color-info: var(--color-yellow-light);
 
     // alert-error
-    --alert-border-error: #FFCC47;
-    --alert-background-error: #212121;
+    --alert-border-error: var(--color-light-red);
+    --alert-background-error: var(--color-xdark-light);
     --alert-color-error: var(--color-xwhite-off);
-    --alert-icon-color-error: var(--alert-border-error);
+    --alert-icon-color-error: var(--color-light-red);
+
+    // alert-success
+    --alert-border-success: var(--color-xdark);
+    --alert-background-success: #2F3136;
+    --alert-color-success: var(--color-xwhite-off);
+    --alert-icon-color-success: var(--color-green-light);
   }
 
   body.theme-light {
     // alert-info
-    --alert-border-info: var(--color-stroke-light);
-    --alert-background-info: var(-color-xgray-alt);
+    --alert-border-info: var(--color-json-orange);
+    --alert-background-info: var(--color-xgray-alt);
     --alert-color-info: var(--color-xdark);
-    --alert-icon-color-info: var(--color-xgreen);
+    --alert-icon-color-info: var(--color-json-orange);
 
     // alert-error
-    --alert-border-error: var(--color-json-orange);
-    --alert-background-error: var(--color-popup-light);
+    --alert-border-error: var(--color-light-red);
+    --alert-background-error: var(--color-xgray-alt);
     --alert-color-error: var(--color-xdark);
-    --alert-icon-color-error: var(--color-json-orange);
+    --alert-icon-color-error: var(--color-light-red);
+
+    // alert-success
+    --alert-border-success: #D9DEF3;
+    --alert-background-success: #CEDBE2;
+    --alert-color-success: var(--color-xdark);
+    --alert-icon-color-success: var(--color-green-darker);
   }
 }
 
@@ -69,5 +81,12 @@
     --alert-background: var(--alert-background-error);
     --alert-color: var(--alert-color-error);
     --alert-icon-color: var(--alert-icon-color-error);
+  }
+
+  &_success {
+    --alert-border: var(--alert-border-success);
+    --alert-background: var(--alert-background-success);
+    --alert-color: var(--alert-color-success);
+    --alert-icon-color: var(--alert-icon-color-success);
   }
 }

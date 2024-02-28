@@ -3,7 +3,7 @@ import { createAsyncThunk } from '@store/redux';
 import { getBundles, refreshBundles, setLoadState } from './bundlesSlice';
 import { AdcmBundlesApi, RequestError } from '@api';
 import { LoadState } from '@models/loadState';
-import { showInfo, showError } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { rejectedFilter } from '@utils/promiseUtils';
 import { loadRelatedData } from './bundlesTableSlice';
@@ -28,7 +28,7 @@ const deleteBundles = createAsyncThunk(
       }
       const message =
         selectedBundlesIds.length > 1 ? 'All selected bundles have been deleted' : 'The bundle has been deleted';
-      thunkAPI.dispatch(showInfo({ message }));
+      thunkAPI.dispatch(showSuccess({ message }));
       return [];
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
@@ -58,7 +58,7 @@ const uploadBundles = createAsyncThunk('adcm/bundlesActions/uploadBundles', asyn
     files.map(async (file) => {
       try {
         const res = await AdcmBundlesApi.uploadBundle(file);
-        thunkAPI.dispatch(showInfo({ message: `Bundle "${file.name}" was upload success` }));
+        thunkAPI.dispatch(showSuccess({ message: `Bundle "${file.name}" was upload success` }));
         return res;
       } catch (error) {
         thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
