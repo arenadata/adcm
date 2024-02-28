@@ -21,6 +21,5 @@ export const useRequestBundle = () => {
     }
   }, defaultDebounceDelay);
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   useRequestTimer(debounceGetData, () => {}, 0, [bundleId]);
 };

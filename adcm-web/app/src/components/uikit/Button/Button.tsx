@@ -15,6 +15,7 @@ export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonE
   iconRight?: IconsNames | IconProps;
   title?: TooltipProps['label'];
   tooltipProps?: Omit<TooltipProps, 'label' | 'children'>;
+  placeholder?: string;
 }
 
 const defaultIconProps: Partial<IconProps> = {
@@ -49,8 +50,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       !icon
         ? undefined
         : typeof icon === 'string'
-        ? { ...defaultIconProps, name: icon }
-        : { ...defaultIconProps, ...icon };
+          ? { ...defaultIconProps, name: icon }
+          : { ...defaultIconProps, ...icon };
 
     const iconLeftProps = calcIconProps(iconLeft);
     const iconRightProps = calcIconProps(iconRight);

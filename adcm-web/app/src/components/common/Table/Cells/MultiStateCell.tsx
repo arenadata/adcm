@@ -12,9 +12,7 @@ const MultiStateCell = ({ entity }: MultiStateCellProps) => {
       <ConditionalWrapper
         Component={Tooltip}
         isWrap={!!entity.multiState.length}
-        label={entity.multiState?.map((state) => (
-          <div key={state}>{state}</div>
-        ))}
+        label={entity.multiState?.map((state) => <div key={state}>{state}</div>)}
         placement="top-start"
         closeDelay={100}
       >

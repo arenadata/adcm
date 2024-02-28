@@ -36,6 +36,5 @@ export const useRequestCluster = () => {
     }
   }, defaultDebounceDelay);
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   useRequestTimer(debounceGetCluster, () => {}, 0, [clusterId]);
 };

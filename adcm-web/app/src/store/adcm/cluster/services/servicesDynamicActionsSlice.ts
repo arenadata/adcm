@@ -33,11 +33,14 @@ const loadClusterServicesDynamicActions = createAsyncThunk(
         throw new Error('Some services can not get those actions');
       }
 
-      return servicesActions.reduce((res, { serviceId, dynamicActions }) => {
-        res[serviceId] = dynamicActions;
+      return servicesActions.reduce(
+        (res, { serviceId, dynamicActions }) => {
+          res[serviceId] = dynamicActions;
 
-        return res;
-      }, {} as AdcmClusterServicesDynamicActionsState['serviceDynamicActions']);
+          return res;
+        },
+        {} as AdcmClusterServicesDynamicActionsState['serviceDynamicActions'],
+      );
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
