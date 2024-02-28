@@ -37,7 +37,7 @@ const DeleteClusterServiceDialog: React.FC = () => {
     <Dialog
       isOpen={isOpenDeleteDialog}
       onOpenChange={handleCloseDialog}
-      title={`Delete "${deletableService?.name}" service`}
+      title={`Delete "${deletableService?.displayName}" service`}
       onAction={handleConfirmDialog}
       actionButtonLabel="Delete"
     >
