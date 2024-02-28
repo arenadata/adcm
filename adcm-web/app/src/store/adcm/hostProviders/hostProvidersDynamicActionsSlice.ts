@@ -27,11 +27,14 @@ const loadHostProvidersDynamicActions = createAsyncThunk(
         throw new Error('Some host providers cannot get those actions');
       }
 
-      return hostProvidersActions.reduce((res, { id, dynamicActions }) => {
-        res[id] = dynamicActions;
+      return hostProvidersActions.reduce(
+        (res, { id, dynamicActions }) => {
+          res[id] = dynamicActions;
 
-        return res;
-      }, {} as AdcmHostProvidersDynamicActionsState['hostProviderDynamicActions']);
+          return res;
+        },
+        {} as AdcmHostProvidersDynamicActionsState['hostProviderDynamicActions'],
+      );
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore

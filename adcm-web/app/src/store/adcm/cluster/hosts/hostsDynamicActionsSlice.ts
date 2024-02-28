@@ -32,11 +32,14 @@ const loadClusterHostsDynamicActions = createAsyncThunk(
         throw new Error('Some hosts cannot get those actions');
       }
 
-      return clusterHostsActions.reduce((res, { hostId, dynamicActions }) => {
-        res[hostId] = dynamicActions;
+      return clusterHostsActions.reduce(
+        (res, { hostId, dynamicActions }) => {
+          res[hostId] = dynamicActions;
 
-        return res;
-      }, {} as AdcmClusterHostsDynamicActionsState['clusterHostDynamicActions']);
+          return res;
+        },
+        {} as AdcmClusterHostsDynamicActionsState['clusterHostDynamicActions'],
+      );
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore

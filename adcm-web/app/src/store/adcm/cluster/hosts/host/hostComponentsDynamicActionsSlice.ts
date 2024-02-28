@@ -38,11 +38,14 @@ const loadClusterHostComponentsDynamicActions = createAsyncThunk(
         throw new Error('Some host components cannot get those actions');
       }
 
-      return hostComponentsActions.reduce((res, { componentPrototypeId, dynamicActions }) => {
-        res[componentPrototypeId] = dynamicActions;
+      return hostComponentsActions.reduce(
+        (res, { componentPrototypeId, dynamicActions }) => {
+          res[componentPrototypeId] = dynamicActions;
 
-        return res;
-      }, {} as AdcmClusterHostComponentsDynamicActionsState['hostComponentDynamicActions']);
+          return res;
+        },
+        {} as AdcmClusterHostComponentsDynamicActionsState['hostComponentDynamicActions'],
+      );
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore

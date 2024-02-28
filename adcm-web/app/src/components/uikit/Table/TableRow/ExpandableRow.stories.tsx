@@ -71,7 +71,6 @@ const longText =
 export const ExpandableRow: Story = {
   args: {},
   render: (args) => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     const [expandableRows, setExpandableRows] = useState<Record<number, boolean>>({
       1: false,
       2: false,
@@ -85,7 +84,6 @@ export const ExpandableRow: Story = {
       });
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     const handleSorting = () => {};
 
     return (

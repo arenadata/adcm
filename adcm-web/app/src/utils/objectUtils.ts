@@ -20,10 +20,13 @@ export const structureTraversal = (
     return structure.map((item) => structureTraversal(item, valueHandler, keyHandler));
   }
   if (isObject(structure)) {
-    return Object.entries(structure).reduce((res, [key, val]) => {
-      res[keyHandler(key)] = structureTraversal(val, valueHandler, keyHandler);
-      return res;
-    }, {} as Record<string, Structure>);
+    return Object.entries(structure).reduce(
+      (res, [key, val]) => {
+        res[keyHandler(key)] = structureTraversal(val, valueHandler, keyHandler);
+        return res;
+      },
+      {} as Record<string, Structure>,
+    );
   }
 
   return valueHandler ? valueHandler(structure) : structure;

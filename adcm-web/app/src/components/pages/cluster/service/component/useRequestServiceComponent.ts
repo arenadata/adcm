@@ -34,6 +34,5 @@ export const useRequestServiceComponent = () => {
     dispatch(getServiceComponent({ clusterId, serviceId, componentId }));
   }, defaultDebounceDelay);
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   useRequestTimer(debounceGetServiceComponent, () => {}, 0, [clusterId, serviceId, componentId]);
 };

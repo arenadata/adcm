@@ -38,6 +38,5 @@ export const useRequestHost = () => {
     dispatch(getHost(hostId));
   }, defaultDebounceDelay);
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   useRequestTimer(debounceGetHostData, () => {}, 0, [hostId]);
 };

@@ -51,11 +51,10 @@ export type EntityType =
   | 'service-component'
   | 'service-component-config-group';
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface LoadConfigurationVersionsArgs {}
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+
 export interface LoadConfigurationArgs {}
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+
 export interface SaveConfigurationArgs {}
 
 /* Settings */

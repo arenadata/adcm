@@ -37,6 +37,5 @@ export const useRequestClusterHost = () => {
     }
   }, defaultDebounceDelay);
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   useRequestTimer(debounceGetClusterHostData, () => {}, 0, [clusterId, hostId]);
 };
