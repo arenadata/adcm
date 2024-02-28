@@ -1,5 +1,11 @@
 import { createSlice, PayloadAction, nanoid } from '@reduxjs/toolkit';
-import { ErrorNotification, InfoNotification, Notification, NotificationVariant } from '@models/notification';
+import {
+  ErrorNotification,
+  InfoNotification,
+  Notification,
+  NotificationVariant,
+  SuccessNotification,
+} from '@models/notification';
 
 interface AlertOptions {
   id?: string;
@@ -45,6 +51,19 @@ const notificationsSlice = createSlice({
       };
       state.notifications = [...state.notifications, notification];
     },
+    showSuccess(state, action: PayloadAction<AlertOptions>) {
+      const { ttl, id, message } = action.payload;
+
+      const notification: SuccessNotification = {
+        id: id ?? nanoid(),
+        variant: NotificationVariant.Success,
+        model: {
+          message,
+        },
+        ttl: ttl ?? 5000,
+      };
+      state.notifications = [...state.notifications, notification];
+    },
     closeNotification(state, action: PayloadAction<string>) {
       state.notifications = state.notifications.filter((n) => n.id !== action.payload);
     },
@@ -54,5 +73,5 @@ const notificationsSlice = createSlice({
   },
 });
 
-export const { showInfo, showError, closeNotification, cleanupNotifications } = notificationsSlice.actions;
+export const { showInfo, showError, showSuccess, closeNotification, cleanupNotifications } = notificationsSlice.actions;
 export default notificationsSlice.reducer;

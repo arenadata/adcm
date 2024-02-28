@@ -1,6 +1,7 @@
 export enum NotificationVariant {
   Error = 'Error',
   Info = 'Info',
+  Success = 'Success',
 }
 
 export interface BaseNotification<Model> {
@@ -18,4 +19,8 @@ export interface InfoNotification extends BaseNotification<{ message: string }> 
   variant: NotificationVariant.Info;
 }
 
-export type Notification = ErrorNotification | InfoNotification;
+export interface SuccessNotification extends BaseNotification<{ message: string }> {
+  variant: NotificationVariant.Success;
+}
+
+export type Notification = ErrorNotification | InfoNotification | SuccessNotification;

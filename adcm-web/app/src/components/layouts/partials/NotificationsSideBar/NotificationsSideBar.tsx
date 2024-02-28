@@ -5,6 +5,7 @@ import { Notification, NotificationVariant } from '@models/notification';
 import ErrorAlert from '@layouts/partials/NotificationsSideBar/Alert/ErrorAlert';
 import InfoAlert from '@layouts/partials/NotificationsSideBar/Alert/InfoAlert';
 import { closeNotification } from '@store/notificationsSlice';
+import SuccessAlert from '@layouts/partials/NotificationsSideBar/Alert/SuccessAlert';
 
 const NotificationItem: React.FC<Notification> = (props) => {
   const { ttl, variant, id } = props;
@@ -30,6 +31,9 @@ const NotificationItem: React.FC<Notification> = (props) => {
   }
   if (variant === NotificationVariant.Info) {
     return <InfoAlert {...props} onClose={() => removeNotification(id)} />;
+  }
+  if (variant === NotificationVariant.Success) {
+    return <SuccessAlert {...props} onClose={() => removeNotification(id)} />;
   }
 
   return null;
