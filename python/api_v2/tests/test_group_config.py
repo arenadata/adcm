@@ -12,6 +12,7 @@
 
 from cm.models import ConfigLog, GroupConfig, Host, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
+from rbac.services.user import create_user
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -75,6 +76,8 @@ class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):
                 }
             ],
         )
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = create_user(**self.test_user_credentials)
 
 
 class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):
@@ -237,6 +240,64 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(response.json()["name"], "service-group-config-new")
 
+    def test_adcm_5285_create_success(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:service-group-config-list",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
+                ),
+                data={"name": "service-group-config-new", "description": "service-group-config-new"},
+            )
+
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+            self.assertEqual(response.json()["name"], "service-group-config-new")
+
+    def test_adcm_5285_edit_success(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:service-group-config-list",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
+                ),
+                data={"name": "service-group-config-new", "description": "service-group-config-new"},
+            )
+
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+            group_config_pk = response.json()["id"]
+
+            new_config = {
+                "config": {
+                    "group": {"password": "newpassword"},
+                    "activatable_group": {"text": "new text"},
+                    "string": "new string",
+                },
+                "adcmMeta": {
+                    "/activatable_group": {"isActive": True, "isSynchronized": False},
+                    "/activatable_group/text": {"isSynchronized": False},
+                    "/group/password": {"isSynchronized": False},
+                    "/string": {"isSynchronized": False},
+                },
+                "description": "new config",
+            }
+
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:service-group-config-config-list",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "group_config_pk": group_config_pk,
+                    },
+                ),
+                data=new_config,
+            )
+
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+            self.assertEqual(response.json()["description"], "new config")
+
     def test_adcm_5113_create_success(self):
         service_config_data = {
             "config": {
@@ -375,6 +436,33 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):
             )
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_adcm_5285_delete_success(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
+            response = self.client.delete(
+                path=reverse(
+                    viewname="v2:service-group-config-detail",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "pk": self.service_1_group_config.pk,
+                    },
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:service-group-config-detail",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "pk": self.service_1_group_config.pk,
+                    },
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_list_hosts_success(self):
         response = self.client.get(
@@ -544,6 +632,73 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(response.json()["name"], "component-group-config-new")
 
+    def test_adcm_5285_create_success(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:component-group-config-list",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                    },
+                ),
+                data={"name": "component-group-config-new", "description": "component-group-config-new"},
+            )
+
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+            self.assertEqual(response.json()["name"], "component-group-config-new")
+
+    def test_adcm_5285_edit_success(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:component-group-config-list",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                    },
+                ),
+                data={"name": "component-group-config-new", "description": "component-group-config-new"},
+            )
+
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+            group_config_pk = response.json()["id"]
+
+            new_config = {
+                "config": {
+                    "group": {"file": "new content"},
+                    "activatable_group": {"secretfile": "new content"},
+                    "secrettext": "new secrettext",
+                },
+                "adcmMeta": {
+                    "/activatable_group": {"isActive": True, "isSynchronized": False},
+                    "/activatable_group/secretfile": {"isSynchronized": False},
+                    "/group/file": {"isSynchronized": False},
+                    "/secrettext": {"isSynchronized": False},
+                },
+                "description": "new config",
+            }
+
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:component-group-config-config-list",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                        "group_config_pk": group_config_pk,
+                    },
+                ),
+                data=new_config,
+            )
+
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+            self.assertEqual(response.json()["description"], "new config")
+
     def test_delete_success(self):
         response = self.client.delete(
             path=reverse(
@@ -570,6 +725,35 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):
             )
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_adcm_5285_delete_success(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
+            response = self.client.delete(
+                path=reverse(
+                    viewname="v2:component-group-config-detail",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                        "pk": self.component_1_group_config.pk,
+                    },
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:component-group-config-detail",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                        "pk": self.component_1_group_config.pk,
+                    },
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_list_hosts(self):
         response = self.client.get(
