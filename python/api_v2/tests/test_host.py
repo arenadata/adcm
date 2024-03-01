@@ -211,6 +211,56 @@ class TestHost(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["maintenance_mode"], "on")
 
+    def test_filter_is_host_in_cluster_success(self):
+        host2 = self.add_host(
+            bundle=self.provider_bundle,
+            description="description",
+            provider=self.provider,
+            fqdn="test_host_2",
+            cluster=self.cluster_1,
+        )
+
+        response = self.client.get(
+            path=reverse(viewname="v2:host-list"),
+            data={"isInCluster": True},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["id"], host2.pk)
+        self.assertEqual(response.json()["results"][0]["cluster"]["name"], self.cluster_1.name)
+
+    def test_filter_is_host_not_in_cluster_success(self):
+        host2 = self.add_host(
+            bundle=self.provider_bundle, description="description", provider=self.provider, fqdn="test_host_2"
+        )
+        self.add_host_to_cluster(self.cluster_1, host=host2)
+
+        response = self.client.get(
+            path=reverse(viewname="v2:host-list"),
+            data={"isInCluster": False},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["id"], self.host.pk)
+        self.assertEqual(response.json()["results"][0]["cluster"], None)
+
+    def test_hostprovider_filter(self):
+        second_provider = self.add_provider(bundle=self.provider_bundle, name="second_provider", description="provider")
+        host2 = self.add_host(
+            bundle=self.provider_bundle, description="description", provider=second_provider, fqdn="test_host_2"
+        )
+
+        response = self.client.get(
+            path=reverse(viewname="v2:host-list"),
+            data={"hostproviderName": second_provider.name},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["id"], host2.pk)
+
 
 class TestClusterHost(BaseAPITestCase):
     def setUp(self) -> None:
