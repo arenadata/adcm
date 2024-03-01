@@ -866,30 +866,29 @@ def multi_bind(cluster: Cluster, service: ClusterObject | None, bind_list: list[
         )
         new_bind[cook_key(cluster=export_cluster, service=export_co)] = prototype_import, cluster_bind, export_obj
 
-    with atomic():
-        for key, value in old_bind.items():
-            if key in new_bind:
-                continue
+    for key, value in old_bind.items():
+        if key in new_bind:
+            continue
 
-            export_obj = get_bind_obj(cluster=value.source_cluster, service=value.source_service)
-            check_import_default(import_obj=import_obj, export_obj=export_obj)
-            value.delete()
-            logger.info("unbind %s from %s", obj_ref(export_obj), obj_ref(obj=import_obj))
+        export_obj = get_bind_obj(cluster=value.source_cluster, service=value.source_service)
+        check_import_default(import_obj=import_obj, export_obj=export_obj)
+        value.delete()
+        logger.info("unbind %s from %s", obj_ref(export_obj), obj_ref(obj=import_obj))
 
-        for key, value in new_bind.items():
-            if key in old_bind:
-                continue
+    for key, value in new_bind.items():
+        if key in old_bind:
+            continue
 
-            prototype_import, cluster_bind, export_obj = value
-            check_multi_bind(
-                actual_import=prototype_import,
-                cluster=cluster,
-                service=service,
-                export_cluster=cluster_bind.source_cluster,
-                export_service=cluster_bind.source_service,
-            )
-            cluster_bind.save()
-            logger.info("bind %s to %s", obj_ref(obj=export_obj), obj_ref(obj=import_obj))
+        prototype_import, cluster_bind, export_obj = value
+        check_multi_bind(
+            actual_import=prototype_import,
+            cluster=cluster,
+            service=service,
+            export_cluster=cluster_bind.source_cluster,
+            export_service=cluster_bind.source_service,
+        )
+        cluster_bind.save()
+        logger.info("bind %s to %s", obj_ref(obj=export_obj), obj_ref(obj=import_obj))
 
         update_hierarchy_issues(obj=cluster)
 

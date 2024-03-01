@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from adcm.permissions import (
     CHANGE_IMPORT_PERM,
     VIEW_CLUSTER_BIND,
@@ -22,6 +21,7 @@ from adcm.permissions import (
 from audit.utils import audit
 from cm.api import multi_bind
 from cm.models import Cluster, ClusterObject, PrototypeImport
+from django.db.transaction import atomic
 from rest_framework.mixins import CreateModelMixin, ListModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -72,6 +72,7 @@ class ImportViewSet(ListModelMixin, CreateModelMixin, CamelCaseGenericViewSet):
         return self.get_paginated_response(data=self.paginate_queryset(queryset=get_imports(obj=obj)))
 
     @audit
+    @atomic
     def create(self, request, *args, **kwargs):  # noqa: ARG002
         obj = self.get_object_and_check_perm(request=request)
         serializer = self.get_serializer(data=request.data, many=True, context={"request": request, "cluster": obj})
