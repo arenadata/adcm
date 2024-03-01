@@ -11,25 +11,30 @@
 # limitations under the License.
 
 from cm.models import Host
-from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
+from django_filters.rest_framework import BooleanFilter, CharFilter, FilterSet, OrderingFilter
 
 
 class HostFilter(FilterSet):
     name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
     hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name")
     cluster_name = CharFilter(label="Cluster name", field_name="cluster__name")
+    is_in_cluster = BooleanFilter(label="Is host in cluster", method="filter_is_in_cluster")
     ordering = OrderingFilter(fields={"fqdn": "name"}, field_labels={"name": "Name"}, label="ordering")
 
     class Meta:
         model = Host
-        fields = ["name", "hostprovider_name", "cluster_name"]
+        fields = ["name", "hostprovider_name", "cluster_name", "is_in_cluster"]
+
+    @staticmethod
+    def filter_is_in_cluster(queryset, _, value):
+        return queryset.filter(cluster__isnull=not value)
 
 
 class HostClusterFilter(FilterSet):
     name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
-    hostprovider = CharFilter(label="Hostprovider name", field_name="provider__name")
+    hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name")
     ordering = OrderingFilter(fields={"fqdn": "name"}, field_labels={"name": "Name"}, label="ordering")
 
     class Meta:
         model = Host
-        fields = ["name", "hostprovider", "ordering"]
+        fields = ["name", "hostprovider_name", "ordering"]
