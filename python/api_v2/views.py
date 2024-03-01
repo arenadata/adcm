@@ -52,9 +52,19 @@ class APIRoot(APIRootView):
     }
 
 
+class CamelCaseBrowsableAPIRendererWithoutForms(CamelCaseBrowsableAPIRenderer):
+    """Renders the browsable api, but excludes the forms."""
+
+    def get_context(self, *args, **kwargs):
+        ctx = super().get_context(*args, **kwargs)
+        ctx["post_form"] = False
+        ctx["put_form"] = False
+        return ctx
+
+
 class CamelCaseGenericViewSet(GenericViewSet):
     parser_classes = [CamelCaseJSONParser, CamelCaseMultiPartParser, CamelCaseFormParser]
-    renderer_classes = [CamelCaseJSONRenderer, CamelCaseBrowsableAPIRenderer]
+    renderer_classes = [CamelCaseJSONRenderer, CamelCaseBrowsableAPIRendererWithoutForms]
 
 
 class CamelCaseModelViewSet(
