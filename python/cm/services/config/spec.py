@@ -9,11 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from collections import OrderedDict, defaultdict
 from typing import Any, Iterable, NamedTuple, TypeAlias
 
-from core.types import ActionID, PrototypeID
+from core.types import PrototypeID
 from typing_extensions import Self
 
 from cm.models import PrototypeConfig
@@ -57,11 +56,22 @@ def retrieve_flat_spec_for_objects(prototypes: Iterable[PrototypeID]) -> dict[Pr
     return flat_config_specification
 
 
-def retrieve_flat_spec_for_action(owner_prototype: PrototypeID, action: ActionID) -> FlatSpec:
+def convert_to_flat_spec_from_proto_flat_spec(
+    prototypes_flat_spec: dict[ConfigParamCompositeKey, PrototypeConfig],
+) -> FlatSpec:
     flat_config_specification = OrderedDict()
 
-    for row in _filter_configs(prototype_id=owner_prototype, action_id=action):
-        flat_config_specification[f"{row['name']}/{row['subname']}"] = ConfigParamPlainSpec.from_dict(row)
+    for key, config_proto in prototypes_flat_spec.items():
+        flat_config_specification[key] = ConfigParamPlainSpec(
+            type=config_proto.type,
+            display_name=config_proto.display_name,
+            description=config_proto.description or "",
+            default=str(config_proto.default or ""),
+            limits=config_proto.limits or {},
+            ui_options=config_proto.ui_options or {},
+            required=config_proto.required,
+            group_customization=config_proto.group_customization,
+        )
 
     return flat_config_specification
 

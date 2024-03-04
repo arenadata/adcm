@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from copy import deepcopy
 from unittest.mock import patch
 
 from django.conf import settings
@@ -178,3 +179,56 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         job_config = get_job_config(job_scope=JobScope(job_id=job.pk, object=self.service))
         self.assertIn("__ansible_vault", job_config["job"]["config"]["rolepass"])
         self.assertEqual(ansible_decrypt(job_config["job"]["config"]["rolepass"]["__ansible_vault"]), raw_value)
+
+    def test_action_jinja_config_with_secrets_bug_adcm_5314(self):
+        """
+        Actually bug is about `run_action`, because it prepares `config` for task,
+        but it was caught within `get_job_config` generation, so checked here
+        """
+        raw_value = "12345ddd"
+        action = Action.objects.filter(prototype=self.service.prototype, name="with_jinja").first()
+        with patch("cm.job.run_task"):
+            task = run_action(
+                action=action,
+                obj=self.service,
+                payload=ActionRunPayload(conf={"rolename": "test_user", "rolepass": raw_value}),
+                hosts=[],
+            )
+
+        self.assertIn("__ansible_vault", task.config["rolepass"])
+        self.assertEqual(ansible_decrypt(task.config["rolepass"]["__ansible_vault"]), raw_value)
+
+        job = JobLog.objects.filter(task=task).first()
+        job_config = get_job_config(job_scope=JobScope(job_id=job.pk, object=self.service))
+        self.assertIn("__ansible_vault", job_config["job"]["config"]["rolepass"])
+        self.assertEqual(ansible_decrypt(job_config["job"]["config"]["rolepass"]["__ansible_vault"]), raw_value)
+
+    def test_action_jinja_config_with_secret_map_and_default_null_password_bug_adcm_5314(self):
+        """
+        Actually bug is about `run_action`, because it prepares `config` for task,
+        but it was caught within `get_job_config` generation, so checked here
+        """
+        self.change_configuration(target=self.cluster, config_diff={"boolean": True})
+        raw_value = {"key": "val", "another": "one"}
+        action = Action.objects.filter(prototype=self.service.prototype, name="with_jinja").first()
+        with patch("cm.job.run_task"):
+            task = run_action(
+                action=action,
+                obj=self.service,
+                payload=ActionRunPayload(conf={"reqsec": deepcopy(raw_value), "secretval": None}),
+                hosts=[],
+            )
+
+        self.assertIn("__ansible_vault", task.config["reqsec"]["key"])
+        self.assertIn("__ansible_vault", task.config["reqsec"]["another"])
+        self.assertEqual(ansible_decrypt(task.config["reqsec"]["key"]["__ansible_vault"]), raw_value["key"])
+        self.assertEqual(ansible_decrypt(task.config["reqsec"]["another"]["__ansible_vault"]), raw_value["another"])
+        self.assertEqual(task.config["secretval"], None)
+
+        job = JobLog.objects.filter(task=task).first()
+        job_config = get_job_config(job_scope=JobScope(job_id=job.pk, object=self.service))
+        self.assertIn("__ansible_vault", job_config["job"]["config"]["reqsec"]["key"])
+        self.assertEqual(
+            ansible_decrypt(job_config["job"]["config"]["reqsec"]["key"]["__ansible_vault"]), raw_value["key"]
+        )
+        self.assertEqual(job_config["job"]["config"]["secretval"], None)
