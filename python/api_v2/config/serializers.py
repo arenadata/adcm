@@ -13,7 +13,7 @@
 from cm.models import ADCM, ConfigLog
 from rest_framework.serializers import (
     DateTimeField,
-    JSONField,
+    DictField,
     ModelSerializer,
     SerializerMethodField,
     ValidationError,
@@ -34,7 +34,8 @@ class ConfigLogListSerializer(ModelSerializer):
 
 
 class ConfigLogSerializer(ConfigLogListSerializer):
-    adcm_meta = JSONField(source="attr")
+    config = DictField()
+    adcm_meta = DictField(source="attr")
 
     class Meta:
         model = ConfigLog

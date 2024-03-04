@@ -16,7 +16,7 @@ from rest_framework.serializers import (
     CharField,
     ChoiceField,
     IntegerField,
-    JSONField,
+    ListField,
     ModelSerializer,
     SerializerMethodField,
 )
@@ -33,7 +33,7 @@ from api_v2.service.serializers import ServiceNameSerializer, ServiceRelatedSeri
 class ComponentMappingSerializer(ModelSerializer):
     service = ServiceNameSerializer(read_only=True)
     depend_on = SerializerMethodField()
-    constraints = JSONField(source="constraint")
+    constraints = ListField(source="constraint")
     prototype = PrototypeRelatedSerializer(read_only=True)
 
     class Meta:

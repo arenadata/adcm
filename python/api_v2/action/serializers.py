@@ -15,7 +15,7 @@ from rest_framework.fields import IntegerField
 from rest_framework.serializers import (
     BooleanField,
     DictField,
-    JSONField,
+    ListField,
     ListSerializer,
     ModelSerializer,
     SerializerMethodField,
@@ -35,7 +35,7 @@ class ActionListSerializer(ModelSerializer):
 
 class ActionRetrieveSerializer(ActionListSerializer):
     is_allow_to_terminate = BooleanField(source="allow_to_terminate")
-    host_component_map_rules = JSONField(source="hostcomponentmap")
+    host_component_map_rules = ListField(source="hostcomponentmap")
     disclaimer = SerializerMethodField()
     configuration = SerializerMethodField()
 
