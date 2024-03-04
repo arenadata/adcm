@@ -1,0 +1,12 @@
+{% if cluster.config.boolean %}
+- name: secretval
+  type: password
+  required: false
+- name: reqsec
+  type: secretmap
+{% else %}
+- name: rolename
+  type: string
+- name: rolepass
+  type: password
+{% endif %}

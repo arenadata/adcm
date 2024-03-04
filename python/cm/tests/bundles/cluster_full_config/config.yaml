@@ -132,6 +132,14 @@
           type: password
           required: yes
 
+    with_jinja:
+      script: ./playbool.yaml
+      script_type: ansible
+      config_jinja: action.j2
+      states:
+        available: any
+      type: job
+
 - type: service
   name: all_params
   version: 1.1
