@@ -12,6 +12,7 @@
 from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import VIEW_GROUP_CONFIG_PERM, check_config_perm
 from audit.utils import audit
+from cm.errors import AdcmEx
 from cm.models import GroupConfig
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
@@ -58,6 +59,10 @@ class GroupConfigViewSet(PermissionListMixin, GetParentObjectMixin, ConfigSchema
             or request.user.has_perm(perm=parent_view_perm)
         ):
             raise NotFound("Can't find config's parent object")
+
+        if parent_object.config is None:
+            raise AdcmEx(code="GROUP_CONFIG_NO_CONFIG_ERROR")
+
         check_config_perm(
             user=request.user,
             action_type="change",

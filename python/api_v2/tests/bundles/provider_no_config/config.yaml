@@ -1,0 +1,10 @@
+---
+- type: provider
+  name: provider_no_config
+  version: &version '1.0'
+  config_group_customization: true
+
+- type: host
+  name: host_no_config
+  version: *version
+
