@@ -15,7 +15,7 @@ from uuid import uuid4
 from adcm.tests.base import BaseTestCase
 
 from cm.errors import AdcmEx
-from cm.models import KnownNames, MessageTemplate
+from cm.models import MessageTemplate
 from cm.tests.utils import gen_adcm
 
 
@@ -79,10 +79,3 @@ class MessageTemplateTest(BaseTestCase):
 
         self.assertIn("AttributeError", e.exception.msg)
         self.assertIn("list", e.exception.msg)
-
-    def test_bad_template__bad_args(self):
-        name = KnownNames.LOCKED_BY_JOB.value
-        with self.assertRaises(AdcmEx) as e:
-            MessageTemplate.get_message_from_template(name)
-
-        self.assertIn("AttributeError", e.exception.msg)

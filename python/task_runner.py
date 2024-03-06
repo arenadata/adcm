@@ -91,7 +91,7 @@ def run_job(task_id, job_id, err_file):
 
 
 def set_log_body(job):
-    name = job.sub_action.script_type if job.sub_action else job.action.script_type
+    name = job.script_type
     log_storages = LogStorage.objects.filter(job=job, name=name, type__in=["stdout", "stderr"])
     for log_storage in log_storages:
         file_path = (
@@ -118,7 +118,7 @@ def run_task(task_id: int, args: str | None = None) -> None:
     task.status = JobStatus.RUNNING
     task.save(update_fields=["pid", "restore_hc_on_fail", "start_date", "status"])
 
-    send_task_status_update_event(object_=task, status=JobStatus.RUNNING.value)
+    send_task_status_update_event(task_id=task.pk, status=JobStatus.RUNNING.value)
 
     jobs = JobLog.objects.filter(task_id=task.id).order_by("id")
     if not jobs:

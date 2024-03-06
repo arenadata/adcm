@@ -284,6 +284,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
 
         job = JobLog.objects.last()
 
+        (settings.RUN_DIR / str(job.pk)).mkdir(exist_ok=True, parents=True)
         re_prepare_job(job_scope=JobScope(job_id=job.pk, object=job.task.task_object))
 
         inventory_file = settings.RUN_DIR / str(job.pk) / "inventory.json"

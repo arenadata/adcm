@@ -16,7 +16,7 @@ from unittest.mock import Mock, mock_open, patch
 from urllib.parse import urljoin
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from core.types import ADCMCoreType
+from core.types import ADCMCoreType, CoreObjectDescriptor, PrototypeDescriptor
 from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
@@ -55,7 +55,8 @@ from cm.services.job.config import (
     get_context,
     get_job_config,
 )
-from cm.services.job.utils import JobScope, get_bundle_root, get_script_path, get_selector
+from cm.services.job.run.repo import JobRepoImpl
+from cm.services.job.utils import JobScope, get_bundle_root, get_script_path
 from cm.tests.utils import (
     gen_action,
     gen_bundle,
@@ -142,7 +143,7 @@ class TestJob(BaseTestCase):
             start_date=timezone.now(),
             finish_date=timezone.now(),
         )
-        job = JobLog.objects.create(task=task, action=action, start_date=timezone.now(), finish_date=timezone.now())
+        job = JobLog.objects.create(task=task, start_date=timezone.now(), finish_date=timezone.now())
         lock_affected_objects(task=task, objects=[cluster])
         status = JobStatus.RUNNING
         pid = 10
@@ -197,7 +198,8 @@ class TestJob(BaseTestCase):
         action.save()
         task = gen_task_log(cluster, action)
         job = gen_job_log(task)
-        job.sub_action = SubAction.objects.create(action=action, state_on_fail="sub_action fail")
+        job.state_on_fail = "sub_action fail"
+        job.save()
 
         # status: expected state, expected multi_state set, expected multi_state unset
         test_data = [
@@ -319,7 +321,7 @@ class TestJob(BaseTestCase):
             start_date=timezone.now(),
             finish_date=timezone.now(),
         )
-        job = JobLog.objects.create(action=action, start_date=timezone.now(), finish_date=timezone.now(), task=task)
+        job = JobLog.objects.create(name=action.name, start_date=timezone.now(), finish_date=timezone.now(), task=task)
         job_scope = JobScope(job_id=job.pk, object=cluster)
 
         mocked_open = mock_open()
@@ -328,7 +330,7 @@ class TestJob(BaseTestCase):
 
         mock_get_inventory_data.assert_called_once_with(obj=cluster, action=action, delta={})
         mock_get_job_config.assert_called_once_with(job_scope=job_scope)
-        mock_prepare_ansible_config.assert_called_once_with(job_id=job.id, action=action, sub_action=None)
+        mock_prepare_ansible_config.assert_called_once_with(job_id=job.id, action=action)
 
     def test_prepare_context(self):
         bundle = Bundle.objects.create()
@@ -336,18 +338,22 @@ class TestJob(BaseTestCase):
         action1 = Action.objects.create(prototype=proto1)
         add_cluster(proto1, "Garbage")
         cluster = add_cluster(proto1, "Ontario")
-        context = get_context(
-            action=action1, object_type=cluster.prototype.type, selector=get_selector(obj=cluster, action=action1)
+        selector = JobRepoImpl._get_selector_for_core_object(
+            target=CoreObjectDescriptor(id=cluster.pk, type=ADCMCoreType.CLUSTER),
+            owner=PrototypeDescriptor(id=action1.prototype_id, type=ADCMCoreType(action1.prototype_type)),
         )
+        context = get_context(action=action1, object_type=cluster.prototype.type, selector=selector)
 
         self.assertDictEqual(context, {"type": "cluster", "cluster_id": cluster.id})
 
         proto2 = Prototype.objects.create(bundle=bundle, type="service")
         action2 = Action.objects.create(prototype=proto2)
         service = add_service_to_cluster(cluster, proto2)
-        context = get_context(
-            action=action2, object_type=service.prototype.type, selector=get_selector(obj=service, action=action2)
+        selector = JobRepoImpl._get_selector_for_core_object(
+            target=CoreObjectDescriptor(id=service.pk, type=ADCMCoreType.SERVICE),
+            owner=PrototypeDescriptor(id=action2.prototype_id, type=ADCMCoreType(action2.prototype_type)),
         )
+        context = get_context(action=action2, object_type=service.prototype.type, selector=selector)
 
         self.assertDictEqual(context, {"type": "service", "service_id": service.id, "cluster_id": cluster.id})
 
@@ -453,21 +459,16 @@ class TestJob(BaseTestCase):
         ]
 
         for prototype_type, obj, action in data:
-            selector = get_selector(obj=obj, action=action)
             task = TaskLog.objects.create(
                 task_object=obj,
                 action=action,
                 start_date=timezone.now(),
                 finish_date=timezone.now(),
                 config="test",
-                selector=selector,
+                selector={},
             )
             job = JobLog.objects.create(
-                action=action,
-                start_date=timezone.now(),
-                finish_date=timezone.now(),
-                task=task,
-                selector=selector,
+                name=action.name, start_date=timezone.now(), finish_date=timezone.now(), task=task
             )
 
             with self.subTest(prototype_type=prototype_type, obj=obj):
@@ -525,10 +526,10 @@ class TestJob(BaseTestCase):
                 self.assertDictEqual(job_config, actual_job_config)
                 mock_get_adcm_configuration.assert_called()
                 mock_get_context.assert_called_with(
-                    action=action, object_type=obj.prototype.type, selector=job.selector
+                    action=action, object_type=obj.prototype.type, selector=job.task.selector
                 )
                 mock_get_bundle_root.assert_called_with(action=action)
-                mock_get_script_path.assert_called_with(action=action, sub_action=None)
+                mock_get_script_path.assert_called_with(action=action, job=job)
 
     @patch("cm.job.cook_delta")
     @patch("cm.job.get_old_hc")
@@ -557,7 +558,7 @@ class TestJob(BaseTestCase):
             prototype=prototype,
             hostcomponentmap=[{"service": "", "component": "", "action": ""}],
         )
-        sub_action = SubAction.objects.create(action=action)
+        SubAction.objects.create(action=action)
         hostcomponentmap = [
             {
                 "host_id": host.id,
@@ -575,8 +576,6 @@ class TestJob(BaseTestCase):
         )
         job = JobLog.objects.create(
             task=task,
-            action=action,
-            sub_action=sub_action,
             start_date=timezone.now(),
             finish_date=timezone.now(),
         )

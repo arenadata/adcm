@@ -40,19 +40,11 @@ class JobShortSerializer(HyperlinkedModelSerializer):
 
     @staticmethod
     def get_display_name(obj: JobLog) -> str | None:
-        if obj.sub_action:
-            return obj.sub_action.display_name
-        elif obj.action:
-            return obj.action.display_name
-        else:
-            return None
+        return obj.display_name
 
     @staticmethod
     def get_terminatable(obj: JobLog):
-        if obj.sub_action is None:
-            return False
-
-        return obj.sub_action.allowed_to_terminate
+        return obj.allow_to_terminate
 
 
 class TaskSerializer(HyperlinkedModelSerializer):
@@ -156,6 +148,9 @@ class RunTaskRetrieveSerializer(TaskRetrieveSerializer):
 
 
 class JobSerializer(HyperlinkedModelSerializer):
+    action_id = SerializerMethodField()
+    sub_action_id = SerializerMethodField()
+
     class Meta:
         model = JobLog
         fields = (
@@ -171,12 +166,22 @@ class JobSerializer(HyperlinkedModelSerializer):
         )
         extra_kwargs = {"url": {"lookup_url_kwarg": "job_pk"}}
 
+    def get_action_id(self, obj: JobLog):
+        try:
+            return obj.action.id
+        except AttributeError:
+            return None
+
+    def get_sub_action_id(self, _: JobLog):
+        return None
+
 
 class JobRetrieveSerializer(HyperlinkedModelSerializer):
+    action_id = SerializerMethodField()
+    sub_action_id = SerializerMethodField()
     action = ActionJobSerializer()
-    display_name = SerializerMethodField()
+    selector = SerializerMethodField()
     objects = SerializerMethodField()
-    selector = JSONField()
     log_dir = SerializerMethodField()
     log_files = SerializerMethodField()
     action_url = SerializerMethodField()
@@ -186,11 +191,18 @@ class JobRetrieveSerializer(HyperlinkedModelSerializer):
     )
     terminatable = SerializerMethodField()
 
+    def get_selector(self, obj: JobLog):
+        return obj.task.selector
+
+    def get_action_id(self, obj: JobLog):
+        return obj.action.id
+
+    def get_sub_action_id(self, _: JobLog):
+        return None
+
     @staticmethod
     def get_terminatable(obj: JobLog):
-        if obj.sub_action is None:
-            return False
-        return obj.sub_action.allowed_to_terminate
+        return obj.allow_to_terminate
 
     class Meta:
         model = JobLog
@@ -212,21 +224,12 @@ class JobRetrieveSerializer(HyperlinkedModelSerializer):
     def get_objects(obj: JobLog) -> list | None:
         return [{"type": k, **v} for k, v in obj.task.selector.items()]
 
-    @staticmethod
-    def get_display_name(obj: JobLog) -> str | None:
-        if obj.sub_action:
-            return obj.sub_action.display_name
-        elif obj.action:
-            return obj.action.display_name
-        else:
-            return None
-
     def get_action_url(self, obj: JobLog) -> str | None:
-        if not obj.action_id:
+        if not obj.action:
             return None
 
         return reverse(
-            viewname="v1:action-detail", kwargs={"action_pk": obj.action_id}, request=self.context["request"]
+            viewname="v1:action-detail", kwargs={"action_pk": obj.action.id}, request=self.context["request"]
         )
 
     @staticmethod

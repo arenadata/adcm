@@ -24,6 +24,8 @@ BundleID: TypeAlias = int
 PrototypeID: TypeAlias = int
 ActionID: TypeAlias = int
 
+ActionID: TypeAlias = int
+
 ConfigID: TypeAlias = int
 
 HostName: TypeAlias = str
@@ -41,6 +43,7 @@ class ADCMMessageError(ADCMCoreError):
 
 
 class ADCMCoreType(Enum):
+    ADCM = "adcm"
     CLUSTER = "cluster"
     SERVICE = "service"
     COMPONENT = "component"
@@ -53,6 +56,15 @@ class ShortObjectInfo(NamedTuple):
     name: str
 
 
+class ADCMDescriptor(NamedTuple):
+    id: int
+
+
+class PrototypeDescriptor(NamedTuple):
+    id: PrototypeID
+    type: ADCMCoreType
+
+
 class GeneralEntityDescriptor(NamedTuple):
     id: ObjectID
     type: str
@@ -61,3 +73,9 @@ class GeneralEntityDescriptor(NamedTuple):
 class CoreObjectDescriptor(NamedTuple):
     id: ObjectID
     type: ADCMCoreType
+
+
+class NamedCoreObject(NamedTuple):
+    id: ObjectID
+    type: ADCMCoreType
+    name: str

@@ -200,7 +200,6 @@ def gen_task_log(obj: ADCMEntity, action: Action = None) -> TaskLog:
 def gen_job_log(task: TaskLog) -> JobLog:
     return JobLog.objects.create(
         task=task,
-        action=task.action,
         status="CREATED",
         start_date=timezone.now(),
         finish_date=timezone.now(),

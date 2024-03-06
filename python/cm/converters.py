@@ -12,12 +12,12 @@
 
 from core.types import ADCMCoreType
 
-from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from cm.models import ADCM, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 
 
 def core_type_to_model(
     core_type: ADCMCoreType,
-) -> type[Cluster | ClusterObject | ServiceComponent | HostProvider | Host]:
+) -> type[Cluster | ClusterObject | ServiceComponent | HostProvider | Host | ADCM]:
     match core_type:
         case ADCMCoreType.CLUSTER:
             return Cluster
@@ -29,6 +29,8 @@ def core_type_to_model(
             return HostProvider
         case ADCMCoreType.HOST:
             return Host
+        case ADCMCoreType.ADCM:
+            return ADCM
         case _:
             raise ValueError(f"Can't convert {core_type} to ORM model")
 
@@ -45,6 +47,8 @@ def core_type_to_db_record_type(core_type: ADCMCoreType) -> str:
             return "provider"
         case ADCMCoreType.HOST:
             return "host"
+        case ADCMCoreType.ADCM:
+            return "adcm"
         case _:
             raise ValueError(f"Can't convert {core_type} to type name in DB")
 

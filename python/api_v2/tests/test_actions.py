@@ -285,7 +285,7 @@ class TestActionsFiltering(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        job = JobLog.objects.filter(action__name="cluster_host_action_allowed").first()
+        job = JobLog.objects.filter(task__action__name="cluster_host_action_allowed").first()
 
         response = self.client.post(path=reverse(viewname="v2:joblog-terminate", kwargs={"pk": job.pk}), data={})
 

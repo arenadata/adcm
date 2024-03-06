@@ -93,7 +93,7 @@ def _get_job_data(job_scope: JobScope) -> JobData:
         command=job_scope.action.name,
         script=job_scope.action.script,
         verbose=job_scope.task.verbose,
-        playbook=get_script_path(action=job_scope.action, sub_action=job_scope.sub_action),
+        playbook=get_script_path(action=job_scope.action, job=job_scope.job),
         action_type_specification=_get_action_type_specific_data(
             cluster=cluster, obj=job_scope.object, action=job_scope.action
         ),
@@ -102,12 +102,11 @@ def _get_job_data(job_scope: JobScope) -> JobData:
     if job_scope.action.params:
         job_data.params = job_scope.action.params
 
-    if job_scope.sub_action:
-        job_data.script = job_scope.sub_action.script
-        job_data.job_name = job_scope.sub_action.name
-        job_data.command = job_scope.sub_action.name
-        if job_scope.sub_action.params:
-            job_data.params = job_scope.sub_action.params
+    job_data.script = job_scope.job.script
+    job_data.job_name = job_scope.job.name
+    job_data.command = job_scope.job.name
+    if job_scope.job.params:
+        job_data.params = job_scope.job.params
 
     if cluster is not None:
         job_data.cluster_id = cluster.pk

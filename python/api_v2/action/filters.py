@@ -21,7 +21,7 @@ from django_filters.rest_framework import (
 
 class ActionFilter(FilterSet):
     name = CharFilter(label="Action Name", field_name="name", lookup_expr="icontains")
-    dispaly_name = CharFilter(label="Action Display Name", field_name="display_name", lookup_expr="icontains")
+    display_name = CharFilter(label="Action Display Name", field_name="display_name", lookup_expr="icontains")
     is_host_own_action = BooleanFilter(
         label="Is Host Own Action", field_name="host_action", method="filter_is_host_own_action"
     )

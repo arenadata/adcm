@@ -16,6 +16,8 @@ from api.job.views import (
     get_task_download_archive_file_handler,
     get_task_download_archive_name,
 )
+from core.job.dto import TaskPayloadDTO
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
@@ -35,6 +37,7 @@ from cm.models import (
     SubAction,
     TaskLog,
 )
+from cm.services.job.prepare import prepare_task_for_action
 from cm.tests.utils import (
     gen_adcm,
     gen_cluster,
@@ -82,6 +85,7 @@ class TaskLogLockTest(BaseTestCase):
         self.assertFalse(cluster.locked)
         self.assertIsNone(task.lock)
 
+    # todo looks like useless test
     @override_settings(RUN_DIR=settings.BASE_DIR / "python" / "cm" / "tests" / "files" / "task_log_download")
     def test_download(self):
         bundle = Bundle.objects.create()
@@ -105,6 +109,7 @@ class TaskLogLockTest(BaseTestCase):
             start_date=timezone.now(),
             finish_date=timezone.now(),
         )
+
         cluster_2 = Cluster.objects.create(
             prototype=Prototype.objects.create(
                 bundle=bundle,
@@ -138,56 +143,64 @@ class TaskLogLockTest(BaseTestCase):
             name="test_cluster_5",
         )
         JobLog.objects.create(
-            task=task,
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-            sub_action=SubAction.objects.create(
+            task=TaskLog.objects.create(
+                task_object=cluster,
                 action=Action.objects.create(
                     display_name="test_subaction_job_1",
                     prototype=cluster_2.prototype,
                     type="job",
                     state_available="any",
                 ),
+                start_date=timezone.now(),
+                finish_date=timezone.now(),
             ),
-        )
-        JobLog.objects.create(
-            task=task,
             start_date=timezone.now(),
             finish_date=timezone.now(),
-            sub_action=SubAction.objects.create(
+        )
+        JobLog.objects.create(
+            task=TaskLog.objects.create(
+                task_object=cluster,
                 action=Action.objects.create(
                     display_name="test_subaction_job_2",
                     prototype=cluster_3.prototype,
                     type="job",
                     state_available="any",
                 ),
+                start_date=timezone.now(),
+                finish_date=timezone.now(),
             ),
-        )
-        JobLog.objects.create(
-            task=task,
             start_date=timezone.now(),
             finish_date=timezone.now(),
-            sub_action=SubAction.objects.create(
+        )
+        JobLog.objects.create(
+            task=TaskLog.objects.create(
+                task_object=cluster,
                 action=Action.objects.create(
                     display_name="test_subaction_job_3",
                     prototype=cluster_4.prototype,
                     type="job",
                     state_available="any",
                 ),
+                start_date=timezone.now(),
+                finish_date=timezone.now(),
             ),
-        )
-        job_no_files = JobLog.objects.create(
-            task=task,
             start_date=timezone.now(),
             finish_date=timezone.now(),
-            sub_action=SubAction.objects.create(
+        )
+        job_no_files = JobLog.objects.create(
+            task=TaskLog.objects.create(
+                task_object=cluster,
                 action=Action.objects.create(
                     display_name="test_subaction_job_4",
                     prototype=cluster_5.prototype,
                     type="job",
                     state_available="any",
                 ),
+                start_date=timezone.now(),
+                finish_date=timezone.now(),
             ),
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
         )
         LogStorage.objects.create(job=job_no_files, body="stdout db", type="stdout", format="txt")
         LogStorage.objects.create(job=job_no_files, body="stderr db", type="stderr", format="txt")
@@ -213,30 +226,25 @@ class TaskLogLockTest(BaseTestCase):
             display_name="Test cluster action",
             prototype=cluster.prototype,
             type="task",
+            script_type="ansible",
             state_available="any",
             name="test_cluster_action",
         )
-        task = TaskLog.objects.create(
-            task_object=cluster,
+        SubAction.objects.create(
+            name="test_subaction_1",
             action=action,
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
+            script_type="ansible",
+            display_name="Test   Dis%#play   NAME!",
         )
-        JobLog.objects.create(
-            task=task,
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-            sub_action=SubAction.objects.create(
-                name="test_subaction_1",
-                action=action,
-                display_name="Test   Dis%#play   NAME!",
-            ),
-        )
-        JobLog.objects.create(
-            task=task,
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-            sub_action=SubAction.objects.create(name="test_subaction_2", action=action),
+        SubAction.objects.create(name="test_subaction_2", action=action, script_type="ansible")
+        object_ = CoreObjectDescriptor(id=cluster.pk, type=ADCMCoreType.CLUSTER)
+        task = TaskLog.objects.get(
+            id=prepare_task_for_action(
+                target=object_,
+                owner=object_,
+                action=action.pk,
+                payload=TaskPayloadDTO(),
+            ).id
         )
         file_handler = get_task_download_archive_file_handler(task)
         file_handler.seek(0)

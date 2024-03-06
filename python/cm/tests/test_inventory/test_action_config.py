@@ -12,14 +12,17 @@
 from copy import deepcopy
 from unittest.mock import patch
 
+from core.job.dto import TaskPayloadDTO
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
-from django.utils import timezone
 
 from cm.adcm_config.ansible import ansible_decrypt
+from cm.converters import model_name_to_core_type
 from cm.job import ActionRunPayload, run_action
 from cm.models import Action, JobLog, ServiceComponent, SubAction, TaskLog
 from cm.services.job.config import get_job_config
-from cm.services.job.utils import JobScope, get_selector
+from cm.services.job.prepare import prepare_task_for_action
+from cm.services.job.utils import JobScope
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
@@ -106,18 +109,19 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             (self.host_1, self.CONFIG_WITH_NONES, "host"),
         ):
             action = Action.objects.filter(prototype=object_.prototype, name="with_config").first()
-            selector = get_selector(obj=object_, action=action)
-            task = TaskLog.objects.create(
-                task_object=object_,
-                action=action,
-                config=config,
-                start_date=timezone.now(),
-                finish_date=timezone.now(),
-                selector=selector,
+            obj_ = CoreObjectDescriptor(
+                id=object_.pk, type=model_name_to_core_type(model_name=object_.__class__.__name__.lower())
             )
-            job = JobLog.objects.create(
-                task=task, action=action, start_date=timezone.now(), finish_date=timezone.now(), selector=selector
+            task = TaskLog.objects.get(
+                id=prepare_task_for_action(
+                    target=obj_,
+                    owner=obj_,
+                    action=action.pk,
+                    payload=TaskPayloadDTO(conf=config),
+                ).id
             )
+
+            job = JobLog.objects.filter(task=task).first()
 
             with self.subTest(f"Own Action for {object_.__class__.__name__}"):
                 expected_data = self.render_json_template(
@@ -134,19 +138,18 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             (self.component, None, "component"),
         ):
             action = Action.objects.filter(prototype=object_.prototype, name="with_config_on_host").first()
-            selector = get_selector(obj=self.host_1, action=action)
-            task = TaskLog.objects.create(
-                task_object=self.host_1,
-                action=action,
-                config=config,
-                start_date=timezone.now(),
-                finish_date=timezone.now(),
-                verbose=True,
-                selector=selector,
+            target = CoreObjectDescriptor(id=self.host_1.pk, type=ADCMCoreType.HOST)
+            task = TaskLog.objects.get(
+                id=prepare_task_for_action(
+                    target=target,
+                    owner=CoreObjectDescriptor(
+                        id=object_.pk, type=model_name_to_core_type(object_.__class__.__name__.lower())
+                    ),
+                    action=action.pk,
+                    payload=TaskPayloadDTO(verbose=True, conf=config),
+                ).id
             )
-            job = JobLog.objects.create(
-                task=task, action=action, start_date=timezone.now(), finish_date=timezone.now(), selector=selector
-            )
+            job = JobLog.objects.filter(task=task).first()
 
             with self.subTest(f"Host Action for {object_.__class__.__name__}"):
                 expected_data = self.render_json_template(

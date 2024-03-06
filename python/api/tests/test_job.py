@@ -51,7 +51,6 @@ class TestJobAPI(BaseTestCase):
             status="failed",
             start_date=timezone.now() + timedelta(days=1),
             finish_date=timezone.now() + timedelta(days=2),
-            action=self.action,
             task=self.task,
             pid=self.job_1.pid + 1,
         )
@@ -175,7 +174,7 @@ class TestJobAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        job = JobLog.objects.get(action=action)
+        job = JobLog.objects.get(task__action=action)
 
         response: Response = self.client.get(
             path=reverse(viewname="v1:joblog-detail", kwargs={"job_pk": job.pk}),
@@ -210,7 +209,7 @@ class TestJobAPI(BaseTestCase):
             response: Response = self.client.get(path=reverse(viewname="v1:joblog-list"))
 
             self.assertIn(
-                JobLog.objects.get(action=action).pk,
+                JobLog.objects.get(task__action=action).pk,
                 {job_data["id"] for job_data in response.data["results"]},
             )
 

@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from collections.abc import Hashable
 from configparser import ConfigParser
 from dataclasses import dataclass, field
@@ -28,7 +27,8 @@ from audit.models import (
     AuditLogOperationResult,
     AuditLogOperationType,
 )
-from core.types import CoreObjectDescriptor
+from core.job.dto import TaskPayloadDTO
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.db.transaction import atomic, on_commit
 from django.utils import timezone
@@ -65,7 +65,6 @@ from cm.logger import logger
 from cm.models import (
     ADCM,
     Action,
-    ActionType,
     ADCMEntity,
     Cluster,
     ClusterObject,
@@ -76,11 +75,9 @@ from cm.models import (
     HostProvider,
     JobLog,
     JobStatus,
-    LogStorage,
     MaintenanceMode,
     Prototype,
     ServiceComponent,
-    SubAction,
     TaskLog,
     Upgrade,
     get_object_cluster,
@@ -90,7 +87,7 @@ from cm.services.job.config import get_job_config
 from cm.services.job.inventory import get_inventory_data
 from cm.services.job.inventory._config import update_configuration_for_inventory_inplace
 from cm.services.job.types import HcAclAction
-from cm.services.job.utils import JobScope, get_selector
+from cm.services.job.utils import JobScope
 from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import (
     send_object_update_event,
@@ -115,6 +112,9 @@ def run_action(
     payload: ActionRunPayload,
     hosts: list[int],
 ) -> TaskLog:
+    # todo resolve circular dependency
+    from cm.services.job.prepare import prepare_task_for_action
+
     cluster: Cluster | None = get_object_cluster(obj=obj)
 
     if hosts:
@@ -151,16 +151,40 @@ def run_action(
     host_map, post_upgrade_hc = check_hostcomponentmap(cluster=cluster, action=action, new_hc=payload.hostcomponent)
 
     with atomic():
-        task = create_task(
-            action=action,
-            obj=obj,
-            conf=payload.conf,
-            attr=payload.attr,
-            verbose=payload.verbose,
-            hosts=hosts,
-            hostcomponent=get_hc(cluster=cluster),
-            post_upgrade_hc=post_upgrade_hc,
+        target = CoreObjectDescriptor(id=obj.pk, type=model_name_to_core_type(obj.__class__.__name__.lower()))
+        owner = target
+        if target.type == ADCMCoreType.HOST and action.host_action:
+            match action.prototype_type:
+                case "cluster":
+                    owner = CoreObjectDescriptor(id=cluster.pk, type=ADCMCoreType.CLUSTER)
+                case "service":
+                    owner = CoreObjectDescriptor(
+                        id=ClusterObject.objects.values_list("id", flat=True)
+                        .filter(cluster=cluster, prototype_id=action.prototype_id)
+                        .get(),
+                        type=ADCMCoreType.SERVICE,
+                    )
+                case "component":
+                    owner = CoreObjectDescriptor(
+                        id=ServiceComponent.objects.values_list("id", flat=True)
+                        .filter(cluster=cluster, prototype_id=action.prototype_id)
+                        .get(),
+                        type=ADCMCoreType.COMPONENT,
+                    )
+
+        task = prepare_task_for_action(
+            target=target,
+            owner=owner,
+            action=action.pk,
+            payload=TaskPayloadDTO(
+                conf=payload.conf,
+                attr=payload.attr,
+                verbose=payload.verbose,
+                hostcomponent=get_hc(cluster=cluster),
+                post_upgrade_hostcomponent=post_upgrade_hc,
+            ),
         )
+        task_ = TaskLog.objects.get(id=task.id)
         if host_map or (is_upgrade_action and host_map is not None):
             save_hc(cluster=cluster, host_comp_list=host_map)
 
@@ -173,17 +197,17 @@ def run_action(
                     id=obj.pk, type=model_name_to_core_type(model_name=obj._meta.model_name)
                 ),
             )
-            process_file_type(obj=task, spec=spec, conf=payload.conf)
-            task.config = new_conf
-            task.save()
+            process_file_type(obj=task_, spec=spec, conf=payload.conf)
+            task_.config = new_conf
+            task_.save()
 
-        on_commit(func=partial(send_task_status_update_event, object_=task, status=JobStatus.CREATED.value))
+        on_commit(func=partial(send_task_status_update_event, task_id=task_.pk, status=JobStatus.CREATED.value))
 
-    re_apply_policy_for_jobs(action_object=obj, task=task)
+    re_apply_policy_for_jobs(action_object=obj, task=task_)
 
-    run_task(task)
+    run_task(task_)
 
-    return task
+    return task_
 
 
 def check_action_hosts(action: Action, obj: ADCMEntity, cluster: Cluster | None, hosts: list[int]) -> None:
@@ -493,60 +517,10 @@ def prepare_job(job_scope: JobScope, delta: dict):
     ) as file_descriptor:
         json.dump(obj=inventory, fp=file_descriptor, separators=(",", ":"))
 
-    prepare_ansible_config(job_id=job_scope.job_id, action=job_scope.action, sub_action=job_scope.sub_action)
-
-
-def create_task(
-    action: Action,
-    obj: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
-    conf: dict,
-    attr: dict,
-    hostcomponent: list[dict],
-    hosts: list[int],
-    verbose: bool,
-    post_upgrade_hc: list[dict],
-) -> TaskLog:
-    selector = get_selector(obj=obj, action=action)
-    task = TaskLog.objects.create(
-        action=action,
-        task_object=obj,
-        config=conf,
-        attr=attr,
-        hostcomponentmap=hostcomponent,
-        hosts=hosts,
-        post_upgrade_hc_map=post_upgrade_hc,
-        verbose=verbose,
-        status=JobStatus.CREATED,
-        selector=selector,
-    )
-
-    if action.type == ActionType.JOB.value:
-        sub_actions = [None]
-    else:
-        sub_actions = SubAction.objects.filter(action=action).order_by("id")
-
-    for sub_action in sub_actions:
-        job = JobLog.obj.create(
-            task=task,
-            action=action,
-            sub_action=sub_action,
-            log_files=action.log_files,
-            status=JobStatus.CREATED,
-            selector=selector,
-        )
-        log_type = sub_action.script_type if sub_action else action.script_type
-        LogStorage.objects.create(job=job, name=log_type, type="stdout", format="txt")
-        LogStorage.objects.create(job=job, name=log_type, type="stderr", format="txt")
-        Path(settings.RUN_DIR, f"{job.pk}", "tmp").mkdir(parents=True, exist_ok=True)
-
-    return task
+    prepare_ansible_config(job_id=job_scope.job_id, action=job_scope.action)
 
 
 def get_state(action: Action, job: JobLog, status: str) -> tuple[str | None, list[str], list[str]]:
-    sub_action = None
-    if job and job.sub_action:
-        sub_action = job.sub_action
-
     if status == JobStatus.SUCCESS:
         multi_state_set = action.multi_state_on_success_set
         multi_state_unset = action.multi_state_on_success_unset
@@ -554,9 +528,9 @@ def get_state(action: Action, job: JobLog, status: str) -> tuple[str | None, lis
         if not state:
             logger.warning('action "%s" success state is not set', action.name)
     elif status == JobStatus.FAILED:
-        state = getattr_first("state_on_fail", sub_action, action)
-        multi_state_set = getattr_first("multi_state_on_fail_set", sub_action, action)
-        multi_state_unset = getattr_first("multi_state_on_fail_unset", sub_action, action)
+        state = getattr_first("state_on_fail", job, action)
+        multi_state_set = getattr_first("multi_state_on_fail_set", job, action)
+        multi_state_unset = getattr_first("multi_state_on_fail_unset", job, action)
         if not state:
             logger.warning('action "%s" fail state is not set', action.name)
     else:
@@ -700,7 +674,7 @@ def finish_task(task: TaskLog, job: JobLog | None, status: str) -> None:
 
     set_task_final_status(task=task, status=status)
 
-    send_task_status_update_event(object_=task, status=status)
+    send_task_status_update_event(task_id=task.pk, status=status)
 
     try:
         reset_objects_in_mm()
@@ -715,10 +689,11 @@ def run_task(task: TaskLog, args: str = ""):
         "a+",
         encoding=settings.ENCODING_UTF_8,
     )
+
     cmd = [
-        str(Path(settings.CODE_DIR, "task_runner.py")),
+        str(Path(settings.CODE_DIR, "runner.py")),
+        "restart" if args == "restart" else "start",
         str(task.pk),
-        args,
     ]
     logger.info("task run cmd: %s", " ".join(cmd))
     proc = subprocess.Popen(  # noqa: SIM115
@@ -731,7 +706,7 @@ def run_task(task: TaskLog, args: str = ""):
     lock_affected_objects(task=task, objects=affected_objs)
 
 
-def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
+def prepare_ansible_config(job_id: int, action: Action):
     config_parser = ConfigParser()
     config_parser["defaults"] = {
         "stdout_callback": "yaml",
@@ -743,10 +718,8 @@ def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):
 
     forks = adcm_conf["ansible_settings"]["forks"]
     config_parser["defaults"]["forks"] = str(forks)
-    params = action.params
 
-    if sub_action:
-        params = sub_action.params
+    params = JobLog.objects.values_list("params").get(pk=job_id) or action.params
 
     if "jinja2_native" in params:
         config_parser["defaults"]["jinja2_native"] = str(params["jinja2_native"])

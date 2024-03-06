@@ -611,10 +611,10 @@ def save_hc(
     hc_queryset.delete()
     host_component_list = []
 
-    for proto, host, comp in host_comp_list:
+    for service, host, comp in host_comp_list:
         host_component = HostComponent(
             cluster=cluster,
-            service=proto,
+            service=service,
             host=host,
             component=comp,
         )

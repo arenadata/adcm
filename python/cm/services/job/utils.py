@@ -20,14 +20,9 @@ from pydantic import Json
 
 from cm.models import (
     Action,
-    ClusterObject,
     JobLog,
-    ObjectType,
-    ServiceComponent,
-    SubAction,
     TaskLog,
 )
-from cm.services.job.types import Selector
 from cm.services.types import ADCMEntityType
 
 
@@ -58,52 +53,12 @@ class JobScope:
     def action(self) -> Action | None:
         return self.task.action
 
-    @cached_property
-    def sub_action(self) -> SubAction | None:
-        return self.job.sub_action
 
-
-def get_selector(obj: ADCMEntityType, action: Action) -> Selector:
-    selector: Selector = {obj.prototype.type: {"id": obj.pk, "name": obj.display_name}}
-
-    match obj.prototype.type:
-        case ObjectType.SERVICE:
-            selector[ObjectType.CLUSTER.value] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}
-
-        case ObjectType.COMPONENT:
-            selector[ObjectType.SERVICE.value] = {"id": obj.service.pk, "name": obj.service.display_name}
-            selector[ObjectType.CLUSTER.value] = {"id": obj.cluster.pk, "name": obj.cluster.display_name}
-
-        case ObjectType.HOST:
-            if action.host_action:
-                if obj.cluster_id is None:
-                    raise ValueError(f'Host "{obj.fqdn}" is not bound to any cluster')
-
-                cluster = obj.cluster
-                selector[ObjectType.CLUSTER.value] = {"id": cluster.pk, "name": cluster.display_name}
-
-                if action.prototype.type == ObjectType.SERVICE:
-                    service = ClusterObject.objects.get(prototype=action.prototype, cluster=cluster)
-                    selector[ObjectType.SERVICE.value] = {"id": service.pk, "name": service.display_name}
-
-                elif action.prototype.type == ObjectType.COMPONENT:
-                    service = ClusterObject.objects.get(prototype=action.prototype.parent, cluster=cluster)
-                    selector[ObjectType.SERVICE.value] = {"id": service.pk, "name": service.display_name}
-                    component = ServiceComponent.objects.get(
-                        prototype=action.prototype, cluster=cluster, service=service
-                    )
-                    selector[ObjectType.COMPONENT.value] = {"id": component.pk, "name": component.display_name}
-
-            else:
-                selector[ObjectType.PROVIDER.value] = {"id": obj.provider.pk, "name": obj.provider.display_name}
-
-    return selector
-
-
-def get_script_path(action: Action, sub_action: SubAction | None) -> str:
-    script = action.script
-    if sub_action:
-        script = sub_action.script
+def get_script_path(action: Action, job: JobLog | None) -> str:
+    # fixme remove `if` here.
+    #  currently left for "backward compatibility", but actually script should always be set for job
+    #  and job should always be passed in here
+    script = job.script if job else action.script
 
     relative_path_part = "./"
     if script.startswith(relative_path_part):

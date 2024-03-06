@@ -361,8 +361,8 @@ def change_hc(job_id, cluster_id, operations):
     For use in ansible plugin adcm_hc
     """
     file_descriptor = job_lock(job_id)
-    job = JobLog.objects.get(id=job_id)
-    action = Action.objects.get(id=job.action_id)
+    action_id = JobLog.objects.values_list("task__action_id", flat=True).get(id=job_id)
+    action = Action.objects.get(id=action_id)
     if action.hostcomponentmap:
         raise AdcmEx("ACTION_ERROR", "You can not change hc in plugin for action with hc_acl")
 

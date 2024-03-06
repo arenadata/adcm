@@ -21,7 +21,6 @@ from cm.models import (
     JobLog,
     JobStatus,
     LogStorage,
-    SubAction,
     TaskLog,
 )
 from django.conf import settings
@@ -62,13 +61,9 @@ class TestJob(BaseTestCase):
             status=JobStatus.RUNNING,
             start_date=timezone.now() + timedelta(days=1),
             finish_date=timezone.now() + timedelta(days=2),
-            action=self.action,
             task=self.task,
             pid=9999,
-            sub_action=SubAction.objects.create(
-                action=self.action,
-                allow_to_terminate=True,
-            ),
+            allow_to_terminate=True,
         )
         self.log_1 = LogStorage.objects.create(
             job=self.job_1,

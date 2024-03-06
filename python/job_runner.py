@@ -103,11 +103,13 @@ def start_subprocess(job_id, cmd, conf, out_file, err_file):
         stdout=out_file,
         stderr=err_file,
     )
-    set_job_start_status(job_id=job_id, pid=process.pid)
+
+    set_job_start_status(job_id=job_id, pid=process.pid)  # todo not implemented in runners
     logger.info("run job #%s, pid %s", job_id, process.pid)
     return_code = process.wait()
-    finish_check(job_id)
-    return_code = set_job_status(job_id=job_id, return_code=return_code)
+
+    finish_check(job_id)  # todo not implemented in runners
+    return_code = set_job_status(job_id=job_id, return_code=return_code)  # todo not implemented in runners
 
     out_file.close()
     err_file.close()
@@ -144,7 +146,7 @@ def run_ansible(job_id: int) -> None:
 def run_internal(job: JobLog) -> None:
     set_job_start_status(job_id=job.id, pid=0)
     out_file, err_file = process_err_out_file(job_id=job.id, job_type="internal")
-    script = job.sub_action.script if job.sub_action else job.action.script
+    script = job.script
     return_code = 0
     status = JobStatus.SUCCESS
 
@@ -160,15 +162,18 @@ def run_internal(job: JobLog) -> None:
                 job.task.save(update_fields=["restore_hc_on_fail"])
 
             if script != "hc_apply":
+                # todo wut?
                 switch_hc(task=job.task, action=job.action)
 
+            # todo shouldn't we reapply policies for every job?
+            #  yes -- for `bundle_switch` and `bundle_revert`
             re_apply_policy_for_jobs(action_object=object_, task=job.task)
     except AdcmEx as e:
         err_file.write(e.msg)
         return_code = 1
         status = JobStatus.FAILED
     finally:
-        if script == "bundle_revert":
+        if script == "bundle_revert":  # todo not implemented in runner
             send_prototype_and_state_update_event(object_=object_)
 
         set_job_final_status(job_id=job.id, status=status)
@@ -217,7 +222,7 @@ def switch_hc(task, action):
 def main(job_id):
     logger.debug("job_runner.py called as: %s", sys.argv)
     job = JobLog.objects.get(id=job_id)
-    job_type = job.sub_action.script_type if job.sub_action else job.action.script_type
+    job_type = job.script_type
     if job_type == "internal":
         run_internal(job=job)
     elif job_type == "python":
