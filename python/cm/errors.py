@@ -162,6 +162,11 @@ ERRORS = {
         HTTP_400_BAD_REQUEST,
         ERR,
     ),
+    "GROUP_CONFIG_NO_CONFIG_ERROR": (
+        "Can't create group config for object without config",
+        HTTP_409_CONFLICT,
+        ERR,
+    ),
     "LOCK_ERROR": ("lock error", HTTP_409_CONFLICT, ERR),
     "MAINTENANCE_MODE_NOT_AVAILABLE": (
         "you can't manage host maintenance mode",

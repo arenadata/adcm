@@ -892,6 +892,23 @@ class TestHostProviderGroupConfig(BaseAPITestCase):
             response.json(), {"description": "group config new", "hosts": [], "id": 2, "name": "group-config-new"}
         )
 
+    def test_create_without_config_fail(self):
+        provider_no_config_bundle_path = self.test_bundles_dir / "provider_no_config"
+        provider_no_config_bundle = self.add_bundle(source_dir=provider_no_config_bundle_path)
+        provider_no_config = self.add_provider(bundle=provider_no_config_bundle, name="provider_no_config")
+
+        initial_group_configs_count = GroupConfig.objects.count()
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:hostprovider-group-config-list", kwargs={"hostprovider_pk": provider_no_config.pk}
+            ),
+            data={"name": "group-config-new", "description": "group config new"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(GroupConfig.objects.count(), initial_group_configs_count)
+
     def test_delete_success(self):
         response = self.client.delete(
             path=reverse(
