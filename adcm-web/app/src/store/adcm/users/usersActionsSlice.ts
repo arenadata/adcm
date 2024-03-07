@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { AdcmGroupsApi, AdcmUsersApi, RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { arePromisesResolved } from '@utils/promiseUtils';
 import { getUsers, refreshUsers } from './usersSlice';
@@ -36,7 +36,9 @@ const blockUsers = createAsyncThunk('adcm/usersActions/blockUsers', async (ids: 
   try {
     if (arePromisesResolved(await Promise.allSettled(ids.map((id) => AdcmUsersApi.blockUser(id))))) {
       thunkAPI.dispatch(
-        showInfo({ message: ids.length === 1 ? 'User was blocked successfully' : 'Users were blocked successfully' }),
+        showSuccess({
+          message: ids.length === 1 ? 'User was blocked successfully' : 'Users were blocked successfully',
+        }),
       );
     }
   } catch (error) {
@@ -51,7 +53,7 @@ const unblockUsers = createAsyncThunk('adcm/usersActions/unblockUsers', async (i
   try {
     if (arePromisesResolved(await Promise.allSettled(ids.map((id) => AdcmUsersApi.unblockUser(id))))) {
       thunkAPI.dispatch(
-        showInfo({
+        showSuccess({
           message: ids.length === 1 ? 'User was unblocked successfully' : 'Users were unblocked successfully',
         }),
       );
@@ -67,7 +69,9 @@ const unblockUsers = createAsyncThunk('adcm/usersActions/unblockUsers', async (i
 const deleteUsersWithUpdate = createAsyncThunk('adcm/usersActions/deleteUsers', async (ids: number[], thunkAPI) => {
   try {
     if (arePromisesResolved(await Promise.allSettled(ids.map((id) => AdcmUsersApi.deleteUser(id))))) {
-      thunkAPI.dispatch(showInfo({ message: ids.length === 1 ? 'User has been deleted' : 'Users have been deleted' }));
+      thunkAPI.dispatch(
+        showSuccess({ message: ids.length === 1 ? 'User has been deleted' : 'Users have been deleted' }),
+      );
     }
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
