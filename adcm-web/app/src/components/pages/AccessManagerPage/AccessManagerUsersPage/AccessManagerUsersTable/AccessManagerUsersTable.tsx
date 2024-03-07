@@ -13,6 +13,7 @@ import { setSortParams } from '@store/adcm/users/usersTableSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { AdcmUser, AdcmUserStatus } from '@models/adcm';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
+import UserStatusCell from '@commonComponents/Table/Cells/LabelIconCell/UserStatusCell';
 
 const AccessManagerUsersTable = () => {
   const dispatch = useDispatch();
@@ -76,9 +77,9 @@ const AccessManagerUsersTable = () => {
               <Checkbox checked={isItemSelected(user)} onChange={getHandlerSelectedItem(user)} />
             </TableCell>
             <TableCell>{user.username}</TableCell>
-            <TableCell>{user.status}</TableCell>
+            <UserStatusCell user={user} />
             <TableCell>{user.email}</TableCell>
-            <TableCell>{userGroupsNames}</TableCell>
+            <TableCell isMultilineText>{userGroupsNames}</TableCell>
             <TableCell>{user.type}</TableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-edit" size={32} title="Edit" onClick={handleEditUserClick(user)} />

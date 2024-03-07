@@ -25,6 +25,7 @@ export interface AdcmUser {
   isSuperUser: boolean;
   type: string;
   username: string;
+  blockingReason: string;
 }
 
 export interface AdcmUsersFilter {
