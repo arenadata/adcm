@@ -79,3 +79,10 @@ class NamedCoreObject(NamedTuple):
     id: ObjectID
     type: ADCMCoreType
     name: str
+
+
+class NamedCoreObjectWithPrototype(NamedTuple):
+    id: ObjectID
+    prototype_id: PrototypeID
+    type: ADCMCoreType
+    name: str

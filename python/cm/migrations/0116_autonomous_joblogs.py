@@ -47,6 +47,10 @@ def extract_sub_action_data_to_joblogs(apps, schema_editor):
     JobLog.objects.filter(sub_action__isnull=True).update(**default_to_fill)
 
 
+def do_nothing(apps, schema_editor):
+    return
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ("cm", "0115_auto_20231025_1823"),
@@ -55,18 +59,36 @@ class Migration(migrations.Migration):
     operations = [
         # create nullable fields
         migrations.AlterField(
-            model_name='joblog',
-            name='status',
+            model_name="joblog",
+            name="status",
             field=models.CharField(
-                choices=[('created', 'created'), ('success', 'success'), ('failed', 'failed'), ('running', 'running'),
-                         ('locked', 'locked'), ('aborted', 'aborted'), ('broken', 'broken')], max_length=1000),
+                choices=[
+                    ("created", "created"),
+                    ("success", "success"),
+                    ("failed", "failed"),
+                    ("running", "running"),
+                    ("locked", "locked"),
+                    ("aborted", "aborted"),
+                    ("broken", "broken"),
+                ],
+                max_length=1000,
+            ),
         ),
         migrations.AlterField(
-            model_name='tasklog',
-            name='status',
+            model_name="tasklog",
+            name="status",
             field=models.CharField(
-                choices=[('created', 'created'), ('success', 'success'), ('failed', 'failed'), ('running', 'running'),
-                         ('locked', 'locked'), ('aborted', 'aborted'), ('broken', 'broken')], max_length=1000),
+                choices=[
+                    ("created", "created"),
+                    ("success", "success"),
+                    ("failed", "failed"),
+                    ("running", "running"),
+                    ("locked", "locked"),
+                    ("aborted", "aborted"),
+                    ("broken", "broken"),
+                ],
+                max_length=1000,
+            ),
         ),
         migrations.AddField(
             model_name="joblog",
@@ -86,7 +108,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="joblog",
             name="script",
-            field=models.CharField(max_length=1000, null=True),
+            field=models.CharField(max_length=1000, default="unknown"),
         ),
         migrations.AddField(
             model_name="joblog",
@@ -94,7 +116,7 @@ class Migration(migrations.Migration):
             field=models.CharField(
                 choices=[("ansible", "ansible"), ("python", "python"), ("internal", "internal")],
                 max_length=1000,
-                null=True,
+                default="ansible",
             ),
         ),
         migrations.AddField(
@@ -105,7 +127,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="joblog",
             name="allow_to_terminate",
-            field=models.BooleanField(default=None, null=True),
+            field=models.BooleanField(default=False),
         ),
         migrations.AddField(
             model_name="joblog",
@@ -115,47 +137,33 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="joblog",
             name="name",
-            field=models.CharField(null=True, max_length=1000),
+            field=models.CharField(max_length=1000, default="unknown"),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='tasklog',
-            name='owner_id',
+            model_name="tasklog",
+            name="owner_id",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='tasklog',
-            name='owner_type',
+            model_name="tasklog",
+            name="owner_type",
             field=models.CharField(
-                choices=[('adcm', 'adcm'), ('cluster', 'cluster'), ('service', 'service'), ('component', 'component'),
-                         ('hostprovider', 'hostprovider'), ('host', 'host')], max_length=100, null=True),
-        ),
-        # move what data can be saved
-        # todo add reverse code
-        migrations.RunPython(extract_sub_action_data_to_joblogs),
-        # make those non-nullable
-        migrations.AlterField(
-            model_name="joblog",
-            name="script",
-            field=models.CharField(max_length=1000),
-        ),
-        migrations.AlterField(
-            model_name="joblog",
-            name="script_type",
-            field=models.CharField(
-                choices=[("ansible", "ansible"), ("python", "python"), ("internal", "internal")], max_length=1000
+                choices=[
+                    ("adcm", "adcm"),
+                    ("cluster", "cluster"),
+                    ("service", "service"),
+                    ("component", "component"),
+                    ("hostprovider", "hostprovider"),
+                    ("host", "host"),
+                ],
+                max_length=100,
+                null=True,
             ),
         ),
-        migrations.AlterField(
-            model_name="joblog",
-            name="name",
-            field=models.CharField(null=False, max_length=1000),
-        ),
-        migrations.AlterField(
-            model_name="joblog",
-            name="allow_to_terminate",
-            field=models.BooleanField(default=False),
-        ),
+        # move data that can be saved
+        migrations.RunPython(code=extract_sub_action_data_to_joblogs, reverse_code=do_nothing),
+        # make those non-nullable
         migrations.AlterField(
             model_name="stagesubaction",
             name="allow_to_terminate",

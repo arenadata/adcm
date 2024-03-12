@@ -9,16 +9,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from operator import itemgetter
+from logging import Logger
 from typing import Any, Protocol
 import os
 import signal
-import logging
 
 from core.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.job.runners import ExecutionTarget, RunnerRuntime, TaskRunner
 from core.job.types import ExecutionStatus, Job, Task
-from core.types import ADCMCoreType, CoreObjectDescriptor, NamedCoreObject
+from core.types import CoreObjectDescriptor
+
+from cm.services.job.run._task_finalizers import (
+    remove_task_lock,
+    set_hostcomponent,
+    set_job_lock,
+    update_issues,
+    update_object_maintenance_mode,
+)
 
 NO_PROCESS_PID = 0
 
@@ -39,132 +46,12 @@ class StatusServerInteractor(Protocol):
         ...
 
 
-def set_job_lock(job_id: int) -> None:
-    # todo move it to `cm.services.job` somewhere
-    from cm.models import JobLog
-
-    job = JobLog.objects.select_related("task").get(pk=job_id)
-    if job.task.lock and job.task.task_object:
-        job.task.lock.reason = job.cook_reason()
-        job.task.lock.save(update_fields=["reason"])
-
-
-def set_hostcomponent(task: Task, logger: logging.Logger):
-    # todo move it to `cm.services.job` somewhere
-    from cm.api import save_hc  # fixme no way it can be in `cm.api`
-    from cm.models import ClusterObject, Host, ServiceComponent, TaskLog, get_object_cluster
-
-    # todo no need in task here, just take owner from task
-    task_ = TaskLog.objects.prefetch_related("task_object").get(id=task.id)
-
-    cluster = get_object_cluster(task_.task_object)
-    if cluster is None:
-        logger.error("no cluster in task #%s", task_.pk)
-
-        return
-
-    new_hostcomponent = task.hostcomponent.to_set
-    hosts = {
-        entry.pk: entry for entry in Host.objects.filter(id__in=set(map(itemgetter("host_id"), new_hostcomponent)))
-    }
-    services = {
-        entry.pk: entry
-        for entry in ClusterObject.objects.filter(id__in=set(map(itemgetter("service_id"), new_hostcomponent)))
-    }
-    components = {
-        entry.pk: entry
-        for entry in ServiceComponent.objects.filter(id__in=set(map(itemgetter("component_id"), new_hostcomponent)))
-    }
-
-    host_comp_list = [
-        (services[entry["service_id"]], hosts[entry["host_id"]], components[entry["component_id"]])
-        for entry in new_hostcomponent
-    ]
-
-    logger.warning("task #%s is failed, restore old hc", task_.pk)
-
-    save_hc(cluster, host_comp_list)
-
-
-def remove_task_lock(task_id: int) -> None:
-    from cm.issue import unlock_affected_objects
-    from cm.models import TaskLog
-
-    unlock_affected_objects(TaskLog.objects.get(pk=task_id))
-
-
-def update_issues(object_: CoreObjectDescriptor):
-    # todo move it to `cm.services.job` somewhere
-    from cm.converters import core_type_to_model
-    from cm.issue import update_hierarchy_issues
-
-    update_hierarchy_issues(obj=core_type_to_model(core_type=object_.type).objects.get(id=object_.id))
-
-
-def update_object_maintenance_mode(action_name: str, object_: CoreObjectDescriptor):
-    # todo move it to `cm.services.job` somewhere
-    from django.conf import settings
-
-    from cm.converters import core_type_to_model
-    from cm.models import MaintenanceMode
-
-    obj = core_type_to_model(core_type=object_.type).objects.get(id=object_.id)
-
-    if (
-        action_name in {settings.ADCM_TURN_ON_MM_ACTION_NAME, settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME}
-        and obj.maintenance_mode == MaintenanceMode.CHANGING
-    ):
-        obj.maintenance_mode = MaintenanceMode.OFF
-        obj.save()
-
-    if (
-        action_name in {settings.ADCM_TURN_OFF_MM_ACTION_NAME, settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME}
-        and obj.maintenance_mode == MaintenanceMode.CHANGING
-    ):
-        obj.maintenance_mode = MaintenanceMode.ON
-        obj.save()
-
-
-def audit_job_finish(
-    owner: NamedCoreObject, display_name: str, is_upgrade: bool, job_result: ExecutionStatus
-) -> None:  # todo probably shouldn't be here at all
-    from audit.cases.common import get_or_create_audit_obj
-    from audit.cef_logger import cef_logger
-    from audit.models import AuditLog, AuditLogOperationResult, AuditLogOperationType, AuditObjectType
-
-    operation_name = f"{display_name} {'upgrade' if is_upgrade else 'action'} completed"
-
-    if owner.type == ADCMCoreType.HOSTPROVIDER:
-        obj_type = AuditObjectType.PROVIDER
-    else:
-        obj_type = AuditObjectType(owner.type.value)
-
-    audit_object = get_or_create_audit_obj(
-        object_id=str(owner.id),
-        object_name=owner.name,
-        object_type=obj_type,
-    )
-    operation_result = (
-        AuditLogOperationResult.SUCCESS if job_result == ExecutionStatus.SUCCESS else AuditLogOperationResult.FAIL
-    )
-
-    audit_log = AuditLog.objects.create(
-        audit_object=audit_object,
-        operation_name=operation_name,
-        operation_type=AuditLogOperationType.UPDATE,
-        operation_result=operation_result,
-        object_changes={},
-    )
-
-    cef_logger(audit_instance=audit_log, signature_id="Action completion")
-
-
 class JobSequenceRunner(TaskRunner):
     _notifier: EventNotifier
     _status_server = StatusServerInteractor
 
     def __init__(
-        self, *, notifier: EventNotifier, status_server: StatusServerInteractor, logger: logging.Logger, **kwargs: Any
+        self, *, notifier: EventNotifier, status_server: StatusServerInteractor, logger: Logger, **kwargs: Any
     ):
         super().__init__(**kwargs)
 
@@ -206,7 +93,8 @@ class JobSequenceRunner(TaskRunner):
         last_processed_job = None
         last_job_result = None
         for current_job in configured_jobs:
-            self._prepare_job_environment(target=current_job)
+            task = self._get_updated_task(task=task)
+            self._prepare_job_environment(task=task, target=current_job)
 
             last_processed_job = current_job.job
             last_job_result = self._execute_job(target=current_job)
@@ -240,7 +128,7 @@ class JobSequenceRunner(TaskRunner):
 
         task = self._repo.get_task(id=task_id)
 
-        if not (task.target and task.bundle_root):
+        if not (task.target and task.bundle):
             message = "Can't run task with no owner and/or bundle info"
             raise RuntimeError(message)
 
@@ -266,11 +154,21 @@ class JobSequenceRunner(TaskRunner):
         self._runtime.status = ExecutionStatus.RUNNING
         self._notifier.send_task_status_update_event(task_id=self._runtime.task_id, status=self._runtime.status.value)
 
-    def _prepare_job_environment(self, target: ExecutionTarget) -> None:
+    def _get_updated_task(self, task: Task) -> Task:
+        """
+        Update fields that can be changed during task execution EXCEPT owner object's related info
+        """
+        new_fields = self._repo.get_task_mutable_fields(id=task.id)
+        if task.hostcomponent == new_fields.hostcomponent:
+            return task
+
+        return Task(**(task.dict() | {"hostcomponent": new_fields.hostcomponent}))
+
+    def _prepare_job_environment(self, task: Task, target: ExecutionTarget) -> None:
         (self._settings.adcm.run_dir / str(target.job.id) / "tmp").mkdir(parents=True, exist_ok=True)
 
         for prepare_environment in target.environment_builders:
-            prepare_environment(job=target.job)
+            prepare_environment(task=task, job=target.job, configuration=self._settings)
 
     def _execute_job(self, target: ExecutionTarget) -> ExecutionStatus:
         target.executor.execute()
@@ -283,8 +181,6 @@ class JobSequenceRunner(TaskRunner):
                 start_date=self._environment.now(),
             ),
         )
-
-        # todo add object update based on job state/multi_state update rules
 
         set_job_lock(job_id=target.job.id)
 
@@ -301,9 +197,25 @@ class JobSequenceRunner(TaskRunner):
             id=target.job.id, data=JobUpdateDTO(status=job_status, finish_date=self._environment.now())
         )
 
+        # There a some approaches to implement finalizers:
+        #  1. "safe" finalizers that doesn't invoke their own errors, fail task on first error
+        #  2. catch all finalizers' exceptions, write as error, continue task
+        #  3. catch finalizers' exceptions, write as error, let all finalizers finish, fail task on error
+        #
+        # Currently **3rd** one is implemented,
+        # meaning we'll try to execute all specified finalizers,
+        # log their exceptions and raise the last exception
+        exception_to_raise = None
         for finalizer in target.finalizers:
-            # todo should we catch any exception here and just log it?
-            finalizer(job=target.job)
+            try:
+                finalizer(job=target.job)
+            except Exception as err:
+                exception_to_raise = err
+                message = "Unhandled exception occurred during after-job finalization"
+                self._logger.exception(message)
+
+        if exception_to_raise:
+            raise exception_to_raise
 
         return job_status
 
@@ -318,23 +230,29 @@ class JobSequenceRunner(TaskRunner):
         return last_job_result == ExecutionStatus.ABORTED
 
     def _finish(self, task: Task, last_job: Job | None):
+        from audit.utils import audit_job_finish
+
         task_result = self._runtime.status
 
         remove_task_lock(task_id=task.id)
 
         audit_job_finish(
             owner=task.target,
-            display_name=task.display_name,
-            is_upgrade=task.is_upgrade,
+            display_name=task.action.display_name,
+            is_upgrade=task.action.is_upgrade,
             job_result=task_result,
         )
 
         finished_task = self._repo.get_task(id=task.id)
         if finished_task.owner:
-            self._update_owner_object(owner=finished_task.owner, finished_task=finished_task, last_job=last_job)
+            self._update_owner_object(
+                owner=CoreObjectDescriptor(id=finished_task.owner.id, type=finished_task.owner.type),
+                finished_task=finished_task,
+                last_job=last_job,
+            )
 
         if finished_task.target:
-            update_object_maintenance_mode(action_name=finished_task.name, object_=finished_task.target)
+            update_object_maintenance_mode(action_name=finished_task.action.name, object_=finished_task.target)
 
         self._repo.update_task(id=task.id, data=TaskUpdateDTO(finish_date=self._environment.now(), status=task_result))
         self._notifier.send_task_status_update_event(task_id=self._runtime.task_id, status=task_result)
@@ -351,7 +269,7 @@ class JobSequenceRunner(TaskRunner):
 
         if (
             self._runtime.status in {ExecutionStatus.FAILED, ExecutionStatus.ABORTED, ExecutionStatus.BROKEN}
-            and finished_task.hostcomponent.to_set is not None
+            and finished_task.hostcomponent.saved is not None
             and finished_task.hostcomponent.restore_on_fail
         ):
             set_hostcomponent(task=finished_task, logger=self._logger)
@@ -364,7 +282,7 @@ class JobSequenceRunner(TaskRunner):
             multi_state_unset = task.on_success.multi_state_unset
             state = task.on_success.state
             if not state:
-                self._logger.warning('task for "%s" success state is not set', task.display_name)
+                self._logger.warning('task for "%s" success state is not set', task.action.display_name)
 
         elif self._runtime.status == ExecutionStatus.FAILED:
             job_on_fail = job.on_fail
@@ -373,7 +291,7 @@ class JobSequenceRunner(TaskRunner):
             multi_state_set = job_on_fail.multi_state_set or task_on_fail.multi_state_set
             multi_state_unset = job_on_fail.multi_state_unset or task_on_fail.multi_state_unset
             if not state:
-                self._logger.warning('task for "%s" fail state is not set', task.display_name)
+                self._logger.warning('task for "%s" fail state is not set', task.action.display_name)
 
         else:
             if self._runtime.status != ExecutionStatus.ABORTED:
@@ -388,7 +306,7 @@ class JobSequenceRunner(TaskRunner):
             owner=owner, add_multi_states=multi_state_set, remove_multi_states=multi_state_unset
         )
 
-        if task.is_upgrade:
+        if task.action.is_upgrade:
             self._notifier.send_prototype_update_event(object_=owner)
         else:
             self._notifier.send_update_event(object_=owner, changes={"state": state})

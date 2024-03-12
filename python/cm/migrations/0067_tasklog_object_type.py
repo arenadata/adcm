@@ -15,8 +15,14 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
-from adcm.utils import OBJECT_TYPES_DICT
-
+content = {
+    "component": "servicecomponent",
+    "service": "clusterobject",
+    "host": "host",
+    "provider": "hostprovider",
+    "cluster": "cluster",
+    "adcm": "adcm",
+}
 
 def fix_tasklog(apps, schema_editor):
     TaskLog = apps.get_model("cm", "TaskLog")
@@ -32,7 +38,7 @@ def fix_tasklog(apps, schema_editor):
 
     def get_content(context):
         if context not in cash:
-            cash[context] = ContentType.objects.get(app_label="cm", model=OBJECT_TYPES_DICT[context])
+            cash[context] = ContentType.objects.get(app_label="cm", model=content[context])
         return cash[context]
 
     def get_task_obj(action, obj_id):

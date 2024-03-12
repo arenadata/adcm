@@ -12,6 +12,7 @@
 
 
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
+from core.job.errors import TaskCreateError
 from core.job.repo import ActionRepoInterface, JobRepoInterface
 from core.job.types import JobSpec
 from core.types import ActionID, CoreObjectDescriptor
@@ -36,21 +37,20 @@ def compose_task(
     ! WARNING !
     Currently, stdout/stderr logs are created alongside the jobs
     for policies to be re-applied correctly after this method is called.
-    It must be changed.
+
+    It may be changed if favor of creating logs when job is actually prepared/started.
     """
 
     job_specifications = get_specifications_for_jobs(action=action, repo=action_repo)
     if not job_specifications:
-        # todo fix error type
         message = f"Can't compose task for action #{action}, because no associated jobs found"
-        raise RuntimeError(message)
+        raise TaskCreateError(message)
 
     action_info = action_repo.get_action(id=action)
     task = job_repo.create_task(target=target, owner=owner, action=action_info, payload=payload)
 
     job_repo.create_jobs(task_id=task.id, jobs=job_specifications)
 
-    # todo fix warning from docstring
     logs = []
     for job in job_repo.get_task_jobs(task_id=task.id):
         logs.append(LogCreateDTO(job_id=job.id, name=job.type.value, type="stdout", format="txt"))

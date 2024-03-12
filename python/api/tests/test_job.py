@@ -167,7 +167,7 @@ class TestJobAPI(BaseTestCase):
         cluster_prototype = Prototype.objects.get(bundle=bundle, type="cluster")
         cluster = Cluster.objects.create(name="test_cluster", prototype=cluster_prototype)
 
-        with patch("cm.job.run_task"):
+        with patch("cm.services.job.run.run_task"):
             response: Response = self.client.post(
                 path=reverse(viewname="v1:run-task", kwargs={"cluster_id": cluster.pk, "action_id": action.pk}),
             )
@@ -201,7 +201,7 @@ class TestJobAPI(BaseTestCase):
         policy.apply()
 
         with self.no_rights_user_logged_in:
-            with patch("cm.job.run_task"):
+            with patch("cm.services.job.run.run_task"):
                 self.client.post(
                     path=reverse(viewname="v1:run-task", kwargs={"cluster_id": cluster.pk, "action_id": action.pk}),
                 )

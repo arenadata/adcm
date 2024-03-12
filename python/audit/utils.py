@@ -48,6 +48,8 @@ from cm.models import (
     get_cm_model_by_type,
     get_model_by_type,
 )
+from core.job.types import ExecutionStatus
+from core.types import ADCMCoreType, NamedCoreObject
 from django.contrib.auth.models import User as DjangoUser
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import Model, ObjectDoesNotExist
@@ -65,12 +67,14 @@ from rest_framework.status import (
 from rest_framework.viewsets import ModelViewSet
 
 from audit.cases.cases import get_audit_operation_and_object
+from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
     AuditObject,
+    AuditObjectType,
     AuditOperation,
     AuditUser,
 )
@@ -612,3 +616,31 @@ def get_client_ip(request: WSGIRequest) -> str | None:
             break
 
     return host
+
+
+def audit_job_finish(owner: NamedCoreObject, display_name: str, is_upgrade: bool, job_result: ExecutionStatus) -> None:
+    operation_name = f"{display_name} {'upgrade' if is_upgrade else 'action'} completed"
+
+    if owner.type == ADCMCoreType.HOSTPROVIDER:
+        obj_type = AuditObjectType.PROVIDER
+    else:
+        obj_type = AuditObjectType(owner.type.value)
+
+    audit_object = get_or_create_audit_obj(
+        object_id=str(owner.id),
+        object_name=owner.name,
+        object_type=obj_type,
+    )
+    operation_result = (
+        AuditLogOperationResult.SUCCESS if job_result == ExecutionStatus.SUCCESS else AuditLogOperationResult.FAIL
+    )
+
+    audit_log = AuditLog.objects.create(
+        audit_object=audit_object,
+        operation_name=operation_name,
+        operation_type=AuditLogOperationType.UPDATE,
+        operation_result=operation_result,
+        object_changes={},
+    )
+
+    cef_logger(audit_instance=audit_log, signature_id="Action completion")

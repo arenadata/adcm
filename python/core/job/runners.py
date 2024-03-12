@@ -24,15 +24,21 @@ from core.job.types import ExecutionStatus, Job, Task
 class ADCMSettings(NamedTuple):
     code_root_dir: Path
     run_dir: Path
+    log_dir: Path
 
 
 class AnsibleSettings(NamedTuple):
     ansible_secret_script: Path
 
 
+class IntegrationsSettings(NamedTuple):
+    status_server_token: str
+
+
 class ExternalSettings(NamedTuple):
     adcm: ADCMSettings
     ansible: AnsibleSettings
+    integrations: IntegrationsSettings
 
 
 class JobFinalizer(Protocol):
@@ -41,7 +47,7 @@ class JobFinalizer(Protocol):
 
 
 class JobEnvironmentBuilder(Protocol):
-    def __call__(self, job: Job) -> None:
+    def __call__(self, task: Task, job: Job, configuration: ExternalSettings) -> None:
         ...
 
 
@@ -53,13 +59,13 @@ class ExecutionTarget(NamedTuple):
     finalizers: Iterable[JobFinalizer]
 
 
-class ExecutionTargetFactoryProtocol(Protocol):
+class JobToExecutionTargetConverter(Protocol):
     def __call__(self, task: Task, jobs: Iterable[Job], configuration: ExternalSettings) -> Iterable[ExecutionTarget]:
         ...
 
 
 class JobProcessor(NamedTuple):
-    convert: ExecutionTargetFactoryProtocol
+    convert: JobToExecutionTargetConverter
     # id will always return True in bool cast
     filter_predicate: Callable[[Job], bool] = id
 

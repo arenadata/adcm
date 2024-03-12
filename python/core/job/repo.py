@@ -12,7 +12,7 @@
 
 from typing import Collection, Iterable, Protocol
 
-from core.job.dto import JobUpdateDTO, LogCreateDTO, TaskPayloadDTO, TaskUpdateDTO
+from core.job.dto import JobUpdateDTO, LogCreateDTO, TaskMutableFieldsDTO, TaskPayloadDTO, TaskUpdateDTO
 from core.job.types import ActionInfo, Job, JobSpec, Task
 from core.types import ActionID, CoreObjectDescriptor
 
@@ -32,6 +32,9 @@ class JobRepoInterface(Protocol):
     def get_task_jobs(self, task_id: int) -> Iterable[Job]:
         ...
 
+    def get_task_mutable_fields(self, id: int) -> TaskMutableFieldsDTO:  # noqa: A002
+        ...
+
     def create_jobs(self, task_id: int, jobs: Iterable[JobSpec]) -> None:
         ...
 
@@ -44,8 +47,6 @@ class JobRepoInterface(Protocol):
     def create_logs(self, logs: Iterable[LogCreateDTO]) -> None:
         ...
 
-    # todo quite strange to keep it here,
-    #  on the other hand statuses are more about actions/task/jobs that anything else
     def update_owner_state(self, owner: CoreObjectDescriptor, state: str) -> None:
         ...
 

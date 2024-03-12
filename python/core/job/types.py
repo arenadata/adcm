@@ -14,9 +14,17 @@ from enum import Enum
 from pathlib import Path
 from typing import NamedTuple
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Extra
 
-from core.types import ActionID, CoreObjectDescriptor, NamedCoreObject, PrototypeDescriptor
+from core.types import (
+    ActionID,
+    ADCMCoreType,
+    NamedCoreObject,
+    NamedCoreObjectWithPrototype,
+    ObjectID,
+    PrototypeDescriptor,
+    PrototypeID,
+)
 
 
 # str is required for pydantic to correctly cast enum to value when calling `.dict`
@@ -49,28 +57,66 @@ class StateChanges(NamedTuple):
 
 
 class HostComponentChanges(NamedTuple):
-    to_set: list[dict] | None
+    saved: list[dict] | None
     post_upgrade: list[dict] | None
     restore_on_fail: bool
+
+
+class BundleInfo(NamedTuple):
+    # root is directory of bundle like /adcm/data/bundle/somehash
+    root: Path
+    # relative path to directory with `config.yaml` within `root`
+    config_dir: Path
+
+
+class RelatedObjects(NamedTuple):
+    # must be specified for Service/Component and Host (if linked)
+    cluster: NamedCoreObjectWithPrototype | None = None
+    # must be specified for Component
+    service: NamedCoreObjectWithPrototype | None = None
+    # must be specified for Host
+    hostprovider: NamedCoreObjectWithPrototype | None = None
+
+
+class TaskOwner(NamedTuple):
+    id: ObjectID
+    type: ADCMCoreType
+    name: str
+    prototype_id: PrototypeID
+
+    related_objects: RelatedObjects
+
+
+class TaskActionInfo(NamedTuple):
+    name: str
+    display_name: str
+
+    venv: str
+    hc_acl: list[dict]
+
+    is_upgrade: bool
+    is_host_action: bool
 
 
 class Task(BaseModel):
     id: int
 
     # Owner is an object on which action is defined
-    owner: CoreObjectDescriptor | None
-    bundle_root: Path | None
+    owner: TaskOwner | None
+    bundle: BundleInfo | None
 
     # Target is an object on which action should be performed
     # it's the same as owner for all cases except `host_action: true`
     target: NamedCoreObject | None
 
-    name: str
-    display_name: str
-    is_upgrade: bool
+    selector: dict
+
+    action: TaskActionInfo
+
     verbose: bool
-    venv: str
     hostcomponent: HostComponentChanges
+    config: dict | None
+
     on_success: StateChanges
     on_fail: StateChanges
 
@@ -91,19 +137,20 @@ class JobSpec(BaseModel):
     # extra
     params: dict
 
-    class Config:  # simplify existing objects retrieval
-        orm_mode = True
-
 
 # it is validated, because we want to fail here on incorrect data
 # rather than when we will use it
 class JobParams(BaseModel):
     ansible_tags: str
 
+    class Config:
+        extra = Extra.allow
+
 
 class Job(BaseModel):
     id: int
     pid: int
+    name: str
     type: ScriptType
     status: ExecutionStatus
     script: str

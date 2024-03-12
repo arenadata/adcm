@@ -19,6 +19,8 @@ import subprocess
 from pydantic import BaseModel
 from typing_extensions import Self
 
+from core.job.types import BundleInfo
+
 
 class ExecutionResult(NamedTuple):
     code: int
@@ -45,8 +47,8 @@ class ExecutorConfig(BaseModel):
 
 
 class BundleExecutorConfig(ExecutorConfig):
-    script_file: Path
-    bundle_root: Path
+    job_script: str
+    bundle: BundleInfo
 
 
 class Executor(ABC):
@@ -96,7 +98,7 @@ class ProcessExecutor(Executor, WithErrOutLogsMixin, ABC):
 
         self._open_logs(log_dir=self._config.work_dir, log_prefix=self.script_type)
 
-        os.chdir(self._config.bundle_root)
+        os.chdir(self._config.bundle.root)
         self._process = subprocess.Popen(
             command,  # noqa S603
             env=environment,
@@ -120,6 +122,7 @@ class ProcessExecutor(Executor, WithErrOutLogsMixin, ABC):
 
     def _get_environment_variables(self) -> dict:
         env = os.environ.copy()
-        env["PYTHONPATH"] = f"./pmod:{self._config.bundle_root}/pmod:{env.get('PYTHONPATH', '')}".rstrip(":")
+        # it is expected to be bundle root as in `stack_dir`
+        env["PYTHONPATH"] = f"./pmod:{self._config.bundle.root}/pmod:{env.get('PYTHONPATH', '')}".rstrip(":")
 
         return env

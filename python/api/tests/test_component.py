@@ -14,7 +14,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 from adcm.tests.base import BaseTestCase
-from cm.job import ActionRunPayload
 from cm.models import (
     Action,
     Bundle,
@@ -26,6 +25,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.job.action import ActionRunPayload
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
@@ -142,18 +142,13 @@ class TestComponentAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["maintenance_mode"], "CHANGING")
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.CHANGING)
-        start_task_mock.assert_called_once_with(
-            action=action,
-            obj=self.component,
-            payload=ActionRunPayload(),
-            hosts=[],
-        )
+        start_task_mock.assert_called_once_with(action=action, obj=self.component, payload=ActionRunPayload())
 
     def test_change_maintenance_mode_on_from_on_with_action_fail(self):
         self.component.maintenance_mode = MaintenanceMode.ON
         self.component.save()
 
-        with patch("adcm.utils.run_action") as start_task_mock:
+        with patch("cm.services.job.action.run_action") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
                 data={"maintenance_mode": "ON"},
@@ -202,18 +197,13 @@ class TestComponentAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["maintenance_mode"], "CHANGING")
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.CHANGING)
-        start_task_mock.assert_called_once_with(
-            action=action,
-            obj=self.component,
-            payload=ActionRunPayload(),
-            hosts=[],
-        )
+        start_task_mock.assert_called_once_with(action=action, obj=self.component, payload=ActionRunPayload())
 
     def test_change_maintenance_mode_off_to_off_with_action_fail(self):
         self.component.maintenance_mode = MaintenanceMode.OFF
         self.component.save()
 
-        with patch("adcm.utils.run_action") as start_task_mock:
+        with patch("cm.services.job.action.run_action") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
                 data={"maintenance_mode": "OFF"},

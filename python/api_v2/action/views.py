@@ -15,8 +15,8 @@ from itertools import compress
 from adcm.mixins import GetParentObjectMixin
 from audit.utils import audit
 from cm.errors import AdcmEx
-from cm.job import ActionRunPayload, run_action
 from cm.models import ADCM, Action, ConcernType, Host, HostComponent, PrototypeConfig
+from cm.services.job.action import ActionRunPayload, run_action
 from cm.stack import check_hostcomponents_objects_exist
 from django.conf import settings
 from django.db.models import Q
@@ -194,7 +194,6 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
                 hostcomponent=insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),
                 verbose=serializer.validated_data["is_verbose"],
             ),
-            hosts=[],
         )
 
         return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)

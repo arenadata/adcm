@@ -64,13 +64,14 @@ def db_record_type_to_core_type(db_record_type: str) -> ADCMCoreType:
 
 
 def model_name_to_core_type(model_name: str) -> ADCMCoreType:
+    name_ = model_name.lower()
     try:
-        return ADCMCoreType(model_name)
+        return ADCMCoreType(name_)
     except ValueError:
-        if model_name == "clusterobject":
+        if name_ == "clusterobject":
             return ADCMCoreType.SERVICE
 
-        if model_name == "servicecomponent":
+        if name_ == "servicecomponent":
             return ADCMCoreType.COMPONENT
 
         raise

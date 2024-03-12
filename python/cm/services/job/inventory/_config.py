@@ -99,9 +99,6 @@ def get_group_config_alternatives_for_hosts_in_cluster_groups(
     return result
 
 
-# todo unite with one above
-
-
 def get_group_config_alternatives_for_hosts_in_hostprovider_groups(
     group_configs: Iterable[GroupConfigInfo],
     hostprovider_vars: dict,

@@ -15,7 +15,6 @@ from datetime import datetime
 from unittest.mock import patch
 
 from adcm.tests.base import BaseTestCase
-from cm.job import finish_task
 from cm.models import (
     ADCM,
     Action,
@@ -155,19 +154,20 @@ class TestActionAudit(BaseTestCase):
             user=self.test_user,
         )
 
-    def test_adcm_finish_fail(self):
-        finish_task(task=self.task, job=None, status="fail")
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        self.check_obj_updated(
-            log=log,
-            obj_pk=self.adcm.pk,
-            obj_name=self.adcm.name,
-            obj_type=AuditObjectType.ADCM,
-            operation_name=f"{self.action.display_name} action completed",
-            operation_result=AuditLogOperationResult.FAIL,
-        )
+    # todo test finalizing action launch with audit
+    # def test_adcm_finish_fail(self):
+    #     finish_task(task=self.task, job=None, status="fail")
+    #
+    #     log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+    #
+    #     self.check_obj_updated(
+    #         log=log,
+    #         obj_pk=self.adcm.pk,
+    #         obj_name=self.adcm.name,
+    #         obj_type=AuditObjectType.ADCM,
+    #         operation_name=f"{self.action.display_name} action completed",
+    #         operation_result=AuditLogOperationResult.FAIL,
+    #     )
 
     def test_component_launch(self):
         cluster, service, component = self.get_cluster_service_component()

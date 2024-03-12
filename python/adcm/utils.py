@@ -17,7 +17,6 @@ from cm.api import cancel_locking_tasks, delete_service
 from cm.errors import AdcmEx
 from cm.flag import update_flags
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
-from cm.job import ActionRunPayload, run_action
 from cm.models import (
     ADCM,
     Action,
@@ -35,6 +34,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import send_object_update_event
 from django.conf import settings
@@ -71,7 +71,6 @@ def _change_mm_via_action(
             action=action,
             obj=obj,
             payload=ActionRunPayload(conf={}, attr={}, hostcomponent=[], verbose=False),
-            hosts=[],
         )
         serializer.validated_data["maintenance_mode"] = MaintenanceMode.CHANGING
 
@@ -381,7 +380,6 @@ def delete_service_from_api(service: ClusterObject) -> Response:
             action=delete_action,
             obj=service,
             payload=ActionRunPayload(conf={}, attr={}, hostcomponent=[], verbose=False),
-            hosts=[],
         )
     else:
         delete_service(service=service)

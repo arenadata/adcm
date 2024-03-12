@@ -127,7 +127,7 @@ class TestComponentAPI(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
-        with patch("cm.job.run_task", return_value=None):
+        with patch("cm.services.job.run.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     "v2:component-action-run",

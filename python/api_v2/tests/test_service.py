@@ -13,7 +13,6 @@
 from typing import NamedTuple
 from unittest.mock import patch
 
-from cm.job import ActionRunPayload, run_action
 from cm.models import (
     Action,
     ADCMEntityStatus,
@@ -28,6 +27,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.status.client import FullStatusMap
 from django.urls import reverse
 from rest_framework.status import (
@@ -252,7 +252,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
-        with patch("cm.job.run_task", return_value=None):
+        with patch("cm.services.job.run.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:service-action-run",
@@ -318,7 +318,7 @@ class TestServiceDeleteAction(BaseAPITestCase):
     @staticmethod
     def imitate_task_running(action: Action, object_: Cluster | ClusterObject) -> TaskLog:
         with patch("subprocess.Popen", return_value=FakePopenResponse(4)):
-            task = run_action(action=action, obj=object_, payload=ActionRunPayload(), hosts=[])
+            task = run_action(action=action, obj=object_, payload=ActionRunPayload())
 
         job = JobLog.objects.filter(task=task).first()
         job.status = "running"

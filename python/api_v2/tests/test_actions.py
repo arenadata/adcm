@@ -252,7 +252,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.host_1.maintenance_mode = MaintenanceMode.ON
         self.host_1.save(update_fields=["maintenance_mode"])
 
-        with patch("cm.job.run_task", return_value=None):
+        with patch("cm.services.job.run.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:host-action-run",
@@ -275,7 +275,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
-        with patch("cm.job.run_task", return_value=None):
+        with patch("cm.services.job.run.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:host-action-run",
@@ -303,7 +303,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
-        with patch("cm.job.run_task", return_value=None):
+        with patch("cm.services.job.run.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:host-action-run",
@@ -324,7 +324,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
-        with patch("cm.job.run_task", return_value=None):
+        with patch("cm.services.job.run.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:host-action-run",
@@ -345,7 +345,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
-        with patch("cm.job.run_task", return_value=None):
+        with patch("cm.services.job.run.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:host-action-run",
@@ -368,7 +368,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
-        with patch("cm.job.run_task", return_value=None):
+        with patch("cm.services.job.run.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:host-action-run",

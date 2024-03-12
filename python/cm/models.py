@@ -1408,7 +1408,7 @@ class TaskLog(ADCMModel):
 class JobLog(AbstractSubAction):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
-    status = models.CharField(max_length=1000, choices=JobStatus.choices)
+    status = models.CharField(max_length=1000, choices=JobStatus.choices, default="created")
     start_date = models.DateTimeField(null=True, default=None)
     finish_date = models.DateTimeField(db_index=True, null=True, default=None)
 

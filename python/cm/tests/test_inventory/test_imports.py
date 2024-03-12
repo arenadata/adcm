@@ -11,7 +11,10 @@
 # limitations under the License.
 from typing import Iterable
 
+from core.types import ADCMCoreType, CoreObjectDescriptor
+
 from cm.api import DataForMultiBind, multi_bind
+from cm.converters import model_name_to_core_type
 from cm.models import (
     Action,
     ADCMModel,
@@ -163,7 +166,8 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         ):
             with self.subTest(object_.__class__.__name__):
                 action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
-                actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action))
+                target = CoreObjectDescriptor(id=object_.id, type=model_name_to_core_type(object_.__class__.__name__))
+                actual_inventory = decrypt_secrets(get_inventory_data(target=target, is_host_action=action.host_action))
                 expected_inventory = self.render_json_template(
                     file=self.templates_dir / "configs_and_imports" / template, context=self.context
                 )
@@ -182,7 +186,10 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         for object_ in (self.cluster, self.service, self.component):
             with self.subTest(object_.__class__.__name__):
                 action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
-                actual_vars = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["vars"])
+                target = CoreObjectDescriptor(id=object_.id, type=model_name_to_core_type(object_.__class__.__name__))
+                actual_vars = decrypt_secrets(
+                    get_inventory_data(target=target, is_host_action=action.host_action)["all"]["vars"]
+                )
                 self.assertDictEqual(actual_vars, expected_vars)
 
     def test_cluster_objects_single_import_success(self) -> None:
@@ -214,7 +221,10 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         for object_ in (self.cluster, self.service, self.component):
             with self.subTest(object_.__class__.__name__):
                 action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
-                actual_vars = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["vars"])
+                target = CoreObjectDescriptor(id=object_.id, type=model_name_to_core_type(object_.__class__.__name__))
+                actual_vars = decrypt_secrets(
+                    get_inventory_data(target=target, is_host_action=action.host_action)["all"]["vars"]
+                )
                 self.assertDictEqual(actual_vars, expected_vars)
 
     def test_cluster_objects_multi_import_success(self) -> None:
@@ -256,7 +266,10 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         for object_ in (self.cluster, self.service, self.component):
             with self.subTest(object_.__class__.__name__):
                 action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
-                actual_vars = decrypt_secrets(get_inventory_data(obj=object_, action=action)["all"]["vars"])
+                target = CoreObjectDescriptor(id=object_.id, type=model_name_to_core_type(object_.__class__.__name__))
+                actual_vars = decrypt_secrets(
+                    get_inventory_data(target=target, is_host_action=action.host_action)["all"]["vars"]
+                )
                 self.assertDictEqual(actual_vars, expected_vars)
 
     def test_imports_have_default_no_import_success(self) -> None:
@@ -362,7 +375,8 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.bind_objects((self.service_with_defaults, [self.export_cluster_1]))
 
         action = Action.objects.filter(prototype=self.service_with_defaults.prototype, name="dummy").first()
-        result = decrypt_secrets(get_inventory_data(obj=self.service_with_defaults, action=action))["all"]
+        target = CoreObjectDescriptor(id=self.service_with_defaults.id, type=ADCMCoreType.SERVICE)
+        result = decrypt_secrets(get_inventory_data(target=target, is_host_action=action.host_action))["all"]
         expected_vars_imports = {
             "very_complex": {
                 "just_integer": 4,

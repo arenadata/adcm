@@ -14,7 +14,7 @@ from datetime import datetime
 import os
 import logging
 
-from core.job.runners import ADCMSettings, AnsibleSettings, ExternalSettings, JobProcessor
+from core.job.runners import ADCMSettings, AnsibleSettings, ExternalSettings, IntegrationsSettings, JobProcessor
 from core.job.types import ExecutionStatus
 from django.conf import settings
 from django.utils import timezone
@@ -66,6 +66,7 @@ def get_restart_runner():
 
 def _prepare_settings() -> ExternalSettings:
     return ExternalSettings(
-        adcm=ADCMSettings(code_root_dir=settings.CODE_DIR, run_dir=settings.RUN_DIR),
+        adcm=ADCMSettings(code_root_dir=settings.CODE_DIR, run_dir=settings.RUN_DIR, log_dir=settings.LOG_DIR),
         ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),
+        integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
     )

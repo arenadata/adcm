@@ -18,8 +18,9 @@ import tarfile
 from adcm.permissions import check_custom_perm, get_object_for_user
 from adcm.utils import str_remove_non_alnum
 from audit.utils import audit
-from cm.job import restart_task
-from cm.models import ActionType, JobLog, LogStorage, TaskLog
+from cm.errors import AdcmEx
+from cm.models import ActionType, JobLog, JobStatus, LogStorage, TaskLog
+from cm.services.job.run import restart_task, run_task
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
@@ -219,7 +220,16 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Gener
     def restart(self, request: Request, task_pk: int) -> Response:
         task = get_object_for_user(request.user, VIEW_TASKLOG_PERMISSION, TaskLog, id=task_pk)
         check_custom_perm(request.user, "change", TaskLog, task)
-        restart_task(task)
+
+        if task.status in (JobStatus.CREATED, JobStatus.RUNNING):
+            raise AdcmEx(code="TASK_ERROR", msg=f"task #{task.pk} is running")
+
+        if task.status == JobStatus.SUCCESS:
+            run_task(task)
+        elif task.status in (JobStatus.FAILED, JobStatus.ABORTED):
+            restart_task(task)
+        else:
+            raise AdcmEx(code="TASK_ERROR", msg=f"task #{task.pk} has unexpected status: {task.status}")
 
         return Response(status=HTTP_200_OK)
 

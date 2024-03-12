@@ -20,7 +20,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rbac.models import User
 from rest_framework.response import Response
-from rest_framework.status import HTTP_404_NOT_FOUND
+from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
 from audit.models import (
     AuditLog,
@@ -98,8 +98,13 @@ class TestTaskAudit(BaseTestCase):
         )
 
     def test_restart(self):
+        self.task.status = "failed"
+        self.task.save()
+
         with patch("api.job.views.restart_task"):
-            self.client.put(path=reverse(viewname="v1:tasklog-restart", kwargs={"task_pk": self.task.pk}))
+            response = self.client.put(path=reverse(viewname="v1:tasklog-restart", kwargs={"task_pk": self.task.pk}))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 

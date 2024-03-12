@@ -24,6 +24,7 @@ from core.job.executors import (
 from typing_extensions import Self
 
 from cm.errors import AdcmEx
+from cm.services.bundle import detect_path_for_file_in_bundle
 from cm.utils import get_env_with_venv_path
 
 
@@ -43,7 +44,11 @@ class AnsibleProcessExecutor(ProcessExecutor):
         super().__init__(config=config)
 
     def _prepare_command(self) -> list[str]:
-        playbook = self._config.script_file
+        playbook = detect_path_for_file_in_bundle(
+            bundle_root=self._config.bundle.root,
+            config_yaml_dir=self._config.bundle.config_dir,
+            file=self._config.job_script,
+        )
         cmd = [
             "ansible-playbook",
             "--vault-password-file",
@@ -52,7 +57,7 @@ class AnsibleProcessExecutor(ProcessExecutor):
             f"@{self._config.work_dir}/config.json",
             "-i",
             f"{self._config.work_dir}/inventory.json",
-            playbook,
+            str(playbook),
         ]
 
         if self._config.tags:
@@ -70,7 +75,8 @@ class AnsibleProcessExecutor(ProcessExecutor):
 
         # This condition is intended to support compatibility.
         # Since older bundle versions may contain their own ansible.cfg
-        if not Path(self._config.bundle_root, "ansible.cfg").is_file():
+        if not Path(self._config.bundle.root, "ansible.cfg").is_file():
+            # bundle root dir (workdir) is used as in `stack_dir` in ansible job config
             env["ANSIBLE_CONFIG"] = str(self._config.work_dir / "ansible.cfg")
 
         return env
@@ -80,7 +86,12 @@ class PythonProcessExecutor(ProcessExecutor):
     script_type = "python"
 
     def _prepare_command(self) -> list[str]:
-        return ["python", self._config.script_file]
+        script_fullpath = detect_path_for_file_in_bundle(
+            bundle_root=self._config.bundle.root,
+            config_yaml_dir=self._config.bundle.config_dir,
+            file=self._config.job_script,
+        )
+        return ["python", str(script_fullpath)]
 
 
 class InternalExecutor(Executor, WithErrOutLogsMixin):
@@ -98,6 +109,8 @@ class InternalExecutor(Executor, WithErrOutLogsMixin):
         except AdcmEx as err:
             self._err_log.write(err.msg)
             return_code = 1
+        finally:
+            self._close_logs()
 
         self._result = ExecutionResult(code=return_code)
 

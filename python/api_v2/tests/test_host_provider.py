@@ -136,7 +136,7 @@ class TestProviderActions(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
-        with patch("cm.job.run_task", return_value=None):
+        with patch("cm.services.job.run.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     viewname="v2:provider-action-run",

@@ -580,7 +580,7 @@ class TestHostActions(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_host_cluster_run_success(self):
-        with patch("cm.job.run_task", return_value=None):
+        with patch("cm.services.job.run.run_task", return_value=None):
             response = self.client.post(
                 path=reverse(
                     "v2:host-cluster-action-run",
@@ -612,7 +612,7 @@ class TestHostActions(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_host_run_success(self):
-        with patch("cm.job.run_task", return_value=None):
+        with patch("cm.services.job.run.run_task", return_value=None):
             response = self.client.post(
                 path=reverse("v2:host-action-run", kwargs={"host_pk": self.host.pk, "pk": self.action.pk}),
                 data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},

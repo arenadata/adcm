@@ -11,18 +11,15 @@
 # limitations under the License.
 
 
-from json import loads
 from pathlib import Path
+from unittest.mock import patch
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from django.conf import settings
-from django.urls import reverse
+from adcm.tests.base import BaseTestCase
+from core.types import CoreObjectDescriptor
 from init_db import init as init_adcm
-from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
 
 from cm.api import add_hc, add_service_to_cluster, update_obj_config
-from cm.job import re_prepare_job
+from cm.converters import model_name_to_core_type
 from cm.models import (
     Action,
     ClusterObject,
@@ -34,10 +31,10 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.job.action import ActionRunPayload, ObjectWithAction, run_action
 from cm.services.job.inventory import get_inventory_data
 from cm.services.job.inventory._constants import MAINTENANCE_MODE_GROUP_SUFFIX
 from cm.services.job.types import HcAclAction
-from cm.services.job.utils import JobScope
 from cm.tests.utils import (
     gen_bundle,
     gen_cluster,
@@ -142,8 +139,9 @@ class TestInventory(BaseTestCase):
         ]
 
         for obj, inv in data:
+            target = CoreObjectDescriptor(id=obj.id, type=model_name_to_core_type(obj.__class__.__name__))
             with self.subTest(obj=obj, inv=inv):
-                actual_data = get_inventory_data(obj=obj, action=action)
+                actual_data = get_inventory_data(target=target, is_host_action=action.host_action)
                 self.assertDictEqual(actual_data, inv)
 
 
@@ -271,25 +269,18 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
 
         return hc_request_data
 
-    def get_inventory_data(self, data: dict, kwargs: dict) -> dict:
+    def get_children_from_inventory(self, action: Action, object_: ObjectWithAction, payload: ActionRunPayload) -> dict:
+        from cm.services.job.run._target_factories import prepare_ansible_inventory
+        from cm.services.job.run.repo import JobRepoImpl
+
         self.assertEqual(TaskLog.objects.count(), 0)
         self.assertEqual(JobLog.objects.count(), 0)
 
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:run-task", kwargs=kwargs),
-            data=data,
-            content_type=APPLICATION_JSON,
-        )
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        with patch("cm.services.job.action.run_task"):
+            task = JobRepoImpl.get_task(run_action(action=action, obj=object_, payload=payload).id)
 
-        job = JobLog.objects.last()
-
-        (settings.RUN_DIR / str(job.pk)).mkdir(exist_ok=True, parents=True)
-        re_prepare_job(job_scope=JobScope(job_id=job.pk, object=job.task.task_object))
-
-        inventory_file = settings.RUN_DIR / str(job.pk) / "inventory.json"
-        with Path(inventory_file).open(encoding=settings.ENCODING_UTF_8) as f:
-            return loads(s=f.read())["all"]["children"]
+        inventory = prepare_ansible_inventory(task=task)
+        return inventory["all"]["children"]
 
     def test_groups_remove_host_not_in_mm_success(self):
         self.host_hc_acl_3.maintenance_mode = MaintenanceMode.ON
@@ -298,13 +289,10 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         # remove: hc_c1_h2
         hc_request_data = self._get_hc_request_data(self.hc_c1_h1, self.hc_c1_h3, self.hc_c2_h1, self.hc_c2_h2)
 
-        inventory_data = self.get_inventory_data(
-            data={"hc": hc_request_data, "verbose": False},
-            kwargs={
-                "cluster_id": self.cluster_hc_acl.pk,
-                "object_type": "cluster",
-                "action_id": self.action_hc_acl.pk,
-            },
+        inventory_data = self.get_children_from_inventory(
+            action=self.action_hc_acl,
+            object_=self.cluster_hc_acl,
+            payload=ActionRunPayload(hostcomponent=hc_request_data, verbose=False),
         )
 
         target_key_remove = (
@@ -344,13 +332,10 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         # remove: hc_c1_h3
         hc_request_data = self._get_hc_request_data(self.hc_c1_h1, self.hc_c1_h2, self.hc_c2_h1, self.hc_c2_h2)
 
-        inventory_data = self.get_inventory_data(
-            data={"hc": hc_request_data, "verbose": False},
-            kwargs={
-                "cluster_id": self.cluster_hc_acl.pk,
-                "object_type": "cluster",
-                "action_id": self.action_hc_acl.pk,
-            },
+        inventory_data = self.get_children_from_inventory(
+            action=self.action_hc_acl,
+            object_=self.cluster_hc_acl,
+            payload=ActionRunPayload(hostcomponent=hc_request_data, verbose=False),
         )
 
         target_key_remove = (
@@ -390,13 +375,10 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
                 attr={"group_keys": {"some_string": True, "float": False}},
             )
 
-        inventory_data = self.get_inventory_data(
-            data={"verbose": False},
-            kwargs={
-                "cluster_id": self.cluster_target_group.pk,
-                "object_type": "cluster",
-                "action_id": Action.objects.get(name="not_host_action").id,
-            },
+        inventory_data = self.get_children_from_inventory(
+            action=Action.objects.get(name="not_host_action"),
+            object_=self.cluster_target_group,
+            payload=ActionRunPayload(verbose=False),
         )
 
         self.assertDictEqual(
@@ -422,14 +404,8 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         self.host_target_group_1.maintenance_mode = MaintenanceMode.ON
         self.host_target_group_1.save()
 
-        target_hosts_data = self.get_inventory_data(
-            data={"verbose": False},
-            kwargs={
-                "cluster_id": self.cluster_target_group.pk,
-                "host_id": self.host_target_group_1.pk,
-                "object_type": "host",
-                "action_id": self.action_target_group.pk,
-            },
+        target_hosts_data = self.get_children_from_inventory(
+            action=self.action_target_group, object_=self.host_target_group_1, payload=ActionRunPayload(verbose=False)
         )["target"]["hosts"]
 
         self.assertIn(self.host_target_group_1.fqdn, target_hosts_data)
@@ -438,14 +414,8 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         self.host_target_group_2.maintenance_mode = MaintenanceMode.OFF
         self.host_target_group_2.save()
 
-        target_hosts_data = self.get_inventory_data(
-            data={"verbose": False},
-            kwargs={
-                "cluster_id": self.cluster_target_group.pk,
-                "host_id": self.host_target_group_2.pk,
-                "object_type": "host",
-                "action_id": self.action_target_group.pk,
-            },
+        target_hosts_data = self.get_children_from_inventory(
+            action=self.action_target_group, object_=self.host_target_group_2, payload=ActionRunPayload(verbose=False)
         )["target"]["hosts"]
 
         self.assertIn(self.host_target_group_2.fqdn, target_hosts_data)

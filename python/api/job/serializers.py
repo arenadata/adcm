@@ -14,8 +14,8 @@ from pathlib import Path
 import json
 
 from cm.ansible_plugin import get_checklogs_data_by_job_id
-from cm.job import ActionRunPayload, run_action
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
+from cm.services.job.action import ActionRunPayload, run_action
 from django.conf import settings
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
@@ -140,7 +140,6 @@ class RunTaskRetrieveSerializer(TaskRetrieveSerializer):
                 hostcomponent=validated_data.get("hc", []),
                 verbose=validated_data.get("verbose", False),
             ),
-            hosts=validated_data.get("hosts", []),
         )
         obj.jobs = JobLog.objects.filter(task_id=obj.id)
 
