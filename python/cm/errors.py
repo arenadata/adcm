@@ -149,7 +149,7 @@ ERRORS = {
     ),
     "GROUP_CONFIG_HOST_EXISTS": (
         "the host is already a member of this group ",
-        HTTP_400_BAD_REQUEST,
+        HTTP_409_CONFLICT,
     ),
     "NOT_CHANGEABLE_FIELDS": ("fields cannot be changed", HTTP_400_BAD_REQUEST, ERR),
     "GROUP_CONFIG_TYPE_ERROR": (
