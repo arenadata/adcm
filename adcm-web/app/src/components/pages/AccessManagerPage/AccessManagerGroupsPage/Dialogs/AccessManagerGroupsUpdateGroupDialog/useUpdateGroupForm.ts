@@ -20,8 +20,12 @@ export const useUpdateGroupForm = () => {
 
   const updatedGroup = useStore((s) => s.adcm.groupsActions.updateDialog.group);
 
-  const users = useStore(({ adcm }) => adcm.groupsActions.relatedData.users);
+  const usersListFromStore = useStore(({ adcm }) => adcm.groupsActions.relatedData.users);
   const groups = useStore((s) => s.adcm.groups.groups);
+  const users = useMemo(
+    () => (usersListFromStore.length ? usersListFromStore : updatedGroup ? updatedGroup?.users : []),
+    [usersListFromStore, updatedGroup],
+  );
 
   const usersOptions = useMemo(() => {
     return users.map(({ username, id }) => ({ value: id, label: username }));
