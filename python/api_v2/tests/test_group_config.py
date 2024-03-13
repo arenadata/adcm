@@ -17,6 +17,7 @@ from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
@@ -107,6 +108,32 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(response.json()["name"], "group-config-new")
+
+    def test_create_no_permissions_fail(self):
+        initial_group_config_ids = set(GroupConfig.objects.values_list("id", flat=True))
+
+        user_password = "user_password"
+        user_with_view_rights = self.create_user(username="user_with_view_rights", password=user_password)
+        with self.grant_permissions(
+            to=user_with_view_rights, on=self.cluster_1, role_name="View cluster configurations"
+        ):
+            self.client.login(username=user_with_view_rights.username, password=user_password)
+
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:cluster-group-config-detail",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response = self.client.post(
+                path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+                data={"name": "group-config-new", "description": "group-config-new"},
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertSetEqual(initial_group_config_ids, set(GroupConfig.objects.values_list("id", flat=True)))
 
     def test_delete_success(self):
         response = self.client.delete(
@@ -251,6 +278,39 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):
 
             self.assertEqual(response.status_code, HTTP_201_CREATED)
             self.assertEqual(response.json()["name"], "service-group-config-new")
+
+    def test_create_no_permissions_fail(self):
+        initial_group_config_ids = set(GroupConfig.objects.values_list("id", flat=True))
+
+        user_password = "user_password"
+        user_with_view_rights = self.create_user(username="user_with_view_rights", password=user_password)
+        with self.grant_permissions(
+            to=user_with_view_rights, on=self.service_1, role_name="View service configurations"
+        ):
+            self.client.login(username=user_with_view_rights.username, password=user_password)
+
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:service-group-config-detail",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "pk": self.service_1_group_config.pk,
+                    },
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:service-group-config-list",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
+                ),
+                data={"name": "group-config-new", "description": "group-config-new"},
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertSetEqual(initial_group_config_ids, set(GroupConfig.objects.values_list("id", flat=True)))
 
     def test_adcm_5285_edit_success(self):
         self.client.login(**self.test_user_credentials)
@@ -648,6 +708,44 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):
             self.assertEqual(response.status_code, HTTP_201_CREATED)
             self.assertEqual(response.json()["name"], "component-group-config-new")
 
+    def test_create_no_permissions_fail(self):
+        initial_group_config_ids = set(GroupConfig.objects.values_list("id", flat=True))
+
+        user_password = "user_password"
+        user_with_view_rights = self.create_user(username="user_with_view_rights", password=user_password)
+        with self.grant_permissions(
+            to=user_with_view_rights, on=self.component_1, role_name="View component configurations"
+        ):
+            self.client.login(username=user_with_view_rights.username, password=user_password)
+
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:component-group-config-detail",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                        "pk": self.component_1_group_config.pk,
+                    },
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:component-group-config-list",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                    },
+                ),
+                data={"name": "group-config-new", "description": "group-config-new"},
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertSetEqual(initial_group_config_ids, set(GroupConfig.objects.values_list("id", flat=True)))
+
     def test_adcm_5285_edit_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
@@ -907,6 +1005,34 @@ class TestHostProviderGroupConfig(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(GroupConfig.objects.count(), initial_group_configs_count)
+
+    def test_create_no_permissions_fail(self):
+        initial_group_config_ids = set(GroupConfig.objects.values_list("id", flat=True))
+
+        user_password = "user_password"
+        user_with_view_rights = self.create_user(username="user_with_view_rights", password=user_password)
+        with self.grant_permissions(
+            to=user_with_view_rights, on=self.provider, role_name="View provider configurations"
+        ):
+            self.client.login(username=user_with_view_rights.username, password=user_password)
+
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:hostprovider-group-config-detail",
+                    kwargs={"hostprovider_pk": self.provider.pk, "pk": self.group_config.pk},
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:hostprovider-group-config-list", kwargs={"hostprovider_pk": self.provider.pk}
+                ),
+                data={"name": "group-config-new", "description": "group-config-new"},
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertSetEqual(initial_group_config_ids, set(GroupConfig.objects.values_list("id", flat=True)))
 
     def test_delete_success(self):
         response = self.client.delete(

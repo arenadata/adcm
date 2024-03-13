@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.mixins import GetParentObjectMixin
+from adcm.mixins import GetParentObjectMixin, ParentObject
 from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
 from audit.utils import audit
 from cm.api import update_obj_config
@@ -20,6 +20,7 @@ from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
@@ -71,23 +72,8 @@ class ConfigLogViewSet(
     def create(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         parent_object = self.get_parent_object()
 
-        parent_view_perm = f"cm.view_{parent_object.__class__.__name__.lower()}"
-        if parent_object is None or not (
-            request.user.has_perm(perm=parent_view_perm, obj=parent_object)
-            or request.user.has_perm(perm=parent_view_perm)
-        ):
-            raise NotFound("Can't find config's parent object")
+        self._check_create_permissions(request=request, parent_object=parent_object)
 
-        if parent_object.config is None:
-            raise AdcmEx(code="CONFIG_NOT_FOUND", msg="This object has no config")
-
-        this_object = parent_object.object if isinstance(parent_object, GroupConfig) else parent_object
-        check_config_perm(
-            user=request.user,
-            action_type="change",
-            model=ContentType.objects.get_for_model(model=this_object).model,
-            obj=this_object,
-        )
         serializer = self.get_serializer(data=request.data, context={"object_": parent_object})
         serializer.is_valid(raise_exception=True)
 
@@ -115,3 +101,22 @@ class ConfigLogViewSet(
         serializer = self.get_serializer(instance)
 
         return Response(data=serializer.data, status=HTTP_200_OK)
+
+    def _check_create_permissions(self, request: Request, parent_object: ParentObject) -> None:
+        owner_object = parent_object.object if isinstance(parent_object, GroupConfig) else parent_object
+
+        owner_view_perm = f"cm.view_{owner_object.__class__.__name__.lower()}"
+        if owner_object is None or not (
+            request.user.has_perm(perm=owner_view_perm, obj=owner_object) or request.user.has_perm(perm=owner_view_perm)
+        ):
+            raise NotFound("Can't find config's parent object")
+
+        if owner_object.config is None:
+            raise AdcmEx(code="CONFIG_NOT_FOUND", msg="This object has no config")
+
+        check_config_perm(
+            user=request.user,
+            action_type="change",
+            model=ContentType.objects.get_for_model(model=owner_object).model,
+            obj=owner_object,
+        )

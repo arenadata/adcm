@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from contextlib import suppress
+from typing import TypeAlias
 
 from cm.models import (
     Cluster,
@@ -23,13 +24,13 @@ from cm.models import (
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import ObjectDoesNotExist
 
+ParentObject: TypeAlias = GroupConfig | Cluster | ClusterObject | ServiceComponent | HostProvider | Host | None
+
 
 class GetParentObjectMixin:
     kwargs: dict
 
-    def get_parent_object(
-        self,
-    ) -> GroupConfig | Cluster | ClusterObject | ServiceComponent | HostProvider | Host | None:
+    def get_parent_object(self) -> ParentObject:
         parent_object = None
 
         with suppress(ObjectDoesNotExist):
