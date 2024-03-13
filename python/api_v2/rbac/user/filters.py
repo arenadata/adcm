@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django_filters.rest_framework import (
     CharFilter,
     ChoiceFilter,
@@ -33,8 +33,9 @@ class UserFilterSet(FilterSet):
 
         if value == UserStatusChoices.ACTIVE:
             filter_value = True
+            return queryset.filter(blocked_at__isnull=filter_value, is_active=filter_value)
 
-        return queryset.filter(blocked_at__isnull=filter_value)
+        return queryset.filter(Q(blocked_at__isnull=filter_value) | Q(is_active=filter_value))
 
     @staticmethod
     def filter_type(queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG001, ARG004

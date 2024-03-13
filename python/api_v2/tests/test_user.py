@@ -704,18 +704,30 @@ class TestUserAPI(BaseAPITestCase):
                 "first_name": "username2_first_name",
                 "last_name": "username2_last_name",
             },
+            {
+                "username": "username3",
+                "password": "username3password",
+                "email": "username3@mail.ru",
+                "first_name": "username3_first_name",
+                "last_name": "username3_last_name",
+            },
         ]
         for data in user_data:
             self.create_user(user_data=data)
 
-        target_user = User.objects.get(username="username2")
-        target_user.blocked_at = now()
-        target_user.save(update_fields=["blocked_at"])
+        target_user1 = User.objects.get(username="username2")
+        target_user1.blocked_at = now()
+        target_user1.save(update_fields=["blocked_at"])
+
+        target_user2 = User.objects.get(username="username3")
+        target_user2.is_active = False
+        target_user2.save(update_fields=["is_active"])
 
         response = self.client.get(path=reverse(viewname="v2:rbac:user-list"), data={"status": "blocked"})
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()["results"]), 1)
-        self.assertEqual(response.json()["results"][0]["username"], target_user.username)
+        self.assertEqual(len(response.json()["results"]), 2)
+        self.assertEqual(response.json()["results"][0]["username"], target_user1.username)
+        self.assertEqual(response.json()["results"][1]["username"], target_user2.username)
 
     def test_filtering_by_type_success(self):
         user_data = [
