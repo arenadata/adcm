@@ -59,7 +59,10 @@ const AccessManagerRolesTable = () => {
           >
             <TableCell className={s.roleName}>{role.displayName}</TableCell>
             <TableCell>{role.description}</TableCell>
-            <TableBigTextCell value={orElseGet(role.children?.map((child) => child.displayName).join(', '))} />
+            <TableBigTextCell
+              isMultilineText
+              value={orElseGet(role.children?.map((child) => child.displayName).join(', '))}
+            />
             <TableCell>
               <Button
                 className={expandableRows[role.id] ? 'is-active' : ''}

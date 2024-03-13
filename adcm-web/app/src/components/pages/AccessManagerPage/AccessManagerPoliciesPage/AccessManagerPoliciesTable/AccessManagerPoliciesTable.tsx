@@ -9,7 +9,6 @@ import { SortParams } from '@uikit/types/list.types';
 import { AdcmPolicy } from '@models/adcm';
 import AccessManagerPoliciesTableExpandedContent from './AccessManagerPoliciesTableExpandedContent/AccessManagerPoliciesTableExpandedContent';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
-import s from './AccessManagerPoliciesTable.module.scss';
 
 const AccessManagerPoliciesTable: React.FC = () => {
   const dispatch = useDispatch();
@@ -46,7 +45,6 @@ const AccessManagerPoliciesTable: React.FC = () => {
       isLoading={isLoading}
       sortParams={sortParams}
       onSorting={handleSorting}
-      className={s.tablePolicies}
     >
       {policies.map((policy) => {
         return (
@@ -59,8 +57,8 @@ const AccessManagerPoliciesTable: React.FC = () => {
             <TableCell>{policy.name}</TableCell>
             <TableCell>{orElseGet(policy.description)}</TableCell>
             <TableCell>{orElseGet(policy.role?.displayName)}</TableCell>
-            <TableBigTextCell value={policy.groups.map((group) => group.displayName).join(', ')} />
-            <TableBigTextCell value={policy.objects.map((object) => object.displayName).join(', ')} />
+            <TableBigTextCell isMultilineText value={policy.groups.map((group) => group.displayName).join(', ')} />
+            <TableBigTextCell isMultilineText value={policy.objects.map((object) => object.displayName).join(', ')} />
             <TableCell>
               <Button
                 className={expandableRows[policy.id] ? 'is-active' : ''}
