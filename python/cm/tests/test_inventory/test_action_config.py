@@ -17,7 +17,7 @@ from django.utils import timezone
 
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.job import ActionRunPayload, run_action
-from cm.models import Action, JobLog, ServiceComponent, TaskLog
+from cm.models import Action, JobLog, ServiceComponent, SubAction, TaskLog
 from cm.services.job.config import get_job_config
 from cm.services.job.utils import JobScope, get_selector
 from cm.tests.test_inventory.base import BaseInventoryTestCase
@@ -232,3 +232,68 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             ansible_decrypt(job_config["job"]["config"]["reqsec"]["key"]["__ansible_vault"]), raw_value["key"]
         )
         self.assertEqual(job_config["job"]["config"]["secretval"], None)
+
+
+class TestScriptPathsInActionConfig(BaseInventoryTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.cluster = self.add_cluster(
+            bundle=self.add_bundle(self.bundles_dir / "cluster_various_path"), name="Main Cluster"
+        )
+        self.service_1 = self.add_services_to_cluster(service_names=["as_cluster"], cluster=self.cluster).first()
+
+        self.context = {
+            "cluster_bundle": self.cluster.prototype.bundle,
+            "datadir": self.directories["DATA_DIR"],
+            "stackdir": self.directories["STACK_DIR"],
+            "token": settings.STATUS_SECRET_KEY,
+        }
+
+    def test_scripts_in_action_config(self) -> None:
+        for action_name in ("job_proto_relative", "job_bundle_relative", "task_mixed"):
+            for object_, type_name in ((self.cluster, "cluster"), (self.service_1, "service")):
+                action = Action.objects.filter(prototype=object_.prototype, name=action_name).first()
+                selector = get_selector(obj=object_, action=action)
+                task = TaskLog.objects.create(
+                    task_object=object_,
+                    action=action,
+                    start_date=timezone.now(),
+                    finish_date=timezone.now(),
+                    selector=selector,
+                )
+                if action.name != "task_mixed":
+                    jobs = [
+                        JobLog.objects.create(
+                            task=task,
+                            action=action,
+                            start_date=timezone.now(),
+                            finish_date=timezone.now(),
+                            selector=selector,
+                        )
+                    ]
+                else:
+                    jobs = [
+                        JobLog.objects.create(
+                            task=task,
+                            action=action,
+                            sub_action=sub_action,
+                            start_date=timezone.now(),
+                            finish_date=timezone.now(),
+                            selector=selector,
+                        )
+                        for sub_action in SubAction.objects.filter(action=action)
+                    ]
+
+                for job in jobs:
+                    prefix = f"{action_name}_{job.sub_action.name if job.sub_action else ''}".strip("_")
+                    with self.subTest(
+                        f"Action {action_name} for {object_.__class__.__name__} {object_.name} [{prefix}]"
+                    ):
+                        expected_data = self.render_json_template(
+                            file=self.templates_dir / "action_configs" / f"{prefix}_{type_name}.json.j2",
+                            context={**self.context, "job_id": job.pk},
+                        )
+                        job_config = get_job_config(job_scope=JobScope(job_id=job.pk, object=object_))
+
+                        self.assertDictEqual(job_config, expected_data)

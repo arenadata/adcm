@@ -1,0 +1,33 @@
+- type: cluster
+  version: 4.3
+  name: lots_of_places
+
+  actions: &actions
+    job_proto_relative:
+      type: job
+      script: ./in_here.yaml
+      script_type: ansible
+      masking:
+
+    job_bundle_relative:
+      type: job
+      script: scripts/over_there.yaml
+      script_type: ansible
+      masking:
+
+    task_mixed:
+      type: task
+      masking:
+      scripts:
+        - name: proto_relative
+          script: ./in_here.yaml
+          script_type: ansible
+        - name: bundle_relative
+          script: scripts/over_there.yaml
+          script_type: ansible
+
+- type: service
+  name: as_cluster
+  version: 3.2
+
+  actions: *actions
