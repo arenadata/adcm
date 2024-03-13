@@ -10,18 +10,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import os
+import logging
 import sqlite3
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from cm.logger import logger
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.migrations.executor import MigrationExecutor
 from django.utils import timezone
+
+logger = logging.getLogger("stream_std")
 
 
 def check_migrations():

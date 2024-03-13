@@ -10,17 +10,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from pathlib import Path
 from secrets import token_hex
 import json
+import logging
 
 import adcm.init_django  # noqa: F401, isort:skip
 
 from cm.bundle import load_adcm
 from cm.issue import update_hierarchy_issues
 from cm.job import abort_all
-from cm.logger import logger
 from cm.models import (
     ADCM,
     CheckLog,
@@ -34,6 +33,9 @@ from django.conf import settings
 from rbac.models import User
 
 TOKEN_LENGTH = 20
+
+
+logger = logging.getLogger("stream_std")
 
 
 def prepare_secrets_json(status_user_username: str, status_user_password: str | None) -> None:

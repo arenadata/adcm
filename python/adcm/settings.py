@@ -256,6 +256,16 @@ if not DEBUG:
                 "when": "midnight",
                 "backupCount": 10,
             },
+            "stream_stdout_handler": {
+                "class": "logging.StreamHandler",
+                "formatter": "adcm",
+                "stream": "ext://sys.stdout",
+            },
+            "stream_stderr_handler": {
+                "class": "logging.StreamHandler",
+                "formatter": "adcm",
+                "stream": "ext://sys.stderr",
+            },
         },
         "loggers": {
             "adcm": {
@@ -282,6 +292,10 @@ if not DEBUG:
                 "handlers": ["task_runner_err_file"],
                 "level": LOG_LEVEL,
                 "propagate": True,
+            },
+            "stream_std": {
+                "handlers": ["stream_stdout_handler", "stream_stderr_handler"],
+                "level": LOG_LEVEL,
             },
         },
     }
