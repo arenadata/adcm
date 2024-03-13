@@ -570,6 +570,36 @@ class TestUserAPI(BaseAPITestCase):
             HTTP_200_OK,
         )
 
+    def test_update_remove_from_groups_bug_adcm_5355(self) -> None:
+        group_2 = Group.objects.create(name="test_group_2")
+        user = self.create_user(
+            user_data={"username": "somebody", "password": "very_long_veryvery", "groups": [{"id": self.group.pk}]}
+        )
+        self.assertEqual(user.groups.count(), 1)
+
+        update_path = reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk})
+        response = self.client.patch(path=update_path, data={"groups": []})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()["groups"]), 0)
+        user.refresh_from_db()
+        self.assertEqual(user.groups.count(), 0)
+
+        response = self.client.patch(path=update_path, data={"groups": [self.group.pk, group_2.pk]})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()["groups"]), 2)
+        user.refresh_from_db()
+        self.assertEqual(user.groups.count(), 2)
+
+        response = self.client.patch(path=update_path, data={"groups": [group_2.pk]})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()["groups"]), 1)
+        self.assertEqual(response.json()["groups"][0]["id"], group_2.pk)
+        user.refresh_from_db()
+        self.assertEqual(user.groups.count(), 1)
+
     def test_delete_success(self):
         user = self.create_user()
 

@@ -121,7 +121,7 @@ class GroupDB:
         return (
             GroupBasicInfo(id=group["id"], built_in=group["built_in"], type=SourceType(group["type"]))
             for group in Group.objects.values("id", "built_in", "type").filter(
-                id__in=m2m_model.objects.values_list("id", flat=True).filter(user_id=user_id)
+                id__in=m2m_model.objects.values_list("group_id", flat=True).filter(user_id=user_id)
             )
         )
 
