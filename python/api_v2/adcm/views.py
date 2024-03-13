@@ -10,9 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.permissions import check_config_perm
 from cm.models import ADCM, ConfigLog, PrototypeConfig
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 from rest_framework.mixins import RetrieveModelMixin
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
@@ -50,3 +53,9 @@ class ADCMConfigView(ConfigLogViewSet):
         )
 
         return Response(data=schema, status=HTTP_200_OK)
+
+    def _check_create_permissions(self, request: Request, parent_object: ADCM | None) -> None:
+        if parent_object is None:
+            raise NotFound("Can't find config's parent object")
+
+        check_config_perm(user=request.user, action_type="change", model=ADCM._meta.model_name, obj=parent_object)

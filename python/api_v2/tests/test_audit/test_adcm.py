@@ -17,6 +17,7 @@ from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
@@ -111,7 +112,7 @@ class TestADCMAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         response = self.client.post(path=reverse(viewname="v2:adcm-config-list"), data=self.data)
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
             operation_name="ADCM configuration updated",
