@@ -17,6 +17,7 @@ from django.db.models.signals import pre_save
 from django.dispatch import receiver
 
 from rbac.models import Group, OriginType
+from rbac.utils import get_group_name_display_name
 
 
 @receiver(signal=pre_save, sender=Group)
@@ -27,7 +28,8 @@ def handle_name_type_display_name(sender, instance, **kwargs):  # noqa: ARG001
     base_group_name_pattern = re.compile(rf'(?P<base_name>.*?)(?: \[(?:{"|".join(OriginType.values)})\]|$)')
     match = base_group_name_pattern.match(instance.name)
     if match and match.group("base_name"):
-        instance.name = f"{match.group('base_name')} [{instance.type}]"
-        instance.display_name = match.group("base_name")
+        name, display_name = get_group_name_display_name(name=match.group("base_name"), type_=instance.type)
+        instance.name = name
+        instance.display_name = display_name
     else:
         raise_adcm_ex(code="GROUP_CONFLICT", msg=f"Check regex. Data: `{instance.name}`")

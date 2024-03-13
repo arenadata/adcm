@@ -95,7 +95,7 @@ def get_groups_by_user_dn(
     user_dn: str,
     user_search: LDAPSearch,
     conn: ldap.ldapobject.LDAPObject,
-) -> tuple[list[str] | None, str | None]:
+) -> tuple[list[str], list[str], str | None]:
     err_msg = None
     user_name_attr = get_ldap_config()["user_name_attribute"]
     replace = f"{user_name_attr}={USER_PLACEHOLDER}"
@@ -116,13 +116,17 @@ def get_groups_by_user_dn(
         return None, err_msg
 
     group_cns = []
+    group_dns_lower = []
     for group_dn in user_attrs.get("memberOf", []):
+        # v3 protocol uses utf-8 encoding
+        # https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-2000-server/cc961766(v=technet.10)?redirectedfrom=MSDN#differences-between-ldapv2-and-ldapv3
+        group_dns_lower.append(group_dn.decode("utf-8").lower())
         group_name = " ".join(CN_PATTERN.findall(group_dn.decode(ENCODING)))
         if group_name:
             group_cns.append(group_name)
 
     logger.debug("Found %s groups by user dn `%s`: %s", len(group_cns), user_dn, group_cns)
-    return group_cns, err_msg
+    return group_cns, group_dns_lower, err_msg
 
 
 def get_user_search(ldap_config: dict) -> LDAPSearch:
@@ -171,6 +175,7 @@ def get_ldap_default_settings() -> tuple[dict, str | None]:
             "USER_ATTR_MAP": user_attr_map,
             "ALWAYS_UPDATE_USER": True,
             "CACHE_TIMEOUT": 0,
+            "GROUP_DN_ADCM_ADMIN": [group_dn.lower() for group_dn in ldap_config["group_dn_adcm_admin"] or []],
         }
         if group_search:
             default_settings.update(
@@ -220,8 +225,12 @@ class CustomLDAPBackend(LDAPBackend):
         if isinstance(user_or_none, User):
             user_or_none.type = OriginType.LDAP
             user_or_none.is_active = True
-            user_or_none.save()
-            self._process_groups(user_or_none, ldap_user.dn, user_local_groups)
+            is_in_admin_group = self._process_groups(user_or_none, ldap_user.dn, user_local_groups)
+            if is_in_admin_group:
+                user_or_none.is_superuser = True
+            elif user_or_none.is_superuser:
+                user_or_none.is_superuser = False
+            user_or_none.save(update_fields=["type", "is_active", "is_superuser"])
 
         return user_or_none
 
@@ -258,22 +267,27 @@ class CustomLDAPBackend(LDAPBackend):
         logger.debug("Found %s groups: %s", len(groups), [i[0] for i in groups])
         return groups
 
-    def _process_groups(self, user: User | _LDAPUser, user_dn: str, additional_groups: list[Group] = ()) -> None:
-        if not self._group_search_enabled:
-            logger.warning("Group search is disabled. Getting all user groups")
-            with self._ldap_connection() as conn:
-                ldap_group_names, err_msg = get_groups_by_user_dn(
-                    user_dn=user_dn,
-                    user_search=self.default_settings["USER_SEARCH"],
-                    conn=conn,
-                )
+    def _process_groups(self, user: User | _LDAPUser, user_dn: str, additional_groups: list[Group] = ()) -> bool:
+        is_in_admin_group = False
+        with self._ldap_connection() as conn:
+            ldap_group_names, ldap_group_dns, err_msg = get_groups_by_user_dn(
+                user_dn=user_dn,
+                user_search=self.default_settings["USER_SEARCH"],
+                conn=conn,
+            )
             if err_msg:
                 raise_adcm_ex(code="GROUP_CONFLICT", msg=err_msg)
 
+        if any(group_dn in self.default_settings["GROUP_DN_ADCM_ADMIN"] for group_dn in ldap_group_dns):
+            is_in_admin_group = True
+
+        if not self._group_search_enabled:
+            logger.warning("Group search is disabled. Getting all user groups")
             for ldap_group_name in ldap_group_names:
                 group, _ = Group.objects.get_or_create(name=f"{ldap_group_name} [ldap]", type=OriginType.LDAP)
                 group.user_set.add(user)
-            return
+
+            return is_in_admin_group
 
         ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
         # ldap-backend managed auth_groups
@@ -286,6 +300,8 @@ class CustomLDAPBackend(LDAPBackend):
                 group.delete()
         for group in additional_groups:
             group.user_set.add(user)
+
+        return is_in_admin_group
 
     def _check_user(self, ldap_user: _LDAPUser) -> bool:
         user_dn = ldap_user.dn

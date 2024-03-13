@@ -35,3 +35,7 @@ def get_query_tuple_str(tuple_items: set | tuple) -> str:
         tuple_str = f"{tuple_str}{item},"
 
     return f"{tuple_str[:-1]})"
+
+
+def get_group_name_display_name(name: str, type_: str) -> tuple[str, str]:
+    return f"{name} [{type_.lower()}]", name
