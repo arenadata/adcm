@@ -3,7 +3,7 @@ import { defaultSpinnerDelay } from '@constants';
 import { AdcmClusterHost, AdcmClusterHostComponentsStatus, AdcmServiceComponent } from '@models/adcm';
 import { createSlice } from '@reduxjs/toolkit';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { createAsyncThunk } from '@store/redux';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
@@ -75,7 +75,7 @@ const unlinkClusterHost = createAsyncThunk(
   async ({ clusterId, hostId }: ClusterHostPayload, thunkAPI) => {
     try {
       await AdcmClustersApi.unlinkHost(clusterId, hostId);
-      thunkAPI.dispatch(showInfo({ message: 'The host has been unlinked!' }));
+      thunkAPI.dispatch(showSuccess({ message: 'The host has been unlinked!' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);

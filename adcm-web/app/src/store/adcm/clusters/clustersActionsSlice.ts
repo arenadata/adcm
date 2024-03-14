@@ -1,7 +1,7 @@
 import { AdcmClustersApi, AdcmPrototypesApi, RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { refreshClusters } from './clustersSlice';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { createSlice } from '@reduxjs/toolkit';
 import {
@@ -83,7 +83,7 @@ const deleteClusterWithUpdate = createAsyncThunk(
     try {
       await AdcmClustersApi.deleteCluster(clusterId);
       await thunkAPI.dispatch(refreshClusters());
-      thunkAPI.dispatch(showInfo({ message: 'The cluster has been deleted' }));
+      thunkAPI.dispatch(showSuccess({ message: 'The cluster has been deleted' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);

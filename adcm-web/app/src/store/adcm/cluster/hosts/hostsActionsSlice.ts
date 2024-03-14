@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmClusterHostsApi, AdcmClustersApi, AdcmHostsApi, RequestError } from '@api';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showInfo, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmHost, AdcmMaintenanceMode, AddClusterHostsPayload } from '@models/adcm';
 import { getClusterHosts, setHostMaintenanceMode } from './hostsSlice';
@@ -37,7 +37,7 @@ const unlinkHost = createAsyncThunk(
   async ({ hostId, clusterId }: UnlinkHostTogglePayload, thunkAPI) => {
     try {
       await AdcmClustersApi.unlinkHost(clusterId, hostId);
-      thunkAPI.dispatch(showInfo({ message: 'The host has been unlinked' }));
+      thunkAPI.dispatch(showSuccess({ message: 'The host has been unlinked' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -60,7 +60,7 @@ const addClusterHosts = createAsyncThunk(
       await AdcmClustersApi.linkHost(clusterId, selectedHostIds);
 
       const message = selectedHostIds.length > 1 ? 'All selected hosts have been added' : 'The host has been added';
-      thunkAPI.dispatch(showInfo({ message }));
+      thunkAPI.dispatch(showSuccess({ message }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);

@@ -4,7 +4,7 @@ import { AdcmBundle } from '@models/adcm/bundle';
 import { LoadState } from '@models/loadState';
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 
@@ -47,7 +47,7 @@ const acceptBundleLicense = createAsyncThunk(
   async (prototypeId: number, thunkAPI) => {
     try {
       await AdcmPrototypesApi.postAcceptLicense(prototypeId);
-      thunkAPI.dispatch(showInfo({ message: 'The license has been accepted' }));
+      thunkAPI.dispatch(showSuccess({ message: 'The license has been accepted' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
     }
@@ -65,7 +65,7 @@ const acceptBundleLicenseWithUpdate = createAsyncThunk(
 const deleteBundle = createAsyncThunk('adcm/bundle/deleteBundle', async (bundleId: number, thunkAPI) => {
   try {
     await AdcmBundlesApi.deleteBundle(bundleId);
-    thunkAPI.dispatch(showInfo({ message: 'The bundle has been deleted' }));
+    thunkAPI.dispatch(showSuccess({ message: 'The bundle has been deleted' }));
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
   }

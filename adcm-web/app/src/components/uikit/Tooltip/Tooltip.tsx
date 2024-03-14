@@ -19,7 +19,7 @@ import { useForwardRef } from '@hooks';
 import { ChildWithRef } from '@uikit/types/element.types';
 import cn from 'classnames';
 import s from './Tooltip.module.scss';
-import { textToDataTestValue } from '@utils/dataTestUtils.ts';
+import { textToDataTestValue } from '@utils/dataTestUtils';
 
 export interface TooltipProps {
   label: React.ReactNode;

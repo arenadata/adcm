@@ -1,8 +1,8 @@
 import { AdcmFullConfigurationInfo } from '@models/adcm';
-import { createAsyncThunk } from '@store/redux.ts';
+import { createAsyncThunk } from '@store/redux';
 import { RequestError } from '@api';
-import { showError } from '@store/notificationsSlice.ts';
-import { getErrorMessage } from '@utils/httpResponseUtils.ts';
+import { showError } from '@store/notificationsSlice';
+import { getErrorMessage } from '@utils/httpResponseUtils';
 import { createSlice } from '@reduxjs/toolkit';
 import { LoadEntityConfigurationArgs } from './entityConfiguration.types';
 import { ApiRequests } from './entityConfiguration.constants';

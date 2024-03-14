@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import s from './LabeledField.module.scss';
 import cn from 'classnames';
-import { textToDataTestValue } from '@utils/dataTestUtils.ts';
+import { textToDataTestValue } from '@utils/dataTestUtils';
 
 export interface LabeledFieldProps extends React.HTMLAttributes<HTMLDivElement> {
   label: ReactNode;

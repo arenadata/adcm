@@ -1,6 +1,6 @@
 import { AdcmConfigGroup } from '@models/adcm';
 import { fulfilledFilter } from '@utils/promiseUtils';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showInfo, showSuccess } from '@store/notificationsSlice';
 import type { AppDispatch } from '@store/store';
 
 interface MappedHostsToConfigGroupProps {
@@ -48,7 +48,7 @@ export const mappedHostsToConfigGroup = async ({
     return false;
   }
 
-  dispatch(showInfo({ message: 'All hosts were successfully mapped on this group' }));
+  dispatch(showSuccess({ message: 'All hosts were successfully mapped on this group' }));
 
   return true;
 };

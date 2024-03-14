@@ -1,7 +1,7 @@
 import { AdcmGroupsApi, AdcmUsersApi, RequestError } from '@api';
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { getGroups } from './groupsSlice';
 import { AdcmGroup, AdcmUpdateGroupPayload, AdcmCreateGroupPayload, AdcmUser } from '@models/adcm';
@@ -72,7 +72,7 @@ const deleteGroupsWithUpdate = createAsyncThunk('adcm/groupActions/deleteGroups'
     }
 
     await thunkAPI.dispatch(getGroups());
-    thunkAPI.dispatch(showInfo({ message: 'Groups have been deleted' }));
+    thunkAPI.dispatch(showSuccess({ message: 'Groups have been deleted' }));
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
     return error;

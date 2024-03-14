@@ -3,9 +3,9 @@ import IconButton from '@uikit/IconButton/IconButton';
 import ActionMenu from '@uikit/ActionMenu/ActionMenu';
 import { Link } from 'react-router-dom';
 import { ConditionalWrapper, Tooltip } from '@uikit';
-import AboutAdcm from './AboutAdcm/AboutAdcm.tsx';
-import AboutAdcmModal from './AboutAdcm/AboutAdcmModal/AboutAdcmModal.tsx';
-import { DefaultSelectListItemProps } from '@uikit/Select/Select.types.ts';
+import AboutAdcm from './AboutAdcm/AboutAdcm';
+import AboutAdcmModal from './AboutAdcm/AboutAdcmModal/AboutAdcmModal';
+import { DefaultSelectListItemProps } from '@uikit/Select/Select.types';
 
 enum HelperLinkActions {
   Help = 'https://t.me/arenadata_cm',

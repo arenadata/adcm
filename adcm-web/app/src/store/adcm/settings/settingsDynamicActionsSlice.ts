@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmSettingsApi, RequestError } from '@api';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { ActionStatuses } from '@constants';
@@ -46,7 +46,7 @@ const runAdcmSettingsDynamicAction = createAsyncThunk(
       // TODO: runAdcmSettingsAction get big response with information about action, but wiki say that this should empty response
       await AdcmSettingsApi.runAdcmSettingsAction(actionId, actionRunConfig);
 
-      thunkAPI.dispatch(showInfo({ message: ActionStatuses.SuccessRun }));
+      thunkAPI.dispatch(showSuccess({ message: ActionStatuses.SuccessRun }));
 
       return null;
     } catch (error) {
@@ -80,6 +80,8 @@ const adcmSettingsDynamicActionsSlice = createSlice({
       return createInitialState();
     },
     closeAdcmSettingsDynamicActionDialog(state) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       state.dialog = createInitialState().dialog;
     },
   },

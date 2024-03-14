@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { getHosts, setHostMaintenanceMode } from '@store/adcm/hosts/hostsSlice';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showInfo, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmClustersApi, AdcmHostProvidersApi, AdcmHostsApi, RequestError } from '@api';
 import {
@@ -50,7 +50,7 @@ const unlinkHost = createAsyncThunk(
   async ({ hostId, clusterId }: UnlinkHostTogglePayload, thunkAPI) => {
     try {
       await AdcmClustersApi.unlinkHost(clusterId, hostId);
-      thunkAPI.dispatch(showInfo({ message: 'The host has been unlinked' }));
+      thunkAPI.dispatch(showSuccess({ message: 'The host has been unlinked' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -71,7 +71,7 @@ const linkHost = createAsyncThunk(
   async ({ hostId, clusterId }: LinkHostTogglePayload, thunkAPI) => {
     try {
       await AdcmClustersApi.linkHost(clusterId, hostId);
-      thunkAPI.dispatch(showInfo({ message: 'The host has been linked' }));
+      thunkAPI.dispatch(showSuccess({ message: 'The host has been linked' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -137,7 +137,7 @@ const toggleMaintenanceMode = createAsyncThunk(
 const deleteHost = createAsyncThunk('adcm/hostsActions/deleteHost', async (hostId: number, thunkAPI) => {
   try {
     await AdcmHostsApi.deleteHost(hostId);
-    thunkAPI.dispatch(showInfo({ message: 'The host has been deleted' }));
+    thunkAPI.dispatch(showSuccess({ message: 'The host has been deleted' }));
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
     return thunkAPI.rejectWithValue(error);

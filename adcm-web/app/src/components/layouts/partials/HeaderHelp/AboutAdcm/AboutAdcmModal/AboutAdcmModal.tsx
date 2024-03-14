@@ -1,6 +1,6 @@
 import { Text, Dialog } from '@uikit';
 import s from './AboutAdcmModal.module.scss';
-import MainLogo from '@layouts/partials/MainLogo/MainLogo.tsx';
+import MainLogo from '@layouts/partials/MainLogo/MainLogo';
 import { adcmVersion } from '@constants';
 
 interface AboutAdcmProps {

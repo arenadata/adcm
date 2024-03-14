@@ -1,11 +1,11 @@
 import React, { ReactNode, useMemo, useState } from 'react';
 import { refractor } from 'refractor';
-import { getLines, getParsedCode } from '@uikit/CodeHighlighterV2/CodeHighlighterHelperV2.tsx';
+import { getLines, getParsedCode } from '@uikit/CodeHighlighterV2/CodeHighlighterHelperV2';
 import './CodeHighlighterTemeV2.scss';
 import s from './CodeHighlighterV2.module.scss';
 import cn from 'classnames';
-import CopyButton from '@uikit/CodeHighlighter/CopyButton/CopyButton.tsx';
-import IconButton from '@uikit/IconButton/IconButton.tsx';
+import CopyButton from '@uikit/CodeHighlighter/CopyButton/CopyButton';
+import IconButton from '@uikit/IconButton/IconButton';
 export interface CodeHighlighterV2Props {
   code: string;
   lang: string;

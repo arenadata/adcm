@@ -1,7 +1,7 @@
 import { AdcmGroupsApi, AdcmPoliciesApi, AdcmRolesApi, RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { getPolicies } from './policiesSlice';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import {
   AdcmGroup,
@@ -85,7 +85,7 @@ const deletePolicyWithUpdate = createAsyncThunk(
     try {
       await AdcmPoliciesApi.deletePolicy(policyId);
       await thunkAPI.dispatch(getPolicies());
-      thunkAPI.dispatch(showInfo({ message: 'The policy has been deleted' }));
+      thunkAPI.dispatch(showSuccess({ message: 'The policy has been deleted' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
     }
