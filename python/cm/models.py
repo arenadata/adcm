@@ -1028,8 +1028,6 @@ class AbstractAction(ADCMModel):
     ui_options = models.JSONField(default=dict)
 
     type = models.CharField(max_length=1000, choices=ActionType.choices)
-    script = models.CharField(max_length=1000)
-    script_type = models.CharField(max_length=1000, choices=SCRIPT_TYPE)
 
     state_available = models.JSONField(default=list)
     state_unavailable = models.JSONField(default=list)
@@ -1042,9 +1040,6 @@ class AbstractAction(ADCMModel):
     multi_state_on_success_unset = models.JSONField(default=list)
     multi_state_on_fail_set = models.JSONField(default=list)
     multi_state_on_fail_unset = models.JSONField(default=list)
-
-    params = models.JSONField(default=dict)
-    log_files = models.JSONField(default=list)
 
     hostcomponentmap = models.JSONField(default=list)
     allow_to_terminate = models.BooleanField(default=False)

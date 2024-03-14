@@ -51,7 +51,6 @@ from cm.converters import core_type_to_model, db_record_type_to_core_type
 from cm.models import (
     ADCM,
     Action,
-    ActionType,
     Cluster,
     ClusterObject,
     Host,
@@ -461,12 +460,6 @@ class ActionRepoImpl:
 
     @classmethod
     def get_job_specs(cls, id: ActionID) -> Iterable[JobSpec]:  # noqa: A002
-        try:
-            if Action.objects.values_list("type", flat=True).get(id=id) == ActionType.JOB:
-                return [cls._from_entry_to_spec(cls._qs_with_spec_values(Action.objects.get_queryset()).get(id=id))]
-        except Action.DoesNotExist:
-            return []
-
         return [
             cls._from_entry_to_spec(sub_action)
             for sub_action in cls._qs_with_spec_values(SubAction.objects.filter(action_id=id)).order_by("id")

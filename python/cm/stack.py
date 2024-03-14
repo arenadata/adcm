@@ -587,6 +587,27 @@ def check_action_hc(proto: StagePrototype, conf: dict) -> None:
 
 def save_sub_actions(conf, action):
     if action.type != settings.TASK_TYPE:
+        sub_action = StageSubAction(
+            action=action,
+            script=conf["script"],
+            script_type=conf["script_type"],
+            name=action.name,
+            allow_to_terminate=action.allow_to_terminate,
+        )
+        sub_action.display_name = action.display_name
+
+        dict_to_obj(conf, "params", sub_action)
+        on_fail = conf.get(ON_FAIL, "")
+        if isinstance(on_fail, str):
+            sub_action.state_on_fail = on_fail
+            sub_action.multi_state_on_fail_set = []
+            sub_action.multi_state_on_fail_unset = []
+        elif isinstance(on_fail, dict):
+            sub_action.state_on_fail = _deep_get(on_fail, STATE, default="")
+            sub_action.multi_state_on_fail_set = _deep_get(on_fail, MULTI_STATE, SET, default=[])
+            sub_action.multi_state_on_fail_unset = _deep_get(on_fail, MULTI_STATE, UNSET, default=[])
+
+        sub_action.save()
         return
 
     for sub in conf["scripts"]:
@@ -713,17 +734,11 @@ def save_action(proto: StagePrototype, config: dict, bundle_hash: str, action_na
     action = StageAction(prototype=proto, name=action_name)
     action.type = config["type"]
 
-    if config["type"] == settings.JOB_TYPE:
-        action.script = config["script"]
-        action.script_type = config["script_type"]
-
     dict_to_obj(dictionary=config, key="description", obj=action)
     dict_to_obj(dictionary=config, key="allow_to_terminate", obj=action)
     dict_to_obj(dictionary=config, key="partial_execution", obj=action)
     dict_to_obj(dictionary=config, key="host_action", obj=action)
     dict_to_obj(dictionary=config, key="ui_options", obj=action)
-    dict_to_obj(dictionary=config, key="params", obj=action)
-    dict_to_obj(dictionary=config, key="log_files", obj=action)
     dict_to_obj(dictionary=config, key="venv", obj=action)
     dict_to_obj(dictionary=config, key="allow_in_maintenance_mode", obj=action)
     dict_to_obj(dictionary=config, key="config_jinja", obj=action)

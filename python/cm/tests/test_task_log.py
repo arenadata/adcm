@@ -94,7 +94,6 @@ class TaskLogLockTest(BaseTestCase):
             display_name="Test cluster action",
             prototype=cluster.prototype,
             type="task",
-            script_type="ansible",
             state_available="any",
             name="test_cluster_action",
         )

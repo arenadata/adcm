@@ -91,7 +91,6 @@ class TestHostAPI(BaseTestCase):
             name=settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME,
             type=ActionType.JOB,
             state_available="any",
-            script_type="ansible",
         )
 
         with patch("adcm.utils.run_action") as start_task_mock:

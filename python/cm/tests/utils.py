@@ -177,12 +177,7 @@ def gen_action(name: str | None = None, bundle=None, prototype=None) -> Action:
         bundle = bundle or gen_bundle()
         prototype = gen_prototype(bundle, "service")
     return Action.objects.create(
-        name=name or gen_name("action_"),
-        display_name=f"Test {prototype.type} action",
-        prototype=prototype,
-        type="task",
-        script="",
-        script_type="ansible",
+        name=name or gen_name("action_"), display_name=f"Test {prototype.type} action", prototype=prototype, type="task"
     )
 
 
