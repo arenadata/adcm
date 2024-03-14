@@ -21,7 +21,6 @@ from cm.stack import check_hostcomponents_objects_exist
 from django.conf import settings
 from django.db.models import Q
 from django_filters.rest_framework.backends import DjangoFilterBackend
-from guardian.shortcuts import get_objects_for_user
 from jinja_config import get_jinja_config
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
@@ -95,9 +94,12 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
 
     def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         self.parent_object = self.get_parent_object()
-        if not self.parent_object or not get_objects_for_user(
-            user=self.request.user,
-            perms=f"cm.view_{self.parent_object.content_type.model}",
+        if (
+            not self.parent_object
+            or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
+            and not request.user.has_perm(
+                perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}", obj=self.parent_object
+            )
         ):
             raise NotFound()
 
@@ -116,9 +118,9 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
 
         if (
             not self.parent_object
-            or not get_objects_for_user(
-                user=self.request.user,
-                perms=f"cm.view_{self.parent_object.content_type.model}",
+            or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
+            and not request.user.has_perm(
+                perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}", obj=self.parent_object
             )
             or not check_run_perms(user=request.user, action=action_, obj=self.parent_object)
         ):
@@ -146,9 +148,9 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
 
         if (
             not self.parent_object
-            or not get_objects_for_user(
-                user=self.request.user,
-                perms=f"cm.view_{self.parent_object.content_type.model}",
+            or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
+            and not request.user.has_perm(
+                perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}", obj=self.parent_object
             )
             or not check_run_perms(user=request.user, action=target_action, obj=self.parent_object)
         ):

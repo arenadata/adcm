@@ -27,6 +27,10 @@ from cm.models import (
     ServiceComponent,
 )
 from django.urls import reverse
+from rbac.models import Role
+from rbac.services.group import create as create_group
+from rbac.services.policy import policy_create
+from rbac.services.role import role_create
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
 from api_v2.tests.base import BaseAPITestCase
@@ -54,8 +58,8 @@ class TestActionsFiltering(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions")
-        self.cluster = self.add_cluster(cluster_bundle, "Cluster with Actions")
+        self.cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions")
+        self.cluster = self.add_cluster(self.cluster_bundle, "Cluster with Actions")
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster).get()
         self.component_1: ServiceComponent = ServiceComponent.objects.get(
             service=self.service_1, prototype__name="component_1"
@@ -383,6 +387,53 @@ class TestActionsFiltering(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_adcm_5348_action_not_allowed_on_any_cluster_failed(self):
+        test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        test_user = self.create_user(**test_user_credentials)
+
+        child_role_action = Role.objects.get(name="Cluster Action: action")
+        child_role_clusters = Role.objects.get(name="View cluster configurations")
+        cluster_as_cluster_one = self.add_cluster(bundle=self.bundle_1, name="cluster_as_cluster_1")
+
+        group_actions = create_group(
+            name_to_display="Group for role `Cluster with Actions`", user_set=[{"id": test_user.pk}]
+        )
+        group_cluster_view = create_group(
+            name_to_display="Group for role `View cluster configurations`", user_set=[{"id": test_user.pk}]
+        )
+        custom_role_in_policy_for_actions = role_create(
+            display_name="Custom `Cluster with Actions` role", child=[child_role_action]
+        )
+        custom_role_in_policy_for_clusters = role_create(
+            display_name="View cluster configurations", child=[child_role_clusters]
+        )
+
+        policy_create(
+            name="Policy for role `Cluster with Actions`",
+            role=custom_role_in_policy_for_actions,
+            group=[group_actions],
+            object=[self.cluster_1],
+        )
+
+        policy_create(
+            name="View cluster configurations",
+            role=custom_role_in_policy_for_clusters,
+            group=[group_cluster_view],
+            object=[self.cluster_1, self.cluster_2],
+        )
+
+        response = self.client.get(
+            path=reverse(viewname="v2:cluster-action-list", kwargs={"cluster_pk": cluster_as_cluster_one.pk})
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.data), 3)
+
+        self.client.login(**test_user_credentials)
+        response = self.client.get(
+            path=reverse(viewname="v2:cluster-action-list", kwargs={"cluster_pk": cluster_as_cluster_one.pk})
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def check_object_action_list(self, viewname: str, object_kwargs: dict, expected_actions: list[str]) -> None:
         response = self.client.get(path=reverse(viewname=viewname, kwargs=object_kwargs))
