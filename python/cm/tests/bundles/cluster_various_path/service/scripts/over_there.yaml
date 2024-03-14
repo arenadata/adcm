@@ -1,0 +1,7 @@
+- name: "Just printing the message"
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: "Read the message"
+      debug:
+        msg: "It's the message from new bundle, what else have you expected?"
