@@ -1,6 +1,6 @@
 import React from 'react';
 import { AdcmJob } from '@models/adcm';
-import JobsStatusIconCell from '@commonComponents/Table/Cells/JobsStatusCell/JobsStatusIcon/JobsStatusIcon.tsx';
+import JobsStatusIconCell from '@commonComponents/Table/Cells/JobsStatusCell/JobsStatusIcon/JobsStatusIcon';
 import { Link } from 'react-router-dom';
 import { ConditionalWrapper, Tooltip } from '@uikit';
 import s from './JobInfo.module.scss';

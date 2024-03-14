@@ -2,8 +2,8 @@ import { createContext, useContext } from 'react';
 import CodeHighlighter from '../CodeHighlighterV2/CodeHighlighterV2';
 import s from './CodeEditorV2.module.scss';
 import cn from 'classnames';
-import CodeEditorTextAreaV2 from '@uikit/CodeEditorV2/CodeEditorTextAreaV2.tsx';
-import { getLines } from '@uikit/CodeHighlighterV2/CodeHighlighterHelperV2.tsx';
+import CodeEditorTextAreaV2 from '@uikit/CodeEditorV2/CodeEditorTextAreaV2';
+import { getLines } from '@uikit/CodeHighlighterV2/CodeHighlighterHelperV2';
 
 export interface CodeEditorProps {
   code: string;

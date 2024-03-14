@@ -8,7 +8,7 @@ import { isCurrentParentPage } from '@utils/urlUtils';
 import Tooltip from '@uikit/Tooltip/Tooltip';
 import s from './LeftBarMenuItem.module.scss';
 import { ConditionalWrapper, MarkerIcon, MarkerIconType } from '@uikit';
-import { MarkerVariantType } from '@uikit/MarkerIcon/MarkerIcon.types.ts';
+import { MarkerVariantType } from '@uikit/MarkerIcon/MarkerIcon.types';
 
 type VariantType = 'default' | 'alert' | 'warning';
 

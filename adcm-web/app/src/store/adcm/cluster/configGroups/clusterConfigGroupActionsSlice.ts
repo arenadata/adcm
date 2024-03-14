@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { AdcmClusterConfigGroupsApi, RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmConfigGroup, AdcmHostCandidate } from '@models/adcm';
 import { AdcmClusterConfigGroupCreateData } from '@api/adcm/clusterGroupConfig';
@@ -36,7 +36,7 @@ const deleteClusterConfigGroup = createAsyncThunk(
     try {
       await AdcmClusterConfigGroupsApi.deleteConfigGroup(clusterId, configGroupId);
 
-      thunkAPI.dispatch(showInfo({ message: 'Config Group was deleted' }));
+      thunkAPI.dispatch(showSuccess({ message: 'Config Group was deleted' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);

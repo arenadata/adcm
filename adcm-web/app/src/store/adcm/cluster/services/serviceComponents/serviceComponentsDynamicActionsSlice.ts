@@ -3,7 +3,7 @@ import { AdcmCluster, AdcmService, AdcmServiceComponent } from '@models/adcm';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmClusterServiceComponentsApi, RequestError } from '@api';
 import { fulfilledFilter } from '@utils/promiseUtils';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { ActionStatuses } from '@constants';
@@ -102,7 +102,7 @@ const runClusterServiceComponentDynamicAction = createAsyncThunk(
         actionRunConfig,
       );
 
-      thunkAPI.dispatch(showInfo({ message: ActionStatuses.SuccessRun }));
+      thunkAPI.dispatch(showSuccess({ message: ActionStatuses.SuccessRun }));
 
       return null;
     } catch (error) {

@@ -5,7 +5,7 @@ import { BaseComponentProps } from '@utils/types';
 import s from './PageSection.module.scss';
 import cn from 'classnames';
 import Icon from '@uikit/Icon/Icon';
-import { textToDataTestValue } from '@utils/dataTestUtils.ts';
+import { textToDataTestValue } from '@utils/dataTestUtils';
 
 interface PageSectionProps extends BaseComponentProps {
   title: React.ReactNode;

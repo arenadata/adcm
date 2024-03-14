@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { AdcmHostProviderConfigGroupsApi, RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmConfigGroup, AdcmHostCandidate } from '@models/adcm';
 import { AdcmHostProviderConfigGroupCreateData } from '@api/adcm/hostProviderGroupConfig';
@@ -36,7 +36,7 @@ const deleteHostProviderConfigGroup = createAsyncThunk(
     try {
       await AdcmHostProviderConfigGroupsApi.deleteConfigGroup(hostProviderId, configGroupId);
 
-      thunkAPI.dispatch(showInfo({ message: 'Config Group was deleted' }));
+      thunkAPI.dispatch(showSuccess({ message: 'Config Group was deleted' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);

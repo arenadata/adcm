@@ -3,7 +3,7 @@ import { Icon } from '@uikit';
 import { ConfigurationNodeView } from '../../ConfigurationEditor.types';
 import s from '../ConfigurationTree.module.scss';
 import cn from 'classnames';
-import { textToDataTestValue } from '@utils/dataTestUtils.ts';
+import { textToDataTestValue } from '@utils/dataTestUtils';
 
 export interface AddItemNodeContentProps {
   node: ConfigurationNodeView;

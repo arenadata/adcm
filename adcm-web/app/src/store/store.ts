@@ -86,19 +86,19 @@ import hostProvidersDynamicActionsSlice from './adcm/hostProviders/hostProviders
 import hostProviderUpgradesSlice from './adcm/hostProviders/hostProviderUpgradesSlice';
 import serviceComponentsDynamicActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponentsDynamicActionsSlice';
 import hostSlice from './adcm/host/hostSlice';
-import serviceConfigGroupsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsSlice.ts';
-import serviceConfigGroupsTableSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsTableSlice.ts';
-import serviceConfigGroupsActionsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsActionsSlice.ts';
-import serviceConfigGroupSlice from './adcm/cluster/services/configGroupSingle/configGroupSingle.ts';
+import serviceConfigGroupsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsSlice';
+import serviceConfigGroupsTableSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsTableSlice';
+import serviceConfigGroupsActionsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsActionsSlice';
+import serviceConfigGroupSlice from './adcm/cluster/services/configGroupSingle/configGroupSingle';
 import hostProviderConfigGroupActionsSlice from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupActionsSlice';
 import hostProviderConfigGroupSlice from '@store/adcm/hostProvider/configurationGroupSingle/hostProviderConfigGroupSlice';
 import bellSlice from '@store/adcm/bell/bellSlice';
 import adcmSettingsSlice from '@store/adcm/settings/settingsSlice';
 import adcmSettingsDynamicActionsSlice from '@store/adcm/settings/settingsDynamicActionsSlice';
-import bundlesActionsSlice from './adcm/bundles/bundlesActionsSlice.ts';
+import bundlesActionsSlice from './adcm/bundles/bundlesActionsSlice';
 
-import adcmEntityConfigurationSlice from '@store/adcm/entityConfiguration/configurationSlice.ts';
-import adcmEntityConfigurationCompareSlice from '@store/adcm/entityConfiguration/compareSlice.ts';
+import adcmEntityConfigurationSlice from '@store/adcm/entityConfiguration/configurationSlice';
+import adcmEntityConfigurationCompareSlice from '@store/adcm/entityConfiguration/compareSlice';
 
 const rootReducer = combineReducers({
   auth: authSlice,

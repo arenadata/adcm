@@ -2,7 +2,7 @@ import { RequestError } from '@api';
 import { AdcmProfileApi } from '@api/adcm/profile';
 import { AdcmProfileChangePassword, AdcmProfileUser } from '@models/adcm/profile';
 import { createSlice } from '@reduxjs/toolkit';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { createAsyncThunk } from '@store/redux';
 import { logout } from '@store/authSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
@@ -25,7 +25,7 @@ const changePassword = createAsyncThunk(
     try {
       await AdcmProfileApi.changePassword(payload);
       await thunkAPI.dispatch(logout());
-      thunkAPI.dispatch(showInfo({ message: 'Password successfully changed' }));
+      thunkAPI.dispatch(showSuccess({ message: 'Password successfully changed' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue([]);
