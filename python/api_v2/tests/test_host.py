@@ -261,6 +261,34 @@ class TestHost(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["results"][0]["id"], host2.pk)
 
+    def test_ordering_by_default_success(self):
+        self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_5")
+        self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2")
+
+        response = self.client.get(
+            path=reverse(viewname="v2:host-list"),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 3)
+        self.assertListEqual(
+            ["test_host", "test_host_2", "test_host_5"],
+            [host["name"] for host in response.json()["results"]],
+        )
+
+    def test_ordering_by_id_desc_success(self):
+        host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_6")
+        host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3")
+
+        response = self.client.get(path=reverse(viewname="v2:host-list"), data={"ordering": "-id"})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 3)
+        self.assertListEqual(
+            [host_3.pk, host_2.pk, self.host.pk],
+            [host["id"] for host in response.json()["results"]],
+        )
+
 
 class TestClusterHost(BaseAPITestCase):
     def setUp(self) -> None:
@@ -272,13 +300,11 @@ class TestClusterHost(BaseAPITestCase):
             bundle=self.provider_bundle, provider=self.provider, fqdn="not-bound-host"
         )
         self.control_host_same_cluster = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="bound-to-same-host"
+            bundle=self.provider_bundle, provider=self.provider, fqdn="bound-to-same-host", cluster=self.cluster_1
         )
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.control_host_same_cluster)
         self.control_host_another_cluster = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="bound-to-another-host"
+            bundle=self.provider_bundle, provider=self.provider, fqdn="bound-to-another-host", cluster=self.cluster_2
         )
-        self.add_host_to_cluster(cluster=self.cluster_2, host=self.control_host_another_cluster)
 
     def check_control_hosts(self) -> None:
         self.control_free_host.refresh_from_db()
@@ -483,6 +509,37 @@ class TestClusterHost(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["maintenance_mode"], "on")
+
+    def test_ordering_by_default_success(self):
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
+
+        response = self.client.get(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 3)
+        self.assertListEqual(
+            ["bound-to-same-host", "second-host", "test_host"],
+            [host["name"] for host in response.json()["results"]],
+        )
+
+    def test_ordering_by_id_desc_success(self):
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
+
+        response = self.client.get(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"ordering": "-id"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 3)
+        self.assertListEqual(
+            [self.control_host_same_cluster.pk, self.host_2.pk, self.host.pk],
+            [host["id"] for host in response.json()["results"]],
+        )
 
 
 class TestHostActions(BaseAPITestCase):

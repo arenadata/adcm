@@ -159,8 +159,10 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet, Obj
     permission_classes = [HostsClusterPermissions]
     # have to define it here for `ObjectWithStatusViewMixin` to be able to determine model related to view
     # don't use it directly, use `get_queryset`
-    queryset = Host.objects.select_related("cluster", "cluster__prototype", "provider", "prototype").prefetch_related(
-        "concerns", "hostcomponent_set__component__prototype"
+    queryset = (
+        Host.objects.select_related("cluster", "cluster__prototype", "provider", "prototype")
+        .prefetch_related("concerns", "hostcomponent_set__component__prototype")
+        .order_by("fqdn")
     )
     filterset_class = HostClusterFilter
     audit_model_hint = Host
@@ -180,8 +182,10 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet, Obj
             user=self.request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=self.kwargs["cluster_pk"]
         )
 
-        by_cluster_qs = get_objects_for_user(**self.get_get_objects_for_user_kwargs(self.queryset)).filter(
-            cluster=cluster
+        by_cluster_qs = (
+            get_objects_for_user(**self.get_get_objects_for_user_kwargs(self.queryset))
+            .filter(cluster=cluster)
+            .order_by("fqdn")
         )
 
         if self.action == "statuses":

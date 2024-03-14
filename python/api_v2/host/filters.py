@@ -19,7 +19,9 @@ class HostFilter(FilterSet):
     hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name")
     cluster_name = CharFilter(label="Cluster name", field_name="cluster__name")
     is_in_cluster = BooleanFilter(label="Is host in cluster", method="filter_is_in_cluster")
-    ordering = OrderingFilter(fields={"fqdn": "name"}, field_labels={"name": "Name"}, label="ordering")
+    ordering = OrderingFilter(
+        fields={"fqdn": "name", "id": "id"}, field_labels={"name": "Name", "id": "Id"}, label="ordering"
+    )
 
     class Meta:
         model = Host
@@ -33,7 +35,9 @@ class HostFilter(FilterSet):
 class HostClusterFilter(FilterSet):
     name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
     hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name")
-    ordering = OrderingFilter(fields={"fqdn": "name"}, field_labels={"name": "Name"}, label="ordering")
+    ordering = OrderingFilter(
+        fields={"fqdn": "name", "id": "id"}, field_labels={"name": "Name", "id": "Id"}, label="ordering"
+    )
 
     class Meta:
         model = Host
