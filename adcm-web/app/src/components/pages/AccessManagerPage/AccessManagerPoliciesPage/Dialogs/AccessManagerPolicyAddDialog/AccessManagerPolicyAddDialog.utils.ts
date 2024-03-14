@@ -42,6 +42,7 @@ export const getObjectsForSubmit = (formData: AccessManagerPolicyAddDialogFormDa
 };
 
 export const generateDialogData = (policy: AdcmPolicy, objectTypes: string[]) => {
+  const objectTypesForUpdateAction = new Set(objectTypes);
   const dialogData: AccessManagerPolicyAddDialogFormData = {
     policyName: policy.name,
     description: policy.description,
@@ -55,20 +56,29 @@ export const generateDialogData = (policy: AdcmPolicy, objectTypes: string[]) =>
     objectTypes: objectTypes,
   };
 
+  // we need to additionally check for data that conflicts with available objectTypes for update action
   for (const object of policy.objects) {
     switch (object.type) {
       case 'cluster':
-        dialogData.clusterIds.push(object.id);
+        if (objectTypesForUpdateAction.has('cluster')) {
+          dialogData.clusterIds.push(object.id);
+        }
         break;
       case 'service':
-        dialogData.serviceClusterIds.push(object.id);
-        dialogData.serviceName = object.name;
+        if (objectTypesForUpdateAction.has('service')) {
+          dialogData.serviceClusterIds.push(object.id);
+          dialogData.serviceName = object.name;
+        }
         break;
       case 'host':
-        dialogData.hostIds.push(object.id);
+        if (objectTypesForUpdateAction.has('host')) {
+          dialogData.hostIds.push(object.id);
+        }
         break;
       case 'provider':
-        dialogData.hostproviderIds.push(object.id);
+        if (objectTypesForUpdateAction.has('provider')) {
+          dialogData.hostproviderIds.push(object.id);
+        }
         break;
     }
   }
