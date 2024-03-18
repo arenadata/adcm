@@ -5,6 +5,7 @@
     --status-icon-color-aborted: var(--color-xdark);
     --status-icon-color-running: var(--color-xblue);
     --status-icon-color-created: var(--color-xwhite-off);
+    --status-icon-color-broken: var(--color-xgray-light);
   }
   body.theme-light {
     --status-icon-color-success: var(--color-xgreen-saturated);
@@ -12,6 +13,7 @@
     --status-icon-color-aborted: var(--color-xgray-light);
     --status-icon-color-running: var(--color-xblue);
     --status-icon-color-created: var(--color-xdark);
+    --status-icon-color-broken: var(--color-xgray-light);
   }
 }
 
@@ -34,5 +36,9 @@
 
   &_aborted {
     color: var(--status-icon-color-aborted);
+  }
+
+  &_broken {
+    color: var(--status-icon-color-broken);
   }
 }

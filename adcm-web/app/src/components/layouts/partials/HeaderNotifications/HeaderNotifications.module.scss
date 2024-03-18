@@ -69,6 +69,10 @@
   &_aborted {
     --bell-marker-color: var(--color-xgray-light);
   }
+
+  &_broken {
+    --bell-marker-color: var(--color-xgray-light);
+  }
 }
 
 .bellPopoverPanel {
