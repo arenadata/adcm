@@ -34,6 +34,7 @@ const HeaderNotifications: React.FC = () => {
       [s.headerNotifications_running]: status === AdcmJobStatus.Running,
       [s.headerNotifications_locked]: status === AdcmJobStatus.Locked,
       [s.headerNotifications_aborted]: status === AdcmJobStatus.Aborted,
+      [s.headerNotifications_broken]: status === AdcmJobStatus.Broken,
     },
   );
 
