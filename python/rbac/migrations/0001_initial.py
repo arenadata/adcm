@@ -14,9 +14,19 @@
 
 import django.contrib.auth.models
 import django.db.models.deletion
-import rbac.models
+from django.core.exceptions import ValidationError
+
 from django.db import connection, migrations, models
 
+types = {"cluster","service", "component", "provider", "host"}
+
+
+def validate(value):
+    if not isinstance(value, list):
+        raise ValidationError("Not a valid list.")
+
+    if not all(v in types for v in value):
+        raise ValidationError("Not a valid object type.")
 
 def upgrade_users(apps, schema_editor):
     query = """
@@ -133,7 +143,7 @@ class Migration(migrations.Migration):
                 ("any_category", models.BooleanField(default=False)),
                 (
                     "parametrized_by_type",
-                    models.JSONField(default=list, validators=[rbac.models.validate_object_type]),
+                    models.JSONField(default=list, validators=[validate]),
                 ),
                 (
                     "bundle",

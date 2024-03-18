@@ -12,9 +12,26 @@
 
 import json
 
-from cm.adcm_config.ansible import ansible_encrypt_and_format
-from cm.utils import obj_to_dict
+from ansible.parsing.vault import VaultAES256, VaultSecret
+from django.conf import settings
 from django.db import migrations
+
+
+def obj_to_dict(obj, keys) -> dict:
+    dictionary = {}
+    for key in keys:
+        if hasattr(obj, key):
+            dictionary[key] = getattr(obj, key)
+
+    return dictionary
+
+
+def ansible_encrypt_and_format(msg: str) -> str:
+    vault = VaultAES256()
+    secret = VaultSecret(_bytes=bytes(settings.ANSIBLE_SECRET, "utf-8"))
+    ciphertext = vault.encrypt(b_plaintext=bytes(msg, "utf-8"), secret=secret)
+
+    return f"{settings.ANSIBLE_VAULT_HEADER}\n{str(ciphertext, settings.ENCODING_UTF_8)}"
 
 
 def get_prototype_config(proto, PrototypeConfig):
