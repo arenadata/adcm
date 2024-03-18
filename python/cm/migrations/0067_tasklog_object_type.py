@@ -15,7 +15,17 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
-from adcm.utils import OBJECT_TYPES_DICT
+OBJECT_TYPES_DICT = {
+    "adcm": "adcm",
+    "cluster": "cluster",
+    "service": "clusterobject",
+    "cluster object": "service",
+    "component": "servicecomponent",
+    "service component": "servicecomponent",
+    "provider": "hostprovider",
+    "host provider": "hostprovider",
+    "host": "host",
+}
 
 
 def fix_tasklog(apps, schema_editor):

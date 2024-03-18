@@ -4,6 +4,7 @@ APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
 SELENOID_HOST ?= 10.92.2.65
 SELENOID_PORT ?= 4444
 ADCM_VERSION = "2.1.0"
+PY_FILES = license_checker.py python dev/linters
 
 .PHONY: help
 
@@ -35,16 +36,17 @@ unittests_postgresql:
 
 pretty:
 	poetry install --no-root --with lint
-	poetry run python license_checker.py --fix --folders python go
+	poetry run python license_checker.py --fix --folders dev/linters python go
 	poetry run ruff format license_checker.py python
-	poetry run ruff check --fix license_checker.py python
-	poetry run ruff format license_checker.py python
+	poetry run ruff check --fix $(PY_FILES)
+	poetry run ruff format $(PY_FILES)
 
 lint:
 	poetry install --no-root --with lint
-	poetry run python license_checker.py --folders python go
-	poetry run ruff check license_checker.py python
-	poetry run ruff format --check python
+	poetry run python license_checker.py --folders dev/linters  python go
+	poetry run ruff check $(PY_FILES)
+	poetry run ruff format --check $(PY_FILES)
+	poetry run python dev/linters/migrations_checker.py python
 
 version:
 	@echo $(ADCM_VERSION)
