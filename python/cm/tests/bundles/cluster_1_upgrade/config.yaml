@@ -147,7 +147,8 @@
       actions:
         action_on_component_2: *action
 
-- name: another_service_two_components
+- &service
+  name: another_service_two_components
   type: service
   version: *version
   config: *config
@@ -165,3 +166,40 @@
       config: *config
       actions:
         action_on_component_2: *action
+
+
+- <<: *service
+  name: another_service_two_components_2
+  components:
+    component_1:
+      constraint: [ 0, + ]
+      config:
+        - name: integer
+          type: integer
+          required: false
+          default: 10
+        - name: plain
+          type: file
+          default: ./plain.txt
+        - name: secte
+          type: secretfile
+          default: ./secret.txt
+        - name: bunch
+          type: group
+          subs:
+            - name: plain
+              type: file
+              default: ./plain.txt
+            - name: secte
+              type: secretfile
+              default: ./secret.txt
+      actions:
+        action_on_component_1: *action
+    component_2:
+      constraint: [ 0, + ]
+      config: *config
+      actions:
+        action_on_component_2: *action
+
+- <<: *service
+  name: another_service_two_components_3
