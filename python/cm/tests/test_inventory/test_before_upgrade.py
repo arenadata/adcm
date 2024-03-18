@@ -12,8 +12,10 @@
 from pathlib import Path
 
 from api_v2.service.utils import bulk_add_services_to_cluster
+from django.conf import settings
 
 from cm.models import Action, ClusterObject, ObjectType, Prototype, ServiceComponent, Upgrade
+from cm.services.job.inventory import get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 from cm.upgrade import bundle_switch, update_before_upgrade
 
@@ -363,7 +365,6 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             ("service_two_components.component_2", "hosts", "host_2", "services"): expected_host_2_services,
         }
 
-        self.maxDiff = None
         self.assert_inventory(
             obj=self.cluster_1,
             action=self.upgrade_for_cluster.action,
@@ -415,3 +416,70 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             expected_topology=expected_topology,
             expected_data=expected_data,
         )
+
+    def test_bug_adcm_5367(self) -> None:
+        another_1 = self.add_services_to_cluster(
+            service_names=["another_service_two_components"], cluster=self.cluster_1
+        ).first()
+        service = self.add_services_to_cluster(
+            service_names=["another_service_two_components_2"], cluster=self.cluster_1
+        ).first()
+        problem_component = ServiceComponent.objects.get(service=service, prototype__name="component_1")
+        another_2 = self.add_services_to_cluster(
+            service_names=["another_service_two_components_3"], cluster=self.cluster_1
+        ).first()
+
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
+
+        self.set_hostcomponent(
+            cluster=self.cluster_1,
+            entries=[
+                (self.host_1, problem_component),
+                (self.host_2, problem_component),
+                (self.host_1, ServiceComponent.objects.filter(service=another_1).first()),
+                (self.host_2, ServiceComponent.objects.filter(service=another_2).first()),
+            ],
+        )
+
+        component_group = self.add_group_config(parent=problem_component, hosts=[self.host_1])
+
+        self.change_configuration(
+            target=component_group,
+            config_diff={"plain": "someother\ntext", "bunch": {"secte": "itsasecret"}},
+            meta_diff={
+                "/plain": {"isSynchronized": False},
+                "/secte": {"isSynchronized": False},
+                "/bunch/secte": {"isSynchronized": False},
+            },
+        )
+
+        self.cluster_1.before_upgrade["bundle_id"] = self.cluster_1.prototype.bundle.pk
+        update_before_upgrade(obj=self.cluster_1)
+
+        bundle_switch(obj=self.cluster_1, upgrade=self.upgrade_for_cluster)
+
+        problem_component.refresh_from_db()
+        action = Action.objects.get(name="action_on_component_1", prototype=problem_component.prototype)
+
+        inventory = get_inventory_data(obj=problem_component, action=action)
+        services = inventory["all"]["vars"]["services"]
+
+        component_prefix = f"{settings.FILE_DIR}/component.{problem_component.id}"
+
+        node = services[service.name]["component_1"]["before_upgrade"]["config"]
+        self.assertEqual(node["plain"], f"{component_prefix}.plain.")
+        self.assertEqual(node["secte"], f"{component_prefix}.secte.")
+        self.assertEqual(node["bunch"]["plain"], f"{component_prefix}.bunch.plain")
+        self.assertEqual(node["bunch"]["secte"], f"{component_prefix}.bunch.secte")
+
+        group_prefix = f"{settings.FILE_DIR}/component.{problem_component.id}.group.{component_group.id}"
+
+        hosts_node = inventory["all"]["children"]["CLUSTER"]["hosts"]
+        node = hosts_node["host_1"]["services"][service.name][problem_component.name]["before_upgrade"]["config"]
+        self.assertEqual(node["plain"], f"{group_prefix}.plain.")
+        self.assertEqual(node["secte"], f"{group_prefix}.secte.")
+        self.assertEqual(node["bunch"]["plain"], f"{group_prefix}.bunch.plain")
+        self.assertEqual(node["bunch"]["secte"], f"{group_prefix}.bunch.secte")
+
+        self.assertNotIn("services", hosts_node["host_2"])
