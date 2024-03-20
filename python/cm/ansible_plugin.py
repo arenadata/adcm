@@ -655,7 +655,7 @@ def get_checklogs_data_by_job_id(job_id: int) -> list[dict[str, Any]]:
     data = []
     group_subs = defaultdict(list)
 
-    for check_log in CheckLog.objects.filter(job_id=job_id):
+    for check_log in CheckLog.objects.filter(job_id=job_id).order_by("id"):
         group = check_log.group
         if group is None:
             data.append(

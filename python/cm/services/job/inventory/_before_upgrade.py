@@ -43,8 +43,11 @@ class ProcessedBeforeUpgrade:
 
     is_default: bool
 
-    # is required for searching related prototypes
-    prototype_name: str | None = None
+    # `prototype_name` field is required for searching related prototypes
+    #
+    # It is expected to be `tuple[str, str]` for Component
+    # with Service's prototype name at first position and Component's prototype name at second
+    prototype_name: str | tuple[str, str] | None = None
     config_id: int | None = None
     bundle_id: int | None = None
     group_configs_info: dict[GroupConfigName, ConfigID] = field(default_factory=dict)
@@ -54,6 +57,7 @@ def extract_objects_before_upgrade(
     objects: ObjectsInInventoryMap,
 ) -> dict[CoreObjectDescriptor, ProcessedBeforeUpgrade]:
     empty_json_field = Value({}, output_field=JSONField())
+    empty_char_field = Value("")
     query = reduce(
         lambda left_qs, right_qs: left_qs.union(right_qs),
         (
@@ -61,6 +65,7 @@ def extract_objects_before_upgrade(
                 "id",
                 "before_upgrade",
                 prototype_name=F("prototype__name"),
+                service_name=F("service__prototype__name") if core_type == ADCMCoreType.COMPONENT else empty_char_field,
                 parent_before_upgrade=F("cluster__before_upgrade")
                 if core_type in (ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT)
                 else empty_json_field,
@@ -92,7 +97,9 @@ def extract_objects_before_upgrade(
             before_upgrade=raw_before_upgrade,
             is_default=False,
             config_id=raw_before_upgrade.get("config_id"),
-            prototype_name=row["prototype_name"],
+            prototype_name=row["prototype_name"]
+            if not row["service_name"]
+            else (row["service_name"], row["prototype_name"]),
             bundle_id=raw_before_upgrade.get("bundle_id", row["parent_before_upgrade"].get("bundle_id")),
             group_configs_info={
                 group_name: int(group_info["group_config_id"])
@@ -106,7 +113,7 @@ def extract_objects_before_upgrade(
 def get_before_upgrades(
     before_upgrades: dict[CoreObjectDescriptor, ProcessedBeforeUpgrade], group_configs: Iterable[GroupConfigInfo] = ()
 ) -> dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, GroupConfigName], dict]:
-    required_prototypes: dict[BundleID, set[tuple[CoreObjectDescriptor, str]]] = defaultdict(set)
+    required_prototypes: dict[BundleID, set[tuple[CoreObjectDescriptor, str | tuple[str, str]]]] = defaultdict(set)
     required_configs: dict[[CoreObjectDescriptor | tuple[CoreObjectDescriptor, GroupConfigName]], ConfigID] = {}
 
     result: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, GroupConfigName], dict] = {}
@@ -136,20 +143,30 @@ def get_before_upgrades(
 
     configurations = retrieve_config_attr_pairs(required_configs.values())
 
-    required_prototypes: dict[tuple[ADCMCoreType, str], PrototypeID] = {
-        (db_record_type_to_core_type(proto["type"]), proto["name"]): proto["id"]
-        for proto in Prototype.objects.values("id", "type", "name").filter(
+    existing_prototypes: dict[tuple[ADCMCoreType, str, str | None], PrototypeID] = {
+        (db_record_type_to_core_type(proto["type"]), proto["name"], proto["parent__name"]): proto["id"]
+        for proto in Prototype.objects.values("id", "type", "name", "parent__name").filter(
             reduce(
                 or_,
                 (
                     Q(bundle_id=bundle_id, type=core_type_to_db_record_type(object_.type), name=name)
+                    # it will be tuple for component, because component names are unique only within service,
+                    # not within cluster, so to uniquely detect component's prototype,
+                    # we have to use both names from service and component
+                    if not isinstance(name, tuple)
+                    else Q(
+                        bundle_id=bundle_id,
+                        type=core_type_to_db_record_type(object_.type),
+                        name=name[1],
+                        parent__name=name[0],
+                    )
                     for bundle_id, requested in required_prototypes.items()
                     for object_, name in requested
                 ),
             )
         )
     }
-    specifications_for_prototypes = retrieve_flat_spec_for_objects(prototypes=required_prototypes.values())
+    specifications_for_prototypes = retrieve_flat_spec_for_objects(prototypes=existing_prototypes.values())
 
     group_config_name_id_map: dict[GroupConfigName, ObjectID] = {
         group_info.name: group_info.id for group_info in group_configs
@@ -162,7 +179,12 @@ def get_before_upgrades(
         result[unprocessed_object] = {"state": before_upgrade_info.before_upgrade.get("state"), "config": None}
 
         try:
-            prototype_id = required_prototypes[unprocessed_object.type, before_upgrade_info.prototype_name]
+            if isinstance(before_upgrade_info.prototype_name, tuple):
+                parent_name, own_name = before_upgrade_info.prototype_name
+            else:
+                parent_name, own_name = None, before_upgrade_info.prototype_name
+
+            prototype_id = existing_prototypes[unprocessed_object.type, own_name, parent_name]
             specification = specifications_for_prototypes[prototype_id]
         except KeyError:
             continue
