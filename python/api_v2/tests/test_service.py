@@ -29,6 +29,7 @@ from cm.models import (
 )
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.status.client import FullStatusMap
+from cm.tests.mocks.task_runner import RunTaskMock
 from django.urls import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -252,7 +253,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
-        with patch("cm.services.job.run.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     viewname="v2:service-action-run",
@@ -266,6 +267,12 @@ class TestServiceAPI(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["id"], run_task.target_task.id)
+        self.assertEqual(run_task.target_task.status, "created")
+
+        run_task.runner.run(run_task.target_task.id)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
 
 
 class TestServiceDeleteAction(BaseAPITestCase):

@@ -52,6 +52,15 @@ def check_run_perms(user: User, action: Action, obj: ADCMEntity) -> bool:
     return user.has_perm(perm=f"{RUN_ACTION_PERM_PREFIX}{get_str_hash(value=action.name)}", obj=obj)
 
 
+def unique_hc_entries(
+    hc_create_data: list[dict[Literal["host_id", "component_id"], int]],
+) -> list[dict[Literal["host_id", "component_id"], int]]:
+    return [
+        {"host_id": host_id, "component_id": component_id}
+        for host_id, component_id in {(entry["host_id"], entry["component_id"]) for entry in hc_create_data}
+    ]
+
+
 def insert_service_ids(
     hc_create_data: List[dict[Literal["host_id", "component_id"], int]],
 ) -> List[dict[Literal["host_id", "component_id", "service_id"], int]]:

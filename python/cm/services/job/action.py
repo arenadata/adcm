@@ -41,7 +41,7 @@ from cm.models import (
     TaskLog,
     get_object_cluster,
 )
-from cm.services.config.spec import retrieve_flat_spec_for_action
+from cm.services.config.spec import convert_to_flat_spec_from_proto_flat_spec
 from cm.services.job.checks import check_constraints_for_upgrade, check_hostcomponentmap
 from cm.services.job.inventory._config import update_configuration_for_inventory_inplace
 from cm.services.job.prepare import prepare_task_for_action
@@ -139,7 +139,7 @@ def run_action(
             new_conf = update_configuration_for_inventory_inplace(
                 configuration=payload.conf,
                 attributes=payload.attr,
-                specification=retrieve_flat_spec_for_action(owner_prototype=obj.prototype.pk, action=action.pk),
+                specification=convert_to_flat_spec_from_proto_flat_spec(prototypes_flat_spec=flat_spec),
                 config_owner=CoreObjectDescriptor(
                     id=obj.pk, type=model_name_to_core_type(model_name=obj._meta.model_name)
                 ),

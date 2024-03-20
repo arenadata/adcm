@@ -12,7 +12,6 @@
 from functools import partial
 from operator import itemgetter
 from typing import TypeAlias
-from unittest.mock import patch
 import json
 
 from cm.models import (
@@ -26,6 +25,7 @@ from cm.models import (
     MaintenanceMode,
     ServiceComponent,
 )
+from cm.tests.mocks.task_runner import RunTaskMock
 from django.urls import reverse
 from rbac.models import Role
 from rbac.services.group import create as create_group
@@ -252,7 +252,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.host_1.maintenance_mode = MaintenanceMode.ON
         self.host_1.save(update_fields=["maintenance_mode"])
 
-        with patch("cm.services.job.run.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     viewname="v2:host-action-run",
@@ -270,12 +270,14 @@ class TestActionsFiltering(BaseAPITestCase):
                 "level": "error",
             },
         )
+        # run task shouldn't be called
+        self.assertIsNone(run_task.target_task)
 
     def test_adcm_4535_job_cant_be_terminated_success(self) -> None:
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
-        with patch("cm.services.job.run.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     viewname="v2:host-action-run",
@@ -285,7 +287,7 @@ class TestActionsFiltering(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        job = JobLog.objects.filter(task__action__name="cluster_host_action_allowed").first()
+        job = JobLog.objects.filter(task=run_task.target_task).first()
 
         response = self.client.post(path=reverse(viewname="v2:joblog-terminate", kwargs={"pk": job.pk}), data={})
 
@@ -303,7 +305,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
-        with patch("cm.services.job.run.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     viewname="v2:host-action-run",
@@ -319,12 +321,13 @@ class TestActionsFiltering(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.assertDictEqual(response.json(), {"detail": "Components with ids 1000 do not exist"})
+        self.assertIsNone(run_task.target_task)
 
     def test_adcm_4856_action_with_non_existing_host_fail(self) -> None:
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
-        with patch("cm.services.job.run.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     viewname="v2:host-action-run",
@@ -340,12 +343,13 @@ class TestActionsFiltering(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.assertDictEqual(response.json(), {"detail": "Hosts with ids 1000 do not exist"})
+        self.assertIsNone(run_task.target_task)
 
     def test_adcm_4856_action_with_duplicated_hc_success(self) -> None:
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
-        with patch("cm.services.job.run.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     viewname="v2:host-action-run",
@@ -363,12 +367,15 @@ class TestActionsFiltering(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        run_task.runner.run(run_task.target_task.pk)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
 
     def test_adcm_4856_action_with_several_entries_hc_success(self) -> None:
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
-        with patch("cm.services.job.run.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     viewname="v2:host-action-run",
@@ -387,6 +394,9 @@ class TestActionsFiltering(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        run_task.runner.run(run_task.target_task.pk)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
 
     def test_adcm_5348_action_not_allowed_on_any_cluster_failed(self):
         test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}

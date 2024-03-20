@@ -9,9 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest.mock import patch
 
 from cm.models import Action, HostProvider
+from cm.tests.mocks.task_runner import RunTaskMock
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -136,7 +136,7 @@ class TestProviderActions(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
-        with patch("cm.services.job.run.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     viewname="v2:provider-action-run",
@@ -149,3 +149,9 @@ class TestProviderActions(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["id"], run_task.target_task.id)
+        self.assertEqual(run_task.target_task.status, "created")
+
+        run_task.runner.run(run_task.target_task.id)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")

@@ -59,13 +59,13 @@ class ExecutionTarget(NamedTuple):
     finalizers: Iterable[JobFinalizer]
 
 
-class JobToExecutionTargetConverter(Protocol):
+class ExecutionTargetFactoryI(Protocol):
     def __call__(self, task: Task, jobs: Iterable[Job], configuration: ExternalSettings) -> Iterable[ExecutionTarget]:
         ...
 
 
 class JobProcessor(NamedTuple):
-    convert: JobToExecutionTargetConverter
+    convert: ExecutionTargetFactoryI
     # id will always return True in bool cast
     filter_predicate: Callable[[Job], bool] = id
 

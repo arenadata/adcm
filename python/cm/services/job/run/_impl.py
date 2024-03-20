@@ -11,10 +11,18 @@
 # limitations under the License.
 
 from datetime import datetime
+from typing import Callable
 import os
 import logging
 
-from core.job.runners import ADCMSettings, AnsibleSettings, ExternalSettings, IntegrationsSettings, JobProcessor
+from core.job.runners import (
+    ADCMSettings,
+    AnsibleSettings,
+    ExternalSettings,
+    IntegrationsSettings,
+    JobProcessor,
+    TaskRunner,
+)
 from core.job.types import ExecutionStatus
 from django.conf import settings
 from django.utils import timezone
@@ -27,6 +35,8 @@ from cm.services.status import notify
 
 logger = logging.getLogger("task_runner_err")
 
+_factory = ExecutionTargetFactory()
+
 
 class SubprocessRunnerEnvironment:
     @property
@@ -37,24 +47,17 @@ class SubprocessRunnerEnvironment:
         return timezone.now()
 
 
-def get_default_runner():
-    return JobSequenceRunner(
-        job_processor=JobProcessor(convert=ExecutionTargetFactory()),
-        settings=_prepare_settings(),
-        repo=JobRepoImpl,
-        environment=SubprocessRunnerEnvironment(),
-        notifier=status_api,
-        status_server=notify,
-        logger=logger,
-    )
+def get_default_runner() -> TaskRunner:
+    return _get_runner()
 
 
-def get_restart_runner():
+def get_restart_runner() -> TaskRunner:
+    return _get_runner(filter_predicate=lambda job: job.status != ExecutionStatus.SUCCESS)
+
+
+def _get_runner(filter_predicate: Callable = id) -> TaskRunner:
     return JobSequenceRunner(
-        job_processor=JobProcessor(
-            convert=ExecutionTargetFactory(),
-            filter_predicate=lambda job: job.status != ExecutionStatus.SUCCESS,
-        ),
+        job_processor=JobProcessor(convert=_factory, filter_predicate=filter_predicate),
         settings=_prepare_settings(),
         repo=JobRepoImpl,
         environment=SubprocessRunnerEnvironment(),
