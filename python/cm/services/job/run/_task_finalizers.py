@@ -81,12 +81,12 @@ def update_object_maintenance_mode(action_name: str, object_: CoreObjectDescript
         action_name in {settings.ADCM_TURN_ON_MM_ACTION_NAME, settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME}
         and obj.maintenance_mode == MaintenanceMode.CHANGING
     ):
-        obj.maintenance_mode = MaintenanceMode.OFF
+        obj.maintenance_mode = MaintenanceMode.ON
         obj.save()
 
     if (
         action_name in {settings.ADCM_TURN_OFF_MM_ACTION_NAME, settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME}
         and obj.maintenance_mode == MaintenanceMode.CHANGING
     ):
-        obj.maintenance_mode = MaintenanceMode.ON
+        obj.maintenance_mode = MaintenanceMode.OFF
         obj.save()

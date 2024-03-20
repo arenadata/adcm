@@ -12,10 +12,10 @@
 
 from datetime import timedelta
 from pathlib import Path
-from unittest.mock import patch
 
 from adcm.tests.base import BaseTestCase
 from cm.models import ADCM, Action, ActionType, Cluster, JobLog, Prototype, TaskLog
+from cm.tests.mocks.task_runner import RunTaskMock
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils import timezone
@@ -167,17 +167,17 @@ class TestJobAPI(BaseTestCase):
         cluster_prototype = Prototype.objects.get(bundle=bundle, type="cluster")
         cluster = Cluster.objects.create(name="test_cluster", prototype=cluster_prototype)
 
-        with patch("cm.services.job.run.run_task"):
+        with RunTaskMock() as run_task:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:run-task", kwargs={"cluster_id": cluster.pk, "action_id": action.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        job = JobLog.objects.get(task__action=action)
-
         response: Response = self.client.get(
-            path=reverse(viewname="v1:joblog-detail", kwargs={"job_pk": job.pk}),
+            path=reverse(
+                viewname="v1:joblog-detail", kwargs={"job_pk": JobLog.objects.get(task=run_task.target_task).pk}
+            ),
         )
 
         self.assertEqual(len(response.data["log_files"]), 2)
@@ -201,21 +201,22 @@ class TestJobAPI(BaseTestCase):
         policy.apply()
 
         with self.no_rights_user_logged_in:
-            with patch("cm.services.job.run.run_task"):
-                self.client.post(
+            with RunTaskMock() as run_task:
+                response = self.client.post(
                     path=reverse(viewname="v1:run-task", kwargs={"cluster_id": cluster.pk, "action_id": action.pk}),
                 )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
 
             response: Response = self.client.get(path=reverse(viewname="v1:joblog-list"))
 
             self.assertIn(
-                JobLog.objects.get(task__action=action).pk,
+                JobLog.objects.get(task=run_task.target_task).pk,
                 {job_data["id"] for job_data in response.data["results"]},
             )
 
             response: Response = self.client.get(path=reverse(viewname="v1:tasklog-list"))
 
             self.assertIn(
-                TaskLog.objects.get(action=action).pk,
+                run_task.target_task.pk,
                 {job_data["id"] for job_data in response.data["results"]},
             )

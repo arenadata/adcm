@@ -9,9 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest.mock import patch
 
 from cm.models import Action, Host, HostComponent, HostProvider, ServiceComponent
+from cm.tests.mocks.task_runner import RunTaskMock
+from core.types import ADCMCoreType
 from django.urls import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -580,7 +581,7 @@ class TestHostActions(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_host_cluster_run_success(self):
-        with patch("cm.services.job.run.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     "v2:host-cluster-action-run",
@@ -594,6 +595,15 @@ class TestHostActions(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["id"], run_task.target_task.id)
+        self.assertEqual(run_task.target_task.status, "created")
+        self.assertEqual(run_task.target_task.task_object, self.host)
+        self.assertEqual(run_task.target_task.owner_id, self.host.pk)
+        self.assertEqual(run_task.target_task.owner_type, ADCMCoreType.HOST.value)
+
+        run_task.runner.run(run_task.target_task.id)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
 
     def test_host_list_success(self):
         response = self.client.get(
@@ -612,13 +622,22 @@ class TestHostActions(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_host_run_success(self):
-        with patch("cm.services.job.run.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse("v2:host-action-run", kwargs={"host_pk": self.host.pk, "pk": self.action.pk}),
                 data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["id"], run_task.target_task.id)
+        self.assertEqual(run_task.target_task.status, "created")
+        self.assertEqual(run_task.target_task.task_object, self.host)
+        self.assertEqual(run_task.target_task.owner_id, self.host.pk)
+        self.assertEqual(run_task.target_task.owner_type, ADCMCoreType.HOST.value)
+
+        run_task.runner.run(run_task.target_task.id)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
 
     def test_host_mapped_list_success(self) -> None:
         HostComponent.objects.create(

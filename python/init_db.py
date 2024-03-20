@@ -20,8 +20,7 @@ from django.utils import timezone
 import adcm.init_django  # noqa: F401, isort:skip
 
 from cm.bundle import load_adcm
-from cm.issue import update_hierarchy_issues
-from cm.job import abort_all
+from cm.issue import unlock_affected_objects, update_hierarchy_issues
 from cm.models import (
     ADCM,
     CheckLog,

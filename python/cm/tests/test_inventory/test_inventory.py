@@ -12,7 +12,6 @@
 
 
 from pathlib import Path
-from unittest.mock import patch
 
 from adcm.tests.base import BaseTestCase
 from core.types import CoreObjectDescriptor
@@ -35,6 +34,7 @@ from cm.services.job.action import ActionRunPayload, ObjectWithAction, run_actio
 from cm.services.job.inventory import get_inventory_data
 from cm.services.job.inventory._constants import MAINTENANCE_MODE_GROUP_SUFFIX
 from cm.services.job.types import HcAclAction
+from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.utils import (
     gen_bundle,
     gen_cluster,
@@ -276,10 +276,10 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         self.assertEqual(TaskLog.objects.count(), 0)
         self.assertEqual(JobLog.objects.count(), 0)
 
-        with patch("cm.services.job.action.run_task"):
-            task = JobRepoImpl.get_task(run_action(action=action, obj=object_, payload=payload).id)
+        with RunTaskMock() as run_task:
+            run_action(action=action, obj=object_, payload=payload)
 
-        inventory = prepare_ansible_inventory(task=task)
+        inventory = prepare_ansible_inventory(task=JobRepoImpl.get_task(run_task.target_task.id))
         return inventory["all"]["children"]
 
     def test_groups_remove_host_not_in_mm_success(self):
