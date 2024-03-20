@@ -347,7 +347,7 @@ def delete_service_from_api(service: ClusterObject) -> Response:
 
     cluster = service.cluster
 
-    if cluster.state == "upgrading" and service.prototype.name in cluster.before_upgrade["services"]:
+    if cluster.state == "upgrading" and service.prototype.name in cluster.before_upgrade.get("services", ()):
         raise AdcmEx(code="SERVICE_CONFLICT", msg="Can't remove service when upgrading cluster")
 
     if ClusterBind.objects.filter(source_service=service).exists():

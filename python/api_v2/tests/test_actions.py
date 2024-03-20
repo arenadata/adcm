@@ -31,7 +31,7 @@ from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
-from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
+from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
 from api_v2.tests.base import BaseAPITestCase
 
@@ -117,6 +117,80 @@ class TestActionsFiltering(BaseAPITestCase):
         self.installed_state = "installed"
         self.flag_multi_state = "flag"
         self.bag_multi_state = "bag"
+
+    def test_upgrading_status_host_remove_fail(self) -> None:
+        self.add_host_to_cluster(self.cluster_1, self.host_1)
+        self.cluster_1.set_state("upgrading")
+
+        response = self.client.delete(
+            path=reverse(
+                viewname="v2:host-cluster-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk}
+            ),
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "HOST_CONFLICT",
+                "desc": "It is forbidden to delete host from cluster in upgrade mode",
+                "level": "error",
+            },
+        )
+
+    def test_upgrading_status_foreign_host_remove_fail(self) -> None:
+        self.cluster_1.set_state("upgrading")
+
+        response = self.client.delete(
+            path=reverse(
+                viewname="v2:host-cluster-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk}
+            ),
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_upgrading_status_service_remove_fail(self) -> None:
+        service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        self.cluster_1.set_state("upgrading")
+        self.cluster_1.before_upgrade["services"] = [
+            service.prototype.name for service in ClusterObject.objects.filter(cluster=self.cluster_1)
+        ]
+        self.cluster_1.save()
+
+        response = self.client.delete(
+            path=reverse(viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": service_1.pk}),
+        )
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "SERVICE_CONFLICT",
+                "desc": "Can't remove service when upgrading cluster",
+                "level": "error",
+            },
+        )
+
+    def test_upgrading_status_service_success(self) -> None:
+        service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        self.cluster_1.set_state("upgrading")
+
+        response = self.client.delete(
+            path=reverse(viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": service_1.pk}),
+        )
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+    def test_upgrading_status_foreign_service_remove_fail(self) -> None:
+        self.cluster_1.set_state("upgrading")
+        self.cluster_1.before_upgrade["services"] = [
+            service.prototype.name for service in ClusterObject.objects.filter(cluster=self.cluster_1)
+        ]
+
+        response = self.client.delete(
+            path=reverse(
+                viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk}
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_filter_object_own_actions_success(self) -> None:
         for object_ in (self.cluster, self.service_1, self.component_1, self.hostprovider, self.host_1):

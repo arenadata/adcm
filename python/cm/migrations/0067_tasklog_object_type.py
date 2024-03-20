@@ -15,14 +15,20 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
+<<<<<<< python/cm/migrations/0067_tasklog_object_type.py
 content = {
-    "component": "servicecomponent",
-    "service": "clusterobject",
-    "host": "host",
-    "provider": "hostprovider",
-    "cluster": "cluster",
     "adcm": "adcm",
+    "cluster": "cluster",
+    "service": "clusterobject",
+    "cluster object": "service",
+    "component": "servicecomponent",
+    "service component": "servicecomponent",
+    "provider": "hostprovider",
+    "host provider": "hostprovider",
+    "host": "host",
 }
+
+>>>>>>> python/cm/migrations/0067_tasklog_object_type.py
 
 def fix_tasklog(apps, schema_editor):
     TaskLog = apps.get_model("cm", "TaskLog")
