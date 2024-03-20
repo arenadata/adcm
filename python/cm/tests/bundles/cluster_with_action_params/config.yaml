@@ -1,0 +1,86 @@
+---
+- type: cluster
+  name: cluster_with_action_params
+  display_name: cluster_with_action_params
+  version: &version '1.0'
+  edition: community
+  config_group_customization: true
+  actions:
+    action_full: &action
+      type: job
+      allow_to_terminate: true
+      script: ./sleep.yaml
+      script_type: ansible
+      params:
+        ansible_tags: ansible_tag1, ansible_tag2
+        jinja2_native: yes
+        custom_str: custom_str_value
+        custom_list: [1, "two", 3.0]
+        custom_map: 
+          1: "two"
+          three: 4.0
+          five: 6
+      states:
+        available: any
+    action_jinja2Native_false:
+      type: job
+      allow_to_terminate: true
+      script: ./sleep.yaml
+      script_type: ansible
+      params:
+        ansible_tags: ansible_tag1, ansible_tag2
+        jinja2_native: no
+        custom_str: custom_str_value
+        custom_list: [1, "two", 3.0]
+        custom_map: 
+          1: "two"
+          three: 4.0
+          five: 6
+      states:
+        available: any
+    action_jinja2Native_absent:
+      type: job
+      allow_to_terminate: true
+      script: ./sleep.yaml
+      script_type: ansible
+      params:
+        ansible_tags: ansible_tag1, ansible_tag2
+        custom_str: custom_str_value
+        custom_list: [1, "two", 3.0]
+        custom_map: 
+          1: "two"
+          three: 4.0
+          five: 6
+      states:
+        available: any
+    action_ansibleTags_absent:
+      type: job
+      allow_to_terminate: true
+      script: ./sleep.yaml
+      script_type: ansible
+      params:
+        jinja2_native: yes
+        custom_str: custom_str_value
+        custom_list: [1, "two", 3.0]
+        custom_map: 
+          1: "two"
+          three: 4.0
+          five: 6
+      states:
+        available: any
+    action_customFields_absent:
+      type: job
+      allow_to_terminate: true
+      script: ./sleep.yaml
+      script_type: ansible
+      params:
+        ansible_tags: ansible_tag1, ansible_tag2
+        jinja2_native: yes
+      states:
+        available: any
+  config: &config
+    - name: string
+      type: string
+      required: false
+      default: string
+

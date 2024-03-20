@@ -9,7 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from configparser import ConfigParser
 from pathlib import Path
+import json
 
 from adcm.tests.base import BaseTestCase
 from django.urls import reverse
@@ -17,7 +20,9 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
 
 from cm.api import add_hc, add_service_to_cluster
-from cm.models import Action, MaintenanceMode, Prototype, ServiceComponent
+from cm.job import prepare_job
+from cm.models import Action, MaintenanceMode, Prototype, ServiceComponent, TaskLog
+from cm.services.job.utils import JobScope
 from cm.tests.utils import (
     gen_action,
     gen_bundle,
@@ -405,3 +410,170 @@ class ActionAllowTest(BaseTestCase):
                 "start_impossible_reason"
             ]
         )
+
+
+class TestActionParams(BaseTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        bundle = self.add_bundle(
+            source_dir=self.base_dir / "python" / "cm" / "tests" / "bundles" / "cluster_with_action_params"
+        )
+
+        self.cluster = self.create_cluster(bundle_pk=bundle.pk, name="test_cluster_with_action_params")
+
+        self.action_full = Action.objects.get(prototype=self.cluster.prototype, name="action_full")
+        self.action_jinja_2_native_false = Action.objects.get(
+            prototype=self.cluster.prototype, name="action_jinja2Native_false"
+        )
+        self.action_jinja_2_native_absent = Action.objects.get(
+            prototype=self.cluster.prototype, name="action_jinja2Native_absent"
+        )
+        self.action_ansible_tags_absent = Action.objects.get(
+            prototype=self.cluster.prototype, name="action_ansibleTags_absent"
+        )
+        self.action_custom_fields_absent = Action.objects.get(
+            prototype=self.cluster.prototype, name="action_customFields_absent"
+        )
+
+    def _generate_and_read_target_files(self, action_pk: int) -> tuple[ConfigParser, dict]:
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:cluster-action-run",
+                kwargs={
+                    "cluster_pk": self.cluster.pk,
+                    "pk": action_pk,
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        task_id = response.json()["id"]
+        job = TaskLog.objects.get(pk=task_id).joblog_set.get()
+
+        prepare_job(job_scope=JobScope(job_id=job.pk, object=self.cluster), delta={})
+
+        ansible_cfg_file: Path = self.directories["RUN_DIR"] / str(task_id) / "ansible.cfg"
+        config_json_file: Path = self.directories["RUN_DIR"] / str(task_id) / "config.json"
+
+        if not ansible_cfg_file.is_file() or not config_json_file.is_file():
+            raise ValueError("Not all files exist")
+
+        config_parser = ConfigParser()
+        config_parser.read(ansible_cfg_file.absolute())
+
+        return config_parser, json.loads(config_json_file.read_text(encoding="utf-8"))
+
+    def test_params_full(self):
+        expexted_ansible_cfg = {
+            "defaults": (
+                ("stdout_callback", "yaml"),
+                ("callback_whitelist", "profile_tasks"),
+                ("forks", "5"),
+                ("jinja2_native", "True"),
+            )
+        }
+        expected_job_params = {
+            "ansible_tags": "ansible_tag1, ansible_tag2",
+            "custom_list": [1, "two", 3.0],
+            "custom_map": {"1": "two", "five": 6, "three": 4.0},
+            "custom_str": "custom_str_value",
+            "jinja2_native": True,
+        }
+
+        ansible_cfg_content, config_json_content = self._generate_and_read_target_files(action_pk=self.action_full.pk)
+
+        self.assertListEqual(ansible_cfg_content.sections(), list(expexted_ansible_cfg.keys()))
+        self.assertSetEqual(set(ansible_cfg_content.items("defaults")), set(expexted_ansible_cfg["defaults"]))
+        self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)
+
+    def test_params_jinja_2_native_false(self):
+        expexted_ansible_cfg = {
+            "defaults": (
+                ("stdout_callback", "yaml"),
+                ("callback_whitelist", "profile_tasks"),
+                ("forks", "5"),
+                ("jinja2_native", "False"),
+            )
+        }
+        expected_job_params = {
+            "ansible_tags": "ansible_tag1, ansible_tag2",
+            "custom_list": [1, "two", 3.0],
+            "custom_map": {"1": "two", "five": 6, "three": 4.0},
+            "custom_str": "custom_str_value",
+            "jinja2_native": False,
+        }
+
+        ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
+            action_pk=self.action_jinja_2_native_false.pk
+        )
+
+        self.assertListEqual(ansible_cfg_content.sections(), list(expexted_ansible_cfg.keys()))
+        self.assertSetEqual(set(ansible_cfg_content.items("defaults")), set(expexted_ansible_cfg["defaults"]))
+        self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)
+
+    def test_params_jinja_2_native_absent(self):
+        expexted_ansible_cfg = {
+            "defaults": (
+                ("stdout_callback", "yaml"),
+                ("callback_whitelist", "profile_tasks"),
+                ("forks", "5"),
+            )
+        }
+        expected_job_params = {
+            "ansible_tags": "ansible_tag1, ansible_tag2",
+            "custom_list": [1, "two", 3.0],
+            "custom_map": {"1": "two", "five": 6, "three": 4.0},
+            "custom_str": "custom_str_value",
+        }
+
+        ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
+            action_pk=self.action_jinja_2_native_absent.pk
+        )
+
+        self.assertListEqual(ansible_cfg_content.sections(), list(expexted_ansible_cfg.keys()))
+        self.assertSetEqual(set(ansible_cfg_content.items("defaults")), set(expexted_ansible_cfg["defaults"]))
+        self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)
+
+    def test_params_ansible_tags_absent(self):
+        expexted_ansible_cfg = {
+            "defaults": (
+                ("stdout_callback", "yaml"),
+                ("callback_whitelist", "profile_tasks"),
+                ("forks", "5"),
+                ("jinja2_native", "True"),
+            )
+        }
+        expected_job_params = {
+            "custom_list": [1, "two", 3.0],
+            "custom_map": {"1": "two", "five": 6, "three": 4.0},
+            "custom_str": "custom_str_value",
+            "jinja2_native": True,
+        }
+
+        ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
+            action_pk=self.action_ansible_tags_absent.pk
+        )
+
+        self.assertListEqual(ansible_cfg_content.sections(), list(expexted_ansible_cfg.keys()))
+        self.assertSetEqual(set(ansible_cfg_content.items("defaults")), set(expexted_ansible_cfg["defaults"]))
+        self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)
+
+    def test_params_custom_fields_absent(self):
+        expexted_ansible_cfg = {
+            "defaults": (
+                ("stdout_callback", "yaml"),
+                ("callback_whitelist", "profile_tasks"),
+                ("forks", "5"),
+                ("jinja2_native", "True"),
+            )
+        }
+        expected_job_params = {"ansible_tags": "ansible_tag1, ansible_tag2", "jinja2_native": True}
+
+        ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
+            action_pk=self.action_custom_fields_absent.pk
+        )
+
+        self.assertListEqual(ansible_cfg_content.sections(), list(expexted_ansible_cfg.keys()))
+        self.assertSetEqual(set(ansible_cfg_content.items("defaults")), set(expexted_ansible_cfg["defaults"]))
+        self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)

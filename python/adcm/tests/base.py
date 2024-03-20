@@ -102,7 +102,23 @@ class ParallelReadyTestCase:
         return temporary_directories
 
 
-class BaseTestCase(TestCase, ParallelReadyTestCase):
+class BundleLogicMixin:
+    @staticmethod
+    def prepare_bundle_file(source_dir: Path) -> str:
+        bundle_file = f"{source_dir.name}.tar"
+        with tarfile.open(settings.DOWNLOAD_DIR / bundle_file, "w") as tar:
+            for file in source_dir.iterdir():
+                tar.add(name=file, arcname=file.name)
+
+        return bundle_file
+
+    def add_bundle(self, source_dir: Path) -> Bundle:
+        bundle_file = self.prepare_bundle_file(source_dir=source_dir)
+        bundle_hash, path = process_file(bundle_file=bundle_file)
+        return prepare_bundle(bundle_file=bundle_file, bundle_hash=bundle_hash, path=path)
+
+
+class BaseTestCase(TestCase, ParallelReadyTestCase, BundleLogicMixin):
     def setUp(self) -> None:
         self.test_user_username = "test_user"
         self.test_user_password = "test_user_password"
@@ -423,21 +439,7 @@ class BaseTestCase(TestCase, ParallelReadyTestCase):
         return "".join(random.sample(f"{string.ascii_letters}{string.digits}", length))
 
 
-class BusinessLogicMixin:
-    @staticmethod
-    def prepare_bundle_file(source_dir: Path) -> str:
-        bundle_file = f"{source_dir.name}.tar"
-        with tarfile.open(settings.DOWNLOAD_DIR / bundle_file, "w") as tar:
-            for file in source_dir.iterdir():
-                tar.add(name=file, arcname=file.name)
-
-        return bundle_file
-
-    def add_bundle(self, source_dir: Path) -> Bundle:
-        bundle_file = self.prepare_bundle_file(source_dir=source_dir)
-        bundle_hash, path = process_file(bundle_file=bundle_file)
-        return prepare_bundle(bundle_file=bundle_file, bundle_hash=bundle_hash, path=path)
-
+class BusinessLogicMixin(BundleLogicMixin):
     @staticmethod
     def add_cluster(bundle: Bundle, name: str, description: str = "") -> Cluster:
         prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.CLUSTER).first()
