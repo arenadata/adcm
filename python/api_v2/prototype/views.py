@@ -10,13 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.prototype.filters import PrototypeFilter, PrototypeVersionFilter
-from api_v2.prototype.serializers import (
-    PrototypeListSerializer,
-    PrototypeTypeSerializer,
-)
-from api_v2.prototype.utils import accept_license
-from api_v2.views import CamelCaseReadOnlyModelViewSet
+from adcm.permissions import VIEW_CLUSTER_PERM, DjangoModelPermissionsAudit
+from adcm.serializers import EmptySerializer
 from audit.utils import audit
 from cm.models import ObjectType, Prototype
 from django.db.models import QuerySet
@@ -25,11 +20,16 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
-from adcm.permissions import VIEW_CLUSTER_PERM, DjangoModelPermissionsAudit
-from adcm.serializers import EmptySerializer
+from api_v2.prototype.filters import PrototypeFilter, PrototypeVersionFilter
+from api_v2.prototype.serializers import (
+    PrototypeListSerializer,
+    PrototypeTypeSerializer,
+)
+from api_v2.prototype.utils import accept_license
+from api_v2.views import CamelCaseReadOnlyModelViewSet
 
 
-class PrototypeViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+class PrototypeViewSet(CamelCaseReadOnlyModelViewSet):
     queryset = Prototype.objects.exclude(type="adcm").select_related("bundle").order_by("name")
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_CLUSTER_PERM]
@@ -45,13 +45,13 @@ class PrototypeViewSet(CamelCaseReadOnlyModelViewSet):  # pylint: disable=too-ma
         return PrototypeListSerializer
 
     @action(methods=["get"], detail=False, filterset_class=PrototypeVersionFilter)
-    def versions(self, request):  # pylint: disable=unused-argument
+    def versions(self, request):  # noqa: ARG001, ARG002
         queryset = self.get_filtered_prototypes_unique_by_display_name()
         return Response(data=self.get_serializer(queryset, many=True).data)
 
     @audit
     @action(methods=["post"], detail=True, url_path="license/accept", url_name="accept-license")
-    def accept(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def accept(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         prototype = self.get_object()
         accept_license(prototype=prototype)
         return Response(status=HTTP_200_OK)

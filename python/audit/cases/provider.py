@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from cm.models import HostProvider
+from rest_framework.response import Response
+
 from audit.cases.common import get_or_create_audit_obj, obj_pk_case, response_case
 from audit.models import (
     AuditLogOperationType,
@@ -16,8 +19,6 @@ from audit.models import (
     AuditObjectType,
     AuditOperation,
 )
-from cm.models import HostProvider
-from rest_framework.response import Response
 
 
 def provider_case(

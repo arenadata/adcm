@@ -12,12 +12,12 @@ const JobPage: React.FC = () => {
   const { task, dispatch } = useRequestJobPage();
 
   useEffect(() => {
-    if (task) {
+    if (task.displayName) {
       const jobBreadcrumbs = [{ href: '/jobs', label: 'Jobs' }, { label: task.displayName }];
 
       dispatch(setBreadcrumbs(jobBreadcrumbs));
     }
-  }, [task, dispatch]);
+  }, [task.displayName, dispatch]);
 
   return (
     <>

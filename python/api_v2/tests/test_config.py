@@ -9,13 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 from pathlib import Path
+import json
 
-from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
-from api_v2.tests.base import BaseAPITestCase
 from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
-from cm.inventory import get_obj_config
 from cm.models import (
     ADCM,
     ConfigLog,
@@ -33,10 +30,12 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
 )
 
-# pylint: disable=too-many-lines
+from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestClusterConfig(BaseAPITestCase):
@@ -191,8 +190,9 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         self.service.refresh_from_db()
-        processed_config = get_obj_config(obj=self.service)
-        self.assertDictEqual(processed_config, {})
+        current_config = ConfigLog.objects.get(obj_ref=self.service.config, id=self.service.config.current).config
+
+        self.assertDictEqual(current_config, {})
 
     def test_save_config_without_not_required_map_in_group_success(self):
         response = self.client.post(
@@ -211,14 +211,15 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    def test_default_success(self):
-        processed_config = get_obj_config(obj=self.service)
-        self.assertDictEqual(processed_config["map_not_required"], {})
+    def test_default_raw_config_success(self):
+        default_config_without_secrets = ConfigLog.objects.get(
+            obj_ref=self.service.config, id=self.service.config.current
+        ).config
         self.assertDictEqual(
-            processed_config,
+            default_config_without_secrets,
             {
-                "group": {"map_not_required": {}, "variant_not_required": None},
-                "map_not_required": {},
+                "group": {"map_not_required": None, "variant_not_required": None},
+                "map_not_required": None,
                 "variant_not_required": None,
                 "list": ["value1", "value2"],
             },
@@ -235,6 +236,9 @@ class TestClusterGroupConfig(BaseAPITestCase):
             object_id=self.cluster_1.pk,
         )
         self.group_config_config = ConfigLog.objects.get(pk=self.group_config.config.current)
+
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
         response = self.client.get(
@@ -320,6 +324,88 @@ class TestClusterGroupConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
+
+    def test_adcm_5219_create_non_superuser_privileged_success(self):
+        with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
+            data = {
+                "config": {
+                    "activatable_group": {"integer": 100},
+                    "boolean": False,
+                    "group": {"float": 2.1},
+                    "list": ["value1", "value2", "value3", "value4"],
+                    "variant_not_strict": "value5",
+                },
+                "adcmMeta": {
+                    "/activatable_group": {"isActive": True, "isSynchronized": False},
+                    "/boolean": {"isSynchronized": False},
+                    "/group/float": {"isSynchronized": False},
+                    "/variant_not_strict": {"isSynchronized": False},
+                    "/list": {"isSynchronized": False},
+                    "/activatable_group/integer": {"isSynchronized": False},
+                },
+                "description": "new config",
+            }
+
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:cluster-group-config-config-list",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
+                ),
+                data=data,
+            )
+
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_create_no_permissions_fail(self):
+        data = {
+            "config": {
+                "activatable_group": {"integer": 100},
+                "boolean": False,
+                "group": {"float": 2.1},
+                "list": ["value1", "value2", "value3", "value4"],
+                "variant_not_strict": "value5",
+            },
+            "adcmMeta": {
+                "/activatable_group": {"isActive": True, "isSynchronized": False},
+                "/boolean": {"isSynchronized": False},
+                "/group/float": {"isSynchronized": False},
+                "/variant_not_strict": {"isSynchronized": False},
+                "/list": {"isSynchronized": False},
+                "/activatable_group/integer": {"isSynchronized": False},
+            },
+            "description": "new config",
+        }
+        initial_configlog_ids = set(ConfigLog.objects.values_list("id", flat=True))
+
+        user_password = "user_password"
+        user_with_view_rights = self.create_user(username="user_with_view_rights", password=user_password)
+        with self.grant_permissions(
+            to=user_with_view_rights, on=self.cluster_1, role_name="View cluster configurations"
+        ):
+            self.client.login(username=user_with_view_rights.username, password=user_password)
+
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:cluster-group-config-config-detail",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "group_config_pk": self.group_config.pk,
+                        "pk": self.group_config_config.pk,
+                    },
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:cluster-group-config-config-list",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
+                ),
+                data=data,
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertSetEqual(initial_configlog_ids, set(ConfigLog.objects.values_list("id", flat=True)))
 
     def test_cancel_sync(self):
         config = {
@@ -712,6 +798,58 @@ class TestServiceGroupConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
+
+    def test_create_no_permissions_fail(self):
+        data = {
+            "config": {
+                "group": {"password": "newpassword"},
+                "activatable_group": {"text": "new text"},
+                "string": "new string",
+            },
+            "adcmMeta": {
+                "/activatable_group": {"isActive": True, "isSynchronized": False},
+                "/activatable_group/text": {"isSynchronized": False},
+                "/group/password": {"isSynchronized": False},
+                "/string": {"isSynchronized": False},
+            },
+            "description": "new config",
+        }
+        initial_configlog_ids = set(ConfigLog.objects.values_list("id", flat=True))
+
+        user_password = "user_password"
+        user_with_view_rights = self.create_user(username="user_with_view_rights", password=user_password)
+        with self.grant_permissions(
+            to=user_with_view_rights, on=self.service_1, role_name="View service configurations"
+        ):
+            self.client.login(username=user_with_view_rights.username, password=user_password)
+
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:service-group-config-config-detail",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "group_config_pk": self.group_config.pk,
+                        "pk": self.group_config_config.pk,
+                    },
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:service-group-config-config-list",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "group_config_pk": self.group_config.pk,
+                    },
+                ),
+                data=data,
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertSetEqual(initial_configlog_ids, set(ConfigLog.objects.values_list("id", flat=True)))
 
     def test_cancel_sync(self):
         config = {
@@ -1136,6 +1274,60 @@ class TestComponentGroupConfig(BaseAPITestCase):
         self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
+
+    def test_create_no_permissions_fail(self):
+        data = {
+            "config": {
+                "group": {"file": "new content"},
+                "activatable_group": {"secretfile": "new content"},
+                "secrettext": "new secrettext",
+            },
+            "adcmMeta": {
+                "/activatable_group": {"isActive": True, "isSynchronized": False},
+                "/activatable_group/secretfile": {"isSynchronized": False},
+                "/group/file": {"isSynchronized": False},
+                "/secrettext": {"isSynchronized": False},
+            },
+            "description": "new config",
+        }
+        initial_configlog_ids = set(ConfigLog.objects.values_list("id", flat=True))
+
+        user_password = "user_password"
+        user_with_view_rights = self.create_user(username="user_with_view_rights", password=user_password)
+        with self.grant_permissions(
+            to=user_with_view_rights, on=self.component_1, role_name="View component configurations"
+        ):
+            self.client.login(username=user_with_view_rights.username, password=user_password)
+
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:component-group-config-config-detail",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                        "group_config_pk": self.group_config.pk,
+                        "pk": self.group_config_config.pk,
+                    },
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:component-group-config-config-list",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1.pk,
+                        "component_pk": self.component_1.pk,
+                        "group_config_pk": self.group_config.pk,
+                    },
+                ),
+                data=data,
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertSetEqual(initial_configlog_ids, set(ConfigLog.objects.values_list("id", flat=True)))
 
     def test_cancel_sync(self):
         config = {
@@ -1666,6 +1858,61 @@ class TestProviderGroupConfig(BaseAPITestCase):
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
 
+    def test_create_no_permissions_fail(self):
+        data = {
+            "config": {
+                "group": {"map": {"integer_key": "100", "string_key": "new string"}},
+                "activatable_group": {
+                    "secretmap": {
+                        "integer_key": "100",
+                        "string_key": "new string",
+                    }
+                },
+                "json": '{"key": "value", "new key": "new value"}',
+            },
+            "adcmMeta": {
+                "/activatable_group": {"isActive": True, "isSynchronized": False},
+                "/json": {"isSynchronized": False},
+                "/group/map": {"isSynchronized": False},
+                "/activatable_group/secretmap": {"isSynchronized": False},
+            },
+            "description": "new config",
+        }
+        initial_configlog_ids = set(ConfigLog.objects.values_list("id", flat=True))
+
+        user_password = "user_password"
+        user_with_view_rights = self.create_user(username="user_with_view_rights", password=user_password)
+        with self.grant_permissions(
+            to=user_with_view_rights, on=self.provider, role_name="View provider configurations"
+        ):
+            self.client.login(username=user_with_view_rights.username, password=user_password)
+
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:hostprovider-group-config-config-detail",
+                    kwargs={
+                        "hostprovider_pk": self.provider.pk,
+                        "group_config_pk": self.group_config.pk,
+                        "pk": self.group_config_config.pk,
+                    },
+                )
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:hostprovider-group-config-config-list",
+                    kwargs={
+                        "hostprovider_pk": self.provider.pk,
+                        "group_config_pk": self.group_config.pk,
+                    },
+                ),
+                data=data,
+            )
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertSetEqual(initial_configlog_ids, set(ConfigLog.objects.values_list("id", flat=True)))
+
     def test_cancel_sync(self):
         config = {
             "group": {"map": {"integer_key": "100", "string_key": "new string"}},
@@ -2129,7 +2376,7 @@ class TestConfigSchemaEnumWithoutValues(BaseAPITestCase):
         )
 
 
-class TestGroupConfigUpgrade(BaseAPITestCase):  # pylint: disable=too-many-instance-attributes
+class TestGroupConfigUpgrade(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 

@@ -18,6 +18,8 @@
   padding: 8px 16px;
   border-radius: 7px;
   width: max-content;
+  max-width: 600px;
+  word-wrap: break-word;
 
   background: var(--tooltip-background);
   color: var(--tooltip-color);

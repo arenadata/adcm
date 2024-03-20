@@ -10,14 +10,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines
+from cm.models import (
+    Cluster,
+    ClusterObject,
+    GroupConfig,
+    Host,
+    HostComponent,
+    MaintenanceMode,
+    ServiceComponent,
+)
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_409_CONFLICT,
+)
 
 from api_v2.cluster.utils import get_requires
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import Host, HostComponent, MaintenanceMode, ServiceComponent
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
 
 
 class TestMapping(BaseAPITestCase):
@@ -55,11 +67,8 @@ class TestMapping(BaseAPITestCase):
     def test_create_mapping_success(self):
         host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_3)
-        component_2 = ServiceComponent.objects.get(
-            cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
-        )
         data = [
-            {"hostId": host_3.pk, "componentId": component_2.pk},
+            {"hostId": host_3.pk, "componentId": self.component_2.pk},
             {"hostId": self.host_1.pk, "componentId": self.component_1.pk},
         ]
 
@@ -68,6 +77,40 @@ class TestMapping(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(HostComponent.objects.count(), 2)
+
+    def test_create_mapping_duplicates_fail(self):
+        host_3 = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3", cluster=self.cluster_1
+        )
+
+        data = [
+            {"hostId": self.host_1.pk, "componentId": self.component_1.pk},
+            {"hostId": self.host_1.pk, "componentId": self.component_1.pk},  # duplicate h1 c1
+            {"hostId": self.host_1.pk, "componentId": self.component_1.pk},  # another duplicate h1 c1
+            {"hostId": self.host_2.pk, "componentId": self.component_2.pk},
+            {"hostId": self.host_2.pk, "componentId": self.component_2.pk},  # duplicate h2 c2
+            {"hostId": self.host_2.pk, "componentId": self.component_2.pk},  # another duplicate h2 c2
+            {"hostId": host_3.pk, "componentId": self.component_1.pk},
+        ]
+
+        duplicate_ids = (
+            (self.host_1.pk, self.component_1.pk, self.component_1.service.pk),
+            (self.host_2.pk, self.component_2.pk, self.component_2.service.pk),
+        )
+        error_msg_part = ", ".join(f"component {map_ids[1]} - host {map_ids[0]}" for map_ids in sorted(duplicate_ids))
+
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}), data=data
+        )
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "INVALID_INPUT",
+                "level": "error",
+                "desc": f"Mapping entries duplicates found: {error_msg_part}.",
+            },
+        )
 
     def test_create_empty_mapping_success(self):
         response = self.client.post(
@@ -146,7 +189,7 @@ class TestMapping(BaseAPITestCase):
         self.assertDictEqual(new_requires, {"service1": ["component1"]})
 
 
-class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-public-methods
+class TestMappingConstraints(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
@@ -186,9 +229,10 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
         self.assertDictEqual(
             response.json(),
             {
-                "code": "FOREIGN_HOST",
+                "code": "HOST_NOT_FOUND",
                 "level": "error",
-                "desc": f'Host "{self.host_not_in_cluster.display_name}" does not belong to any cluster',
+                "desc": f'Host(s) "{self.host_not_in_cluster.pk}" '
+                f'do not belong to cluster "{self.cluster.display_name}"',
             },
         )
         self.assertEqual(HostComponent.objects.count(), 0)
@@ -213,12 +257,9 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
         self.assertDictEqual(
             response.json(),
             {
-                "code": "FOREIGN_HOST",
+                "code": "HOST_NOT_FOUND",
                 "level": "error",
-                "desc": (
-                    f'Host "{self.foreign_host.display_name}" (cluster "{self.foreign_host.cluster.display_name}") '
-                    f'does not belong to cluster "{self.cluster.display_name}"'
-                ),
+                "desc": (f'Host(s) "{self.foreign_host.pk}" do not belong to cluster "{self.cluster.display_name}"'),
             },
         )
         self.assertEqual(HostComponent.objects.count(), 0)
@@ -247,7 +288,8 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
             {
                 "code": "HOST_NOT_FOUND",
                 "level": "error",
-                "desc": f"Hosts not found: {non_existent_host_pk}, {non_existent_host_pk + 1}",
+                "desc": f'Host(s) "{non_existent_host_pk}", "{non_existent_host_pk + 1}" '
+                f'do not belong to cluster "{self.cluster.display_name}"',
             },
         )
         self.assertEqual(HostComponent.objects.count(), 0)
@@ -276,7 +318,8 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
             {
                 "code": "COMPONENT_NOT_FOUND",
                 "level": "error",
-                "desc": f"Components not found: {non_existent_component_pk}, {non_existent_component_pk + 1}",
+                "desc": f'Component(s) "{non_existent_component_pk}", "{non_existent_component_pk + 1}" '
+                f'do not belong to cluster "{self.cluster.display_name}"',
             },
         )
         self.assertEqual(HostComponent.objects.count(), 0)
@@ -340,11 +383,20 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
             service=service_requires_component,
             cluster=self.cluster,
         )
+        service_with_component_required = self.add_services_to_cluster(
+            service_names=["service_with_component_required"], cluster=self.cluster
+        ).get()
+        not_required_component = ServiceComponent.objects.get(
+            prototype__name="not_required_component",
+            service=service_with_component_required,
+            cluster=self.cluster,
+        )
 
         response: Response = self.client.post(
             path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster.pk}),
             data=[
                 {"hostId": self.host_1.pk, "componentId": component_1.pk},
+                {"hostId": self.host_1.pk, "componentId": not_required_component.pk},
             ],
         )
 
@@ -457,8 +509,9 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
                 "code": "COMPONENT_CONSTRAINT_ERROR",
                 "level": "error",
                 "desc": (
-                    f'Component "bound_target_component" of service "bound_target_service" not in hc for '
-                    f'component "{bound_component.display_name}" of service "{bound_component.service.display_name}"'
+                    f'No component "bound_target_component" of service "bound_target_service" '
+                    f'on host "{self.host_1.fqdn}" for component "{bound_component.display_name}" '
+                    f'of service "{bound_component.service.display_name}"'
                 ),
             },
         )
@@ -498,9 +551,10 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
                 "code": "COMPONENT_CONSTRAINT_ERROR",
                 "level": "error",
                 "desc": (
-                    f'No component "{bound_target_component.display_name}" of service '
-                    f'"{bound_target_component.service.display_name}" on host "{self.host_1.display_name}" for '
-                    f'component "{bound_component.display_name}" of service "{bound_component.service.display_name}"'
+                    f'No component "{bound_component.display_name}" of service '
+                    f'"{bound_component.service.display_name}" on host "{self.host_2.display_name}" for '
+                    f'component "{bound_target_component.display_name}" '
+                    f'of service "{bound_target_component.service.display_name}"'
                 ),
             },
         )
@@ -1067,7 +1121,7 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
                 "code": "SERVICE_CONFLICT",
                 "level": "error",
                 "desc": (
-                    f'No required service "service_required" 1.0 for service '
+                    f'No required service "service_required" for service '
                     f'"{service_requires_service.display_name}" {service_requires_service.prototype.version}'
                 ),
             },
@@ -1103,3 +1157,156 @@ class TestMappingConstraints(BaseAPITestCase):  # pylint: disable=too-many-publi
             },
         )
         self.assertEqual(HostComponent.objects.count(), 0)
+
+
+class GroupConfigRelatedTests(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1)
+
+        self.host_1 = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster_1
+        )
+        self.host_2 = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
+        )
+
+        self.service_1 = ClusterObject.objects.get(prototype__name="service_1", cluster=self.cluster_1)
+        self.component_1_from_s1 = ServiceComponent.objects.get(prototype__name="component_1", service=self.service_1)
+        self.component_2_from_s1 = ServiceComponent.objects.get(prototype__name="component_2", service=self.service_1)
+
+    def _prepare_config_group_via_api(
+        self, obj: Cluster | ClusterObject | ServiceComponent, hosts: list[Host], name: str, description: str = ""
+    ) -> GroupConfig:
+        match type(obj).__name__:
+            case ServiceComponent.__name__:
+                viewname_create = "v2:component-group-config-list"
+                viewname_add_host = "v2:component-group-config-hosts-list"
+                kwargs = {"cluster_pk": obj.cluster.pk, "service_pk": obj.service.pk, "component_pk": obj.pk}
+            case ClusterObject.__name__:
+                viewname_create = "v2:service-group-config-list"
+                viewname_add_host = "v2:service-group-config-hosts-list"
+                kwargs = {
+                    "cluster_pk": obj.cluster.pk,
+                    "service_pk": obj.pk,
+                }
+            case Cluster.__name__:
+                viewname_create = "v2:cluster-group-config-list"
+                viewname_add_host = "v2:cluster-group-config-hosts-list"
+                kwargs = {
+                    "cluster_pk": obj.pk,
+                }
+            case _:
+                raise NotImplementedError(str(obj))
+
+        response = self.client.post(
+            path=reverse(viewname=viewname_create, kwargs=kwargs),
+            data={"name": name, "description": description},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config = GroupConfig.objects.get(pk=response.json()["id"])
+        kwargs.update({"group_config_pk": group_config.pk})
+
+        for host in hosts:
+            response = self.client.post(
+                path=reverse(viewname=viewname_add_host, kwargs=kwargs),
+                data={"hostId": host.pk},
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config.refresh_from_db()
+        self.assertEqual(group_config.hosts.count(), len(hosts))
+
+        return group_config
+
+    def test_host_removed_from_component_group_config_on_mapping_change(self):
+        mapping_url = reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk})
+        mapping_data = [{"hostId": self.host_1.pk, "componentId": self.component_1_from_s1.pk}]
+
+        response: Response = self.client.post(path=mapping_url, data=mapping_data)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config = self._prepare_config_group_via_api(
+            obj=self.component_1_from_s1, hosts=[self.host_1], name="component config group"
+        )
+
+        mapping_data[0].update({"componentId": self.component_2_from_s1.pk})
+        response: Response = self.client.post(path=mapping_url, data=mapping_data)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config.refresh_from_db()
+        self.assertEqual(group_config.hosts.count(), 0)
+
+    def test_host_not_removed_from_component_group_config_on_mapping_remain(self):
+        mapping_url = reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk})
+        mapping_data = [{"hostId": self.host_1.pk, "componentId": self.component_1_from_s1.pk}]
+
+        response: Response = self.client.post(path=mapping_url, data=mapping_data)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config = self._prepare_config_group_via_api(
+            obj=self.component_1_from_s1, hosts=[self.host_1], name="component config group"
+        )
+
+        mapping_data.append({"hostId": self.host_2.pk, "componentId": self.component_2_from_s1.pk})
+        response: Response = self.client.post(path=mapping_url, data=mapping_data)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config.refresh_from_db()
+        self.assertSetEqual(set(group_config.hosts.values_list("pk", flat=True)), {self.host_1.pk})
+
+    def test_host_removed_from_service_group_config_on_mapping_change(self):
+        mapping_url = reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk})
+        mapping_data = [{"hostId": self.host_1.pk, "componentId": self.component_1_from_s1.pk}]
+
+        response: Response = self.client.post(path=mapping_url, data=mapping_data)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config = self._prepare_config_group_via_api(
+            obj=self.service_1, hosts=[self.host_1], name="service config group"
+        )
+
+        mapping_data[0].update({"componentId": self.component_2_from_s1.pk})
+        response: Response = self.client.post(path=mapping_url, data=mapping_data)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config.refresh_from_db()
+        self.assertEqual(group_config.hosts.count(), 0)
+
+    def test_host_not_removed_from_service_group_config_on_mapping_remain(self):
+        mapping_url = reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk})
+        mapping_data = [{"hostId": self.host_1.pk, "componentId": self.component_1_from_s1.pk}]
+
+        response: Response = self.client.post(path=mapping_url, data=mapping_data)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config = self._prepare_config_group_via_api(
+            obj=self.service_1, hosts=[self.host_1], name="service config group"
+        )
+
+        mapping_data.insert(0, {"hostId": self.host_2.pk, "componentId": self.component_2_from_s1.pk})
+        response: Response = self.client.post(path=mapping_url, data=mapping_data)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config.refresh_from_db()
+        self.assertSetEqual(set(group_config.hosts.values_list("pk", flat=True)), {self.host_1.pk})
+
+    def test_host_not_removed_from_cluster_group_config_on_mapping_change(self):
+        mapping_url = reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk})
+        mapping_data = [{"hostId": self.host_1.pk, "componentId": self.component_1_from_s1.pk}]
+
+        response: Response = self.client.post(path=mapping_url, data=mapping_data)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config = self._prepare_config_group_via_api(
+            obj=self.cluster_1, hosts=[self.host_1], name="cluster config group"
+        )
+
+        mapping_data[0].update({"componentId": self.component_2_from_s1.pk})
+        response: Response = self.client.post(path=mapping_url, data=mapping_data)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config.refresh_from_db()
+        self.assertSetEqual(set(group_config.hosts.values_list("pk", flat=True)), {self.host_1.pk})

@@ -8,11 +8,12 @@ import { AdcmObjectCandidates, AdcmPolicy } from '@models/adcm/policy';
 import { AdcmClustersApi, AdcmHostProvidersApi, AdcmHostsApi, AdcmPoliciesApi, RequestError } from '@api';
 import { SortParams } from '@models/table';
 import { AdcmCluster, AdcmHost, AdcmHostProvider, AdcmService } from '@models/adcm';
+import { LoadState } from '@models/loadState';
 
 interface AdcmPoliciesState {
   policies: AdcmPolicy[];
   totalCount: number;
-  isLoading: boolean;
+  loadState: LoadState;
   relatedData: {
     clusters: AdcmCluster[];
     services: AdcmService[];
@@ -40,7 +41,7 @@ const loadPoliciesFromBackend = createAsyncThunk('adcm/policies/loadPoliciesFrom
 });
 
 const getPolicies = createAsyncThunk('adcm/policies/getPolicies', async (arg, thunkAPI) => {
-  thunkAPI.dispatch(setIsLoading(true));
+  thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
   await thunkAPI.dispatch(loadPoliciesFromBackend());
@@ -49,7 +50,7 @@ const getPolicies = createAsyncThunk('adcm/policies/getPolicies', async (arg, th
     startDate,
     delay: defaultSpinnerDelay,
     callback: () => {
-      thunkAPI.dispatch(setIsLoading(false));
+      thunkAPI.dispatch(setLoadState(LoadState.Loaded));
     },
   });
 });
@@ -59,7 +60,7 @@ const refreshPolicies = createAsyncThunk('adcm/policies/refreshPolicies', async 
 });
 
 const getObjectCandidates = createAsyncThunk('adcm/policies/getObjectCandidates', async (roleId: number, thunkAPI) => {
-  thunkAPI.dispatch(setIsLoading(true));
+  thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
   await thunkAPI.dispatch(loadObjectCandidates(roleId));
@@ -68,7 +69,7 @@ const getObjectCandidates = createAsyncThunk('adcm/policies/getObjectCandidates'
     startDate,
     delay: defaultSpinnerDelay,
     callback: () => {
-      thunkAPI.dispatch(setIsLoading(false));
+      thunkAPI.dispatch(setLoadState(LoadState.Loaded));
     },
   });
 });
@@ -118,7 +119,7 @@ const loadHostProviders = createAsyncThunk('adcm/policies/loadHostProviders', as
 const createInitialState = (): AdcmPoliciesState => ({
   policies: [],
   totalCount: 0,
-  isLoading: true,
+  loadState: LoadState.NotLoaded,
   relatedData: {
     clusters: [],
     services: [],
@@ -138,8 +139,8 @@ const policiesSlice = createSlice({
   name: 'adcm/policies',
   initialState: createInitialState(),
   reducers: {
-    setIsLoading: (state, action) => {
-      state.isLoading = action.payload;
+    setLoadState(state, action) {
+      state.loadState = action.payload;
     },
     cleanupPolicies: () => {
       return createInitialState();
@@ -187,7 +188,7 @@ const policiesSlice = createSlice({
   },
 });
 
-const { setIsLoading, cleanupPolicies } = policiesSlice.actions;
+const { setLoadState, cleanupPolicies } = policiesSlice.actions;
 export {
   getPolicies,
   refreshPolicies,

@@ -1,8 +1,7 @@
 import { useDispatch, useRequestTimer, useDebounce, useStore } from '@hooks';
 import { defaultDebounceDelay } from '@constants';
 import { useParams } from 'react-router-dom';
-import { cleanupService, getService } from '@store/adcm/services/serviceSlice';
-import { getRelatedServiceComponentsStatuses } from '@store/adcm/services/serviceSlice';
+import { cleanupService, getService, getRelatedServiceComponentsStatuses } from '@store/adcm/services/serviceSlice';
 import { useEffect } from 'react';
 import {
   cleanupClusterServiceDynamicActions,
@@ -38,6 +37,5 @@ export const useRequestService = () => {
     }
   }, defaultDebounceDelay);
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   useRequestTimer(debounceGetCluster, () => {}, 0, [clusterId, serviceId]);
 };

@@ -9,22 +9,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.rbac.user.constants import UserTypeChoices
-from api_v2.tests.base import BaseAPITestCase
+import datetime
+
 from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils.timezone import now
-from rbac.models import Group, OriginType, User
+from rbac.models import Group, OriginType, Role, User
+from rbac.services.policy import policy_create
+from rbac.services.role import role_create
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from rest_framework.test import APIClient
+import pytz
+
+from api_v2.rbac.user.constants import UserTypeChoices
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestUserAPI(BaseAPITestCase):
@@ -64,9 +72,28 @@ class TestUserAPI(BaseAPITestCase):
                     "isBuiltIn",
                     "isSuperUser",
                     "groups",
+                    "blockingReason",
                 ]
             ),
         )
+
+    def test_list_no_perms_empty_list_success(self) -> None:
+        self.create_user(user_data={"username": "test_user", "password": "test_user_password"})
+        self.client.login(username="test_user", password="test_user_password")
+
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-list"))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 0)
+        self.assertEqual(len(response.json()["results"]), 0)
+
+    def test_retrieve_no_perms_not_found_fail(self) -> None:
+        user = self.create_user(user_data={"username": "test_user", "password": "test_user_password"})
+        self.client.login(username="test_user", password="test_user_password")
+
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}))
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_create_success(self):
         response = self.client.post(
@@ -85,10 +112,12 @@ class TestUserAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         user = User.objects.filter(username="test_user_username").first()
         self.assertIsNotNone(user)
-        self.assertEqual(response.json()["firstName"], "test_user_first_name")
-        self.assertEqual(response.json()["lastName"], "test_user_last_name")
-        self.assertFalse(response.json()["isSuperUser"])
+        data = response.json()
+        self.assertEqual(data["firstName"], "test_user_first_name")
+        self.assertEqual(data["lastName"], "test_user_last_name")
+        self.assertFalse(data["isSuperUser"])
         self.assertEqual(user.groups.count(), 1)
+        self.assertEqual(data["groups"][0]["displayName"], self.group.display_name)
 
     def test_create_required_fields_success(self):
         response = self.client.post(
@@ -106,6 +135,89 @@ class TestUserAPI(BaseAPITestCase):
         self.assertDictEqual(
             response.json(), {"code": "BAD_REQUEST", "desc": "password - This field is required.;", "level": "error"}
         )
+
+    def test_create_password_does_not_meet_requirements_fail(self) -> None:
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-list"), data={"username": "test_user_username", "password": "1"}
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "USER_PASSWORD_ERROR")
+
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-list"), data={"username": "test_user_username", "password": "1" * 1000}
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "USER_PASSWORD_ERROR")
+
+    def test_create_taken_email_fail(self) -> None:
+        email = "em@ai.il"
+
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-list"),
+            data={"username": "test_user_username_1", "password": "test_user_password_1", "email": email},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-list"),
+            data={"username": "test_user_username_2", "password": "test_user_password_1", "email": email},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "USER_CREATE_ERROR")
+        self.assertEqual(response.json()["desc"], "User with the same email already exist")
+
+    def test_create_taken_username_fail(self) -> None:
+        username = "cooluserisbest"
+
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-list"),
+            data={"username": username, "password": "test_user_password_1"},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-list"),
+            data={"username": username, "password": "test_user_password_2"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "USER_CREATE_ERROR")
+        self.assertEqual(response.json()["desc"], "User with the same username already exist")
+
+    def test_create_empty_email_success(self) -> None:
+        email = ""
+
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-list"),
+            data={"username": "test_user_username_1", "password": "test_user_password_1", "email": email},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-list"),
+            data={"username": "test_user_username_2", "password": "test_user_password_1", "email": email},
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_permissions_granted_on_user_creation_with_group_success(self) -> None:
+        creds = {"username": "test_user_username", "password": "test_user_password"}
+        policy_create(name="ADCM User group", role=Role.objects.get(name="ADCM User"), group=[self.group])
+
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-list"),
+            data={**creds, "groups": [self.group.pk]},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        self.client.login(**creds)
+
+        response = self.client.get(path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_retrieve_success(self):
         user = self.create_user()
@@ -127,6 +239,7 @@ class TestUserAPI(BaseAPITestCase):
                     "isBuiltIn",
                     "isSuperUser",
                     "groups",
+                    "blockingReason",
                 ]
             ),
         )
@@ -188,9 +301,19 @@ class TestUserAPI(BaseAPITestCase):
         self.assertEqual(len(data["groups"]), 1)
         self.assertDictEqual(data["groups"][0], expected_group_data)
 
+    def test_update_no_change_email_success(self) -> None:
+        email = "one@em.ail"
+        user = self.create_user(user_data={"username": "test_user", "password": "test_user_password", "email": email})
+
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
+            data={"email": email, "firstName": "test_user_first_name"},
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
     def test_update_self_by_regular_user_success(self):
         """
-        According to business requirements, a user cannot make himself a super user and add himself to a group
+        According to business requirements, a user cannot make himself a superuser and add himself to a group
         """
 
         group = Group.objects.create(name="group")
@@ -262,6 +385,64 @@ class TestUserAPI(BaseAPITestCase):
         self.assertFalse(second_user.is_superuser)
         self.assertEqual(second_user.groups.count(), 0)
 
+    def test_update_no_permission_fail(self) -> None:
+        creds = {"username": "test_user_username", "password": "test_user_password"}
+        user = self.create_user(user_data=creds)
+        self.client.login(**creds)
+
+        response = self.client.patch(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}), data={})
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_update_view_permission_fail(self) -> None:
+        creds = {"username": "test_user_username", "password": "test_user_password"}
+        user = self.create_user(user_data=creds)
+        view_user_permission, _ = Permission.objects.get_or_create(
+            content_type=ContentType.objects.get_for_model(model=User),
+            codename=f"view_{User.__name__.lower()}",
+        )
+        user.user_permissions.add(view_user_permission)
+        self.client.login(**creds)
+
+        response = self.client.patch(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}), data={})
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+    def test_update_email_taken_fail(self) -> None:
+        email = "ta@k.vot"
+        self.create_user(user_data={"username": "test_user", "password": "test_user_password", "email": email})
+        user_to_change = self.create_user(
+            user_data={"username": "test_user_2", "password": "test_user_password", "email": "custom@em.ail"}
+        )
+
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user_to_change.pk}),
+            data={"email": email},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "USER_CONFLICT")
+        self.assertEqual(response.json()["desc"], "User with the same email already exist")
+
+    def test_update_incorrect_password_fail(self) -> None:
+        user = self.create_user(user_data={"username": "test_user", "password": "test_user_password"})
+
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
+            data={"password": "1"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "USER_PASSWORD_ERROR")
+
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
+            data={"password": "1" * 1000},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "USER_PASSWORD_ERROR")
+
     def test_update_password_self_by_profile_fail(self):
         user_data = {
             "username": "test_user",
@@ -287,6 +468,137 @@ class TestUserAPI(BaseAPITestCase):
                 "level": "error",
             },
         )
+
+    def test_update_ldap_user_fail(self) -> None:
+        user = self.create_user(user_data={"username": "somebody", "password": "very_long_veryvery"})
+        user.type = OriginType.LDAP
+        user.save()
+
+        for field in ("password", "email", "first_name", "last_name"):
+            with self.subTest(f"Change {field}"):
+                response = self.client.patch(
+                    path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
+                    data={field: "someval@ui.ie"},
+                )
+
+                self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+                self.assertEqual(response.json()["code"], "USER_UPDATE_ERROR")
+                self.assertEqual(response.json()["desc"], "LDAP user's information can't be changed")
+
+    def test_update_add_to_ldap_group_fail(self) -> None:
+        user = self.create_user(user_data={"username": "somebody", "password": "very_long_veryvery"})
+        self.group.type = OriginType.LDAP
+        self.group.save()
+
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
+            data={"groups": [self.group.pk]},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "USER_UPDATE_ERROR")
+        self.assertEqual(response.json()["desc"], "You cannot add user to LDAP group")
+
+    def test_update_removed_from_ldap_group_fail(self) -> None:
+        user = self.create_user(user_data={"username": "somebody", "password": "very_long_veryvery"})
+        self.group.type = OriginType.LDAP
+        self.group.save()
+        self.group.user_set.add(user)
+
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
+            data={"groups": []},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "USER_UPDATE_ERROR")
+        self.assertEqual(response.json()["desc"], "You cannot remove user from original LDAP group")
+
+    def test_update_add_to_non_existing_group_fail(self) -> None:
+        user = self.create_user(user_data={"username": "somebody", "password": "very_long_veryvery"})
+
+        response = self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
+            data={"groups": [1000]},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "USER_UPDATE_ERROR")
+        self.assertEqual(response.json()["desc"], "Some of groups doesn't exist")
+
+    def test_permissions_updated_on_group_change_success(self) -> None:
+        creds = {"username": "test_user_username", "password": "test_user_password"}
+
+        policy_create(
+            name="ADCM User group",
+            role=role_create(name="Awesome Role", child=[Role.objects.get(name="View users")]),
+            group=[self.group],
+        )
+        group_2 = Group.objects.create(name="test_group_2")
+        policy_create(
+            name="Cluster Admin",
+            role=Role.objects.get(name="Cluster Administrator"),
+            object=[self.cluster_1],
+            group=[group_2],
+        )
+
+        user = self.create_user(user_data={**creds, "groups": [{"id": self.group.pk}]})
+
+        user_client = APIClient()
+        user_client.login(**creds)
+
+        self.assertEqual(
+            user_client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk})).status_code,
+            HTTP_200_OK,
+        )
+        self.assertEqual(
+            user_client.get(path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk})).status_code,
+            HTTP_404_NOT_FOUND,
+        )
+
+        self.client.patch(
+            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
+            data={"groups": [group_2.pk]},
+        )
+
+        self.assertEqual(
+            user_client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk})).status_code,
+            HTTP_404_NOT_FOUND,
+        )
+        self.assertEqual(
+            user_client.get(path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk})).status_code,
+            HTTP_200_OK,
+        )
+
+    def test_update_remove_from_groups_bug_adcm_5355(self) -> None:
+        group_2 = Group.objects.create(name="test_group_2")
+        user = self.create_user(
+            user_data={"username": "somebody", "password": "very_long_veryvery", "groups": [{"id": self.group.pk}]}
+        )
+        self.assertEqual(user.groups.count(), 1)
+
+        update_path = reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk})
+        response = self.client.patch(path=update_path, data={"groups": []})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()["groups"]), 0)
+        user.refresh_from_db()
+        self.assertEqual(user.groups.count(), 0)
+
+        response = self.client.patch(path=update_path, data={"groups": [self.group.pk, group_2.pk]})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()["groups"]), 2)
+        user.refresh_from_db()
+        self.assertEqual(user.groups.count(), 2)
+
+        response = self.client.patch(path=update_path, data={"groups": [group_2.pk]})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()["groups"]), 1)
+        self.assertEqual(response.json()["groups"][0]["id"], group_2.pk)
+        user.refresh_from_db()
+        self.assertEqual(user.groups.count(), 1)
 
     def test_delete_success(self):
         user = self.create_user()
@@ -329,20 +641,6 @@ class TestUserAPI(BaseAPITestCase):
         self.assertIsNone(response.data)
         self.assertIsNone(user.blocked_at)
         self.assertEqual(user.failed_login_attempts, 0)
-
-    def test_unblock_built_in_fail(self):
-        user = self.create_user()
-        user.built_in = True
-        user.save(update_fields=["built_in"])
-
-        response = self.client.post(
-            path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": user.pk}),
-        )
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertDictEqual(
-            response.json(),
-            {"code": "USER_BLOCK_ERROR", "desc": "Built-in user could not be blocked", "level": "error"},
-        )
 
     def test_ordering_success(self):
         user_data = [
@@ -436,18 +734,30 @@ class TestUserAPI(BaseAPITestCase):
                 "first_name": "username2_first_name",
                 "last_name": "username2_last_name",
             },
+            {
+                "username": "username3",
+                "password": "username3password",
+                "email": "username3@mail.ru",
+                "first_name": "username3_first_name",
+                "last_name": "username3_last_name",
+            },
         ]
         for data in user_data:
             self.create_user(user_data=data)
 
-        target_user = User.objects.get(username="username2")
-        target_user.blocked_at = now()
-        target_user.save(update_fields=["blocked_at"])
+        target_user1 = User.objects.get(username="username2")
+        target_user1.blocked_at = now()
+        target_user1.save(update_fields=["blocked_at"])
+
+        target_user2 = User.objects.get(username="username3")
+        target_user2.is_active = False
+        target_user2.save(update_fields=["is_active"])
 
         response = self.client.get(path=reverse(viewname="v2:rbac:user-list"), data={"status": "blocked"})
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()["results"]), 1)
-        self.assertEqual(response.json()["results"][0]["username"], target_user.username)
+        self.assertEqual(len(response.json()["results"]), 2)
+        self.assertEqual(response.json()["results"][0]["username"], target_user1.username)
+        self.assertEqual(response.json()["results"][1]["username"], target_user2.username)
 
     def test_filtering_by_type_success(self):
         user_data = [
@@ -479,3 +789,136 @@ class TestUserAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["results"]), 1)
         self.assertEqual(response.json()["results"][0]["username"], target_user.username)
+
+
+class TestBlockUnblockAPI(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.user = self.create_user(user_data={"username": "someuser", "password": "bestpasseverever"})
+        self.admin = User.objects.get(username="admin")
+
+        creds = {"username": "editor", "password": "bestpasseverever"}
+        self.user_with_edit = self.create_user(user_data=creds)
+        self.user_with_edit.user_permissions.add(
+            Permission.objects.get(content_type=ContentType.objects.get_for_model(model=User), codename="view_user")
+        )
+        self.edit_client = APIClient()
+        self.edit_client.login(**creds)
+
+    def test_retrieve_blocked_by_login_attempts(self) -> None:
+        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.save()
+
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.user.pk}))
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(data["status"], "blocked")
+        self.assertEqual(data["blockingReason"], "Brute-force block: failure login attempt limit exceeded")
+
+    def test_retrieve_blocked_manually(self) -> None:
+        self.user.is_active = False
+        self.user.save()
+
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.user.pk}))
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(data["status"], "blocked")
+        self.assertEqual(data["blockingReason"], "Unlimited block: manual block by ADCM Administrator")
+
+    def test_retrieve_blocked_both_ways(self) -> None:
+        self.user.is_active = False
+        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.save()
+
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.user.pk}))
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(data["status"], "blocked")
+        self.assertEqual(data["blockingReason"], "Unlimited block: manual block by ADCM Administrator")
+
+    def test_retrieve_not_blocked(self) -> None:
+        self.user.failed_login_attempts = 10
+        self.user.save()
+
+        response = self.client.get(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.user.pk}))
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(data["status"], "active")
+        self.assertEqual(data["blockingReason"], None)
+
+    def test_block_manually_success(self) -> None:
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.user.pk}))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.user.refresh_from_db()
+        self.assertIsNone(self.user.blocked_at)
+        self.assertFalse(self.user.is_active)
+
+    def test_block_manually_self_fail(self) -> None:
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.admin.pk}))
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["desc"], "You can't block yourself.")
+
+        self.admin.refresh_from_db()
+        self.assertIsNone(self.admin.blocked_at)
+        self.assertTrue(self.admin.is_active)
+
+    def test_block_not_superuser_fail(self) -> None:
+        response = self.edit_client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.user.pk}))
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.json()["detail"], "You do not have permission to perform this action.")
+
+        self.admin.refresh_from_db()
+        self.assertIsNone(self.user.blocked_at)
+        self.assertTrue(self.user.is_active)
+
+    def test_block_ldap_user_fail(self) -> None:
+        self.user.type = OriginType.LDAP
+        self.user.save()
+
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.user.pk}))
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["desc"], "You can't block LDAP users.")
+
+    def test_unblock_success(self) -> None:
+        self.user.is_active = False
+        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.failed_login_attempts = 10
+        self.user.save()
+
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": self.user.pk}))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertIsNone(self.user.blocked_at)
+        self.assertTrue(self.user.is_active)
+        self.assertEqual(self.user.failed_login_attempts, 0)
+
+    def test_unblock_ldap_success(self) -> None:
+        self.user.is_active = False
+        self.user.blocked_at = datetime.datetime.now(tz=pytz.UTC)
+        self.user.failed_login_attempts = 10
+        self.user.type = OriginType.LDAP
+        self.user.save()
+
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": self.user.pk}))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+        self.assertIsNone(self.user.blocked_at)
+        self.assertEqual(self.user.failed_login_attempts, 0)
+
+    def test_unblock_not_superuser_fail(self) -> None:
+        response = self.edit_client.post(path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": self.user.pk}))
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.json()["detail"], "You do not have permission to perform this action.")

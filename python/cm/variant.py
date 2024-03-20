@@ -12,10 +12,13 @@
 from functools import wraps
 from typing import Callable
 
+from django.core.exceptions import ObjectDoesNotExist
+
 from cm.errors import AdcmEx
 from cm.errors import raise_adcm_ex as err
 from cm.logger import logger
 from cm.models import (
+    Cluster,
     ClusterObject,
     GroupConfig,
     Host,
@@ -23,7 +26,6 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
-from django.core.exceptions import ObjectDoesNotExist
 
 
 def return_empty_on_not_found(func: Callable) -> Callable:
@@ -47,20 +49,19 @@ def return_empty_on_not_found(func: Callable) -> Callable:
     return with_not_found_handle
 
 
-def get_cluster(obj):
+def get_cluster(obj) -> Cluster | None:
     if isinstance(obj, GroupConfig):
         obj = obj.object
 
-    if obj.prototype.type == "service":
-        cluster = obj.cluster
-    elif obj.prototype.type == "host":
-        cluster = obj.cluster
-    elif obj.prototype.type == "cluster":
-        cluster = obj
-    else:
-        return None
-
-    return cluster
+    match obj.prototype.type:
+        case "cluster":
+            return obj
+        case "service" | "component":
+            return obj.cluster
+        case "host":
+            return obj.cluster
+        case _:
+            return None
 
 
 def variant_service_in_cluster(**kwargs):
@@ -91,7 +92,7 @@ def variant_service_to_add(**kwargs):
     return out
 
 
-def var_host_and(cluster, args):  # pylint: disable=unused-argument
+def var_host_and(cluster, args):  # noqa: ARG001
     if not isinstance(args, list):
         err("CONFIG_VARIANT_ERROR", 'arguments of "and" predicate should be a list')
 
@@ -101,7 +102,7 @@ def var_host_and(cluster, args):  # pylint: disable=unused-argument
     return sorted(set.intersection(*[set(a) for a in args]))
 
 
-def var_host_or(cluster, args):  # pylint: disable=unused-argument
+def var_host_or(cluster, args):  # noqa: ARG001
     if not isinstance(args, list):
         err("CONFIG_VARIANT_ERROR", 'arguments of "or" predicate should be a list')
 
@@ -148,7 +149,7 @@ def var_host_not_in_service(cluster, args):
     return out
 
 
-def var_host_in_cluster(cluster, args):  # pylint: disable=unused-argument
+def var_host_in_cluster(cluster, args):  # noqa: ARG001
     out = []
     for host in Host.objects.filter(cluster=cluster).order_by("fqdn"):
         out.append(host.fqdn)
@@ -183,7 +184,7 @@ def var_host_not_in_component(cluster, args):
     return out
 
 
-def var_host_in_hc(cluster, args):  # pylint: disable=unused-argument
+def var_host_in_hc(cluster, args):  # noqa: ARG001
     out = []
     for hostcomponent in HostComponent.objects.filter(cluster=cluster).order_by("host__fqdn"):
         out.append(hostcomponent.host.fqdn)
@@ -191,7 +192,7 @@ def var_host_in_hc(cluster, args):  # pylint: disable=unused-argument
     return out
 
 
-def var_host_not_in_hc(cluster, args):  # pylint: disable=unused-argument
+def var_host_not_in_hc(cluster, args):  # noqa: ARG001
     out = []
     for host in Host.objects.filter(cluster=cluster).order_by("fqdn"):
         if HostComponent.objects.filter(cluster=cluster, host=host):
@@ -202,7 +203,7 @@ def var_host_not_in_hc(cluster, args):  # pylint: disable=unused-argument
     return out
 
 
-def var_host_inline_list(cluster, args):  # pylint: disable=unused-argument
+def var_host_inline_list(cluster, args):  # noqa: ARG001
     return args["list"]
 
 
@@ -234,15 +235,13 @@ def var_host_solver(cluster, func_map, args):
     if isinstance(args, dict):
         if "predicate" not in args:
             return args
-        else:
+        else:  # noqa: RET505
             predicate = args["predicate"]
             if predicate not in func_map:
                 err("CONFIG_VARIANT_ERROR", f'no "{predicate}" in list of host functions')
 
             check_key("args", args)
-            res = func_map[predicate](cluster, var_host_solver(cluster, func_map, args["args"]))
-
-            return res
+            return func_map[predicate](cluster, var_host_solver(cluster, func_map, args["args"]))
 
     res = []
     if not isinstance(args, list):
@@ -271,9 +270,7 @@ def variant_host(**kwargs):
     if "predicate" not in kwargs["args"]:
         err("CONFIG_VARIANT_ERROR", 'no "predicate" key in variant host function arguments')
 
-    res = var_host_solver(cluster=cluster, func_map=VARIANT_HOST_FUNC, args=kwargs["args"])
-
-    return res
+    return var_host_solver(cluster=cluster, func_map=VARIANT_HOST_FUNC, args=kwargs["args"])
 
 
 def variant_host_in_cluster(**kwargs):
@@ -307,9 +304,9 @@ def variant_host_in_cluster(**kwargs):
                 out.append(hostcomponent.host.fqdn)
 
             return out
-        else:
+        else:  # noqa: RET505
             for hostcomponent in HostComponent.objects.filter(cluster=cluster, service=service).order_by("host__fqdn"):
-                out.append(hostcomponent.host.fqdn)
+                out.append(hostcomponent.host.fqdn)  # noqa: RET505
 
             return out
 
@@ -319,7 +316,7 @@ def variant_host_in_cluster(**kwargs):
     return out
 
 
-def variant_host_not_in_clusters(**kwargs):  # pylint: disable=unused-argument
+def variant_host_not_in_clusters(**kwargs):  # noqa: ARG001
     out = []
     for host in Host.objects.filter(cluster=None).order_by("fqdn"):
         out.append(host.fqdn)

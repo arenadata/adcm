@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.prototype.utils import get_license_text
+from adcm.serializers import EmptySerializer
 from cm.models import Bundle, HostProvider, ObjectType, Prototype
 from rest_framework.fields import (
     CharField,
@@ -20,7 +20,7 @@ from rest_framework.fields import (
 )
 from rest_framework.serializers import ModelSerializer
 
-from adcm.serializers import EmptySerializer
+from api_v2.prototype.utils import get_license_text
 
 
 class BundleRelatedSerializer(ModelSerializer):

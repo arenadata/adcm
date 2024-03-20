@@ -1,117 +1,70 @@
-import {
-  ConfigurationAttributes,
-  ConfigurationData,
-  ConfigurationSchema,
-  SchemaDefinition,
-  SingleSchemaDefinition,
-} from '@models/adcm';
-import { determineFieldSchema, getTitle } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.utils';
+import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 import { JSONObject, JSONValue } from '@models/json';
+// eslint-disable-next-line spellcheck/spell-checker
+// TODO: import from @uikit, after fix jest paths
+import { ConfigurationNode } from '../../../uikit/ConfigurationEditor/ConfigurationEditor.types';
+import { buildConfigurationNodes } from '../../../uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.utils';
+
+type NameValueTuple = { name: string; value: JSONValue };
 
 export const getCompareView = (
   schema: ConfigurationSchema,
   configuration: ConfigurationData,
   attributes: ConfigurationAttributes,
-) => {
-  const { fieldSchema } = determineFieldSchema(schema);
-
-  return getCompareViewObject(fieldSchema, configuration, attributes, '');
-};
-
-type GetCompareViewItemRes = {
-  title: string;
-  value: JSONValue;
-};
-
-const getCompareViewItem = (
-  key: string,
-  schema: SchemaDefinition,
-  fieldValue: JSONValue,
-  attributes: ConfigurationAttributes,
-  parentPath: string,
-  isParentDeactivated = false,
-): GetCompareViewItemRes | null => {
-  const { fieldSchema } = determineFieldSchema(schema);
-
-  if (fieldSchema.adcmMeta.isInvisible) {
-    return null;
-  }
-
-  let title = getTitle(key, fieldSchema);
-
-  const itemPath = `${parentPath}/${key}`;
-  const itemAttributes = attributes[itemPath];
-  const isDeactivated = isParentDeactivated || itemAttributes?.isActive === false;
-  if (isDeactivated) {
-    title = `// ${title}`;
-  }
-
-  let value: JSONValue;
-
-  if (Array.isArray(fieldValue)) {
-    value = getCompareViewArray(fieldSchema, fieldValue, attributes, itemPath);
-  } else if (typeof fieldValue === 'object' && fieldValue !== null) {
-    value = getCompareViewObject(fieldSchema, fieldValue, attributes, itemPath, isDeactivated);
-  } else {
-    value = fieldValue;
-  }
-
-  return {
-    title,
-    value,
-  };
-};
-
-const getCompareViewArray = (
-  fieldSchema: SingleSchemaDefinition,
-  fieldValue: JSONValue,
-  attributes: ConfigurationAttributes,
-  parentPath: string,
-) => {
-  const res = [];
-  const array = fieldValue as Array<JSONValue>;
-  const itemsSchema = fieldSchema.items as SingleSchemaDefinition;
-  for (let i = 0; i < array.length; i++) {
-    const tmp = getCompareViewItem(i.toString(), itemsSchema, array[i], attributes, parentPath + '/' + i);
-    if (tmp === null) continue;
-
-    res.push(tmp.value);
-  }
-
-  return res;
-};
-
-const getCompareViewObject = (
-  fieldSchema: SingleSchemaDefinition,
-  fieldValue: JSONObject,
-  attributes: ConfigurationAttributes,
-  parentPath: string,
-  isParentDeactivated = false,
-) => {
-  if (!fieldSchema.properties) return fieldValue;
-
+): JSONObject => {
   const result: JSONObject = {};
+  const configNode = buildConfigurationNodes(schema, configuration, attributes);
 
-  for (const key of Object.keys(fieldValue)) {
-    if (!fieldSchema.properties[key]) {
-      result[key] = fieldValue[key];
-      continue;
+  if (configNode.children) {
+    for (const child of configNode.children) {
+      const tuple = configNodeToCompareView(child);
+      if (tuple) {
+        result[tuple.name] = tuple.value;
+      }
     }
-
-    const tmp = getCompareViewItem(
-      key,
-      fieldSchema.properties[key],
-      fieldValue[key],
-      attributes,
-      parentPath,
-      isParentDeactivated,
-    );
-    if (tmp === null) continue;
-
-    const { title, value } = tmp;
-
-    result[title] = value;
   }
 
   return result;
+};
+
+const configNodeToCompareView = (configNode: ConfigurationNode, isParentDeactivated = false): NameValueTuple | null => {
+  if (configNode.data.fieldSchema.adcmMeta.isInvisible) {
+    return null;
+  }
+
+  const isDeactivated = isParentDeactivated || configNode.data.fieldAttributes?.isActive === false;
+  const title = configNode.data.title;
+  const name = isDeactivated ? `// ${title}` : title;
+
+  switch (configNode.data.type) {
+    case 'field': {
+      return { name, value: configNode.data.value };
+    }
+    case 'object': {
+      const result: JSONObject = {};
+      if (configNode.children) {
+        for (const child of configNode.children) {
+          const tuple = configNodeToCompareView(child, isDeactivated);
+          if (tuple) {
+            result[tuple.name] = tuple.value;
+          }
+        }
+      }
+
+      return { name, value: result };
+    }
+    case 'array': {
+      const result: JSONValue[] = [];
+      if (configNode.children) {
+        for (const child of configNode.children) {
+          const tuple = configNodeToCompareView(child);
+          if (tuple) {
+            result.push(tuple.value);
+          }
+        }
+      }
+
+      return { name, value: result };
+    }
+  }
 };

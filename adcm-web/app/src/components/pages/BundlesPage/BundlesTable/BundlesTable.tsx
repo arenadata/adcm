@@ -1,16 +1,19 @@
 import React, { Dispatch, SetStateAction, useCallback } from 'react';
-import { useDispatch, useStore } from '@hooks';
+import { useDispatch, useStore, useSelectedItems } from '@hooks';
 import { columns } from './BundlesTable.constants';
 import { Checkbox, IconButton, Table, TableCell, TableRow } from '@uikit';
 import { orElseGet } from '@utils/checkUtils';
-import { useSelectedItems } from '@uikit/hooks/useSelectedItems';
-import { AdcmBundle } from '@models/adcm/bundle';
+import { AdcmBundle } from '@models/adcm';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
-import { setDeletableId, setSelectedItemsIds as setSelectedBundlesIds } from '@store/adcm/bundles/bundlesSlice';
+import {
+  openDeleteDialog,
+  setSelectedItemsIds as setSelectedBundlesIds,
+} from '@store/adcm/bundles/bundlesActionsSlice';
 import { SortParams } from '@uikit/types/list.types';
 import { setSortParams } from '@store/adcm/bundles/bundlesTableSlice';
 import { Link } from 'react-router-dom';
 import cn from 'classnames';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const getBundleUniqKey = ({ id }: AdcmBundle) => id;
 
@@ -18,8 +21,8 @@ const BundlesTable: React.FC = () => {
   const dispatch = useDispatch();
 
   const bundles = useStore(({ adcm }) => adcm.bundles.bundles);
-  const isLoading = useStore(({ adcm }) => adcm.bundles.isLoading);
-  const selectedItemsIds = useStore(({ adcm }) => adcm.bundles.selectedItemsIds);
+  const isLoading = useStore(({ adcm }) => isShowSpinner(adcm.bundles.loadState));
+  const selectedItemsIds = useStore(({ adcm }) => adcm.bundlesActions.selectedItemsIds);
   const sortParams = useStore((s) => s.adcm.bundlesTable.sortParams);
 
   const setSelectedItemsIds = useCallback<Dispatch<SetStateAction<number[]>>>(
@@ -39,7 +42,7 @@ const BundlesTable: React.FC = () => {
 
   const getHandleDeleteClick = (bundleId: number) => () => {
     // set deletable id for show Delete Confirm Dialog
-    dispatch(setDeletableId(bundleId));
+    dispatch(openDeleteDialog(bundleId));
   };
 
   const handleSorting = (sortParams: SortParams) => {

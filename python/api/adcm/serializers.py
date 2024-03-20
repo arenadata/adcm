@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.concern.serializers import ConcernItemSerializer
-from api.serializers import StringListSerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import ADCM
 from rest_framework.serializers import (
@@ -20,6 +18,9 @@ from rest_framework.serializers import (
     HyperlinkedModelSerializer,
     SerializerMethodField,
 )
+
+from api.concern.serializers import ConcernItemSerializer
+from api.serializers import StringListSerializer
 
 
 class ADCMSerializer(HyperlinkedModelSerializer):

@@ -1,0 +1,4 @@
+---
+root:
+  match: dict_key_selection
+  selector: type

@@ -10,10 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.serializers import EmptySerializer
 from cm.models import ObjectType
 from rest_framework.fields import ChoiceField, IntegerField
-
-from adcm.serializers import EmptySerializer
 
 
 class SourceSerializer(EmptySerializer):

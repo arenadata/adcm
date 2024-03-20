@@ -10,31 +10,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import random
-import string
 from contextlib import contextmanager
+from operator import itemgetter
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
+from typing import TypedDict
+import random
+import string
+import tarfile
 
+from api_v2.prototype.utils import accept_license
+from api_v2.service.utils import bulk_add_services_to_cluster
+from cm.api import add_cluster, add_hc, add_host, add_host_provider, add_host_to_cluster
+from cm.bundle import prepare_bundle, process_file
 from cm.models import (
     ADCM,
     ADCMEntity,
+    ADCMModel,
     Bundle,
     Cluster,
     ClusterObject,
     ConfigLog,
     Host,
+    HostComponent,
     HostProvider,
     ObjectType,
     Prototype,
     ServiceComponent,
 )
+from core.rbac.dto import UserCreateDTO
 from django.conf import settings
+from django.db.models import QuerySet
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from init_db import init
-from rbac.models import Group, Role, RoleTypes, User
+from rbac.models import Group, Policy, Role, RoleTypes, User
+from rbac.services.group import create as create_group
+from rbac.services.policy import policy_create
+from rbac.services.role import role_create
+from rbac.services.user import perform_user_creation
 from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
@@ -42,12 +57,28 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 APPLICATION_JSON = "application/json"
 
 
+class TestUserCreateDTO(UserCreateDTO):
+    username: str
+    first_name: str = ""
+    last_name: str = ""
+    email: str = ""
+    is_superuser: bool = False
+
+    password: str = ""
+
+
+class HostComponentMapDictType(TypedDict):
+    host_id: int
+    service_id: int
+    component_id: int
+
+
 class ParallelReadyTestCase:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
-        directories = cls._prepare_temporal_directories_for_adcm()
-        override_settings(**directories)(cls)
+        cls.directories = cls._prepare_temporal_directories_for_adcm()
+        override_settings(**cls.directories)(cls)
 
     @staticmethod
     def _prepare_temporal_directories_for_adcm() -> dict:
@@ -72,8 +103,6 @@ class ParallelReadyTestCase:
 
 
 class BaseTestCase(TestCase, ParallelReadyTestCase):
-    # pylint: disable=too-many-instance-attributes,too-many-public-methods
-
     def setUp(self) -> None:
         self.test_user_username = "test_user"
         self.test_user_password = "test_user_password"
@@ -392,3 +421,106 @@ class BaseTestCase(TestCase, ParallelReadyTestCase):
     @staticmethod
     def get_random_str_num(length: int) -> str:
         return "".join(random.sample(f"{string.ascii_letters}{string.digits}", length))
+
+
+class BusinessLogicMixin:
+    @staticmethod
+    def prepare_bundle_file(source_dir: Path) -> str:
+        bundle_file = f"{source_dir.name}.tar"
+        with tarfile.open(settings.DOWNLOAD_DIR / bundle_file, "w") as tar:
+            for file in source_dir.iterdir():
+                tar.add(name=file, arcname=file.name)
+
+        return bundle_file
+
+    def add_bundle(self, source_dir: Path) -> Bundle:
+        bundle_file = self.prepare_bundle_file(source_dir=source_dir)
+        bundle_hash, path = process_file(bundle_file=bundle_file)
+        return prepare_bundle(bundle_file=bundle_file, bundle_hash=bundle_hash, path=path)
+
+    @staticmethod
+    def add_cluster(bundle: Bundle, name: str, description: str = "") -> Cluster:
+        prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.CLUSTER).first()
+        if prototype.license_path is not None:
+            accept_license(prototype=prototype)
+            prototype.refresh_from_db(fields=["license"])
+        return add_cluster(prototype=prototype, name=name, description=description)
+
+    @staticmethod
+    def add_provider(bundle: Bundle, name: str, description: str = "") -> HostProvider:
+        prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.PROVIDER).first()
+        return add_host_provider(prototype=prototype, name=name, description=description)
+
+    def add_host(
+        self, bundle: Bundle, provider: HostProvider, fqdn: str, description: str = "", cluster: Cluster | None = None
+    ) -> Host:
+        prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.HOST).first()
+        host = add_host(prototype=prototype, provider=provider, fqdn=fqdn, description=description)
+        if cluster is not None:
+            self.add_host_to_cluster(cluster=cluster, host=host)
+
+        return host
+
+    @staticmethod
+    def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
+        return add_host_to_cluster(cluster=cluster, host=host)
+
+    @staticmethod
+    def add_services_to_cluster(service_names: list[str], cluster: Cluster) -> QuerySet[ClusterObject]:
+        service_prototypes = Prototype.objects.filter(
+            type=ObjectType.SERVICE, name__in=service_names, bundle=cluster.prototype.bundle
+        )
+        return bulk_add_services_to_cluster(cluster=cluster, prototypes=service_prototypes)
+
+    @staticmethod
+    def add_hostcomponent_map(cluster: Cluster, hc_map: list[HostComponentMapDictType]) -> list[HostComponent]:
+        return add_hc(cluster=cluster, hc_in=hc_map)
+
+    @staticmethod
+    def get_non_existent_pk(model: type[ADCMEntity | ADCMModel | User | Role | Group | Policy]):
+        try:
+            return model.objects.order_by("-pk").first().pk + 1
+        except model.DoesNotExist:
+            return 1
+
+    def create_user(self, user_data: dict | None = None, **kwargs) -> User:
+        user_data = (user_data or {}) | kwargs
+        if not user_data:
+            user_data = {
+                "username": "test_user_username",
+                "password": "test_user_password",
+                "email": "testuser@mail.ru",
+                "first_name": "test_user_first_name",
+                "last_name": "test_user_last_name",
+                "profile": "",
+            }
+
+        groups = tuple(map(itemgetter("id"), user_data.pop("groups", None) or ()))
+
+        user_id = perform_user_creation(create_data=TestUserCreateDTO(**user_data), groups=groups)
+
+        return User.objects.get(id=user_id)
+
+    @contextmanager
+    def grant_permissions(self, to: User, on: list[ADCMEntity] | ADCMEntity, role_name: str):
+        if not isinstance(on, list):
+            on = [on]
+
+        group = create_group(name_to_display=f"Group for role `{role_name}`", user_set=[{"id": to.pk}])
+        target_role = Role.objects.get(name=role_name)
+        delete_role = True
+
+        if target_role.type != RoleTypes.ROLE:
+            custom_role = role_create(display_name=f"Custom `{role_name}` role", child=[target_role])
+        else:
+            custom_role = target_role
+            delete_role = False
+
+        policy = policy_create(name=f"Policy for role `{role_name}`", role=custom_role, group=[group], object=on)
+
+        yield
+
+        policy.delete()
+        if delete_role:
+            custom_role.delete()
+        group.delete()

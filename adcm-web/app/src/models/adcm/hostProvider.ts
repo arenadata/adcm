@@ -1,4 +1,4 @@
-import { AdcmConcerns } from '@models/adcm/concern';
+import { AdcmConcerns } from './concern';
 
 export interface AdcmHostProvider {
   id: number;

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import Checkbox from '@uikit/Checkbox/Checkbox';
+import { Checkbox } from '@uikit';
 
 export interface CheckAllProps<T> {
   allList: T[];

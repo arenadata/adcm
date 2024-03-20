@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { getServices } from '@store/adcm/cluster/services/servicesSlice';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { getServices, setServiceMaintenanceMode } from '@store/adcm/cluster/services/servicesSlice';
+import { showError, showInfo, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { RequestError } from '@api';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
@@ -33,7 +33,7 @@ const addServices = createAsyncThunk(
       await AdcmClusterServicesApi.addClusterService(clusterId, servicesIds);
 
       const message = servicesIds.length > 1 ? 'All selected services have been added' : 'The service has been added';
-      thunkAPI.dispatch(showInfo({ message }));
+      thunkAPI.dispatch(showSuccess({ message }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue([]);
@@ -62,7 +62,7 @@ const deleteService = createAsyncThunk(
   async ({ clusterId, serviceId }: DeleteClusterServicePayload, thunkAPI) => {
     try {
       await AdcmClusterServicesApi.deleteClusterService(clusterId, serviceId);
-      thunkAPI.dispatch(showInfo({ message: 'Service was deleted' }));
+      thunkAPI.dispatch(showSuccess({ message: 'Service was deleted' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue([]);
@@ -102,6 +102,7 @@ const toggleMaintenanceMode = createAsyncThunk(
       const data = await AdcmClusterServicesApi.toggleMaintenanceMode(clusterId, serviceId, maintenanceMode);
       const maintenanceModeStatus = maintenanceMode === AdcmMaintenanceMode.Off ? 'disabled' : 'enabled';
       thunkAPI.dispatch(showInfo({ message: `The maintenance mode has been ${maintenanceModeStatus}` }));
+      thunkAPI.dispatch(setServiceMaintenanceMode({ serviceId, maintenanceMode }));
       return data;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));

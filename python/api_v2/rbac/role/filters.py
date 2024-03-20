@@ -23,7 +23,7 @@ class RoleFilter(FilterSet):
     type = ChoiceFilter(choices=[(k, v) for k, v in RoleTypes.choices if k != RoleTypes.HIDDEN])
 
     @staticmethod
-    def filter_category(queryset: QuerySet, name: str, value: str):  # pylint: disable=unused-argument
+    def filter_category(queryset: QuerySet, name: str, value: str):  # noqa: ARG001, ARG004
         return queryset.filter(Q(category__value=value) | Q(any_category=True))
 
     class Meta:

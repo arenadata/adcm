@@ -14,8 +14,10 @@ export const useLocalStorage = <T>({ key, initData }: StorageProps<T>): StorageR
       const data = JSON.parse(storageData) as T;
       if (data) return data;
       if (initData) {
-        localStorage.setItem(key, JSON.stringify(initData));
-        return initData;
+        const stringifyData = JSON.stringify(initData);
+        localStorage.setItem(key, stringifyData);
+        // have to parse stringified data again because getItem doesn't return undefined props from storage to return correct object
+        return JSON.parse(stringifyData) as T;
       }
     } catch (e) {
       console.error(e);

@@ -24,7 +24,6 @@ const BundleOverviewTable: React.FC = () => {
         <TableCell>
           {orElseGet(licenseLink, () => {
             return (
-              // eslint-disable-next-line spellcheck/spell-checker
               <a href={`data:text/plain;base64,${licenseLink}`} download="EULA.txt">
                 EULA.txt
               </a>

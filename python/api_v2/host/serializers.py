@@ -10,11 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.cluster.serializers import RelatedComponentStatusSerializer
-from api_v2.concern.serializers import ConcernSerializer
-from api_v2.prototype.serializers import PrototypeRelatedSerializer
-from cm.models import Cluster, Host, HostProvider, MaintenanceMode, ServiceComponent
-from cm.status_api import get_obj_status
+from adcm import settings
+from adcm.serializers import EmptySerializer
+from cm.models import Cluster, Host, HostComponent, HostProvider, MaintenanceMode, ServiceComponent
 from cm.validators import HostUniqueValidator, StartMidEndValidator
 from rest_framework.serializers import (
     CharField,
@@ -25,8 +23,9 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
-from adcm import settings
-from adcm.serializers import EmptySerializer
+from api_v2.concern.serializers import ConcernSerializer
+from api_v2.prototype.serializers import PrototypeRelatedSerializer
+from api_v2.serializers import WithStatusSerializer
 
 
 class HostProviderSerializer(ModelSerializer):
@@ -47,8 +46,7 @@ class HCComponentNameSerializer(ModelSerializer):
         fields = ["id", "name", "display_name"]
 
 
-class HostSerializer(ModelSerializer):
-    status = SerializerMethodField()
+class HostSerializer(WithStatusSerializer):
     hostprovider = HostProviderSerializer(source="provider")
     prototype = PrototypeRelatedSerializer(read_only=True)
     concerns = ConcernSerializer(many=True)
@@ -87,10 +85,6 @@ class HostSerializer(ModelSerializer):
             "cluster",
             "components",
         ]
-
-    @staticmethod
-    def get_status(host: Host) -> str:
-        return get_obj_status(obj=host)
 
     @staticmethod
     def get_components(instance: Host) -> list[dict]:
@@ -144,8 +138,8 @@ class HostCreateSerializer(EmptySerializer):
     cluster_id = IntegerField(required=False)
 
 
-class HostCreateRelatedSerializer(EmptySerializer):
-    host_id = PrimaryKeyRelatedField(queryset=Host.objects.all())
+class HostAddSerializer(EmptySerializer):
+    host_id = IntegerField()
 
 
 class HostMappingSerializer(ModelSerializer):
@@ -179,17 +173,22 @@ class HostGroupConfigSerializer(ModelSerializer):
         extra_kwargs = {"name": {"read_only": True}}
 
 
+class RelatedHostComponentsStatusSerializer(WithStatusSerializer):
+    id = IntegerField(source="component.id")
+    name = CharField(source="component.name")
+    display_name = CharField(source="component.display_name")
+
+    class Meta:
+        model = HostComponent
+        fields = ["id", "name", "display_name", "status"]
+
+
 class ClusterHostStatusSerializer(EmptySerializer):
-    host_components = SerializerMethodField()
+    host_components = RelatedHostComponentsStatusSerializer(many=True, source="hostcomponent_set")
 
     class Meta:
         model = Host
         fields = ["host_components"]
-
-    def get_host_components(self, instance: Host) -> list:
-        return RelatedComponentStatusSerializer(
-            instance=[hc.component for hc in instance.hostcomponent_set.select_related("component")], many=True
-        ).data
 
 
 class HostAuditSerializer(ModelSerializer):

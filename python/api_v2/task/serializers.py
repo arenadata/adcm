@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.action.serializers import ActionNameSerializer
 from cm.models import Action, JobLog, JobStatus, SubAction, TaskLog
 from rest_framework.fields import CharField, DateTimeField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
+
+from api_v2.action.serializers import ActionNameSerializer
 
 OBJECT_ORDER = {
     "adcm": 0,
@@ -99,10 +100,7 @@ class TaskSerializer(ModelSerializer):
 
     @staticmethod
     def get_is_terminatable(obj: TaskLog):
-        if obj.action:
-            allow_to_terminate = obj.action.allow_to_terminate
-        else:
-            allow_to_terminate = False
+        allow_to_terminate = obj.action.allow_to_terminate if obj.action else False
 
         if allow_to_terminate and obj.status in {JobStatus.CREATED, JobStatus.RUNNING}:
             return True

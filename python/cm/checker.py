@@ -10,11 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from typing import Callable
+import contextlib
 
 import ruyaml
-
-# pylint: disable=W0212
-
 
 MATCH_DICT_RESERVED_DIRECTIVES = ("invisible_items",)
 
@@ -44,14 +42,10 @@ def round_trip_load(stream, version=None, preserve_quotes=None, allow_duplicate_
         return loader._constructor.get_single_data()
     finally:
         loader._parser.dispose()
-        try:
+        with contextlib.suppress(AttributeError):
             loader._reader.reset_reader()
-        except AttributeError:
-            pass
-        try:
+        with contextlib.suppress(AttributeError):
             loader._scanner.reset_scanner()
-        except AttributeError:
-            pass
 
 
 class FormatError(Exception):
@@ -104,7 +98,7 @@ def match_none(data, rules, rule, path, parent=None):
         raise FormatError(path, msg, data, rule, parent)
 
 
-def match_any(data, rules, rule, path, parent=None):  # pylint: disable=unused-argument
+def match_any(data, rules, rule, path, parent=None):  # noqa: ARG001
     pass
 
 

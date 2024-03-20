@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.tests.base import BaseTestCase
 from cm.errors import AdcmEx
 from django.contrib.auth.models import Group as AuthGroup
-from rbac.models import Group, OriginType
 
-from adcm.tests.base import BaseTestCase
+from rbac.models import Group, OriginType
 
 
 class GroupTestCase(BaseTestCase):

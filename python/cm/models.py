@@ -10,24 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines,unsupported-membership-test,unsupported-delete-operation,
-# too-many-instance-attributes
-# pylint could not understand that JSON fields are dicts
-
-
-import os.path
-import signal
-import time
 from collections.abc import Iterable, Mapping
 from copy import deepcopy
 from enum import Enum
 from itertools import chain
 from typing import Optional, TypeAlias
 from uuid import uuid4
+import time
+import signal
+import os.path
 
-from cm.adcm_config.ansible import ansible_decrypt
-from cm.errors import AdcmEx
-from cm.logger import logger
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -35,6 +27,10 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
+
+from cm.adcm_config.ansible import ansible_decrypt
+from cm.errors import AdcmEx
+from cm.logger import logger
 
 
 def validate_line_break_character(value: str) -> None:
@@ -149,7 +145,6 @@ class ADCMModel(models.Model):
         instance._state.adding = False
         instance._state.db = db
         # customization to store the original field values on the instance
-        # pylint: disable=attribute-defined-outside-init
         instance._loaded_values = dict(zip(field_names, values))
         return instance
 
@@ -282,8 +277,7 @@ class ObjectConfig(ADCMModel):
         ]
         for object_type in object_types:
             if hasattr(self, object_type):
-                obj = getattr(self, object_type)
-                return obj
+                return getattr(self, object_type)
         return None
 
 
@@ -323,11 +317,7 @@ class ADCMEntity(ADCMModel):
         ).first()
 
     def requires_service_name(self, service_name: str) -> bool:
-        for item in self.requires:
-            if item.get("service") == service_name:
-                return True
-
-        return False
+        return any(item.get("service") == service_name for item in self.requires)
 
     def __str__(self):
         own_name = getattr(self, "name", None)
@@ -418,12 +408,7 @@ class Upgrade(ADCMModel):
         if self.state_available:
             available = self.state_available
 
-            if obj.state in available:
-                return True
-            elif available == "any":
-                return True
-            else:
-                return False
+            return obj.state in available or available == "any"
         else:
             if self.action:
                 return self.action.allowed(obj=obj)
@@ -774,7 +759,7 @@ class ServiceComponent(ADCMEntity):
 
 
 @receiver(post_delete, sender=ServiceComponent)
-def auto_delete_config_with_servicecomponent(sender, instance, **kwargs):  # pylint: disable=unused-argument
+def auto_delete_config_with_servicecomponent(sender, instance, **kwargs):  # noqa: ARG001
     if instance.config is not None:
         instance.config.delete()
 
@@ -907,9 +892,7 @@ class GroupConfig(ADCMModel):
         """Return attr for group config without group_keys and custom_group_keys params"""
 
         config_log = ConfigLog.obj.get(id=self.config.current)
-        attr = {k: v for k, v in config_log.attr.items() if k not in ("group_keys", "custom_group_keys")}
-
-        return attr
+        return {k: v for k, v in config_log.attr.items() if k not in ("group_keys", "custom_group_keys")}
 
     def get_config_and_attr(self):
         """Return merge object config with group config and merge attr"""
@@ -975,28 +958,23 @@ class GroupConfig(ADCMModel):
             )
             filepath = str(settings.FILE_DIR / filename)
 
-            if field.subname:
-                value = config[field.name][field.subname]
-            else:
-                value = config[field.name]
+            value = config[field.name][field.subname] if field.subname else config[field.name]
 
             if field.type == "secretfile":
                 value = ansible_decrypt(msg=value)
 
             if value is not None:
                 # See cm.adcm_config.py:313
-                if field.name == "ansible_ssh_private_key_file":
-                    if value != "":
-                        if value[-1] == "-":
-                            value += "\n"
+                if field.name == "ansible_ssh_private_key_file" and value != "" and value[-1] == "-":
+                    value += "\n"
 
-                with open(filepath, "w", encoding=settings.ENCODING_UTF_8) as f:
+                with open(filepath, mode="w", encoding=settings.ENCODING_UTF_8) as f:
                     f.write(value)
 
-                os.chmod(filepath, 0o0600)
+                os.chmod(filepath, 0o0600)  # noqa: PTH101
             else:
-                if os.path.exists(filename):
-                    os.remove(filename)
+                if os.path.exists(filename):  # noqa: PTH101, PTH110
+                    os.remove(filename)  # noqa: PTH107
 
     @transaction.atomic()
     def save(self, *args, **kwargs):
@@ -1080,9 +1058,8 @@ class AbstractAction(ADCMModel):
         Bundle developer could mark one action with exact venv he needs,
         or mark all actions on prototype.
         """
-        if self._venv == "default":
-            if self.prototype is not None:
-                return self.prototype.venv
+        if self._venv == "default" and self.prototype is not None:
+            return self.prototype.venv
         return self._venv
 
     @venv.setter
@@ -1117,12 +1094,11 @@ class Action(AbstractAction):
     def get_id_chain(self, target_ids: dict) -> dict:
         """Get action ID chain for front-end URL generation in message templates"""
         target_ids["action_id"] = self.pk
-        result = {
+        return {
             "type": f"{self.prototype.type}_action_run",
             "name": self.display_name or self.name,
             "params": target_ids,
         }
-        return result
 
     def allowed(self, obj: ADCMEntity) -> bool:
         """Check if action is allowed to be run on object"""
@@ -1138,24 +1114,26 @@ class Action(AbstractAction):
             return False
 
         state_allowed = False
-        if self.state_available == "any":
-            state_allowed = True
-        elif isinstance(self.state_available, list) and obj.state in self.state_available:
+        if (
+            self.state_available == "any"
+            or isinstance(self.state_available, list)
+            and obj.state in self.state_available
+        ):
             state_allowed = True
 
         multi_state_allowed = False
-        if self.multi_state_available == "any":
-            multi_state_allowed = True
-        elif isinstance(self.multi_state_available, list) and obj.has_multi_state_intersection(
-            self.multi_state_available,
+        if (
+            self.multi_state_available == "any"
+            or isinstance(self.multi_state_available, list)
+            and obj.has_multi_state_intersection(
+                self.multi_state_available,
+            )
         ):
             multi_state_allowed = True
 
         return state_allowed and multi_state_allowed
 
     def get_start_impossible_reason(self, obj: ADCMEntity) -> str | None:
-        # pylint: disable=too-many-branches, too-many-return-statements
-
         if obj.prototype.type == "adcm":
             obj: ADCM
 
@@ -1219,9 +1197,8 @@ class Action(AbstractAction):
         elif obj.prototype.type == "host":
             obj: Host
 
-            if not self.allow_in_maintenance_mode:
-                if obj.maintenance_mode == MaintenanceMode.ON:
-                    return HOST_IN_MM
+            if not self.allow_in_maintenance_mode and obj.maintenance_mode == MaintenanceMode.ON:
+                return HOST_IN_MM
 
         return None
 

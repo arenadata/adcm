@@ -12,7 +12,7 @@ const HostProviderCreateButton = () => {
 
   return (
     <>
-      <Button onClick={createHostProviderHandler}>Create provider</Button>
+      <Button onClick={createHostProviderHandler}>Create hostprovider</Button>
     </>
   );
 };

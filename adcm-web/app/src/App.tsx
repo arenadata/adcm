@@ -26,8 +26,6 @@ import {
   ClusterImportsCluster,
   ClusterImportsService,
   ClusterMapping,
-  ClusterHostsMapping,
-  ClusterComponentsMapping,
   ClusterOverview,
   ClusterServices,
 } from '@pages/cluster';
@@ -145,11 +143,7 @@ function App() {
                       element={<ClusterHostPrimaryConfiguration />}
                     />
                   </Route>
-                  <Route path="/clusters/:clusterId/mapping" element={<ClusterMapping />}>
-                    <Route index element={<Navigate to="components" replace />} />
-                    <Route path="/clusters/:clusterId/mapping/hosts" element={<ClusterHostsMapping />} />
-                    <Route path="/clusters/:clusterId/mapping/components" element={<ClusterComponentsMapping />} />
-                  </Route>
+                  <Route path="/clusters/:clusterId/mapping" element={<ClusterMapping />} />
                   <Route path="/clusters/:clusterId/configuration" element={<ClusterConfiguration />}>
                     <Route index element={<Navigate to="primary-configuration" replace />} />
                     <Route

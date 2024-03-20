@@ -9,13 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=wrong-import-order,wrong-import-position
 DOCUMENTATION = """
 ---
 module: adcm_change_maintenance_mode
 short_description: Change Host, Service or Component maintenance mode to ON or OFF
 description:
-    - The C(adcm_change_maintenance_mode) module is intended to 
+    - The C(adcm_change_maintenance_mode) module is intended to
       change Host, Service or Component maintenance mode to ON or OFF.
 options:
   type:
@@ -28,7 +27,7 @@ options:
   value:
     description: Maintenance mode value True or False.
     required: True
-    type: bool  
+    type: bool
 """
 
 EXAMPLES = r"""
@@ -36,7 +35,7 @@ EXAMPLES = r"""
   adcm_change_maintenance_mode:
     type: host
     value: True
-     
+
 - name: Change service maintenance mode to False
   adcm_change_maintenance_mode:
     type: service
@@ -46,17 +45,17 @@ EXAMPLES = r"""
 import sys
 
 from ansible.errors import AnsibleActionFail
-
 from ansible.plugins.action import ActionBase
 
 sys.path.append("/adcm/python")
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django  # noqa: F401, isort:skip
+
 from cm.ansible_plugin import get_object_id_from_context
-from cm.api import load_mm_objects
-from cm.status_api import send_object_update_event
 from cm.issue import update_hierarchy_issues
 from cm.models import ClusterObject, Host, ServiceComponent
+from cm.services.status.notify import reset_objects_in_mm
+from cm.status_api import send_object_update_event
 
 
 class ActionModule(ActionBase):
@@ -109,6 +108,6 @@ class ActionModule(ActionBase):
         obj.save()
         send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
         update_hierarchy_issues(obj.cluster)
-        load_mm_objects()
+        reset_objects_in_mm()
 
         return {"failed": False, "changed": True}

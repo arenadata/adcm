@@ -3,7 +3,7 @@ import { AdcmCluster, AdcmService } from '@models/adcm';
 import { createAsyncThunk } from '@store/redux';
 import { RequestError } from '@api';
 import { fulfilledFilter } from '@utils/promiseUtils';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
@@ -33,11 +33,14 @@ const loadClusterServicesDynamicActions = createAsyncThunk(
         throw new Error('Some services can not get those actions');
       }
 
-      return servicesActions.reduce((res, { serviceId, dynamicActions }) => {
-        res[serviceId] = dynamicActions;
+      return servicesActions.reduce(
+        (res, { serviceId, dynamicActions }) => {
+          res[serviceId] = dynamicActions;
 
-        return res;
-      }, {} as AdcmClusterServicesDynamicActionsState['serviceDynamicActions']);
+          return res;
+        },
+        {} as AdcmClusterServicesDynamicActionsState['serviceDynamicActions'],
+      );
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
@@ -85,7 +88,7 @@ const runClusterServiceDynamicAction = createAsyncThunk(
       // TODO: run***Action get big response with information about action, but wiki say that this should empty response
       await AdcmClusterServicesApi.runClusterServiceAction(cluster.id, service.id, actionId, actionRunConfig);
 
-      thunkAPI.dispatch(showInfo({ message: ActionStatuses.SuccessRun }));
+      thunkAPI.dispatch(showSuccess({ message: ActionStatuses.SuccessRun }));
 
       return null;
     } catch (error) {

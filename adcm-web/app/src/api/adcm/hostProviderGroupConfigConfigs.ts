@@ -8,41 +8,59 @@ import {
   ConfigurationAttributes,
 } from '@models/adcm';
 
+export interface GetHostProviderGroupConfigsArgs {
+  hostProviderId: number;
+  configGroupId: number;
+}
+
+export interface GetHostProviderGroupConfigArgs {
+  hostProviderId: number;
+  configGroupId: number;
+  configId: number;
+}
+
+interface GetHostProviderGroupConfigSchemaArgs {
+  hostProviderId: number;
+  configGroupId: number;
+}
+
+export interface CreateHostProviderGroupConfigArgs {
+  hostProviderId: number;
+  configGroupId: number;
+  description?: string;
+  configurationData: ConfigurationData;
+  attributes: ConfigurationAttributes;
+}
+
 export class AdcmHostProviderGroupConfigsConfigsApi {
-  public static async getConfigs(hostProviderId: number, configGroupId: number) {
+  public static async getConfigs(args: GetHostProviderGroupConfigsArgs) {
     const response = await httpClient.get<Batch<AdcmConfigShortView>>(
-      `/api/v2/hostproviders/${hostProviderId}/config-groups/${configGroupId}/configs/?offset=0&limit=1000`,
+      `/api/v2/hostproviders/${args.hostProviderId}/config-groups/${args.configGroupId}/configs/?offset=0&limit=1000`,
     );
     return response.data;
   }
 
-  public static async getConfig(hostProviderId: number, configGroupId: number, configId: number) {
+  public static async getConfig(args: GetHostProviderGroupConfigArgs) {
     const response = await httpClient.get<AdcmConfig>(
-      `/api/v2/hostproviders/${hostProviderId}/config-groups/${configGroupId}/configs/${configId}/`,
+      `/api/v2/hostproviders/${args.hostProviderId}/config-groups/${args.configGroupId}/configs/${args.configId}/`,
     );
     return response.data;
   }
 
-  public static async getConfigSchema(hostProviderId: number, configGroupId: number) {
+  public static async getConfigSchema(args: GetHostProviderGroupConfigSchemaArgs) {
     const response = await httpClient.get<ConfigurationSchema>(
-      `/api/v2/hostproviders/${hostProviderId}/config-groups/${configGroupId}/config-schema/`,
+      `/api/v2/hostproviders/${args.hostProviderId}/config-groups/${args.configGroupId}/config-schema/`,
     );
     return response.data;
   }
 
-  public static async createConfiguration(
-    hostProviderId: number,
-    configGroupId: number,
-    configurationData: ConfigurationData,
-    attributes: ConfigurationAttributes,
-    description = '',
-  ) {
+  public static async createConfiguration(args: CreateHostProviderGroupConfigArgs) {
     const response = await httpClient.post<AdcmConfig>(
-      `/api/v2/hostproviders/${hostProviderId}/config-groups/${configGroupId}/configs/`,
+      `/api/v2/hostproviders/${args.hostProviderId}/config-groups/${args.configGroupId}/configs/`,
       {
-        description,
-        adcmMeta: attributes,
-        config: configurationData,
+        description: args.description ?? '',
+        adcmMeta: args.attributes,
+        config: args.configurationData,
       },
     );
     return response.data;

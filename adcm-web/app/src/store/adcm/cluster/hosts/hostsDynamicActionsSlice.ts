@@ -1,11 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { RequestError } from '@api';
+import { AdcmClusterHostsApi, RequestError } from '@api';
 import { fulfilledFilter } from '@utils/promiseUtils';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { AdcmClusterHostsApi } from '@api';
 import { AdcmCluster, AdcmClusterHost } from '@models/adcm';
 import { ActionStatuses } from '@constants';
 
@@ -33,11 +32,14 @@ const loadClusterHostsDynamicActions = createAsyncThunk(
         throw new Error('Some hosts cannot get those actions');
       }
 
-      return clusterHostsActions.reduce((res, { hostId, dynamicActions }) => {
-        res[hostId] = dynamicActions;
+      return clusterHostsActions.reduce(
+        (res, { hostId, dynamicActions }) => {
+          res[hostId] = dynamicActions;
 
-        return res;
-      }, {} as AdcmClusterHostsDynamicActionsState['clusterHostDynamicActions']);
+          return res;
+        },
+        {} as AdcmClusterHostsDynamicActionsState['clusterHostDynamicActions'],
+      );
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
@@ -81,7 +83,7 @@ const runClusterHostDynamicAction = createAsyncThunk(
       // TODO: run***Action get big response with information about action, but wiki say that this should empty response
       await AdcmClusterHostsApi.runClusterHostAction(cluster.id, clusterHost.id, actionId, actionRunConfig);
 
-      thunkAPI.dispatch(showInfo({ message: ActionStatuses.SuccessRun }));
+      thunkAPI.dispatch(showSuccess({ message: ActionStatuses.SuccessRun }));
 
       return null;
     } catch (error) {

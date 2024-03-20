@@ -12,13 +12,13 @@
 
 from unittest.mock import patch
 
+from adcm.tests.base import APPLICATION_JSON
 from cm.models import ServiceComponent, Upgrade
 from django.urls import reverse
-from rbac.tests.test_policy.base import PolicyBaseTestCase
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from adcm.tests.base import APPLICATION_JSON
+from rbac.tests.test_policy.base import PolicyBaseTestCase
 
 
 class PolicyWithClusterAdminRoleUpgradeTestCase(PolicyBaseTestCase):

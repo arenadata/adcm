@@ -1,9 +1,9 @@
 import React, { ChangeEventHandler, RefObject, useRef } from 'react';
 import cn from 'classnames';
 import Input, { InputProps } from '@uikit/Input/Input';
-import { useForwardRef } from '@uikit/hooks/useForwardRef';
+import { useForwardRef } from '@hooks';
 import InputNumberArrows from '@uikit/InputNumber/InputNumberArrows/InputNumberArrows';
-import { createChangeEvent } from '@uikit/utils/handlerUtils';
+import { createChangeEvent } from '@utils/handlerUtils';
 
 import s from './InputNumber.module.scss';
 

@@ -9,27 +9,32 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from adcm.permissions import check_config_perm
+from cm.models import ADCM, ConfigLog, PrototypeConfig
+from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
+from rest_framework.mixins import RetrieveModelMixin
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
+
 from api_v2.adcm.serializers import AdcmSerializer
 from api_v2.config.utils import get_config_schema
 from api_v2.config.views import ConfigLogViewSet
 from api_v2.views import CamelCaseGenericViewSet
-from cm.models import ADCM, ConfigLog, PrototypeConfig
-from rest_framework.decorators import action
-from rest_framework.mixins import RetrieveModelMixin
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
 
 
 class ADCMViewSet(RetrieveModelMixin, CamelCaseGenericViewSet):
     queryset = ADCM.objects.prefetch_related("concerns").all()
     serializer_class = AdcmSerializer
 
-    def get_object(self, *args, **kwargs):  # pylint: disable=unused-argument
+    def get_object(self, *args, **kwargs):  # noqa: ARG001, ARG002
         return super().get_queryset().first()
 
 
-class ADCMConfigView(ConfigLogViewSet):  # pylint: disable=too-many-ancestors
-    def get_queryset(self, *args, **kwargs):
+class ADCMConfigView(ConfigLogViewSet):
+    def get_queryset(self, *args, **kwargs):  # noqa: ARG002
         return (
             ConfigLog.objects.select_related("obj_ref__adcm__prototype")
             .filter(obj_ref__adcm__isnull=False)
@@ -40,7 +45,7 @@ class ADCMConfigView(ConfigLogViewSet):  # pylint: disable=too-many-ancestors
         return ADCM.objects.first()
 
     @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
-    def config_schema(self, request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def config_schema(self, request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         instance = self.get_parent_object()
         schema = get_config_schema(
             object_=instance,
@@ -48,3 +53,9 @@ class ADCMConfigView(ConfigLogViewSet):  # pylint: disable=too-many-ancestors
         )
 
         return Response(data=schema, status=HTTP_200_OK)
+
+    def _check_create_permissions(self, request: Request, parent_object: ADCM | None) -> None:
+        if parent_object is None:
+            raise NotFound("Can't find config's parent object")
+
+        check_config_perm(user=request.user, action_type="change", model=ADCM._meta.model_name, obj=parent_object)

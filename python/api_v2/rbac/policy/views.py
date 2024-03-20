@@ -10,9 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.rbac.policy.filters import PolicyFilter
-from api_v2.rbac.policy.serializers import PolicyCreateSerializer, PolicySerializer
-from api_v2.views import CamelCaseModelViewSet
+from adcm.permissions import VIEW_POLICY_PERMISSION, CustomModelPermissionsByMethod
 from audit.utils import audit
 from cm.errors import AdcmEx, raise_adcm_ex
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -23,10 +21,12 @@ from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
 
-from adcm.permissions import VIEW_POLICY_PERMISSION, CustomModelPermissionsByMethod
+from api_v2.rbac.policy.filters import PolicyFilter
+from api_v2.rbac.policy.serializers import PolicyCreateSerializer, PolicySerializer
+from api_v2.views import CamelCaseModelViewSet
 
 
-class PolicyViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disable=too-many-ancestors
+class PolicyViewSet(PermissionListMixin, CamelCaseModelViewSet):
     queryset = Policy.objects.select_related("role").prefetch_related("group", "object").order_by("name")
     filter_backends = (DjangoFilterBackend,)
     filterset_class = PolicyFilter
@@ -45,14 +45,14 @@ class PolicyViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disa
         return PolicySerializer
 
     @audit
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):  # noqa: ARG002
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
         policy = policy_create(**serializer.validated_data)
         return Response(data=PolicySerializer(policy).data, status=HTTP_201_CREATED)
 
     @audit
-    def update(self, request, *args, **kwargs):
+    def update(self, request, *args, **kwargs):  # noqa: ARG002
         policy = self.get_object()
 
         if policy.built_in:

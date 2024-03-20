@@ -12,6 +12,12 @@
 
 from pathlib import Path
 
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from django.conf import settings
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+
 from cm.api import add_host_to_cluster, save_hc
 from cm.errors import AdcmEx
 from cm.job import check_hostcomponentmap
@@ -22,12 +28,6 @@ from cm.tests.test_upgrade import (
     cook_provider,
     cook_provider_bundle,
 )
-from django.conf import settings
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestHC(BaseTestCase):

@@ -27,7 +27,7 @@ def migrate_logrotate_config(apps, schema_editor):
 
     adcm_configlog = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
 
-    # pylint: disable=simplifiable-if-statement
+    
     if adcm_configlog.config.get("logrotate", {}).get("nginx_server", False):
         active_value = True
     else:

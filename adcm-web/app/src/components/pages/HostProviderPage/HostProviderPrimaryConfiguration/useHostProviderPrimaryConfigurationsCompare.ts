@@ -1,34 +1,46 @@
 import { useDispatch, useStore } from '@hooks';
 import { useCallback, useEffect } from 'react';
 import {
-  cleanupHostProviderConfigurationsCompareSlice,
+  cleanupCompareSlice,
   getLeftConfiguration,
   getRightConfiguration,
-} from '@store/adcm/hostProvider/configuration/hostProviderConfigurationsCompareSlice';
+} from '@store/adcm/entityConfiguration/compareSlice';
 
 export const useHostProviderPrimaryConfigurationsCompare = () => {
   const dispatch = useDispatch();
   const hostProvider = useStore(({ adcm }) => adcm.hostProvider.hostProvider);
-  const leftConfiguration = useStore(({ adcm }) => adcm.hostProviderConfigurationsCompare.leftConfiguration);
-  const rightConfiguration = useStore(({ adcm }) => adcm.hostProviderConfigurationsCompare.rightConfiguration);
+  const leftConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.leftConfiguration);
+  const rightConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.rightConfiguration);
 
   useEffect(
     () => () => {
-      dispatch(cleanupHostProviderConfigurationsCompareSlice());
+      dispatch(cleanupCompareSlice());
     },
     [hostProvider, dispatch],
   );
 
   const getLeftConfig = useCallback(
     (configId: number) => {
-      hostProvider?.id && dispatch(getLeftConfiguration({ hostProviderId: hostProvider.id, configId }));
+      hostProvider?.id &&
+        dispatch(
+          getLeftConfiguration({
+            entityType: 'host-provider',
+            args: { hostProviderId: hostProvider.id, configId },
+          }),
+        );
     },
     [hostProvider, dispatch],
   );
 
   const getRightConfig = useCallback(
     (configId: number) => {
-      hostProvider?.id && dispatch(getRightConfiguration({ hostProviderId: hostProvider.id, configId }));
+      hostProvider?.id &&
+        dispatch(
+          getRightConfiguration({
+            entityType: 'host-provider',
+            args: { hostProviderId: hostProvider.id, configId },
+          }),
+        );
     },
     [hostProvider, dispatch],
   );

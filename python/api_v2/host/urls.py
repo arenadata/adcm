@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rest_framework_nested.routers import NestedSimpleRouter, SimpleRouter
+
 from api_v2.action.views import ActionViewSet
 from api_v2.config.views import ConfigLogViewSet
 from api_v2.host.views import HostViewSet
-from rest_framework_nested.routers import NestedSimpleRouter, SimpleRouter
 
 host_router = SimpleRouter()
 host_router.register(prefix="", viewset=HostViewSet)

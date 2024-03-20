@@ -11,11 +11,10 @@
 # limitations under the License.
 
 
+from contextlib import contextmanager, suppress
 import os
 import re
-from contextlib import contextmanager, suppress
 
-import ldap
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.errors import raise_adcm_ex
 from cm.logger import logger
@@ -24,6 +23,8 @@ from django.contrib.auth.models import Group as DjangoGroup
 from django.db.transaction import atomic
 from django_auth_ldap.backend import LDAPBackend, _LDAPUser
 from django_auth_ldap.config import LDAPSearch, MemberDNGroupType
+import ldap
+
 from rbac.models import Group, OriginType, User
 
 CERT_ENV_KEY = "LDAPTLS_CACERT"
@@ -40,9 +41,8 @@ def _process_extra_filter(filterstr: str) -> str:
     # simple single filter ex: `primaryGroupID=513`
     if "(" not in filterstr and ")" not in filterstr:
         return f"({filterstr})"
-    else:
-        # assume that composed filter is syntactically valid
-        return filterstr
+    # assume that composed filter is syntactically valid
+    return filterstr
 
 
 def configure_tls(
@@ -95,7 +95,7 @@ def get_groups_by_user_dn(
     user_dn: str,
     user_search: LDAPSearch,
     conn: ldap.ldapobject.LDAPObject,
-) -> tuple[list[str] | None, str | None]:
+) -> tuple[list[str], list[str], str | None]:
     err_msg = None
     user_name_attr = get_ldap_config()["user_name_attribute"]
     replace = f"{user_name_attr}={USER_PLACEHOLDER}"
@@ -116,13 +116,17 @@ def get_groups_by_user_dn(
         return None, err_msg
 
     group_cns = []
+    group_dns_lower = []
     for group_dn in user_attrs.get("memberOf", []):
+        # v3 protocol uses utf-8 encoding
+        # https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-2000-server/cc961766(v=technet.10)?redirectedfrom=MSDN#differences-between-ldapv2-and-ldapv3
+        group_dns_lower.append(group_dn.decode("utf-8").lower())
         group_name = " ".join(CN_PATTERN.findall(group_dn.decode(ENCODING)))
         if group_name:
             group_cns.append(group_name)
 
     logger.debug("Found %s groups by user dn `%s`: %s", len(group_cns), user_dn, group_cns)
-    return group_cns, err_msg
+    return group_cns, group_dns_lower, err_msg
 
 
 def get_user_search(ldap_config: dict) -> LDAPSearch:
@@ -171,6 +175,7 @@ def get_ldap_default_settings() -> tuple[dict, str | None]:
             "USER_ATTR_MAP": user_attr_map,
             "ALWAYS_UPDATE_USER": True,
             "CACHE_TIMEOUT": 0,
+            "GROUP_DN_ADCM_ADMIN": [group_dn.lower() for group_dn in ldap_config["group_dn_adcm_admin"] or []],
         }
         if group_search:
             default_settings.update(
@@ -185,7 +190,7 @@ def get_ldap_default_settings() -> tuple[dict, str | None]:
 
         if is_tls(ldap_config["ldap_uri"]):
             cert_filepath = ldap_config.get("tls_ca_cert_file", "")
-            if not cert_filepath or not os.path.exists(cert_filepath):
+            if not cert_filepath or not os.path.exists(cert_filepath):  # noqa: PTH110
                 msg = "NO_CERT_FILE"
                 logger.warning(msg)
                 return {}, msg
@@ -211,18 +216,21 @@ class CustomLDAPBackend(LDAPBackend):
         try:
             if not self._check_user(ldap_user):
                 return None
-            # pylint: disable=protected-access
             user_local_groups = self._get_local_groups_by_username(ldap_user._username)
             user_or_none = super().authenticate_ldap_user(ldap_user, password)
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # noqa: BLE001
             logger.exception(e)
             return None
 
         if isinstance(user_or_none, User):
             user_or_none.type = OriginType.LDAP
             user_or_none.is_active = True
-            user_or_none.save()
-            self._process_groups(user_or_none, ldap_user.dn, user_local_groups)
+            is_in_admin_group = self._process_groups(user_or_none, ldap_user.dn, user_local_groups)
+            if is_in_admin_group:
+                user_or_none.is_superuser = True
+            elif user_or_none.is_superuser:
+                user_or_none.is_superuser = False
+            user_or_none.save(update_fields=["type", "is_active", "is_superuser"])
 
         return user_or_none
 
@@ -232,11 +240,11 @@ class CustomLDAPBackend(LDAPBackend):
 
     @staticmethod
     def _get_local_groups_by_username(username: str) -> list[Group]:
-        groups = []
         with suppress(User.DoesNotExist):
             user = User.objects.get(username__iexact=username, type=OriginType.LDAP)
-            groups = [g.group for g in user.groups.order_by("id") if g.group.type == OriginType.LOCAL]
-        return groups
+            return [g.group for g in user.groups.order_by("id") if g.group.type == OriginType.LOCAL]
+
+        return []
 
     def get_user_model(self) -> type[User]:
         return User
@@ -259,22 +267,27 @@ class CustomLDAPBackend(LDAPBackend):
         logger.debug("Found %s groups: %s", len(groups), [i[0] for i in groups])
         return groups
 
-    def _process_groups(self, user: User | _LDAPUser, user_dn: str, additional_groups: list[Group] = ()) -> None:
-        if not self._group_search_enabled:
-            logger.warning("Group search is disabled. Getting all user groups")
-            with self._ldap_connection() as conn:
-                ldap_group_names, err_msg = get_groups_by_user_dn(
-                    user_dn=user_dn,
-                    user_search=self.default_settings["USER_SEARCH"],
-                    conn=conn,
-                )
+    def _process_groups(self, user: User | _LDAPUser, user_dn: str, additional_groups: list[Group] = ()) -> bool:
+        is_in_admin_group = False
+        with self._ldap_connection() as conn:
+            ldap_group_names, ldap_group_dns, err_msg = get_groups_by_user_dn(
+                user_dn=user_dn,
+                user_search=self.default_settings["USER_SEARCH"],
+                conn=conn,
+            )
             if err_msg:
                 raise_adcm_ex(code="GROUP_CONFLICT", msg=err_msg)
 
+        if any(group_dn in self.default_settings["GROUP_DN_ADCM_ADMIN"] for group_dn in ldap_group_dns):
+            is_in_admin_group = True
+
+        if not self._group_search_enabled:
+            logger.warning("Group search is disabled. Getting all user groups")
             for ldap_group_name in ldap_group_names:
                 group, _ = Group.objects.get_or_create(name=f"{ldap_group_name} [ldap]", type=OriginType.LDAP)
                 group.user_set.add(user)
-            return
+
+            return is_in_admin_group
 
         ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
         # ldap-backend managed auth_groups
@@ -288,11 +301,13 @@ class CustomLDAPBackend(LDAPBackend):
         for group in additional_groups:
             group.user_set.add(user)
 
+        return is_in_admin_group
+
     def _check_user(self, ldap_user: _LDAPUser) -> bool:
         user_dn = ldap_user.dn
         if user_dn is None:
             return False
-        username = ldap_user._username  # pylint: disable=protected-access
+        username = ldap_user._username
 
         if User.objects.filter(username__iexact=username, type=OriginType.LOCAL).exists():
             logger.exception("usernames collision: `%s`", username)
@@ -310,10 +325,10 @@ class CustomLDAPBackend(LDAPBackend):
 
     @staticmethod
     def _get_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
-        group_dn = ""
         with suppress(IndexError):
-            group_dn = [i for i in ldap_groups if i[0] == group_name][0][1]
-        return group_dn
+            return [i for i in ldap_groups if i[0] == group_name][0][1]
+
+        return ""
 
     @staticmethod
     def _get_rbac_group(group: Group | DjangoGroup, ldap_group_dn: str) -> Group:
@@ -322,17 +337,16 @@ class CustomLDAPBackend(LDAPBackend):
         """
         if isinstance(group, Group):
             return group
-        elif isinstance(group, DjangoGroup):
+        elif isinstance(group, DjangoGroup):  # noqa: RET505
             try:
                 # maybe we'll need more accurate filtering here
                 return Group.objects.get(name=f"{group.name} [{OriginType.LDAP.value}]", type=OriginType.LDAP.value)
             except Group.DoesNotExist:
                 with atomic():
-                    rbac_group = Group.objects.create(
+                    return Group.objects.create(
                         name=group.name,
                         type=OriginType.LDAP,
                         description=ldap_group_dn,
                     )
-                    return rbac_group
         else:
-            raise ValueError("wrong group type")
+            raise TypeError("wrong group type")

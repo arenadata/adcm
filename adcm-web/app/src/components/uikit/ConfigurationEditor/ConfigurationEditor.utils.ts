@@ -7,7 +7,7 @@ import { isObject } from '@utils/objectUtils';
 export const editField = (configuration: ConfigurationData, path: ConfigurationNodePath, value: JSONValue) => {
   if (path.length) {
     const newConfiguration = JSON.parse(JSON.stringify(configuration));
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
     const fieldName = path.pop()!;
 
     let node = newConfiguration;
@@ -23,7 +23,7 @@ export const editField = (configuration: ConfigurationData, path: ConfigurationN
 
 export const addField = (configuration: ConfigurationData, path: ConfigurationNodePath, value: JSONPrimitive) => {
   const newConfiguration = JSON.parse(JSON.stringify(configuration));
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
   const fieldName = path.pop()!;
 
   let node = newConfiguration;
@@ -42,7 +42,7 @@ export const addField = (configuration: ConfigurationData, path: ConfigurationNo
 
 export const deleteField = (configuration: ConfigurationData, path: ConfigurationNodePath) => {
   const newConfiguration = JSON.parse(JSON.stringify(configuration));
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
   const fieldName = path.pop()!;
 
   let node = newConfiguration;
@@ -80,7 +80,7 @@ export const addArrayItem = (
 
 export const deleteArrayItem = (configuration: ConfigurationData, path: ConfigurationNodePath) => {
   const newConfiguration = JSON.parse(JSON.stringify(configuration));
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
   const fieldName = path.pop()!;
 
   let node = newConfiguration;

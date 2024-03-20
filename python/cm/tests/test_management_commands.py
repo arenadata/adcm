@@ -12,17 +12,18 @@
 
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import ADCM, Bundle, ServiceComponent
-from cm.tests.utils import gen_cluster, gen_provider
 from django.conf import settings
 from django.core.management import load_command_class
 from rbac.models import Policy, Role, User
+
+from cm.models import ADCM, Bundle, ServiceComponent
+from cm.tests.utils import gen_cluster, gen_provider
 
 
 class TestStatistics(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.maxDiff = None  # pylint: disable=invalid-name
+        self.maxDiff = None
 
         enterprise_bundle_cluster = Bundle.objects.create(
             name="enterprise_cluster", version="1.0", edition="enterprise"

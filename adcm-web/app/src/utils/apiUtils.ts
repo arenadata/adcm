@@ -2,15 +2,18 @@ import { EmptyTableFilter, PaginationParams, SortParams } from '@models/table';
 import { queryParamSortBy } from '@constants';
 
 const clearFilter = <F extends EmptyTableFilter>(filter: F) => {
-  return Object.entries(filter).reduce((res, [filterName, filterValue]) => {
-    const isEmptyString = filterValue === '';
-    const isEmptyArray = Array.isArray(filterValue) && filterValue.length === 0;
+  return Object.entries(filter).reduce(
+    (res, [filterName, filterValue]) => {
+      const isEmptyString = filterValue === '';
+      const isEmptyArray = Array.isArray(filterValue) && filterValue.length === 0;
 
-    if (!isEmptyString && !isEmptyArray) {
-      res[filterName as keyof F] = filterValue;
-    }
-    return res;
-  }, {} as Record<keyof F, unknown>);
+      if (!isEmptyString && !isEmptyArray) {
+        res[filterName as keyof F] = filterValue;
+      }
+      return res;
+    },
+    {} as Record<keyof F, unknown>,
+  );
 };
 
 export const prepareSorting = ({ sortBy: fieldName, sortDirection }: SortParams) => {

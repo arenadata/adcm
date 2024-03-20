@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import s from './ThemeSwitcher.module.scss';
-import { useLocalStorage } from '@uikit/hooks/useLocalStorage';
+import { useLocalStorage } from '@hooks';
 import Icon from '@uikit/Icon/Icon';
 import cn from 'classnames';
+import { ConditionalWrapper, Tooltip } from '@uikit';
 
 enum THEME {
   Dark = 'dark',
@@ -46,22 +47,24 @@ const ThemeSwitcher: React.FC = () => {
 
   return (
     <div className={s.themeSwitcher}>
-      <button
-        className={cn(s.themeSwitcher__btn, { 'is-active': theme === THEME.Light })}
-        onClick={lightOn}
-        title={theme === THEME.Dark ? 'Switch to light theme' : undefined}
-        data-test="light-theme"
-      >
-        <Icon name="g2-sun" size={24} />
-      </button>
-      <button
-        className={cn(s.themeSwitcher__btn, { 'is-active': theme === THEME.Dark })}
-        onClick={darkOn}
-        title={theme === THEME.Light ? 'Switch to dark theme' : undefined}
-        data-test="dark-theme"
-      >
-        <Icon name="g2-moon" size={24} />
-      </button>
+      <ConditionalWrapper Component={Tooltip} isWrap={theme === THEME.Dark} label="Switch to light theme">
+        <button
+          className={cn(s.themeSwitcher__btn, { 'is-active': theme === THEME.Light })}
+          onClick={lightOn}
+          data-test="light-theme"
+        >
+          <Icon name="g2-sun" size={24} />
+        </button>
+      </ConditionalWrapper>
+      <ConditionalWrapper Component={Tooltip} isWrap={theme === THEME.Light} label="Switch to dark theme">
+        <button
+          className={cn(s.themeSwitcher__btn, { 'is-active': theme === THEME.Dark })}
+          onClick={darkOn}
+          data-test="dark-theme"
+        >
+          <Icon name="g2-moon" size={24} />
+        </button>
+      </ConditionalWrapper>
     </div>
   );
 };

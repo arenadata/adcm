@@ -11,11 +11,12 @@ import { SortParams } from '@uikit/types/list.types';
 import ClusterDynamicActionsIcon from '@pages/ClustersPage/ClustersTable/ClusterDynamicActionsIcon/ClusterDynamicActionsIcon';
 import MultiStateCell from '@commonComponents/Table/Cells/MultiStateCell';
 import { openClusterUpgradeDialog } from '@store/adcm/clusters/clusterUpgradesSlice';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const ClustersTable = () => {
   const dispatch = useDispatch();
   const clusters = useStore((s) => s.adcm.clusters.clusters);
-  const isLoading = useStore((s) => s.adcm.clusters.isLoading);
+  const isLoading = useStore((s) => isShowSpinner(s.adcm.clusters.loadState));
   const sortParams = useStore((s) => s.adcm.clustersTable.sortParams);
 
   const handleUpgradeClick = (cluster: AdcmCluster) => {

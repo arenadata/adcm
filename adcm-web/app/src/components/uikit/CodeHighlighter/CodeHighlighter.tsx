@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import cn from 'classnames';
 import s from './CodeHighlighter.module.scss';
 import './Themes/CodeHighlighter.module.themes.scss';
+// TODO: change on https://www.npmjs.com/package/refractor
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/default-highlight';
 import customTheme from './Themes/customTheme';
 import CopyButton from './CopyButton/CopyButton';
@@ -55,6 +56,20 @@ const CodePre = ({ children }: React.PropsWithChildren) => (
   <div className={cn(s['code-pre'], s['highlighter_font-params'])}>{children}</div>
 );
 
+const SyntaxFallback: React.FC<{ text: string }> = ({ text }) => {
+  const lineCount = text.split('\n').length;
+  return (
+    <CodePre>
+      <div className={cn(s['code-wrapper'])}>
+        <LineNumbers lineCount={lineCount} />
+        <LinesWrapper dataTest="code-wrapper-log-text">
+          <div className={s.fallbackPre}>{text}</div>
+        </LinesWrapper>
+      </div>
+    </CodePre>
+  );
+};
+
 export type CodeHighlighterProps = {
   code: string;
   language: string;
@@ -92,17 +107,21 @@ const CodeHighlighter = ({
           onClick={toggleShowSecret}
         />
       )}
-      <SyntaxHighlighter
-        language={language}
-        showLineNumbers={false}
-        CodeTag={CodeTagComponent}
-        PreTag={CodePre}
-        wrapLines={true}
-        style={customTheme}
-        useInlineStyles={false}
-      >
-        {text}
-      </SyntaxHighlighter>
+      {language === 'txt' ? (
+        <SyntaxFallback text={text} />
+      ) : (
+        <SyntaxHighlighter
+          language={language}
+          showLineNumbers={false}
+          CodeTag={CodeTagComponent}
+          PreTag={CodePre}
+          wrapLines={true}
+          style={customTheme}
+          useInlineStyles={false}
+        >
+          {text}
+        </SyntaxHighlighter>
+      )}
     </div>
   );
 };

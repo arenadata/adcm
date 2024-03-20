@@ -10,8 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.permissions import check_custom_perm, get_object_for_user
+from adcm.utils import delete_service_from_api, get_maintenance_mode_response
+from audit.utils import audit
+from cm.api import get_import, unbind
+from cm.models import Cluster, ClusterBind, ClusterObject, HostComponent, Prototype
+from cm.services.status.notify import update_mm_objects
+from cm.status_api import make_ui_service_status
+from guardian.mixins import PermissionListMixin
+from rest_framework import permissions
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
+
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.cluster.serializers import BindSerializer
+from api.rbac.viewsets import DjangoOnlyObjectPermissions
 from api.service.serializers import (
     ClusterServiceSerializer,
     ImportPostSerializer,
@@ -26,19 +40,6 @@ from api.service.serializers import (
 )
 from api.stack.serializers import ImportSerializer
 from api.utils import check_obj, create
-from audit.utils import audit
-from cm.api import get_import, unbind, update_mm_objects
-from cm.models import Cluster, ClusterBind, ClusterObject, HostComponent, Prototype
-from cm.status_api import make_ui_service_status
-from guardian.mixins import PermissionListMixin
-from rbac.viewsets import DjangoOnlyObjectPermissions
-from rest_framework import permissions
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
-
-from adcm.permissions import check_custom_perm, get_object_for_user
-from adcm.utils import delete_service_from_api, get_maintenance_mode_response
 
 
 class ServiceListView(PermissionListMixin, PaginatedView):
@@ -51,7 +52,7 @@ class ServiceListView(PermissionListMixin, PaginatedView):
     ordering_fields = ("id", "state", "prototype__display_name", "prototype__version_order")
     ordering = ["id"]
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *_, **kwargs):  # noqa: ARG002
         queryset = self.get_queryset()
         if "cluster_id" in kwargs:
             cluster = get_object_for_user(request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"])
@@ -60,7 +61,7 @@ class ServiceListView(PermissionListMixin, PaginatedView):
         return self.get_page(self.filter_queryset(queryset), request)
 
     @audit
-    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def post(self, request, *args, **kwargs):  # noqa: ARG002
         serializer_class = self.serializer_class
         if "cluster_id" in kwargs:
             serializer_class = self.serializer_class_cluster
@@ -96,7 +97,7 @@ class ServiceDetailView(PermissionListMixin, DetailView):
         return queryset
 
     @audit
-    def delete(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def delete(self, request, *args, **kwargs):  # noqa: ARG002
         instance: ClusterObject = self.get_object()
         return delete_service_from_api(service=instance)
 
@@ -132,7 +133,7 @@ class ServiceImportView(GenericUIView):
     ordering = ["id"]
 
     @staticmethod
-    def get(request, *args, **kwargs):  # pylint: disable=unused-argument
+    def get(request, *_, **kwargs):
         service = get_object_for_user(request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
         check_custom_perm(request.user, "view_import_of", "clusterobject", service, "view_clusterbind")
         cluster = service.cluster
@@ -161,7 +162,7 @@ class ServiceBindView(GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     ordering = ["id"]
 
-    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def get(self, request, *args, **kwargs):  # noqa: ARG002
         service = get_object_for_user(request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
         check_custom_perm(request.user, "view_import_of", "clusterobject", service, "view_clusterbind")
         binds = self.get_queryset().filter(service=service)
@@ -196,7 +197,7 @@ class ServiceBindDetailView(GenericUIView):
 
         return service, check_obj(ClusterBind, {"cluster": cluster, "id": bind_id})
 
-    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def get(self, request, *args, **kwargs):  # noqa: ARG002
         service, bind = self.get_obj(kwargs, kwargs["bind_id"])
         check_custom_perm(request.user, "view_import_of", "clusterobject", service, "view_clusterbind")
         serializer = self.get_serializer(bind)
@@ -204,7 +205,7 @@ class ServiceBindDetailView(GenericUIView):
         return Response(serializer.data)
 
     @audit
-    def delete(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def delete(self, request, *args, **kwargs):  # noqa: ARG002
         service, bind = self.get_obj(kwargs, kwargs["bind_id"])
         check_custom_perm(request.user, "change_import_of", "clusterobject", service)
         unbind(bind)
@@ -218,7 +219,7 @@ class StatusList(GenericUIView):
     serializer_class = ServiceStatusSerializer
     ordering = ["id"]
 
-    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def get(self, request, *args, **kwargs):  # noqa: ARG002
         service = get_object_for_user(request.user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
         if self._is_for_ui():
             host_components = self.get_queryset().filter(service=service)

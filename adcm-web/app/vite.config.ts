@@ -12,6 +12,21 @@ export default defineConfig(({ command, mode }) => {
   const withQaAttributes = env.WITH_QA_ATTRIBUTES === 'true';
 
   return {
+    server: {
+      port: 5173,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+        },
+        '/ws': {
+          target: 'ws://localhost:8000',
+          changeOrigin: false,
+          ws: true,
+        },
+      },
+      cors: true,
+    },
     envPrefix: 'ADCM_',
     plugins: [
       tsconfigPaths(),

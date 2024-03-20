@@ -10,14 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
-import json
-import re
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any
+import re
+import copy
+import json
 
 from ansible.errors import AnsibleError
+from django.conf import settings
+from django.db.models import QuerySet
+from jinja_config import get_jinja_config
+
 from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.adcm_config.checks import check_attr, check_config_type
 from cm.adcm_config.utils import (
@@ -49,9 +53,16 @@ from cm.models import (
 )
 from cm.utils import deep_merge, dict_to_obj, obj_to_dict
 from cm.variant import get_variant, process_variant
-from django.conf import settings
-from django.db.models import QuerySet
-from jinja_config import get_jinja_config
+
+
+def get_path_file_from_bundle(file_name: str, bundle_hash: str, path: str, is_adcm: bool = False) -> Path:
+    if is_adcm:
+        return settings.BASE_DIR / "conf/adcm" / file_name
+
+    if file_name.startswith("./"):
+        return Path(settings.BUNDLE_DIR, bundle_hash, path, file_name)
+
+    return Path(settings.BUNDLE_DIR, bundle_hash, file_name)
 
 
 def read_bundle_file(proto: Prototype | StagePrototype, fname: str, bundle_hash: str, ref=None) -> str | None:
@@ -60,15 +71,12 @@ def read_bundle_file(proto: Prototype | StagePrototype, fname: str, bundle_hash:
 
     file_descriptor = None
 
-    if proto.type == ObjectType.ADCM:
-        path = settings.BASE_DIR / "conf/adcm" / fname
-    elif fname.startswith("./"):
-        path = Path(settings.BUNDLE_DIR, bundle_hash, proto.path, fname)
-    else:
-        path = Path(settings.BUNDLE_DIR, bundle_hash, fname)
+    path = get_path_file_from_bundle(
+        file_name=fname, bundle_hash=bundle_hash, path=proto.path, is_adcm=proto.type == ObjectType.ADCM
+    )
 
     try:
-        file_descriptor = open(path, encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+        file_descriptor = open(path, encoding=settings.ENCODING_UTF_8)  # noqa: SIM115
     except FileNotFoundError:
         raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'{bundle_hash} "{path}" is not found ({ref})')
     except PermissionError:
@@ -143,7 +151,7 @@ def make_object_config(obj: ADCMEntity, prototype: Prototype) -> None:
         obj.save()
 
 
-def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+def switch_config(
     obj: ADCMEntity,
     new_prototype: Prototype,
     old_prototype: Prototype,
@@ -275,7 +283,7 @@ def _clear_group_keys(group_keys: dict, spec: dict) -> dict:
             correct_group_keys[field]["value"] = group_keys[field]["value"]
             correct_group_keys[field]["fields"] = {}
 
-            for key in info["fields"].keys():
+            for key in info["fields"]:
                 correct_group_keys[field]["fields"][key] = group_keys[field]["fields"][key]
         else:
             correct_group_keys[field] = group_keys[field]
@@ -379,12 +387,10 @@ def save_file_type(obj, key, subkey, value):
     # So when we create that key from playbook and save it in ADCM we get
     # "Load key : invalid format" on next connect to host.
 
-    if key == "ansible_ssh_private_key_file":
-        if value != "":
-            if value[-1] == "-":
-                value += "\n"
+    if key == "ansible_ssh_private_key_file" and value != "" and value[-1] == "-":
+        value += "\n"
 
-    file_descriptor = open(filename, "w", encoding=settings.ENCODING_UTF_8)  # pylint: disable=consider-using-with
+    file_descriptor = open(filename, "w", encoding=settings.ENCODING_UTF_8)  # noqa: SIM115
     file_descriptor.write(value)
     file_descriptor.close()
     Path(filename).chmod(0o0600)
@@ -393,8 +399,6 @@ def save_file_type(obj, key, subkey, value):
 
 
 def process_file_type(obj: Any, spec: dict, conf: dict):
-    # pylint: disable=too-many-branches,disable=too-many-nested-blocks
-
     for key in conf:
         if "type" in spec[key]:
             if spec[key]["type"] == "file":
@@ -435,7 +439,7 @@ def process_file_type(obj: Any, spec: dict, conf: dict):
                     save_file_type(obj, key, subkey, value)
 
 
-def process_config(  # pylint: disable=too-many-branches
+def process_config(
     obj: ADCMEntity,
     spec: dict,
     old_conf: dict,
@@ -444,7 +448,7 @@ def process_config(  # pylint: disable=too-many-branches
         return old_conf
 
     conf = copy.deepcopy(old_conf)
-    for key in conf:  # pylint: disable=too-many-nested-blocks
+    for key in conf:
         if "type" in spec[key]:
             if conf[key] is not None:
                 if spec[key]["type"] in {"file", "secretfile"}:
@@ -476,7 +480,7 @@ def process_config(  # pylint: disable=too-many-branches
     return conf
 
 
-def ui_config(obj, config_log):  # pylint: disable=too-many-locals
+def ui_config(obj, config_log):
     conf = []
     _, spec, _, _ = get_prototype_config(obj.prototype)
     obj_conf = config_log.config
@@ -536,7 +540,7 @@ def get_action_variant(obj: ADCMEntity, prototype_configs: QuerySet[PrototypeCon
                 conf.limits["source"]["value"] = get_variant(obj, config_log.config, conf.limits)
 
 
-def restore_read_only(obj, spec, conf, old_conf):  # pylint: disable=too-many-branches
+def restore_read_only(obj, spec, conf, old_conf):
     # Do not remove!
     # This patch fix old error when sometimes group config values can be lost
     # during bundle upgrade
@@ -551,18 +555,15 @@ def restore_read_only(obj, spec, conf, old_conf):  # pylint: disable=too-many-br
                 )
     # end of patch
 
-    for key in spec:  # pylint: disable=too-many-nested-blocks
+    for key in spec:
         if "type" in spec[key]:
-            if config_is_ro(obj, key, spec[key]["limits"]) and key not in conf:
-                if key in old_conf:
-                    conf[key] = old_conf[key]
+            if config_is_ro(obj, key, spec[key]["limits"]) and key not in conf and key in old_conf:
+                conf[key] = old_conf[key]
         else:
             for subkey in spec[key]:
                 if config_is_ro(obj=obj, key=f"{key}/{subkey}", limits=spec[key][subkey]["limits"]):
-                    if key in conf:
-                        if subkey not in conf:
-                            if key in old_conf and subkey in old_conf[key]:
-                                conf[key][subkey] = old_conf[key][subkey]
+                    if key in conf and subkey not in conf and key in old_conf and subkey in old_conf[key]:
+                        conf[key][subkey] = old_conf[key][subkey]
                     elif key in old_conf and subkey in old_conf[key]:
                         conf[key] = {subkey: old_conf[key][subkey]}
 
@@ -586,12 +587,10 @@ def process_json_config(
 
     process_variant(obj, spec, new_config)
     check_config_spec(proto=prototype, obj=obj, spec=spec, flat_spec=flat_spec, conf=new_config, attr=new_attr)
-    new_config = process_config_spec(obj=group or obj, spec=spec, new_config=new_config)
-
-    return new_config
+    return process_config_spec(obj=group or obj, spec=spec, new_config=new_config)
 
 
-def check_config_spec(  # pylint: disable=too-many-branches
+def check_config_spec(
     proto: Prototype,
     obj: ADCMEntity | Action,
     spec: dict,
@@ -799,56 +798,43 @@ def get_option_value(value: str, limits: dict) -> str | int | float:
     return raise_adcm_ex("CONFIG_OPTION_ERROR")
 
 
-def get_default(  # pylint: disable=too-many-branches
+def get_default(
     conf: PrototypeConfig,
     prototype: Prototype | None = None,
 ) -> Any:
     value = conf.default
     if conf.default == "":
         value = None
-    elif conf.type == "string":
+    elif conf.type == "string" or conf.type == "text":
         value = conf.default
-    elif conf.type == "text":
-        value = conf.default
-    elif conf.type in settings.SECURE_PARAM_TYPES:
-        if conf.default:
-            value = ansible_encrypt_and_format(msg=conf.default)
+    elif conf.type in settings.SECURE_PARAM_TYPES and conf.default:
+        value = ansible_encrypt_and_format(msg=conf.default)
     elif conf.type in settings.STACK_COMPLEX_FIELD_TYPES:
-        if isinstance(conf.default, str):
-            value = json.loads(s=conf.default)
-        else:
-            value = conf.default
+        value = json.loads(s=conf.default) if isinstance(conf.default, str) else conf.default
     elif conf.type == "integer":
         value = int(conf.default)
     elif conf.type == "float":
         value = float(conf.default)
     elif conf.type == "boolean":
-        if isinstance(conf.default, bool):
-            value = conf.default
-        else:
-            value = bool(conf.default.lower() in {"true", "yes"})
+        value = conf.default if isinstance(conf.default, bool) else bool(conf.default.lower() in {"true", "yes"})
     elif conf.type == "option":
         value = get_option_value(value=value, limits=conf.limits)
-    elif conf.type == "file":
-        if prototype:
-            if conf.default:
-                value = read_bundle_file(
-                    proto=prototype,
-                    fname=conf.default,
-                    bundle_hash=prototype.bundle.hash,
-                    ref=f'config key "{conf.name}/{conf.subname}" default file',
-                )
-    elif conf.type == "secretfile":
-        if prototype:
-            if conf.default:
-                value = ansible_encrypt_and_format(
-                    msg=read_bundle_file(
-                        proto=prototype,
-                        fname=conf.default,
-                        bundle_hash=prototype.bundle.hash,
-                        ref=f'config key "{conf.name}/{conf.subname}" default file',
-                    ),
-                )
+    elif conf.type == "file" and prototype and conf.default:
+        value = read_bundle_file(
+            proto=prototype,
+            fname=conf.default,
+            bundle_hash=prototype.bundle.hash,
+            ref=f'config key "{conf.name}/{conf.subname}" default file',
+        )
+    elif conf.type == "secretfile" and prototype and conf.default:
+        value = ansible_encrypt_and_format(
+            msg=read_bundle_file(
+                proto=prototype,
+                fname=conf.default,
+                bundle_hash=prototype.bundle.hash,
+                ref=f'config key "{conf.name}/{conf.subname}" default file',
+            ),
+        )
 
     if conf.type == "secretmap" and conf.default:
         new_value = {}

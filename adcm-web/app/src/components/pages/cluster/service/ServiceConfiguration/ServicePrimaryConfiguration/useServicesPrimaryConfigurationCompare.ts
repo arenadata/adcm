@@ -1,27 +1,33 @@
 import { useDispatch, useStore } from '@hooks';
 import { useCallback, useEffect } from 'react';
 import {
-  cleanupClusterServicesConfigurationsCompareSlice,
+  cleanupCompareSlice,
   getLeftConfiguration,
   getRightConfiguration,
-} from '@store/adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationsCompareSlice';
+} from '@store/adcm/entityConfiguration/compareSlice';
 
 export const useServicesPrimaryConfigurationsCompare = () => {
   const dispatch = useDispatch();
   const service = useStore(({ adcm }) => adcm.service.service);
-  const leftConfiguration = useStore(({ adcm }) => adcm.clusterServicesConfigurationsCompare.leftConfiguration);
-  const rightConfiguration = useStore(({ adcm }) => adcm.clusterServicesConfigurationsCompare.rightConfiguration);
+  const leftConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.leftConfiguration);
+  const rightConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.rightConfiguration);
 
   useEffect(
     () => () => {
-      dispatch(cleanupClusterServicesConfigurationsCompareSlice());
+      dispatch(cleanupCompareSlice());
     },
     [service, dispatch],
   );
 
   const getLeftConfig = useCallback(
     (configId: number) => {
-      service?.id && dispatch(getLeftConfiguration({ clusterId: service.cluster.id, serviceId: service.id, configId }));
+      service?.id &&
+        dispatch(
+          getLeftConfiguration({
+            entityType: 'service',
+            args: { clusterId: service.cluster.id, serviceId: service.id, configId },
+          }),
+        );
     },
     [service, dispatch],
   );
@@ -29,7 +35,12 @@ export const useServicesPrimaryConfigurationsCompare = () => {
   const getRightConfig = useCallback(
     (configId: number) => {
       service?.id &&
-        dispatch(getRightConfiguration({ clusterId: service.cluster.id, serviceId: service.id, configId }));
+        dispatch(
+          getRightConfiguration({
+            entityType: 'service',
+            args: { clusterId: service.cluster.id, serviceId: service.id, configId },
+          }),
+        );
     },
     [service, dispatch],
   );

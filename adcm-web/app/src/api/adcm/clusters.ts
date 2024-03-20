@@ -91,10 +91,9 @@ export class AdcmClustersApi {
     return response.data;
   }
 
-  public static async linkHost(clusterId: number, hostId: number) {
-    await httpClient.post(`/api/v2/clusters/${clusterId}/hosts/`, {
-      hostId,
-    });
+  public static async linkHost(clusterId: number, hostIds: number[]) {
+    const hostIdsPayload = hostIds.map((id) => ({ hostId: id }));
+    await httpClient.post(`/api/v2/clusters/${clusterId}/hosts/`, hostIdsPayload);
   }
 
   public static async unlinkHost(clusterId: number, hostId: number) {

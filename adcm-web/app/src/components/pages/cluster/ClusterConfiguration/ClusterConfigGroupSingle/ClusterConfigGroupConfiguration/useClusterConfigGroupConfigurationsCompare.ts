@@ -4,14 +4,14 @@ import {
   cleanupCompareSlice,
   getLeftConfiguration,
   getRightConfiguration,
-} from '@store/adcm/cluster/configGroupSingle/configuration/clusterConfigGroupConfigurationsCompareSlice';
+} from '@store/adcm/entityConfiguration/compareSlice';
 
 export const useClusterConfigGroupConfigurationsCompare = () => {
   const dispatch = useDispatch();
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
   const clusterConfigGroup = useStore((s) => s.adcm.clusterConfigGroup.clusterConfigGroup);
-  const leftConfiguration = useStore(({ adcm }) => adcm.clusterConfigGroupConfigurationsCompare.leftConfiguration);
-  const rightConfiguration = useStore(({ adcm }) => adcm.clusterConfigGroupConfigurationsCompare.rightConfiguration);
+  const leftConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.leftConfiguration);
+  const rightConfiguration = useStore(({ adcm }) => adcm.entityConfigurationCompare.rightConfiguration);
 
   useEffect(
     () => () => {
@@ -23,7 +23,12 @@ export const useClusterConfigGroupConfigurationsCompare = () => {
   const getLeftConfig = useCallback(
     (configId: number) => {
       if (cluster && clusterConfigGroup) {
-        dispatch(getLeftConfiguration({ clusterId: cluster.id, configGroupId: clusterConfigGroup.id, configId }));
+        dispatch(
+          getLeftConfiguration({
+            entityType: 'cluster-config-group',
+            args: { clusterId: cluster.id, configGroupId: clusterConfigGroup.id, configId },
+          }),
+        );
       }
     },
     [cluster, clusterConfigGroup, dispatch],
@@ -32,7 +37,12 @@ export const useClusterConfigGroupConfigurationsCompare = () => {
   const getRightConfig = useCallback(
     (configId: number) => {
       if (cluster && clusterConfigGroup) {
-        dispatch(getRightConfiguration({ clusterId: cluster.id, configGroupId: clusterConfigGroup.id, configId }));
+        dispatch(
+          getRightConfiguration({
+            entityType: 'cluster-config-group',
+            args: { clusterId: cluster.id, configGroupId: clusterConfigGroup.id, configId },
+          }),
+        );
       }
     },
     [cluster, clusterConfigGroup, dispatch],

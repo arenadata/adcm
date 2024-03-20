@@ -9,22 +9,35 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from operator import attrgetter
+from typing import Iterable
 from unittest.mock import patch
+
+from adcm.tests.base import BaseTestCase
 
 from cm.api import add_cluster, add_service_to_cluster
 from cm.hierarchy import Tree
 from cm.issue import (
+    add_concern_to_object,
     create_issue,
     do_check_import,
     recheck_issues,
     remove_issue,
     update_hierarchy_issues,
 )
-from cm.models import Bundle, ClusterBind, ConcernCause, Prototype, PrototypeImport
+from cm.models import (
+    ADCMEntity,
+    Bundle,
+    ClusterBind,
+    ConcernCause,
+    ConcernItem,
+    ConcernType,
+    Prototype,
+    PrototypeImport,
+)
+from cm.services.cluster import perform_host_to_cluster_map
+from cm.services.status import notify
 from cm.tests.utils import gen_service, generate_hierarchy
-
-from adcm.tests.base import BaseTestCase
 
 mock_issue_check_map = {
     ConcernCause.CONFIG: lambda x: False,
@@ -297,3 +310,61 @@ class TestImport(BaseTestCase):
         issue = service.get_own_issue(ConcernCause.IMPORT)
 
         self.assertIsNone(issue)
+
+
+class TestConcernsRedistribution(BaseTestCase):
+    MOCK_ISSUE_CHECK_MAP_ALL_FALSE = {
+        ConcernCause.CONFIG: lambda x: False,
+        ConcernCause.IMPORT: lambda x: False,
+        ConcernCause.SERVICE: lambda x: False,
+        ConcernCause.HOSTCOMPONENT: lambda x: False,
+        ConcernCause.REQUIREMENT: lambda x: False,
+    }
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.hierarchy = generate_hierarchy(bind_to_cluster=False)
+        self.cluster = self.hierarchy["cluster"]
+        self.service = self.hierarchy["service"]
+        self.component = self.hierarchy["component"]
+        self.hostprovider = self.hierarchy["provider"]
+        self.host = self.hierarchy["host"]
+
+        for object_ in self.hierarchy.values():
+            create_issue(object_, ConcernCause.CONFIG)
+            tree = Tree(object_)
+            self.add_lock(
+                owner=object_, affected_objects=map(attrgetter("value"), tree.get_all_affected(node=tree.built_from))
+            )
+
+    def add_lock(self, owner: ADCMEntity, affected_objects: Iterable[ADCMEntity]):
+        """Check out lock_affected_objects"""
+        lock = ConcernItem.objects.create(
+            type=ConcernType.LOCK.value,
+            name=None,
+            reason=f"Lock from {owner.__class__.__name__} {owner.id}",
+            blocking=True,
+            owner=owner,
+            cause=ConcernCause.JOB.value,
+        )
+        for obj in affected_objects:
+            add_concern_to_object(object_=obj, concern=lock)
+
+    def test_map_host_to_cluster(self) -> None:
+        concerns_before = self.host.concerns.all()
+        self.assertEqual(len(concerns_before), 4)
+        self.assertEqual(
+            set(map(attrgetter("owner_type"), concerns_before)),
+            {self.hostprovider.content_type, self.host.content_type},
+        )
+
+        with patch("cm.issue._issue_check_map", self.MOCK_ISSUE_CHECK_MAP_ALL_FALSE):
+            perform_host_to_cluster_map(self.cluster.id, [self.host.id], status_service=notify)
+
+        self.host.refresh_from_db()
+        concerns_after = self.host.concerns.all()
+        self.assertEqual(len(concerns_after), 4)
+        self.assertEqual(
+            set(map(attrgetter("owner_type"), concerns_after)), {self.hostprovider.content_type, self.host.content_type}
+        )

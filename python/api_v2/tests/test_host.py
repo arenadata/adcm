@@ -11,7 +11,6 @@
 # limitations under the License.
 from unittest.mock import patch
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import Action, Host, HostComponent, HostProvider, ServiceComponent
 from django.urls import reverse
 from rest_framework.status import (
@@ -22,6 +21,8 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestHost(BaseAPITestCase):
@@ -210,12 +211,110 @@ class TestHost(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["maintenance_mode"], "on")
 
+    def test_filter_is_host_in_cluster_success(self):
+        host2 = self.add_host(
+            bundle=self.provider_bundle,
+            description="description",
+            provider=self.provider,
+            fqdn="test_host_2",
+            cluster=self.cluster_1,
+        )
+
+        response = self.client.get(
+            path=reverse(viewname="v2:host-list"),
+            data={"isInCluster": True},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["id"], host2.pk)
+        self.assertEqual(response.json()["results"][0]["cluster"]["name"], self.cluster_1.name)
+
+    def test_filter_is_host_not_in_cluster_success(self):
+        host2 = self.add_host(
+            bundle=self.provider_bundle, description="description", provider=self.provider, fqdn="test_host_2"
+        )
+        self.add_host_to_cluster(self.cluster_1, host=host2)
+
+        response = self.client.get(
+            path=reverse(viewname="v2:host-list"),
+            data={"isInCluster": False},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["id"], self.host.pk)
+        self.assertEqual(response.json()["results"][0]["cluster"], None)
+
+    def test_hostprovider_filter(self):
+        second_provider = self.add_provider(bundle=self.provider_bundle, name="second_provider", description="provider")
+        host2 = self.add_host(
+            bundle=self.provider_bundle, description="description", provider=second_provider, fqdn="test_host_2"
+        )
+
+        response = self.client.get(
+            path=reverse(viewname="v2:host-list"),
+            data={"hostproviderName": second_provider.name},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["id"], host2.pk)
+
+    def test_ordering_by_default_success(self):
+        self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_5")
+        self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2")
+
+        response = self.client.get(
+            path=reverse(viewname="v2:host-list"),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 3)
+        self.assertListEqual(
+            ["test_host", "test_host_2", "test_host_5"],
+            [host["name"] for host in response.json()["results"]],
+        )
+
+    def test_ordering_by_id_desc_success(self):
+        host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_6")
+        host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3")
+
+        response = self.client.get(path=reverse(viewname="v2:host-list"), data={"ordering": "-id"})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 3)
+        self.assertListEqual(
+            [host_3.pk, host_2.pk, self.host.pk],
+            [host["id"] for host in response.json()["results"]],
+        )
+
 
 class TestClusterHost(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
         self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host")
+        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second-host")
+        self.control_free_host = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="not-bound-host"
+        )
+        self.control_host_same_cluster = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="bound-to-same-host", cluster=self.cluster_1
+        )
+        self.control_host_another_cluster = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="bound-to-another-host", cluster=self.cluster_2
+        )
+
+    def check_control_hosts(self) -> None:
+        self.control_free_host.refresh_from_db()
+        self.assertIsNone(self.control_free_host.cluster)
+
+        self.control_host_same_cluster.refresh_from_db()
+        self.assertEqual(self.control_host_same_cluster.cluster, self.cluster_1)
+
+        self.control_host_another_cluster.refresh_from_db()
+        self.assertEqual(self.control_host_another_cluster.cluster, self.cluster_2)
 
     def test_list_success(self):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
@@ -224,7 +323,7 @@ class TestClusterHost(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["count"], 2)
 
     def test_retrieve_success(self):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
@@ -247,6 +346,8 @@ class TestClusterHost(BaseAPITestCase):
         self.host.refresh_from_db()
         self.assertEqual(self.host.cluster, self.cluster_1)
 
+        self.check_control_hosts()
+
     def test_create_belonging_to_another_cluster_fail(self):
         self.add_host_to_cluster(cluster=self.cluster_2, host=self.host)
 
@@ -258,8 +359,34 @@ class TestClusterHost(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertDictEqual(
             response.json(),
-            {"code": "FOREIGN_HOST", "desc": "Host already linked to another cluster.", "level": "error"},
+            {
+                "code": "FOREIGN_HOST",
+                "desc": "At least one host is already linked to another cluster.",
+                "level": "error",
+            },
         )
+
+        self.check_control_hosts()
+
+    def test_create_already_added_fail(self) -> None:
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+
+        response = self.client.post(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"hostId": self.host.pk},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "HOST_CONFLICT",
+                "desc": "At least one host is already associated with this cluster.",
+                "level": "error",
+            },
+        )
+
+        self.check_control_hosts()
 
     def test_create_not_found_fail(self):
         response = self.client.post(
@@ -270,8 +397,105 @@ class TestClusterHost(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
             response.json(),
-            {"code": "BAD_REQUEST", "desc": 'host_id - Invalid pk "2" - object does not exist.;', "level": "error"},
+            {"code": "BAD_REQUEST", "desc": "At least one host does not exist.", "level": "error"},
         )
+
+        self.check_control_hosts()
+
+    def test_add_many_success(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data=[{"hostId": self.host.pk}, {"hostId": self.host_2.pk}],
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        data = response.json()
+
+        self.assertEqual(len(data), 2)
+
+        self.host.refresh_from_db()
+        self.assertEqual(self.host.cluster, self.cluster_1)
+
+        self.host_2.refresh_from_db()
+        self.assertEqual(self.host_2.cluster, self.cluster_1)
+
+        self.check_control_hosts()
+
+    def test_add_many_when_one_belongs_to_another_cluster_fail(self):
+        self.add_host_to_cluster(cluster=self.cluster_2, host=self.host)
+
+        response = self.client.post(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data=[{"hostId": self.host_2.pk}, {"hostId": self.host.pk}],
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "FOREIGN_HOST",
+                "desc": "At least one host is already linked to another cluster.",
+                "level": "error",
+            },
+        )
+
+        self.host.refresh_from_db()
+        self.assertEqual(self.host.cluster, self.cluster_2)
+
+        self.host_2.refresh_from_db()
+        self.assertIsNone(self.host_2.cluster)
+
+        self.check_control_hosts()
+
+    def test_add_many_when_one_is_already_added_fail(self) -> None:
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+
+        response = self.client.post(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data=[{"hostId": self.host_2.pk}, {"hostId": self.host.pk}],
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "HOST_CONFLICT",
+                "desc": "At least one host is already associated with this cluster.",
+                "level": "error",
+            },
+        )
+
+        self.host.refresh_from_db()
+        self.assertEqual(self.host.cluster, self.cluster_1)
+
+        self.host_2.refresh_from_db()
+        self.assertIsNone(self.host_2.cluster)
+
+        self.check_control_hosts()
+
+    def test_add_many_when_one_is_not_found_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data=[
+                {"hostId": self.host_2.pk},
+                {"hostId": self.host.pk},
+                {"hostId": self.get_non_existent_pk(model=Host)},
+            ],
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(),
+            {"code": "BAD_REQUEST", "desc": "At least one host does not exist.", "level": "error"},
+        )
+
+        self.host.refresh_from_db()
+        self.assertIsNone(self.host.cluster)
+
+        self.host_2.refresh_from_db()
+        self.assertIsNone(self.host_2.cluster)
+
+        self.check_control_hosts()
 
     def test_maintenance_mode(self):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
@@ -285,6 +509,37 @@ class TestClusterHost(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["maintenance_mode"], "on")
+
+    def test_ordering_by_default_success(self):
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
+
+        response = self.client.get(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 3)
+        self.assertListEqual(
+            ["bound-to-same-host", "second-host", "test_host"],
+            [host["name"] for host in response.json()["results"]],
+        )
+
+    def test_ordering_by_id_desc_success(self):
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
+
+        response = self.client.get(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"ordering": "-id"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 3)
+        self.assertListEqual(
+            [self.control_host_same_cluster.pk, self.host_2.pk, self.host.pk],
+            [host["id"] for host in response.json()["results"]],
+        )
 
 
 class TestHostActions(BaseAPITestCase):

@@ -18,7 +18,7 @@ from django.db import migrations
 def migrate_nginx_logrotate_config(apps, schema_editor) -> None:
     adcm_model = apps.get_model("cm", "ADCM")
     config_log_model = apps.get_model("cm", "ConfigLog")
-    prototype_config_model = apps.get_model("cm", "PrototypeConfig")
+    prototype_config_model = apps.get_model("cm", "PrototypeConfig")  # noqa: F841
     logrotate_conf_field_name = "logrotate"
 
     try:

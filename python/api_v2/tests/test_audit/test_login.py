@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditSession, AuditSessionLoginResult
-from rbac.services.user import create_user
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED
+from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestLoginAudit(BaseAPITestCase):
@@ -26,7 +26,7 @@ class TestLoginAudit(BaseAPITestCase):
         self.target_url_paths = [reverse(viewname="v2:token"), reverse(viewname="v2:login")]
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = create_user(**self.test_user_credentials)
+        self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_login_success(self):
         for url_path in self.target_url_paths:
@@ -64,7 +64,7 @@ class TestLoginAudit(BaseAPITestCase):
             with self.subTest(msg=f"Login account disabled for `{url_path}`"):
                 response: Response = self.client.post(path=url_path, data=self.test_user_credentials)
 
-                self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
+                self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
                 self.check_last_audit_record(
                     model=AuditSession,
                     user__username=self.test_user_credentials["username"],

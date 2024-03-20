@@ -1,0 +1,21 @@
+{
+  "config": {
+    "integer": {{ config_integer | default(10) }},
+    "password": "password",
+    "string": "string",
+    "list": [
+      "value1",
+      "value2",
+      "value3"
+    ]
+  },
+  "name": "{{ name | default('cluster_1') }}",
+  "id": {{ id }},
+  "version": "1.0",
+  "edition": "community",
+  "state": "created",
+  "multi_state": [],
+  "before_upgrade": {
+    "state": null
+  }
+}

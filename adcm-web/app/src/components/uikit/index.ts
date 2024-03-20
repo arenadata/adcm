@@ -57,6 +57,7 @@ import Spinner, { SpinnerPanel } from '@uikit/Spinner/Spinner';
 import Tooltip from '@uikit/Tooltip/Tooltip';
 import ToolbarPanel from './ToolbarPanel/ToolbarPanel';
 import ActionMenu from './ActionMenu/ActionMenu';
+import TableBigTextCell from './Table/TableCell/TableBigTextCell';
 
 export {
   ActionMenu,
@@ -109,6 +110,7 @@ export {
   Switch,
   Table,
   TableRow,
+  TableBigTextCell,
   TableCell,
   TableCellProps,
   TableColumn,

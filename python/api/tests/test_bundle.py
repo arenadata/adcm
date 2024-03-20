@@ -13,18 +13,15 @@
 from pathlib import Path
 from unittest.mock import patch
 
+from adcm.tests.base import BaseTestCase
 from cm.models import Bundle, Prototype
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 
-from adcm.tests.base import BaseTestCase
-
 
 class TestBundle(BaseTestCase):
-    # pylint: disable=too-many-public-methods
-
     def setUp(self) -> None:
         super().setUp()
 
@@ -154,7 +151,7 @@ class TestBundle(BaseTestCase):
         self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
 
     def test_load_servicemap(self):
-        with patch("api.stack.views.load_service_map"):
+        with patch("cm.services.status.notify.reset_hc_map"):
             response: Response = self.client.put(
                 path=reverse(viewname="v1:load-servicemap"),
             )

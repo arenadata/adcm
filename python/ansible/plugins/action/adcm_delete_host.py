@@ -10,11 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=wrong-import-order,wrong-import-position
 
-from __future__ import absolute_import, division, print_function
-
-__metaclass__ = type  # pylint: disable=invalid-name
 
 ANSIBLE_METADATA = {"metadata_version": "1.1", "supported_by": "Arenadata"}
 
@@ -39,15 +35,16 @@ RETURN = r"""
 import sys
 
 from ansible.errors import AnsibleError
-
 from ansible.plugins.action import ActionBase
 
 sys.path.append("/adcm/python")
-import adcm.init_django  # pylint: disable=unused-import
-import cm.api
+
+import adcm.init_django  # noqa: F401, isort:skip
+
 from cm.ansible_plugin import get_object_id_from_context
 from cm.errors import AdcmEx
 from cm.logger import logger
+import cm.api
 
 
 class ActionModule(ActionBase):

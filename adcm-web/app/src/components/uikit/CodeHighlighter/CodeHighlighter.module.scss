@@ -96,6 +96,12 @@
   }
 }
 
+.fallbackPre {
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+}
+
 .highlighter_font-params {
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;

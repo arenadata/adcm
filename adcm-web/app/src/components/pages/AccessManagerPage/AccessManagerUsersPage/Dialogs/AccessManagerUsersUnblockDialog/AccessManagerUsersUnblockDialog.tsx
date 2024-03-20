@@ -31,7 +31,7 @@ const AccessManagerUsersUnblockDialog: React.FC = () => {
         onAction={handleConfirmDialog}
         actionButtonLabel="Unblock"
       >
-        User will be unblocked and able to access their account. All failure login attempts will be reset to 0
+        Selected user will be unblocked and able to access their account
       </Dialog>
     </>
   );

@@ -10,14 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-import os
 from collections.abc import Mapping
 from pathlib import Path
 from secrets import token_hex
 from typing import Any, Iterable, Protocol, TypeVar
-
-from django.conf import settings
+import os
+import json
 
 
 class WithPK(Protocol):
@@ -32,26 +30,26 @@ def build_id_object_mapping(objects: Iterable[ObjectWithPk]) -> dict[int, Object
 
 
 def dict_json_get_or_create(path: str | Path, field: str, value: Any = None) -> Any:
-    with open(path, encoding=settings.ENCODING_UTF_8) as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
 
     if field not in data:
         data[field] = value
-        with open(path, "w", encoding=settings.ENCODING_UTF_8) as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f)
 
     return data[field]
 
 
-def get_adcm_token() -> str:
-    if not settings.ADCM_TOKEN_FILE.is_file():
-        settings.ADCM_TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with open(file=settings.ADCM_TOKEN_FILE, mode="w", encoding=settings.ENCODING_UTF_8) as f:
+def get_adcm_token(token_path: Path) -> str:
+    if not token_path.is_file():
+        token_path.parent.mkdir(parents=True, exist_ok=True)
+        with token_path.open(mode="w", encoding="utf-8") as f:
             f.write(token_hex(20))
 
-    with open(file=settings.ADCM_TOKEN_FILE, encoding=settings.ENCODING_UTF_8) as f:
+    with token_path.open(encoding="utf-8") as f:
         adcm_token = f.read().strip()
-        adcm_token.encode(encoding="idna").decode(encoding=settings.ENCODING_UTF_8)
+        adcm_token.encode(encoding="idna").decode(encoding="utf-8")
 
     return adcm_token
 
@@ -101,7 +99,7 @@ def dict_to_obj(dictionary: dict, obj: Any, keys: Iterable) -> Any:
     return obj
 
 
-def obj_ref(obj: type["ADCMEntity"]) -> str:
+def obj_ref(obj: type["ADCMEntity"]) -> str:  # noqa: F821
     if hasattr(obj, "name"):
         name = obj.name
     elif hasattr(obj, "fqdn"):

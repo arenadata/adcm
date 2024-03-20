@@ -10,21 +10,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=wrong-import-order
-
+from logging import getLogger
 import os
-import signal
-import subprocess
 import sys
 import time
-from logging import getLogger
+import signal
+import subprocess
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django  # noqa: F401, isort:skip
 
 from cm.errors import AdcmEx
-from cm.job import finish_task, re_prepare_job
+from cm.job import finish_task, re_prepare_job, write_job_config
 from cm.logger import logger
-from cm.models import JobLog, JobStatus, LogStorage, TaskLog
+from cm.models import ADCM, JobLog, JobStatus, LogStorage, TaskLog
+from cm.services.job.config import get_job_config
+from cm.services.job.utils import JobScope
 from cm.status_api import send_task_status_update_event
 from cm.utils import get_env_with_venv_path
 from django.conf import settings
@@ -48,7 +48,7 @@ def terminate_job(task, jobs):
         finish_task(task, None, JobStatus.ABORTED)
 
 
-def terminate_task(signum, frame):  # pylint: disable=unused-argument
+def terminate_task(signum, frame):  # noqa: ARG001
     logger.info("cancel task #%s, signal: #%s", TASK_ID, signum)
     task = TaskLog.objects.get(id=TASK_ID)
     jobs = JobLog.objects.filter(task_id=TASK_ID)
@@ -80,13 +80,12 @@ def run_job(task_id, job_id, err_file):
     logger.info("task run job cmd: %s", " ".join(cmd))
 
     try:
-        # pylint: disable=consider-using-with
+        # noqa: SIM115
         proc = subprocess.Popen(
             args=cmd, stderr=err_file, env=get_env_with_venv_path(venv=TaskLog.objects.get(id=task_id).action.venv)
         )
-        res = proc.wait()
-        return res
-    except Exception as error:  # pylint: disable=broad-except
+        return proc.wait()  # noqa: TRY300
+    except Exception as error:  # noqa: BLE001
         logger.error("exception running job %s: %s", job_id, error)
         return 1
 
@@ -104,7 +103,7 @@ def set_log_body(job):
         LogStorage.objects.filter(job=job, name=log_storage.name, type=log_storage.type).update(body=body)
 
 
-def run_task(task_id: int, args: str | None = None) -> None:  # pylint: disable=too-many-statements,too-many-branches
+def run_task(task_id: int, args: str | None = None) -> None:
     logger.debug("task_runner.py called as: %s", sys.argv)
     try:
         task = TaskLog.objects.get(id=task_id)
@@ -128,70 +127,78 @@ def run_task(task_id: int, args: str | None = None) -> None:  # pylint: disable=
 
         return
 
-    err_file = open(  # pylint: disable=consider-using-with
-        settings.LOG_DIR / "job_runner.err",
-        "a+",
-        encoding=settings.ENCODING_UTF_8,
-    )
+    with open(settings.LOG_DIR / "job_runner.err", mode="a+", encoding=settings.ENCODING_UTF_8) as err_file:
+        logger.info("run task #%s", task_id)
 
-    logger.info("run task #%s", task_id)
+        job = None
+        count = 0
+        res = 0
 
-    job = None
-    count = 0
-    res = 0
-    for job in jobs:
-        try:
-            job.refresh_from_db()
-            if args == "restart" and job.status == JobStatus.SUCCESS:
-                logger.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
-                continue
+        # It needs to be defined outside of jobs loop, because task_object can be deleted during job execution
+        task_object = task.task_object
 
-            task.refresh_from_db()
-            re_prepare_job(task, job)
-            res = run_job(task.id, job.id, err_file)
-            set_log_body(job)
-
-            # For multi jobs task object state and/or config can be changed by adcm plugins
-            if task.task_object is not None:
-                try:
-                    task.task_object.refresh_from_db()
-                except ObjectDoesNotExist:
-                    task.object_id = 0
-                    task.object_type = None
-
-            job.refresh_from_db()
-            count += 1
-            if res != 0:
-                task.refresh_from_db()
-                if job.status == JobStatus.ABORTED and task.status != JobStatus.ABORTED:
+        for job in jobs:
+            try:
+                job.refresh_from_db()
+                if args == "restart" and job.status == JobStatus.SUCCESS:
+                    logger.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
                     continue
 
+                task.refresh_from_db()
+
+                job_scope = JobScope(job_id=job.pk, object=task_object)
+                # This should be reworked somehow,
+                # because preparation of job depends on its type,
+                # not parent object.
+                # For now, I don't see another point where it can be patched
+                # without reworking the whole job preparation tree
+                if not isinstance(job_scope.object, ADCM):
+                    re_prepare_job(job_scope=job_scope)
+                else:
+                    write_job_config(job_id=job_scope.job_id, config=get_job_config(job_scope=job_scope))
+
+                res = run_job(task.id, job.id, err_file)
+                set_log_body(job)
+
+                # For multi jobs task object state and/or config can be changed by adcm plugins
+                if task.task_object is not None:
+                    try:
+                        task.task_object.refresh_from_db()
+                    except ObjectDoesNotExist:
+                        task.object_id = 0
+                        task.object_type = None
+
+                job.refresh_from_db()
+                count += 1
+                if res != 0:
+                    task.refresh_from_db()
+                    if job.status == JobStatus.ABORTED and task.status != JobStatus.ABORTED:
+                        continue
+
+                    break
+            except Exception:  # noqa: BLE001ion-caught
+                error_logger.exception("Task #%s: Error processing job #%s", task_id, job.pk)
+                res = 1
                 break
-        except Exception:  # pylint: disable=broad-exception-caught
-            error_logger.exception("Task #%s: Error processing job #%s", task_id, job.pk)
-            res = 1
-            break
 
-    if job is not None:
-        job.refresh_from_db()
+        if job is not None:
+            job.refresh_from_db()
 
-    if job is not None and job.status == JobStatus.ABORTED:
-        finish_task(task, job, JobStatus.ABORTED)
-    elif res == 0:
-        finish_task(task, job, JobStatus.SUCCESS)
-    else:
-        finish_task(task, job, JobStatus.FAILED)
-
-    err_file.close()
+        if job is not None and job.status == JobStatus.ABORTED:
+            finish_task(task, job, JobStatus.ABORTED)
+        elif res == 0:
+            finish_task(task, job, JobStatus.SUCCESS)
+        else:
+            finish_task(task, job, JobStatus.FAILED)
 
     logger.info("finish task #%s, ret %s", task_id, res)
 
 
 def do_task():
-    global TASK_ID  # pylint: disable=global-statement
+    global TASK_ID
 
     if len(sys.argv) < 2:
-        print(f"\nUsage:\n{os.path.basename(sys.argv[0])} task_id [restart]\n")
+        print(f"\nUsage:\n{os.path.basename(sys.argv[0])} task_id [restart]\n")  # noqa: PTH119
         sys.exit(4)
     elif len(sys.argv) > 2:
         TASK_ID = sys.argv[1]

@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from hashlib import sha256
+from pathlib import Path
 
 from cm.checker import FormatError, check
 from cm.errors import raise_adcm_ex
@@ -19,11 +20,15 @@ from cm.models import Action, Bundle, Host, ProductCategory, get_model_by_type
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from rbac.models import Permission, Policy, Role, RoleMigration, RoleTypes
-from rbac.settings import api_settings
 from ruyaml import round_trip_load
 from ruyaml.parser import ParserError
 from ruyaml.scanner import ScannerError
+
+from rbac.models import Permission, Policy, Role, RoleMigration, RoleTypes
+
+_BASE_DIR = Path(__file__).parent
+ROLE_SPEC = _BASE_DIR / "role_spec.yaml"
+ROLE_SCHEMA = _BASE_DIR / "role_schema.yaml"
 
 
 def upgrade(data: dict) -> None:
@@ -120,7 +125,7 @@ def upgrade_role(role_data: dict) -> Role:
     return new_role
 
 
-def get_role_spec(data: str, schema: str) -> dict:
+def get_role_spec(data: Path, schema: Path) -> dict:
     """
     Read and parse roles specification from role_spec.yaml file.
     Specification file structure is checked against role_schema.yaml file.
@@ -128,7 +133,7 @@ def get_role_spec(data: str, schema: str) -> dict:
     """
 
     try:
-        with open(file=data, encoding=settings.ENCODING_UTF_8) as f:
+        with data.open(encoding=settings.ENCODING_UTF_8) as f:
             data = round_trip_load(stream=f)
     except FileNotFoundError:
         raise_adcm_ex(code="INVALID_ROLE_SPEC", msg=f'Can not open role file "{data}"')
@@ -136,7 +141,7 @@ def get_role_spec(data: str, schema: str) -> dict:
     except (ParserError, ScannerError, NotImplementedError) as e:
         raise_adcm_ex(code="INVALID_ROLE_SPEC", msg=f'YAML decode "{data}" error: {e}')
 
-    with open(file=schema, encoding=settings.ENCODING_UTF_8) as f:
+    with schema.open(encoding=settings.ENCODING_UTF_8) as f:
         rules = round_trip_load(stream=f)
 
     try:
@@ -163,10 +168,7 @@ def prepare_hidden_roles(bundle: Bundle) -> dict:
         name = f"{name_prefix} {action.display_name}"
         model = get_model_by_type(action.prototype.type)
 
-        if action.prototype.type == "component":
-            serv_name = f"service_{action.prototype.parent.name}_"
-        else:
-            serv_name = ""
+        serv_name = f"service_{action.prototype.parent.name}_" if action.prototype.type == "component" else ""
 
         role_name = (
             f"{bundle.name}_{bundle.version}_{bundle.edition}_{serv_name}"
@@ -285,7 +287,7 @@ def prepare_action_roles(bundle: Bundle) -> None:
 
 
 def init_roles() -> str:
-    role_data = get_role_spec(data=api_settings.ROLE_SPEC, schema=api_settings.ROLE_SCHEMA)
+    role_data = get_role_spec(data=ROLE_SPEC, schema=ROLE_SCHEMA)
     for role in role_data["roles"]:
         if "child" not in role:
             continue

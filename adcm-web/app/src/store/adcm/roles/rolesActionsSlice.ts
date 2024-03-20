@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { RequestError, AdcmRolesApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { getRoles } from './rolesSlice';
 import { AdcmCreateRolePayload, AdcmRole, AdcmRoleType, UpdateRolePayload } from '@models/adcm';
@@ -40,7 +40,7 @@ const createInitialState = (): AdcmRolesActionState => ({
 const deleteRoleWithUpdate = createAsyncThunk('adcm/rolesActions/deleteRoles', async (id: number, thunkAPI) => {
   try {
     await AdcmRolesApi.deleteRole(id);
-    thunkAPI.dispatch(showInfo({ message: 'Role has been deleted' }));
+    thunkAPI.dispatch(showSuccess({ message: 'Role has been deleted' }));
     await thunkAPI.dispatch(getRoles());
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));

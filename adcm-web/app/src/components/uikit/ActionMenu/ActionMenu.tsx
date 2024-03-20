@@ -1,5 +1,5 @@
 import React, { cloneElement, useRef, useState } from 'react';
-import { useForwardRef } from '@uikit/hooks/useForwardRef';
+import { useForwardRef } from '@hooks';
 import { SingleSelectOptions } from '@uikit/Select/Select.types';
 import { PopoverOptions } from '@uikit/Popover/Popover.types';
 import { ChildWithRef } from '@uikit/types/element.types';

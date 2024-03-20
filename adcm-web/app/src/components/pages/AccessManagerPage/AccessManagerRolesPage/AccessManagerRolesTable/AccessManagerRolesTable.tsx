@@ -1,4 +1,4 @@
-import { Table, TableCell, IconButton, Button, ExpandableRowComponent } from '@uikit';
+import { Table, TableCell, IconButton, Button, ExpandableRowComponent, TableBigTextCell } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { columns } from './AccessManagerRolesTable.constants';
 import { setSortParams } from '@store/adcm/roles/rolesTableSlice';
@@ -7,14 +7,15 @@ import { openDeleteDialog, openUpdateDialog } from '@store/adcm/roles/rolesActio
 import { useState } from 'react';
 import AccessManagerRolesTableExpandedContent from './AccessManagerRolesTableExpandedContent/AccessManagerRolesTableExpandedContent';
 import s from './AccessManagerRolesTable.module.scss';
-import cn from 'classnames';
 import { AdcmRole } from '@models/adcm';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
+import { orElseGet } from '@utils/checkUtils';
 
 const AccessManagerRolesTable = () => {
   const dispatch = useDispatch();
 
   const roles = useStore((s) => s.adcm.roles.roles);
-  const isLoading = useStore((s) => s.adcm.roles.isLoading);
+  const isLoading = useStore((s) => isShowSpinner(s.adcm.roles.loadState));
   const sortParams = useStore((s) => s.adcm.rolesTable.sortParams);
 
   const [expandableRows, setExpandableRows] = useState<Record<number, boolean>>({});
@@ -44,8 +45,8 @@ const AccessManagerRolesTable = () => {
       columns={columns}
       sortParams={sortParams}
       onSorting={handleSorting}
-      className={s.rolesTable}
       variant="secondary"
+      className={s.tableRoles}
     >
       {roles.map((role) => {
         return (
@@ -55,12 +56,13 @@ const AccessManagerRolesTable = () => {
             isExpanded={expandableRows[role.id] || false}
             isInactive={!role.children?.length}
             expandedContent={<AccessManagerRolesTableExpandedContent children={role.children || []} />}
-            className={cn(s.rolesTable__roleRow, { [s.expandedRow]: expandableRows[role.id] })}
-            expandedClassName={s.rolesTable__expandedRoleRow}
           >
-            <TableCell className={s.rolesTable__roleRow__roleName}>{role.displayName}</TableCell>
+            <TableCell className={s.roleName}>{role.displayName}</TableCell>
             <TableCell>{role.description}</TableCell>
-            <TableCell>{role.children?.map((child) => child.displayName).join(', ')}</TableCell>
+            <TableBigTextCell
+              isMultilineText
+              value={orElseGet(role.children?.map((child) => child.displayName).join(', '))}
+            />
             <TableCell>
               <Button
                 className={expandableRows[role.id] ? 'is-active' : ''}

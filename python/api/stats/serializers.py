@@ -10,9 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.serializers import IntegerField
-
 from adcm.serializers import EmptySerializer
+from rest_framework.serializers import IntegerField
 
 
 class StatsSerializer(EmptySerializer):

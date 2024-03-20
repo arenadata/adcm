@@ -9,6 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from django.db.models import Model
+from django.views import View
+from rest_framework.generics import GenericAPIView
+from rest_framework.response import Response
+
 from audit.cases.adcm import adcm_case
 from audit.cases.bundle import bundle_case
 from audit.cases.cluster import cluster_case
@@ -21,13 +26,9 @@ from audit.cases.rbac import rbac_case
 from audit.cases.service import service_case
 from audit.cases.stack import stack_case
 from audit.models import AuditObject, AuditOperation
-from django.db.models import Model
-from django.views import View
-from rest_framework.generics import GenericAPIView
-from rest_framework.response import Response
 
 
-def get_audit_operation_and_object(  # pylint: disable=too-many-branches
+def get_audit_operation_and_object(
     view: View | GenericAPIView,
     response: Response | None,
     deleted_obj: Model,
@@ -48,7 +49,7 @@ def get_audit_operation_and_object(  # pylint: disable=too-many-branches
             deleted_obj=deleted_obj,
         )
     elif (
-        "cluster" in path  # pylint: disable=too-many-boolean-expressions
+        "cluster" in path
         or ("clusters" in path and "config-groups" not in path)
         or "component" in path
         or ("host" in path and "config" in path)

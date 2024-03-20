@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.tests.base import BaseAPITestCase
 from django.urls import reverse
 from rbac.models import Group, OriginType
 from rest_framework.response import Response
@@ -20,6 +19,8 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
 )
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestGroupAPI(BaseAPITestCase):
@@ -166,3 +167,28 @@ class TestGroupAPI(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_update_add_remove_users_success(self) -> None:
+        group = Group.objects.create(name="test_group_2")
+        user_1 = self.create_user(
+            user_data={"username": "somebody", "password": "very_long_veryvery", "groups": [{"id": group.pk}]}
+        )
+        user_2 = self.create_user(user_data={"username": "somebody22", "password": "very_long_veryvery", "groups": []})
+        self.assertEqual(group.user_set.count(), 1)
+
+        update_path = reverse(viewname="v2:rbac:group-detail", kwargs={"pk": group.pk})
+        response = self.client.patch(path=update_path, data={"users": []})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()["users"]), 0)
+
+        response = self.client.patch(path=update_path, data={"users": [user_1.pk, user_2.pk]})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()["users"]), 2)
+
+        response = self.client.patch(path=update_path, data={"users": [user_2.pk]})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()["users"]), 1)
+        self.assertEqual(response.json()["users"][0]["id"], user_2.pk)

@@ -10,12 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.job.permissions import JobPermissions
-from api_v2.job.serializers import JobRetrieveSerializer
-from api_v2.task.serializers import JobListSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from adcm.permissions import VIEW_JOBLOG_PERMISSION
+from adcm.serializers import EmptySerializer
 from audit.utils import audit
 from cm.models import JobLog
+from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
@@ -23,17 +22,23 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
-from adcm.permissions import VIEW_JOBLOG_PERMISSION
-from adcm.serializers import EmptySerializer
+from api_v2.job.permissions import JobPermissions
+from api_v2.job.serializers import JobRetrieveSerializer
+from api_v2.task.serializers import JobListSerializer
+from api_v2.views import CamelCaseGenericViewSet
 
 
-class JobViewSet(
-    PermissionListMixin, ListModelMixin, RetrieveModelMixin, CreateModelMixin, CamelCaseGenericViewSet
-):  # pylint: disable=too-many-ancestors
+class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, CreateModelMixin, CamelCaseGenericViewSet):
     queryset = JobLog.objects.select_related("task__action").order_by("pk")
     filter_backends = []
     permission_classes = [JobPermissions]
     permission_required = [VIEW_JOBLOG_PERMISSION]
+
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+        if not self.request.user.is_superuser:
+            queryset = queryset.exclude(task__object_type=ContentType.objects.get(app_label="cm", model="adcm"))
+        return queryset
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -46,7 +51,7 @@ class JobViewSet(
 
     @audit
     @action(methods=["post"], detail=True)
-    def terminate(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def terminate(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         job = self.get_object()
         job.cancel()
 

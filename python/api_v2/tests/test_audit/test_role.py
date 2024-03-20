@@ -11,11 +11,9 @@
 # limitations under the License.
 
 
-from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditObject
 from rbac.models import Role
 from rbac.services.role import role_create
-from rbac.services.user import create_user
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -27,13 +25,15 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
+from api_v2.tests.base import BaseAPITestCase
+
 
 class TestRoleAudit(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = create_user(**self.test_user_credentials)
+        self.test_user = self.create_user(**self.test_user_credentials)
 
         self.role_create_data = {
             "displayName": "Custom `view cluster configurations` role",

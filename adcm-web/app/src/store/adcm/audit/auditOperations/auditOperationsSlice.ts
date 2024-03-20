@@ -5,11 +5,12 @@ import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmAuditApi } from '@api/adcm/audit';
 import { localDateToServerDate } from '@utils/date/dateConvertUtils';
+import { LoadState } from '@models/loadState';
 
 type AdcmAuditOperationsState = {
   auditOperations: AdcmAuditOperation[];
   totalCount: number;
-  isLoading: boolean;
+  loadState: LoadState;
 };
 
 const loadAuditOperations = createAsyncThunk('adcm/auditOperations/loadAuditOperations', async (arg, thunkAPI) => {
@@ -34,7 +35,7 @@ const loadAuditOperations = createAsyncThunk('adcm/auditOperations/loadAuditOper
 });
 
 const getAuditOperations = createAsyncThunk('adcm/auditOperations/getAuditOperations', async (arg, thunkAPI) => {
-  thunkAPI.dispatch(setIsLoading(true));
+  thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
   await thunkAPI.dispatch(loadAuditOperations());
@@ -43,7 +44,7 @@ const getAuditOperations = createAsyncThunk('adcm/auditOperations/getAuditOperat
     startDate,
     delay: defaultSpinnerDelay,
     callback: () => {
-      thunkAPI.dispatch(setIsLoading(false));
+      thunkAPI.dispatch(setLoadState(LoadState.Loaded));
     },
   });
 });
@@ -58,15 +59,15 @@ const refreshAuditOperations = createAsyncThunk(
 const createInitialState = (): AdcmAuditOperationsState => ({
   auditOperations: [],
   totalCount: 0,
-  isLoading: true,
+  loadState: LoadState.NotLoaded,
 });
 
 const auditOperationsSlice = createSlice({
   name: 'adcm/auditOperations',
   initialState: createInitialState(),
   reducers: {
-    setIsLoading(state, action) {
-      state.isLoading = action.payload;
+    setLoadState(state, action) {
+      state.loadState = action.payload;
     },
     cleanupAuditOperations() {
       return createInitialState();
@@ -83,7 +84,7 @@ const auditOperationsSlice = createSlice({
   },
 });
 
-const { setIsLoading, cleanupAuditOperations } = auditOperationsSlice.actions;
-export { getAuditOperations, cleanupAuditOperations, refreshAuditOperations };
+const { setLoadState, cleanupAuditOperations } = auditOperationsSlice.actions;
+export { getAuditOperations, cleanupAuditOperations, refreshAuditOperations, setLoadState };
 
 export default auditOperationsSlice.reducer;

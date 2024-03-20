@@ -1,8 +1,6 @@
-import { useSelector as useReduxSelector } from 'react-redux';
-import { StoreState } from '@store';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { TypedUseSelectorHook, useSelector as useReduxSelector } from 'react-redux';
+import type { AppStore } from '@store/store';
 
-type Selector<Selected> = (state: StoreState) => Selected;
-
-export const useStore = <Selected>(selector: Selector<Selected>) => {
-  return useReduxSelector<StoreState, Selected>(selector);
-};
+// Use instead of `useSelector` from 'react-redux
+export const useStore: TypedUseSelectorHook<AppStore> = useReduxSelector;

@@ -13,12 +13,7 @@
 from datetime import datetime
 from unittest.mock import patch
 
-from audit.models import (
-    AuditLog,
-    AuditLogOperationResult,
-    AuditLogOperationType,
-    AuditObjectType,
-)
+from adcm.tests.base import BaseTestCase
 from cm.models import ADCM, TaskLog
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
@@ -27,7 +22,12 @@ from rbac.models import User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_404_NOT_FOUND
 
-from adcm.tests.base import BaseTestCase
+from audit.models import (
+    AuditLog,
+    AuditLogOperationResult,
+    AuditLogOperationType,
+    AuditObjectType,
+)
 
 
 class TestTaskAudit(BaseTestCase):

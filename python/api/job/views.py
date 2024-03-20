@@ -10,10 +10,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
 import io
 import re
 import tarfile
-from pathlib import Path
+
+from adcm.permissions import check_custom_perm, get_object_for_user
+from adcm.utils import str_remove_non_alnum
+from audit.utils import audit
+from cm.job import restart_task
+from cm.models import ActionType, JobLog, LogStorage, TaskLog
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.http import HttpResponse
+from guardian.mixins import PermissionListMixin
+from rest_framework.decorators import action
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import DjangoModelPermissions
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
 
 from api.base_view import GenericUIViewSet
 from api.job.serializers import (
@@ -24,23 +40,7 @@ from api.job.serializers import (
     TaskRetrieveSerializer,
     TaskSerializer,
 )
-from audit.utils import audit
-from cm.job import restart_task
-from cm.models import ActionType, JobLog, LogStorage, TaskLog
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from django.http import HttpResponse
-from guardian.mixins import PermissionListMixin
-from rbac.viewsets import DjangoOnlyObjectPermissions
-from rest_framework.decorators import action
-from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-from rest_framework.permissions import DjangoModelPermissions
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
-
-from adcm.permissions import check_custom_perm, get_object_for_user
-from adcm.utils import str_remove_non_alnum
+from api.rbac.viewsets import DjangoOnlyObjectPermissions
 
 VIEW_TASKLOG_PERMISSION = "cm.view_tasklog"
 VIEW_JOBLOG_PERMISSION = "cm.view_joblog"
@@ -78,9 +78,7 @@ def get_task_download_archive_name(task: TaskLog) -> str:
     obj_name = None
     if task.object_type.name == "cluster":
         obj_name = task.task_object.name
-    elif task.object_type.name == "cluster object":
-        obj_name = task.task_object.cluster.name
-    elif task.object_type.name == "service component":
+    elif task.object_type.name == "cluster object" or task.object_type.name == "service component":
         obj_name = task.task_object.cluster.name
     elif task.object_type.name == "host provider":
         obj_name = task.task_object.name
@@ -135,7 +133,6 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
     return file_handler
 
 
-#  pylint:disable-next=too-many-ancestors
 class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
     queryset = JobLog.objects.select_related("task", "action").all()
     serializer_class = JobSerializer
@@ -153,11 +150,7 @@ class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Generi
         return queryset
 
     def get_permissions(self):
-        if self.action == "list":
-            permission_classes = (DjangoModelPermissions,)
-        else:
-            permission_classes = (DjangoOnlyObjectPermissions,)
-
+        permission_classes = (DjangoModelPermissions,) if self.action == "list" else (DjangoOnlyObjectPermissions,)
         return [permission() for permission in permission_classes]
 
     def get_serializer_class(self):
@@ -177,7 +170,6 @@ class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Generi
         return Response(status=HTTP_200_OK)
 
 
-#  pylint:disable-next=too-many-ancestors
 class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
     queryset = TaskLog.objects.select_related("action").all()
     serializer_class = TaskSerializer
@@ -231,7 +223,6 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Gener
         return response
 
 
-#  pylint:disable-next=too-many-ancestors
 class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
     queryset = LogStorage.objects.all()
     serializer_class = LogStorageSerializer
@@ -267,10 +258,7 @@ class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin,
             filename = f"{job_pk}-{log_storage.name}.{log_storage.format}"
 
         filename = re.sub(r"\s+", "_", filename)
-        if log_storage.format == "txt":
-            mime_type = "text/plain"
-        else:
-            mime_type = "application/json"
+        mime_type = "text/plain" if log_storage.format == "txt" else "application/json"
 
         if log_storage.body is None:
             file_path = Path(

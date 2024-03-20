@@ -9,19 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from api_v2.imports.serializers import ImportPostSerializer
-from api_v2.imports.utils import cook_data_for_multibind, get_imports
-from api_v2.views import CamelCaseGenericViewSet
-from audit.utils import audit
-from cm.api import multi_bind
-from cm.models import Cluster, ClusterObject, PrototypeImport
-from rest_framework.mixins import CreateModelMixin, ListModelMixin
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
-
 from adcm.permissions import (
     CHANGE_IMPORT_PERM,
     VIEW_CLUSTER_BIND,
@@ -31,9 +18,22 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
+from audit.utils import audit
+from cm.api import multi_bind
+from cm.models import Cluster, ClusterObject, PrototypeImport
+from django.db.transaction import atomic
+from rest_framework.mixins import CreateModelMixin, ListModelMixin
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_201_CREATED
+
+from api_v2.imports.serializers import ImportPostSerializer
+from api_v2.imports.utils import cook_data_for_multibind, get_imports
+from api_v2.views import CamelCaseGenericViewSet
 
 
-class ImportViewSet(ListModelMixin, CreateModelMixin, CamelCaseGenericViewSet):  # pylint: disable=too-many-ancestors
+class ImportViewSet(ListModelMixin, CreateModelMixin, CamelCaseGenericViewSet):
     queryset = PrototypeImport.objects.all()
     permission_classes = [IsAuthenticated]
     ordering = ["id"]
@@ -67,12 +67,13 @@ class ImportViewSet(ListModelMixin, CreateModelMixin, CamelCaseGenericViewSet): 
 
         return obj
 
-    def list(self, request: Request, *args, **kwargs) -> Response:
+    def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         obj = self.get_object_and_check_perm(request=request)
         return self.get_paginated_response(data=self.paginate_queryset(queryset=get_imports(obj=obj)))
 
     @audit
-    def create(self, request, *args, **kwargs):
+    @atomic
+    def create(self, request, *args, **kwargs):  # noqa: ARG002
         obj = self.get_object_and_check_perm(request=request)
         serializer = self.get_serializer(data=request.data, many=True, context={"request": request, "cluster": obj})
         serializer.is_valid(raise_exception=True)

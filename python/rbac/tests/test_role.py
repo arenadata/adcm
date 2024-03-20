@@ -10,9 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import hashlib
 import json
+import hashlib
 
+from adcm.permissions import check_custom_perm
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.api import add_host_to_cluster
 from cm.errors import AdcmEx
 from cm.models import (
@@ -32,17 +34,15 @@ from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from init_db import init as init_adcm
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.status import HTTP_404_NOT_FOUND
+
 from rbac.models import Role, RoleTypes
 from rbac.roles import ModelRole
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
 from rbac.tests.test_base import RBACBaseTestCase
 from rbac.upgrade.role import prepare_action_roles
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.status import HTTP_404_NOT_FOUND
-
-from adcm.permissions import check_custom_perm
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class RoleModelTest(BaseTestCase):
@@ -247,7 +247,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         )
 
     def make_roles_list(self):
-        roles = [
+        return [
             # hidden action roles
             {
                 "name": "sample_bundle_1.0_community_cluster_Sample Cluster_cluster_action",
@@ -472,8 +472,6 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
             },
         ]
 
-        return roles
-
     def test_cook_roles(self):
         prepare_action_roles(self.bundle_1)
 
@@ -574,7 +572,6 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         self.assertEqual(sa_role_count, 6, "Roles missing from base roles")
 
 
-# pylint: disable=protected-access
 class TestMMRoles(RBACBaseTestCase):
     def setUp(self) -> None:
         super().setUp()

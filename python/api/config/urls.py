@@ -10,13 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.urls import path
+
 from api.config.views import (
     ConfigHistoryRestoreView,
     ConfigHistoryView,
     ConfigVersionView,
     ConfigView,
 )
-from django.urls import path
 
 urlpatterns = [
     path("", ConfigView.as_view(), name="object-config"),

@@ -11,10 +11,7 @@
 # limitations under the License.
 
 
-from api_v2.cluster.utils import get_depend_on
-from api_v2.concern.serializers import ConcernSerializer
-from api_v2.prototype.serializers import PrototypeRelatedSerializer
-from api_v2.prototype.utils import get_license_text
+from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import (
     Cluster,
@@ -24,7 +21,6 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
-from cm.status_api import get_obj_status
 from cm.upgrade import get_upgrade
 from cm.validators import ClusterUniqueValidator, StartMidEndValidator
 from django.conf import settings
@@ -35,11 +31,14 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
-from adcm.serializers import EmptySerializer
+from api_v2.cluster.utils import get_depend_on
+from api_v2.concern.serializers import ConcernSerializer
+from api_v2.prototype.serializers import PrototypeRelatedSerializer
+from api_v2.prototype.utils import get_license_text
+from api_v2.serializers import WithStatusSerializer
 
 
-class ClusterSerializer(ModelSerializer):
-    status = SerializerMethodField()
+class ClusterSerializer(WithStatusSerializer):
     prototype = PrototypeRelatedSerializer(read_only=True)
     concerns = ConcernSerializer(many=True, read_only=True)
     is_upgradable = SerializerMethodField()
@@ -60,10 +59,6 @@ class ClusterSerializer(ModelSerializer):
             "is_upgradable",
             "main_info",
         ]
-
-    @staticmethod
-    def get_status(cluster: Cluster) -> str:
-        return get_obj_status(obj=cluster)
 
     @staticmethod
     def get_is_upgradable(cluster: Cluster) -> bool:
@@ -165,38 +160,21 @@ class MappingSerializer(ModelSerializer):
         extra_kwargs = {"id": {"read_only": True}}
 
 
-class RelatedComponentStatusSerializer(ModelSerializer):
-    status = SerializerMethodField()
-
+class RelatedComponentStatusSerializer(WithStatusSerializer):
     class Meta:
         model = ServiceComponent
         fields = ["id", "name", "display_name", "status"]
 
-    @staticmethod
-    def get_status(instance: ServiceComponent) -> str:
-        return get_obj_status(obj=instance)
 
-
-class RelatedServicesStatusesSerializer(ModelSerializer):
-    status = SerializerMethodField()
+class RelatedServicesStatusesSerializer(WithStatusSerializer):
     components = RelatedComponentStatusSerializer(many=True, source="servicecomponent_set")
-
-    @staticmethod
-    def get_status(instance: ClusterObject) -> str:
-        return get_obj_status(obj=instance)
 
     class Meta:
         model = ClusterObject
         fields = ["id", "name", "display_name", "status", "components"]
 
 
-class RelatedHostsStatusesSerializer(ModelSerializer):
-    status = SerializerMethodField()
-
-    @staticmethod
-    def get_status(instance: ClusterObject) -> str:
-        return get_obj_status(obj=instance)
-
+class RelatedHostsStatusesSerializer(WithStatusSerializer):
     class Meta:
         model = Host
         fields = ["id", "name", "status"]

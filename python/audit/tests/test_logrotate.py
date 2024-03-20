@@ -12,7 +12,7 @@
 
 from datetime import datetime, timedelta
 
-from audit.models import AuditLog, AuditLogOperationResult, AuditLogOperationType
+from adcm.tests.base import BaseTestCase
 from cm.models import (
     ADCM,
     Bundle,
@@ -27,7 +27,7 @@ from django.core.management import call_command
 from django.utils import timezone
 from rbac.models import User
 
-from adcm.tests.base import BaseTestCase
+from audit.models import AuditLog, AuditLogOperationResult, AuditLogOperationType
 
 
 class TestLogrotate(BaseTestCase):

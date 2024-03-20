@@ -1,13 +1,13 @@
 import { useRef } from 'react';
 import { Icon } from '@uikit';
-import { ConfigurationNode } from '../../ConfigurationEditor.types';
+import { ConfigurationNodeView } from '../../ConfigurationEditor.types';
 import s from '../ConfigurationTree.module.scss';
 import cn from 'classnames';
-import { textToDataTestValue } from '@utils/dataTestUtils.ts';
+import { textToDataTestValue } from '@utils/dataTestUtils';
 
 export interface AddItemNodeContentProps {
-  node: ConfigurationNode;
-  onClick: (node: ConfigurationNode, nodeRef: React.RefObject<HTMLElement>) => void;
+  node: ConfigurationNodeView;
+  onClick: (node: ConfigurationNodeView, nodeRef: React.RefObject<HTMLElement>) => void;
   dataTest?: string;
 }
 

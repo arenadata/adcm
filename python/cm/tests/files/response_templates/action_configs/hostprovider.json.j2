@@ -1,0 +1,102 @@
+{
+  "adcm": {
+    "config": {
+      "global": {
+        "adcm_url": null,
+        "verification_public_key": "{{ stackdir }}/data/file/adcm.1.global.verification_public_key"
+      },
+      "statistics_collection": {
+        "url": "adcm-usage-ss.arenadata.io"
+      },
+      "google_oauth": {
+        "client_id": null,
+        "secret": null
+      },
+      "yandex_oauth": {
+        "client_id": null,
+        "secret": null
+      },
+      "ansible_settings": {
+        "forks": 5
+      },
+      "logrotate": null,
+      "audit_data_retention": {
+        "log_rotation_on_fs": 365,
+        "log_rotation_in_db": 365,
+        "config_rotation_in_db": 0,
+        "retention_period": 1825,
+        "data_archiving": false
+      },
+      "ldap_integration": null,
+      "auth_policy": {
+        "min_password_length": 12,
+        "max_password_length": 20,
+        "login_attempt_limit": 5,
+        "block_time": 5
+      }
+    }
+  },
+  "context": {
+    "provider_id": 1,
+    "type": "provider"
+  },
+  "env": {
+    "run_dir": "{{ datadir }}/run",
+    "log_dir": "{{ datadir }}/log",
+    "tmp_dir": "{{ datadir }}/run/{{ job_id }}/tmp",
+    "stack_dir": "{{ stackdir }}/data/bundle/{{ hostprovider_bundle.hash }}",
+    "status_api_token": "{{ token }}"
+  },
+  "job": {
+    "id": {{ job_id }},
+    "action": "with_config",
+    "job_name": "with_config",
+    "command": "with_config",
+    "script": "./playbook.yaml",
+    "verbose": false,
+    "playbook": "{{ stackdir }}/data/bundle/{{ hostprovider_bundle.hash }}/playbook.yaml",
+    "hostgroup": "PROVIDER",
+    "provider_id": 1,
+    "config": {
+      "boolean": true,
+      "secrettext": "awe\nsopme\n\ttext\n",
+      "list": [
+        "1",
+        "5",
+        "baset"
+      ],
+      "variant_inline": "f",
+      "plain_group": {
+        "file": "contente\t\n\n\n\tbest\n\t   ",
+        "map": {
+          "k": "v",
+          "key": "val"
+        },
+        "simple": "ingroup"
+      },
+      "integer": 4102,
+      "float": 23.43,
+      "string": "outside",
+      "password": "unbreakable",
+      "map": {
+        "see": "yes",
+        "no": "no"
+      },
+      "secretmap": {
+        "see": "dont",
+        "me": "you"
+      },
+      "json": "{\"hey\": [\"yooo\", 1]}",
+      "file": "filecontent",
+      "secretfile": "somesecrethere",
+      "variant_builtin": "host-1",
+      "activatable_group": {
+        "simple": "inactive",
+        "list": [
+          "one",
+          "two"
+        ]
+      }
+    }
+  }
+}

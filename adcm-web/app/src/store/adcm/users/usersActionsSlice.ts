@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { AdcmGroupsApi, AdcmUsersApi, RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { arePromisesResolved } from '@utils/promiseUtils';
 import { getUsers, refreshUsers } from './usersSlice';
@@ -23,6 +23,9 @@ interface AdcmUsersActionState {
   unblockDialog: {
     ids: number[];
   };
+  blockDialog: {
+    ids: number[];
+  };
   relatedData: {
     groups: AdcmGroup[];
   };
@@ -32,7 +35,11 @@ interface AdcmUsersActionState {
 const blockUsers = createAsyncThunk('adcm/usersActions/blockUsers', async (ids: number[], thunkAPI) => {
   try {
     if (arePromisesResolved(await Promise.allSettled(ids.map((id) => AdcmUsersApi.blockUser(id))))) {
-      thunkAPI.dispatch(showInfo({ message: ids.length === 1 ? 'User was blocked' : 'Users were blocked' }));
+      thunkAPI.dispatch(
+        showSuccess({
+          message: ids.length === 1 ? 'User was blocked successfully' : 'Users were blocked successfully',
+        }),
+      );
     }
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
@@ -45,7 +52,11 @@ const blockUsers = createAsyncThunk('adcm/usersActions/blockUsers', async (ids: 
 const unblockUsers = createAsyncThunk('adcm/usersActions/unblockUsers', async (ids: number[], thunkAPI) => {
   try {
     if (arePromisesResolved(await Promise.allSettled(ids.map((id) => AdcmUsersApi.unblockUser(id))))) {
-      thunkAPI.dispatch(showInfo({ message: ids.length === 1 ? 'User was unblocked' : 'Users were unblocked' }));
+      thunkAPI.dispatch(
+        showSuccess({
+          message: ids.length === 1 ? 'User was unblocked successfully' : 'Users were unblocked successfully',
+        }),
+      );
     }
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
@@ -58,7 +69,9 @@ const unblockUsers = createAsyncThunk('adcm/usersActions/unblockUsers', async (i
 const deleteUsersWithUpdate = createAsyncThunk('adcm/usersActions/deleteUsers', async (ids: number[], thunkAPI) => {
   try {
     if (arePromisesResolved(await Promise.allSettled(ids.map((id) => AdcmUsersApi.deleteUser(id))))) {
-      thunkAPI.dispatch(showInfo({ message: ids.length === 1 ? 'User has been deleted' : 'Users have been deleted' }));
+      thunkAPI.dispatch(
+        showSuccess({ message: ids.length === 1 ? 'User has been deleted' : 'Users have been deleted' }),
+      );
     }
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
@@ -153,6 +166,9 @@ const createInitialState = (): AdcmUsersActionState => ({
   unblockDialog: {
     ids: [],
   },
+  blockDialog: {
+    ids: [],
+  },
   relatedData: {
     groups: [],
   },
@@ -187,6 +203,12 @@ const usersActionsSlice = createSlice({
     closeUnblockDialog(state) {
       state.unblockDialog.ids = [];
     },
+    openBlockDialog(state, action) {
+      state.blockDialog.ids = action.payload;
+    },
+    closeBlockDialog(state) {
+      state.blockDialog.ids = [];
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -195,6 +217,10 @@ const usersActionsSlice = createSlice({
       })
       .addCase(blockUsers.fulfilled, (state) => {
         state.selectedItemsIds = [];
+        usersActionsSlice.caseReducers.closeBlockDialog(state);
+      })
+      .addCase(blockUsers.rejected, (state) => {
+        usersActionsSlice.caseReducers.closeBlockDialog(state);
       })
       .addCase(unblockUsers.fulfilled, (state) => {
         state.selectedItemsIds = [];
@@ -244,6 +270,8 @@ export const {
   closeUserUpdateDialog,
   openUnblockDialog,
   closeUnblockDialog,
+  openBlockDialog,
+  closeBlockDialog,
 } = usersActionsSlice.actions;
 
 export {

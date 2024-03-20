@@ -12,6 +12,11 @@
 
 from dataclasses import dataclass
 
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Model
+from django.views import View
+from rest_framework.response import Response
+
 from audit.cases.common import get_audit_object_from_resp, get_or_create_audit_obj
 from audit.models import (
     AUDIT_OBJECT_TYPE_TO_MODEL_MAP,
@@ -20,10 +25,6 @@ from audit.models import (
     AuditObjectType,
     AuditOperation,
 )
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Model
-from django.views import View
-from rest_framework.response import Response
 
 
 @dataclass
@@ -131,12 +132,18 @@ def rbac_case(
                 response=response,
             )
 
-        case ["rbac", "user" | "users", user_pk] | [
-            "rbac",
-            "user" | "users",
-            user_pk,
-            "reset_failed_login_attempts" | "unblock",
-        ]:
+        case (
+            ["rbac", "user" | "users", user_pk]
+            | [
+                "rbac",
+                "user"
+                | "users",
+                user_pk,
+                "reset_failed_login_attempts"
+                | "block"
+                | "unblock",
+            ]
+        ):
             data = RbacCaseData(view=view, deleted_obj=deleted_obj, obj_pk=user_pk)
             audit_operation, audit_object = _rbac_case(
                 obj_type=AuditObjectType.USER,
@@ -147,6 +154,9 @@ def rbac_case(
             match view.action:
                 case "reset_failed_login_attempts":
                     audit_operation.name = "User login attempts reset"
+                case "block":
+                    username = f"{audit_object.object_name} " if audit_object is not None else ""
+                    audit_operation.name = f"{username}user blocked"
                 case "unblock":
                     username = f"{audit_object.object_name} " if audit_object is not None else ""
                     audit_operation.name = f"{username}user unblocked"

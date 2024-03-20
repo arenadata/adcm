@@ -10,8 +10,7 @@ import { SortParams } from '@models/table';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
 import AuditOperationsTableExpandedContent from '@pages/audit/AuditOperationsPage/AuditOperationsTableExpandedContent/AuditOperationsTableExpandedContent';
 import { orElseGet } from '@utils/checkUtils';
-import s from './AuditOperationsTable.module.scss';
-import cn from 'classnames';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const AuditOperationsTable = () => {
   const dispatch = useDispatch();
@@ -19,7 +18,7 @@ const AuditOperationsTable = () => {
   const [expandableRows, setExpandableRows] = useState<Record<number, boolean>>({});
 
   const auditOperations = useStore(({ adcm }) => adcm.auditOperations.auditOperations);
-  const isLoading = useStore(({ adcm }) => adcm.auditOperations.isLoading);
+  const isLoading = useStore(({ adcm }) => isShowSpinner(adcm.auditOperations.loadState));
   const sortParams = useStore(({ adcm }) => adcm.auditOperationsTable.sortParams);
 
   const handleExpandClick = (id: number) => {
@@ -34,14 +33,7 @@ const AuditOperationsTable = () => {
   };
 
   return (
-    <Table
-      className={s.auditOperationsTable}
-      variant="tertiary"
-      isLoading={isLoading}
-      columns={columns}
-      sortParams={sortParams}
-      onSorting={handleSorting}
-    >
+    <Table variant="tertiary" isLoading={isLoading} columns={columns} sortParams={sortParams} onSorting={handleSorting}>
       {auditOperations.map((auditOperation) => (
         <ExpandableRowComponent
           key={auditOperation.id}
@@ -49,8 +41,6 @@ const AuditOperationsTable = () => {
           isExpanded={expandableRows[auditOperation.id] || false}
           isInactive={operationAuditInactiveResults.includes(auditOperation.result)}
           expandedContent={<AuditOperationsTableExpandedContent objectChanges={auditOperation.objectChanges} />}
-          className={cn(s.auditOperationsTable__auditRow, { [s.expandedRow]: expandableRows[auditOperation.id] })}
-          expandedClassName={s.auditOperationsTable__expandedRow}
         >
           <TableCell>{orElseGet(auditOperation.object?.type)}</TableCell>
           <TableCell>{orElseGet(auditOperation.object?.name)}</TableCell>

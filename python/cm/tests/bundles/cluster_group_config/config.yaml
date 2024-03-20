@@ -1,0 +1,219 @@
+- type: cluster
+  name: very_complex
+  version: 2.3
+  config_group_customization: true
+
+  export:
+    - just_integer
+    - variant_inline
+    - plain_group
+
+  config: &config
+    - name: just_bool
+      type: boolean
+      required: false
+    - name: just_integer
+      type: integer
+      default: 4
+    - name: just_float
+      type: float
+      default: 2.3
+    - name: just_string
+      type: string
+      default: "outofgroup"
+    - name: just_text
+      type: text
+      default: |
+        lineone
+        second line
+    - name: just_map
+      type: map
+      required: false
+    - name: just_list
+      type: list
+      required: false
+      default: ["1"]
+    - name: just_json
+      type: json
+      required: false
+    - name: variant_config
+      required: false
+      type: variant
+      source:
+        type: config
+        name: just_list
+    - name: variant_inline
+      type: variant
+      required: false
+      source:
+        type: inline
+        value:
+          - f
+          - c
+    - name: variant_builtin
+      type: variant
+      required: false
+      source:
+        type: builtin
+        name: host_in_cluster
+    # secrets
+    - name: password
+      type: password
+      default: "defaultpass"
+    - name: secrettext
+      type: secrettext
+      default: |
+        default
+        password
+    - name: secretmap
+      type: secretmap
+      default:
+        k1: v1
+        k2: v2
+    - name: secretfile
+      type: secretfile
+      default: ./secret.txt
+    - name: nullist
+      type: list
+      required: false
+    # plain group
+    - name: plain_group
+      type: group
+      subs:
+        - name: simple
+          type: string
+          default: "ingroup"
+        - name: secretmap
+          type: secretmap
+          default:
+            gk1: gv1
+            gk2: gv2
+        - name: secretfile
+          type: secretfile
+          default: ./secret-group.txt
+        - &list_of_dicts
+          name: list_of_dicts
+          display_name: List of Dicts
+          type: structure
+          yspec: ./lod.yaml
+          required: false
+        - name: listofstuff
+          type: list
+          default: ["x", "y"]
+    # activatable group
+    - name: activatable_group
+      type: group
+      activatable: true
+      active: false
+      subs:
+        - name: simple
+          type: string
+          default: "inactgroup"
+        - name: secretmap
+          type: secretmap
+          default:
+            agk1: agv1
+            agk2: agv2
+        - name: secretfile
+          type: secretfile
+          default: ./secret-group.txt
+    # structures
+    - <<: *list_of_dicts
+      default:
+        - integer: 3
+          string: "three"
+        - integer: 12
+          string: "twelve"
+    - name: dict_of_lists
+      display_name: Dict of Lists
+      type: structure
+      yspec: ./dol.yaml
+      default:
+        integers:
+          - 1
+          - 103
+        strings:
+          - "over"
+          - "and"
+          - "over"
+  actions: &actions
+    dummy:
+      type: job
+      script: ./playbook.yaml
+      script_type: ansible
+      states:
+        available: any
+
+- type: service
+  name: for_export
+  version: 4.3
+  config_group_customization: true
+
+  export:
+    - just_integer
+    - plain_group
+    - activatable_group
+
+  config:
+    - name: just_integer
+      type: integer
+      default: 12
+    # plain group
+    - name: plain_group
+      type: group
+      subs:
+        - name: list_of_dicts
+          display_name: List of Dicts
+          type: structure
+          yspec: ./lod.yaml
+          required: false
+        - name: listofstuff
+          type: list
+          default: [ "x", "y" ]
+    # activatable group
+    - name: activatable_group
+      type: group
+      activatable: true
+      active: false
+      subs:
+        - name: simple
+          type: string
+          default: "inactgroup"
+        - name: secretmap
+          type: secretmap
+          default:
+            agk1: agv1
+            agk2: agv2
+
+- type: service
+  name: not_simple
+  version: 4.3
+  config_group_customization: true
+
+  config: *config
+  actions: *actions
+
+  components:
+    not_simple_component:
+      config: *config
+      actions: *actions
+
+    another_not_simple_component:
+      config: *config
+      actions: *actions
+
+- type: service
+  name: thesame
+  version: 2.1
+
+  config: *config
+  actions: *actions
+
+  components:
+    thesame_component:
+      config: *config
+      actions: *actions
+
+    another_thesame_component:
+      config: *config
+      actions: *actions

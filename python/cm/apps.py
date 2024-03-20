@@ -17,7 +17,7 @@ class CmConfig(AppConfig):
     name = "cm"
 
     def ready(self):
-        from cm.signals import (  # pylint: disable=import-outside-toplevel,unused-import
+        from cm.signals import (  # noqa: F401, PLC0415
             rename_audit_object,
             rename_audit_object_host,
         )

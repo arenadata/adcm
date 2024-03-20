@@ -11,10 +11,8 @@
 # limitations under the License.
 
 
-from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditObject
 from cm.models import Action, HostProvider, Prototype, Upgrade
-from rbac.services.user import create_user
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -26,13 +24,15 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
+from api_v2.tests.base import BaseAPITestCase
 
-class TestHostProviderAudit(BaseAPITestCase):  # pylint: disable=too-many-public-methods
+
+class TestHostProviderAudit(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = create_user(**self.test_user_credentials)
+        self.test_user = self.create_user(**self.test_user_credentials)
 
         self.config_post_data = {
             "config": {

@@ -9,12 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.action.serializers import ActionRunSerializer
-from api_v2.action.utils import get_action_configuration, insert_service_ids
-from api_v2.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
-from api_v2.task.serializers import TaskListSerializer
-from api_v2.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from adcm.mixins import GetParentObjectMixin
+from adcm.permissions import (
+    VIEW_CLUSTER_PERM,
+    VIEW_CLUSTER_UPGRADE_PERM,
+    VIEW_PROVIDER_PERM,
+    VIEW_PROVIDER_UPGRADE_PERM,
+    check_custom_perm,
+    get_object_for_user,
+)
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import Cluster, HostProvider, PrototypeConfig, TaskLog, Upgrade
@@ -29,18 +32,15 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
-from adcm.mixins import GetParentObjectMixin
-from adcm.permissions import (
-    VIEW_CLUSTER_PERM,
-    VIEW_CLUSTER_UPGRADE_PERM,
-    VIEW_PROVIDER_PERM,
-    VIEW_PROVIDER_UPGRADE_PERM,
-    check_custom_perm,
-    get_object_for_user,
-)
+from api_v2.action.serializers import ActionRunSerializer
+from api_v2.action.utils import get_action_configuration, insert_service_ids
+from api_v2.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
+from api_v2.task.serializers import TaskListSerializer
+from api_v2.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
+from api_v2.views import CamelCaseGenericViewSet
 
 
-class UpgradeViewSet(  # pylint: disable=too-many-ancestors
+class UpgradeViewSet(
     ListModelMixin,
     GetParentObjectMixin,
     RetrieveModelMixin,
@@ -85,8 +85,7 @@ class UpgradeViewSet(  # pylint: disable=too-many-ancestors
         queryset = self.filter_queryset(self.get_queryset())
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        obj = get_object_or_404(queryset, **filter_kwargs)
-        return obj
+        return get_object_or_404(queryset, **filter_kwargs)
 
     def get_parent_object_for_user(self, user: User) -> Cluster | HostProvider:
         parent: Cluster | HostProvider | None = self.get_parent_object()
@@ -119,13 +118,13 @@ class UpgradeViewSet(  # pylint: disable=too-many-ancestors
 
         return upgrade
 
-    def list(self, request: Request, *args, **kwargs) -> Response:
+    def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         parent: Cluster | HostProvider = self.get_parent_object_for_user(user=request.user)
         upgrades = get_upgrade(obj=parent)
         serializer = self.get_serializer_class()(instance=upgrades, many=True)
         return Response(data=serializer.data)
 
-    def retrieve(self, request: Request, *args, **kwargs) -> Response:
+    def retrieve(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         parent: Cluster | HostProvider = self.get_parent_object_for_user(user=request.user)
 
         upgrade = self.get_upgrade(parent=parent)
@@ -154,6 +153,7 @@ class UpgradeViewSet(  # pylint: disable=too-many-ancestors
         upgrade = self.get_upgrade(parent=parent)
 
         configuration = serializer.validated_data["configuration"]
+        verbose = serializer.validated_data["is_verbose"]
         config = {}
         adcm_meta = {}
 
@@ -177,6 +177,7 @@ class UpgradeViewSet(  # pylint: disable=too-many-ancestors
             config=config,
             attr=attr,
             hostcomponent=insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),
+            verbose=verbose,
         )
 
         if (task_id := result["task_id"]) is None:

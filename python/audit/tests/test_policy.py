@@ -9,8 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from datetime import datetime
+import contextlib
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from cm.models import Bundle, Cluster, HostProvider, ObjectType, Prototype
+from django.urls import reverse
+from rbac.models import Policy, Role, RoleTypes, User
+from rest_framework.response import Response
+from rest_framework.status import HTTP_403_FORBIDDEN
 
 from audit.models import (
     AuditLog,
@@ -18,18 +25,9 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import Bundle, Cluster, HostProvider, ObjectType, Prototype
-from django.urls import reverse
-from rbac.models import Policy, Role, RoleTypes, User
-from rest_framework.response import Response
-from rest_framework.status import HTTP_403_FORBIDDEN
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestPolicyAudit(BaseTestCase):
-    # pylint: disable=too-many-instance-attributes
-
     def setUp(self) -> None:
         super().setUp()
 
@@ -334,7 +332,7 @@ class TestPolicyAudit(BaseTestCase):
         )
 
     def test_update_patch_failed(self):
-        try:
+        with contextlib.suppress(KeyError):
             self.client.patch(
                 path=reverse(viewname=self.detail_name, kwargs={"pk": self.policy.pk}),
                 data={
@@ -345,8 +343,6 @@ class TestPolicyAudit(BaseTestCase):
                 },
                 content_type=APPLICATION_JSON,
             )
-        except KeyError:
-            pass
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 

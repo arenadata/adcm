@@ -10,10 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import string
 from pathlib import Path
+import string
 
-from cm.models import Bundle, Cluster, Host, HostProvider, MaintenanceMode, Prototype
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -25,7 +25,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from cm.models import Bundle, Cluster, Host, HostProvider, MaintenanceMode, Prototype
 
 
 class TestHostAPI(BaseTestCase):
@@ -120,7 +120,7 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["maintenance_mode"], new_mm)
 
-    def test_host(self):  # pylint: disable=too-many-statements
+    def test_host(self):
         host = "test.server.net"
         host_url = reverse(viewname="v1:host")
 

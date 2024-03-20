@@ -3,24 +3,20 @@ import {
   AdcmMappingComponent,
   AdcmMappingComponentService,
   AdcmServicePrototype,
+  HostId,
+  ComponentId,
+  ServiceId,
+  ServicePrototypeId,
 } from '@models/adcm';
 
 export type ValidationError = { isValid: false; errors: string[] };
 export type ValidationSuccess = { isValid: true };
 export type ValidationResult = ValidationError | ValidationSuccess;
 
-export type HostId = AdcmHostShortView['id'];
-export type ComponentId = AdcmMappingComponent['id'];
-export type ServiceId = AdcmMappingComponentService['id'];
-
 export type HostsDictionary = Record<HostId, AdcmHostShortView>;
 export type ComponentHostsDictionary = Record<ComponentId, AdcmHostShortView[]>;
 export type ComponentsDictionary = Record<ComponentId, AdcmMappingComponent>;
-
-export type HostMappingFilter = {
-  componentDisplayName: string;
-  isHideEmptyHosts: boolean;
-};
+export type ServicesDictionary = Record<ServiceId, AdcmServicePrototype>;
 
 export type HostMapping = {
   host: AdcmHostShortView;
@@ -38,9 +34,10 @@ export type ComponentMappingValidation = {
   isValid: boolean;
 };
 
-export type ServiceMappingFilter = {
+export type MappingFilter = {
   hostName: string;
-  isHideEmptyComponents: boolean;
+  componentDisplayName: string;
+  isHideEmpty: boolean;
 };
 
 export type ServiceMapping = {
@@ -53,20 +50,18 @@ export type ComponentMapping = {
   hosts: AdcmHostShortView[];
 };
 
-export type MappingState = 'no-changes' | 'editing' | 'saved';
-
 export type ComponentValidateResult = {
   constraintsValidationResult: ValidationResult;
   requireValidationResults: ValidationResult;
 };
 
 export type ValidateCache = {
-  componentsCache: Map<number, ComponentValidateResult>;
-  servicesCache: Map<AdcmServicePrototype['id'], boolean>;
+  componentsCache: Map<ComponentId, ComponentValidateResult>;
+  servicesCache: Map<ServicePrototypeId, boolean>;
 };
 
 export type ValidateRelatedData = {
-  servicesMappingDictionary: Record<AdcmServicePrototype['id'], ServiceMapping>;
-  notAddedServicesDictionary: Record<ServiceId, AdcmServicePrototype>;
+  servicesMappingDictionary: Record<ServicePrototypeId, ServiceMapping>;
+  notAddedServicesDictionary: ServicesDictionary;
   allHostsCount: number;
 };

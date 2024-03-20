@@ -1,9 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmHostProvidersApi, RequestError } from '@api';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { getHostProviders, setIsLoading } from './hostProvidersSlice';
+import { getHostProviders, setLoadState } from './hostProvidersSlice';
+import { LoadState } from '@models/loadState';
 
 interface AdcmHostProvidersActionsState {
   deleteDialog: {
@@ -16,7 +17,7 @@ const deleteHostProvider = createAsyncThunk(
   async (deletableId: number, thunkAPI) => {
     try {
       await AdcmHostProvidersApi.deleteHostProvider(deletableId);
-      thunkAPI.dispatch(showInfo({ message: 'Hostprovider was deleted' }));
+      thunkAPI.dispatch(showSuccess({ message: 'Hostprovider was deleted' }));
       return [];
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
@@ -28,7 +29,7 @@ const deleteHostProvider = createAsyncThunk(
 const deleteWithUpdateHostProvider = createAsyncThunk(
   'adcm/hostProvidersActions/deleteWithUpdateHostProvider',
   async (deletableId: number, thunkAPI) => {
-    thunkAPI.dispatch(setIsLoading(true));
+    thunkAPI.dispatch(setLoadState(LoadState.Loading));
     await thunkAPI.dispatch(deleteHostProvider(deletableId));
     await thunkAPI.dispatch(getHostProviders());
   },

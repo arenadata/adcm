@@ -19,7 +19,8 @@ import ldap
 os.environ["PYTHONPATH"] = "/adcm/python/"
 sys.path.append("/adcm/python/")
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django  # noqa: F401 # isort:skip
+
 from cm.errors import AdcmEx
 from rbac.ldap import configure_tls, get_ldap_default_settings, is_tls
 

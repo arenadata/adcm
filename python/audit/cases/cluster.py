@@ -9,6 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from operator import itemgetter
+
+from cm.models import Cluster, ClusterBind, ClusterObject, Host, Prototype
+from django.views import View
+from rest_framework.generics import GenericAPIView
+from rest_framework.response import Response
+
 from audit.cases.common import (
     get_obj_name,
     get_or_create_audit_obj,
@@ -22,10 +29,6 @@ from audit.models import (
     AuditObjectType,
     AuditOperation,
 )
-from cm.models import Cluster, ClusterBind, ClusterObject, Host, Prototype
-from django.views import View
-from rest_framework.generics import GenericAPIView
-from rest_framework.response import Response
 
 CONFIGURATION_STR = "configuration "
 
@@ -68,7 +71,6 @@ def make_export_name(cluster_name: str, service_name: str) -> str:
     return export_name
 
 
-# pylint: disable-next=too-many-locals,too-many-branches,too-many-statements
 def cluster_case(
     path: list[str],
     view: GenericAPIView | View,
@@ -113,15 +115,21 @@ def cluster_case(
             if response and response.data:
                 if api_version == 1:
                     host_fqdn = response.data["fqdn"]
+                elif isinstance(response.data, list):
+                    host_fqdn = ", ".join(map(itemgetter("name"), response.data))
                 else:
                     host_fqdn = response.data["name"]
 
-            if "host_id" in view.request.data:
-                host = Host.objects.filter(pk=view.request.data["host_id"]).first()
-                if host:
-                    host_fqdn = host.fqdn
+            else:
+                if isinstance(view.request.data, list):
+                    ids = (entry.get("host_id", None) for entry in view.request.data if isinstance(entry, dict))
+                    host_fqdn = ", ".join(sorted(Host.objects.filter(pk__in=ids).values_list("fqdn", flat=True)))
+                elif isinstance(view.request.data, dict) and "host_id" in view.request.data:
+                    host = Host.objects.filter(pk=view.request.data["host_id"]).first()
+                    if host:
+                        host_fqdn = host.fqdn
 
-            operation_name = f"{host_fqdn} host added".strip()
+            operation_name = f"[{host_fqdn}] host(s) added".strip()
 
             audit_operation = AuditOperation(
                 name=operation_name,
@@ -135,13 +143,18 @@ def cluster_case(
                     object_type=AuditObjectType.CLUSTER,
                 )
 
-        case ["cluster", cluster_pk, "host", host_pk] | ["clusters", cluster_pk, "hosts", host_pk] | [
-            "cluster",
-            cluster_pk,
-            "host",
-            host_pk,
-            "maintenance-mode",
-        ] | ["clusters", cluster_pk, "hosts", host_pk, "maintenance-mode"]:
+        case (
+            ["cluster", cluster_pk, "host", host_pk]
+            | ["clusters", cluster_pk, "hosts", host_pk]
+            | [
+                "cluster",
+                cluster_pk,
+                "host",
+                host_pk,
+                "maintenance-mode",
+            ]
+            | ["clusters", cluster_pk, "hosts", host_pk, "maintenance-mode"]
+        ):
             if view.request.method == "DELETE":
                 name = "host removed"
                 operation_type = AuditLogOperationType.UPDATE
@@ -215,13 +228,23 @@ def cluster_case(
                 service_display_name = []
 
                 if response and response.data:
-                    service_display_name = [data["display_name"] for data in response.data]
-                elif isinstance(view.request.data, list) and all("prototype_id" in data for data in view.request.data):
+                    service_display_name = [
+                        data["display_name"]
+                        for data in (response.data if isinstance(response.data, list) else [response.data])
+                    ]
+                elif isinstance(view.request.data, list):
                     service_display_name = (
-                        Prototype.objects.filter(pk__in=[data["prototype_id"] for data in view.request.data])
+                        Prototype.objects.filter(pk__in=(data.get("prototype_id", None) for data in view.request.data))
                         .order_by("pk")
                         .values_list("display_name", flat=True)
                     )
+                elif isinstance(view.request.data, dict):
+                    service_display_name = [
+                        Prototype.objects.filter(pk=view.request.data.get("prototype_id"))
+                        .values_list("display_name", flat=True)
+                        .first()
+                        or ""
+                    ]
 
                 service_display_name = f"[{', '.join(service_display_name)}]"
                 operation_name = f"{service_display_name} service(s) added"
@@ -428,11 +451,14 @@ def cluster_case(
             ["component", component_pk]
             | ["component", component_pk, _]
             | [
-                "cluster" | "clusters",
+                "cluster"
+                | "clusters",
                 _,
-                "service" | "services",
+                "service"
+                | "services",
                 _,
-                "component" | "components",
+                "component"
+                | "components",
                 component_pk,
                 "maintenance-mode",
             ]

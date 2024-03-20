@@ -5,7 +5,7 @@ import { store } from '@store';
 import { Provider } from 'react-redux';
 import Button from '@uikit/Button/Button';
 import { useDispatch } from '@hooks';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showInfo, showSuccess } from '@store/notificationsSlice';
 import NotificationsSideBar from '@layouts/partials/NotificationsSideBar/NotificationsSideBar';
 
 type Story = StoryObj<typeof Alert>;
@@ -64,6 +64,17 @@ const NotificationSidebarExample: React.FC = () => {
         }}
       >
         Show error notification
+      </Button>
+      <Button
+        onClick={() => {
+          dispatch(
+            showSuccess({
+              message: 'Some success text',
+            }),
+          );
+        }}
+      >
+        Show success notification
       </Button>
     </div>
   );

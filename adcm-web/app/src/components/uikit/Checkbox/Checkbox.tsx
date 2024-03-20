@@ -8,7 +8,8 @@ interface CheckboxProps extends InputHTMLAttributes<HTMLInputElement> {
   readOnly?: boolean;
   hasError?: boolean;
 }
-export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>((props, ref) => {
+
+const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>((props, ref) => {
   const { label, checked = false, disabled = false, className, readOnly = false, hasError = false, ...rest } = props;
 
   const checkboxClasses = cn(

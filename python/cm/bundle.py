@@ -10,17 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines
-
-import functools
-import hashlib
-import os
-import shutil
-import tarfile
 from collections.abc import Iterable
 from pathlib import Path
+import os
+import shutil
+import hashlib
+import tarfile
+import functools
 
 from adcm_version import compare_adcm_versions, compare_prototype_versions
+from django.conf import settings
+from django.db import IntegrityError, transaction
+from django.db.transaction import atomic
+from gnupg import GPG, ImportResult
+from rbac.models import Role
+from rbac.upgrade.role import prepare_action_roles
+
 from cm.adcm_config.config import init_object_config, switch_config
 from cm.adcm_config.utils import cook_file_type_name, proto_ref
 from cm.errors import AdcmEx, raise_adcm_ex
@@ -50,12 +55,6 @@ from cm.models import (
     Upgrade,
 )
 from cm.stack import get_config_files, read_definition, save_definition
-from django.conf import settings
-from django.db import IntegrityError, transaction
-from django.db.transaction import atomic
-from gnupg import GPG, ImportResult
-from rbac.models import Role
-from rbac.upgrade.role import prepare_action_roles
 
 STAGE = (
     StagePrototype,
@@ -107,10 +106,9 @@ def load_bundle(bundle_file: str) -> Bundle:
     untar_and_cleanup(bundle_archive=bundle_archive, signature_file=signature_file, bundle_hash=bundle_hash)
 
     with atomic():
-        bundle = prepare_bundle(
+        return prepare_bundle(
             bundle_file=bundle_file, bundle_hash=bundle_hash, path=path, verification_status=verification_status
         )
-    return bundle
 
 
 def get_bundle_and_signature_paths(path: Path) -> tuple[Path | None, Path | None]:
@@ -149,7 +147,7 @@ def get_verification_status(bundle_archive: Path | None, signature_file: Path | 
     if bundle_archive is None or signature_file is None:
         return SignatureStatus.ABSENT
 
-    gpg = GPG(gpgbinary=os.popen("which gpg").read().strip())
+    gpg = GPG(gpgbinary=os.popen("which gpg").read().strip())  # noqa: S605, S607
     gpg.encoding = settings.ENCODING_UTF_8
     key_filepath = cook_file_type_name(obj=ADCM.objects.get(), key="global", sub_key="verification_public_key")
 
@@ -253,7 +251,7 @@ def untar(bundle_hash: str, bundle: Path) -> Path:
                 ),
             )
 
-    tar = tarfile.open(bundle)  # pylint: disable=consider-using-with
+    tar = tarfile.open(bundle)  # noqa: SIM115
     tar.extractall(path=path)
     tar.close()
 
@@ -273,7 +271,7 @@ def get_hash_safe(path: str) -> str:
 
 
 def get_hash(bundle_file: str) -> str:
-    sha1 = hashlib.sha1()
+    sha1 = hashlib.sha1()  # noqa: S324
     with open(bundle_file, "rb") as f:
         for data in iter(lambda: f.read(16384), b""):
             sha1.update(data)
@@ -291,7 +289,7 @@ def load_adcm(adcm_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.
 
     with atomic():
         prototypes, _ = save_definition(
-            path=Path(""), fname=adcm_file, conf=conf, obj_list={}, bundle_hash="adcm", adcm_=True
+            path=Path(), fname=adcm_file, conf=conf, obj_list={}, bundle_hash="adcm", adcm_=True
         )
         process_adcm()
         StagePrototype.objects.filter(id__in=[prototype.id for prototype in prototypes]).delete()
@@ -574,7 +572,7 @@ def check_variant_host(args, ref):
             check_variant_host(i["args"], ref)
 
 
-def re_check_config() -> None:  # pylint: disable=too-many-branches
+def re_check_config() -> None:
     sp_service = None
     same_stage_prototype_config = None
 
@@ -956,7 +954,7 @@ def copy_stage(bundle_hash: str, bundle_proto, verification_status: SignatureSta
 
 def update_bundle_from_stage(
     bundle,
-):  # pylint: disable=too-many-locals,too-many-statements
+):
     for stage_prototype in StagePrototype.objects.order_by("id"):
         try:
             prototype = Prototype.objects.get(

@@ -9,11 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import fcntl
-import json
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any
+from typing import Any, NamedTuple
+import json
+import fcntl
 
 # isort: off
 from ansible.errors import AnsibleError
@@ -23,6 +23,7 @@ from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 
+from cm.adcm_config.ansible import ansible_decrypt
 from cm.adcm_config.config import get_option_value
 from cm.api import add_hc, get_hc, set_object_config_with_plugin
 from cm.errors import AdcmEx
@@ -47,7 +48,6 @@ from cm.models import (
 from cm.status_api import send_object_update_event, send_config_creation_event
 from rbac.models import Role, Policy
 from rbac.roles import assign_group_perm
-
 # isort: on
 
 MSG_NO_CONFIG = (
@@ -84,7 +84,7 @@ MSG_NO_MULTI_STATE_TO_DELETE = (
 
 
 def job_lock(job_id):
-    file_descriptor = open(  # pylint: disable=consider-using-with
+    file_descriptor = open(  # noqa: SIM115
         settings.RUN_DIR / f"{job_id}/config.json",
         encoding=settings.ENCODING_UTF_8,
     )
@@ -149,9 +149,11 @@ class ContextActionModule(ActionBase):
 
     def _wrap_call(self, func, *args):
         try:
-            func(*args)
+            res = func(*args)
         except AdcmEx as e:
             return {"failed": True, "msg": e.msg}
+        if isinstance(res, PluginResult):
+            return {"changed": res.changed}
         return {"changed": True}
 
     def _check_mandatory(self):
@@ -409,10 +411,16 @@ def cast_to_type(field_type: str, value: Any, limits: dict) -> Any:
         raise AnsibleError(f"Could not convert '{value}' to '{field_type}'") from error
 
 
-def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> dict | int | str:
+class PluginResult(NamedTuple):
+    value: dict | int | str
+    changed: bool
+
+
+def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> PluginResult:
     config_log = ConfigLog.objects.get(id=obj.config.current)
+
     new_config = deepcopy(config_log.config)
-    new_attr = config_log.attr if config_log.attr is not None else {}
+    new_attr = deepcopy(config_log.attr) if config_log.attr is not None else {}
 
     for keys, value in conf.items():
         keys_list = keys.split("/")
@@ -448,48 +456,76 @@ def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> dict | int | str:
 
             new_attr.update(attr)
 
-    for key in attr.keys():
+    for key in attr:
         for subkey, value in config_log.config[key].items():
             if not new_config[key] or subkey not in new_config[key]:
                 new_config[key][subkey] = value
+
+    if _does_contain(base_dict=config_log.config, part=new_config) and _does_contain(
+        base_dict=config_log.attr, part=new_attr
+    ):
+        return PluginResult(conf, False)
 
     set_object_config_with_plugin(obj=obj, config=new_config, attr=new_attr)
     send_config_creation_event(object_=obj)
 
     if len(conf) == 1:
-        return list(conf.values())[0]
+        return PluginResult(list(conf.values())[0], True)
 
-    return conf
+    return PluginResult(conf, True)
 
 
-def set_cluster_config(cluster_id: int, config: dict, attr: dict) -> dict | int | str:
+def set_cluster_config(cluster_id: int, config: dict, attr: dict) -> PluginResult:
     obj = Cluster.obj.get(id=cluster_id)
 
     return update_config(obj=obj, conf=config, attr=attr)
 
 
-def set_host_config(host_id: int, config: dict, attr: dict) -> dict | int | str:
+def set_host_config(host_id: int, config: dict, attr: dict) -> PluginResult:
     obj = Host.obj.get(id=host_id)
 
     return update_config(obj=obj, conf=config, attr=attr)
 
 
-def set_provider_config(provider_id: int, config: dict, attr: dict) -> dict | int | str:
+def set_provider_config(provider_id: int, config: dict, attr: dict) -> PluginResult:
     obj = HostProvider.obj.get(id=provider_id)
 
     return update_config(obj=obj, conf=config, attr=attr)
 
 
-def set_service_config_by_name(cluster_id: int, service_name: str, config: dict, attr: dict) -> dict | int | str:
+def set_service_config_by_name(cluster_id: int, service_name: str, config: dict, attr: dict) -> PluginResult:
     obj = get_service_by_name(cluster_id, service_name)
 
     return update_config(obj=obj, conf=config, attr=attr)
 
 
-def set_service_config(cluster_id: int, service_id: int, config: dict, attr: dict) -> dict | int | str:
+def set_service_config(cluster_id: int, service_id: int, config: dict, attr: dict) -> PluginResult:
     obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type="service")
 
     return update_config(obj=obj, conf=config, attr=attr)
+
+
+def _does_contain(base_dict: dict, part: dict) -> bool:
+    """
+    Check fields in `part` have the same value in `base_dict`
+    """
+
+    for key, val2 in part.items():
+        if key not in base_dict:
+            return False
+
+        val1 = base_dict[key]
+
+        if isinstance(val1, dict) and isinstance(val2, dict):
+            if not _does_contain(val1, val2):
+                return False
+        else:
+            val1 = ansible_decrypt(val1)
+            val2 = ansible_decrypt(val2)
+            if val1 != val2:
+                return False
+
+    return True
 
 
 def set_component_config_by_name(
@@ -512,9 +548,8 @@ def set_component_config(component_id: int, config: dict, attr: dict):
 
 
 def check_missing_ok(obj: ADCMEntity, multi_state: str, missing_ok):
-    if missing_ok is False:
-        if multi_state not in obj.multi_state:
-            raise AnsibleError(MSG_NO_MULTI_STATE_TO_DELETE)
+    if missing_ok is False and multi_state not in obj.multi_state:
+        raise AnsibleError(MSG_NO_MULTI_STATE_TO_DELETE)
 
 
 def _unset_object_multi_state(obj: ADCMEntity, multi_state: str, missing_ok) -> ADCMEntity:
@@ -563,10 +598,7 @@ def log_group_check(group: GroupCheckLog, fail_msg: str, success_msg: str):
     logs = CheckLog.objects.filter(group=group).values("result")
     result = all(log["result"] for log in logs)
 
-    if result:
-        msg = success_msg
-    else:
-        msg = fail_msg
+    msg = success_msg if result else fail_msg
 
     group.message = msg
     group.result = result
@@ -623,7 +655,7 @@ def get_checklogs_data_by_job_id(job_id: int) -> list[dict[str, Any]]:
     data = []
     group_subs = defaultdict(list)
 
-    for check_log in CheckLog.objects.filter(job_id=job_id):
+    for check_log in CheckLog.objects.filter(job_id=job_id).order_by("id"):
         group = check_log.group
         if group is None:
             data.append(

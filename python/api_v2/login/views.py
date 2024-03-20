@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.login.serializers import LoginSerializer
 from cm.errors import AdcmEx
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User as AuthUser
@@ -27,6 +26,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
+
+from api_v2.login.serializers import LoginSerializer
 
 
 class BaseLoginView(GenericAPIView):
@@ -50,6 +51,6 @@ class BaseLoginView(GenericAPIView):
 
 
 class LoginView(BaseLoginView):
-    def post(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def post(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         self.perform_login(request=request)
         return Response(status=HTTP_200_OK)

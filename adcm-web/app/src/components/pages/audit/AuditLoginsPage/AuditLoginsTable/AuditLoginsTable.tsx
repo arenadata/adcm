@@ -6,12 +6,13 @@ import { setSortParams } from '@store/adcm/audit/auditLogins/auditLoginsTableSli
 import { SortParams } from '@models/table';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
 import { orElseGet } from '@utils/checkUtils';
+import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const AuditLoginsTable = () => {
   const dispatch = useDispatch();
 
   const auditLogins = useStore(({ adcm }) => adcm.auditLogins.auditLogins);
-  const isLoading = useStore(({ adcm }) => adcm.auditLogins.isLoading);
+  const isLoading = useStore(({ adcm }) => isShowSpinner(adcm.auditLogins.loadState));
   const sortParams = useStore(({ adcm }) => adcm.auditLoginsTable.sortParams);
 
   const handleSorting = (sortParams: SortParams) => {

@@ -6,5 +6,5 @@ export enum AdcmLicenseStatus {
 
 export interface AdcmLicense {
   status: AdcmLicenseStatus;
-  text?: string;
+  text: string | null;
 }

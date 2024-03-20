@@ -3,7 +3,7 @@ import { AdcmCluster, AdcmService, AdcmServiceComponent } from '@models/adcm';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmClusterServiceComponentsApi, RequestError } from '@api';
 import { fulfilledFilter } from '@utils/promiseUtils';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { ActionStatuses } from '@constants';
@@ -42,11 +42,14 @@ const loadClusterServiceComponentsDynamicActions = createAsyncThunk(
         throw new Error('Some service components cannot get those actions');
       }
 
-      return serviceComponentsActions.reduce((res, { componentId, dynamicActions }) => {
-        res[componentId] = dynamicActions;
+      return serviceComponentsActions.reduce(
+        (res, { componentId, dynamicActions }) => {
+          res[componentId] = dynamicActions;
 
-        return res;
-      }, {} as AdcmClusterServiceComponentsDynamicActionsState['serviceComponentDynamicActions']);
+          return res;
+        },
+        {} as AdcmClusterServiceComponentsDynamicActionsState['serviceComponentDynamicActions'],
+      );
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
@@ -99,7 +102,7 @@ const runClusterServiceComponentDynamicAction = createAsyncThunk(
         actionRunConfig,
       );
 
-      thunkAPI.dispatch(showInfo({ message: ActionStatuses.SuccessRun }));
+      thunkAPI.dispatch(showSuccess({ message: ActionStatuses.SuccessRun }));
 
       return null;
     } catch (error) {

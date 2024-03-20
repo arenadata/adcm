@@ -1,0 +1,10 @@
+---
+- name: sleep
+  hosts: all
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: sleep
+      pause:
+        seconds: 1

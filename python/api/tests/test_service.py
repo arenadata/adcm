@@ -13,6 +13,7 @@
 from pathlib import Path
 from unittest.mock import patch
 
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.job import ActionRunPayload
 from cm.models import (
     Action,
@@ -36,8 +37,6 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_409_CONFLICT,
 )
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestServiceAPI(BaseTestCase):

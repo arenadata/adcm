@@ -15,7 +15,14 @@ const AccessManagerPolicyAddDialogStepTwo: React.FC<AccessManagerPolicyAddDialog
 }) => {
   const stepTypes = formData.objectTypes;
   const {
-    relatedData: { clusterOptions, serviceOptions, hostproviderOptions, hostOptions, serviceClusters },
+    relatedData: {
+      //
+      clusterOptions,
+      serviceOptions,
+      hostproviderOptions,
+      hostOptions,
+      serviceClusters,
+    },
   } = useAccessManagerPolicyAddDialogStepTwo();
 
   const serviceClustersOptions = useMemo(() => {
@@ -59,7 +66,6 @@ const AccessManagerPolicyAddDialogStepTwo: React.FC<AccessManagerPolicyAddDialog
                 <MultiSelect
                   checkAllLabel="All clusters"
                   placeholder="Select cluster"
-                  disabled={formData.clusterIds.length === 0 && formData.serviceName !== ''}
                   value={formData.clusterIds}
                   onChange={handleClusterChange}
                   options={clusterOptions}
@@ -71,7 +77,6 @@ const AccessManagerPolicyAddDialogStepTwo: React.FC<AccessManagerPolicyAddDialog
                 <FormField label="Service">
                   <Select
                     placeholder="Select service"
-                    disabled={formData.clusterIds.length > 0 && formData.serviceName === ''}
                     value={formData.serviceName}
                     onChange={handleServiceChange}
                     options={serviceOptions}
@@ -95,7 +100,6 @@ const AccessManagerPolicyAddDialogStepTwo: React.FC<AccessManagerPolicyAddDialog
                 <MultiSelect
                   checkAllLabel="All hosts"
                   placeholder="Select host"
-                  disabled={formData.hostproviderIds.length > 0}
                   value={formData.hostIds}
                   onChange={handleHostChange}
                   options={hostOptions}
@@ -107,7 +111,6 @@ const AccessManagerPolicyAddDialogStepTwo: React.FC<AccessManagerPolicyAddDialog
                 <MultiSelect
                   checkAllLabel="All Providers"
                   placeholder="Select provider"
-                  disabled={formData.hostIds.length > 0}
                   value={formData.hostproviderIds}
                   onChange={handleHostproviderChange}
                   options={hostproviderOptions}

@@ -1,11 +1,15 @@
 import { AdcmMaintenanceMode } from './maintenanceMode';
-import { AdcmDependOnService, AdcmEntityState, AdcmPrototypeShortView } from '@models/adcm/index';
+import { AdcmDependOnService } from './service';
+import { AdcmPrototypeShortView } from './prototype';
+import { AdcmEntityState } from './common';
 
 export interface AdcmMapping {
   id?: number;
   hostId: number;
   componentId: number;
 }
+
+export type HostId = AdcmHostShortView['id'];
 
 export interface AdcmHostShortView {
   id: number;
@@ -29,6 +33,8 @@ export interface AdcmComponentDependency {
 
 export type AdcmComponentConstraint = number | string;
 
+export type ServiceId = AdcmMappingComponentService['id'];
+
 export interface AdcmMappingComponentService {
   id: number;
   name: string;
@@ -36,6 +42,8 @@ export interface AdcmMappingComponentService {
   state: AdcmEntityState;
   prototype: AdcmPrototypeShortView;
 }
+
+export type ComponentId = AdcmMappingComponent['id'];
 
 export interface AdcmMappingComponent {
   id: number;

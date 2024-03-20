@@ -9,14 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import unittest
 
-from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditObject
 from django.utils import timezone
 from rbac.models import User
 from rbac.services.group import create as create_group
-from rbac.services.user import create_user
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -27,15 +24,17 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
 )
 
+from api_v2.tests.base import BaseAPITestCase
+
 
 class TestUserAudit(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = create_user(**self.test_user_credentials)
+        self.test_user = self.create_user(**self.test_user_credentials)
 
-        self.blocked_user = create_user(username="blocked_user", password="blocked_user_pswd")
+        self.blocked_user = self.create_user(username="blocked_user", password="blocked_user_pswd")
         self.blocked_user.blocked_at = timezone.now()
         self.blocked_user.save(update_fields=["blocked_at"])
 
@@ -293,7 +292,6 @@ class TestUserAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-    @unittest.skip("Skip until RBAC issues are fixed")
     def test_user_unblock_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
@@ -333,6 +331,64 @@ class TestUserAudit(BaseAPITestCase):
 
         self.check_last_audit_record(
             operation_name="user unblocked",
+            operation_type="update",
+            operation_result="fail",
+            audit_object__isnull=True,
+            object_changes={},
+            user__username="admin",
+        )
+
+    def test_user_block_success(self):
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.blocked_user.pk}))
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.check_last_audit_record(
+            operation_name=f"{self.blocked_user.username} user blocked",
+            operation_type="update",
+            operation_result="success",
+            **self.prepare_audit_object_arguments(expected_object=self.blocked_user),
+            user__username="admin",
+        )
+
+    def test_user_block_no_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.blocked_user.pk}))
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_record(
+            operation_name=f"{self.blocked_user.username} user blocked",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.blocked_user),
+            user__username=self.test_user.username,
+        )
+
+    def test_user_block_view_perms_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View users"):
+            response = self.client.post(
+                path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.blocked_user.pk})
+            )
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+        self.check_last_audit_record(
+            operation_name=f"{self.blocked_user.username} user blocked",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.blocked_user),
+            user__username=self.test_user.username,
+        )
+
+    def test_user_block_not_exists_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.get_non_existent_pk(model=User)})
+        )
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_record(
+            operation_name="user blocked",
             operation_type="update",
             operation_result="fail",
             audit_object__isnull=True,

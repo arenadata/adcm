@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-import logging
-import os
-import string
-import sys
 from pathlib import Path
+import os
+import sys
+import json
+import string
+import logging
 
 from cm.utils import dict_json_get_or_create, get_adcm_token
 from django.core.management.utils import get_random_secret_key
@@ -24,10 +24,7 @@ ENCODING_UTF_8 = "utf-8"
 
 API_URL = "http://localhost:8020/api/v1/"
 BASE_DIR = os.getenv("ADCM_BASE_DIR")
-if BASE_DIR:
-    BASE_DIR = Path(BASE_DIR)
-else:
-    BASE_DIR = Path(__file__).absolute().parent.parent.parent
+BASE_DIR = Path(BASE_DIR) if BASE_DIR else Path(__file__).absolute().parent.parent.parent
 
 STACK_DIR = os.getenv("ADCM_STACK_DIR", BASE_DIR)
 BUNDLE_DIR = STACK_DIR / "data" / "bundle"
@@ -49,7 +46,8 @@ PYTHON_SITE_PACKAGES = Path(
 ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
 DEFAULT_SALT = b'"j\xebi\xc0\xea\x82\xe0\xa8\xba\x9e\x12E>\x11D'
 
-ADCM_TOKEN = get_adcm_token()
+
+ADCM_TOKEN = get_adcm_token(ADCM_TOKEN_FILE)
 if SECRETS_FILE.is_file():
     with open(SECRETS_FILE, encoding=ENCODING_UTF_8) as f:
         data = json.load(f)
@@ -258,6 +256,16 @@ if not DEBUG:
                 "when": "midnight",
                 "backupCount": 10,
             },
+            "stream_stdout_handler": {
+                "class": "logging.StreamHandler",
+                "formatter": "adcm",
+                "stream": "ext://sys.stdout",
+            },
+            "stream_stderr_handler": {
+                "class": "logging.StreamHandler",
+                "formatter": "adcm",
+                "stream": "ext://sys.stderr",
+            },
         },
         "loggers": {
             "adcm": {
@@ -284,6 +292,10 @@ if not DEBUG:
                 "handlers": ["task_runner_err_file"],
                 "level": LOG_LEVEL,
                 "propagate": True,
+            },
+            "stream_std": {
+                "handlers": ["stream_stdout_handler", "stream_stderr_handler"],
+                "level": LOG_LEVEL,
             },
         },
     }
@@ -321,7 +333,7 @@ TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "re
 EMPTY_REQUEST_STATUS_CODE = 32
 VALUE_ERROR_STATUS_CODE = 8
 EMPTY_STATUS_STATUS_CODE = 4
-STATUS_REQUEST_TIMEOUT = 0.01
+STATUS_REQUEST_TIMEOUT = 0.1
 
 JOB_TYPE = "job"
 TASK_TYPE = "task"
@@ -338,3 +350,10 @@ SPECTACULAR_SETTINGS = {
 }
 
 USERNAME_MAX_LENGTH = 150
+
+STDOUT_STDERR_LOG_CUT_LENGTH = 1500
+STDOUT_STDERR_LOG_LINE_CUT_LENGTH = 1000
+STDOUT_STDERR_LOG_MAX_UNCUT_LENGTH = STDOUT_STDERR_LOG_CUT_LENGTH * STDOUT_STDERR_LOG_LINE_CUT_LENGTH
+STDOUT_STDERR_TRUNCATED_LOG_MESSAGE = "<Truncated. Download full version via link>"
+
+TEST_RUNNER = "adcm.tests.runner.SubTestParallelRunner"

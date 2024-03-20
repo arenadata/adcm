@@ -10,14 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.rbac.user.constants import UserStatusChoices, UserTypeChoices
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django_filters.rest_framework import (
     CharFilter,
     ChoiceFilter,
     FilterSet,
     OrderingFilter,
 )
+
+from api_v2.rbac.user.constants import UserStatusChoices, UserTypeChoices
 
 
 class UserFilterSet(FilterSet):
@@ -27,16 +28,17 @@ class UserFilterSet(FilterSet):
     ordering = OrderingFilter(fields={"username": "username"}, field_labels={"username": "username"}, label="ordering")
 
     @staticmethod
-    def filter_status(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument
+    def filter_status(queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG001, ARG004
         filter_value = False
 
         if value == UserStatusChoices.ACTIVE:
             filter_value = True
+            return queryset.filter(blocked_at__isnull=filter_value, is_active=filter_value)
 
-        return queryset.filter(blocked_at__isnull=filter_value)
+        return queryset.filter(Q(blocked_at__isnull=filter_value) | Q(is_active=filter_value))
 
     @staticmethod
-    def filter_type(queryset: QuerySet, name: str, value: str) -> QuerySet:  # pylint: disable=unused-argument
+    def filter_type(queryset: QuerySet, name: str, value: str) -> QuerySet:  # noqa: ARG001, ARG004
         filter_value = UserTypeChoices.LOCAL.value
 
         if value == UserTypeChoices.LDAP:

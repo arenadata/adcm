@@ -10,18 +10,19 @@ import {
   AdcmMaintenanceMode,
   AdcmMappingComponent,
 } from '@models/adcm';
-import { ComponentMapping, ComponentMappingValidation, ServiceMappingFilter } from '../../ClusterMapping.types';
+import { ComponentMapping, ComponentMappingValidation, MappingFilter } from '../../ClusterMapping.types';
 import { getConstraintsLimit, isComponentDependOnNotAddedServices } from '../../ClusterMapping.utils';
 import s from './ComponentContainer.module.scss';
 import cn from 'classnames';
-import { useDispatch, useStore } from '@hooks';
-import { openRequiredServicesDialog } from '@store/adcm/cluster/mapping/mappingSlice';
+import { useDispatch } from '@hooks';
+import { NotAddedServicesDictionary, openRequiredServicesDialog } from '@store/adcm/cluster/mapping/mappingSlice';
 
 export interface ComponentContainerProps {
   componentMapping: ComponentMapping;
   componentMappingValidation: ComponentMappingValidation;
-  filter: ServiceMappingFilter;
+  filter: MappingFilter;
   allHosts: AdcmHostShortView[];
+  notAddedServicesDictionary: NotAddedServicesDictionary;
   onMap: (hosts: AdcmHostShortView[], component: AdcmMappingComponent) => void;
   onUnmap: (hostId: number, componentId: number) => void;
   allowActions?: AdcmHostComponentMapRuleAction[];
@@ -36,6 +37,7 @@ const ComponentContainer = ({
   componentMappingValidation,
   filter,
   allHosts,
+  notAddedServicesDictionary,
   onUnmap,
   onMap,
   denyAddHostReason = <DenyActionTooltip />,
@@ -43,7 +45,6 @@ const ComponentContainer = ({
   allowActions = defaultAllowActions,
 }: ComponentContainerProps) => {
   const dispatch = useDispatch();
-  const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const addIconRef = useRef(null);
   const { component, hosts } = componentMapping;
@@ -104,7 +105,7 @@ const ComponentContainer = ({
 
   const limit = getConstraintsLimit(component.constraints);
 
-  if (visibleHosts.length === 0 && filter.isHideEmptyComponents) {
+  if (visibleHosts.length === 0 && filter.isHideEmpty) {
     return null;
   }
 

@@ -9,6 +9,7 @@ import {
 } from '@store/adcm/bundles/bundlesTableSlice';
 import { mergePaginationParams } from '@hooks/usePersistSettings';
 import { AdcmBundlesFilter } from '@models/adcm/bundle';
+import { LoadState } from '@models/loadState';
 
 const mergeFilters = (
   filterFromStorage: AdcmBundlesFilter,
@@ -34,7 +35,7 @@ export const usePersistBundlesTableSettings = () => {
   const requestFrequency = useStore(({ adcm }) => adcm.bundlesTable.requestFrequency);
 
   const products = useStore(({ adcm }) => adcm.bundlesTable.relatedData.products);
-  const isAllDataLoaded = useStore(({ adcm }) => adcm.bundlesTable.relatedData.isProductsLoaded);
+  const isAllDataLoaded = useStore(({ adcm }) => adcm.bundlesTable.relatedData.productsLoadState) === LoadState.Loaded;
 
   const { perPage } = paginationParams;
 

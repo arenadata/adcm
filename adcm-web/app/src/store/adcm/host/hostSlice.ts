@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmHost, AdcmClusterHostComponentsStatus } from '@models/adcm';
 import { AdcmClusterHostsApi, AdcmClustersApi, AdcmHostsApi, RequestError } from '@api';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
@@ -66,7 +66,7 @@ const unlinkHostWithUpdate = createAsyncThunk(
   async ({ clusterId, hostId }: HostPayload, thunkAPI) => {
     try {
       await AdcmClustersApi.unlinkHost(clusterId, hostId);
-      thunkAPI.dispatch(showInfo({ message: 'The host has been unlinked' }));
+      thunkAPI.dispatch(showSuccess({ message: 'The host has been unlinked' }));
       thunkAPI.dispatch(getHost(hostId));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));

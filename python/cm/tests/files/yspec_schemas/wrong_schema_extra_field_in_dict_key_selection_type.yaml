@@ -1,0 +1,14 @@
+---
+root:
+  match: dict_key_selection
+  selector: type
+  variants:
+    string: string
+    integer: integer
+  extra: field
+
+string:
+  match: string
+
+integer:
+  match: int

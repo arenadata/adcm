@@ -1,6 +1,6 @@
 ---
 
-version: 10
+version: 11
 
 roles:
   - name: Add host
@@ -340,7 +340,7 @@ roles:
               - view
 
   - name: Edit config
-    description: The abiluty to change and add configuration
+    description: The ability to change and add configuration
     type: hidden
     module_name: rbac.roles
     class_name: ModelRole
@@ -1423,6 +1423,8 @@ roles:
       - Get host object
       - Get service object
       - Manage service imports
+      - Manage service Maintenance mode
+      - Manage component Maintenance mode
       - View component config
       - View host config
       - View host-components hidden

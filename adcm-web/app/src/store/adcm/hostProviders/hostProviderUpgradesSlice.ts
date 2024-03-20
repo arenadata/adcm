@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { AdcmHostProvider, AdcmUpgradeDetails, AdcmUpgradeRunConfig, AdcmUpgradeShort } from '@models/adcm';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmHostProvidersApi, AdcmPrototypesApi, RequestError } from '@api';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 
 const acceptPrototypeLicense = createAsyncThunk(
@@ -60,7 +60,7 @@ const runHostProviderUpgrade = createAsyncThunk(
     try {
       await AdcmHostProvidersApi.runHostProviderUpgrade(hostProvider.id, upgradeId, upgradeRunConfig);
 
-      thunkAPI.dispatch(showInfo({ message: 'Upgrade was running successfully' }));
+      thunkAPI.dispatch(showSuccess({ message: 'Upgrade was running successfully' }));
 
       return null;
     } catch (error) {

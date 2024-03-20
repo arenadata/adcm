@@ -13,7 +13,7 @@
 from typing import Any, Iterable
 
 from cm.adcm_config.ansible import ansible_decrypt
-from cm.api import cancel_locking_tasks, delete_service, load_mm_objects
+from cm.api import cancel_locking_tasks, delete_service
 from cm.errors import AdcmEx
 from cm.flag import update_flags
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
@@ -35,6 +35,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import send_object_update_event
 from django.conf import settings
 from rest_framework.response import Response
@@ -44,6 +45,18 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_409_CONFLICT,
 )
+
+OBJECT_TYPES_DICT = {
+    "adcm": "adcm",
+    "cluster": "cluster",
+    "service": "clusterobject",
+    "cluster object": "service",
+    "component": "servicecomponent",
+    "service component": "servicecomponent",
+    "provider": "hostprovider",
+    "host provider": "hostprovider",
+    "host": "host",
+}
 
 
 def _change_mm_via_action(
@@ -76,7 +89,7 @@ def _update_mm_hierarchy_issues(obj: Host | ClusterObject | ServiceComponent) ->
     update_hierarchy_issues(obj.cluster)
     update_issue_after_deleting()
     update_flags()
-    load_mm_objects()
+    reset_objects_in_mm()
 
 
 def process_requires(
@@ -113,14 +126,15 @@ def process_requires(
 
 
 def get_obj_type(obj_type: str) -> str:
-    if obj_type == "cluster object":
-        return "service"
-    elif obj_type == "service component":
-        return "component"
-    elif obj_type == "host provider":
-        return "provider"
-
-    return obj_type
+    object_names_to_object_types = {
+        "adcm": "adcm",
+        "cluster": "cluster",
+        "cluster object": "service",
+        "service component": "component",
+        "host provider": "provider",
+        "host": "host",
+    }
+    return object_names_to_object_types[obj_type]
 
 
 def str_remove_non_alnum(value: str) -> str:
@@ -212,8 +226,6 @@ def get_maintenance_mode_response(
     obj: Host | ClusterObject | ServiceComponent,
     serializer: Serializer,
 ) -> Response:
-    # pylint: disable=too-many-branches, too-many-return-statements
-
     turn_on_action_name = settings.ADCM_TURN_ON_MM_ACTION_NAME
     turn_off_action_name = settings.ADCM_TURN_OFF_MM_ACTION_NAME
     prototype = obj.prototype
@@ -320,7 +332,7 @@ def get_maintenance_mode_response(
     )
 
 
-def delete_service_from_api(service: ClusterObject) -> Response:  # pylint: disable=too-many-branches
+def delete_service_from_api(service: ClusterObject) -> Response:
     delete_action = Action.objects.filter(
         prototype=service.prototype,
         name=settings.ADCM_DELETE_SERVICE_ACTION_NAME,

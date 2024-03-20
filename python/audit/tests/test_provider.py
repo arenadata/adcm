@@ -13,12 +13,7 @@
 from datetime import datetime
 from unittest.mock import patch
 
-from audit.models import (
-    AuditLog,
-    AuditLogOperationResult,
-    AuditLogOperationType,
-    AuditObjectType,
-)
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import (
     Action,
     Bundle,
@@ -39,7 +34,12 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
 )
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from audit.models import (
+    AuditLog,
+    AuditLogOperationResult,
+    AuditLogOperationType,
+    AuditObjectType,
+)
 
 
 class TestProviderAudit(BaseTestCase):

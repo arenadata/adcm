@@ -1,0 +1,4 @@
+---
+root:
+  match: string
+  extra: field

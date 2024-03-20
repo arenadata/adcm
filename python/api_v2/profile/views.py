@@ -9,8 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.profile.serializers import ProfileSerializer, ProfileUpdateSerializer
 from audit.utils import audit
+from cm.errors import AdcmEx
+from cm.services.adcm import retrieve_password_requirements
+from core.rbac.operations import update_user_password
 from django.conf import settings
 from djangorestframework_camel_case.parser import (
     CamelCaseFormParser,
@@ -22,9 +24,11 @@ from djangorestframework_camel_case.render import (
     CamelCaseJSONRenderer,
 )
 from rbac.models import User
-from rbac.services.user import update_user
+from rbac.services.user import UserDB
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.response import Response
+
+from api_v2.profile.serializers import ProfileSerializer, ProfileUpdateSerializer
 
 
 class ProfileView(RetrieveUpdateAPIView):
@@ -42,16 +46,23 @@ class ProfileView(RetrieveUpdateAPIView):
         return ProfileSerializer
 
     @audit
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=True)
+    def update(self, request, *_, **__):
+        user = self.get_object()
+
+        serializer = self.get_serializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
-        user = update_user(
-            user=instance,
-            context_user=self.request.user,
-            partial=True,
-            **serializer.validated_data,
+        if not (
+            (current_password := serializer.validated_data.get("current_password", ""))
+            and user.check_password(raw_password=current_password)
+        ):
+            raise AdcmEx(code="USER_PASSWORD_CURRENT_PASSWORD_REQUIRED_ERROR")
+
+        update_user_password(
+            user_id=user.pk,
+            new_password=serializer.validated_data["password"],
+            db=UserDB,
+            password_requirements=retrieve_password_requirements(),
         )
 
-        return Response(data=self.get_serializer(instance=user).data)
+        return Response()

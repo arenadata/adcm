@@ -4,7 +4,8 @@ import { createAsyncThunk } from '@store/redux';
 import { AdcmClusterImport, AdcmClusterImportPostPayload, AdcmError } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
+import { LoadState } from '@models/loadState';
 
 type GetClusterImportsArg = {
   clusterId: number;
@@ -18,7 +19,7 @@ export interface AdcmSaveClusterImportsArgs {
 type AdcmClusterImportsState = {
   clusterImports: AdcmClusterImport[];
   hasSaveError: boolean;
-  isLoading: boolean;
+  loadState: LoadState;
   totalCount: number;
 };
 
@@ -65,7 +66,7 @@ const saveClusterServiceImports = createAsyncThunk(
     try {
       await AdcmClusterServiceImportsApi.postClusterServiceImport(clusterId, serviceId, clusterImportsList);
       thunkAPI.dispatch(loadClusterServiceImports({ clusterId }));
-      thunkAPI.dispatch(showInfo({ message: 'Import has been completed' }));
+      thunkAPI.dispatch(showSuccess({ message: 'Import has been completed' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: (error as RequestError<AdcmError>).response?.data.desc ?? '' }));
       return thunkAPI.rejectWithValue(error);
@@ -76,7 +77,7 @@ const saveClusterServiceImports = createAsyncThunk(
 const getClusterServiceImports = createAsyncThunk(
   'adcm/cluster/imports/service/getClusterImports',
   async ({ clusterId }: GetClusterImportsArg, thunkAPI) => {
-    thunkAPI.dispatch(setIsLoading(true));
+    thunkAPI.dispatch(setLoadState(LoadState.Loading));
     const startDate = new Date();
 
     await thunkAPI.dispatch(loadClusterServiceImports({ clusterId }));
@@ -85,7 +86,7 @@ const getClusterServiceImports = createAsyncThunk(
       startDate,
       delay: defaultSpinnerDelay,
       callback: () => {
-        thunkAPI.dispatch(setIsLoading(false));
+        thunkAPI.dispatch(setLoadState(LoadState.Loaded));
       },
     });
   },
@@ -94,7 +95,7 @@ const getClusterServiceImports = createAsyncThunk(
 const createInitialState = (): AdcmClusterImportsState => ({
   clusterImports: [],
   hasSaveError: false,
-  isLoading: false,
+  loadState: LoadState.Loaded,
   totalCount: 0,
 });
 
@@ -105,8 +106,8 @@ const clusterImportsServiceSlice = createSlice({
     cleanupClusterServiceImports() {
       return createInitialState();
     },
-    setIsLoading(state, action) {
-      state.isLoading = action.payload;
+    setLoadState(state, action) {
+      state.loadState = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -127,6 +128,6 @@ const clusterImportsServiceSlice = createSlice({
   },
 });
 
-const { cleanupClusterServiceImports, setIsLoading } = clusterImportsServiceSlice.actions;
+const { cleanupClusterServiceImports, setLoadState } = clusterImportsServiceSlice.actions;
 export { cleanupClusterServiceImports, getClusterServiceImports, saveClusterServiceImports };
 export default clusterImportsServiceSlice.reducer;

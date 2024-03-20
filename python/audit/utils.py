@@ -10,13 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
 from contextlib import suppress
 from functools import wraps
+import re
 
 from api.cluster.serializers import ClusterAuditSerializer
 from api.component.serializers import ComponentAuditSerializer
 from api.host.serializers import HostAuditSerializer
+from api.rbac.group.serializers import GroupAuditSerializer
+from api.rbac.policy.serializers import PolicyAuditSerializer
+from api.rbac.role.serializers import RoleAuditSerializer
+from api.rbac.user.serializers import UserAuditSerializer
 from api.service.serializers import ServiceAuditSerializer
 from api_v2.cluster.serializers import (
     ClusterAuditSerializer as ClusterAuditSerializerV2,
@@ -30,16 +34,6 @@ from api_v2.service.serializers import (
     ServiceAuditSerializer as ServiceAuditSerializerV2,
 )
 from api_v2.views import CamelCaseModelViewSet
-from audit.cases.cases import get_audit_operation_and_object
-from audit.cef_logger import cef_logger
-from audit.models import (
-    AuditLog,
-    AuditLogOperationResult,
-    AuditLogOperationType,
-    AuditObject,
-    AuditOperation,
-    AuditUser,
-)
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
@@ -59,10 +53,6 @@ from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import Model, ObjectDoesNotExist
 from django.http.response import Http404
 from django.urls import resolve
-from rbac.endpoints.group.serializers import GroupAuditSerializer
-from rbac.endpoints.policy.serializers import PolicyAuditSerializer
-from rbac.endpoints.role.serializers import RoleAuditSerializer
-from rbac.endpoints.user.serializers import UserAuditSerializer
 from rbac.models import Group, Policy, Role, User, get_rbac_model_by_type
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.generics import GenericAPIView
@@ -73,6 +63,17 @@ from rest_framework.status import (
     is_success,
 )
 from rest_framework.viewsets import ModelViewSet
+
+from audit.cases.cases import get_audit_operation_and_object
+from audit.cef_logger import cef_logger
+from audit.models import (
+    AuditLog,
+    AuditLogOperationResult,
+    AuditLogOperationType,
+    AuditObject,
+    AuditOperation,
+    AuditUser,
+)
 
 AUDITED_HTTP_METHODS = frozenset(("POST", "DELETE", "PUT", "PATCH"))
 
@@ -101,8 +102,6 @@ def _get_view_and_request(args) -> tuple[GenericAPIView, WSGIRequest]:
 def _get_deleted_obj(
     view: GenericAPIView, request: WSGIRequest, kwargs: dict, api_version: int, path: list[str]
 ) -> Model | None:
-    # pylint: disable=too-many-branches, too-many-statements
-
     try:
         deleted_obj = view.get_object()
     except AssertionError:
@@ -118,7 +117,7 @@ def _get_deleted_obj(
     except (AdcmEx, Http404) as e:  # when denied returns 404 from PermissionListMixin
         if api_version == 1:
             try:
-                if getattr(view, "queryset") is None:
+                if view.queryset is None:
                     raise TypeError from e
 
                 if view.queryset.count() == 1:
@@ -131,10 +130,7 @@ def _get_deleted_obj(
                 else:
                     deleted_obj = None
             except TypeError:
-                if "role" in request.path:
-                    deleted_obj = Role.objects.filter(pk=view.kwargs["pk"]).first()
-                else:
-                    deleted_obj = None
+                deleted_obj = Role.objects.filter(pk=view.kwargs["pk"]).first() if "role" in request.path else None
             except (IndexError, ObjectDoesNotExist):
                 deleted_obj = None
         elif api_version == 2:
@@ -175,7 +171,7 @@ def get_target_object_by_path(path: list[str]) -> Model | None:
         return None
 
 
-def get_target_model_and_id_by_path(  # pylint: disable=too-many-return-statements
+def get_target_model_and_id_by_path(
     path: list[str],
 ) -> tuple[type[Model], str] | None:
     match path:
@@ -215,7 +211,6 @@ def get_target_model_and_id_by_path(  # pylint: disable=too-many-return-statemen
             return None
 
 
-# pylint: disable=too-many-branches
 def _get_object_changes(prev_data: dict, current_obj: Model, api_version: int) -> dict:
     serializer_class = None
     if isinstance(current_obj, Group):
@@ -269,8 +264,6 @@ def _get_object_changes(prev_data: dict, current_obj: Model, api_version: int) -
 
 
 def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | None, Model | None]:
-    # pylint: disable=too-many-branches,too-many-statements
-
     prev_data = None
     current_obj = None
     serializer_class = None
@@ -328,10 +321,8 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
             pk = view.kwargs["pk"]
 
     if serializer_class:
-        if hasattr(view, "audit_model_hint"):  # for cases when get_queryset() raises error
-            model = view.audit_model_hint
-        else:
-            model = view.get_queryset().model
+        # for cases when get_queryset() raises error
+        model = view.audit_model_hint if hasattr(view, "audit_model_hint") else view.get_queryset().model
 
         try:
             current_obj = model.objects.filter(pk=pk).first()
@@ -395,10 +386,7 @@ def _detect_status_code_and_deleted_object_for_v1(
     error: AdcmEx | ValidationError | Http404 | NotFound, deleted_obj, kwargs
 ) -> int:
     if not deleted_obj:
-        if isinstance(error, Http404):
-            status_code = HTTP_404_NOT_FOUND
-        else:
-            status_code = error.status_code
+        status_code = HTTP_404_NOT_FOUND if isinstance(error, Http404) else error.status_code
 
         if status_code != HTTP_404_NOT_FOUND:
             return status_code
@@ -411,7 +399,7 @@ def _detect_status_code_and_deleted_object_for_v1(
         return status_code
 
     # when denied returns 404 from PermissionListMixin
-    if getattr(error, "msg", None) and (  # pylint: disable=too-many-boolean-expressions
+    if getattr(error, "msg", None) and (
         "There is host" in error.msg
         or "belong to cluster" in error.msg
         or "host associated with a cluster" in error.msg
@@ -450,7 +438,7 @@ def _all_child_objects_exist(path: list[str]) -> bool:
             return True
 
 
-def _all_objects_in_path_exist(path: list[str]) -> bool:  # pylint: disable=too-many-return-statements
+def _all_objects_in_path_exist(path: list[str]) -> bool:
     match path:
         case ["rbac", rbac_type, pk, *_]:
             with suppress(KeyError, ValueError):
@@ -470,11 +458,8 @@ def _all_objects_in_path_exist(path: list[str]) -> bool:  # pylint: disable=too-
 
 
 def audit(func):
-    # pylint: disable=too-many-statements
     @wraps(func)
     def wrapped(*args, **kwargs):
-        # pylint: disable=too-many-branches,too-many-statements,too-many-locals
-
         audit_operation: AuditOperation
         audit_object: AuditObject
         operation_name: str
@@ -515,19 +500,13 @@ def audit(func):
                 return res
 
             # Correctly finished request (when will be `bool(res) is False`?)
-            if res:
-                status_code = res.status_code
-            else:
-                status_code = HTTP_403_FORBIDDEN
+            status_code = res.status_code if res else HTTP_403_FORBIDDEN
         except (AdcmEx, ValidationError, Http404, NotFound) as exc:
             error = exc
             res = None
 
             if api_version == 2:
-                if isinstance(error, Http404):
-                    status_code = HTTP_404_NOT_FOUND
-                else:
-                    status_code = error.status_code
+                status_code = HTTP_404_NOT_FOUND if isinstance(error, Http404) else error.status_code
 
                 if status_code == HTTP_404_NOT_FOUND and _all_objects_in_path_exist(path=path):
                     status_code = HTTP_403_FORBIDDEN

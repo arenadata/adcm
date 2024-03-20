@@ -1,7 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
-import { useDispatch, useStore } from '@hooks';
-import { setLocalMapping, revertChanges } from '@store/adcm/cluster/mapping/mappingSlice';
-import { AdcmMappingComponent, AdcmHostShortView } from '@models/adcm';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AdcmMappingComponent, AdcmHostShortView, AdcmMapping } from '@models/adcm';
 import { arrayToHash } from '@utils/arrayUtils';
 import {
   getComponentsMapping,
@@ -11,34 +9,39 @@ import {
   validate,
 } from './ClusterMapping.utils';
 import {
-  HostMappingFilter,
+  MappingFilter,
   HostMapping,
   ComponentMapping,
-  ServiceMappingFilter,
   ServiceMapping,
   HostsDictionary,
   ComponentsDictionary,
 } from './ClusterMapping.types';
+import { NotAddedServicesDictionary } from '@store/adcm/cluster/mapping/mappingSlice';
 
-export const useClusterMapping = () => {
-  const dispatch = useDispatch();
-
-  const { hosts, components, localMapping, isLoaded, isLoading, hasSaveError, state } = useStore(
-    ({ adcm }) => adcm.clusterMapping,
-  );
-  const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
-
+export const useClusterMapping = (
+  mapping: AdcmMapping[],
+  hosts: AdcmHostShortView[],
+  components: AdcmMappingComponent[],
+  notAddedServicesDictionary: NotAddedServicesDictionary,
+  isLoaded: boolean,
+) => {
   const hostsDictionary: HostsDictionary = useMemo(() => arrayToHash(hosts, (h) => h.id), [hosts]);
   const componentsDictionary: ComponentsDictionary = useMemo(() => arrayToHash(components, (c) => c.id), [components]);
 
-  const [hostsMappingFilter, setHostsMappingFilter] = useState<HostMappingFilter>({
+  const [localMapping, setLocalMapping] = useState<AdcmMapping[]>(mapping);
+  const [isMappingChanged, setIsMappingChanged] = useState(false);
+
+  const [mappingFilter, setMappingFilter] = useState<MappingFilter>({
     componentDisplayName: '',
-    isHideEmptyHosts: false,
-  });
-  const [servicesMappingFilter, setServicesMappingFilter] = useState<ServiceMappingFilter>({
     hostName: '',
-    isHideEmptyComponents: false,
+    isHideEmpty: false,
   });
+
+  useEffect(() => {
+    if (isLoaded) {
+      setLocalMapping(mapping);
+    }
+  }, [isLoaded, mapping]);
 
   const componentsMapping: ComponentMapping[] = useMemo(
     () => (isLoaded ? getComponentsMapping(localMapping, components, hostsDictionary) : []),
@@ -47,7 +50,7 @@ export const useClusterMapping = () => {
 
   const hostsMapping: HostMapping[] = useMemo(
     () => (isLoaded ? getHostsMapping(localMapping, hosts, componentsDictionary) : []),
-    [isLoaded, localMapping, hosts, componentsDictionary],
+    [hosts, componentsDictionary, isLoaded, localMapping],
   );
 
   const servicesMapping: ServiceMapping[] = useMemo(
@@ -55,9 +58,10 @@ export const useClusterMapping = () => {
     [isLoaded, componentsMapping],
   );
 
-  const servicesMappingDictionary = useMemo(() => {
-    return Object.fromEntries(servicesMapping.map((item) => [item.service.prototype.id, item]));
-  }, [servicesMapping]);
+  const servicesMappingDictionary = useMemo(
+    () => arrayToHash(servicesMapping, (sm) => sm.service.prototype.id),
+    [servicesMapping],
+  );
 
   const mappingValidation = useMemo(() => {
     return validate(componentsMapping, {
@@ -67,57 +71,48 @@ export const useClusterMapping = () => {
     });
   }, [componentsMapping, servicesMappingDictionary, notAddedServicesDictionary, hosts.length]);
 
-  const handleMapHostsToComponent = useCallback(
+  const handleMap = useCallback(
     (hosts: AdcmHostShortView[], component: AdcmMappingComponent) => {
       const newLocalMapping = mapHostsToComponent(servicesMapping, hosts, component);
-      dispatch(setLocalMapping(newLocalMapping));
+      setLocalMapping(newLocalMapping);
+      setIsMappingChanged(true);
     },
-    [dispatch, servicesMapping],
+    [servicesMapping],
   );
 
   const handleUnmap = useCallback(
     (hostId: number, componentId: number) => {
-      const newLocalMapping = localMapping.filter((m) => !(m.hostId === hostId && m.componentId === componentId));
-      dispatch(setLocalMapping(newLocalMapping));
+      const newMapping = localMapping.filter((m) => !(m.hostId === hostId && m.componentId === componentId));
+      setLocalMapping(newMapping);
+      setIsMappingChanged(true);
     },
-    [dispatch, localMapping],
+    [localMapping],
   );
 
-  const handleServicesMappingFilterChange = (changes: Partial<ServiceMappingFilter>) => {
-    setServicesMappingFilter({
-      ...servicesMappingFilter,
+  const handleMappingFilterChange = (changes: Partial<MappingFilter>) => {
+    setMappingFilter({
+      ...mappingFilter,
       ...changes,
     });
   };
 
-  const handleHostsMappingFilterChange = (changes: Partial<HostMappingFilter>) => {
-    setHostsMappingFilter({
-      ...hostsMappingFilter,
-      ...changes,
-    });
+  const handleReset = () => {
+    setLocalMapping(mapping);
+    setIsMappingChanged(false);
   };
-
-  const handleRevert = useCallback(() => {
-    dispatch(revertChanges());
-  }, [dispatch]);
 
   return {
-    hostComponentMapping: localMapping,
-    isLoading,
-    isLoaded,
     hosts,
     hostsMapping,
-    hostsMappingFilter,
-    handleHostsMappingFilterChange,
+    localMapping,
+    isMappingChanged,
+    mappingFilter,
+    handleMappingFilterChange,
     components,
     servicesMapping,
-    servicesMappingFilter,
-    handleServicesMappingFilterChange,
-    mappingState: state,
     mappingValidation,
-    hasSaveError,
-    handleMapHostsToComponent,
+    handleMap,
     handleUnmap,
-    handleRevert,
+    handleReset,
   };
 };

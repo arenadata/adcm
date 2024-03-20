@@ -3,12 +3,11 @@ import cn from 'classnames';
 import LeftBarMenu from '@commonComponents/LeftBarMenu/LeftBarMenu';
 import LeftBarMenuItem from '@commonComponents/LeftBarMenu/LeftBarMenuItem';
 import MainLogo from '@layouts/partials/MainLogo/MainLogo';
-import { useMediaQuery } from '@uikit/hooks/useMediaQuery';
 import s from './LeftSideBar.module.scss';
-import { useDispatch, useStore } from '@hooks';
+import { useDispatch, useStore, useMediaQuery } from '@hooks';
 import { logout } from '@store/authSlice';
-import { getAdcmSettings } from '@store/adcm/settings/settingsSlice.ts';
-import { isBlockingConcernPresent } from '@utils/concernUtils.ts';
+import { getAdcmSettings } from '@store/adcm/settings/settingsSlice';
+import { isBlockingConcernPresent } from '@utils/concernUtils';
 
 const LeftSideBar: React.FC<HTMLAttributes<HTMLDivElement>> = ({ className }) => {
   const dispatch = useDispatch();

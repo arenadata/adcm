@@ -10,11 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.action.serializers import ActionShort
-from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
-from api.serializers import DoUpgradeSerializer, StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL, check_obj
+from adcm.serializers import EmptySerializer
+from adcm.utils import filter_actions
 from cm.adcm_config.config import get_main_info
 from cm.api import add_host_provider
 from cm.errors import AdcmEx
@@ -30,8 +27,11 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
-from adcm.serializers import EmptySerializer
-from adcm.utils import filter_actions
+from api.action.serializers import ActionShort
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.serializers import DoUpgradeSerializer, StringListSerializer
+from api.utils import CommonAPIURL, ObjectURL, check_obj
 
 
 class ProviderSerializer(EmptySerializer):
@@ -45,8 +45,7 @@ class ProviderSerializer(EmptySerializer):
 
     @staticmethod
     def validate_prototype_id(prototype_id):
-        proto = check_obj(Prototype, {"id": prototype_id, "type": "provider"}, "PROTOTYPE_NOT_FOUND")
-        return proto
+        return check_obj(Prototype, {"id": prototype_id, "type": "provider"}, "PROTOTYPE_NOT_FOUND")
 
     def create(self, validated_data):
         try:

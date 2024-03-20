@@ -12,6 +12,23 @@
 
 from itertools import compress
 
+from adcm.mixins import GetParentObjectMixin
+from audit.utils import audit
+from cm.errors import AdcmEx
+from cm.job import ActionRunPayload, run_action
+from cm.models import ADCM, Action, ConcernType, Host, HostComponent, PrototypeConfig
+from cm.stack import check_hostcomponents_objects_exist
+from django.conf import settings
+from django.db.models import Q
+from django_filters.rest_framework.backends import DjangoFilterBackend
+from jinja_config import get_jinja_config
+from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
+
 from api_v2.action.filters import ActionFilter
 from api_v2.action.serializers import (
     ActionListSerializer,
@@ -27,44 +44,17 @@ from api_v2.action.utils import (
 from api_v2.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
-from audit.utils import audit
-from cm.errors import AdcmEx
-from cm.job import ActionRunPayload, run_action
-from cm.models import ADCM, Action, ConcernType, Host, HostComponent, PrototypeConfig
-from cm.stack import check_hostcomponents_objects_exist
-from django.conf import settings
-from django.db.models import Q
-from django_filters.rest_framework.backends import DjangoFilterBackend
-from guardian.shortcuts import get_objects_for_user
-from jinja_config import get_jinja_config
-from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound
-from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
-
-from adcm.mixins import GetParentObjectMixin
 
 
-class ActionViewSet(  # pylint: disable=too-many-ancestors
-    ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, CamelCaseGenericViewSet
-):
+class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, CamelCaseGenericViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ActionFilter
 
-    def get_queryset(self, *args, **kwargs):  # pylint: disable=unused-argument
-        self.parent_object = self.get_parent_object()  # pylint: disable=attribute-defined-outside-init
-
-        if self.parent_object is None or not self.request.user.has_perm(
-            f"cm.view_{self.parent_object.__class__.__name__.lower()}", self.parent_object
-        ):
-            raise NotFound()
-
-        if self.parent_object.concerns.filter(type=ConcernType.LOCK).exists():
+    def get_queryset(self, *args, **kwargs):  # noqa: ARG002
+        if self.parent_object is None or self.parent_object.concerns.filter(type=ConcernType.LOCK).exists():
             return Action.objects.none()
 
-        self.prototype_objects = {}  # pylint: disable=attribute-defined-outside-init
+        self.prototype_objects = {}
 
         if isinstance(self.parent_object, Host) and self.parent_object.cluster:
             self.prototype_objects[self.parent_object.cluster.prototype] = self.parent_object.cluster
@@ -76,7 +66,7 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
                 self.prototype_objects[hc_item.component.prototype] = hc_item.component
 
         actions = (
-            get_objects_for_user(user=self.request.user, perms=["cm.view_action"])
+            Action.objects.all()
             .select_related("prototype")
             .exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET)
             .filter(upgrade__isnull=True)
@@ -102,7 +92,17 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
 
         return ActionListSerializer
 
-    def list(self, request: Request, *args, **kwargs) -> Response:
+    def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+        self.parent_object = self.get_parent_object()
+        if (
+            not self.parent_object
+            or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
+            and not request.user.has_perm(
+                perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}", obj=self.parent_object
+            )
+        ):
+            raise NotFound()
+
         actions = self.filter_queryset(self.get_queryset())
         allowed_actions_mask = [act.allowed(self.prototype_objects[act.prototype]) for act in actions]
         actions = list(compress(actions, allowed_actions_mask))
@@ -112,8 +112,19 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
 
         return Response(data=serializer.data)
 
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, request, *args, **kwargs):  # noqa: ARG002
+        self.parent_object = self.get_parent_object()
         action_ = self.get_object()
+
+        if (
+            not self.parent_object
+            or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
+            and not request.user.has_perm(
+                perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}", obj=self.parent_object
+            )
+            or not check_run_perms(user=request.user, action=action_, obj=self.parent_object)
+        ):
+            raise NotFound()
 
         config_schema, config, adcm_meta = get_action_configuration(action_=action_, object_=self.parent_object)
 
@@ -131,14 +142,22 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
 
     @audit
     @action(methods=["post"], detail=True, url_path="run")
-    def run(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def run(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+        self.parent_object = self.get_parent_object()
         target_action = self.get_object()
+
+        if (
+            not self.parent_object
+            or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
+            and not request.user.has_perm(
+                perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}", obj=self.parent_object
+            )
+            or not check_run_perms(user=request.user, action=target_action, obj=self.parent_object)
+        ):
+            raise NotFound()
 
         if reason := target_action.get_start_impossible_reason(self.parent_object):
             raise AdcmEx("ACTION_ERROR", msg=reason)
-
-        if not check_run_perms(user=request.user, action=target_action, obj=self.parent_object):
-            raise NotFound()
 
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -181,6 +200,6 @@ class ActionViewSet(  # pylint: disable=too-many-ancestors
         return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)
 
 
-class AdcmActionViewSet(ActionViewSet):  # pylint: disable=too-many-ancestors
+class AdcmActionViewSet(ActionViewSet):
     def get_parent_object(self):
         return ADCM.objects.first()

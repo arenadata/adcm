@@ -9,13 +9,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-lines
 
+from functools import partial
+from typing import Literal, TypedDict
 import json
-from functools import partial, wraps
-from typing import Literal
 
 from adcm_version import compare_prototype_versions
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import MultipleObjectsReturned
+from django.db.transaction import atomic, on_commit
+from rbac.models import Policy, re_apply_object_policy
+from rbac.roles import apply_policy_for_new_config
+
 from cm.adcm_config.config import (
     init_object_config,
     process_json_config,
@@ -50,26 +55,19 @@ from cm.models import (
     HostProvider,
     MaintenanceMode,
     ObjectConfig,
-    ObjectType,
     Prototype,
     PrototypeExport,
     PrototypeImport,
     ServiceComponent,
     TaskLog,
 )
+from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import (
-    api_request,
     send_config_creation_event,
     send_delete_service_event,
     send_host_component_map_update_event,
 )
-from cm.utils import build_id_object_mapping, obj_ref
-from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import MultipleObjectsReturned
-from django.db.transaction import atomic, on_commit
-from rbac.models import Policy, re_apply_object_policy
-from rbac.roles import apply_policy_for_new_config
-from rest_framework.status import HTTP_409_CONFLICT
+from cm.utils import obj_ref
 
 
 def check_license(prototype: Prototype) -> None:
@@ -81,108 +79,23 @@ def check_license(prototype: Prototype) -> None:
 
 
 def is_version_suitable(version: str, prototype_import: PrototypeImport) -> bool:
-    if prototype_import.min_strict:
-        if compare_prototype_versions(version, prototype_import.min_version) <= 0:
-            return False
-    elif prototype_import.min_version:
-        if compare_prototype_versions(version, prototype_import.min_version) < 0:
-            return False
+    if (
+        prototype_import.min_strict
+        and compare_prototype_versions(version, prototype_import.min_version) <= 0
+        or prototype_import.min_version
+        and compare_prototype_versions(version, prototype_import.min_version) < 0
+    ):
+        return False
 
-    if prototype_import.max_strict:
-        if compare_prototype_versions(version, prototype_import.max_version) >= 0:
-            return False
-    elif prototype_import.max_version:
-        if compare_prototype_versions(version, prototype_import.max_version) > 0:
-            return False
+    if (
+        prototype_import.max_strict
+        and compare_prototype_versions(version, prototype_import.max_version) >= 0
+        or prototype_import.max_version
+        and compare_prototype_versions(version, prototype_import.max_version) > 0
+    ):
+        return False
 
     return True
-
-
-def load_service_map():
-    comps = {}
-    hosts = {}
-    hc_map = {}
-    services = {}
-    passive = {}
-    for service_component in ServiceComponent.objects.filter(prototype__monitoring="passive"):
-        passive[service_component.pk] = True
-
-    for hostcomponent in HostComponent.objects.order_by("id"):
-        if hostcomponent.component.pk in passive:
-            continue
-
-        key = f"{hostcomponent.host.pk}.{hostcomponent.component.pk}"
-        hc_map[key] = {"cluster": hostcomponent.cluster.pk, "service": hostcomponent.service.pk}
-        if str(hostcomponent.cluster.pk) not in comps:
-            comps[str(hostcomponent.cluster.pk)] = {}
-
-        if str(hostcomponent.service.pk) not in comps[str(hostcomponent.cluster.pk)]:
-            comps[str(hostcomponent.cluster.pk)][str(hostcomponent.service.pk)] = []
-
-        comps[str(hostcomponent.cluster.pk)][str(hostcomponent.service.pk)].append(key)
-
-    for host in Host.objects.filter(prototype__monitoring="active"):
-        if host.cluster:
-            cluster_pk = host.cluster.pk
-        else:
-            cluster_pk = 0
-
-        if cluster_pk not in hosts:
-            hosts[cluster_pk] = []
-
-        hosts[cluster_pk].append(host.pk)
-
-    for service in ClusterObject.objects.filter(prototype__monitoring="active"):
-        if service.cluster.pk not in services:
-            services[service.cluster.pk] = []
-
-        services[service.cluster.pk].append(service.pk)
-
-    data = {
-        "hostservice": hc_map,
-        "component": comps,
-        "service": services,
-        "host": hosts,
-    }
-    api_request(method="post", url="servicemap/", data=data)
-    load_mm_objects()
-
-
-def load_mm_objects():
-    """send ids of all objects in mm to status server"""
-    clusters = Cluster.objects.filter(prototype__type=ObjectType.CLUSTER, prototype__allow_maintenance_mode=True)
-
-    service_ids = set()
-    component_ids = set()
-    host_ids = []
-
-    for service in ClusterObject.objects.filter(cluster__in=clusters).prefetch_related("servicecomponent_set"):
-        if service.maintenance_mode == MaintenanceMode.ON:
-            service_ids.add(service.pk)
-        for component in service.servicecomponent_set.order_by("id"):
-            if component.maintenance_mode == MaintenanceMode.ON:
-                component_ids.add(component.pk)
-
-    for host in Host.objects.filter(cluster__in=clusters):
-        if host.maintenance_mode == MaintenanceMode.ON:
-            host_ids.append(host.pk)
-
-    data = {
-        "services": list(service_ids),
-        "components": list(component_ids),
-        "hosts": host_ids,
-    }
-    return api_request(method="post", url="object/mm/", data=data)
-
-
-def update_mm_objects(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        res = func(*args, **kwargs)
-        load_mm_objects()
-        return res
-
-    return wrapper
 
 
 def add_cluster(prototype: Prototype, name: str, description: str = "") -> Cluster:
@@ -197,7 +110,7 @@ def add_cluster(prototype: Prototype, name: str, description: str = "") -> Clust
         cluster.save()
         update_hierarchy_issues(cluster)
 
-    load_service_map()
+    reset_hc_map()
     logger.info("cluster #%s %s is added", cluster.pk, cluster.name)
 
     return cluster
@@ -224,7 +137,7 @@ def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, descriptio
         update_hierarchy_issues(host.provider)
         re_apply_object_policy(provider)
 
-    load_service_map()
+    reset_hc_map()
     logger.info("host #%s %s is added", host.pk, host.fqdn)
 
     return host
@@ -319,7 +232,8 @@ def delete_host(host: Host, cancel_tasks: bool = True) -> None:
 
     host_pk = host.pk
     host.delete()
-    load_service_map()
+    reset_hc_map()
+    reset_objects_in_mm()
     update_issue_after_deleting()
     logger.info("host #%s is deleted", host_pk)
 
@@ -385,7 +299,7 @@ def delete_service(service: ClusterObject) -> None:
     update_issue_after_deleting()
     update_hierarchy_issues(service.cluster)
     re_apply_object_policy(service.cluster)
-    load_service_map()
+    reset_hc_map()
     on_commit(func=partial(send_delete_service_event, service_id=service_pk))
     logger.info("service #%s is deleted", service_pk)
 
@@ -407,7 +321,8 @@ def delete_cluster(cluster: Cluster) -> None:
     )
     cluster.delete()
     update_issue_after_deleting()
-    load_service_map()
+    reset_hc_map()
+    reset_objects_in_mm()
 
     for task in tasks:
         task.cancel(obj_deletion=True)
@@ -435,7 +350,8 @@ def remove_host_from_cluster(host: Host) -> Host:
         update_hierarchy_issues(obj=cluster)
         re_apply_object_policy(apply_object=cluster)
 
-    load_service_map()
+    reset_hc_map()
+    reset_objects_in_mm()
 
     return host
 
@@ -455,13 +371,12 @@ def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
         raise_adcm_ex(code="OBJ_TYPE_ERROR", msg=f"Prototype type should be service, not {proto.type}")
 
     check_license(prototype=proto)
-    if not proto.shared:
-        if cluster.prototype.bundle != proto.bundle:
-            raise_adcm_ex(
-                code="SERVICE_CONFLICT",
-                msg=f"{proto_ref(prototype=proto)} does not belong to bundle "
-                f'"{cluster.prototype.bundle.name}" {cluster.prototype.version}',
-            )
+    if not proto.shared and cluster.prototype.bundle != proto.bundle:
+        raise_adcm_ex(
+            code="SERVICE_CONFLICT",
+            msg=f"{proto_ref(prototype=proto)} does not belong to bundle "
+            f'"{cluster.prototype.bundle.name}" {cluster.prototype.version}',
+        )
 
     with atomic():
         service = ClusterObject.objects.create(cluster=cluster, prototype=proto)
@@ -472,7 +387,7 @@ def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
         update_hierarchy_issues(obj=cluster)
         re_apply_object_policy(apply_object=cluster)
 
-    load_service_map()
+    reset_hc_map()
     logger.info(
         "service #%s %s is added to cluster #%s %s",
         service.pk,
@@ -604,52 +519,6 @@ def check_sub_key(hc_in):
             raise_adcm_ex("INVALID_INPUT", f"duplicate ({item}) in host service list")
 
 
-def retrieve_host_component_objects(
-    cluster: Cluster, plain_hc: list[dict[Literal["host_id", "component_id"], int]]
-) -> list[tuple[ClusterObject, Host, ServiceComponent]]:
-    host_ids: set[int] = set()
-    component_ids: set[int] = set()
-    for record in plain_hc:
-        host_ids.add(record["host_id"])
-        component_ids.add(record["component_id"])
-
-    hosts_in_hc: dict[int, Host] = build_id_object_mapping(
-        objects=Host.objects.select_related("cluster").filter(pk__in=host_ids)
-    )
-    if not_found_host_ids := host_ids.difference(hosts_in_hc.keys()):
-        message = f"Hosts not found: {', '.join([str(host_id) for host_id in not_found_host_ids])}"
-        raise AdcmEx(code="HOST_NOT_FOUND", http_code=HTTP_409_CONFLICT, msg=message)
-
-    components_in_hc: dict[int, ServiceComponent] = build_id_object_mapping(
-        objects=ServiceComponent.objects.select_related("service").filter(pk__in=component_ids, cluster=cluster)
-    )
-    if not_found_component_ids := component_ids.difference(components_in_hc.keys()):
-        message = f"Components not found: {', '.join([str(component_id) for component_id in not_found_component_ids])}"
-        raise AdcmEx(code="COMPONENT_NOT_FOUND", http_code=HTTP_409_CONFLICT, msg=message)
-
-    host_component_objects = []
-
-    for record in plain_hc:
-        host: Host = hosts_in_hc[record["host_id"]]
-
-        if not host.cluster:
-            message = f'Host "{host.fqdn}" does not belong to any cluster'
-            raise AdcmEx(code="FOREIGN_HOST", msg=message)
-
-        if host.cluster.pk != cluster.pk:
-            message = (
-                f'Host "{host.fqdn}" (cluster "{host.cluster.display_name}") '
-                f'does not belong to cluster "{cluster.display_name}"'
-            )
-            raise AdcmEx(code="FOREIGN_HOST", msg=message)
-
-        component: ServiceComponent = components_in_hc[record["component_id"]]
-
-        host_component_objects.append((component.service, host, component))
-
-    return host_component_objects
-
-
 def make_host_comp_list(cluster: Cluster, hc_in: list[dict]) -> list[tuple[ClusterObject, Host, ServiceComponent]]:
     host_comp_list = []
     for item in hc_in:
@@ -712,8 +581,6 @@ def still_existed_hc(cluster: Cluster, host_comp_list: list[tuple[ClusterObject,
 def save_hc(
     cluster: Cluster, host_comp_list: list[tuple[ClusterObject, Host, ServiceComponent]]
 ) -> list[HostComponent]:
-    # pylint: disable=too-many-locals
-
     hc_queryset = HostComponent.objects.filter(cluster=cluster).order_by("id")
     service_set = {hc.service for hc in hc_queryset}
     old_hosts = {i.host for i in hc_queryset.select_related("host")}
@@ -760,7 +627,8 @@ def save_hc(
         update_hierarchy_issues(provider)
 
     update_issue_after_deleting()
-    load_service_map()
+    reset_hc_map()
+    reset_objects_in_mm()
 
     for host_component_item in host_component_list:
         service_set.add(host_component_item.service)
@@ -784,40 +652,11 @@ def save_hc(
     return host_component_list
 
 
-def set_host_component(
-    cluster: Cluster, host_component_objects: list[tuple[ClusterObject, Host, ServiceComponent]]
-) -> list[HostComponent]:
-    """
-    Save given hosts-components mapping if all sanity checks pass
-    """
-
-    check_hc_requires(shc_list=host_component_objects)
-
-    check_bound_components(shc_list=host_component_objects)
-
-    for service in ClusterObject.objects.select_related("prototype").filter(cluster=cluster):
-        check_component_constraint(
-            cluster=cluster,
-            service_prototype=service.prototype,
-            hc_in=[i for i in host_component_objects if i[0] == service],
-        )
-        check_service_requires(cluster=cluster, proto=service.prototype)
-
-    check_maintenance_mode(cluster=cluster, host_comp_list=host_component_objects)
-
-    with atomic():
-        new_host_component = save_hc(cluster=cluster, host_comp_list=host_component_objects)
-
-    return new_host_component
-
-
 def add_hc(cluster: Cluster, hc_in: list[dict]) -> list[HostComponent]:
     host_comp_list = check_hc(cluster=cluster, hc_in=hc_in)
 
     with atomic():
-        new_host_component = save_hc(cluster=cluster, host_comp_list=host_comp_list)
-
-    return new_host_component
+        return save_hc(cluster=cluster, host_comp_list=host_comp_list)
 
 
 def get_bind(
@@ -940,9 +779,8 @@ def check_import_default(import_obj: Cluster | ClusterObject, export_obj: Cluste
         return
 
     for name in json.loads(prototype_import.default):
-        if name in config_log.attr:
-            if "active" in config_log.attr[name] and not config_log.attr[name]["active"]:
-                raise_adcm_ex("BIND_ERROR", f'Default import "{name}" for {obj_ref(import_obj)} is inactive')
+        if name in config_log.attr and "active" in config_log.attr[name] and not config_log.attr[name]["active"]:
+            raise_adcm_ex("BIND_ERROR", f'Default import "{name}" for {obj_ref(import_obj)} is inactive')
 
 
 def get_bind_obj(cluster: Cluster, service: ClusterObject | None) -> Cluster | ClusterObject:
@@ -981,7 +819,12 @@ def get_prototype_import(import_pk: int, import_obj: Cluster | ClusterObject) ->
     return proto_import
 
 
-def multi_bind(cluster: Cluster, service: ClusterObject | None, bind_list: list[dict]):
+class DataForMultiBind(TypedDict):
+    import_id: int
+    export_id: dict[Literal["cluster_id", "service_id"], int]
+
+
+def multi_bind(cluster: Cluster, service: ClusterObject | None, bind_list: list[DataForMultiBind]):
     check_bind_post(bind_list=bind_list)
     import_obj = get_bind_obj(cluster=cluster, service=service)
     old_bind = {}
@@ -1023,30 +866,29 @@ def multi_bind(cluster: Cluster, service: ClusterObject | None, bind_list: list[
         )
         new_bind[cook_key(cluster=export_cluster, service=export_co)] = prototype_import, cluster_bind, export_obj
 
-    with atomic():
-        for key, value in old_bind.items():
-            if key in new_bind:
-                continue
+    for key, value in old_bind.items():
+        if key in new_bind:
+            continue
 
-            export_obj = get_bind_obj(cluster=value.source_cluster, service=value.source_service)
-            check_import_default(import_obj=import_obj, export_obj=export_obj)
-            value.delete()
-            logger.info("unbind %s from %s", obj_ref(export_obj), obj_ref(obj=import_obj))
+        export_obj = get_bind_obj(cluster=value.source_cluster, service=value.source_service)
+        check_import_default(import_obj=import_obj, export_obj=export_obj)
+        value.delete()
+        logger.info("unbind %s from %s", obj_ref(export_obj), obj_ref(obj=import_obj))
 
-        for key, value in new_bind.items():
-            if key in old_bind:
-                continue
+    for key, value in new_bind.items():
+        if key in old_bind:
+            continue
 
-            prototype_import, cluster_bind, export_obj = value
-            check_multi_bind(
-                actual_import=prototype_import,
-                cluster=cluster,
-                service=service,
-                export_cluster=cluster_bind.source_cluster,
-                export_service=cluster_bind.source_service,
-            )
-            cluster_bind.save()
-            logger.info("bind %s to %s", obj_ref(obj=export_obj), obj_ref(obj=import_obj))
+        prototype_import, cluster_bind, export_obj = value
+        check_multi_bind(
+            actual_import=prototype_import,
+            cluster=cluster,
+            service=service,
+            export_cluster=cluster_bind.source_cluster,
+            export_service=cluster_bind.source_service,
+        )
+        cluster_bind.save()
+        logger.info("bind %s to %s", obj_ref(obj=export_obj), obj_ref(obj=import_obj))
 
         update_hierarchy_issues(obj=cluster)
 
@@ -1144,7 +986,7 @@ def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
         update_hierarchy_issues(host)
         re_apply_object_policy(cluster)
 
-    load_service_map()
+    reset_hc_map()
     logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
 
     return host

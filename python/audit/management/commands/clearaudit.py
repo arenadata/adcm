@@ -10,26 +10,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import csv
-import logging
-import os
 from datetime import timedelta
 from pathlib import Path
 from shutil import rmtree
 from tarfile import TarFile
+import os
+import csv
+import logging
 
-from audit.models import AuditLog, AuditLogOperationResult, AuditObject, AuditSession
-from audit.utils import make_audit_log
 from cm.adcm_config.config import get_adcm_config
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Count, Q
 from django.utils import timezone
 
+from audit.models import AuditLog, AuditLogOperationResult, AuditObject, AuditSession
+from audit.utils import make_audit_log
+
 logger = logging.getLogger("background_tasks")
 
 
-# pylint: disable=protected-access
 class Command(BaseCommand):
     config_key = "audit_data_retention"
     archive_base_dir = "/adcm/data/audit/"
@@ -55,10 +55,10 @@ class Command(BaseCommand):
         AuditObject: "objects",
     }
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: ARG002
         try:
             self.__handle()
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # noqa: BLE001
             make_audit_log("audit", AuditLogOperationResult.FAIL, "completed")
             self.__log(e, "exception")
 

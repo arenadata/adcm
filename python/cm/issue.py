@@ -13,8 +13,12 @@ from functools import partial
 from typing import Iterable
 
 from api_v2.concern.serializers import ConcernSerializer
+from django.db.transaction import on_commit
+from djangorestframework_camel_case.util import camelize
+
 from cm.adcm_config.config import get_prototype_config
 from cm.adcm_config.utils import proto_ref
+from cm.data_containers import PrototypeData
 from cm.errors import AdcmEx
 from cm.hierarchy import Tree
 from cm.logger import logger
@@ -41,23 +45,19 @@ from cm.models import (
 )
 from cm.status_api import send_concern_creation_event, send_concern_delete_event
 from cm.utils import obj_ref
-from django.db.transaction import on_commit
-from djangorestframework_camel_case.util import camelize
 
 
-def check_config(obj: ADCMEntity) -> bool:  # pylint: disable=too-many-branches
+def check_config(obj: ADCMEntity) -> bool:
     spec, _, _, _ = get_prototype_config(prototype=obj.prototype)
     conf, attr = get_obj_config(obj=obj)
-    for key, value in spec.items():  # pylint: disable=too-many-nested-blocks
+    for key, value in spec.items():
         if "required" in value:
-            if value["required"]:
-                if key in conf and conf[key] is None:
-                    logger.debug("required config key %s of %s is missing", key, obj_ref(obj=obj))
-                    return False
+            if value["required"] and key in conf and conf[key] is None:
+                logger.debug("required config key %s of %s is missing", key, obj_ref(obj=obj))
+                return False
         else:
-            if key in attr:
-                if "active" in attr[key] and not attr[key]["active"]:
-                    continue
+            if key in attr and "active" in attr[key] and not attr[key]["active"]:
+                continue
             for subkey in value:
                 if value[subkey]["required"]:
                     if key not in conf:
@@ -213,7 +213,7 @@ def check_hc_requires(shc_list: list[tuple[ClusterObject, Host, ServiceComponent
                 continue
 
             if not any(
-                {
+                {  # noqa: C419
                     (shc[0].prototype.name == require["service"] and shc[2].prototype.name == req_comp)
                     for shc in shc_list
                 }
@@ -230,19 +230,23 @@ def check_bound_components(shc_list: list[tuple[ClusterObject, Host, ServiceComp
         service_name = component_prototype.bound_to["service"]
         component_name = component_prototype.bound_to["component"]
 
-        bound_target_ref = f'component "{component_name}" of service "{service_name}"'
-        bound_requester_ref = f'component "{shc[2].display_name}" of service "{shc[0].display_name}"'
-
         bound_targets_shc = [
             i for i in shc_list if i[0].prototype.name == service_name and i[2].prototype.name == component_name
         ]
+
         if not bound_targets_shc:
+            bound_target_ref = f'component "{component_name}" of service "{service_name}"'
+            bound_requester_ref = f'component "{shc[2].display_name}" of service "{shc[0].display_name}"'
             msg = f"{bound_target_ref.capitalize()} not in hc for {bound_requester_ref}"
             raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=msg)
 
         for target_shc in bound_targets_shc:
             if not [i for i in shc_list if i[1] == target_shc[1] and i[2].prototype == component_prototype]:
-                msg = f'No {bound_target_ref} on host "{shc[1].fqdn}" for {bound_requester_ref}'
+                bound_target_ref = f'component "{shc[2].prototype.name}" of service "{shc[0].prototype.name}"'
+                bound_requester_ref = (
+                    f'component "{target_shc[2].prototype.name}" of service "{target_shc[0].prototype.name}"'
+                )
+                msg = f'No {bound_target_ref} on host "{target_shc[1].fqdn}" for {bound_requester_ref}'
                 raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=msg)
 
 
@@ -258,56 +262,69 @@ def get_obj_config(obj: ADCMEntity) -> tuple[dict, dict]:
     return config_log.config, attr
 
 
-def check_min_required_components(count: int, constraint: int, comp: ServiceComponent, ref: str) -> None:
+def check_min_required_components(count: int, constraint: int, component_prototype: Prototype, ref: str) -> None:
     if count < constraint:
         raise AdcmEx(
             code="COMPONENT_CONSTRAINT_ERROR",
-            msg=f'Less then {constraint} required component "{comp.name}" ({count}) {ref}',
+            msg=f'Less then {constraint} required component "{component_prototype.name}" ({count}) {ref}',
         )
 
 
-def check_max_required_components(count: int, constraint: int, comp: ServiceComponent, ref: str) -> None:
+def check_max_required_components(count: int, constraint: int, component_prototype: Prototype, ref: str) -> None:
     if count > constraint:
         raise AdcmEx(
             code="COMPONENT_CONSTRAINT_ERROR",
-            msg=f'Amount ({count}) of component "{comp.name}" more then maximum ({constraint}) {ref}',
+            msg=f'Amount ({count}) of component "{component_prototype.name}" more then maximum ({constraint}) {ref}',
         )
 
 
-def check_components_number_is_odd(count: int, constraint: str, comp: ServiceComponent, ref: str) -> None:
+def check_components_number_is_odd(count: int, constraint: str, component_prototype: Prototype, ref: str) -> None:
     if count % 2 == 0:
         raise AdcmEx(
             code="COMPONENT_CONSTRAINT_ERROR",
-            msg=f'Amount ({count}) of component "{comp.name}" should be odd ({constraint}) {ref}',
+            msg=f'Amount ({count}) of component "{component_prototype.name}" should be odd ({constraint}) {ref}',
         )
 
 
 def check_components_mapping_contraints(
-    cluster: Cluster, service_prototype: Prototype, comp: ServiceComponent, hc_in: list, constraint: list
+    hosts_count: int,
+    target_mapping_count: int,
+    service_prototype: Prototype | PrototypeData,
+    component_prototype: Prototype | PrototypeData,
 ) -> None:
-    all_hosts_number = Host.objects.filter(cluster=cluster).count()
+    constraint = component_prototype.constraint
     ref = f'in host component list for {service_prototype.type} "{service_prototype.name}"'
-    count = 0
-    for _, _, component in hc_in:
-        if comp.name == component.prototype.name:
-            count += 1
 
     if isinstance(constraint[0], int):
-        check_min_required_components(count=count, constraint=constraint[0], comp=comp, ref=ref)
+        check_min_required_components(
+            count=target_mapping_count, constraint=constraint[0], component_prototype=component_prototype, ref=ref
+        )
         if len(constraint) < 2:
-            check_max_required_components(count=count, constraint=constraint[0], comp=comp, ref=ref)
+            check_max_required_components(
+                count=target_mapping_count, constraint=constraint[0], component_prototype=component_prototype, ref=ref
+            )
 
     if len(constraint) > 1:
         if isinstance(constraint[1], int):
-            check_max_required_components(count=count, constraint=constraint[1], comp=comp, ref=ref)
-        elif constraint[1] == "odd" and count:
-            check_components_number_is_odd(count=count, constraint=constraint[1], comp=comp, ref=ref)
+            check_max_required_components(
+                count=target_mapping_count, constraint=constraint[1], component_prototype=component_prototype, ref=ref
+            )
+        elif constraint[1] == "odd" and target_mapping_count:
+            check_components_number_is_odd(
+                count=target_mapping_count, constraint=constraint[1], component_prototype=component_prototype, ref=ref
+            )
 
     if constraint[0] == "+":
-        check_min_required_components(count=count, constraint=all_hosts_number, comp=comp, ref=ref)
+        check_min_required_components(
+            count=target_mapping_count, constraint=hosts_count, component_prototype=component_prototype, ref=ref
+        )
     elif constraint[0] == "odd":  # synonym to [1,odd]
-        check_min_required_components(count=count, constraint=1, comp=comp, ref=ref)
-        check_components_number_is_odd(count=count, constraint=constraint[0], comp=comp, ref=ref)
+        check_min_required_components(
+            count=target_mapping_count, constraint=1, component_prototype=component_prototype, ref=ref
+        )
+        check_components_number_is_odd(
+            count=target_mapping_count, constraint=constraint[0], component_prototype=component_prototype, ref=ref
+        )
 
 
 def check_component_constraint(
@@ -331,11 +348,16 @@ def check_component_constraint(
                 continue
 
         check_components_mapping_contraints(
-            cluster=cluster,
+            hosts_count=Host.objects.filter(cluster=cluster).count(),
+            target_mapping_count=len(
+                [
+                    i
+                    for i in hc_in
+                    if i[0].prototype.name == service_prototype.name and i[2].prototype.name == component_prototype.name
+                ]
+            ),
             service_prototype=service_prototype,
-            comp=component_prototype,
-            hc_in=hc_in,
-            constraint=component_prototype.constraint,
+            component_prototype=component_prototype,
         )
 
 
@@ -403,14 +425,13 @@ def _create_concern_item(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernI
     kwargs = get_kwargs_for_issue(msg_name=msg_name, source=obj)
     reason = MessageTemplate.get_message_from_template(name=msg_name.value, **kwargs)
     issue_name = _gen_issue_name(obj=obj, cause=issue_cause)
-    issue = ConcernItem.objects.create(
+    return ConcernItem.objects.create(
         type=ConcernType.ISSUE,
         name=issue_name,
         reason=reason,
         owner=obj,
         cause=issue_cause,
     )
-    return issue
 
 
 def create_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:

@@ -10,6 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.permissions import check_custom_perm, get_object_for_user
+from adcm.utils import get_maintenance_mode_response
+from audit.utils import audit
+from cm.models import Cluster, ClusterObject, HostComponent, ServiceComponent
+from cm.services.status.notify import update_mm_objects
+from cm.status_api import make_ui_component_status
+from guardian.mixins import PermissionListMixin
+from rest_framework import permissions
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
+
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.component.serializers import (
     ComponentChangeMaintenanceModeSerializer,
@@ -19,19 +31,7 @@ from api.component.serializers import (
     ComponentStatusSerializer,
     ComponentUISerializer,
 )
-from audit.utils import audit
-from cm.api import update_mm_objects
-from cm.models import Cluster, ClusterObject, HostComponent, ServiceComponent
-from cm.status_api import make_ui_component_status
-from guardian.mixins import PermissionListMixin
-from rbac.viewsets import DjangoOnlyObjectPermissions
-from rest_framework import permissions
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
-
-from adcm.permissions import check_custom_perm, get_object_for_user
-from adcm.utils import get_maintenance_mode_response
+from api.rbac.viewsets import DjangoOnlyObjectPermissions
 
 
 def get_component_queryset(queryset, user, kwargs):
@@ -100,7 +100,6 @@ class ComponentMaintenanceModeView(GenericUIView):
             ServiceComponent,
             id=kwargs["component_id"],
         )
-        # pylint: disable=protected-access
         check_custom_perm(request.user, "change_maintenance_mode", component._meta.model_name, component)
         serializer = self.get_serializer(instance=component, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -118,7 +117,7 @@ class StatusList(GenericUIView):
     serializer_class = ComponentStatusSerializer
     ordering = ["id"]
 
-    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def get(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         queryset = get_component_queryset(ServiceComponent.objects.order_by("id"), request.user, kwargs)
         component = get_object_for_user(request.user, "cm.view_servicecomponent", queryset, id=kwargs["component_id"])
         if self._is_for_ui():

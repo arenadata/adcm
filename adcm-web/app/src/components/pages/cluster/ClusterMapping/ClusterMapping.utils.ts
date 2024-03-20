@@ -5,16 +5,16 @@ import {
   AdcmMapping,
   AdcmMappingComponentService,
   AdcmDependOnService,
+  ComponentId,
+  HostId,
+  ServiceId,
 } from '@models/adcm';
 import {
   HostMapping,
   ServiceMapping,
   ComponentMapping,
   ValidationResult,
-  ComponentId,
-  ServiceId,
   ComponentMappingValidation,
-  HostId,
   HostsDictionary,
   MappingValidation,
   ValidateCache,
@@ -96,13 +96,13 @@ export const getServicesMapping = (componentMapping: ComponentMapping[]): Servic
 export const validate = (componentMapping: ComponentMapping[], relatedData: ValidateRelatedData): MappingValidation => {
   const byComponents: Record<ComponentId, ComponentMappingValidation> = {};
   let isAllMappingValid = true;
-  const validateCash: ValidateCache = {
+  const validateCache: ValidateCache = {
     componentsCache: new Map(),
     servicesCache: new Map(),
   };
 
   for (const cm of componentMapping) {
-    const { constraintsValidationResult, requireValidationResults } = validateComponent(cm, relatedData, validateCash);
+    const { constraintsValidationResult, requireValidationResults } = validateComponent(cm, relatedData, validateCache);
 
     const isValid = constraintsValidationResult.isValid && requireValidationResults.isValid;
 
@@ -204,7 +204,7 @@ export const getConstraintsLimit = (constraints: AdcmComponentConstraint[]) => {
 export const validateDependOn = (
   component: AdcmMappingComponent,
   relatedData: ValidateRelatedData,
-  validateCash: ValidateCache,
+  validateCache: ValidateCache,
 ): ValidationResult => {
   // component have not dependencies
   if (!component.dependOn || component.dependOn.length === 0) {
@@ -214,7 +214,7 @@ export const validateDependOn = (
   const errors = [];
   for (const { servicePrototype: dependService } of component.dependOn) {
     // component depend on not added service
-    if (!validateServiceRequire(dependService, relatedData, validateCash)) {
+    if (!validateServiceRequire(dependService, relatedData, validateCache)) {
       let error = `Requires mapping of service "${dependService.displayName}"`;
 
       // when component depend on special components of service
@@ -239,9 +239,9 @@ export const validateDependOn = (
 const validateServiceRequire = (
   servicePrototype: AdcmDependOnService['servicePrototype'],
   relatedData: ValidateRelatedData,
-  validateCash: ValidateCache,
+  validateCache: ValidateCache,
 ) => {
-  const { servicesCache } = validateCash;
+  const { servicesCache } = validateCache;
   if (servicesCache.has(servicePrototype.id)) {
     return servicesCache.get(servicePrototype.id);
   }
@@ -271,7 +271,7 @@ const validateServiceRequire = (
     const { constraintsValidationResult, requireValidationResults } = validateComponent(
       requiredComponentItem,
       relatedData,
-      validateCash,
+      validateCache,
     );
     const isValidChildComponent = constraintsValidationResult.isValid && requireValidationResults.isValid;
 
@@ -290,9 +290,9 @@ const validateServiceRequire = (
 const validateComponent = (
   componentMapping: ComponentMapping,
   relatedData: ValidateRelatedData,
-  validateCash: ValidateCache,
+  validateCache: ValidateCache,
 ) => {
-  const { componentsCache } = validateCash;
+  const { componentsCache } = validateCache;
   if (componentsCache.has(componentMapping.component.id)) {
     return componentsCache.get(componentMapping.component.id) as ComponentValidateResult;
   }
@@ -306,7 +306,7 @@ const validateComponent = (
   // if component can be not mapping (constraint = [0,...]) and user not mapped some hosts to this component
   // then we can ignore validateDependOn for this component
   const requireValidationResults = isMandatoryComponent(componentMapping)
-    ? validateDependOn(componentMapping.component, relatedData, validateCash)
+    ? validateDependOn(componentMapping.component, relatedData, validateCache)
     : ({ isValid: true } as ValidationSuccess);
 
   const result = {

@@ -9,9 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.bundle.filters import BundleFilter
-from api_v2.bundle.serializers import BundleListSerializer, UploadBundleSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from adcm.permissions import DjangoModelPermissionsAudit
 from audit.utils import audit
 from cm.bundle import delete_bundle, load_bundle, upload_file
 from cm.models import Bundle, ObjectType
@@ -26,12 +24,12 @@ from rest_framework.mixins import (
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
-from adcm.permissions import DjangoModelPermissionsAudit
+from api_v2.bundle.filters import BundleFilter
+from api_v2.bundle.serializers import BundleListSerializer, UploadBundleSerializer
+from api_v2.views import CamelCaseGenericViewSet
 
 
-class BundleViewSet(  # pylint: disable=too-many-ancestors
-    ListModelMixin, RetrieveModelMixin, DestroyModelMixin, CreateModelMixin, CamelCaseGenericViewSet
-):
+class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, CreateModelMixin, CamelCaseGenericViewSet):
     queryset = (
         Bundle.objects.exclude(name="ADCM")
         .annotate(
@@ -58,7 +56,7 @@ class BundleViewSet(  # pylint: disable=too-many-ancestors
         return BundleListSerializer
 
     @audit
-    def create(self, request, *args, **kwargs) -> Response:
+    def create(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         file_path = upload_file(file=request.data["file"])
@@ -69,7 +67,7 @@ class BundleViewSet(  # pylint: disable=too-many-ancestors
         )
 
     @audit
-    def destroy(self, request, *args, **kwargs) -> Response:
+    def destroy(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         bundle = self.get_object()
         delete_bundle(bundle=bundle)
 

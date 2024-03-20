@@ -3,34 +3,21 @@ APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
 SELENOID_HOST ?= 10.92.2.65
 SELENOID_PORT ?= 4444
-ADCM_VERSION = "2.0.0"
+ADCM_VERSION = "2.1.0"
 
 .PHONY: help
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-describe_old:
-	@echo '{"version": "$(shell date '+%Y.%m.%d.%H')","commit_id": "$(shell git log --pretty=format:'%h' -n 1)"}' > config.json
-	cp config.json web/src/assets/config.json
-
 buildss:
 	@docker run -i --rm -v $(CURDIR)/go:/code -w /code golang sh -c "make"
-
-buildjs_old:
-	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./build.sh
 
 buildjs:
 	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/adcm-web/app:/code -e ADCM_VERSION=$(ADCM_VERSION) -w /code node:18.16-alpine ./build.sh
 
-build_base_old:
-	@docker build . -t $(APP_IMAGE):$(APP_TAG)_old
-
 build_base:
 	@docker build . -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
-
-# build ADCM_v1
-build_old: describe_old buildss buildjs_old build_base_old
 
 # build ADCM_v2
 build: buildss buildjs build_base
@@ -46,24 +33,18 @@ unittests_postgresql:
 	poetry run python/manage.py test python -v 2 --parallel
 	docker stop postgres
 
-ng_tests:
-	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64 ./ng_test.sh
-
 pretty:
 	poetry install --no-root --with lint
-	black license_checker.py python
-	autoflake -r -i --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python
-	isort license_checker.py python
-	python license_checker.py --fix --folders python go
+	poetry run python license_checker.py --fix --folders python go
+	poetry run ruff format license_checker.py python
+	poetry run ruff check --fix license_checker.py python
+	poetry run ruff format license_checker.py python
 
 lint:
 	poetry install --no-root --with lint
-	poetry run black --check license_checker.py python
-	poetry run autoflake --check --quiet -r --remove-all-unused-imports --exclude apps.py,python/ansible/plugins,python/init_db.py,python/task_runner.py,python/backupdb.py,python/job_runner.py,python/drf_docs.py license_checker.py python
-	poetry run isort --check license_checker.py python
-	python license_checker.py --folders python go
-	poetry run pylint -j 0 --rcfile pyproject.toml --recursive y python
+	poetry run python license_checker.py --folders python go
+	poetry run ruff check license_checker.py python
+	poetry run ruff format --check python
 
 version:
 	@echo $(ADCM_VERSION)

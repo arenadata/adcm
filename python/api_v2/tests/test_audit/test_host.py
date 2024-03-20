@@ -10,10 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.tests.base import BaseAPITestCase
 from audit.models import AuditObject
 from cm.models import Host, ObjectType, Prototype
-from rbac.services.user import create_user
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -24,13 +22,15 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
 )
 
+from api_v2.tests.base import BaseAPITestCase
 
-class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
+
+class TestHostAudit(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = create_user(**self.test_user_credentials)
+        self.test_user = self.create_user(**self.test_user_credentials)
 
         self.prototype = Prototype.objects.get(bundle=self.bundle_1, type=ObjectType.CLUSTER)
         self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host")
@@ -320,7 +320,7 @@ class TestHostAudit(BaseAPITestCase):  # pylint:disable=too-many-public-methods
                 ),
             )
 
-        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
             operation_name=f"{self.host_1.fqdn} host removed",

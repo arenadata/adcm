@@ -11,3 +11,4 @@ data/
 config.json
 go/bin/
 wwwroot/
+python/adcm/silk_*.py

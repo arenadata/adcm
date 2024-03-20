@@ -1,2 +1,2 @@
-import './clientJS/themeLoader.ts';
-import './clientJS/safariChecker.ts';
+import './clientJS/themeLoader';
+import './clientJS/safariChecker';

@@ -9,6 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from cm.models import ADCM
+from django.views import View
+from requests import Response
+
 from audit.cases.common import (
     _get_audit_operation,
     get_or_create_audit_obj,
@@ -20,9 +24,6 @@ from audit.models import (
     AuditObjectType,
     AuditOperation,
 )
-from cm.models import ADCM
-from django.views import View
-from requests import Response
 
 
 def adcm_case(
@@ -33,7 +34,7 @@ def adcm_case(
 
     if api_version == 1:
         match path:
-            case (["adcm", adcm_pk, "config", "history"] | ["adcm", adcm_pk, "config", "history", _, "restore"]):
+            case ["adcm", adcm_pk, "config", "history"] | ["adcm", adcm_pk, "config", "history", _, "restore"]:
                 audit_operation, audit_object = obj_pk_case(
                     obj_type=AuditObjectType.ADCM,
                     operation_type=AuditLogOperationType.UPDATE,

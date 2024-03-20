@@ -10,16 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from collections import defaultdict
 from collections.abc import Iterable
 from urllib.parse import urljoin
+import json
 
+from django.conf import settings
+from requests import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 import requests
+
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
-    ADCMEntityStatus,
     Cluster,
     ClusterObject,
     Host,
@@ -27,9 +30,6 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from django.conf import settings
-from requests import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 
 class EventTypes:
@@ -58,7 +58,7 @@ def api_request(method: str, url: str, data: dict = None) -> Response | None:
         response = requests.request(method, url, **kwargs)
         if response.status_code not in {HTTP_200_OK, HTTP_201_CREATED}:
             logger.error("%s %s error %d: %s", method, url, response.status_code, response.text)
-        return response
+        return response  # noqa: TRY300
     except requests.exceptions.Timeout:
         logger.error("%s request to %s timed out", method, url)
         return None
@@ -153,8 +153,7 @@ def get_raw_status(url: str) -> int:
 
     if "status" in json_data:
         return json_data["status"]
-    else:
-        return settings.EMPTY_STATUS_STATUS_CODE
+    return settings.EMPTY_STATUS_STATUS_CODE
 
 
 def get_status(obj: ADCMEntity, url: str) -> int:
@@ -189,30 +188,6 @@ def get_host_comp_status(host: Host, component: ServiceComponent) -> int:
 
 def get_component_status(component: ServiceComponent) -> int:
     return get_status(obj=component, url=f"component/{component.id}/")
-
-
-def get_obj_status(obj: Cluster | ClusterObject | Host | HostComponent | ServiceComponent) -> str:
-    match obj.__class__.__name__:
-        case Cluster.__name__:
-            url = f"cluster/{obj.pk}/"
-        case ClusterObject.__name__:
-            url = f"cluster/{obj.cluster.pk}/service/{obj.pk}/"
-        case Host.__name__:
-            url = f"host/{obj.pk}/"
-        case HostComponent.__name__:
-            url = f"host/{obj.host_id}/component/{obj.component_id}/"
-            obj = obj.component
-        case ServiceComponent.__name__:
-            url = f"component/{obj.pk}/"
-        case _:
-            raise ValueError("Wrong obj type")
-
-    int_status = get_status(obj=obj, url=url)
-
-    if int_status == 0:
-        return ADCMEntityStatus.UP
-
-    return ADCMEntityStatus.DOWN
 
 
 def get_object_map(obj: ADCMEntity, url_type: str) -> dict | None:

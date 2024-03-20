@@ -3,11 +3,12 @@ import { ListState } from '@models/table';
 import { AdcmBundlesFilter } from '@models/adcm/bundle';
 import { AdcmPrototypesApi } from '@api';
 import { AdcmPrototypeType, AdcmPrototypeVersions } from '@models/adcm';
+import { LoadState } from '@models/loadState';
 
 type AdcmBundlesTableState = ListState<AdcmBundlesFilter> & {
   relatedData: {
     products: AdcmPrototypeVersions[];
-    isProductsLoaded: boolean;
+    productsLoadState: LoadState;
   };
 };
 
@@ -27,7 +28,7 @@ const createInitialState = (): AdcmBundlesTableState => ({
   },
   relatedData: {
     products: [],
-    isProductsLoaded: false,
+    productsLoadState: LoadState.NotLoaded,
   },
 });
 
@@ -58,7 +59,7 @@ const bundlesTableSlice = createListSlice({
   extraReducers: (builder) => {
     builder.addCase(loadPrototypeVersions.fulfilled, (state, action) => {
       state.relatedData.products = action.payload;
-      state.relatedData.isProductsLoaded = true;
+      state.relatedData.productsLoadState = LoadState.Loaded;
     });
     builder.addCase(loadPrototypeVersions.rejected, (state) => {
       state.relatedData.products = [];

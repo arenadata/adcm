@@ -1,10 +1,10 @@
 import { useDispatch, useStore } from '@hooks';
 import {
-  cleanupHostsConfiguration,
-  createWithUpdateHostsConfigurations,
-  getHostsConfiguration,
-  getHostsConfigurationsVersions,
-} from '@store/adcm/host/configuration/hostsConfigurationSlice';
+  cleanup,
+  createWithUpdateConfigurations,
+  getConfiguration,
+  getConfigurationsVersions,
+} from '@store/adcm/entityConfiguration/configurationSlice';
 import { useCallback, useEffect } from 'react';
 import { useConfigurations } from '@commonComponents/configuration/useConfigurations';
 import { useParams } from 'react-router-dom';
@@ -13,17 +13,17 @@ export const useHostsPrimaryConfiguration = () => {
   const dispatch = useDispatch();
   const { hostId: hostIdFromUrl } = useParams();
   const hostId = Number(hostIdFromUrl);
-  const configVersions = useStore(({ adcm }) => adcm.hostsConfiguration.configVersions);
-  const loadedConfiguration = useStore(({ adcm }) => adcm.hostsConfiguration.loadedConfiguration);
-  const isConfigurationLoading = useStore(({ adcm }) => adcm.hostsConfiguration.isConfigurationLoading);
-  const isVersionsLoading = useStore(({ adcm }) => adcm.hostsConfiguration.isVersionsLoading);
+  const configVersions = useStore(({ adcm }) => adcm.entityConfiguration.configVersions);
+  const loadedConfiguration = useStore(({ adcm }) => adcm.entityConfiguration.loadedConfiguration);
+  const isConfigurationLoading = useStore(({ adcm }) => adcm.entityConfiguration.isConfigurationLoading);
+  const isVersionsLoading = useStore(({ adcm }) => adcm.entityConfiguration.isVersionsLoading);
 
   useEffect(() => {
     // load all configurations for current Host
-    dispatch(getHostsConfigurationsVersions(hostId));
+    dispatch(getConfigurationsVersions({ entityType: 'host', args: { hostId } }));
 
     return () => {
-      dispatch(cleanupHostsConfiguration());
+      dispatch(cleanup());
     };
   }, [hostId, dispatch]);
 
@@ -36,9 +36,12 @@ export const useHostsPrimaryConfiguration = () => {
     if (selectedConfigId) {
       // load full config for selected configuration
       dispatch(
-        getHostsConfiguration({
-          hostId,
-          configId: selectedConfigId,
+        getConfiguration({
+          entityType: 'host',
+          args: {
+            hostId,
+            configId: selectedConfigId,
+          },
         }),
       );
     }
@@ -51,11 +54,14 @@ export const useHostsPrimaryConfiguration = () => {
       if (selectedConfiguration) {
         const { configurationData, attributes } = selectedConfiguration;
         dispatch(
-          createWithUpdateHostsConfigurations({
-            configurationData,
-            attributes,
-            hostId,
-            description,
+          createWithUpdateConfigurations({
+            entityType: 'host',
+            args: {
+              configurationData,
+              attributes,
+              hostId,
+              description,
+            },
           }),
         )
           .unwrap()

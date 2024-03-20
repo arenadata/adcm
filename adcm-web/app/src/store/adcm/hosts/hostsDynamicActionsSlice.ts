@@ -1,11 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import { RequestError } from '@api';
+import { AdcmHostsApi, RequestError } from '@api';
 import { fulfilledFilter } from '@utils/promiseUtils';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { AdcmHostsApi } from '@api';
 import { AdcmHost } from '@models/adcm';
 import { ActionStatuses } from '@constants';
 
@@ -28,11 +27,14 @@ const loadHostsDynamicActions = createAsyncThunk(
         throw new Error('Some hosts cannot get those actions');
       }
 
-      return hostsActions.reduce((res, { hostId, dynamicActions }) => {
-        res[hostId] = dynamicActions;
+      return hostsActions.reduce(
+        (res, { hostId, dynamicActions }) => {
+          res[hostId] = dynamicActions;
 
-        return res;
-      }, {} as AdcmHostsDynamicActionsState['hostDynamicActions']);
+          return res;
+        },
+        {} as AdcmHostsDynamicActionsState['hostDynamicActions'],
+      );
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
@@ -74,7 +76,7 @@ const runHostDynamicAction = createAsyncThunk(
       // TODO: run***Action get big response with information about action, but wiki say that this should empty response
       await AdcmHostsApi.runHostAction(host.id, actionId, actionRunConfig);
 
-      thunkAPI.dispatch(showInfo({ message: ActionStatuses.SuccessRun }));
+      thunkAPI.dispatch(showSuccess({ message: ActionStatuses.SuccessRun }));
 
       return null;
     } catch (error) {

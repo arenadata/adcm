@@ -6,12 +6,12 @@ import { createSlice } from '@reduxjs/toolkit';
 import { AdcmHostsApi } from '@api';
 import { updateIfExists } from '@utils/objectUtils';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
-import { toggleMaintenanceMode } from '@store/adcm/hosts/hostsActionsSlice';
+import { LoadState } from '@models/loadState';
 
 type AdcmHostsState = {
   hosts: AdcmHost[];
   totalCount: number;
-  isLoading: boolean;
+  loadState: LoadState;
 };
 
 const loadHosts = createAsyncThunk('adcm/hosts/loadHosts', async (arg, thunkAPI) => {
@@ -30,7 +30,7 @@ const loadHosts = createAsyncThunk('adcm/hosts/loadHosts', async (arg, thunkAPI)
 });
 
 const getHosts = createAsyncThunk('adcm/hosts/getHosts', async (arg, thunkAPI) => {
-  thunkAPI.dispatch(setIsLoading(true));
+  thunkAPI.dispatch(setLoadState(LoadState.Loading));
   const startDate = new Date();
 
   await thunkAPI.dispatch(loadHosts());
@@ -39,7 +39,7 @@ const getHosts = createAsyncThunk('adcm/hosts/getHosts', async (arg, thunkAPI) =
     startDate,
     delay: defaultSpinnerDelay,
     callback: () => {
-      thunkAPI.dispatch(setIsLoading(false));
+      thunkAPI.dispatch(setLoadState(LoadState.Loaded));
     },
   });
 });
@@ -51,18 +51,24 @@ const refreshHosts = createAsyncThunk('adcm/hosts/refreshHosts', async (arg, thu
 const createInitialState = (): AdcmHostsState => ({
   hosts: [],
   totalCount: 0,
-  isLoading: true,
+  loadState: LoadState.NotLoaded,
 });
 
 const hostsSlice = createSlice({
   name: 'adcm/hosts',
   initialState: createInitialState(),
   reducers: {
-    setIsLoading(state, action) {
-      state.isLoading = action.payload;
+    setLoadState(state, action) {
+      state.loadState = action.payload;
     },
     cleanupHosts() {
       return createInitialState();
+    },
+    setHostMaintenanceMode(state, action) {
+      const changedHost = state.hosts.find(({ id }) => id === action.payload.hostId);
+      if (changedHost) {
+        changedHost.maintenanceMode = action.payload.maintenanceMode;
+      }
     },
   },
   extraReducers: (builder) => {
@@ -72,12 +78,6 @@ const hostsSlice = createSlice({
     });
     builder.addCase(loadHosts.rejected, (state) => {
       state.hosts = [];
-    });
-    builder.addCase(toggleMaintenanceMode.fulfilled, (state, action) => {
-      const changedHost = state.hosts.find(({ id }) => id === action.meta.arg.hostId);
-      if (changedHost) {
-        changedHost.maintenanceMode = action.payload.maintenanceMode;
-      }
     });
     builder.addCase(wsActions.update_host, (state, action) => {
       const { id, changes } = action.payload.object;
@@ -110,7 +110,7 @@ const hostsSlice = createSlice({
   },
 });
 
-export const { setIsLoading, cleanupHosts } = hostsSlice.actions;
+export const { setLoadState, cleanupHosts, setHostMaintenanceMode } = hostsSlice.actions;
 export { getHosts, refreshHosts };
 
 export default hostsSlice.reducer;

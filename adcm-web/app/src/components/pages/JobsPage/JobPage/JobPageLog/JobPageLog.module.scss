@@ -4,4 +4,8 @@
 
 .jobPageLog {
   margin-bottom: 14px;
+
+  &__spinner {
+    padding-top: var(--base-margin-v);
+  }
 }

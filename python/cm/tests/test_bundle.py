@@ -10,8 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from pathlib import Path
+import json
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from django.conf import settings
+from django.db import IntegrityError
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_409_CONFLICT,
+)
 
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import delete_host_provider
@@ -24,18 +36,6 @@ from cm.tests.test_upgrade import (
     cook_provider,
     cook_provider_bundle,
 )
-from django.conf import settings
-from django.db import IntegrityError
-from django.urls import reverse
-from rest_framework.response import Response
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_400_BAD_REQUEST,
-    HTTP_409_CONFLICT,
-)
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestBundle(BaseTestCase):

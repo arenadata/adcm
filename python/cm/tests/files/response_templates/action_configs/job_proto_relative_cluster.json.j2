@@ -1,0 +1,61 @@
+{
+  "adcm": {
+    "config": {
+      "global": {
+        "adcm_url": null,
+        "verification_public_key": "{{ stackdir }}/data/file/adcm.1.global.verification_public_key"
+      },
+      "statistics_collection": {
+        "url": "adcm-usage-ss.arenadata.io"
+      },
+      "google_oauth": {
+        "client_id": null,
+        "secret": null
+      },
+      "yandex_oauth": {
+        "client_id": null,
+        "secret": null
+      },
+      "ansible_settings": {
+        "forks": 5
+      },
+      "logrotate": null,
+      "audit_data_retention": {
+        "log_rotation_on_fs": 365,
+        "log_rotation_in_db": 365,
+        "config_rotation_in_db": 0,
+        "retention_period": 1825,
+        "data_archiving": false
+      },
+      "ldap_integration": null,
+      "auth_policy": {
+        "min_password_length": 12,
+        "max_password_length": 20,
+        "login_attempt_limit": 5,
+        "block_time": 5
+      }
+    }
+  },
+  "context": {
+    "cluster_id": 1,
+    "type": "cluster"
+  },
+  "env": {
+    "run_dir": "{{ datadir }}/run",
+    "log_dir": "{{ datadir }}/log",
+    "tmp_dir": "{{ datadir }}/run/{{ job_id }}/tmp",
+    "stack_dir": "{{ stackdir }}/data/bundle/{{ cluster_bundle.hash }}",
+    "status_api_token": "{{ token }}"
+  },
+  "job": {
+    "id": {{ job_id }},
+    "action": "job_proto_relative",
+    "job_name": "job_proto_relative",
+    "command": "job_proto_relative",
+    "script": "./in_here.yaml",
+    "verbose": false,
+    "playbook": "{{ stackdir }}/data/bundle/{{ cluster_bundle.hash }}/in_here.yaml",
+    "cluster_id": 1,
+    "hostgroup": "CLUSTER"
+  }
+}

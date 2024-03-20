@@ -2,36 +2,39 @@ import { useDispatch, useStore } from '@hooks';
 import { useCallback, useEffect } from 'react';
 import { useConfigurations } from '@commonComponents/configuration/useConfigurations';
 import {
-  cleanupServiceConfigGroupConfiguration,
-  createWithUpdateServiceConfigGroupConfigurations,
-  getServiceConfigGroupConfiguration,
-  getServiceConfigGroupConfigurationsVersions,
-} from '@store/adcm/cluster/services/configGroupSingle/configuration/serviceConfigGroupConfigurationSlice';
+  cleanup,
+  createWithUpdateConfigurations,
+  getConfiguration,
+  getConfigurationsVersions,
+} from '@store/adcm/entityConfiguration/configurationSlice';
 
 export const useServiceConfigGroupSingleConfiguration = () => {
   const dispatch = useDispatch();
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
   const service = useStore(({ adcm }) => adcm.service.service);
   const serviceConfigGroup = useStore((s) => s.adcm.serviceConfigGroup.serviceConfigGroup);
-  const configVersions = useStore(({ adcm }) => adcm.serviceConfigGroupConfiguration.configVersions);
-  const loadedConfiguration = useStore(({ adcm }) => adcm.serviceConfigGroupConfiguration.loadedConfiguration);
-  const isConfigurationLoading = useStore(({ adcm }) => adcm.serviceConfigGroupConfiguration.isConfigurationLoading);
-  const isVersionsLoading = useStore(({ adcm }) => adcm.serviceConfigGroupConfiguration.isVersionsLoading);
+  const configVersions = useStore(({ adcm }) => adcm.entityConfiguration.configVersions);
+  const loadedConfiguration = useStore(({ adcm }) => adcm.entityConfiguration.loadedConfiguration);
+  const isConfigurationLoading = useStore(({ adcm }) => adcm.entityConfiguration.isConfigurationLoading);
+  const isVersionsLoading = useStore(({ adcm }) => adcm.entityConfiguration.isVersionsLoading);
 
   useEffect(() => {
     if (cluster && service && serviceConfigGroup) {
       // load all configurations for current Cluster
       dispatch(
-        getServiceConfigGroupConfigurationsVersions({
-          clusterId: cluster.id,
-          serviceId: service.id,
-          configGroupId: serviceConfigGroup.id,
+        getConfigurationsVersions({
+          entityType: 'service-config-group',
+          args: {
+            clusterId: cluster.id,
+            serviceId: service.id,
+            configGroupId: serviceConfigGroup.id,
+          },
         }),
       );
     }
 
     return () => {
-      dispatch(cleanupServiceConfigGroupConfiguration());
+      dispatch(cleanup());
     };
   }, [cluster, service, serviceConfigGroup, dispatch]);
 
@@ -44,11 +47,14 @@ export const useServiceConfigGroupSingleConfiguration = () => {
     if (cluster && service && serviceConfigGroup && selectedConfigId) {
       // load full config for selected configuration
       dispatch(
-        getServiceConfigGroupConfiguration({
-          clusterId: cluster.id,
-          serviceId: service.id,
-          configGroupId: serviceConfigGroup.id,
-          configId: selectedConfigId,
+        getConfiguration({
+          entityType: 'service-config-group',
+          args: {
+            clusterId: cluster.id,
+            serviceId: service.id,
+            configGroupId: serviceConfigGroup.id,
+            configId: selectedConfigId,
+          },
         }),
       );
     }
@@ -61,13 +67,16 @@ export const useServiceConfigGroupSingleConfiguration = () => {
       if (cluster && service && serviceConfigGroup && selectedConfiguration) {
         const { configurationData, attributes } = selectedConfiguration;
         dispatch(
-          createWithUpdateServiceConfigGroupConfigurations({
-            configurationData,
-            attributes,
-            clusterId: cluster.id,
-            serviceId: service.id,
-            configGroupId: serviceConfigGroup.id,
-            description,
+          createWithUpdateConfigurations({
+            entityType: 'service-config-group',
+            args: {
+              configurationData,
+              attributes,
+              clusterId: cluster.id,
+              serviceId: service.id,
+              configGroupId: serviceConfigGroup.id,
+              description,
+            },
           }),
         )
           .unwrap()

@@ -1,0 +1,19 @@
+{
+  "{{ host_fqdn }}": {
+    "integer": 10,
+    "password": "password",
+    "string": "string",
+    "list": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "adcm_hostid": {{ adcm_hostid }},
+    "state": "created",
+    "multi_state": [
+      {% if host_2_multi_state  %}
+        {% for state in host_2_multi_state %}"{{ state }}"{% if not loop.last %},{% endif %}{% endfor %}
+      {% endif %}
+      ]
+  }
+}

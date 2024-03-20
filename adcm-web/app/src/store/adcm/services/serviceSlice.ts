@@ -4,7 +4,7 @@ import { defaultSpinnerDelay } from '@constants';
 import { createSlice } from '@reduxjs/toolkit';
 import { AdcmRelatedServiceComponentsState, AdcmService, AdcmServiceStatus } from '@models/adcm';
 import { AdcmServicesApi, RequestError } from '@api';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 
@@ -57,7 +57,7 @@ const deleteService = createAsyncThunk(
     try {
       await AdcmServicesApi.deleteService(clusterId, serviceId);
 
-      thunkAPI.dispatch(showInfo({ message: 'Service was deleted' }));
+      thunkAPI.dispatch(showSuccess({ message: 'Service was deleted' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue([]);

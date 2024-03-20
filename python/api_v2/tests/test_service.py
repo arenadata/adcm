@@ -10,10 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, NamedTuple
+from typing import NamedTuple
 from unittest.mock import patch
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.job import ActionRunPayload, run_action
 from cm.models import (
     Action,
@@ -29,6 +28,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.status.client import FullStatusMap
 from django.urls import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -37,6 +37,8 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_409_CONFLICT,
 )
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class FakePopenResponse(NamedTuple):
@@ -50,15 +52,6 @@ class TestServiceAPI(BaseAPITestCase):
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
         self.action = Action.objects.filter(prototype=self.service_2.prototype).first()
-
-    def get_service_status_mock(self) -> Callable:
-        def inner(service: ClusterObject) -> int:
-            if service.pk == self.service_2.pk:
-                return 0
-
-            return 32
-
-        return inner
 
     def test_list_success(self):
         response = self.client.get(
@@ -131,10 +124,31 @@ class TestServiceAPI(BaseAPITestCase):
 
         response = self.client.post(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data=[{"prototype_id": manual_add_service_proto.pk}],
+            data=[{"prototypeId": manual_add_service_proto.pk}],
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
+        data = response.json()
+        self.assertIsInstance(data, list)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["prototype"]["id"], manual_add_service_proto.pk)
+
+        self.assertEqual(ClusterObject.objects.count(), initial_service_count + 1)
+
+    def test_add_one_success(self):
+        initial_service_count = ClusterObject.objects.count()
+        manual_add_service_proto = Prototype.objects.get(type=ObjectType.SERVICE, name="service_3_manual_add")
+
+        response = self.client.post(
+            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"prototypeId": manual_add_service_proto.pk},
+        )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        data = response.json()
+        self.assertIsInstance(data, dict)
+        self.assertEqual(data["prototype"]["id"], manual_add_service_proto.pk)
+
         self.assertEqual(ClusterObject.objects.count(), initial_service_count + 1)
 
     def test_create_wrong_data_fail(self):
@@ -143,7 +157,7 @@ class TestServiceAPI(BaseAPITestCase):
 
         response = self.client.post(
             path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data={"prototype_id": manual_add_service_proto.pk},
+            data={"somekey": manual_add_service_proto.pk},
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -168,7 +182,20 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 1)
 
     def test_filter_by_status_success(self):
-        with patch("api_v2.service.filters.get_service_status", new_callable=self.get_service_status_mock):
+        status_map = FullStatusMap(
+            clusters={
+                str(self.cluster_1.pk): {
+                    "status": 16,
+                    "hosts": {},
+                    "services": {
+                        str(self.service_1.pk): {"status": 16, "components": {}, "details": []},
+                        str(self.service_2.pk): {"status": 0, "components": {}, "details": []},
+                    },
+                }
+            }
+        )
+
+        with patch("api_v2.filters.retrieve_status_map", return_value=status_map):
             response = self.client.get(
                 path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
                 data={"status": ADCMEntityStatus.UP},
@@ -302,3 +329,173 @@ class TestServiceDeleteAction(BaseAPITestCase):
         task.save(update_fields=["status", "pid"])
 
         return task
+
+
+class TestServiceMaintenanceMode(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.service_1_cl_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        self.component_1_s_1_cl1 = ServiceComponent.objects.filter(
+            cluster_id=self.cluster_1.pk, service_id=self.service_1_cl_1.pk
+        ).last()
+        self.service_cl_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
+
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = self.create_user(**self.test_user_credentials)
+
+    def test_change_mm_success(self):
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-maintenance-mode",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1_cl_1.pk},
+            ),
+            data={"maintenance_mode": MaintenanceMode.ON},
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_adcm_5277_change_mm_service_service_administrator_success(self):
+        with self.grant_permissions(to=self.test_user, on=self.service_1_cl_1, role_name="Service Administrator"):
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:service-maintenance-mode",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1_cl_1.pk},
+                ),
+                data={"maintenance_mode": MaintenanceMode.ON},
+            )
+            self.service_1_cl_1.refresh_from_db()
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(self.service_1_cl_1.maintenance_mode, MaintenanceMode.ON)
+
+    def test_adcm_5277_change_mm_component_service_administrator_success(self):
+        with self.grant_permissions(to=self.test_user, on=self.service_1_cl_1, role_name="Service Administrator"):
+            response = self.client.post(
+                path=reverse(
+                    "v2:component-maintenance-mode",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "service_pk": self.service_1_cl_1.pk,
+                        "pk": self.component_1_s_1_cl1.pk,
+                    },
+                ),
+                data={"maintenance_mode": MaintenanceMode.ON},
+            )
+            self.component_1_s_1_cl1.refresh_from_db()
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(self.component_1_s_1_cl1.maintenance_mode, MaintenanceMode.ON)
+
+    def test_change_mm_not_available_fail(self):
+        response = self.client.post(
+            path=reverse(
+                "v2:service-maintenance-mode",
+                kwargs={"cluster_pk": self.cluster_2.pk, "pk": self.service_cl_2.pk},
+            ),
+            data={"maintenance_mode": MaintenanceMode.ON},
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "MAINTENANCE_MODE_NOT_AVAILABLE",
+                "level": "error",
+                "desc": "Service does not support maintenance mode",
+            },
+        )
+
+
+class TestServicePermissions(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = self.create_user(**self.test_user_credentials)
+
+        self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter", cluster=self.cluster_1)
+        self.host_with_component = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter_2", cluster=self.cluster_1
+        )
+        component = ServiceComponent.objects.filter(cluster_id=self.cluster_1.pk, service_id=self.service.pk).last()
+        self.add_hostcomponent_map(
+            cluster=self.cluster_1,
+            hc_map=[
+                {
+                    "host_id": self.host_with_component.pk,
+                    "service_id": self.service.pk,
+                    "component_id": component.pk,
+                }
+            ],
+        )
+
+    def test_adcm_5278_cluster_hosts_restriction_by_service_administrator_ownership_success(self):
+        response_list = self.client.get(
+            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        )
+
+        response_detail = self.client.get(
+            path=reverse(
+                viewname="v2:host-cluster-detail",
+                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_with_component.pk},
+            ),
+        )
+
+        self.assertEqual(response_list.status_code, HTTP_200_OK)
+        self.assertEqual(response_list.json()["count"], 2)
+
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.service, role_name="Service Administrator"):
+            response = self.client.get(
+                path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(response.json()["count"], 1)
+            self.assertDictEqual(response_list.json()["results"][1], response.json()["results"][0])
+
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:host-cluster-detail",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_with_component.pk},
+                ),
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertDictEqual(response_detail.json(), response.json())
+
+    def test_adcm_5278_hosts_restriction_by_service_administrator_ownership_success(self):
+        response_list = self.client.get(
+            path=reverse(viewname="v2:host-list"),
+        )
+
+        response_detail = self.client.get(
+            path=reverse(
+                viewname="v2:host-detail",
+                kwargs={"pk": self.host_with_component.pk},
+            ),
+        )
+
+        self.assertEqual(response_list.status_code, HTTP_200_OK)
+        self.assertEqual(response_list.json()["count"], 2)
+
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.service, role_name="Service Administrator"):
+            response = self.client.get(
+                path=reverse(viewname="v2:host-list"),
+            )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(response.json()["count"], 1)
+            self.assertDictEqual(response_list.json()["results"][1], response.json()["results"][0])
+
+            response = self.client.get(
+                path=reverse(
+                    viewname="v2:host-detail",
+                    kwargs={"pk": self.host_with_component.pk},
+                ),
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertDictEqual(response_detail.json(), response.json())

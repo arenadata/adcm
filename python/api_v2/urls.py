@@ -9,17 +9,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from api_v2.login.views import LoginView
-from api_v2.logout.views import LogoutView
-from api_v2.profile.views import ProfileView
-from api_v2.token.views import TokenView
-from api_v2.views import APIRoot
 from django.urls import include, path
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
     SpectacularSwaggerSplitView,
 )
+
+from api_v2.login.views import LoginView
+from api_v2.logout.views import LogoutView
+from api_v2.profile.views import ProfileView
+from api_v2.token.views import TokenView
+from api_v2.views import APIRoot
 
 urlpatterns = [
     path("", APIRoot.as_view(), name="api-root-v2"),
@@ -32,7 +33,7 @@ urlpatterns = [
     path("audit/", include(("api_v2.audit.urls", "audit"))),
     path("jobs/", include("api_v2.job.urls")),
     path("tasks/", include("api_v2.task.urls")),
-    path("adcm/", include(("api_v2.adcm.urls"))),
+    path("adcm/", include("api_v2.adcm.urls")),
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("profile/", ProfileView.as_view(), name="profile"),

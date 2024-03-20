@@ -1,10 +1,12 @@
 import { AdcmGroupsApi, AdcmUsersApi, RequestError } from '@api';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { showError } from '@store/notificationsSlice';
+import { createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk } from '@store/redux';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { getGroups } from './groupsSlice';
 import { AdcmGroup, AdcmUpdateGroupPayload, AdcmCreateGroupPayload, AdcmUser } from '@models/adcm';
 import { PaginationParams, SortParams } from '@models/table';
+import { rejectedFilter } from '@utils/promiseUtils';
 
 const createGroup = createAsyncThunk(
   'adcm/groupActions/createGroup',
@@ -60,6 +62,23 @@ const loadUsers = createAsyncThunk('adcm/groupActions/loadUsers', async (arg, th
   }
 });
 
+const deleteGroupsWithUpdate = createAsyncThunk('adcm/groupActions/deleteGroups', async (ids: number[], thunkAPI) => {
+  try {
+    const deletePromises = await Promise.allSettled(ids.map((id) => AdcmGroupsApi.deleteGroup(id)));
+    const responsesList = rejectedFilter(deletePromises);
+
+    if (responsesList.length > 0) {
+      throw responsesList[0];
+    }
+
+    await thunkAPI.dispatch(getGroups());
+    thunkAPI.dispatch(showSuccess({ message: 'Groups have been deleted' }));
+  } catch (error) {
+    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+    return error;
+  }
+});
+
 interface AdcmGroupsActionsState {
   createDialog: {
     isOpen: boolean;
@@ -68,6 +87,10 @@ interface AdcmGroupsActionsState {
     group: AdcmGroup | null;
     isUpdating: boolean;
   };
+  deleteDialog: {
+    id: number | null;
+  };
+  selectedItemsIds: number[];
   relatedData: {
     users: AdcmUser[];
   };
@@ -81,6 +104,10 @@ const createInitialState = (): AdcmGroupsActionsState => ({
     group: null,
     isUpdating: false,
   },
+  deleteDialog: {
+    id: null,
+  },
+  selectedItemsIds: [],
   relatedData: {
     users: [],
   },
@@ -106,6 +133,18 @@ const groupsActionsSlice = createSlice({
       state.updateDialog.group = null;
       state.updateDialog.isUpdating = false;
     },
+    cleanupItemsForActions(state) {
+      state.selectedItemsIds = createInitialState().selectedItemsIds;
+    },
+    openDeleteDialog(state, action) {
+      state.deleteDialog.id = action.payload;
+    },
+    closeDeleteDialog(state) {
+      state.deleteDialog.id = null;
+    },
+    setSelectedItemsIds(state, action) {
+      state.selectedItemsIds = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -126,11 +165,26 @@ const groupsActionsSlice = createSlice({
       })
       .addCase(loadUsers.rejected, (state) => {
         state.relatedData.users = [];
+      })
+      .addCase(deleteGroupsWithUpdate.pending, (state) => {
+        state.deleteDialog.id = null;
+      })
+      .addCase(getGroups.pending, (state) => {
+        state.selectedItemsIds = [];
       });
   },
 });
 
-export const { openCreateDialog, closeCreateDialog, openUpdateDialog, closeUpdateDialog } = groupsActionsSlice.actions;
-export { createGroup, updateGroup, loadUsers };
+export const {
+  openCreateDialog,
+  closeCreateDialog,
+  openUpdateDialog,
+  cleanupItemsForActions,
+  closeUpdateDialog,
+  openDeleteDialog,
+  closeDeleteDialog,
+  setSelectedItemsIds,
+} = groupsActionsSlice.actions;
+export { createGroup, updateGroup, loadUsers, deleteGroupsWithUpdate };
 
 export default groupsActionsSlice.reducer;

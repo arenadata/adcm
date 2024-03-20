@@ -11,9 +11,7 @@
 # limitations under the License.
 from collections import defaultdict
 
-from api_v2.rbac.role.filters import RoleFilter
-from api_v2.rbac.role.serializers import RoleCreateUpdateSerializer, RoleSerializer
-from api_v2.views import CamelCaseModelViewSet
+from adcm.permissions import VIEW_ROLE_PERMISSION, CustomModelPermissionsByMethod
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ProductCategory
@@ -27,10 +25,12 @@ from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from adcm.permissions import VIEW_ROLE_PERMISSION, CustomModelPermissionsByMethod
+from api_v2.rbac.role.filters import RoleFilter
+from api_v2.rbac.role.serializers import RoleCreateUpdateSerializer, RoleSerializer
+from api_v2.views import CamelCaseModelViewSet
 
 
-class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disable=too-many-ancestors
+class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):
     queryset = (
         Role.objects.prefetch_related(
             Prefetch(lookup="child", queryset=Role.objects.exclude(type=RoleTypes.HIDDEN)), "category", "policy_set"
@@ -53,7 +53,7 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
         return RoleSerializer
 
     @audit
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         role = role_create(**serializer.validated_data)
@@ -61,7 +61,7 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
         return Response(data=RoleSerializer(instance=role).data, status=HTTP_201_CREATED)
 
     @audit
-    def update(self, request, *args, **kwargs):
+    def update(self, request, *args, **kwargs):  # noqa: ARG002
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
 
@@ -87,11 +87,11 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):  # pylint: disabl
         return super().destroy(request, *args, **kwargs)
 
     @action(methods=["get"], detail=False)
-    def categories(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def categories(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         return Response(data=sorted(category.value for category in ProductCategory.objects.all()), status=HTTP_200_OK)
 
     @action(methods=["get"], detail=True, url_path="object-candidates", url_name="object-candidates")
-    def object_candidates(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def object_candidates(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         role = self.get_object()
         if role.type != RoleTypes.ROLE:
             return Response({"cluster": [], "provider": [], "service": [], "host": []})

@@ -12,13 +12,12 @@
 
 from datetime import timedelta
 
+from adcm.tests.base import BaseTestCase
 from cm.models import JobLog, LogStorage
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
-
-from adcm.tests.base import BaseTestCase
 
 
 class TestTaskAPI(BaseTestCase):

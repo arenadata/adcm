@@ -18,6 +18,6 @@ class AuditConfig(AppConfig):
     name = "audit"
 
     def ready(self):
-        from audit.signals import (  # pylint: disable=import-outside-toplevel,unused-import
+        from audit.signals import (  # noqa: F401, PLC0415
             mark_deleted_audit_object_handler,
         )

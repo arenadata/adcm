@@ -1,29 +1,29 @@
 import { useDispatch, useStore } from '@hooks';
 import {
-  cleanupClusterConfiguration,
-  createWithUpdateClusterConfigurations,
-  getClusterConfiguration,
-  getClusterConfigurationsVersions,
-} from '@store/adcm/cluster/configuration/clusterConfigurationSlice';
+  cleanup,
+  createWithUpdateConfigurations,
+  getConfiguration,
+  getConfigurationsVersions,
+} from '@store/adcm/entityConfiguration/configurationSlice';
 import { useCallback, useEffect } from 'react';
 import { useConfigurations } from '@commonComponents/configuration/useConfigurations';
 
 export const useClusterPrimaryConfiguration = () => {
   const dispatch = useDispatch();
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
-  const configVersions = useStore(({ adcm }) => adcm.clusterConfiguration.configVersions);
-  const loadedConfiguration = useStore(({ adcm }) => adcm.clusterConfiguration.loadedConfiguration);
-  const isConfigurationLoading = useStore(({ adcm }) => adcm.clusterConfiguration.isConfigurationLoading);
-  const isVersionsLoading = useStore(({ adcm }) => adcm.clusterConfiguration.isVersionsLoading);
+  const configVersions = useStore(({ adcm }) => adcm.entityConfiguration.configVersions);
+  const loadedConfiguration = useStore(({ adcm }) => adcm.entityConfiguration.loadedConfiguration);
+  const isConfigurationLoading = useStore(({ adcm }) => adcm.entityConfiguration.isConfigurationLoading);
+  const isVersionsLoading = useStore(({ adcm }) => adcm.entityConfiguration.isVersionsLoading);
 
   useEffect(() => {
     if (cluster) {
       // load all configurations for current Cluster
-      dispatch(getClusterConfigurationsVersions({ clusterId: cluster.id }));
+      dispatch(getConfigurationsVersions({ entityType: 'cluster', args: { clusterId: cluster.id } }));
     }
 
     return () => {
-      dispatch(cleanupClusterConfiguration());
+      dispatch(cleanup());
     };
   }, [cluster, dispatch]);
 
@@ -35,7 +35,9 @@ export const useClusterPrimaryConfiguration = () => {
   useEffect(() => {
     if (cluster && selectedConfigId) {
       // load full config for selected configuration
-      dispatch(getClusterConfiguration({ clusterId: cluster.id, configId: selectedConfigId }));
+      dispatch(
+        getConfiguration({ entityType: 'cluster', args: { clusterId: cluster.id, configId: selectedConfigId } }),
+      );
     }
   }, [dispatch, cluster, selectedConfigId]);
 
@@ -46,7 +48,10 @@ export const useClusterPrimaryConfiguration = () => {
       if (cluster?.id && selectedConfiguration) {
         const { configurationData, attributes } = selectedConfiguration;
         dispatch(
-          createWithUpdateClusterConfigurations({ configurationData, attributes, clusterId: cluster.id, description }),
+          createWithUpdateConfigurations({
+            entityType: 'cluster',
+            args: { configurationData, attributes, clusterId: cluster.id, description },
+          }),
         )
           .unwrap()
           .then(() => {

@@ -10,18 +10,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=wrong-import-order
-
-import json
 from pathlib import Path
 from secrets import token_hex
+import json
+import logging
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django  # noqa: F401, isort:skip
 
 from cm.bundle import load_adcm
 from cm.issue import update_hierarchy_issues
 from cm.job import abort_all
-from cm.logger import logger
 from cm.models import (
     ADCM,
     CheckLog,
@@ -37,10 +35,13 @@ from rbac.models import User
 TOKEN_LENGTH = 20
 
 
+logger = logging.getLogger("stream_std")
+
+
 def prepare_secrets_json(status_user_username: str, status_user_password: str | None) -> None:
     # we need to know status user's password to write it to secrets.json [old implementation]
     if not settings.SECRETS_FILE.is_file() and status_user_username is not None:
-        with open(settings.SECRETS_FILE, "w", encoding=settings.ENCODING_UTF_8) as f:
+        with Path(settings.SECRETS_FILE).open(mode="w", encoding=settings.ENCODING_UTF_8) as f:
             json.dump(
                 {
                     "adcmuser": {"user": status_user_username, "password": status_user_password},

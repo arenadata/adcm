@@ -9,12 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from api.serializers import (
-    MultiHyperlinkedIdentityField,
-    MultiHyperlinkedRelatedField,
-    UIConfigField,
-)
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, GroupConfig, Host, ObjectConfig
@@ -24,6 +18,12 @@ from django.db.transaction import atomic
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.reverse import reverse
+
+from api.serializers import (
+    MultiHyperlinkedIdentityField,
+    MultiHyperlinkedRelatedField,
+    UIConfigField,
+)
 
 
 class HostFlexFieldsSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
@@ -45,28 +45,22 @@ def check_object_type(type_name):
         raise AdcmEx("GROUP_CONFIG_TYPE_ERROR")
 
 
+MODEL_NAME_TRANSLATIONS = {
+    "clusterobject": "service",
+    "servicecomponent": "component",
+    "hostprovider": "provider",
+}
+
+
 def translate_model_name(model_name):
     """Translating model name to display model name"""
-    if model_name == "clusterobject":
-        return "service"
-    elif model_name == "servicecomponent":
-        return "component"
-    elif model_name == "hostprovider":
-        return "provider"
-    else:
-        return model_name
+    return MODEL_NAME_TRANSLATIONS.get(model_name, model_name)
 
 
 def revert_model_name(name):
     """Translating display model name to model name"""
-    if name == "service":
-        return "clusterobject"
-    elif name == "component":
-        return "servicecomponent"
-    elif name == "provider":
-        return "hostprovider"
-    else:
-        return name
+    reverse_translations = {value: key for key, value in MODEL_NAME_TRANSLATIONS.items()}
+    return reverse_translations.get(name, name)
 
 
 class ObjectTypeField(serializers.Field):
@@ -245,9 +239,7 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
         config = validated_data.get("config")
         attr = validated_data.get("attr", {})
         description = validated_data.get("description", "")
-        config_log = update_obj_config(object_config, config, attr, description)
-
-        return config_log
+        return update_obj_config(object_config, config, attr, description)
 
 
 class UIGroupConfigConfigLogSerializer(GroupConfigConfigLogSerializer):

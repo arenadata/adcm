@@ -1,11 +1,7 @@
-import {
-  AdcmConcerns,
-  AdcmLicense,
-  AdcmLicenseStatus,
-  AdcmMaintenanceMode,
-  AdcmPrototypeShortView,
-  AdcmPrototypeType,
-} from '@models/adcm';
+import { AdcmConcerns } from './concern';
+import { AdcmLicense, AdcmLicenseStatus } from './license';
+import { AdcmPrototypeShortView, AdcmPrototypeType } from './prototype';
+import { AdcmMaintenanceMode } from './maintenanceMode';
 
 export enum AdcmServiceStatus {
   Up = 'up',
@@ -37,6 +33,8 @@ export interface AdcmService {
   };
 }
 
+export type ServicePrototypeId = AdcmServicePrototype['id'];
+
 export interface AdcmServicePrototype {
   id: number;
   name: string;
@@ -45,7 +43,7 @@ export interface AdcmServicePrototype {
   version: string;
   license: {
     status: AdcmLicenseStatus;
-    text: string;
+    text: string | null;
   };
   isRequired: boolean;
   dependOn: AdcmDependOnService[] | null;

@@ -11,17 +11,18 @@
 # limitations under the License.
 
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import ADCM, Action
-from rbac.services.user import create_user
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestADCMAudit(BaseAPITestCase):
@@ -30,8 +31,8 @@ class TestADCMAudit(BaseAPITestCase):
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user_credentials_2 = {"username": "test_user_username_2", "password": "test_user_password"}
-        self.test_user = create_user(**self.test_user_credentials)
-        self.test_user_2 = create_user(**self.test_user_credentials_2)
+        self.test_user = self.create_user(**self.test_user_credentials)
+        self.test_user_2 = self.create_user(**self.test_user_credentials_2)
 
         self.adcm = ADCM.objects.first()
         self.data = {
@@ -111,7 +112,7 @@ class TestADCMAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         response = self.client.post(path=reverse(viewname="v2:adcm-config-list"), data=self.data)
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
             operation_name="ADCM configuration updated",

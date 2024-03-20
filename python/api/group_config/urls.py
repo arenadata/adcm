@@ -11,6 +11,8 @@
 # limitations under the License.
 
 
+from rest_framework_extensions.routers import ExtendedSimpleRouter as SimpleRouter
+
 from api.group_config.views import (
     GroupConfigConfigLogViewSet,
     GroupConfigConfigViewSet,
@@ -18,7 +20,6 @@ from api.group_config.views import (
     GroupConfigHostViewSet,
     GroupConfigViewSet,
 )
-from rest_framework_extensions.routers import ExtendedSimpleRouter as SimpleRouter
 
 router = SimpleRouter()
 

@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.utils import has_google_oauth, has_yandex_oauth
 from cm.stack import NAME_REGEX
 from django.conf import settings
 from rest_framework.permissions import AllowAny
@@ -17,8 +18,6 @@ from rest_framework.response import Response
 from rest_framework.routers import APIRootView
 from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.views import APIView
-
-from adcm.utils import has_google_oauth, has_yandex_oauth
 
 
 class APIRoot(APIRootView):
@@ -62,7 +61,7 @@ class ADCMInfo(APIView):
     schema = AutoSchema()
 
     @staticmethod
-    def get(request):  # pylint: disable=unused-argument
+    def get(request):  # noqa: ARG004
         return Response(
             {
                 "adcm_version": settings.ADCM_VERSION,

@@ -9,7 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=wrong-import-order
+
+from adcm.tests.base import BaseTestCase
 
 from cm.adcm_config.config import save_object_config, switch_config
 from cm.api import (
@@ -37,8 +38,6 @@ from cm.models import (
 )
 from cm.tests.utils import gen_cluster
 from cm.upgrade import bundle_revert, check_upgrade, do_upgrade, switch_components
-
-from adcm.tests.base import BaseTestCase
 
 
 def cook_cluster_bundle(ver):
@@ -465,7 +464,7 @@ class TestUpgrade(BaseTestCase):
         self.assertEqual(service_1.id, service_2.id)
         self.assertEqual(service_2.prototype.id, new_proto.id)
 
-    def test_hc(self):  # pylint: disable=too-many-locals
+    def test_hc(self):
         bundle_1 = cook_cluster_bundle("1.0")
         bundle_2 = cook_cluster_bundle("2.0")
         bundle_3 = cook_provider_bundle("1.0")
@@ -569,7 +568,7 @@ class TestUpgrade(BaseTestCase):
 
 
 class TestRevertUpgrade(BaseTestCase):
-    def test_simple_revert_upgrade(self):  # pylint: disable=too-many-locals
+    def test_simple_revert_upgrade(self):
         bundle1 = cook_cluster_bundle(ver="1.0")
         bundle2 = cook_cluster_bundle(ver="2.0")
         service1_proto1 = Prototype.objects.get(bundle=bundle1, type="service", name="hadoop")

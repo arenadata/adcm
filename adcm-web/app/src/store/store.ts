@@ -1,4 +1,5 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import type { Action, ThunkAction } from '@reduxjs/toolkit';
 import authSlice from '@store/authSlice';
 import notificationsSlice from '@store/notificationsSlice';
 import clustersSlice from '@store/adcm/clusters/clustersSlice';
@@ -10,16 +11,10 @@ import clusterHostsActionsSlice from '@store/adcm/cluster/hosts/hostsActionsSlic
 import clusterHostsDynamicActionsSlice from '@store/adcm/cluster/hosts/hostsDynamicActionsSlice';
 import hostComponentsDynamicActionsSlice from '@store/adcm/cluster/hosts/host/hostComponentsDynamicActionsSlice';
 import clustersTableSlice from '@store/adcm/clusters/clustersTableSlice';
-import clusterConfigurationsCompareSlice from '@store/adcm/cluster/configuration/clusterConfigurationsCompareSlice';
-import clusterConfigurationSlice from '@store/adcm/cluster/configuration/clusterConfigurationSlice';
 import clusterConfigGroupsSlice from '@store/adcm/cluster/configGroups/clusterConfigGroupsSlice';
 import clusterConfigGroupsTableSlice from '@store/adcm/cluster/configGroups/clusterConfigGroupsTableSlice';
 import clusterConfigGroupActionsSlice from '@store/adcm/cluster/configGroups/clusterConfigGroupActionsSlice';
 import clusterConfigGroupSlice from '@store/adcm/cluster/configGroupSingle/clusterConfigGroup';
-import clusterConfigGroupConfigurationSlice from '@store/adcm/cluster/configGroupSingle/configuration/clusterConfigGroupConfigurationSlice';
-import clusterConfigGroupConfigurationsCompareSlice from '@store/adcm/cluster/configGroupSingle/configuration/clusterConfigGroupConfigurationsCompareSlice';
-import hostProviderConfigurationSlice from '@store/adcm/hostProvider/configuration/hostProviderConfigurationSlice';
-import hostProviderConfigurationsCompareSlice from '@store/adcm/hostProvider/configuration/hostProviderConfigurationsCompareSlice';
 import hostProviderConfigGroupsSlice from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupsSlice';
 import hostProviderConfigGroupsTableSlice from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupsTableSlice';
 import bundlesSlice from '@store/adcm/bundles/bundlesSlice';
@@ -49,6 +44,7 @@ import clusterOverviewHostsTableSlice from '@store/adcm/cluster/overview/overvie
 
 import { apiMiddleware } from './middlewares/apiMiddleware';
 import { wsMiddleware } from './middlewares/wsMiddeware';
+
 import clusterSlice from './adcm/clusters/clusterSlice';
 import usersSlice from './adcm/users/usersSlice';
 import usersTableSlice from './adcm/users/usersTableSlice';
@@ -77,8 +73,6 @@ import serviceComponentConfigGroupsSlice from './adcm/cluster/services/serviceCo
 import serviceComponentConfigGroupsTableSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configGroups/serviceComponentConfigGroupsTableSlice';
 import serviceComponentConfigGroupsActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configGroups/serviceComponentConfigGroupsActionsSlice';
 import serviceComponentConfigGroupSingleSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configGroupSingle/serviceComponentConfigGroupSingleSlice';
-import serviceComponentConfigGroupConfigurationSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configGroupSingle/serviceComponentConfigGroupConfigurationSlice';
-import serviceComponentConfigGroupConfigurationsCompareSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configGroupSingle/serviceComponentConfigGroupConfigurationsCompareSlice';
 
 import clustersActionsSlice from './adcm/clusters/clustersActionsSlice';
 import clusterHostSlice from './adcm/cluster/hosts/host/clusterHostSlice';
@@ -91,28 +85,20 @@ import hostProvidersActionsSlice from './adcm/hostProviders/hostProvidersActions
 import hostProvidersDynamicActionsSlice from './adcm/hostProviders/hostProvidersDynamicActionsSlice';
 import hostProviderUpgradesSlice from './adcm/hostProviders/hostProviderUpgradesSlice';
 import serviceComponentsDynamicActionsSlice from './adcm/cluster/services/serviceComponents/serviceComponentsDynamicActionsSlice';
-import serviceComponentConfigurationsCompareSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configuration/serviceComponentConfigurationsCompareSlice';
-import serviceComponentConfigurationSlice from './adcm/cluster/services/serviceComponents/serviceComponent/configuration/serviceComponentConfigurationSlice';
 import hostSlice from './adcm/host/hostSlice';
-import clusterServicesConfigurationSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationSlice.ts';
-import clusterServicesConfigurationsCompareSlice from './adcm/cluster/services/servicesPrymaryConfiguration/servicesConfigurationsCompareSlice.ts';
-import hostsConfigurationSlice from './adcm/host/configuration/hostsConfigurationSlice.ts';
-import hostsConfigurationCompareSlice from './adcm/host/configuration/hostsConfigurationCompareSlice.ts';
-import serviceConfigGroupsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsSlice.ts';
-import serviceConfigGroupsTableSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsTableSlice.ts';
-import serviceConfigGroupsActionsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsActionsSlice.ts';
-import serviceConfigGroupSlice from './adcm/cluster/services/configGroupSingle/configGroupSingle.ts';
-import serviceConfigGroupConfigurationSlice from './adcm/cluster/services/configGroupSingle/configuration/serviceConfigGroupConfigurationSlice';
-import serviceConfigGroupConfigurationsCompareSlice from './adcm/cluster/services/configGroupSingle/configuration/serviceConfigGroupConfigurationsCompareSlice';
-import settingsConfigurationsSlice from './adcm/settings/configuration/settingsConfigurationSlice.ts';
-import settingsConfigurationsCompareSlice from './adcm/settings/configuration/settingsConfigurationsCompareSlice.ts';
+import serviceConfigGroupsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsSlice';
+import serviceConfigGroupsTableSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsTableSlice';
+import serviceConfigGroupsActionsSlice from './adcm/cluster/services/configGroups/serviceConfigGroupsActionsSlice';
+import serviceConfigGroupSlice from './adcm/cluster/services/configGroupSingle/configGroupSingle';
 import hostProviderConfigGroupActionsSlice from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupActionsSlice';
 import hostProviderConfigGroupSlice from '@store/adcm/hostProvider/configurationGroupSingle/hostProviderConfigGroupSlice';
-import hostProviderConfigGroupConfigurationSlice from '@store/adcm/hostProvider/configurationGroupSingle/configuration/hostProviderConfigGroupConfigurationSlice';
-import hostProviderConfigGroupConfigurationsCompareSlice from '@store/adcm/hostProvider/configurationGroupSingle/configuration/hostProviderConfigGroupConfigurationsCompareSlice';
 import bellSlice from '@store/adcm/bell/bellSlice';
 import adcmSettingsSlice from '@store/adcm/settings/settingsSlice';
 import adcmSettingsDynamicActionsSlice from '@store/adcm/settings/settingsDynamicActionsSlice';
+import bundlesActionsSlice from './adcm/bundles/bundlesActionsSlice';
+
+import adcmEntityConfigurationSlice from '@store/adcm/entityConfiguration/configurationSlice';
+import adcmEntityConfigurationCompareSlice from '@store/adcm/entityConfiguration/compareSlice';
 
 const rootReducer = combineReducers({
   auth: authSlice,
@@ -131,31 +117,22 @@ const rootReducer = combineReducers({
     hostComponentsDynamicActions: hostComponentsDynamicActionsSlice,
     clusterHostsTable: clusterHostsTableSlice,
     clusterMapping: clusterMappingSlice,
-    clusterConfigurationsCompare: clusterConfigurationsCompareSlice,
-    clusterConfiguration: clusterConfigurationSlice,
     clusterConfigGroups: clusterConfigGroupsSlice,
     clusterConfigGroupsTable: clusterConfigGroupsTableSlice,
     clusterConfigGroupActions: clusterConfigGroupActionsSlice,
     clusterConfigGroup: clusterConfigGroupSlice,
-    clusterConfigGroupConfiguration: clusterConfigGroupConfigurationSlice,
-    clusterConfigGroupConfigurationsCompare: clusterConfigGroupConfigurationsCompareSlice,
-    clusterServicesConfiguration: clusterServicesConfigurationSlice,
-    clusterServicesConfigurationsCompare: clusterServicesConfigurationsCompareSlice,
     bundle: bundleSlice,
     bundles: bundlesSlice,
+    bundlesActions: bundlesActionsSlice,
     bundlesTable: bundlesTableSlice,
     breadcrumbs: breadcrumbsSlice,
     hostComponents: hostComponentsSlice,
     hostComponentsTable: hostComponentsTableSlice,
     hostProvider: hostProviderSlice,
-    hostProviderConfigurationsCompare: hostProviderConfigurationsCompareSlice,
-    hostProviderConfiguration: hostProviderConfigurationSlice,
     hostProviderConfigGroupActions: hostProviderConfigGroupActionsSlice,
     hostProviderConfigGroups: hostProviderConfigGroupsSlice,
     hostProviderConfigGroupsTable: hostProviderConfigGroupsTableSlice,
     hostProviderConfigGroup: hostProviderConfigGroupSlice,
-    hostProviderConfigGroupConfiguration: hostProviderConfigGroupConfigurationSlice,
-    hostProviderConfigGroupConfigurationsCompare: hostProviderConfigGroupConfigurationsCompareSlice,
     hostProviders: hostProvidersSlice,
     hostProvidersActions: hostProvidersActionsSlice,
     hostProvidersTable: hostProvidersTableSlice,
@@ -167,8 +144,6 @@ const rootReducer = combineReducers({
     host: hostSlice,
     hostsTable: hostsTableSlice,
     hostsActions: hostsActionsSlice,
-    hostsConfiguration: hostsConfigurationSlice,
-    hostsConfigurationsCompare: hostsConfigurationCompareSlice,
     service: serviceSlice,
     services: servicesSlice,
     servicesTable: servicesTableSlice,
@@ -178,17 +153,11 @@ const rootReducer = combineReducers({
     serviceConfigGroupsTable: serviceConfigGroupsTableSlice,
     serviceConfigGroupsActions: serviceConfigGroupsActionsSlice,
     serviceConfigGroup: serviceConfigGroupSlice,
-    serviceConfigGroupConfiguration: serviceConfigGroupConfigurationSlice,
-    serviceConfigGroupConfigurationsCompare: serviceConfigGroupConfigurationsCompareSlice,
     serviceComponents: serviceComponentsSlice,
-    serviceComponentsConfigurationsCompare: serviceComponentConfigurationsCompareSlice,
-    serviceComponentConfiguration: serviceComponentConfigurationSlice,
     serviceComponentConfigGroups: serviceComponentConfigGroupsSlice,
     serviceComponentConfigGroupsTable: serviceComponentConfigGroupsTableSlice,
     serviceComponentConfigGroupsActions: serviceComponentConfigGroupsActionsSlice,
     serviceComponentConfigGroupSingle: serviceComponentConfigGroupSingleSlice,
-    serviceComponentConfigGroupConfiguration: serviceComponentConfigGroupConfigurationSlice,
-    serviceComponentConfigGroupConfigurationsCompare: serviceComponentConfigGroupConfigurationsCompareSlice,
     serviceComponentsTable: serviceComponentsTableSlice,
     serviceComponentsActions: serviceComponentsActionsSlice,
     serviceComponentsDynamicActions: serviceComponentsDynamicActionsSlice,
@@ -223,17 +192,33 @@ const rootReducer = combineReducers({
     roles: rolesSlice,
     rolesTable: rolesTableSlice,
     rolesActions: rolesActionsSlice,
-    settingsConfigurations: settingsConfigurationsSlice,
-    settingsConfigurationsCompare: settingsConfigurationsCompareSlice,
     adcmSettings: adcmSettingsSlice,
     adcmSettingsDynamicActions: adcmSettingsDynamicActionsSlice,
+    entityConfigurationCompare: adcmEntityConfigurationCompareSlice,
+    entityConfiguration: adcmEntityConfigurationSlice,
   }),
 });
 
-export const store = configureStore({
-  reducer: rootReducer,
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(apiMiddleware, wsMiddleware),
-});
+// The store setup is wrapped in `makeStore` to allow reuse
+// when setting up tests that need the same store config
+export const makeStore = (preloadedState?: Partial<RootState>) => {
+  const store = configureStore({
+    reducer: rootReducer,
+    middleware: (getDefaultMiddleware) => {
+      return getDefaultMiddleware().concat(apiMiddleware, wsMiddleware);
+    },
+    preloadedState,
+  });
+  return store;
+};
 
-export type StoreState = ReturnType<typeof rootReducer>;
+export const store = makeStore();
+
+// Infer the `RootState` type from the root reducer
+export type RootState = ReturnType<typeof rootReducer>;
+// Infer the type of `store`
+export type AppStore = ReturnType<typeof store.getState>;
+// Infer the `AppDispatch` type from the store itself
 export type AppDispatch = typeof store.dispatch;
+
+export type AppThunk<ThunkReturnType = void> = ThunkAction<ThunkReturnType, RootState, unknown, Action>;

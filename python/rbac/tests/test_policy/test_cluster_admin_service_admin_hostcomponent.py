@@ -11,14 +11,14 @@
 # limitations under the License.
 
 
+from adcm.tests.base import APPLICATION_JSON
 from cm.models import ClusterObject, Host, ServiceComponent
 from django.urls import reverse
-from rbac.models import Group
-from rbac.tests.test_policy.base import PolicyBaseTestCase
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
 
-from adcm.tests.base import APPLICATION_JSON
+from rbac.models import Group
+from rbac.tests.test_policy.base import PolicyBaseTestCase
 
 
 class ClusterAdminServiceAdminHostcomponentTestCase(PolicyBaseTestCase):

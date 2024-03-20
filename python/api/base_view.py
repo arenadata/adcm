@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import rest_framework.pagination
-from api.utils import AdcmFilterBackend, AdcmOrderingFilter, getlist_from_querydict
+from adcm.permissions import DjangoObjectPermissionsAudit
 from audit.utils import audit
 from cm.errors import AdcmEx
 from django.conf import settings
@@ -23,8 +22,9 @@ from rest_framework.response import Response
 from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.utils.urls import replace_query_param
 from rest_framework.viewsets import ViewSetMixin
+import rest_framework.pagination
 
-from adcm.permissions import DjangoObjectPermissionsAudit
+from api.utils import AdcmFilterBackend, AdcmOrderingFilter, getlist_from_querydict
 
 
 class ModelPermOrReadOnlyForAuth(DjangoModelPermissions):
@@ -64,18 +64,14 @@ class GenericUIView(GenericAPIView):
 
     def get_serializer_class(self):
         if self.request is not None:
-            if self.request.method == "POST":
-                if self.serializer_class_post:
-                    return self.serializer_class_post
-            elif self.request.method == "PUT":
-                if self.serializer_class_put:
-                    return self.serializer_class_put
-            elif self.request.method == "PATCH":
-                if self.serializer_class_patch:
-                    return self.serializer_class_patch
-            elif self._is_for_ui():
-                if self.serializer_class_ui:
-                    return self.serializer_class_ui
+            if self.request.method == "POST" and self.serializer_class_post:
+                return self.serializer_class_post
+            elif self.request.method == "PUT" and self.serializer_class_put:
+                return self.serializer_class_put
+            elif self.request.method == "PATCH" and self.serializer_class_patch:
+                return self.serializer_class_patch
+            elif self._is_for_ui() and self.serializer_class_ui:
+                return self.serializer_class_ui
 
         return super().get_serializer_class()
 
@@ -105,7 +101,7 @@ class PaginatedView(GenericUIView):
     def get_ordering(request, queryset, view):
         return AdcmOrderingFilter().get_ordering(request, queryset, view)
 
-    def is_paged(self, request):  # pylint: disable=unused-argument
+    def is_paged(self, request):  # noqa: ARG001, ARG002
         limit = self.request.query_params.get("limit", False)
         offset = self.request.query_params.get("offset", False)
 
@@ -115,9 +111,7 @@ class PaginatedView(GenericUIView):
         page = self.paginator
         url = self.request.build_absolute_uri()
         url = replace_query_param(url, page.limit_query_param, page.limit)
-        url = replace_query_param(url, page.offset_query_param, 0)
-
-        return url
+        return replace_query_param(url, page.offset_query_param, 0)
 
     def get_page(self, obj, request, context=None):
         if not context:
@@ -165,7 +159,7 @@ class PaginatedView(GenericUIView):
 
         raise AdcmEx("TOO_LONG", msg=msg, args=self.get_paged_link())
 
-    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def get(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         obj = self.filter_queryset(self.get_queryset())
 
         return self.get_page(obj, request)
@@ -193,7 +187,7 @@ class DetailView(GenericUIView):
 
         return obj
 
-    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def get(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         obj = self.get_object()
         serializer = self.get_serializer(obj)
 

@@ -1,19 +1,63 @@
 {
+  "settings": {
+    "import/resolver": {
+      "alias": {
+        "map": [
+          ["@uikit", "./src/components/uikit/"],
+          ["@models", "./src/models/"],
+          ["@utils", "./src/utils/"],
+          ["@store", "./src/store/"],
+          ["@constants", "./src/constants"],
+          ["@api", "./src/api/"]
+        ],
+        "extensions": [".ts", ".js", ".jsx", ".json"]
+      }
+    }
+  },
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
-  "plugins": ["react", "prettier", "@typescript-eslint", "react-hooks", "react-refresh", "spellcheck"],
+  "plugins": ["react", "prettier", "@typescript-eslint", "react-hooks", "react-refresh", "spellcheck", "import"],
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:react-hooks/recommended",
     "plugin:storybook/recommended",
     "plugin:prettier/recommended",
+    "plugin:import/errors",
+    "plugin:import/warnings",
+    "plugin:import/typescript",
     "prettier"
   ],
   "rules": {
+    "import/no-unresolved": "off", // delete after fixing all cycle deps and adding all alias mappings into import/resolver settings above
+    "import/no-cycle": [
+      "error",
+      {
+        "maxDepth": 10,
+        "ignoreExternal": true
+      }
+    ],
+    "no-restricted-imports": "off",
+    "@typescript-eslint/no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "react-redux",
+            "importNames": ["useSelector", "useDispatch"],
+            "message": "Use typed `useStore` and `useDispatch` from '@hooks' instead."
+          },
+          {
+            "name": "@reduxjs/toolkit",
+            "importNames": ["createAsyncThunk"],
+            "message": "Use typed `createAsyncThunk` from '@store/redux' instead."
+          }
+        ]
+      }
+    ],
     "@typescript-eslint/no-unused-vars": ["error", { "ignoreRestSiblings": true }],
     "react-refresh/only-export-components": "warn",
     "object-curly-spacing": [2, "always"],
@@ -61,15 +105,19 @@
           "enum",
           "guid",
           "gz",
+          "highlite",
           "hljs",
           "hostcomponentmap",
           "hostprovider",
           "hostproviders",
           "href",
+          "highlite",
           "io",
           "javascript",
+          "lang",
           "linkable",
           "ldap",
+          "lang",
           "maintenance",
           "mouseenter",
           "mouseleave",
@@ -94,7 +142,9 @@
           "readonly",
           "rect",
           "redux",
+          "refractor",
           "resize",
+          "refractor",
           "rp",
           "req",
           "schemas",
@@ -114,6 +164,7 @@
           "tgz",
           "toggler",
           "tooltip",
+          "txt",
           "ttl",
           "ul",
           "unlink",

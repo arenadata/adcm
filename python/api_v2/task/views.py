@@ -10,16 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.log_storage.utils import (
-    get_task_download_archive_file_handler,
-    get_task_download_archive_name,
-)
-from api_v2.task.filters import TaskFilter
-from api_v2.task.permissions import TaskPermissions
-from api_v2.task.serializers import TaskListSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from adcm.permissions import VIEW_TASKLOG_PERMISSION
 from audit.utils import audit
 from cm.models import TaskLog
+from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
@@ -29,12 +23,17 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
-from adcm.permissions import VIEW_TASKLOG_PERMISSION
+from api_v2.log_storage.utils import (
+    get_task_download_archive_file_handler,
+    get_task_download_archive_name,
+)
+from api_v2.task.filters import TaskFilter
+from api_v2.task.permissions import TaskPermissions
+from api_v2.task.serializers import TaskListSerializer
+from api_v2.views import CamelCaseGenericViewSet
 
 
-class TaskViewSet(
-    PermissionListMixin, ListModelMixin, RetrieveModelMixin, CreateModelMixin, CamelCaseGenericViewSet
-):  # pylint: disable=too-many-ancestors
+class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, CreateModelMixin, CamelCaseGenericViewSet):
     queryset = TaskLog.objects.select_related("action").order_by("-pk")
     serializer_class = TaskListSerializer
     filterset_class = TaskFilter
@@ -42,16 +41,22 @@ class TaskViewSet(
     permission_classes = [TaskPermissions]
     permission_required = [VIEW_TASKLOG_PERMISSION]
 
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+        if not self.request.user.is_superuser:
+            queryset = queryset.exclude(object_type=ContentType.objects.get(app_label="cm", model="adcm"))
+        return queryset
+
     @audit
     @action(methods=["post"], detail=True)
-    def terminate(self, request: Request, *args, **kwargs) -> Response:  # pylint: disable=unused-argument
+    def terminate(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         task = self.get_object()
         task.cancel()
 
         return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)
 
     @action(methods=["get"], detail=True, url_path="logs/download")
-    def download(self, request: Request, *args, **kwargs):  # pylint: disable=unused-argument
+    def download(self, request: Request, *args, **kwargs):  # noqa: ARG001, ARG002
         task = self.get_object()
         response = HttpResponse(
             content=get_task_download_archive_file_handler(task=task).getvalue(),

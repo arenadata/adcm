@@ -5,3 +5,7 @@ export type EntityWithMaintenanceModeType = AdcmHost | AdcmService | AdcmService
 export const getRevertedMaintenanceModeStatus = (entity: EntityWithMaintenanceModeType) => {
   return entity?.maintenanceMode === AdcmMaintenanceMode.Off ? AdcmMaintenanceMode.On : AdcmMaintenanceMode.Off;
 };
+
+export const getEntityDisplayName = (entity: EntityWithMaintenanceModeType) => {
+  return 'displayName' in entity ? entity.displayName : entity.name;
+};

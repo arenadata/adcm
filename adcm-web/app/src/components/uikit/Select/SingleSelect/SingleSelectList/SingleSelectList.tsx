@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { SelectOption } from '@uikit/Select/Select.types';
+import { SelectOption, DefaultSelectListItemProps } from '@uikit/Select/Select.types';
 import s from './SingleSelectList.module.scss';
 import cn from 'classnames';
 import { useSingleSelectContext } from '../SingleSelectContext/SingleSelect.context';
@@ -57,13 +57,6 @@ const SingleSelectList = <T,>() => {
   );
 };
 export default SingleSelectList;
-
-export interface DefaultSelectListItemProps<T> {
-  onSelect?: () => void;
-  isSelected?: boolean;
-  className?: string;
-  option: SelectOption<T>;
-}
 
 const SingleSelectOptionsItem = <T,>({ onSelect, option, className }: DefaultSelectListItemProps<T>) => {
   const { disabled, title, label } = option;

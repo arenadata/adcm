@@ -9,19 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-lines
 
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from audit.models import (
-    AuditLog,
-    AuditLogOperationResult,
-    AuditLogOperationType,
-    AuditObject,
-    AuditObjectType,
-)
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import (
     Action,
     Bundle,
@@ -50,12 +43,16 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
 )
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from audit.models import (
+    AuditLog,
+    AuditLogOperationResult,
+    AuditLogOperationType,
+    AuditObject,
+    AuditObjectType,
+)
 
 
 class TestClusterAudit(BaseTestCase):
-    # pylint: disable=too-many-instance-attributes,too-many-public-methods
-
     def setUp(self) -> None:
         super().setUp()
 
@@ -691,7 +688,7 @@ class TestClusterAudit(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.CLUSTER,
-            operation_name=f"{self.host.fqdn} host added",
+            operation_name=f"[{self.host.fqdn}] host(s) added",
             operation_type=AuditLogOperationType.UPDATE,
         )
 
@@ -708,7 +705,7 @@ class TestClusterAudit(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.CLUSTER,
-            operation_name="host added",
+            operation_name="[] host(s) added",
             operation_type=AuditLogOperationType.UPDATE,
             operation_result=AuditLogOperationResult.FAIL,
         )
@@ -726,7 +723,7 @@ class TestClusterAudit(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
-            operation_name=f"{self.host.fqdn} host added",
+            operation_name=f"[{self.host.fqdn}] host(s) added",
             operation_type=AuditLogOperationType.UPDATE,
         )
 

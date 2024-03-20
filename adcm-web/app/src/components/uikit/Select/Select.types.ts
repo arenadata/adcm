@@ -1,6 +1,11 @@
-import { DefaultSelectListItemProps } from '@uikit/Select/SingleSelect/SingleSelectList/SingleSelectList.tsx';
-
 export type SelectValue = string | number | null;
+
+export interface DefaultSelectListItemProps<T> {
+  onSelect?: () => void;
+  isSelected?: boolean;
+  className?: string;
+  option: SelectOption<T>;
+}
 
 export interface SelectOption<T = SelectValue> {
   value: T;

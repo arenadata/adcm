@@ -12,6 +12,13 @@
 
 from datetime import datetime
 
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from django.urls import reverse
+from django.utils import timezone
+from init_db import init as init_adcm
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
+
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -22,18 +29,9 @@ from audit.models import (
     AuditSessionLoginResult,
     AuditUser,
 )
-from django.urls import reverse
-from django.utils import timezone
-from init_db import init as init_adcm
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestAuditViews(BaseTestCase):
-    # pylint: disable=too-many-instance-attributes
-
     def setUp(self) -> None:
         super().setUp()
 

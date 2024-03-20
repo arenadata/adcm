@@ -8,7 +8,7 @@ import {
 
 export const useRequestAdcmSettings = () => {
   const dispatch = useDispatch();
-  const configVersions = useStore(({ adcm }) => adcm.settingsConfigurations.configVersions);
+  const configVersions = useStore(({ adcm }) => adcm.entityConfiguration.configVersions);
 
   useEffect(() => {
     dispatch(getAdcmSettings());

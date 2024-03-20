@@ -10,10 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
-import sys
 from pathlib import Path
 from typing import TextIO
+import sys
+import argparse
 
 APACHE_LICENCE_PY = [
     '# Licensed under the Apache License, Version 2.0 (the "License");\n',

@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from audit.models import AuditLog
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import (
     Bundle,
     Cluster,
@@ -25,7 +25,7 @@ from cm.models import (
 from django.urls import reverse
 from rbac.models import Group, Policy, Role, RoleTypes
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from audit.models import AuditLog
 
 
 class TestAuditObjectRename(BaseTestCase):

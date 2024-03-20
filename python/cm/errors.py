@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.logger import logger
 from django.conf import settings
 from django.db.utils import OperationalError
 from rest_framework.exceptions import APIException, ValidationError
@@ -25,6 +24,8 @@ from rest_framework.status import (
     HTTP_501_NOT_IMPLEMENTED,
 )
 from rest_framework.views import exception_handler
+
+from cm.logger import logger
 
 WARN = "warning"
 ERR = "error"
@@ -144,11 +145,11 @@ ERRORS = {
     "ISSUE_INTEGRITY_ERROR": ("Issue object integrity error", HTTP_409_CONFLICT, ERR),
     "GROUP_CONFIG_HOST_ERROR": (
         "host is not available for this object, or host already is a member of another group of this object",
-        HTTP_400_BAD_REQUEST,
+        HTTP_409_CONFLICT,
     ),
     "GROUP_CONFIG_HOST_EXISTS": (
         "the host is already a member of this group ",
-        HTTP_400_BAD_REQUEST,
+        HTTP_409_CONFLICT,
     ),
     "NOT_CHANGEABLE_FIELDS": ("fields cannot be changed", HTTP_400_BAD_REQUEST, ERR),
     "GROUP_CONFIG_TYPE_ERROR": (
@@ -159,6 +160,11 @@ ERRORS = {
     "GROUP_CONFIG_DATA_ERROR": (
         "invalid data for creating group_config",
         HTTP_400_BAD_REQUEST,
+        ERR,
+    ),
+    "GROUP_CONFIG_NO_CONFIG_ERROR": (
+        "Can't create group config for object without config",
+        HTTP_409_CONFLICT,
         ERR,
     ),
     "LOCK_ERROR": ("lock error", HTTP_409_CONFLICT, ERR),
@@ -220,8 +226,9 @@ ERRORS = {
     "USER_UPDATE_ERROR": ("Error during process of user updating", HTTP_400_BAD_REQUEST, ERR),
     "USER_DELETE_ERROR": ("Built-in user could not be deleted", HTTP_409_CONFLICT, ERR),
     "USER_BLOCK_ERROR": ("Built-in user could not be blocked", HTTP_409_CONFLICT, ERR),
-    "USER_UNBLOCK_ERROR": ("Only superuser can reset login attempts.", HTTP_409_CONFLICT, ERR),
+    "USER_UNBLOCK_ERROR": ("Only superuser can unblock user.", HTTP_403_FORBIDDEN, ERR),
     "JOB_TERMINATION_ERROR": ("Can't terminate job", HTTP_409_CONFLICT, ERR),
+    "USER_PASSWORD_ERROR": ("Password doesn't feet requirements", HTTP_409_CONFLICT, ERR),
     "USER_PASSWORD_TOO_SHORT_ERROR": ("This password is shorter than min password length", HTTP_400_BAD_REQUEST, ERR),
     "USER_PASSWORD_TOO_LONG_ERROR": ("This password is longer than max password length", HTTP_400_BAD_REQUEST, ERR),
     "USER_PASSWORD_TOO_COMMON_ERROR": ("This password is too common", HTTP_400_BAD_REQUEST, ERR),
@@ -254,12 +261,12 @@ def get_error(code):
 
 
 class AdcmEx(APIException):
-    def __init__(self, code, msg="", http_code="", args=""):
+    def __init__(self, code, msg="", http_code: int | None = None, args=""):
         err_code, err_msg, err_http_code, level = get_error(code)
         if msg != "":
             err_msg = msg
 
-        if http_code != "":
+        if http_code is not None:
             err_http_code = http_code
 
         self.msg = err_msg

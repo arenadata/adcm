@@ -1,0 +1,104 @@
+{
+  "service_two_components": {
+    "id": 1,
+    "version": "2.0",
+    "state": "created",
+    "multi_state": [],
+    "config": {
+      "integer": {{ service_config_integer | default(100) }},
+      "string": "{{ config_string | default('string') }}",
+      "list": [
+        "value1",
+        "value2",
+        "value3"
+      ]
+    },
+    "maintenance_mode": false,
+    "display_name": "service_two_components",
+    "before_upgrade": {
+      "state": "created",
+      "config": {
+        "integer": 10,
+        "password": "password",
+        "string": "{{ before_upgrade_string | default('string') }}",
+        "list": [
+          "value1",
+          "value2",
+          "value3"
+        ]
+      }
+    },
+    "component_1": {
+      "component_id": 1,
+      "config": {
+        "integer": {{ component_1_config_integer | default(100) }},
+        "string": "string",
+        {% if config_list %}
+        "list": [
+          "1",
+          "2"
+        ]
+        {% else %}
+        "list": [
+          "value1",
+          "value2",
+          "value3"
+        ]
+        {% endif %}
+      },
+      "state": "created",
+      "multi_state": [],
+      "maintenance_mode": false,
+      "display_name": "component_1",
+      "before_upgrade": {
+        "state": "created",
+        "config": {
+          "integer": 10,
+          "password": "password",
+          "string": "string",
+          {% if before_upgrade_list %}
+          "list": [
+            "1",
+            "2"
+          ]
+          {% else %}
+          "list": [
+            "value1",
+            "value2",
+            "value3"
+          ]
+          {% endif %}
+        }
+      }
+    },
+    "component_2": {
+      "component_id": 2,
+      "config": {
+        "integer": 100,
+        "string": "string",
+        "list": [
+          "value1",
+          "value2",
+          "value3"
+        ]
+      },
+      "state": "created",
+      "multi_state": [],
+      "maintenance_mode": false,
+      "display_name": "component_2",
+      "before_upgrade": {
+        "state": "created",
+        "config": {
+          "integer": 10,
+          "password": "password",
+          "string": "string",
+          "list": [
+            "value1",
+            "value2",
+            "value3"
+          ]
+        }
+      }
+    }
+  }
+}

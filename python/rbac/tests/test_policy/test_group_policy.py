@@ -12,13 +12,13 @@
 
 from pathlib import Path
 
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import Action, ConfigLog, ObjectType, ServiceComponent
 from django.urls import reverse
-from rbac.models import Group
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from rbac.models import Group
 
 
 class GroupPolicyTestCase(BaseTestCase):

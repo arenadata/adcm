@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 3.3
+  version: 3.4
 
   actions:
     run_ldap_sync:
@@ -235,6 +235,12 @@
             Attribute from group entry that is list of members.
           type: string
           default: "member"
+        - name: "group_dn_adcm_admin"
+          display_name: "Group DN for granting ADCM Administrator rights"
+          description: |
+            The distinguished name (DN) of the group list whose members are granted ADCM Administrator rights. List element example: "cn=adcm_admin,ou=Groups,dc=ad,dc=ranger-test".
+          type: list
+          required: false
         - name: "sync_interval"
           display_name: "Sync interval"
           description: |

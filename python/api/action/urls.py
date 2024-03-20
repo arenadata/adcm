@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.action.views import ActionDetail, ActionList, RunTask
 from django.urls import path
+
+from api.action.views import ActionDetail, ActionList, RunTask
 
 urlpatterns = [
     path("", ActionList.as_view(), name="object-action"),

@@ -10,13 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_ui.stack.serializers import PrototypeUISerializer
 from cm.models import ObjectType, Prototype
 from django.db.models.query import QuerySet
 from rest_framework.mixins import ListModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.viewsets import GenericViewSet
+
+from api_ui.stack.serializers import PrototypeUISerializer
 
 
 class PrototypeUIViewMixin:

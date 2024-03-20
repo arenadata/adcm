@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=wrong-import-order,wrong-import-position
 
 import sys
 
@@ -18,7 +17,8 @@ from ansible.plugins.lookup import LookupBase
 
 sys.path.append("/adcm/python")
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django  # noqa: F401, isort:skip
+
 from cm.ansible_plugin import (
     set_cluster_config,
     set_host_config,
@@ -62,7 +62,7 @@ RETURN = """
 
 
 class LookupModule(LookupBase):
-    def run(self, terms, variables=None, **kwargs):  # pylint: disable=too-many-branches
+    def run(self, terms, variables=None, **kwargs):
         logger.debug("run %s %s", terms, kwargs)
         ret = []
 
@@ -105,5 +105,5 @@ class LookupModule(LookupBase):
         else:
             raise AnsibleError(f"unknown object type: {terms[0]}")
 
-        ret.append(res)
+        ret.append(res.value)
         return ret

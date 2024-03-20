@@ -10,9 +10,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=wrong-import-order
 
-import adcm.init_django  # pylint: disable=unused-import
+import adcm.init_django  # noqa: F401, isort:skip
 import api.urls
 
 
@@ -24,9 +23,8 @@ def fix_ordering(field, view):
     if view.__name__ == "ClusterServiceList":
         if "display_name" in fix:
             fix = fix.replace("prototype_display_name", "display_name")
-    elif view.__name__ == "ServiceComponentList":
-        if "display_name" in fix:
-            fix = fix.replace("component__display_name", "display_name")
+    elif view.__name__ == "ServiceComponentList" and "display_name" in fix:
+        fix = fix.replace("component__display_name", "display_name")
     return fix
 
 

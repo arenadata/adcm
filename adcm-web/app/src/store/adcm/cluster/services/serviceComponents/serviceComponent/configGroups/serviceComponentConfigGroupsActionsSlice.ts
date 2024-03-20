@@ -1,12 +1,12 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { AdcmClusterServiceComponentConfigGroupsApi, RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { showError, showInfo } from '@store/notificationsSlice';
+import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { AdcmConfigGroup, AdcmHostCandidate } from '@models/adcm';
 import { AdcmServiceComponentConfigGroupCreateData } from '@api/adcm/serviceComponentGroupConfigs';
 import { getServiceComponentConfigGroups } from './serviceComponentConfigGroupsSlice';
-import { mappedHostsToConfigGroup } from '@utils/configGroupUtils';
+import { mappedHostsToConfigGroup } from '@store/adcm/entityConfiguration/configGroupSlice.utils';
 
 interface AdcmServiceComponentConfigGroupActionsState {
   deleteDialog: {
@@ -46,7 +46,7 @@ const deleteServiceComponentConfigGroup = createAsyncThunk(
         configGroupId,
       );
 
-      thunkAPI.dispatch(showInfo({ message: 'Config Group was deleted' }));
+      thunkAPI.dispatch(showSuccess({ message: 'Config Group was deleted' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);

@@ -797,6 +797,46 @@
               "type": "null"
             }
           ]
+        },
+        "group_dn_adcm_admin": {
+          "oneOf": [
+            {
+              "title": "Group DN for granting ADCM Administrator rights",
+              "type": "array",
+              "description": "The distinguished name (DN) of the group list whose members are granted ADCM Administrator rights. List element example: \"cn=adcm_admin,ou=Groups,dc=ad,dc=ranger-test\".\n",
+              "default": [],
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": false,
+                "stringExtra": null,
+                "enumExtra": null
+              },
+              "items": {
+                "type": "string",
+                "title": "",
+                "description": "",
+                "default": null,
+                "readOnly": false,
+                "adcmMeta": {
+                  "isAdvanced": false,
+                  "isInvisible": false,
+                  "activation": null,
+                  "synchronization": null,
+                  "nullValue": null,
+                  "isSecret": false,
+                  "stringExtra": null,
+                  "enumExtra": null
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -812,6 +852,7 @@
         "group_object_class",
         "group_name_attribute",
         "group_member_attribute_name",
+        "group_dn_adcm_admin",
         "sync_interval",
         "tls_ca_cert_file"
       ]

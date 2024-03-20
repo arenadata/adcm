@@ -3,6 +3,7 @@ export const allowIconsNames = [
   'alert-circle',
   'arrow-sorting',
   'check',
+  'check-hollow',
   'chevron',
   'chevron-double',
   'dots',

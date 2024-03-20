@@ -10,10 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.tests.base import BaseAPITestCase
 from cm.models import ADCM, Action
+from django.conf import settings
 from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestADCM(BaseAPITestCase):
@@ -39,3 +41,9 @@ class TestADCM(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], Action.objects.last().pk)
+
+    def test_get_versions_success(self):
+        response = self.client.get(path=reverse(viewname="versions"))
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertDictEqual(response.json(), {"adcm": {"version": settings.ADCM_VERSION}})

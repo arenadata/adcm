@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.utils import get_api_url_kwargs, hlink
+from adcm.serializers import EmptySerializer
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
     BooleanField,
@@ -20,7 +20,7 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
-from adcm.serializers import EmptySerializer
+from api.utils import get_api_url_kwargs, hlink
 
 
 class ConcernItemSerializer(EmptySerializer):

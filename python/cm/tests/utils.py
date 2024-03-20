@@ -12,6 +12,9 @@
 
 from uuid import uuid4
 
+from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
+
 from cm.errors import AdcmEx
 from cm.models import (
     ADCM,
@@ -33,8 +36,6 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from django.contrib.contenttypes.models import ContentType
-from django.utils import timezone
 
 
 def gen_name(prefix: str):
@@ -206,7 +207,7 @@ def gen_job_log(task: TaskLog) -> JobLog:
     )
 
 
-def generate_hierarchy():
+def generate_hierarchy(bind_to_cluster: bool = True):
     """
     Generates hierarchy:
         cluster - service - component - host - provider
@@ -240,11 +241,12 @@ def generate_hierarchy():
     provider.save()
 
     host_pt = gen_prototype(provider_bundle, "host")
-    host = gen_host(provider, cluster, prototype=host_pt)
+    host = gen_host(provider, cluster if bind_to_cluster else None, prototype=host_pt)
     host.config = gen_config()
     host.save()
 
-    gen_host_component(component, host)
+    if bind_to_cluster:
+        gen_host_component(component, host)
 
     return {
         "cluster": cluster,

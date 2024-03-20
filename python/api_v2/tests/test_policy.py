@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api_v2.tests.base import BaseAPITestCase
 from django.urls import reverse
 from rbac.models import Group, Policy, Role
 from rbac.services.policy import policy_create
@@ -21,6 +20,8 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
 )
+
+from api_v2.tests.base import BaseAPITestCase
 
 
 class TestPolicy(BaseAPITestCase):

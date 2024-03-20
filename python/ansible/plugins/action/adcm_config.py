@@ -9,18 +9,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=wrong-import-order,wrong-import-position
 
-from __future__ import absolute_import, division, print_function
-
-__metaclass__ = type  # pylint: disable=invalid-name
 
 import sys
 
 from ansible.errors import AnsibleError
 
 sys.path.append("/adcm/python")
-import adcm.init_django  # pylint: disable=unused-import
+
+import adcm.init_django  # noqa: F401, isort:skip
+
 from cm.ansible_plugin import (
     ContextActionModule,
     set_cluster_config,
@@ -38,7 +36,8 @@ DOCUMENTATION = r"""
 module: adcm_config
 short_description: Change values in config in runtime
 description:
-  - This is special ADCM only module which is useful for setting of specified config key or set of config keys for various ADCM objects.
+  - This is special ADCM only module which is useful for setting of specified config key
+  or set of config keys for various ADCM objects.
   - There is support of cluster, service, host and providers config.
   - This one is allowed to be used in various execution contexts.
 options:
@@ -68,7 +67,8 @@ options:
   - option-name: service_name
     required: false
     type: string
-    description: useful in cluster context only. In that context you are able to set a config value for a service belongs to the cluster.
+    description: useful in cluster context only.
+    In that context you are able to set a config value for a service belongs to the cluster.
 
 notes:
   - If type is 'service', there is no needs to specify service_name
@@ -181,7 +181,7 @@ class ActionModule(ContextActionModule):
 
         return attr
 
-    def _do_cluster(self, task_vars, context):
+    def _do_cluster(self, task_vars, context):  # noqa: ARG002
         res = self._wrap_call(
             set_cluster_config,
             context["cluster_id"],
@@ -192,7 +192,7 @@ class ActionModule(ContextActionModule):
 
         return res
 
-    def _do_service_by_name(self, task_vars, context):
+    def _do_service_by_name(self, task_vars, context):  # noqa: ARG002
         res = self._wrap_call(
             set_service_config_by_name,
             context["cluster_id"],
@@ -204,7 +204,7 @@ class ActionModule(ContextActionModule):
 
         return res
 
-    def _do_service(self, task_vars, context):
+    def _do_service(self, task_vars, context):  # noqa: ARG002
         res = self._wrap_call(
             set_service_config,
             context["cluster_id"],
@@ -216,7 +216,7 @@ class ActionModule(ContextActionModule):
 
         return res
 
-    def _do_host(self, task_vars, context):
+    def _do_host(self, task_vars, context):  # noqa: ARG002
         res = self._wrap_call(
             set_host_config,
             context["host_id"],
@@ -227,7 +227,7 @@ class ActionModule(ContextActionModule):
 
         return res
 
-    def _do_host_from_provider(self, task_vars, context):
+    def _do_host_from_provider(self, task_vars, context):  # noqa: ARG002
         res = self._wrap_call(
             set_host_config,
             self._task.args["host_id"],
@@ -238,7 +238,7 @@ class ActionModule(ContextActionModule):
 
         return res
 
-    def _do_provider(self, task_vars, context):
+    def _do_provider(self, task_vars, context):  # noqa: ARG002
         res = self._wrap_call(
             set_provider_config,
             context["provider_id"],
@@ -249,7 +249,7 @@ class ActionModule(ContextActionModule):
 
         return res
 
-    def _do_component_by_name(self, task_vars, context):
+    def _do_component_by_name(self, task_vars, context):  # noqa: ARG002
         res = self._wrap_call(
             set_component_config_by_name,
             context["cluster_id"],
@@ -263,7 +263,7 @@ class ActionModule(ContextActionModule):
 
         return res
 
-    def _do_component(self, task_vars, context):
+    def _do_component(self, task_vars, context):  # noqa: ARG002
         res = self._wrap_call(
             set_component_config,
             context["component_id"],

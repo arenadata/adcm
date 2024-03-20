@@ -9,11 +9,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import asyncio
+
+from adcm.tests.base import APPLICATION_JSON
+from asgiref.sync import sync_to_async
+from cm.models import ClusterBind
+from django.test import AsyncClient
+from django.urls import reverse
+from rbac.models import User
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 from api_v2.tests.base import BaseAPITestCase
-from cm.models import ClusterBind
-from django.urls import reverse
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 
 class TestImport(BaseAPITestCase):
@@ -31,6 +37,8 @@ class TestImport(BaseAPITestCase):
         self.import_service = self.add_services_to_cluster(
             service_names=["service_import"], cluster=self.import_cluster
         ).get()
+        self.aclient = AsyncClient()
+        self.aclient.force_login(User.objects.get(username="admin"))
 
     def test_cluster_imports_list_success(self):
         response = self.client.get(
@@ -89,6 +97,7 @@ class TestImport(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
+        self.maxDiff = None
         self.assertDictEqual(
             response.json()["results"][0],
             {
@@ -160,3 +169,19 @@ class TestImport(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertFalse(ClusterBind.objects.exists())
+
+    async def test_adcm_5295_cluster_imports_no_requests_race_success(self):
+        async def import_list():
+            resp = await self.aclient.post(
+                path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
+                data=[{"source": {"id": self.export_service.pk, "type": "service"}}],
+                content_type=APPLICATION_JSON,
+            )
+            count = await sync_to_async(ClusterBind.objects.count)()
+            return resp, count
+
+        responses = await asyncio.gather(*[import_list()] * 1000)
+
+        for response, clusterbinds in responses:
+            self.assertEqual(clusterbinds, 1)
+            self.assertEqual(response.status_code, HTTP_201_CREATED)

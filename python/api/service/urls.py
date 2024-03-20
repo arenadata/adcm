@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.urls import include, path
+
 from api.service.views import (
     ServiceBindDetailView,
     ServiceBindView,
@@ -19,7 +21,6 @@ from api.service.views import (
     ServiceMaintenanceModeView,
     StatusList,
 )
-from django.urls import include, path
 
 urlpatterns = [
     path("", ServiceListView.as_view(), name="service"),

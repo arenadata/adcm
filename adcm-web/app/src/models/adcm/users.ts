@@ -8,7 +8,7 @@ export enum AdcmUserType {
   Ldap = 'ldap',
 }
 
-interface AdcmUserGroup {
+export interface AdcmUserGroup {
   id: number;
   name: string;
   displayName: string;
@@ -25,6 +25,7 @@ export interface AdcmUser {
   isSuperUser: boolean;
   type: string;
   username: string;
+  blockingReason: string;
 }
 
 export interface AdcmUsersFilter {
