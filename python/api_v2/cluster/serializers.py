@@ -78,6 +78,9 @@ class ClusterRelatedSerializer(ModelSerializer):
 class ClusterCreateSerializer(EmptySerializer):
     prototype_id = IntegerField()
     name = CharField(
+        min_length=2,
+        max_length=150,
+        trim_whitespace=False,
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
             StartMidEndValidator(
@@ -94,7 +97,9 @@ class ClusterCreateSerializer(EmptySerializer):
 
 class ClusterUpdateSerializer(ModelSerializer):
     name = CharField(
-        max_length=80,
+        min_length=2,
+        max_length=150,
+        trim_whitespace=False,
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
             StartMidEndValidator(
