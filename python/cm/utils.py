@@ -11,11 +11,8 @@
 # limitations under the License.
 
 from collections.abc import Mapping
-from pathlib import Path
-from secrets import token_hex
 from typing import Any, Iterable, Protocol, TypeVar
 import os
-import json
 
 
 class WithPK(Protocol):
@@ -27,31 +24,6 @@ ObjectWithPk = TypeVar("ObjectWithPk", bound=WithPK)
 
 def build_id_object_mapping(objects: Iterable[ObjectWithPk]) -> dict[int, ObjectWithPk]:
     return {object_.pk: object_ for object_ in objects}
-
-
-def dict_json_get_or_create(path: str | Path, field: str, value: Any = None) -> Any:
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-
-    if field not in data:
-        data[field] = value
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f)
-
-    return data[field]
-
-
-def get_adcm_token(token_path: Path) -> str:
-    if not token_path.is_file():
-        token_path.parent.mkdir(parents=True, exist_ok=True)
-        with token_path.open(mode="w", encoding="utf-8") as f:
-            f.write(token_hex(20))
-
-    with token_path.open(encoding="utf-8") as f:
-        adcm_token = f.read().strip()
-        adcm_token.encode(encoding="idna").decode(encoding="utf-8")
-
-    return adcm_token
 
 
 def get_env_with_venv_path(venv: str, existing_env: dict | None = None) -> dict:
@@ -108,3 +80,22 @@ def obj_ref(obj: type["ADCMEntity"]) -> str:  # noqa: F821
         name = obj.prototype.name
 
     return f'{obj.prototype.type} #{obj.id} "{name}"'
+
+
+def get_obj_type(obj_type: str) -> str:
+    object_names_to_object_types = {
+        "adcm": "adcm",
+        "cluster": "cluster",
+        "cluster object": "service",
+        "service component": "component",
+        "host provider": "provider",
+        "host": "host",
+    }
+    return object_names_to_object_types[obj_type]
+
+
+def str_remove_non_alnum(value: str) -> str:
+    result = "".join(ch.lower().replace(" ", "-") for ch in value if (ch.isalnum() or ch == " "))
+    while result.find("--") != -1:
+        result = result.replace("--", "-")
+    return result

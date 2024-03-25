@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from adcm.serializers import EmptySerializer
-from adcm.utils import filter_actions, get_requires
 from cm.adcm_config.config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
@@ -41,7 +40,7 @@ from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializ
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.host.serializers import HostSerializer
 from api.serializers import DoUpgradeSerializer, StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL, UrlField, check_obj
+from api.utils import CommonAPIURL, ObjectURL, UrlField, check_obj, filter_actions, get_requires
 
 
 def get_cluster_id(obj):

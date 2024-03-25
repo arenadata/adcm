@@ -21,10 +21,10 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from adcm.utils import get_maintenance_mode_response
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, ServiceComponent
+from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import update_mm_objects
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action

@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.utils import get_obj_type
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from cm.utils import get_obj_type
 from rbac.models import Group, Policy, Role, RoleTypes
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.exceptions import ValidationError
