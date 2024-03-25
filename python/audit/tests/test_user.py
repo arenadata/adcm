@@ -199,11 +199,12 @@ class TestUserAudit(BaseTestCase):
         prev_first_name = self.test_user.first_name
         prev_is_superuser = self.test_user.is_superuser
         new_test_first_name = "test_first_name"
+        admin = User.objects.get(username="admin")
+        self.client.login(username="admin", password="admin")
         self.client.put(
             path=reverse(viewname=self.detail_name, kwargs={"pk": self.test_user.pk}),
             data={
                 "username": self.test_user_username,
-                "password": self.test_user_password,
                 "first_name": new_test_first_name,
             },
             content_type=APPLICATION_JSON,
@@ -214,7 +215,7 @@ class TestUserAudit(BaseTestCase):
         self.check_log(
             log=log,
             operation_result=AuditLogOperationResult.SUCCESS,
-            user=self.test_user,
+            user=admin,
             object_changes={
                 "current": {
                     "first_name": new_test_first_name,

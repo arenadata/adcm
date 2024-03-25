@@ -324,11 +324,9 @@ class TestUserAPI(BaseAPITestCase):
         response = self.client.patch(
             path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": user.pk}),
             data={
-                "password": "newtestpassword",
                 "email": "test_user@mail.ru",
                 "firstName": "test_user_first_name",
                 "lastName": "test_user_last_name",
-                "isSuperUser": True,
                 "groups": [group.pk],
             },
         )
@@ -337,8 +335,7 @@ class TestUserAPI(BaseAPITestCase):
         data = response.json()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertFalse(user.check_password(raw_password="test_user_password"))
-        self.assertTrue(user.check_password(raw_password="newtestpassword"))
+        self.assertTrue(user.check_password(raw_password="test_user_password"))
         self.assertEqual(data["email"], "test_user@mail.ru")
         self.assertEqual(data["firstName"], "test_user_first_name")
         self.assertEqual(data["lastName"], "test_user_last_name")
@@ -361,11 +358,9 @@ class TestUserAPI(BaseAPITestCase):
         self.client.login(username="test_user", password="test_user_password")
 
         new_data = {
-            "password": "newtestuser2password",
             "email": "new_test_user2@mail.ru",
             "firstName": "new_test_user2_first_name",
             "lastName": "new_test_user2_last_name",
-            "isSuperUser": True,
             "groups": [group.pk],
         }
         response = self.client.patch(
@@ -375,8 +370,7 @@ class TestUserAPI(BaseAPITestCase):
         second_user.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertTrue(second_user.check_password(raw_password=new_data["password"]))
-        self.assertFalse(second_user.check_password(raw_password="test_user2_password"))
+        self.assertTrue(second_user.check_password(raw_password="test_user2_password"))
         self.assertEqual(second_user.email, new_data["email"])
         self.assertEqual(second_user.first_name, new_data["firstName"])
         self.assertEqual(second_user.last_name, new_data["lastName"])
