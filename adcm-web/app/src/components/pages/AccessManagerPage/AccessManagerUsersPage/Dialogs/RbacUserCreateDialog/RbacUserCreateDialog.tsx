@@ -4,7 +4,18 @@ import { useRbacUserCreateDialog } from './useRbacUserCreateDialog';
 import RbacUserForm from '@pages/AccessManagerPage/AccessManagerUsersPage/RbacUserForm/RbacUserForm';
 
 const RbacUserCreateDialog: React.FC = () => {
-  const { isOpen, isValid, onClose, formData, onChangeFormData, onSubmit, groups, errors } = useRbacUserCreateDialog();
+  const {
+    //
+    isOpen,
+    isValid,
+    onClose,
+    formData,
+    onChangeFormData,
+    onSubmit,
+    groups,
+    errors,
+    isCurrentUserSuperUser,
+  } = useRbacUserCreateDialog();
 
   return (
     <Dialog
@@ -19,6 +30,7 @@ const RbacUserCreateDialog: React.FC = () => {
       <form>
         <RbacUserForm
           onChangeFormData={onChangeFormData}
+          isCurrentUserSuperUser={isCurrentUserSuperUser}
           formData={formData}
           groups={groups}
           errors={errors}

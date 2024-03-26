@@ -20,6 +20,7 @@ export const useRbacUserUpdateDialog = () => {
   const user = useStore((s) => s.adcm.usersActions.updateDialog.user);
   const isUpdating = useStore((s) => s.adcm.usersActions.updateDialog.isUpdating);
   const groups = useStore((s) => s.adcm.usersActions.relatedData.groups);
+  const isCurrentUserSuperUser = useStore((s) => s.auth.profile.isSuperUser);
   const authSettings = useStore((s) => s.auth.profile.authSettings);
   const isOpen = !!user;
   const isPersonalDataEditForbidden = user?.type === 'ldap';
@@ -72,16 +73,20 @@ export const useRbacUserUpdateDialog = () => {
 
   const handleCreate = () => {
     if (user) {
+      const userData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        groups: formData.groups,
+        password: formData.password === '' ? undefined : formData.password,
+      };
+
       dispatch(
         updateUser({
           id: user.id,
           userData: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email,
-            groups: formData.groups,
-            password: formData.password === '' ? undefined : formData.password,
-            isSuperUser: formData.isSuperUser,
+            ...userData,
+            ...(isCurrentUserSuperUser && { isSuperUser: formData.isSuperUser }),
           },
         }),
       );
@@ -98,5 +103,6 @@ export const useRbacUserUpdateDialog = () => {
     onSubmit: handleCreate,
     errors,
     isPersonalDataEditForbidden,
+    isCurrentUserSuperUser,
   };
 };
