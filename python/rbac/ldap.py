@@ -108,12 +108,12 @@ def get_groups_by_user_dn(
     )
     if len(users) != 1:
         err_msg = f"Not one user found by `{search_expr}` search"
-        return None, err_msg
+        return [], [], err_msg
 
     user_dn_, user_attrs = users[0]
     if user_dn_.strip().lower() != user_dn.strip().lower():
         err_msg = f"Got different user dn: {(user_dn_, user_dn)}. Tune search"
-        return None, err_msg
+        return [], [], err_msg
 
     group_cns = []
     group_dns_lower = []
