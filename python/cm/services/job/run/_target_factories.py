@@ -213,7 +213,7 @@ def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSet
     forks = adcm_config(get_adcm_config_id()).config["ansible_settings"]["forks"]
     config_parser["defaults"]["forks"] = str(forks)
 
-    jinja_2_native = getattr(job.params, "jinja_2_native", None)
+    jinja_2_native = getattr(job.params, "jinja2_native", None)
     if jinja_2_native is not None:
         config_parser["defaults"]["jinja2_native"] = str(jinja_2_native)
 

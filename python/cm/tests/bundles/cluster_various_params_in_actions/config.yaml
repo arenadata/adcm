@@ -1,0 +1,74 @@
+- type: cluster
+  version: 2.3
+  name: cluster_with_various_params_in_action
+
+  actions:
+    job_no_params: &job
+      type: job
+      script: ./somewhere.yaml
+      script_type: ansible
+
+    job_params:
+      <<: *job
+      params:
+        ansible_tags: hello, there
+        custom: [4, 3]
+
+    task_no_params:
+      type: task
+      scripts:
+        - &script
+          name: first
+          script: ./somewhere.yaml
+          script_type: ansible
+        - <<: *script
+          name: second
+
+    task_params_in_action:
+      type: task
+      scripts:
+        - <<: *script
+        - <<: *script
+          name: second
+      params:
+        jinja2_native: yes
+        custom: {"key": "value"}
+
+    task_params_in_action_and_scripts:
+      type: task
+      scripts:
+          - <<: *script
+            params:
+              ansible_tags: one, two
+              jinja2_native: "hello"
+          - <<: *script
+            name: second
+      params:
+        jinja2_native: yes
+        custom: { "key": "value" }
+
+    task_params_in_action_and_all_scripts:
+      type: task
+      scripts:
+          - <<: *script
+            params:
+              ansible_tags: one, two
+              jinja2_native: "hello"
+          - <<: *script
+            name: second
+            params:
+              perfect: "thing"
+      params:
+        ansible_tags: some
+        custom: { "key": "value" }
+
+    task_params_in_scripts:
+      type: task
+      scripts:
+        - <<: *script
+          params:
+            ansible_tags: one
+        - <<: *script
+          name: second
+          params:
+            perfect: "thing"

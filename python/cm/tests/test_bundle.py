@@ -13,7 +13,7 @@
 from pathlib import Path
 import json
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase, BundleLogicMixin
 from django.conf import settings
 from django.db import IntegrityError
 from django.urls import reverse
@@ -29,7 +29,7 @@ from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import delete_host_provider
 from cm.bundle import delete_bundle
 from cm.errors import AdcmEx
-from cm.models import ConfigLog
+from cm.models import Bundle, ConfigLog, SubAction
 from cm.tests.test_upgrade import (
     cook_cluster,
     cook_cluster_bundle,
@@ -265,4 +265,54 @@ class TestBundle(BaseTestCase):
         self.assertEqual(
             response.data["desc"],
             '"service" filed is required in hc_acl of action "sleep" of component "component" 1.0',
+        )
+
+
+class TestBundleParsing(BaseTestCase, BundleLogicMixin):
+    def get_ordered_subs(self, bundle: Bundle, action_name: str):
+        return SubAction.objects.filter(action__name=action_name, action__prototype__bundle=bundle).order_by("id")
+
+    def test_params_in_action_processing_during_upload(self) -> None:
+        bundle = self.add_bundle(
+            source_dir=self.base_dir / "python" / "cm" / "tests" / "bundles" / "cluster_various_params_in_actions"
+        )
+        fields = ("name", "params")
+
+        subs = self.get_ordered_subs(action_name="job_no_params", bundle=bundle)
+        self.assertEqual(subs.count(), 1)
+        self.assertEqual(list(subs.values_list(*fields)), [("job_no_params", {})])
+
+        subs = self.get_ordered_subs(action_name="job_params", bundle=bundle)
+        self.assertEqual(subs.count(), 1)
+        self.assertEqual(
+            list(subs.values_list(*fields)), [("job_params", {"ansible_tags": "hello, there", "custom": [4, 3]})]
+        )
+
+        subs = self.get_ordered_subs(action_name="task_no_params", bundle=bundle)
+        self.assertEqual(subs.count(), 2)
+        self.assertEqual(list(subs.values_list(*fields)), [("first", {}), ("second", {})])
+
+        subs = self.get_ordered_subs(action_name="task_params_in_action", bundle=bundle)
+        self.assertEqual(subs.count(), 2)
+        action_params = {"jinja2_native": True, "custom": {"key": "value"}}
+        self.assertEqual(list(subs.values_list(*fields)), [("first", action_params), ("second", action_params)])
+
+        subs = self.get_ordered_subs(action_name="task_params_in_action_and_scripts", bundle=bundle)
+        self.assertEqual(subs.count(), 2)
+        self.assertEqual(
+            list(subs.values_list(*fields)),
+            [("first", {"ansible_tags": "one, two", "jinja2_native": "hello"}), ("second", action_params)],
+        )
+
+        subs = self.get_ordered_subs(action_name="task_params_in_action_and_all_scripts", bundle=bundle)
+        self.assertEqual(subs.count(), 2)
+        self.assertEqual(
+            list(subs.values_list(*fields)),
+            [("first", {"ansible_tags": "one, two", "jinja2_native": "hello"}), ("second", {"perfect": "thing"})],
+        )
+
+        subs = self.get_ordered_subs(action_name="task_params_in_scripts", bundle=bundle)
+        self.assertEqual(subs.count(), 2)
+        self.assertEqual(
+            list(subs.values_list(*fields)), [("first", {"ansible_tags": "one"}), ("second", {"perfect": "thing"})]
         )
