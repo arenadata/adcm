@@ -120,7 +120,8 @@ class TestHostAPI(BaseTestCase):
         run_task.target_task.refresh_from_db()
         self.assertEqual(run_task.target_task.status, "success")
         self.host.refresh_from_db()
-        self.assertEqual(self.host.maintenance_mode, MaintenanceMode.ON.value)
+        # since MM wasn't changed with plugin, rollback will be preformed
+        self.assertEqual(self.host.maintenance_mode, MaintenanceMode.OFF.value)
 
     def test_change_mm_on_from_on_with_action_fail(self):
         self.host.maintenance_mode = MaintenanceMode.ON
@@ -190,7 +191,8 @@ class TestHostAPI(BaseTestCase):
         run_task.target_task.refresh_from_db()
         self.assertEqual(run_task.target_task.status, "success")
         self.host.refresh_from_db()
-        self.assertEqual(self.host.maintenance_mode, MaintenanceMode.OFF.value)
+        # since MM wasn't changed with plugin, rollback will be preformed
+        self.assertEqual(self.host.maintenance_mode, MaintenanceMode.ON.value)
 
     def test_change_mm_off_to_off_with_action_fail(self):
         self.host.maintenance_mode = MaintenanceMode.OFF
@@ -368,4 +370,5 @@ class TestHostAPI(BaseTestCase):
         run_task.target_task.refresh_from_db()
         self.assertEqual(run_task.target_task.status, "success")
         host.refresh_from_db()
-        self.assertEqual(host.maintenance_mode, MaintenanceMode.ON.value)
+        # since MM wasn't changed with plugin, rollback will be preformed
+        self.assertEqual(host.maintenance_mode, MaintenanceMode.OFF.value)

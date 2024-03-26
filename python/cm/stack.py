@@ -610,6 +610,7 @@ def save_sub_actions(conf, action):
         sub_action.save()
         return
 
+    action_wide_params = conf.get("params", {})
     for sub in conf["scripts"]:
         sub_action = StageSubAction(
             action=action,
@@ -624,6 +625,9 @@ def save_sub_actions(conf, action):
             sub_action.display_name = sub["display_name"]
 
         dict_to_obj(sub, "params", sub_action)
+        if not sub_action.params and action_wide_params:
+            sub_action.params = action_wide_params
+
         on_fail = sub.get(ON_FAIL, "")
         if isinstance(on_fail, str):
             sub_action.state_on_fail = on_fail

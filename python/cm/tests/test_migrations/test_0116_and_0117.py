@@ -54,6 +54,7 @@ class TestDirectMigration(MigratorTestCase):
             state_on_fail="onfail",
             multi_state_on_fail_set=["one", "two"],
             multi_state_on_fail_unset=["old"],
+            params={"ansible_tags": "hello"},
         )
         self.sub_2 = SubAction.objects.create(
             action=action,
@@ -65,6 +66,7 @@ class TestDirectMigration(MigratorTestCase):
             state_on_fail="onfailtwo",
             multi_state_on_fail_set=[],
             multi_state_on_fail_unset=["hello"],
+            params={"jinja2_native": True, "custom": [1, 4], "boo": {"heh": 23}},
         )
         self.sub_3 = SubAction.objects.create(
             action=action, name="sub_3", allow_to_terminate=True, script="script1", script_type=ScriptType.INTERNAL
@@ -94,6 +96,7 @@ class TestDirectMigration(MigratorTestCase):
                 "state_on_fail",
                 "multi_state_on_fail_set",
                 "multi_state_on_fail_unset",
+                "params",
             ):
                 self.assertEqual(getattr(job, field), getattr(sub_, field))
 

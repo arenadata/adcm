@@ -21,6 +21,7 @@ from cm.api import save_hc
 from cm.converters import core_type_to_model
 from cm.issue import unlock_affected_objects, update_hierarchy_issues
 from cm.models import ClusterObject, Host, JobLog, MaintenanceMode, ServiceComponent, TaskLog, get_object_cluster
+from cm.status_api import send_object_update_event
 
 # todo "unwrap" these functions to use repo without directly calling ORM,
 #  try to rework functions like `save_hc` also, because they rely on API v1 input
@@ -75,18 +76,23 @@ def update_issues(object_: CoreObjectDescriptor):
 
 
 def update_object_maintenance_mode(action_name: str, object_: CoreObjectDescriptor):
+    """
+    If maintenance mode wasn't changed during action execution, set "opposite" (to action's name) MM
+    """
     obj = core_type_to_model(core_type=object_.type).objects.get(id=object_.id)
 
     if (
         action_name in {settings.ADCM_TURN_ON_MM_ACTION_NAME, settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME}
         and obj.maintenance_mode == MaintenanceMode.CHANGING
     ):
-        obj.maintenance_mode = MaintenanceMode.ON
+        obj.maintenance_mode = MaintenanceMode.OFF
         obj.save()
+        send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
 
     if (
         action_name in {settings.ADCM_TURN_OFF_MM_ACTION_NAME, settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME}
         and obj.maintenance_mode == MaintenanceMode.CHANGING
     ):
-        obj.maintenance_mode = MaintenanceMode.OFF
+        obj.maintenance_mode = MaintenanceMode.ON
         obj.save()
+        send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
