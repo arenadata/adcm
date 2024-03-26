@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import s from './RbacUserForm.module.scss';
-import { Checkbox, FormField, FormFieldsContainer, Input } from '@uikit';
+import { Checkbox, FormField, FormFieldsContainer, Input, MarkerIcon, Tooltip } from '@uikit';
 import InputPassword from '@uikit/InputPassword/InputPassword';
 import MultiSelect from '@uikit/Select/MultiSelect/MultiSelect';
 import { RbacUserFormData } from './RbacUserForm.types';
@@ -14,6 +14,7 @@ interface RbacUserFormProps {
   errors: Partial<Record<keyof RbacUserFormData, string | undefined>>;
   isPersonalDataEditForbidden?: boolean;
   isCreate?: boolean;
+  isCurrentUserSuperUser: boolean;
 }
 
 const RbacUserForm: React.FC<RbacUserFormProps> = ({
@@ -23,6 +24,7 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
   errors,
   isCreate = false,
   isPersonalDataEditForbidden = false,
+  isCurrentUserSuperUser = false,
 }) => {
   const groupsOptions = useMemo(() => {
     return groups.map(({ displayName, id }) => ({ value: id, label: displayName }));
@@ -118,12 +120,24 @@ const RbacUserForm: React.FC<RbacUserFormProps> = ({
         />
       </FormField>
       <FormField label="" className={s.rbacUserForm__isSuperUser}>
-        <Checkbox
-          label="Grant ADCM Administrator’s rights"
-          checked={formData.isSuperUser}
-          onChange={handleIsSuperUserChange}
-          disabled={!isCreate && isPersonalDataEditForbidden}
-        />
+        <>
+          <Checkbox
+            label="Grant ADCM Administrator’s rights"
+            checked={formData.isSuperUser}
+            onChange={handleIsSuperUserChange}
+            disabled={(!isCreate && isPersonalDataEditForbidden) || !isCurrentUserSuperUser}
+          />
+          {!isCurrentUserSuperUser && (
+            <>
+              <Tooltip
+                label="You can`t edit this field because you are not an ADCM Administrator"
+                placement="top-start"
+              >
+                <MarkerIcon type="info" variant="square" className={s.markerIcon} />
+              </Tooltip>
+            </>
+          )}
+        </>
       </FormField>
 
       <FormField
