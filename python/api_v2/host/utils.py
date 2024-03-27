@@ -11,13 +11,13 @@
 # limitations under the License.
 
 from adcm.permissions import check_custom_perm
-from adcm.utils import get_maintenance_mode_response
 from cm.adcm_config.config import init_object_config
 from cm.api import check_license
 from cm.api_context import CTX
 from cm.issue import add_concern_to_object, update_hierarchy_issues
 from cm.logger import logger
 from cm.models import Cluster, Host, HostProvider, Prototype
+from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import reset_hc_map
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy

@@ -17,8 +17,9 @@ import json
 import string
 import logging
 
-from cm.utils import dict_json_get_or_create, get_adcm_token
 from django.core.management.utils import get_random_secret_key
+
+from adcm.settings_utils import dict_json_get_or_create, get_adcm_token
 
 ENCODING_UTF_8 = "utf-8"
 

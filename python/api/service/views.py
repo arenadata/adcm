@@ -11,10 +11,11 @@
 # limitations under the License.
 
 from adcm.permissions import check_custom_perm, get_object_for_user
-from adcm.utils import delete_service_from_api, get_maintenance_mode_response
 from audit.utils import audit
 from cm.api import get_import, unbind
 from cm.models import Cluster, ClusterBind, ClusterObject, HostComponent, Prototype
+from cm.services.maintenance_mode import get_maintenance_mode_response
+from cm.services.service import delete_service_from_api
 from cm.services.status.notify import update_mm_objects
 from cm.status_api import make_ui_service_status
 from guardian.mixins import PermissionListMixin
