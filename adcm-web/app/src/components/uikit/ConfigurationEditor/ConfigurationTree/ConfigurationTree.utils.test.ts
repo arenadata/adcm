@@ -387,6 +387,54 @@ describe('filter', () => {
     expect(clusterNameNode.key).toBe('/cluster_config/cluster/cluster_name');
     expect(clusterNameNode.children).toBe(undefined);
   });
+
+  test('find in parent', () => {
+    const configuration = {
+      structure: {
+        someField1: 'value1',
+        someField2: 'value2',
+      },
+    };
+    const tree = buildConfigurationNodes(structureSchema, configuration, {});
+    // eslint-disable-next-line spellcheck/spell-checker
+    const filteredTree = buildConfigurationTree(tree, { title: 'truct', showAdvanced: false, showInvisible: false });
+    const structureNode = filteredTree.children?.[0]!;
+
+    expect(structureNode.children?.length).toBe(2);
+    expect(structureNode.children?.[0].data.title).toBe('someField1');
+    expect(structureNode.children?.[1].data.title).toBe('someField2');
+  });
+
+  test('not find in parent', () => {
+    const configuration = {
+      structure: {
+        someField1: 'value1',
+        someField2: 'value2',
+      },
+    };
+    const tree = buildConfigurationNodes(structureSchema, configuration, {});
+    // eslint-disable-next-line spellcheck/spell-checker
+    const filteredTree = buildConfigurationTree(tree, { title: 'blabla', showAdvanced: false, showInvisible: false });
+    const structureNode = filteredTree.children?.[0]!;
+
+    expect(structureNode).toBe(undefined);
+  });
+
+  test('find in children', () => {
+    const configuration = {
+      structure: {
+        someField1: 'value1',
+        someField2: 'value2',
+      },
+    };
+    const tree = buildConfigurationNodes(structureSchema, configuration, {});
+    // eslint-disable-next-line spellcheck/spell-checker
+    const filteredTree = buildConfigurationTree(tree, { title: 'ld1', showAdvanced: false, showInvisible: false });
+    const structureNode = filteredTree.children?.[0]!;
+
+    expect(structureNode.children?.length).toBe(1);
+    expect(structureNode.children?.[0].data.title).toBe('someField1');
+  });
 });
 
 describe('fillFieldAttributes', () => {

@@ -456,15 +456,13 @@ export const buildConfigurationTree = (
   if (rootNode.children) {
     const filteredChildren = [];
     for (const child of rootNode.children) {
-      const childNodeView = buildConfigurationTreeRecursively(child, filter);
+      const childNodeView = buildConfigurationTreeRecursively(child, filter, false);
       if (childNodeView) {
         filteredChildren.push(childNodeView);
       }
     }
 
-    if (filteredChildren.length) {
-      (rootNode as ConfigurationNodeView).children = filteredChildren;
-    }
+    (rootNode as ConfigurationNodeView).children = filteredChildren;
   }
 
   return rootNode;
@@ -473,6 +471,7 @@ export const buildConfigurationTree = (
 const buildConfigurationTreeRecursively = (
   node: ConfigurationNode,
   filter: ConfigurationTreeFilter,
+  foundInParent: boolean,
 ): ConfigurationNodeView | undefined => {
   const treeNode = node as ConfigurationNodeView;
 
@@ -484,10 +483,12 @@ const buildConfigurationTreeRecursively = (
     return undefined;
   }
 
+  const foundInTitle = treeNode.data.title.toLowerCase().includes(filter.title.toLowerCase());
+
   const filteredChildren = [];
   if (node.children) {
     for (const child of node.children) {
-      const childNodeView = buildConfigurationTreeRecursively(child, filter);
+      const childNodeView = buildConfigurationTreeRecursively(child, filter, foundInTitle);
       if (childNodeView) {
         filteredChildren.push(childNodeView);
       }
@@ -496,10 +497,8 @@ const buildConfigurationTreeRecursively = (
 
   treeNode.children = filteredChildren.length ? filteredChildren : undefined;
 
-  const foundInTitle = treeNode.data.title.toLowerCase().includes(filter.title.toLowerCase());
   const foundInChildren = Boolean(treeNode.children?.length);
-
-  if (!foundInTitle && !foundInChildren) {
+  if (!(foundInParent || foundInTitle || foundInChildren)) {
     return undefined;
   }
 
