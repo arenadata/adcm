@@ -30,15 +30,25 @@ class FakePopen(NamedTuple):
     pid: int
 
 
+class FailedJobInfo(NamedTuple):
+    position: int
+    return_code: int
+
+
 # ExecutionTarget Factories
 
 
 class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
+    def __init__(self, failed_job: FailedJobInfo | None = None):
+        super().__init__()
+
+        self._failed_job = failed_job
+
     def __call__(
         self, task: Task, jobs: Iterable[Job], configuration: ExternalSettings
     ) -> Generator[ExecutionTarget, None, None]:
         _ = task
-        for job in jobs:
+        for job_num, job in enumerate(jobs):
             work_dir = configuration.adcm.run_dir / str(job.id)
 
             if job.type == ScriptType.INTERNAL:
@@ -47,8 +57,16 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
                 executor = InternalExecutorMock(config=ExecutorConfig(work_dir=work_dir), script=script)
 
             else:
-                executor = SuccessExecutorMock(
-                    script_type=job.script, config=ExecutorConfig(work_dir=configuration.adcm.run_dir / str(job.id))
+                executor_class = SuccessExecutorMock
+                executor_kwargs = {}
+                if self._failed_job is not None and job_num == self._failed_job.position:
+                    executor_class = FailExecutorMock
+                    executor_kwargs = {"return_code": self._failed_job.return_code}
+
+                executor = executor_class(
+                    script_type=job.script,
+                    config=ExecutorConfig(work_dir=configuration.adcm.run_dir / str(job.id)),
+                    **executor_kwargs,
                 )
 
             yield ExecutionTarget(
@@ -58,8 +76,6 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
                 finalizers=(),
             )
 
-
-DEFAULT_ETF_MOCK = ExecutionTargetFactoryDummyMock()
 
 # Executors
 
@@ -94,6 +110,20 @@ class SuccessExecutorMock(MockExecutor):
         return self._script_type
 
 
+class FailExecutorMock(SuccessExecutorMock):
+    def __init__(self, return_code: int, **kwargs):
+        super().__init__(**kwargs)
+
+        if return_code <= 0:
+            raise ValueError("Only positive integers allowed")
+
+        self._return_code = return_code
+
+    def wait_finished(self) -> Self:
+        self._result = ExecutionResult(code=self._return_code)
+        return self
+
+
 # Custom Mocks
 
 
@@ -106,8 +136,11 @@ class SubprocessRunnerMockEnvironment:
         return timezone.now()
 
 
+_DEFAULT_ETF_MOCK = ExecutionTargetFactoryDummyMock()
+
+
 class RunTaskMock:
-    def __init__(self, execution_target_factory: ExecutionTargetFactoryI = DEFAULT_ETF_MOCK):
+    def __init__(self, execution_target_factory: ExecutionTargetFactoryI = _DEFAULT_ETF_MOCK):
         self.target_task: TaskLog | None = None
         self.runner: TaskRunner | None = None
         self._execution_target_factory = execution_target_factory
