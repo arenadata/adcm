@@ -8,6 +8,7 @@ import { Pagination } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { useEffect } from 'react';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
+import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const ClusterImportsCluster = () => {
   const {
@@ -23,6 +24,7 @@ const ClusterImportsCluster = () => {
     paginationHandler,
     totalCount,
     initialSelected,
+    accessCheckStatus,
   } = useClusterImports();
 
   const dispatch = useDispatch();
@@ -43,7 +45,7 @@ const ClusterImportsCluster = () => {
   }, [cluster, dispatch]);
 
   return (
-    <>
+    <PermissionsChecker requestState={accessCheckStatus}>
       <ClusterImportToolbar
         isDisabled={!isValid}
         onClick={onImportHandler}
@@ -68,7 +70,7 @@ const ClusterImportsCluster = () => {
           ))}
       </div>
       <Pagination totalItems={totalCount} pageData={paginationParams} onChangeData={paginationHandler} />
-    </>
+    </PermissionsChecker>
   );
 };
 

@@ -1,18 +1,19 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { RequestError, AdcmClusterMappingApi } from '@api';
+import { AdcmClusterMappingApi, RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import {
-  AdcmMappingComponent,
+  AdcmError,
   AdcmHostShortView,
   AdcmMapping,
-  AdcmError,
+  AdcmMappingComponent,
   AdcmServicePrototype,
   ServiceId,
 } from '@models/adcm';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
 import { arrayToHash } from '@utils/arrayUtils';
-import { ActionState } from '@models/loadState';
+import { ActionState, RequestState } from '@models/loadState';
+import { processErrorResponse } from '@utils/responseUtils';
 
 export type NotAddedServicesDictionary = Record<ServiceId, AdcmServicePrototype>;
 
@@ -42,6 +43,7 @@ type AdcmClusterMappingsState = {
   requiredServicesDialog: {
     component: AdcmMappingComponent | null;
   };
+  accessCheckStatus: RequestState;
 };
 
 const loadMapping = createAsyncThunk(
@@ -133,6 +135,7 @@ const createInitialState = (): AdcmClusterMappingsState => ({
   requiredServicesDialog: {
     component: null,
   },
+  accessCheckStatus: RequestState.NotRequested,
 });
 
 const mappingSlice = createSlice({
@@ -161,6 +164,13 @@ const mappingSlice = createSlice({
     });
     builder.addCase(loadMapping.fulfilled, (state, action) => {
       state.mapping = action.payload;
+      state.accessCheckStatus = RequestState.Completed;
+    });
+    builder.addCase(loadMapping.pending, (state) => {
+      state.accessCheckStatus = RequestState.Pending;
+    });
+    builder.addCase(loadMapping.rejected, (state, action) => {
+      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
     });
     builder.addCase(loadMappingHosts.fulfilled, (state, action) => {
       state.hosts = action.payload;

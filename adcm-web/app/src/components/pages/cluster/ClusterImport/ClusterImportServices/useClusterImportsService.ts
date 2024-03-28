@@ -52,6 +52,7 @@ export const useClusterImportsService = () => {
     services: new Set(),
   });
   const { clusterImports, hasSaveError, totalCount } = useStore(({ adcm }) => adcm.clusterImportsService);
+  const accessCheckStatus = useStore(({ adcm }) => adcm.clusterImportsServiceFilter.accessCheckStatus);
   const isLoading = useStore((s) => isShowSpinner(s.adcm.clusterImportsService.loadState));
   const {
     paginationParams,
@@ -147,5 +148,6 @@ export const useClusterImportsService = () => {
     handleServiceChange,
     totalCount,
     initialImports,
+    accessCheckStatus,
   };
 };
