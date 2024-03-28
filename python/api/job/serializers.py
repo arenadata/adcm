@@ -13,7 +13,7 @@
 from pathlib import Path
 import json
 
-from cm.ansible_plugin import get_checklogs_data_by_job_id
+from ansible_plugin.utils import get_checklogs_data_by_job_id
 from cm.job import ActionRunPayload, run_action
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
 from django.conf import settings
