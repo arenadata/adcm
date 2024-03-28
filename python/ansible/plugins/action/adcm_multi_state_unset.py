@@ -17,7 +17,7 @@ sys.path.append("/adcm/python")
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from cm.ansible_plugin import (
+from ansible_plugin.utils import (
     ContextActionModule,
     unset_cluster_multi_state,
     unset_component_multi_state,

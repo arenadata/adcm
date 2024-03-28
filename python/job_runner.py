@@ -19,7 +19,7 @@ import subprocess
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from cm.ansible_plugin import finish_check
+from ansible_plugin.utils import finish_check
 from cm.api import get_hc, save_hc
 from cm.errors import AdcmEx
 from cm.job import check_hostcomponentmap, set_job_final_status, set_job_start_status

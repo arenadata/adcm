@@ -51,11 +51,9 @@ sys.path.append("/adcm/python")
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from cm.ansible_plugin import get_object_id_from_context
-from cm.issue import update_hierarchy_issues
-from cm.models import ClusterObject, Host, ServiceComponent
-from cm.services.status.notify import reset_objects_in_mm
-from cm.status_api import send_object_update_event
+from ansible_plugin.maintenance_mode import get_object, validate_args, validate_obj
+from cm.models import MaintenanceMode
+from cm.services.maintenance_mode import set_maintenance_mode
 
 
 class ActionModule(ActionBase):
@@ -65,49 +63,22 @@ class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         super().run(tmp, task_vars)
 
-        type_class_map = {
-            "host": Host,
-            "service": ClusterObject,
-            "component": ServiceComponent,
-        }
-        type_choices = set(type_class_map.keys())
+        error = validate_args(task_args=self._task.args)
+        if error is not None:
+            raise error
 
-        if not self._task.args.get("type"):
-            raise AnsibleActionFail('"type" option is required')
+        obj, error = get_object(task_vars=task_vars, obj_type=self._task.args["type"])
+        if error is not None:
+            raise error
 
-        if self._task.args.get("value") is None:
-            raise AnsibleActionFail('"value" option is required')
+        error = validate_obj(obj=obj)
+        if error is not None:
+            raise error
 
-        if self._task.args["type"] not in type_choices:
-            raise AnsibleActionFail(f'"type" should be one of {type_choices}')
-
-        if not isinstance(self._task.args["value"], bool):
-            raise AnsibleActionFail('"value" should be boolean')
-
-        obj_type = self._task.args["type"]
-        context_type = obj_type
-        if obj_type == "host":
-            context_type = "cluster"
-
-        obj_value = "on" if self._task.args["value"] else "off"
-        obj_pk = get_object_id_from_context(
-            task_vars=task_vars,
-            id_type=f"{obj_type}_id",
-            context_types=(context_type,),
-            err_msg=f'You can change "{obj_type}" maintenance mode only in {context_type} context',
-        )
-
-        obj = type_class_map[obj_type].objects.filter(pk=obj_pk).first()
-        if not obj:
-            raise AnsibleActionFail(f'Object of type "{obj_type}" with PK "{obj_pk}" does not exist')
-
-        if obj.maintenance_mode != "changing":
-            raise AnsibleActionFail('Only "changing" state of object maintenance mode can be changed')
-
-        obj.maintenance_mode = obj_value
-        obj.save()
-        send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
-        update_hierarchy_issues(obj.cluster)
-        reset_objects_in_mm()
+        value = MaintenanceMode.ON if self._task.args["value"] else MaintenanceMode.OFF
+        try:
+            set_maintenance_mode(obj=obj, value=value)
+        except Exception as e:  # noqa: BLE001
+            raise AnsibleActionFail("Unexpected error occurred while changing object's maintenance mode") from e
 
         return {"failed": False, "changed": True}

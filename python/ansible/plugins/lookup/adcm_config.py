@@ -19,7 +19,7 @@ sys.path.append("/adcm/python")
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from cm.ansible_plugin import (
+from ansible_plugin.utils import (
     set_cluster_config,
     set_host_config,
     set_provider_config,
