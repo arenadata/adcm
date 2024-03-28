@@ -12,7 +12,7 @@
 from abc import ABC
 from datetime import datetime
 from functools import partial
-from typing import Callable, Generator, Iterable, NamedTuple
+from typing import Any, Callable, Generator, Iterable, NamedTuple
 from unittest.mock import patch
 
 from core.job.executors import ExecutionResult, Executor, ExecutorConfig
@@ -26,13 +26,22 @@ from cm.services.job.run import get_default_runner, run_task
 from cm.services.job.run._target_factories import ExecutionTargetFactory
 
 
+def do_nothing():
+    return None
+
+
 class FakePopen(NamedTuple):
     pid: int
 
 
 class FailedJobInfo(NamedTuple):
     position: int
-    return_code: int
+    return_code: int = 1
+
+
+class JobImitator(NamedTuple):
+    call: Callable[[], Any] = do_nothing
+    return_code: int = 0
 
 
 # ExecutionTarget Factories
@@ -77,11 +86,52 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
             )
 
 
+class ETFMockWithEnvPreparation(ExecutionTargetFactory):
+    def __init__(self, change_jobs: dict[int, JobImitator] | None = None):
+        super().__init__()
+
+        self.imitators = change_jobs or {}
+        self.default_imitator = JobImitator()
+
+    def __call__(
+        self, task: Task, jobs: Iterable[Job], configuration: ExternalSettings
+    ) -> Generator[ExecutionTarget, None, None]:
+        for i, target in enumerate(super().__call__(task=task, jobs=jobs, configuration=configuration)):
+            if target.job.type == ScriptType.INTERNAL:
+                yield target
+                continue
+
+            imitator = self.imitators.get(i, self.default_imitator)
+            common_kwargs = {
+                "script_type": target.executor.script_type,
+                "config": ExecutorConfig(work_dir=configuration.adcm.run_dir / str(target.job.id)),
+                "on_execute_": imitator.call,
+            }
+            executor = (
+                SuccessExecutorMock(**common_kwargs)
+                if imitator.return_code == 0
+                else FailExecutorMock(**common_kwargs, return_code=imitator.return_code)
+            )
+
+            yield ExecutionTarget(
+                job=target.job,
+                executor=executor,
+                environment_builders=target.environment_builders,
+                finalizers=target.finalizers,
+            )
+
+
 # Executors
 
 
 class MockExecutor(Executor, ABC):
+    def __init__(self, *args, on_execute_: Callable[[], Any] = lambda: None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._on_execute = on_execute_
+
     def execute(self) -> Self:
+        self._on_execute()
         return self
 
     def wait_finished(self) -> Self:
@@ -101,8 +151,8 @@ class InternalExecutorMock(MockExecutor):
 
 
 class SuccessExecutorMock(MockExecutor):
-    def __init__(self, script_type: str, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *args, script_type: str, **kwargs):
+        super().__init__(*args, **kwargs)
         self._script_type = script_type
 
     @property
@@ -111,8 +161,8 @@ class SuccessExecutorMock(MockExecutor):
 
 
 class FailExecutorMock(SuccessExecutorMock):
-    def __init__(self, return_code: int, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *args, return_code: int, **kwargs):
+        super().__init__(*args, **kwargs)
 
         if return_code <= 0:
             raise ValueError("Only positive integers allowed")

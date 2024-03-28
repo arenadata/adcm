@@ -223,7 +223,7 @@ def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSet
 
 def prepare_ansible_inventory(task: Task) -> dict[str, Any]:
     delta = {}
-    if task.hostcomponent.saved:
+    if task.action.hc_acl:
         cluster_id = None
         if task.owner:
             if task.owner.type == ADCMCoreType.CLUSTER:

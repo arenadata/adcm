@@ -15,7 +15,7 @@ from operator import itemgetter
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import TypedDict
+from typing import Iterable, TypedDict
 import random
 import string
 import tarfile
@@ -118,31 +118,7 @@ class BundleLogicMixin:
         return prepare_bundle(bundle_file=bundle_file, bundle_hash=bundle_hash, path=path)
 
 
-class BaseTestCase(TestCase, ParallelReadyTestCase, BundleLogicMixin):
-    def setUp(self) -> None:
-        self.test_user_username = "test_user"
-        self.test_user_password = "test_user_password"
-
-        self.test_user = User.objects.create_user(
-            username=self.test_user_username,
-            password=self.test_user_password,
-            is_superuser=True,
-        )
-        self.test_user_group = Group.objects.create(name="simple_test_group")
-        self.test_user_group.user_set.add(self.test_user)
-
-        self.no_rights_user_username = "no_rights_user"
-        self.no_rights_user_password = "no_rights_user_password"
-        self.no_rights_user = User.objects.create_user(
-            username="no_rights_user",
-            password="no_rights_user_password",
-        )
-        self.no_rights_user_group = Group.objects.create(name="no_right_group")
-        self.no_rights_user_group.user_set.add(self.no_rights_user)
-
-        self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
-        self.login()
-
+class TestCaseWithCommonSetUpTearDown(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -171,6 +147,32 @@ class BaseTestCase(TestCase, ParallelReadyTestCase, BundleLogicMixin):
             else:
                 if item.name != ".gitkeep":
                     item.unlink()
+
+
+class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, BundleLogicMixin):
+    def setUp(self) -> None:
+        self.test_user_username = "test_user"
+        self.test_user_password = "test_user_password"
+
+        self.test_user = User.objects.create_user(
+            username=self.test_user_username,
+            password=self.test_user_password,
+            is_superuser=True,
+        )
+        self.test_user_group = Group.objects.create(name="simple_test_group")
+        self.test_user_group.user_set.add(self.test_user)
+
+        self.no_rights_user_username = "no_rights_user"
+        self.no_rights_user_password = "no_rights_user_password"
+        self.no_rights_user = User.objects.create_user(
+            username="no_rights_user",
+            password="no_rights_user_password",
+        )
+        self.no_rights_user_group = Group.objects.create(name="no_right_group")
+        self.no_rights_user_group.user_set.add(self.no_rights_user)
+
+        self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
+        self.login()
 
     def login(self):
         response: Response = self.client.post(
@@ -477,6 +479,16 @@ class BusinessLogicMixin(BundleLogicMixin):
     @staticmethod
     def add_hostcomponent_map(cluster: Cluster, hc_map: list[HostComponentMapDictType]) -> list[HostComponent]:
         return add_hc(cluster=cluster, hc_in=hc_map)
+
+    @staticmethod
+    def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, ServiceComponent]]) -> list[HostComponent]:
+        return add_hc(
+            cluster=cluster,
+            hc_in=[
+                {"host_id": host.pk, "component_id": component.pk, "service_id": component.service_id}
+                for host, component in entries
+            ],
+        )
 
     @staticmethod
     def get_non_existent_pk(model: type[ADCMEntity | ADCMModel | User | Role | Group | Policy]):
