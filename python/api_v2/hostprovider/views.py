@@ -16,10 +16,12 @@ from cm.errors import AdcmEx
 from cm.models import HostProvider, ObjectType, Prototype
 from django.db.utils import IntegrityError
 from django_filters.rest_framework.backends import DjangoFilterBackend
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
+from api_v2.api_schema import ErrorSerializer
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.hostprovider.filters import HostProviderFilter
 from api_v2.hostprovider.permissions import HostProviderPermissions
@@ -30,6 +32,81 @@ from api_v2.hostprovider.serializers import (
 from api_v2.views import CamelCaseReadOnlyModelViewSet
 
 
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getHostproviders",
+        summary="GET hostproviders",
+        description="Get a list of ADCM hostproviders with information on them.",
+        parameters=[
+            OpenApiParameter(
+                name="name",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by hostprovider name.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="prototypeName",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Hostprovider prototype name.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="ordering",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
+                type=str,
+            ),
+        ],
+    ),
+    create=extend_schema(
+        operation_id="postHostproviders",
+        summary="POST hostproviders",
+        description="Creation of a new ADCM hostprovider.",
+        responses={
+            201: HostProviderSerializer,
+            403: ErrorSerializer,
+            409: ErrorSerializer,
+        },
+    ),
+    retrieve=extend_schema(
+        operation_id="getHostprovider",
+        summary="GET hostprovider",
+        description="Get information about a specific hostprovider.",
+        parameters=[
+            OpenApiParameter(
+                name="hostproviderId",
+                required=True,
+                location=OpenApiParameter.QUERY,
+                description="Hostprovider id.",
+                type=int,
+            ),
+        ],
+        responses={200: HostProviderSerializer, 404: ErrorSerializer},
+    ),
+    destroy=extend_schema(
+        operation_id="deleteHostprovider",
+        summary="DELETE hostprovider",
+        description="Delete a specific ADCM hostprovider.",
+        parameters=[
+            OpenApiParameter(
+                name="hostproviderId",
+                required=True,
+                location=OpenApiParameter.QUERY,
+                description="Get information about a specific hostprovider.",
+                type=int,
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(description="OK"),
+            403: ErrorSerializer,
+            404: ErrorSerializer,
+            409: ErrorSerializer,
+        },
+    ),
+)
 class HostProviderViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet):
     queryset = HostProvider.objects.select_related("prototype").order_by("name")
     serializer_class = HostProviderSerializer
