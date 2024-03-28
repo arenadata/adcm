@@ -30,6 +30,7 @@ from cm.api import delete_host_provider
 from cm.bundle import delete_bundle
 from cm.errors import AdcmEx
 from cm.models import Bundle, ConfigLog, SubAction
+from cm.services.bundle import detect_path_for_file_in_bundle
 from cm.tests.test_upgrade import (
     cook_cluster,
     cook_cluster_bundle,
@@ -43,6 +44,25 @@ class TestBundle(BaseTestCase):
         super().setUp()
 
         self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
+
+    def test_path_resolution(self) -> None:
+        bundle_root = Path(__file__).parent / "files" / "files_with_symlinks"
+        inner_dir = Path("inside")
+
+        result = detect_path_for_file_in_bundle(bundle_root=bundle_root, config_yaml_dir=Path(), file="somefile")
+        self.assertEqual(result, bundle_root / "somefile")
+
+        result = detect_path_for_file_in_bundle(bundle_root=bundle_root, config_yaml_dir=inner_dir, file="./somefile")
+        self.assertEqual(result, bundle_root / "inside" / "somefile")
+
+        result = detect_path_for_file_in_bundle(bundle_root=bundle_root, config_yaml_dir=inner_dir, file="./backref")
+        self.assertEqual(result, bundle_root / "inside" / "backref")
+
+        result = detect_path_for_file_in_bundle(bundle_root=bundle_root, config_yaml_dir=Path(), file="inside/backref")
+        self.assertEqual(result, bundle_root / "inside" / "backref")
+
+        result = detect_path_for_file_in_bundle(bundle_root=bundle_root, config_yaml_dir=Path(), file="./another_link")
+        self.assertEqual(result, bundle_root / "another_link")
 
     def test_bundle_upload_duplicate_upgrade_fail(self):
         with self.assertRaises(IntegrityError):

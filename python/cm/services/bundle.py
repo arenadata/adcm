@@ -15,7 +15,7 @@ from pathlib import Path
 
 def detect_path_for_file_in_bundle(bundle_root: Path, config_yaml_dir: str | Path, file: str) -> Path:
     """
-    Detect path to file within bundle directory
+    Detect path to file within bundle directory without symlink resolution
 
     :param bundle_root: Path to bundle root directory (like */adcm/data/bundle/somebundlehash/*)
     :param config_yaml_dir: Directory containing *config.yaml* file with definition
@@ -30,28 +30,28 @@ def detect_path_for_file_in_bundle(bundle_root: Path, config_yaml_dir: str | Pat
     >>> from pathlib import Path
     >>> bundle_root_dir = Path("/adcm/data/bundle") / "bundle-hash"
     >>> this = detect_path_for_file_in_bundle
-    >>> str(this(bundle_root_dir, "", "./script.yaml")) == str((bundle_root_dir / "script.yaml").resolve())
+    >>> str(this(bundle_root_dir, "", "./script.yaml")) == str(bundle_root_dir / "script.yaml")
     True
     >>> res = str(this(bundle_root_dir, ".", "./some/script.yaml"))
-    >>> exp = str((bundle_root_dir / "some" /"script.yaml").resolve())
+    >>> exp = str(bundle_root_dir / "some" /"script.yaml")
     >>> res == exp
     True
     >>> str(this(bundle_root_dir, Path(""), "script.yaml")) == str((bundle_root_dir / "script.yaml").resolve())
     True
     >>> res = str(this(bundle_root_dir, Path("inner"), "atroot/script.yaml"))
-    >>> exp = str((bundle_root_dir / "atroot" / "script.yaml").resolve())
+    >>> exp = str(bundle_root_dir / "atroot" / "script.yaml")
     >>> res == exp
     True
     >>> res = str(this(bundle_root_dir, Path("inner"), "./script.yaml"))
-    >>> exp = str((bundle_root_dir / "inner" / "script.yaml").resolve())
+    >>> exp = str(bundle_root_dir / "inner" / "script.yaml")
     >>> res == exp
     True
     >>> res = str(this(bundle_root_dir, Path("inner"), "./alongside/script.yaml"))
-    >>> exp = str((bundle_root_dir / "inner" / "alongside" / "script.yaml").resolve())
+    >>> exp = str(bundle_root_dir / "inner" / "alongside" / "script.yaml")
     >>> res == exp
     True
     """
     if file.startswith("./"):
-        return (bundle_root / config_yaml_dir / file).resolve()
+        return bundle_root / config_yaml_dir / file
 
-    return (bundle_root / file).resolve()
+    return bundle_root / file

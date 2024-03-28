@@ -66,6 +66,8 @@ class BundleInfo(NamedTuple):
     # root is directory of bundle like /adcm/data/bundle/somehash
     root: Path
     # relative path to directory with `config.yaml` within `root`
+    #
+    # should point to directory with `config.yaml` where task owner is defined
     config_dir: Path
 
 
