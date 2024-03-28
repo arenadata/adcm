@@ -339,14 +339,14 @@ class TestUserAudit(BaseAPITestCase):
         )
 
     def test_user_block_success(self):
-        response = self.client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.blocked_user.pk}))
+        response = self.client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.test_user.pk}))
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.check_last_audit_record(
-            operation_name=f"{self.blocked_user.username} user blocked",
+            operation_name=f"{self.test_user.username} user blocked",
             operation_type="update",
             operation_result="success",
-            **self.prepare_audit_object_arguments(expected_object=self.blocked_user),
+            **self.prepare_audit_object_arguments(expected_object=self.test_user),
             user__username="admin",
         )
 

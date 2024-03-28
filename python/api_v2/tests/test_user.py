@@ -32,6 +32,7 @@ from rest_framework.test import APIClient
 import pytz
 
 from api_v2.rbac.user.constants import UserTypeChoices
+from api_v2.rbac.user.serializers import UserCreateSerializer, UserUpdateSerializer
 from api_v2.tests.base import BaseAPITestCase
 
 
@@ -245,6 +246,17 @@ class TestUserAPI(BaseAPITestCase):
         )
 
         self.assertEqual(response.json()["id"], user.pk)
+
+    def test_listfield_create_update_serializers_group_success(self):
+        user = self.create_user(
+            user_data={"username": "user", "password": "test_password1", "groups": [{"id": self.group.pk}]}
+        )
+
+        try:
+            UserUpdateSerializer().to_representation(user)
+            UserCreateSerializer().to_representation(user)
+        except TypeError:
+            self.fail("The exception is raised - ListField fails to represent list of Group objects")
 
     def test_retrieve_not_found_fail(self):
         wrong_pk = self.get_non_existent_pk(model=User)
