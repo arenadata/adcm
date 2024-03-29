@@ -29,6 +29,7 @@ from cm.models import (
 from cm.variant import get_variant
 from django.db.models import QuerySet
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
@@ -657,6 +658,13 @@ class ConfigSchemaMixin:
     @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
     def config_schema(self, request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         instance = self.get_object()
+
+        instance_config_view_perm = f"cm.view_{instance.config.__class__.__name__.lower()}"
+        if not request.user.has_perm(instance_config_view_perm, instance.config) or not request.user.has_perm(
+            instance_config_view_perm
+        ):
+            raise PermissionDenied
+
         schema = get_config_schema(
             object_=instance,
             prototype_configs=PrototypeConfig.objects.filter(prototype=instance.prototype, action=None).order_by("pk"),
