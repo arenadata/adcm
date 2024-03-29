@@ -165,7 +165,7 @@ def gen_host_component(component: ServiceComponent, host: Host) -> HostComponent
     )
 
 
-def gen_concern_item(concern_type, name: str | None = None, reason=None, blocking=True, owner=None) -> ConcernItem:
+def gen_concern_item(concern_type, owner, name: str = "", reason="", blocking=True) -> ConcernItem:
     """Generate ConcernItem object"""
     reason = reason or {"message": "Test", "placeholder": {}}
     return ConcernItem.objects.create(type=concern_type, name=name, reason=reason, blocking=blocking, owner=owner)
@@ -188,7 +188,7 @@ def gen_action(name: str | None = None, bundle=None, prototype=None) -> Action:
 
 def gen_task_log(obj: ADCMEntity, action: Action = None) -> TaskLog:
     return TaskLog.objects.create(
-        action=action or gen_action(),
+        action=action or gen_action(prototype=obj.prototype),
         object_id=obj.pk,
         status="CREATED",
         task_object=obj,

@@ -12,7 +12,6 @@
 
 from collections.abc import Iterable, Mapping
 from copy import deepcopy
-from enum import Enum
 from itertools import chain
 from typing import Optional, TypeAlias
 from uuid import uuid4
@@ -1416,13 +1415,6 @@ class JobLog(ADCMModel):
     class Meta:
         ordering = ["id"]
 
-    def cook_reason(self):
-        return MessageTemplate.get_message_from_template(
-            KnownNames.LOCKED_BY_JOB.value,
-            job=self,
-            target=self.task.task_object,
-        )
-
     def cancel(self):
         if self.sub_action and not self.sub_action.allowed_to_terminate:
             raise AdcmEx("JOB_TERMINATION_ERROR", f"Job #{self.pk} can not be terminated")
@@ -1588,148 +1580,6 @@ class StagePrototypeImport(ADCMModel):
         unique_together = (("prototype", "name"),)
 
 
-class KnownNames(Enum):
-    LOCKED_BY_JOB = "locked by running job on target"  # kwargs=(job, target)
-    CONFIG_ISSUE = "object config issue"  # kwargs=(source, )
-    REQUIRED_SERVICE_ISSUE = "required service issue"  # kwargs=(source, )
-    REQUIRED_IMPORT_ISSUE = "required import issue"  # kwargs=(source, )
-    HOST_COMPONENT_ISSUE = "host component issue"  # kwargs=(source, )
-    UNSATISFIED_REQUIREMENT_ISSUE = "unsatisfied service requirement"  # kwargs=(source, )
-    CONFIG_FLAG = "outdated configuration flag"  # kwargs=(source, )
-
-
-class PlaceHolderType(Enum):
-    ACTION = "action"
-    JOB = "job"
-    ADCM_ENTITY = "adcm_entity"
-    ADCM = "adcm"
-    CLUSTER = "cluster"
-    SERVICE = "service"
-    COMPONENT = "component"
-    PROVIDER = "provider"
-    HOST = "host"
-    PROTOTYPE = "prototype"
-
-
-class MessageTemplate(ADCMModel):
-    """
-    Templates for `ConcernItem.reason
-    There are two sources of templates - they are pre-created in migrations or loaded from bundles
-
-    expected template format is
-        {
-            'message': 'Lorem ${ipsum} dolor sit ${amet}',
-            'placeholder': {
-                'lorem': {'type': 'cluster'},
-                'amet': {'type': 'action'}
-            }
-        }
-
-    placeholder fill functions have unified interface:
-      @classmethod
-      def _func(cls, placeholder_name, **kwargs) -> dict
-    """
-
-    name = models.CharField(max_length=1000, unique=True)
-    template = models.JSONField()
-
-    @classmethod
-    def get_message_from_template(cls, name: KnownNames, **kwargs) -> dict:
-        """Find message template by its name and fill placeholders"""
-
-        tpl = cls.obj.get(name=name).template
-        filled_placeholders = {}
-        try:
-            for ph_name, ph_data in tpl["placeholder"].items():
-                filled_placeholders[ph_name] = cls._fill_placeholder(ph_name, ph_data, **kwargs)
-        except (KeyError, AttributeError, TypeError, AssertionError) as e:
-            if isinstance(e, KeyError):
-                msg = f'Message templating KeyError: "{e.args[0]}" not found'
-            elif isinstance(e, AttributeError):
-                msg = f'Message templating AttributeError: "{e.args[0]}"'
-            elif isinstance(e, TypeError):
-                msg = f'Message templating TypeError: "{e.args[0]}"'
-            elif isinstance(e, AssertionError):
-                msg = "Message templating AssertionError: expected kwarg were not found"
-            else:
-                msg = None
-            raise AdcmEx("MESSAGE_TEMPLATING_ERROR", msg=msg) from e
-
-        tpl["placeholder"] = filled_placeholders
-
-        return tpl
-
-    @classmethod
-    def _fill_placeholder(cls, ph_name: str, ph_data: dict, **ph_source_data) -> dict:
-        type_map = {
-            PlaceHolderType.ACTION.value: cls._action_placeholder,
-            PlaceHolderType.ADCM_ENTITY.value: cls._adcm_entity_placeholder,
-            PlaceHolderType.ADCM.value: cls._adcm_entity_placeholder,
-            PlaceHolderType.CLUSTER.value: cls._adcm_entity_placeholder,
-            PlaceHolderType.SERVICE.value: cls._adcm_entity_placeholder,
-            PlaceHolderType.COMPONENT.value: cls._adcm_entity_placeholder,
-            PlaceHolderType.PROVIDER.value: cls._adcm_entity_placeholder,
-            PlaceHolderType.HOST.value: cls._adcm_entity_placeholder,
-            PlaceHolderType.JOB.value: cls._job_placeholder,
-            PlaceHolderType.PROTOTYPE.value: cls._prototype_placeholder,
-        }
-        return type_map[ph_data["type"]](ph_name, **ph_source_data)
-
-    @classmethod
-    def _action_placeholder(cls, _, **kwargs) -> dict:
-        action = kwargs.get("action")
-        target = kwargs.get("target")
-        if not target or not action:
-            return {}
-
-        ids = target.get_id_chain()
-        ids["action_id"] = action.pk
-        return {
-            "type": PlaceHolderType.ACTION.value,
-            "name": action.display_name,
-            "params": ids,
-        }
-
-    @classmethod
-    def _prototype_placeholder(cls, _, **kwargs) -> dict:
-        proto = kwargs.get("target")
-
-        if proto:
-            return {
-                "params": {"prototype_id": proto.id},
-                "type": "prototype",
-                "name": proto.display_name or proto.name,
-            }
-
-        return {}
-
-    @classmethod
-    def _adcm_entity_placeholder(cls, ph_name, **kwargs) -> dict:
-        obj = kwargs.get(ph_name)
-        if not obj:
-            return {}
-
-        return {
-            "type": obj.prototype.type,
-            "name": obj.display_name,
-            "params": obj.get_id_chain(),
-        }
-
-    @classmethod
-    def _job_placeholder(cls, _, **kwargs) -> dict:
-        job = kwargs.get("job")
-        action = job.sub_action or job.action
-
-        if not job:
-            return {}
-
-        return {
-            "type": PlaceHolderType.JOB.value,
-            "name": action.display_name or action.name,
-            "params": {"job_id": job.task.id},
-        }
-
-
 class ConcernType(models.TextChoices):
     LOCK = "lock", "lock"
     ISSUE = "issue", "issue"
@@ -1755,21 +1605,26 @@ class ConcernItem(ADCMModel):
     `type` is literally type of concern
     `name` is used for (un)setting flags from ansible playbooks
     `reason` is used to display/notify on front-end, text template and data for URL generation
-        should be generated from pre-created templates model `MessageTemplate`
+        should be generated from `MessageTemplate`
     `blocking` blocks actions from running
     `owner` is object-origin of concern
     `cause` is owner's parameter causing concern
     `related_objects` are back-refs from affected `ADCMEntities.concerns`
     """
 
-    type = models.CharField(max_length=1000, choices=ConcernType.choices, default=ConcernType.LOCK)
-    name = models.CharField(max_length=1000, null=True, unique=True)
+    type = models.CharField(max_length=100, choices=ConcernType.choices, default=ConcernType.LOCK)
+    name = models.CharField(max_length=1000, default="")
     reason = models.JSONField(default=dict)
     blocking = models.BooleanField(default=True)
-    owner_id = models.PositiveIntegerField(null=True)
-    owner_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)
+    owner_id = models.PositiveIntegerField()
+    owner_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     owner = GenericForeignKey("owner_type", "owner_id")
-    cause = models.CharField(max_length=1000, null=True, choices=ConcernCause.choices)
+    cause = models.CharField(max_length=100, null=True, choices=ConcernCause.choices)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(name="cm_concernitem_name_owner_uc", fields=("name", "owner_id", "owner_type"))
+        ]
 
     @property
     def related_objects(self) -> Iterable[ADCMEntity]:

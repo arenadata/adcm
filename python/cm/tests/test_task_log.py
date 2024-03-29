@@ -54,7 +54,7 @@ class TaskLogLockTest(BaseTestCase):
         cluster = gen_cluster()
         task = gen_task_log(cluster)
         gen_job_log(task)
-        task.lock = gen_concern_item(ConcernType.LOCK)
+        task.lock = gen_concern_item(ConcernType.LOCK, owner=cluster)
         task.save()
         lock_affected_objects(task=task, objects=[cluster])
 

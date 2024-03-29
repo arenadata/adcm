@@ -314,6 +314,10 @@ class TestServiceDeleteAction(BaseAPITestCase):
                 )
             )
             self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+            self.assertEqual(
+                "adcm_delete_service",
+                self.service_to_delete.concerns.get(type=ConcernType.LOCK).reason["placeholder"]["job"]["name"],
+            )
 
     @staticmethod
     def imitate_task_running(action: Action, object_: Cluster | ClusterObject) -> TaskLog:
