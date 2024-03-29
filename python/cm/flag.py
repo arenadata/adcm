@@ -12,17 +12,13 @@
 
 from cm.hierarchy import Tree
 from cm.issue import add_concern_to_object, remove_concern_from_object
-from cm.models import (
-    ADCMEntity,
-    ConcernCause,
-    ConcernItem,
-    ConcernType,
-    KnownNames,
-    MessageTemplate,
-)
+from cm.models import ADCMEntity, ConcernCause, ConcernItem, ConcernType
+from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, build_concern_reason
 
 
 def get_flag_name(obj: ADCMEntity, msg: str = "") -> str:
+    # todo it should be changed (adjusted to one format)
+    #  after plugin is reworked
     name = f"{obj} has an outdated configuration"
     if msg:
         name = f"{name}: {msg}"
@@ -31,8 +27,13 @@ def get_flag_name(obj: ADCMEntity, msg: str = "") -> str:
 
 
 def create_flag(obj: ADCMEntity, msg: str = "") -> ConcernItem:
-    reason = MessageTemplate.get_message_from_template(name=KnownNames.CONFIG_FLAG.value, source=obj)
+    # todo make correct message preparation
+    reason = build_concern_reason(
+        concern_message=ConcernMessage.FLAG, placeholder_objects=PlaceholderObjectsDTO(source=obj)
+    )
     if msg:
+        # todo it should be changed (adjusted to one format)
+        #  after plugin is reworked
         reason["message"] = f"{reason['message']}: {msg}"
 
     return ConcernItem.objects.create(

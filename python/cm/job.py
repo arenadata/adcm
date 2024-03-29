@@ -85,6 +85,7 @@ from cm.models import (
     Upgrade,
     get_object_cluster,
 )
+from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, build_concern_reason
 from cm.services.config.spec import convert_to_flat_spec_from_proto_flat_spec
 from cm.services.job.config import get_job_config
 from cm.services.job.inventory import get_inventory_data
@@ -764,14 +765,17 @@ def set_task_final_status(task: TaskLog, status: str):
 
 
 def set_job_start_status(job_id: int, pid: int) -> None:
-    job = JobLog.objects.get(id=job_id)
+    job = JobLog.objects.select_related("task").get(id=job_id)
     job.status = JobStatus.RUNNING
     job.start_date = timezone.now()
     job.pid = pid
     job.save(update_fields=["status", "start_date", "pid"])
 
     if job.task.lock and job.task.task_object:
-        job.task.lock.reason = job.cook_reason()
+        job.task.lock.reason = build_concern_reason(
+            ConcernMessage.LOCKED_BY_JOB,
+            placeholder_objects=PlaceholderObjectsDTO(job=job, target=job.task.task_object),
+        )
         job.task.lock.save(update_fields=["reason"])
 
 
