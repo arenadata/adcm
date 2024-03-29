@@ -11,8 +11,8 @@
 # limitations under the License.
 from contextlib import suppress
 
-from adcm.utils import get_obj_type
 from cm.models import GroupConfig, Host, ObjectConfig, get_cm_model_by_type
+from cm.utils import get_obj_type
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet

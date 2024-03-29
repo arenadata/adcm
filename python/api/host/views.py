@@ -17,7 +17,6 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from adcm.utils import get_maintenance_mode_response
 from audit.utils import audit
 from cm.api import add_host_to_cluster, delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
@@ -30,6 +29,7 @@ from cm.models import (
     HostProvider,
     ServiceComponent,
 )
+from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import (
     reset_hc_map,
     reset_objects_in_mm,

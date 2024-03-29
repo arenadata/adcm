@@ -9,26 +9,35 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from adcm.permissions import VIEW_CLUSTER_PERM, DjangoModelPermissionsAudit
 from adcm.serializers import EmptySerializer
 from audit.utils import audit
 from cm.models import ObjectType, Prototype
 from django.db.models import QuerySet
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
+from api_v2.api_schema import ErrorSerializer
 from api_v2.prototype.filters import PrototypeFilter, PrototypeVersionFilter
 from api_v2.prototype.serializers import (
-    PrototypeListSerializer,
-    PrototypeTypeSerializer,
+    PrototypeSerializer,
+    PrototypeVersionsSerializer,
 )
 from api_v2.prototype.utils import accept_license
 from api_v2.views import CamelCaseReadOnlyModelViewSet
 
 
+@extend_schema_view(
+    list=extend_schema(operation_id="getPrototypes", description="Get a list of all prototypes."),
+    retrieve=extend_schema(
+        operation_id="getPrototype",
+        description="Get detail information about a specific prototype.",
+        responses={200: PrototypeSerializer, 404: ErrorSerializer},
+    ),
+)
 class PrototypeViewSet(CamelCaseReadOnlyModelViewSet):
     queryset = Prototype.objects.exclude(type="adcm").select_related("bundle").order_by("name")
     permission_classes = [DjangoModelPermissionsAudit]
@@ -37,18 +46,28 @@ class PrototypeViewSet(CamelCaseReadOnlyModelViewSet):
 
     def get_serializer_class(self):
         if self.action == "versions":
-            return PrototypeTypeSerializer
+            return PrototypeVersionsSerializer
 
         if self.action == "accept":
             return EmptySerializer
 
-        return PrototypeListSerializer
+        return PrototypeSerializer
 
+    @extend_schema(
+        operation_id="getPrototypeVersions",
+        description="Get a list of ADCM bundles when creating an object (cluster or provider).",
+        responses={200: PrototypeVersionsSerializer(many=True)},
+    )
     @action(methods=["get"], detail=False, filterset_class=PrototypeVersionFilter)
     def versions(self, request):  # noqa: ARG001, ARG002
         queryset = self.get_filtered_prototypes_unique_by_display_name()
         return Response(data=self.get_serializer(queryset, many=True).data)
 
+    @extend_schema(
+        operation_id="postLicense",
+        description="Accept prototype license.",
+        responses={200: None, 404: ErrorSerializer, 409: ErrorSerializer},
+    )
     @audit
     @action(methods=["post"], detail=True, url_path="license/accept", url_name="accept-license")
     def accept(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002

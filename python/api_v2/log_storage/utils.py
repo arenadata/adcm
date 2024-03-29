@@ -16,7 +16,6 @@ import io
 import tarfile
 
 from adcm import settings
-from adcm.utils import str_remove_non_alnum
 from cm.models import (
     ActionType,
     ClusterObject,
@@ -26,6 +25,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.utils import str_remove_non_alnum
 
 
 def get_task_download_archive_name(task: TaskLog) -> str:

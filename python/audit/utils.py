@@ -30,6 +30,7 @@ from api_v2.component.serializers import (
 )
 from api_v2.host.serializers import HostAuditSerializer as HostAuditSerializerV2
 from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
+from api_v2.rbac.user.serializers import UserBlockStatusChangedSerializer
 from api_v2.service.serializers import (
     ServiceAuditSerializer as ServiceAuditSerializerV2,
 )
@@ -322,6 +323,9 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
             pk = view.kwargs["pk"]
         elif view.__class__.__name__ == "ComponentViewSet" and view.action == "maintenance_mode":
             serializer_class = ComponentAuditSerializerV2
+            pk = view.kwargs["pk"]
+        elif view.__class__.__name__ == "UserViewSet" and view.action in ("block", "unblock"):
+            serializer_class = UserBlockStatusChangedSerializer
             pk = view.kwargs["pk"]
 
     if serializer_class:

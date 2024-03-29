@@ -17,8 +17,9 @@ import json
 import string
 import logging
 
-from cm.utils import dict_json_get_or_create, get_adcm_token
 from django.core.management.utils import get_random_secret_key
+
+from adcm.settings_utils import dict_json_get_or_create, get_adcm_token
 
 ENCODING_UTF_8 = "utf-8"
 
@@ -150,7 +151,7 @@ REST_FRAMEWORK = {
     ],
     "EXCEPTION_HANDLER": "cm.errors.custom_drf_exception_handler",
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.NamespaceVersioning",
-    "DEFAULT_VERSION": "v1",
+    "DEFAULT_VERSION": "v2",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
     "JSON_UNDERSCOREIZE": {
         "ignore_fields": ("config", "configSchema", "adcmMeta", "properties"),
@@ -341,12 +342,17 @@ TASK_TYPE = "task"
 SPECTACULAR_SETTINGS = {
     "TITLE": "ADCM API",
     "DESCRIPTION": "Arenadata Cluster Manager",
-    "VERSION": "2.0.0",
+    "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
     "REDOC_DIST": "SIDECAR",
+    "POSTPROCESSING_HOOKS": [
+        "drf_spectacular.hooks.postprocess_schema_enums",
+        "drf_spectacular.contrib.djangorestframework_camel_case.camelize_serializer_fields",
+        "adcm.api_schema.make_all_fields_required_in_response",
+    ],
 }
 
 USERNAME_MAX_LENGTH = 150

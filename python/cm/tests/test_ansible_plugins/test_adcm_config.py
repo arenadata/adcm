@@ -13,9 +13,9 @@
 from pathlib import Path
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
+from ansible_plugin.utils import set_cluster_config, set_provider_config
 
 from cm.adcm_config.ansible import ansible_decrypt
-from cm.ansible_plugin import set_cluster_config, set_provider_config
 from cm.models import ConfigLog
 
 

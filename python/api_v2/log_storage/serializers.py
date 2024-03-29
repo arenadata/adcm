@@ -14,7 +14,7 @@ from contextlib import suppress
 import json
 
 from adcm import settings
-from cm.ansible_plugin import get_checklogs_data_by_job_id
+from ansible_plugin.utils import get_checklogs_data_by_job_id
 from cm.log import extract_log_content_from_fs
 from cm.models import LogStorage
 from rest_framework.fields import SerializerMethodField

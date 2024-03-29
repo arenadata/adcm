@@ -203,6 +203,64 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(cluster.description, "")
 
+    def test_create_adcm_5371_start_digits_success(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-list"),
+            data={"prototype_id": self.cluster_1.prototype.pk, "name": "1new_test_cluster"},
+        )
+
+        cluster = Cluster.objects.get(name="1new_test_cluster")
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(cluster.description, "")
+
+    def test_create_adcm_5371_dot_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-list"),
+            data={"prototype_id": self.cluster_1.prototype.pk, "name": "new_test_cluster."},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_create_adcm_5371_space_prohibited_end_start_fail(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-list"),
+            data={"prototype_id": self.cluster_1.prototype.pk, "name": " new_test_cluster "},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+    def test_create_adcm_5371_min_name_2_chars_success(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-list"),
+            data={"prototype_id": self.cluster_1.prototype.pk, "name": "a"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-list"),
+            data={"prototype_id": self.cluster_1.prototype.pk, "name": "aa"},
+        )
+
+        self.assertIsNotNone(Cluster.objects.filter(name="aa").first())
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_create_adcm_5371_max_name_150_chars_success(self):
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-list"),
+            data={"prototype_id": self.cluster_1.prototype.pk, "name": "a" * 151},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-list"),
+            data={"prototype_id": self.cluster_1.prototype.pk, "name": "a" * 150},
+        )
+
+        self.assertIsNotNone(Cluster.objects.filter(name="a" * 150).first())
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
     def test_create_same_name_fail(self):
         response = self.client.post(
             path=reverse(viewname="v2:cluster-list"),
@@ -273,11 +331,12 @@ class TestCluster(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 6)
+        self.assertEqual(len(response.json()), 7)
         self.assertListEqual(
             [prototype["displayName"] for prototype in response.json()],
             [
                 "service_1",
+                "service_1_clone",
                 "service_2",
                 "service_3_manual_add",
                 "service_4_save_config_without_required_field",
@@ -294,11 +353,12 @@ class TestCluster(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 5)
+        self.assertEqual(len(response.json()), 6)
         self.assertListEqual(
             [prototype["displayName"] for prototype in response.json()],
             [
                 "service_1",
+                "service_1_clone",
                 "service_2",
                 "service_4_save_config_without_required_field",
                 "service_5_variant_type_without_values",

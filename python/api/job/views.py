@@ -16,11 +16,11 @@ import re
 import tarfile
 
 from adcm.permissions import check_custom_perm, get_object_for_user
-from adcm.utils import str_remove_non_alnum
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import ActionType, JobLog, JobStatus, LogStorage, TaskLog
 from cm.services.job.run import restart_task, run_task
+from cm.utils import str_remove_non_alnum
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse

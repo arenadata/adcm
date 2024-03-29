@@ -77,6 +77,13 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        if not request.user.is_superuser and serializer.validated_data["is_superuser"]:
+            raise AdcmEx(
+                code="USER_CREATE_ERROR",
+                http_code=HTTP_403_FORBIDDEN,
+                msg="You can't create user with ADCM Administrator's rights.",
+            )
+
         try:
             user_id = perform_user_creation(
                 create_data=UserCreateDTO(**serializer.validated_data),
@@ -101,8 +108,16 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):
         validated_data = serializer.validated_data
         user_id = int(kwargs["pk"])
         new_password = validated_data.get("password", None)
+
         try:
             if request.user.is_superuser:
+                if request.user.pk == user_id and validated_data.get("is_superuser") is False:
+                    raise AdcmEx(
+                        code="USER_UPDATE_ERROR",
+                        http_code=HTTP_409_CONFLICT,
+                        msg="You can't withdraw ADCM Administrator's rights from yourself.",
+                    )
+
                 perform_user_update_as_superuser(
                     user_id=user_id,
                     update_data=UserUpdateDTO(**validated_data),
@@ -110,9 +125,20 @@ class UserViewSet(PermissionListMixin, CamelCaseModelViewSet):
                     new_user_groups=set(validated_data["groups"]) if "groups" in validated_data else None,
                 )
             else:
-                perform_regular_user_update(
-                    user_id=user_id, update_data=UserUpdateDTO(**validated_data), new_password=new_password
-                )
+                if new_password is not None and not request.user.is_superuser:
+                    raise AdcmEx(
+                        code="USER_UPDATE_ERROR", http_code=HTTP_403_FORBIDDEN, msg="You can't change user's password."
+                    )
+
+                if "is_superuser" in validated_data:
+                    raise AdcmEx(
+                        code="USER_UPDATE_ERROR",
+                        http_code=HTTP_403_FORBIDDEN,
+                        msg=f"You can't {'grant' if validated_data['is_superuser'] else 'withdraw'} "
+                        "ADCM Administrator's rights.",
+                    )
+
+                perform_regular_user_update(user_id=user_id, update_data=UserUpdateDTO(**validated_data))
         except EmailTakenError:
             raise AdcmEx(code="USER_CONFLICT", msg="User with the same email already exist") from None
         except PasswordError as err:

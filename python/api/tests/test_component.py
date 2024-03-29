@@ -131,7 +131,7 @@ class TestComponentAPI(BaseTestCase):
         )
         action = Action.objects.create(prototype=self.component.prototype, name=settings.ADCM_TURN_ON_MM_ACTION_NAME)
 
-        with patch("adcm.utils.run_action") as start_task_mock:
+        with patch("cm.services.maintenance_mode.run_action") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
                 data={"maintenance_mode": "ON"},
@@ -186,7 +186,7 @@ class TestComponentAPI(BaseTestCase):
         )
         action = Action.objects.create(prototype=self.component.prototype, name=settings.ADCM_TURN_OFF_MM_ACTION_NAME)
 
-        with patch("adcm.utils.run_action") as start_task_mock:
+        with patch("cm.services.maintenance_mode.run_action") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:component-maintenance-mode", kwargs={"component_id": self.component.pk}),
                 data={"maintenance_mode": "OFF"},

@@ -21,6 +21,7 @@ from cm.stack import check_hostcomponents_objects_exist
 from django.conf import settings
 from django.db.models import Q
 from django_filters.rest_framework.backends import DjangoFilterBackend
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from jinja_config import get_jinja_config
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
@@ -42,6 +43,7 @@ from api_v2.action.utils import (
     insert_service_ids,
     unique_hc_entries,
 )
+from api_v2.api_schema import ErrorSerializer
 from api_v2.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
@@ -202,6 +204,41 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
         return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)
 
 
+@extend_schema_view(
+    run=extend_schema(
+        operation_id="postADCMaction",
+        summary="POST adcm action",
+        description="Run ADCM action.",
+        responses={
+            200: TaskListSerializer,
+            400: ErrorSerializer,
+            403: ErrorSerializer,
+            404: ErrorSerializer,
+            409: ErrorSerializer,
+        },
+    ),
+    list=extend_schema(
+        operation_id="getADCMactions",
+        summary="GET adcm actions",
+        description="Get a list of ADCM actions.",
+        parameters=[
+            OpenApiParameter(
+                name="ordering",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
+                type=str,
+            )
+        ],
+        responses={200: ActionListSerializer, 404: ErrorSerializer},
+    ),
+    retrieve=extend_schema(
+        operation_id="getADCMaction",
+        summary="GET adcm action",
+        description="Get information about a specific ADCM action.",
+        responses={200: ActionRetrieveSerializer, 404: ErrorSerializer},
+    ),
+)
 class AdcmActionViewSet(ActionViewSet):
     def get_parent_object(self):
         return ADCM.objects.first()

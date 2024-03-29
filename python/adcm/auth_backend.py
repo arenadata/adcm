@@ -10,10 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.services.authorization import get_google_oauth, get_yandex_oauth
 from social_core.backends.google import GoogleOAuth2
 from social_core.backends.yandex import YandexOAuth2
-
-from adcm.utils import get_google_oauth, get_yandex_oauth
 
 
 class CustomYandexOAuth2(YandexOAuth2):

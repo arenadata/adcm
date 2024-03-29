@@ -31,7 +31,7 @@ class TestComponentAPI(BaseAPITestCase):
         self.component_2_to_delete = ServiceComponent.objects.get(
             prototype__name="component_2", service=self.service_1, cluster=self.cluster_1
         )
-        self.action_1 = Action.objects.get(name="action_1_comp_1")
+        self.action_1 = Action.objects.get(name="action_1_comp_1", prototype=self.component_1.prototype)
 
     def test_list(self):
         response = self.client.get(

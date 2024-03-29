@@ -325,7 +325,6 @@ class TestHostAPI(BaseTestCase):
                 "python/api/tests/files/cluster_using_plugin.tar",
             ),
         )
-        Action.objects.get(name=settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME)
 
         cluster_prototype = Prototype.objects.get(bundle_id=bundle.pk, type="cluster")
         cluster_response: Response = self.client.post(

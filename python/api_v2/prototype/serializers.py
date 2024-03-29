@@ -9,19 +9,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from adcm.serializers import EmptySerializer
-from cm.models import Prototype
-from rest_framework.fields import CharField, IntegerField, SerializerMethodField
+from cm.models import LICENSE_STATE, Prototype
+from drf_spectacular.utils import extend_schema_field
+from rest_framework.fields import CharField, ChoiceField, IntegerField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
 from api_v2.bundle.serializers import BundleRelatedSerializer
 from api_v2.prototype.utils import get_license_text
 
 
-class PrototypeListSerializer(ModelSerializer):
+class LicenseSerializer(EmptySerializer):
+    status = ChoiceField(choices=LICENSE_STATE)
+    text = SerializerMethodField(allow_null=True)
+
+
+class PrototypeSerializer(ModelSerializer):
     license = SerializerMethodField()
-    bundle = BundleRelatedSerializer(read_only=True)
+    bundle = BundleRelatedSerializer()
 
     class Meta:
         model = Prototype
@@ -37,6 +42,7 @@ class PrototypeListSerializer(ModelSerializer):
         )
 
     @staticmethod
+    @extend_schema_field(field=LicenseSerializer)
     def get_license(prototype: Prototype) -> dict:
         return {
             "status": prototype.license,
@@ -52,19 +58,20 @@ class PrototypeVersionSerializer(ModelSerializer):
     id = IntegerField(source="pk")
     version = CharField()
     bundle = BundleRelatedSerializer(read_only=True)
-    license_status = CharField(source="license")
+    license_status = ChoiceField(source="license", choices=LICENSE_STATE)
 
     class Meta:
         model = Prototype
         fields = ("id", "bundle", "version", "license_status")
 
 
-class PrototypeTypeSerializer(EmptySerializer):
+class PrototypeVersionsSerializer(EmptySerializer):
     name = CharField()
     display_name = CharField()
     versions = SerializerMethodField()
 
     @staticmethod
+    @extend_schema_field(field=PrototypeVersionSerializer(many=True))
     def get_versions(obj: Prototype) -> str | None:
         queryset = (
             Prototype.objects.select_related("bundle")

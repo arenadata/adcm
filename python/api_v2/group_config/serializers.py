@@ -25,11 +25,11 @@ class GroupConfigSerializer(ModelSerializer):
         fields = ["id", "name", "description", "hosts"]
 
     def validate_name(self, value):
-        model = self.context["view"].get_parent_object()
-        parent_content_type = ContentType.objects.get_for_model(model=model)
-        queryset = GroupConfig.objects.filter(name=value, object_type=parent_content_type)
+        object_ = self.context["view"].get_parent_object()
+        parent_content_type = ContentType.objects.get_for_model(model=object_)
+        queryset = GroupConfig.objects.filter(name=value, object_type=parent_content_type, object_id=object_.pk)
         if queryset.exists():
             raise ValidationError(
-                f"Group config with name {value} already exists for {parent_content_type} {model.name}"
+                f"Group config with name {value} already exists for {parent_content_type} {object_.name}"
             )
         return value
