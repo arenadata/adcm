@@ -1,0 +1,33 @@
+
+---
+- name: Change MM of component
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: debug_info
+      debug:
+        msg: "Component turn ON"
+      tags:
+        - turn_on
+
+    - name: change mm
+      adcm_change_maintenance_mode:
+        type: component
+        value: True
+      tags:
+        - turn_on
+
+    - name: debug_info
+      debug:
+        msg: "Component turn OFF"
+      tags:
+        - turn_off
+
+    - name: change mm
+      adcm_change_maintenance_mode:
+        type: component
+        value: False
+      tags:
+        - turn_off

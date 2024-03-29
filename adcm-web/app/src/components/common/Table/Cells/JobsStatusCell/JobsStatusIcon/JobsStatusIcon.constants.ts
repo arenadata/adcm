@@ -8,4 +8,5 @@ export const jobStatusesIconsMap: { [key in AdcmJobStatus]: IconsNames } = {
   [AdcmJobStatus.Running]: 'g2-running-10x10',
   [AdcmJobStatus.Locked]: 'g2-locked-10x10',
   [AdcmJobStatus.Aborted]: 'g2-aborted-10x10',
+  [AdcmJobStatus.Broken]: 'g2-failed-10x10',
 };

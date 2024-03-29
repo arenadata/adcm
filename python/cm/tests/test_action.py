@@ -15,14 +15,16 @@ from pathlib import Path
 import json
 
 from adcm.tests.base import BaseTestCase
+from core.job.runners import ADCMSettings, AnsibleSettings, ExternalSettings, IntegrationsSettings
+from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
 
 from cm.api import add_hc, add_service_to_cluster
-from cm.job import prepare_job
-from cm.models import Action, MaintenanceMode, Prototype, ServiceComponent, TaskLog
-from cm.services.job.utils import JobScope
+from cm.models import Action, MaintenanceMode, Prototype, ServiceComponent
+from cm.services.job.run._target_factories import prepare_ansible_environment
+from cm.services.job.run.repo import JobRepoImpl
 from cm.tests.utils import (
     gen_action,
     gen_bundle,
@@ -436,6 +438,12 @@ class TestActionParams(BaseTestCase):
             prototype=self.cluster.prototype, name="action_customFields_absent"
         )
 
+        self.configuration = ExternalSettings(
+            adcm=ADCMSettings(code_root_dir=settings.CODE_DIR, run_dir=settings.RUN_DIR, log_dir=settings.LOG_DIR),
+            ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),
+            integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
+        )
+
     def _generate_and_read_target_files(self, action_pk: int) -> tuple[ConfigParser, dict]:
         response = self.client.post(
             path=reverse(
@@ -448,13 +456,15 @@ class TestActionParams(BaseTestCase):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        task_id = response.json()["id"]
-        job = TaskLog.objects.get(pk=task_id).joblog_set.get()
+        task = JobRepoImpl.get_task(id=response.json()["id"])
+        job, *_ = JobRepoImpl.get_task_jobs(task_id=task.id)
 
-        prepare_job(job_scope=JobScope(job_id=job.pk, object=self.cluster), delta={})
+        job_dir: Path = self.directories["RUN_DIR"] / str(job.id)
+        job_dir.mkdir(parents=True)
+        prepare_ansible_environment(task=task, job=job, configuration=self.configuration)
 
-        ansible_cfg_file: Path = self.directories["RUN_DIR"] / str(task_id) / "ansible.cfg"
-        config_json_file: Path = self.directories["RUN_DIR"] / str(task_id) / "config.json"
+        ansible_cfg_file: Path = job_dir / "ansible.cfg"
+        config_json_file: Path = job_dir / "config.json"
 
         if not ansible_cfg_file.is_file() or not config_json_file.is_file():
             raise ValueError("Not all files exist")

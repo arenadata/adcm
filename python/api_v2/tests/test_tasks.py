@@ -14,7 +14,7 @@ from io import BytesIO
 from operator import itemgetter
 from unittest.mock import patch
 
-from cm.job import create_task
+from cm.converters import model_name_to_core_type
 from cm.models import (
     ADCM,
     Action,
@@ -26,6 +26,9 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.job.prepare import prepare_task_for_action
+from core.job.dto import TaskPayloadDTO
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils import timezone
@@ -47,35 +50,32 @@ class TestTask(BaseAPITestCase):
         self.cluster_action = Action.objects.filter(name="action", prototype=self.cluster_1.prototype).first()
         service_1_action = Action.objects.filter(name="action", prototype=service_1.prototype).first()
         component_1_action = Action.objects.filter(name="action_1_comp_1", prototype=component_1.prototype).first()
-        self.cluster_task = create_task(
-            action=self.cluster_action,
-            obj=self.cluster_1,
-            conf={},
-            attr={},
-            hostcomponent=[],
-            hosts=[],
-            verbose=False,
-            post_upgrade_hc=[],
+        cluster_object = CoreObjectDescriptor(id=self.cluster_1.pk, type=ADCMCoreType.CLUSTER)
+        self.cluster_task = TaskLog.objects.get(
+            id=prepare_task_for_action(
+                target=cluster_object,
+                owner=cluster_object,
+                action=self.cluster_action.pk,
+                payload=TaskPayloadDTO(),
+            ).id
         )
-        self.service_task = create_task(
-            action=service_1_action,
-            obj=service_1,
-            conf={},
-            attr={},
-            hostcomponent=[],
-            hosts=[],
-            verbose=False,
-            post_upgrade_hc=[],
+        service_object = CoreObjectDescriptor(id=service_1.pk, type=ADCMCoreType.SERVICE)
+        self.service_task = TaskLog.objects.get(
+            id=prepare_task_for_action(
+                target=service_object,
+                owner=service_object,
+                action=service_1_action.pk,
+                payload=TaskPayloadDTO(),
+            ).id
         )
-        self.component_task = create_task(
-            action=component_1_action,
-            obj=component_1,
-            conf={},
-            attr={},
-            hostcomponent=[],
-            hosts=[],
-            verbose=False,
-            post_upgrade_hc=[],
+        component_object = CoreObjectDescriptor(id=component_1.pk, type=ADCMCoreType.COMPONENT)
+        self.component_task = TaskLog.objects.get(
+            id=prepare_task_for_action(
+                target=component_object,
+                owner=component_object,
+                action=component_1_action.pk,
+                payload=TaskPayloadDTO(),
+            ).id
         )
         self.adcm_task = TaskLog.objects.create(
             object_id=self.adcm.pk,
@@ -260,14 +260,12 @@ class TestTaskObjects(BaseAPITestCase):
         host: Host | None = None,
     ):
         action = Action.objects.get(name=action_name, prototype=object_.prototype)
-        hosts = [] if not host else [host.pk]
-        return create_task(
-            action=action,
-            obj=host or object_,
-            conf={},
-            attr={},
-            hostcomponent=[],
-            hosts=hosts,
-            verbose=False,
-            post_upgrade_hc=[],
+
+        owner = CoreObjectDescriptor(
+            id=object_.pk, type=model_name_to_core_type(model_name=object_.__class__.__name__.lower())
         )
+        target = CoreObjectDescriptor(id=host.pk, type=ADCMCoreType.HOST) if host else owner
+
+        launch = prepare_task_for_action(target=target, owner=owner, action=action.pk, payload=TaskPayloadDTO())
+
+        return TaskLog.objects.get(id=launch.id)

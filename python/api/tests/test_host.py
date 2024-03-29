@@ -11,10 +11,8 @@
 # limitations under the License.
 
 from pathlib import Path
-from unittest.mock import patch
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.job import ActionRunPayload
 from cm.models import (
     Action,
     ActionType,
@@ -26,7 +24,10 @@ from cm.models import (
     MaintenanceMode,
     Prototype,
     ServiceComponent,
+    SubAction,
 )
+from cm.tests.mocks.task_runner import RunTaskMock
+from core.types import ADCMCoreType
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
@@ -86,14 +87,19 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.ON)
 
     def test_change_mm_on_with_action_success(self):
-        action = Action.objects.create(
-            prototype=self.host.cluster.prototype,
-            name=settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME,
-            type=ActionType.JOB,
-            state_available="any",
+        SubAction.objects.create(
+            action=Action.objects.create(
+                prototype=self.host.cluster.prototype,
+                name=settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME,
+                type=ActionType.JOB,
+                state_available="any",
+                host_action=True,
+            ),
+            script_type="ansible",
+            script="somethign.yaml",
         )
 
-        with patch("cm.services.maintenance_mode.run_action") as start_task_mock:
+        with RunTaskMock() as run_task:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": "ON"},
@@ -104,18 +110,24 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["maintenance_mode"], "CHANGING")
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
-        start_task_mock.assert_called_once_with(
-            action=action,
-            obj=self.host,
-            payload=ActionRunPayload(),
-            hosts=[],
-        )
+
+        self.assertIsNotNone(run_task.target_task)
+        self.assertEqual(run_task.target_task.task_object, self.host)
+        self.assertEqual(run_task.target_task.owner_id, self.host.cluster.pk)
+        self.assertEqual(run_task.target_task.owner_type, ADCMCoreType.CLUSTER.value)
+
+        run_task.runner.run(run_task.target_task.pk)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
+        self.host.refresh_from_db()
+        # since MM wasn't changed with plugin, rollback will be preformed
+        self.assertEqual(self.host.maintenance_mode, MaintenanceMode.OFF.value)
 
     def test_change_mm_on_from_on_with_action_fail(self):
         self.host.maintenance_mode = MaintenanceMode.ON
         self.host.save(update_fields=["maintenance_mode"])
 
-        with patch("cm.services.maintenance_mode.run_action") as start_task_mock:
+        with RunTaskMock() as run_task:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": "ON"},
@@ -125,7 +137,7 @@ class TestHostAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.ON)
-        start_task_mock.assert_not_called()
+        self.assertIsNone(run_task.target_task)
 
     def test_change_mm_off_no_action_success(self):
         self.host.maintenance_mode = MaintenanceMode.ON
@@ -145,12 +157,20 @@ class TestHostAPI(BaseTestCase):
     def test_change_mm_off_with_action_success(self):
         self.host.maintenance_mode = MaintenanceMode.ON
         self.host.save(update_fields=["maintenance_mode"])
-        action = Action.objects.create(
-            prototype=self.host.cluster.prototype,
-            name=settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
+
+        SubAction.objects.create(
+            action=Action.objects.create(
+                prototype=self.host.cluster.prototype,
+                name=settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
+                host_action=True,
+                type=ActionType.JOB,
+                state_available="any",
+            ),
+            script_type="ansible",
+            script="something.yaml",
         )
 
-        with patch("cm.services.maintenance_mode.run_action") as start_task_mock:
+        with RunTaskMock() as run_task:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": "OFF"},
@@ -161,18 +181,24 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["maintenance_mode"], "CHANGING")
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
-        start_task_mock.assert_called_once_with(
-            action=action,
-            obj=self.host,
-            payload=ActionRunPayload(),
-            hosts=[],
-        )
+
+        self.assertIsNotNone(run_task.target_task)
+        self.assertEqual(run_task.target_task.task_object, self.host)
+        self.assertEqual(run_task.target_task.owner_id, self.host.cluster.pk)
+        self.assertEqual(run_task.target_task.owner_type, ADCMCoreType.CLUSTER.value)
+
+        run_task.runner.run(run_task.target_task.pk)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
+        self.host.refresh_from_db()
+        # since MM wasn't changed with plugin, rollback will be preformed
+        self.assertEqual(self.host.maintenance_mode, MaintenanceMode.ON.value)
 
     def test_change_mm_off_to_off_with_action_fail(self):
         self.host.maintenance_mode = MaintenanceMode.OFF
         self.host.save(update_fields=["maintenance_mode"])
 
-        with patch("cm.services.maintenance_mode.run_action") as start_task_mock:
+        with RunTaskMock() as run_task:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": self.host.pk}),
                 data={"maintenance_mode": "OFF"},
@@ -182,7 +208,7 @@ class TestHostAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.OFF)
-        start_task_mock.assert_not_called()
+        self.assertIsNone(run_task.target_task)
 
     def test_change_mm_changing_now_fail(self):
         self.host.maintenance_mode = MaintenanceMode.CHANGING
@@ -299,7 +325,6 @@ class TestHostAPI(BaseTestCase):
                 "python/api/tests/files/cluster_using_plugin.tar",
             ),
         )
-        action = Action.objects.get(name=settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME)
 
         cluster_prototype = Prototype.objects.get(bundle_id=bundle.pk, type="cluster")
         cluster_response: Response = self.client.post(
@@ -323,7 +348,7 @@ class TestHostAPI(BaseTestCase):
             data={"host_id": host.pk},
         )
 
-        with patch("cm.services.maintenance_mode.run_action") as start_task_mock:
+        with RunTaskMock() as run_task:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:host-maintenance-mode", kwargs={"host_id": host.pk}),
                 data={"maintenance_mode": "ON"},
@@ -334,9 +359,15 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["maintenance_mode"], "CHANGING")
         self.assertEqual(host.maintenance_mode, MaintenanceMode.CHANGING)
-        start_task_mock.assert_called_once_with(
-            action=action,
-            obj=host,
-            payload=ActionRunPayload(),
-            hosts=[],
-        )
+
+        self.assertIsNotNone(run_task.target_task)
+        self.assertEqual(run_task.target_task.task_object, host)
+        self.assertEqual(run_task.target_task.owner_id, host.cluster.pk)
+        self.assertEqual(run_task.target_task.owner_type, ADCMCoreType.CLUSTER.value)
+
+        run_task.runner.run(run_task.target_task.pk)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
+        host.refresh_from_db()
+        # since MM wasn't changed with plugin, rollback will be preformed
+        self.assertEqual(host.maintenance_mode, MaintenanceMode.OFF.value)

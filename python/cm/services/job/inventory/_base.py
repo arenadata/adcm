@@ -18,8 +18,8 @@ from core.cluster.types import ClusterTopology, MaintenanceModeOfObjects, Object
 from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, HostName, ObjectID
 from django.db.models import F
 
+from cm.converters import core_type_to_model
 from cm.models import (
-    Action,
     Cluster,
     ClusterObject,
     Host,
@@ -51,14 +51,13 @@ from cm.services.job.inventory._types import (
 )
 
 
-def get_inventory_data(
-    obj: Cluster | ClusterObject | ServiceComponent | HostProvider | Host, action: Action, delta: dict | None = None
-) -> dict:
-    if isinstance(obj, HostProvider) or (isinstance(obj, Host) and not action.host_action):
-        return _get_inventory_for_action_from_hostprovider_bundle(object_=obj)
+def get_inventory_data(target: CoreObjectDescriptor, is_host_action: bool, delta: dict | None = None) -> dict:
+    target_object = core_type_to_model(target.type).objects.get(id=target.id)
+    if isinstance(target_object, HostProvider) or (isinstance(target_object, Host) and not is_host_action):
+        return _get_inventory_for_action_from_hostprovider_bundle(object_=target_object)
 
     return _get_inventory_for_action_from_cluster_bundle(
-        object_=obj, is_host_action=action.host_action, delta=delta or {}
+        object_=target_object, is_host_action=is_host_action, delta=delta or {}
     )
 
 
