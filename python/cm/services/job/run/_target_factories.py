@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Generator, Iterable, Literal
 import json
 
+from ansible_plugin.utils import finish_check
 from core.job.executors import BundleExecutorConfig, ExecutorConfig
 from core.job.runners import ExecutionTarget, ExternalSettings
 from core.job.types import Job, ScriptType, Task
@@ -22,7 +23,6 @@ from core.types import ADCMCoreType
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
-from cm.ansible_plugin import finish_check
 from cm.api import get_hc, save_hc
 from cm.models import (
     Cluster,

@@ -16,8 +16,8 @@ from rest_framework.status import HTTP_204_NO_CONTENT
 
 from cm.api import cancel_locking_tasks, delete_service
 from cm.errors import AdcmEx
-from cm.job import ActionRunPayload, run_action
 from cm.models import Action, ClusterBind, ClusterObject, HostComponent, JobStatus, ServiceComponent, TaskLog
+from cm.services.job.action import ActionRunPayload, run_action
 
 
 def delete_service_from_api(service: ClusterObject) -> Response:
@@ -69,7 +69,6 @@ def delete_service_from_api(service: ClusterObject) -> Response:
             action=delete_action,
             obj=service,
             payload=ActionRunPayload(conf={}, attr={}, hostcomponent=[], verbose=False),
-            hosts=[],
         )
     else:
         delete_service(service=service)

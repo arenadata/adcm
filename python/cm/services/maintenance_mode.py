@@ -17,8 +17,8 @@ from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
 
 from cm.flag import update_flags
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
-from cm.job import ActionRunPayload, run_action
 from cm.models import Action, ClusterObject, Host, HostComponent, MaintenanceMode, Prototype, ServiceComponent
+from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import send_object_update_event
 
@@ -35,7 +35,6 @@ def _change_mm_via_action(
             action=action,
             obj=obj,
             payload=ActionRunPayload(conf={}, attr={}, hostcomponent=[], verbose=False),
-            hosts=[],
         )
         serializer.validated_data["maintenance_mode"] = MaintenanceMode.CHANGING
 

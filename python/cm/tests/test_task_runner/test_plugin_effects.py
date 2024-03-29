@@ -13,8 +13,8 @@ from pathlib import Path
 import json
 
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase, TestCaseWithCommonSetUpTearDown
+from ansible_plugin.utils import change_hc
 
-from cm.ansible_plugin import change_hc
 from cm.models import Action, ServiceComponent
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.tests.mocks.task_runner import ETFMockWithEnvPreparation, JobImitator, RunTaskMock
