@@ -191,10 +191,16 @@ class JobRetrieveSerializer(HyperlinkedModelSerializer):
     terminatable = SerializerMethodField()
 
     def get_selector(self, obj: JobLog):
-        return obj.task.selector
+        try:
+            return obj.task.selector
+        except AttributeError:
+            return {}
 
     def get_action_id(self, obj: JobLog):
-        return obj.action.id
+        try:
+            return obj.task.action.id
+        except AttributeError:
+            return None
 
     def get_sub_action_id(self, _: JobLog):
         return None
