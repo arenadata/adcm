@@ -1,4 +1,4 @@
-import React, { ReactNode, useMemo, useState } from 'react';
+import React, { ReactNode, useMemo, useRef, useState } from 'react';
 import { refractor } from 'refractor';
 import { getLines, getParsedCode } from '@uikit/CodeHighlighterV2/CodeHighlighterHelperV2';
 import './CodeHighlighterTemeV2.scss';
@@ -6,6 +6,9 @@ import s from './CodeHighlighterV2.module.scss';
 import cn from 'classnames';
 import CopyButton from '@uikit/CodeHighlighter/CopyButton/CopyButton';
 import IconButton from '@uikit/IconButton/IconButton';
+import ScrollBar from '@uikit/ScrollBar/ScrollBar';
+import ScrollBarWrapper from '@uikit/ScrollBar/ScrollBarWrapper';
+
 export interface CodeHighlighterV2Props {
   code: string;
   lang: string;
@@ -27,6 +30,7 @@ const CodeHighlighterV2 = ({
 }: CodeHighlighterV2Props) => {
   const [isSecretVisible, setIsSecretVisible] = useState(!isSecret);
   const prepCode = useMemo(() => (isSecretVisible ? code : code.replace(/./g, '*')), [code, isSecretVisible]);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const { parsedCode, lines, patchWidth } = useMemo(() => {
     const lines = getLines(prepCode);
@@ -50,7 +54,6 @@ const CodeHighlighterV2 = ({
 
   return (
     <div className={cn(className, s.codeHighlighter)} style={wrapperStyles}>
-      <div className={cn(s.codeHighlighterLines, s.patch)} style={{ width: `${patchWidth}px` }}></div>
       {!isNotCopy && <CopyButton code={code} className={s.codeHighlighter__copyBtn} />}
       {isSecret && (
         <IconButton
@@ -61,7 +64,7 @@ const CodeHighlighterV2 = ({
           onClick={toggleShowSecret}
         />
       )}
-      <div className={cn('scroll', s.codeHighlighterWrapper)} data-test={`${dataTestPrefix}_code-highlite`}>
+      <div className={s.codeHighlighterWrapper} data-test={`${dataTestPrefix}_code-highlite`} ref={contentRef}>
         <div className={s.codeHighlighterLinesWrapper}>
           <div className={cn(s.codeHighlighterLines, s.codeHighlighterFontParams)}>
             {lines.map((lineNum) => (
@@ -74,6 +77,12 @@ const CodeHighlighterV2 = ({
           {codeOverlay && <div className={s.codeHighlighterCodeOverlay}>{codeOverlay}</div>}
         </div>
       </div>
+      <ScrollBarWrapper position="right" className={s.highlighterScrollVertical}>
+        <ScrollBar contentRef={contentRef} orientation="vertical" />
+      </ScrollBarWrapper>
+      <ScrollBarWrapper position="bottom" className={s.highlighterScrollHorizontal}>
+        <ScrollBar contentRef={contentRef} orientation="horizontal" />
+      </ScrollBarWrapper>
     </div>
   );
 };

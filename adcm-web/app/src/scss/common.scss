@@ -87,3 +87,12 @@ strong {
   margin-left: calc(-1 * var(--page-padding-h));
   margin-right: calc(-1 * var(--page-padding-h));
 }
+
+.scrollBar  {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
