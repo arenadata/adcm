@@ -33,7 +33,6 @@ from cm.api import (
 )
 from cm.errors import raise_adcm_ex
 from cm.issue import update_hierarchy_issues
-from cm.job import ActionRunPayload, run_action
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
@@ -53,6 +52,7 @@ from cm.models import (
     ServiceComponent,
     Upgrade,
 )
+from cm.services.job.action import ActionRunPayload, run_action
 from cm.status_api import send_prototype_and_state_update_event
 from cm.utils import obj_ref
 
@@ -501,7 +501,6 @@ def do_upgrade(
             action=upgrade.action,
             obj=obj,
             payload=ActionRunPayload(conf=config, attr=attr, hostcomponent=hostcomponent, verbose=verbose),
-            hosts=[],
         )
         task_id = task.id
 

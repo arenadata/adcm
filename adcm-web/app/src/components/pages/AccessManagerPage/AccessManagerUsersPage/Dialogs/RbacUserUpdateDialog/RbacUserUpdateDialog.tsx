@@ -14,6 +14,7 @@ const RbacUserUpdateDialog: React.FC = () => {
     groups,
     errors,
     isPersonalDataEditForbidden,
+    isCurrentUserSuperUser,
   } = useRbacUserUpdateDialog();
 
   return (
@@ -28,6 +29,7 @@ const RbacUserUpdateDialog: React.FC = () => {
     >
       <RbacUserForm
         isPersonalDataEditForbidden={isPersonalDataEditForbidden}
+        isCurrentUserSuperUser={isCurrentUserSuperUser}
         onChangeFormData={onChangeFormData}
         formData={formData}
         groups={groups}

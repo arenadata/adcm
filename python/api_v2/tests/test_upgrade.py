@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from pathlib import Path
-from unittest.mock import patch
 
 from cm.models import (
     ADCM,
@@ -20,12 +19,10 @@ from cm.models import (
     ObjectType,
     Prototype,
     ServiceComponent,
-    TaskLog,
     Upgrade,
 )
-from django.contrib.contenttypes.models import ContentType
+from cm.tests.mocks.task_runner import RunTaskMock
 from django.urls import reverse
-from django.utils import timezone
 from init_db import init
 from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
@@ -180,15 +177,9 @@ class TestUpgrade(BaseAPITestCase):
         )
 
     def test_cluster_upgrade_run_success(self):
-        tasklog = TaskLog.objects.create(
-            object_id=self.cluster_1.pk,
-            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-            action=self.upgrade_cluster_via_action_simple.action,
-        )
+        Prototype.objects.update(license="accepted")
 
-        with patch("cm.upgrade.run_action", return_value=tasklog):
+        with RunTaskMock() as run_task:
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",
@@ -199,16 +190,18 @@ class TestUpgrade(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
         self.assertTrue(set(data.keys()).issuperset({"id", "childJobs", "startTime"}))
-        self.assertEqual(data["id"], tasklog.id)
+        self.assertEqual(data["id"], run_task.target_task.id)
+
+        run_task.runner.run(run_task.target_task.id)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
+        self.cluster_1.refresh_from_db()
+        self.assertEqual(
+            self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
+        )
 
     def test_cluster_upgrade_run_complex_success(self):
-        tasklog = TaskLog.objects.create(
-            object_id=self.cluster_1.pk,
-            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-            action=self.upgrade_cluster_via_action_simple.action,
-        )
+        Prototype.objects.update(license="accepted")
 
         host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host)
@@ -216,7 +209,7 @@ class TestUpgrade(BaseAPITestCase):
         component_2 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_2")
         HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_2, host=host)
 
-        with patch("cm.upgrade.run_action", return_value=tasklog):
+        with RunTaskMock() as run_task:
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",
@@ -235,16 +228,18 @@ class TestUpgrade(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
         self.assertTrue(set(data.keys()).issuperset({"id", "childJobs", "startTime"}))
-        self.assertEqual(data["id"], tasklog.id)
+        self.assertEqual(data["id"], run_task.target_task.id)
+
+        run_task.runner.run(run_task.target_task.id)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
+        self.cluster_1.refresh_from_db()
+        self.assertEqual(
+            self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
+        )
 
     def test_adcm_5246_cluster_upgrade_other_constraints_run_success(self):
-        tasklog = TaskLog.objects.create(
-            object_id=self.cluster_1.pk,
-            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-            action=self.upgrade_cluster_via_action_simple.action,
-        )
+        Prototype.objects.update(license="accepted")
 
         host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="first_host")
         host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="second_host")
@@ -256,7 +251,7 @@ class TestUpgrade(BaseAPITestCase):
         HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_1, host=host_1)
         HostComponent.objects.create(cluster=self.cluster_1, service=self.service_1, component=component_1, host=host_2)
 
-        with patch("cm.upgrade.run_action", return_value=tasklog):
+        with RunTaskMock() as run_task:
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",
@@ -269,7 +264,7 @@ class TestUpgrade(BaseAPITestCase):
                         {"hostId": host_1.pk, "componentId": component_2.pk},
                     ],
                     "configuration": {
-                        "config": {},
+                        "config": {"simple": "val", "grouped": {"simple": 5, "second": 4.3}, "after": ["x", "y"]},
                         "adcmMeta": {},
                     },
                     "isVerbose": True,
@@ -279,21 +274,21 @@ class TestUpgrade(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
         self.assertTrue(set(data.keys()).issuperset({"id", "childJobs", "startTime"}))
-        self.assertEqual(data["id"], tasklog.id)
+        self.assertEqual(data["id"], run_task.target_task.id)
 
-    def test_adcm_4856_cluster_upgrade_run_complex_no_component_fail(self):
-        tasklog = TaskLog.objects.create(
-            object_id=self.cluster_1.pk,
-            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-            action=self.upgrade_cluster_via_action_simple.action,
+        run_task.runner.run(run_task.target_task.id)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
+        self.cluster_1.refresh_from_db()
+        self.assertEqual(
+            self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
         )
 
+    def test_adcm_4856_cluster_upgrade_run_complex_no_component_fail(self):
         host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host)
 
-        with patch("cm.upgrade.run_action", return_value=tasklog):
+        with RunTaskMock() as run_task:
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",
@@ -302,7 +297,7 @@ class TestUpgrade(BaseAPITestCase):
                 data={
                     "hostComponentMap": [{"hostId": host.pk, "componentId": 1000}],
                     "configuration": {
-                        "config": {},
+                        "config": {"simple": "val", "grouped": {"simple": 5, "second": 4.3}, "after": ["x", "y"]},
                         "adcmMeta": {},
                     },
                     "isVerbose": True,
@@ -311,19 +306,12 @@ class TestUpgrade(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.assertDictEqual(response.json(), {"detail": "Components with ids 1000 do not exist"})
+        self.assertIsNone(run_task.target_task)
 
     def test_adcm_4856_cluster_upgrade_run_complex_no_host_fail(self):
-        tasklog = TaskLog.objects.create(
-            object_id=self.cluster_1.pk,
-            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-            action=self.upgrade_cluster_via_action_simple.action,
-        )
-
         component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
 
-        with patch("cm.upgrade.run_action", return_value=tasklog):
+        with RunTaskMock() as run_task:
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",
@@ -341,21 +329,18 @@ class TestUpgrade(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.assertDictEqual(response.json(), {"detail": "Hosts with ids 1000 do not exist"})
+        self.assertIsNone(run_task.target_task)
 
     def test_adcm_4856_cluster_upgrade_run_complex_duplicated_hc_success(self):
-        tasklog = TaskLog.objects.create(
-            object_id=self.cluster_1.pk,
-            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-            action=self.upgrade_cluster_via_action_simple.action,
-        )
+        # fixme was incorrect test, probably should fix a validation? see action run
+        Prototype.objects.update(license="accepted")
+
         host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host)
 
         component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
 
-        with patch("cm.upgrade.run_action", return_value=tasklog):
+        with RunTaskMock() as run_task:
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",
@@ -367,7 +352,7 @@ class TestUpgrade(BaseAPITestCase):
                         {"hostId": host.pk, "componentId": component_1.pk},
                     ],
                     "configuration": {
-                        "config": {},
+                        "config": {"simple": "val", "grouped": {"simple": 5, "second": 4.3}, "after": ["x", "y"]},
                         "adcmMeta": {},
                     },
                     "isVerbose": True,
@@ -376,14 +361,17 @@ class TestUpgrade(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_adcm_4856_cluster_upgrade_run_complex_several_entries_hc_success(self):
-        tasklog = TaskLog.objects.create(
-            object_id=self.cluster_1.pk,
-            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-            action=self.upgrade_cluster_via_action_simple.action,
+        run_task.runner.run(run_task.target_task.id)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
+        self.cluster_1.refresh_from_db()
+        self.assertEqual(
+            self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
         )
+
+    def test_adcm_4856_cluster_upgrade_run_complex_several_entries_hc_success(self):
+        Prototype.objects.update(license="accepted")
+
         host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="one_host")
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_1)
 
@@ -391,9 +379,8 @@ class TestUpgrade(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=host_2)
 
         component_1 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")
-        component_2 = ServiceComponent.objects.get(service=self.service_1, prototype__name="component_2")
 
-        with patch("cm.upgrade.run_action", return_value=tasklog):
+        with RunTaskMock() as run_task:
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",
@@ -402,11 +389,10 @@ class TestUpgrade(BaseAPITestCase):
                 data={
                     "hostComponentMap": [
                         {"hostId": host_1.pk, "componentId": component_1.pk},
-                        {"hostId": host_1.pk, "componentId": component_2.pk},
-                        {"hostId": host_2.pk, "componentId": component_2.pk},
+                        {"hostId": host_2.pk, "componentId": component_1.pk},
                     ],
                     "configuration": {
-                        "config": {},
+                        "config": {"simple": "val", "grouped": {"simple": 5, "second": 4.3}, "after": ["x", "y"]},
                         "adcmMeta": {},
                     },
                     "isVerbose": True,
@@ -414,6 +400,14 @@ class TestUpgrade(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+        run_task.runner.run(run_task.target_task.id)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
+        self.cluster_1.refresh_from_db()
+        self.assertEqual(
+            self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
+        )
 
     def test_provider_list_upgrades_success(self):
         response: Response = self.client.get(
@@ -466,15 +460,7 @@ class TestUpgrade(BaseAPITestCase):
         self.assertEqual(len(upgrade_data["hostComponentMapRules"]), 0)
 
     def test_provider_upgrade_run_success(self):
-        tasklog = TaskLog.objects.create(
-            object_id=self.provider.pk,
-            object_type=ContentType.objects.get(app_label="cm", model="hostprovider"),
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-            action=self.upgrade_host_via_action_simple.action,
-        )
-
-        with patch("cm.upgrade.run_action", return_value=tasklog):
+        with RunTaskMock() as run_task:
             response: Response = self.client.post(
                 path=reverse(
                     viewname="v2:upgrade-run",
@@ -485,7 +471,13 @@ class TestUpgrade(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
         self.assertTrue(set(data.keys()).issuperset({"id", "childJobs", "startTime"}))
-        self.assertEqual(data["id"], tasklog.id)
+        self.assertEqual(data["id"], run_task.target_task.id)
+
+        run_task.runner.run(run_task.target_task.id)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
+        self.provider.refresh_from_db()
+        self.assertEqual(self.provider.prototype.version, self.upgrade_host_via_action_simple.action.prototype.version)
 
     def test_provider_upgrade_run_violate_constraint_fail(self):
         response: Response = self.client.post(

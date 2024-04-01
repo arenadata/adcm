@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from adcm.utils import OBJECT_TYPES_DICT
 from cm import models
 from cm.errors import AdcmEx
 from django.contrib.contenttypes.models import ContentType
@@ -22,6 +21,7 @@ from api.concern.serializers import (
     ConcernItemSerializer,
     ConcernItemUISerializer,
 )
+from api.utils import OBJECT_TYPES_DICT
 
 CHOICES = list(zip(OBJECT_TYPES_DICT, OBJECT_TYPES_DICT))
 

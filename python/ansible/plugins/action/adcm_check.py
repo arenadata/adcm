@@ -99,7 +99,7 @@ sys.path.append("/adcm/python")
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from cm.ansible_plugin import create_checklog_object
+from ansible_plugin.utils import create_checklog_object
 from cm.errors import AdcmEx
 from cm.logger import logger
 

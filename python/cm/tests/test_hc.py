@@ -20,8 +20,8 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 from cm.api import add_host_to_cluster, save_hc
 from cm.errors import AdcmEx
-from cm.job import check_hostcomponentmap
 from cm.models import Action, Bundle, ClusterObject, Host, Prototype, ServiceComponent
+from cm.services.job.checks import check_hostcomponentmap
 from cm.tests.test_upgrade import (
     cook_cluster,
     cook_cluster_bundle,

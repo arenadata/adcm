@@ -9,10 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from unittest.mock import patch
 
 from cm.issue import add_concern_to_object
 from cm.models import Action, ConcernType, MaintenanceMode, ServiceComponent
+from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.utils import gen_concern_item
 from django.urls import reverse
 from rest_framework.status import HTTP_200_OK, HTTP_405_METHOD_NOT_ALLOWED, HTTP_409_CONFLICT
@@ -31,7 +31,7 @@ class TestComponentAPI(BaseAPITestCase):
         self.component_2_to_delete = ServiceComponent.objects.get(
             prototype__name="component_2", service=self.service_1, cluster=self.cluster_1
         )
-        self.action_1 = Action.objects.get(name="action_1_comp_1")
+        self.action_1 = Action.objects.get(name="action_1_comp_1", prototype=self.component_1.prototype)
 
     def test_list(self):
         response = self.client.get(
@@ -127,7 +127,7 @@ class TestComponentAPI(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
-        with patch("cm.job.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     "v2:component-action-run",
@@ -142,6 +142,12 @@ class TestComponentAPI(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["id"], run_task.target_task.id)
+        self.assertEqual(run_task.target_task.status, "created")
+
+        run_task.runner.run(run_task.target_task.id)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
 
 
 class TestComponentMaintenanceMode(BaseAPITestCase):

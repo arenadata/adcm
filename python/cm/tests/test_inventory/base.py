@@ -16,11 +16,13 @@ import json
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
 
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import add_hc, update_obj_config
+from cm.converters import model_name_to_core_type
 from cm.models import (
     Action,
     ADCMEntity,
@@ -134,7 +136,10 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
     def assert_inventory(
         self, obj: ADCMEntity, action: Action, expected_topology: dict, expected_data: dict, delta: Delta | None = None
     ) -> None:
-        actual_inventory = decrypt_secrets(source=get_inventory_data(obj=obj, action=action, delta=delta))
+        target = CoreObjectDescriptor(id=obj.id, type=model_name_to_core_type(obj.__class__.__name__))
+        actual_inventory = decrypt_secrets(
+            source=get_inventory_data(target=target, is_host_action=action.host_action, delta=delta)
+        )
 
         self.check_hosts_topology(data=actual_inventory["all"]["children"], expected=expected_topology)
         self.check_data_by_template(data=actual_inventory, templates_data=expected_data)

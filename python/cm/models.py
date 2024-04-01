@@ -19,6 +19,8 @@ import time
 import signal
 import os.path
 
+from core.job.types import ScriptType
+from core.types import ADCMCoreType
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -326,7 +328,7 @@ class ADCMEntity(ADCMModel):
 
     def set_state(self, state: str) -> None:
         self.state = state or self.state
-        self.save()
+        self.save(update_fields=["state"])
         logger.info('set %s state to "%s"', self, state)
 
     def get_id_chain(self) -> dict:
@@ -376,6 +378,11 @@ class ADCMEntity(ADCMModel):
     def content_type(self):
         model_name = self.__class__.__name__.lower()
         return ContentType.objects.get(app_label="cm", model=model_name)
+
+    @classmethod
+    @property
+    def class_content_type(cls):
+        return ContentType.objects.get(app_label="cm", model=cls.__name__.lower())
 
     def delete(self, using=None, keep_parents=False):
         for concern in self.concerns.filter(owner_type=self.content_type, owner_id=self.id):
@@ -1002,10 +1009,7 @@ class ActionType(models.TextChoices):
     JOB = "job", "job"
 
 
-SCRIPT_TYPE = (
-    ("ansible", "ansible"),
-    ("task_generator", "task_generator"),
-)
+SCRIPT_TYPE = tuple((entry.value, entry.value) for entry in ScriptType)
 
 
 def get_any():
@@ -1023,8 +1027,6 @@ class AbstractAction(ADCMModel):
     ui_options = models.JSONField(default=dict)
 
     type = models.CharField(max_length=1000, choices=ActionType.choices)
-    script = models.CharField(max_length=1000)
-    script_type = models.CharField(max_length=1000, choices=SCRIPT_TYPE)
 
     state_available = models.JSONField(default=list)
     state_unavailable = models.JSONField(default=list)
@@ -1037,9 +1039,6 @@ class AbstractAction(ADCMModel):
     multi_state_on_success_unset = models.JSONField(default=list)
     multi_state_on_fail_set = models.JSONField(default=list)
     multi_state_on_fail_unset = models.JSONField(default=list)
-
-    params = models.JSONField(default=dict)
-    log_files = models.JSONField(default=list)
 
     hostcomponentmap = models.JSONField(default=list)
     allow_to_terminate = models.BooleanField(default=False)
@@ -1213,7 +1212,7 @@ class AbstractSubAction(ADCMModel):
     multi_state_on_fail_set = models.JSONField(default=list)
     multi_state_on_fail_unset = models.JSONField(default=list)
     params = models.JSONField(default=dict)
-    allow_to_terminate = models.BooleanField(null=True, default=None)
+    allow_to_terminate = models.BooleanField(default=False)
 
     class Meta:
         abstract = True
@@ -1221,12 +1220,6 @@ class AbstractSubAction(ADCMModel):
 
 class SubAction(AbstractSubAction):
     action = models.ForeignKey(Action, on_delete=models.CASCADE)
-
-    @property
-    def allowed_to_terminate(self) -> bool:
-        if self.allow_to_terminate is None:
-            return self.action.allow_to_terminate
-        return self.allow_to_terminate
 
 
 class HostComponent(ADCMModel):
@@ -1328,6 +1321,7 @@ class JobStatus(models.TextChoices):
     RUNNING = "running", "running"
     LOCKED = "locked", "locked"
     ABORTED = "aborted", "aborted"
+    BROKEN = "broken", "broken"
 
 
 class UserProfile(ADCMModel):
@@ -1339,6 +1333,12 @@ class TaskLog(ADCMModel):
     object_id = models.PositiveIntegerField()
     object_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)
     task_object = GenericForeignKey("object_type", "object_id")
+
+    owner_id = models.PositiveIntegerField(default=0)
+    owner_type = models.CharField(
+        max_length=100, choices=((type_.value, type_.value) for type_ in ADCMCoreType), null=True
+    )
+
     action = models.ForeignKey(Action, on_delete=models.SET_NULL, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
     selector = models.JSONField(default=dict)
@@ -1399,14 +1399,10 @@ class TaskLog(ADCMModel):
         return (self.finish_date - self.start_date).total_seconds()
 
 
-class JobLog(ADCMModel):
+class JobLog(AbstractSubAction):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
-    action = models.ForeignKey(Action, on_delete=models.SET_NULL, null=True, default=None)
-    sub_action = models.ForeignKey(SubAction, on_delete=models.SET_NULL, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
-    selector = models.JSONField(default=dict)
-    log_files = models.JSONField(default=list)
-    status = models.CharField(max_length=1000, choices=JobStatus.choices)
+    status = models.CharField(max_length=1000, choices=JobStatus.choices, default="created")
     start_date = models.DateTimeField(null=True, default=None)
     finish_date = models.DateTimeField(db_index=True, null=True, default=None)
 
@@ -1415,8 +1411,15 @@ class JobLog(ADCMModel):
     class Meta:
         ordering = ["id"]
 
+    @property
+    def action(self) -> Action | None:
+        try:
+            return self.task.action
+        except (ObjectDoesNotExist, AttributeError):
+            return None
+
     def cancel(self):
-        if self.sub_action and not self.sub_action.allowed_to_terminate:
+        if not self.allow_to_terminate:
             raise AdcmEx("JOB_TERMINATION_ERROR", f"Job #{self.pk} can not be terminated")
 
         if self.status != JobStatus.RUNNING or self.pid == 0:
@@ -1605,7 +1608,6 @@ class ConcernItem(ADCMModel):
     `type` is literally type of concern
     `name` is used for (un)setting flags from ansible playbooks
     `reason` is used to display/notify on front-end, text template and data for URL generation
-        should be generated from `MessageTemplate`
     `blocking` blocks actions from running
     `owner` is object-origin of concern
     `cause` is owner's parameter causing concern

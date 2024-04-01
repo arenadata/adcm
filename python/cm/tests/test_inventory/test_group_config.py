@@ -11,7 +11,9 @@
 # limitations under the License.
 
 from api_v2.service.utils import bulk_add_services_to_cluster
+from core.types import CoreObjectDescriptor
 
+from cm.converters import model_name_to_core_type
 from cm.models import (
     Action,
     ObjectType,
@@ -181,7 +183,8 @@ class TestGroupConfigsInInventory(BaseInventoryTestCase):
         ):
             with self.subTest(object_.__class__.__name__):
                 action = Action.objects.filter(prototype=object_.prototype).first()
-                actual_inventory = decrypt_secrets(get_inventory_data(obj=object_, action=action))
+                target = CoreObjectDescriptor(id=object_.id, type=model_name_to_core_type(object_.__class__.__name__))
+                actual_inventory = decrypt_secrets(get_inventory_data(target=target, is_host_action=action.host_action))
                 self.check_hosts_topology(actual_inventory["all"]["children"], expected_topology)
                 self.assertDictEqual(actual_inventory["all"]["vars"], expected_parts["vars"])
                 for group in actual_inventory["all"]["children"].values():

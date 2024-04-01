@@ -33,7 +33,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
 from api_v2.action.serializers import ActionRunSerializer
-from api_v2.action.utils import get_action_configuration, insert_service_ids
+from api_v2.action.utils import get_action_configuration, insert_service_ids, unique_hc_entries
 from api_v2.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
@@ -176,7 +176,9 @@ class UpgradeViewSet(
             upgrade=upgrade,
             config=config,
             attr=attr,
-            hostcomponent=insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),
+            hostcomponent=insert_service_ids(
+                hc_create_data=unique_hc_entries(serializer.validated_data["host_component_map"])
+            ),
             verbose=verbose,
         )
 

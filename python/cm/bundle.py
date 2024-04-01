@@ -738,8 +738,6 @@ def copy_stage_actions(stage_actions, prototype):
         (
             "name",
             "type",
-            "script",
-            "script_type",
             "state_available",
             "state_unavailable",
             "state_on_success",
@@ -750,8 +748,6 @@ def copy_stage_actions(stage_actions, prototype):
             "multi_state_on_success_unset",
             "multi_state_on_fail_set",
             "multi_state_on_fail_unset",
-            "params",
-            "log_files",
             "hostcomponentmap",
             "display_name",
             "description",

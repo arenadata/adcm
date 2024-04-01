@@ -15,11 +15,13 @@ from collections.abc import Iterable
 from urllib.parse import urljoin
 import json
 
+from core.types import CoreObjectDescriptor
 from django.conf import settings
 from requests import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 import requests
 
+from cm.converters import core_type_to_model
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
@@ -28,7 +30,6 @@ from cm.models import (
     Host,
     HostComponent,
     ServiceComponent,
-    TaskLog,
 )
 
 
@@ -119,12 +120,23 @@ def send_config_creation_event(object_: ADCMEntity) -> None:
     )
 
 
+def send_update_event(object_: CoreObjectDescriptor, changes: dict) -> None:
+    post_event(event=EventTypes.UPDATE.format(object_.type.value), object_id=object_.id, changes=changes)
+
+
 def send_object_update_event(object_: ADCMEntity, changes: dict) -> None:
     post_event(event=EventTypes.UPDATE.format(object_.prototype.type), object_id=object_.pk, changes=changes)
 
 
-def send_task_status_update_event(object_: TaskLog, status: str) -> None:
-    post_event(event=EventTypes.UPDATE.format("task"), object_id=object_.pk, changes={"status": status})
+def send_task_status_update_event(task_id: int, status: str) -> None:
+    post_event(event=EventTypes.UPDATE.format("task"), object_id=task_id, changes={"status": status})
+
+
+def send_prototype_update_event(object_: CoreObjectDescriptor) -> None:
+    # todo inplace request, no need in the whole object
+    send_prototype_and_state_update_event(
+        core_type_to_model(core_type=object_.type).objects.select_related("prototype").get(id=object_.id)
+    )
 
 
 def send_prototype_and_state_update_event(object_: ADCMEntity) -> None:

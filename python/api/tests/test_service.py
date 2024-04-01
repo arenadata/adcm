@@ -14,7 +14,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.job import ActionRunPayload
 from cm.models import (
     Action,
     Bundle,
@@ -28,6 +27,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.job.action import ActionRunPayload
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
@@ -120,7 +120,7 @@ class TestServiceAPI(BaseTestCase):
         )
         action = Action.objects.create(prototype=self.service.prototype, name=settings.ADCM_TURN_ON_MM_ACTION_NAME)
 
-        with patch("adcm.utils.run_action") as start_task_mock:
+        with patch("cm.services.maintenance_mode.run_action") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
                 data={"maintenance_mode": "ON"},
@@ -131,18 +131,13 @@ class TestServiceAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["maintenance_mode"], "CHANGING")
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
-        start_task_mock.assert_called_once_with(
-            action=action,
-            obj=self.service,
-            payload=ActionRunPayload(),
-            hosts=[],
-        )
+        start_task_mock.assert_called_once_with(action=action, obj=self.service, payload=ActionRunPayload())
 
     def test_change_maintenance_mode_on_from_on_with_action_fail(self):
         self.service.maintenance_mode = MaintenanceMode.ON
         self.service.save()
 
-        with patch("adcm.utils.run_action") as start_task_mock:
+        with patch("cm.services.job.action.run_action") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
                 data={"maintenance_mode": "ON"},
@@ -180,7 +175,7 @@ class TestServiceAPI(BaseTestCase):
         )
         action = Action.objects.create(prototype=self.service.prototype, name=settings.ADCM_TURN_OFF_MM_ACTION_NAME)
 
-        with patch("adcm.utils.run_action") as start_task_mock:
+        with patch("cm.services.maintenance_mode.run_action") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
                 data={"maintenance_mode": "OFF"},
@@ -191,18 +186,13 @@ class TestServiceAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["maintenance_mode"], "CHANGING")
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
-        start_task_mock.assert_called_once_with(
-            action=action,
-            obj=self.service,
-            payload=ActionRunPayload(),
-            hosts=[],
-        )
+        start_task_mock.assert_called_once_with(action=action, obj=self.service, payload=ActionRunPayload())
 
     def test_change_maintenance_mode_off_to_off_with_action_fail(self):
         self.service.maintenance_mode = MaintenanceMode.OFF
         self.service.save()
 
-        with patch("adcm.utils.run_action") as start_task_mock:
+        with patch("cm.services.job.action.run_action") as start_task_mock:
             response: Response = self.client.post(
                 path=reverse(viewname="v1:service-maintenance-mode", kwargs={"service_id": self.service.pk}),
                 data={"maintenance_mode": "OFF"},
@@ -242,7 +232,7 @@ class TestServiceAPI(BaseTestCase):
     def test_delete_with_action(self):
         action = Action.objects.create(prototype=self.service.prototype, name=settings.ADCM_DELETE_SERVICE_ACTION_NAME)
 
-        with patch("adcm.utils.delete_service"), patch("adcm.utils.run_action") as start_task_mock:
+        with patch("cm.services.service.delete_service"), patch("cm.services.service.run_action") as start_task_mock:
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
@@ -273,36 +263,26 @@ class TestServiceAPI(BaseTestCase):
             component=service_component,
         )
 
-        with patch("adcm.utils.delete_service"), patch("adcm.utils.run_action") as start_task_mock:
+        with patch("cm.services.service.delete_service"), patch("cm.services.service.run_action") as start_task_mock:
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-        start_task_mock.assert_called_once_with(
-            action=action,
-            obj=self.service,
-            payload=ActionRunPayload(),
-            hosts=[],
-        )
+        start_task_mock.assert_called_once_with(action=action, obj=self.service, payload=ActionRunPayload())
 
     def test_delete_with_action_not_created_state(self):
         action = Action.objects.create(prototype=self.service.prototype, name=settings.ADCM_DELETE_SERVICE_ACTION_NAME)
         self.service.state = "not created"
         self.service.save(update_fields=["state"])
 
-        with patch("adcm.utils.delete_service"), patch("adcm.utils.run_action") as start_task_mock:
+        with patch("cm.services.service.delete_service"), patch("cm.services.service.run_action") as start_task_mock:
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-        start_task_mock.assert_called_once_with(
-            action=action,
-            obj=self.service,
-            payload=ActionRunPayload(),
-            hosts=[],
-        )
+        start_task_mock.assert_called_once_with(action=action, obj=self.service, payload=ActionRunPayload())
 
     def test_upload_with_cyclic_requires(self):
         self.upload_and_load_bundle(path=Path(self.base_dir, "python/api/tests/files/bundle_cluster_requires.tar"))
@@ -353,7 +333,7 @@ class TestServiceAPI(BaseTestCase):
         self.service.prototype.required = True
         self.service.prototype.save(update_fields=["required"])
 
-        with patch("adcm.utils.delete_service"):
+        with patch("cm.services.service.delete_service"):
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
@@ -370,7 +350,7 @@ class TestServiceAPI(BaseTestCase):
             source_service=self.service,
         )
 
-        with patch("adcm.utils.delete_service"):
+        with patch("cm.services.service.delete_service"):
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )
@@ -387,7 +367,7 @@ class TestServiceAPI(BaseTestCase):
             source_service=service_2,
         )
 
-        with patch("adcm.utils.delete_service"):
+        with patch("cm.services.service.delete_service"):
             response: Response = self.client.delete(
                 path=reverse(viewname="v1:service-details", kwargs={"service_id": self.service.pk}),
             )

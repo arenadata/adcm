@@ -1,0 +1,23 @@
+- type: cluster
+  name: for_task_runner_tests
+  version: 1.2
+
+  actions:
+    two_ansible_steps:
+      type: task
+      masking:
+      scripts:
+        - name: first
+          script_type: ansible
+          script: ./actions.yaml
+        - name: second
+          script_type: ansible
+          script: ./actions.yaml
+
+- type: service
+  name: simple
+  version: 1
+
+  components:
+    part_1:
+    part_2:

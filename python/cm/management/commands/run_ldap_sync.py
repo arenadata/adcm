@@ -18,8 +18,8 @@ from audit.utils import make_audit_log
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from cm.job import ActionRunPayload, run_action
 from cm.models import ADCM, Action, ConfigLog, JobStatus, TaskLog
+from cm.services.job.action import ActionRunPayload, run_action
 
 logger = logging.getLogger("background_tasks")
 
@@ -51,7 +51,7 @@ class Command(BaseCommand):
         if last_sync is None:
             logger.debug("First ldap sync launched in %s", timezone.now())
             make_audit_log("sync", AuditLogOperationResult.SUCCESS, "launched")
-            task = run_action(action=action, obj=adcm_object, payload=ActionRunPayload(), hosts=[])
+            task = run_action(action=action, obj=adcm_object, payload=ActionRunPayload())
             if task:
                 make_audit_log("sync", AuditLogOperationResult.SUCCESS, "completed")
             else:
@@ -61,7 +61,7 @@ class Command(BaseCommand):
         if new_rotate_time <= timezone.now():
             logger.debug("Ldap sync launched in %s", timezone.now())
             make_audit_log("sync", AuditLogOperationResult.SUCCESS, "launched")
-            task = run_action(action=action, obj=adcm_object, payload=ActionRunPayload(), hosts=[])
+            task = run_action(action=action, obj=adcm_object, payload=ActionRunPayload())
             if task:
                 make_audit_log("sync", AuditLogOperationResult.SUCCESS, "completed")
             else:

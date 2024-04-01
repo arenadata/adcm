@@ -16,7 +16,6 @@ import io
 import tarfile
 
 from adcm import settings
-from adcm.utils import str_remove_non_alnum
 from cm.models import (
     ActionType,
     ClusterObject,
@@ -26,6 +25,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.utils import str_remove_non_alnum
 
 
 def get_task_download_archive_name(task: TaskLog) -> str:
@@ -65,11 +65,9 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
     with tarfile.open(fileobj=file_handler, mode="w:gz") as tar_file:
         for job in jobs:
             if task_dir_name_suffix is None:
-                dir_name_suffix = ""
-                if job.sub_action:
-                    dir_name_suffix = str_remove_non_alnum(value=job.sub_action.display_name) or str_remove_non_alnum(
-                        value=job.sub_action.name,
-                    )
+                dir_name_suffix = str_remove_non_alnum(value=job.display_name or "") or str_remove_non_alnum(
+                    value=job.name
+                )
             else:
                 dir_name_suffix = task_dir_name_suffix
 

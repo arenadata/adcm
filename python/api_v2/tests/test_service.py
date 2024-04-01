@@ -13,7 +13,6 @@
 from typing import NamedTuple
 from unittest.mock import patch
 
-from cm.job import ActionRunPayload, run_action
 from cm.models import (
     Action,
     ADCMEntityStatus,
@@ -28,7 +27,9 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.status.client import FullStatusMap
+from cm.tests.mocks.task_runner import RunTaskMock
 from django.urls import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -252,7 +253,7 @@ class TestServiceAPI(BaseAPITestCase):
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
-        with patch("cm.job.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     viewname="v2:service-action-run",
@@ -266,6 +267,12 @@ class TestServiceAPI(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["id"], run_task.target_task.id)
+        self.assertEqual(run_task.target_task.status, "created")
+
+        run_task.runner.run(run_task.target_task.id)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
 
 
 class TestServiceDeleteAction(BaseAPITestCase):
@@ -322,7 +329,7 @@ class TestServiceDeleteAction(BaseAPITestCase):
     @staticmethod
     def imitate_task_running(action: Action, object_: Cluster | ClusterObject) -> TaskLog:
         with patch("subprocess.Popen", return_value=FakePopenResponse(4)):
-            task = run_action(action=action, obj=object_, payload=ActionRunPayload(), hosts=[])
+            task = run_action(action=action, obj=object_, payload=ActionRunPayload())
 
         job = JobLog.objects.filter(task=task).first()
         job.status = "running"

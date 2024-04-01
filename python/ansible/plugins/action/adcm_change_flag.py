@@ -71,7 +71,7 @@ sys.path.append("/adcm/python")
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from cm.ansible_plugin import check_context_type, get_context_object
+from ansible_plugin.utils import check_context_type, get_context_object
 from cm.flag import remove_flag, update_object_flag
 from cm.logger import logger
 from cm.models import (

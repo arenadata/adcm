@@ -24,6 +24,7 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.services.status.client import FullStatusMap
+from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.utils import gen_component, gen_host, gen_service, generate_hierarchy
 from django.urls import reverse
 from guardian.models import GroupObjectPermission
@@ -37,6 +38,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
+from api_v2.config.utils import convert_adcm_meta_to_attr
 from api_v2.tests.base import BaseAPITestCase
 
 
@@ -329,11 +331,12 @@ class TestCluster(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 6)
+        self.assertEqual(len(response.json()), 7)
         self.assertListEqual(
             [prototype["displayName"] for prototype in response.json()],
             [
                 "service_1",
+                "service_1_clone",
                 "service_2",
                 "service_3_manual_add",
                 "service_4_save_config_without_required_field",
@@ -350,11 +353,12 @@ class TestCluster(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 5)
+        self.assertEqual(len(response.json()), 6)
         self.assertListEqual(
             [prototype["displayName"] for prototype in response.json()],
             [
                 "service_1",
+                "service_1_clone",
                 "service_2",
                 "service_4_save_config_without_required_field",
                 "service_5_variant_type_without_values",
@@ -430,7 +434,7 @@ class TestClusterActions(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_run_cluster_action_success(self):
-        with patch("cm.job.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     viewname="v2:cluster-action-run",
@@ -440,6 +444,12 @@ class TestClusterActions(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["id"], run_task.target_task.id)
+        self.assertEqual(run_task.target_task.status, "created")
+
+        run_task.runner.run(run_task.target_task.id)
+        run_task.target_task.refresh_from_db()
+        self.assertEqual(run_task.target_task.status, "success")
 
     def test_run_action_with_config_success(self):
         config = {
@@ -450,7 +460,7 @@ class TestClusterActions(BaseAPITestCase):
         }
         adcm_meta = {"/activatable_group": {"isActive": True}}
 
-        with patch("cm.job.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     viewname="v2:cluster-action-run",
@@ -460,9 +470,12 @@ class TestClusterActions(BaseAPITestCase):
             )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["id"], run_task.target_task.id)
+        self.assertEqual(run_task.target_task.config, config)
+        self.assertEqual(run_task.target_task.attr, convert_adcm_meta_to_attr(adcm_meta))
 
     def test_run_action_with_config_wrong_configuration_fail(self):
-        with patch("cm.job.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     viewname="v2:cluster-action-run",
@@ -480,11 +493,12 @@ class TestClusterActions(BaseAPITestCase):
                 "level": "error",
             },
         )
+        self.assertIsNone(run_task.target_task)
 
     def test_run_action_with_config_required_adcm_meta_fail(self):
         config = {"simple": "kuku", "grouped": {"simple": 5, "second": 4.3}, "after": ["something"]}
 
-        with patch("cm.job.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     viewname="v2:cluster-action-run",
@@ -497,9 +511,10 @@ class TestClusterActions(BaseAPITestCase):
         self.assertDictEqual(
             response.json(), {"code": "BAD_REQUEST", "desc": "adcm_meta - This field is required.;", "level": "error"}
         )
+        self.assertIsNone(run_task.target_task)
 
     def test_run_action_with_config_required_config_fail(self):
-        with patch("cm.job.run_task", return_value=None):
+        with RunTaskMock() as run_task:
             response = self.client.post(
                 path=reverse(
                     viewname="v2:cluster-action-run",
@@ -512,6 +527,7 @@ class TestClusterActions(BaseAPITestCase):
         self.assertDictEqual(
             response.json(), {"code": "BAD_REQUEST", "desc": "config - This field is required.;", "level": "error"}
         )
+        self.assertIsNone(run_task.target_task)
 
     def test_retrieve_action_with_hc_success(self):
         response = self.client.get(

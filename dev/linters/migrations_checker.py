@@ -24,6 +24,7 @@ ALLOWED_IMPORTS = (
     "django",
     "hashlib",
     "json",
+    "operator",
     "os",
     "typing",
     "uuid",

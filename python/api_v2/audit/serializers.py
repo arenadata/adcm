@@ -10,15 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from audit.models import AuditLog, AuditObject, AuditSession, AuditUser
-from rest_framework.fields import CharField, DateTimeField, DictField, IntegerField
+from audit.models import (
+    AuditLog,
+    AuditLogOperationResult,
+    AuditLogOperationType,
+    AuditObject,
+    AuditObjectType,
+    AuditSession,
+    AuditSessionLoginResult,
+    AuditUser,
+)
+from rest_framework.fields import CharField, ChoiceField, DateTimeField, DictField, IntegerField
 from rest_framework.serializers import ModelSerializer
 
 
 class AuditObjectSerializer(ModelSerializer):
-    id = IntegerField(read_only=True, source="object_id")
-    type = CharField(read_only=True, source="object_type")
-    name = CharField(read_only=True, source="object_name")
+    id = IntegerField(source="object_id")
+    type = ChoiceField(choices=AuditObjectType, source="object_type")
+    name = CharField(source="object_name")
 
     class Meta:
         model = AuditObject
@@ -35,11 +44,12 @@ class AuditUserShortSerializer(ModelSerializer):
 
 class AuditLogSerializer(ModelSerializer):
     time = DateTimeField(source="operation_time")
-    name = CharField(read_only=True, source="operation_name")
-    type = CharField(read_only=True, source="operation_type")
-    result = CharField(read_only=True, source="operation_result")
-    object = AuditObjectSerializer(source="audit_object", read_only=True, allow_null=True)
-    user = AuditUserShortSerializer(read_only=True, allow_null=True)
+    name = CharField(source="operation_name")
+    type = ChoiceField(choices=AuditLogOperationType, source="operation_type")
+    result = ChoiceField(choices=AuditLogOperationResult, source="operation_result")
+    object = AuditObjectSerializer(source="audit_object", allow_null=True)
+    user = AuditUserShortSerializer(allow_null=True)
+    object_changes = DictField()
 
     class Meta:
         model = AuditLog
@@ -57,7 +67,7 @@ class AuditLogSerializer(ModelSerializer):
 
 class AuditSessionSerializer(ModelSerializer):
     user = AuditUserShortSerializer(read_only=True, allow_null=True)
-    result = CharField(source="login_result")
+    result = ChoiceField(choices=AuditSessionLoginResult, source="login_result")
     time = DateTimeField(source="login_time")
     details = DictField(source="login_details")
 

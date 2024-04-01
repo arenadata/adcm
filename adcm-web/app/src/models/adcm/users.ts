@@ -41,7 +41,7 @@ export interface AdcmCreateUserPayload {
   email: string;
   groups: number[];
   password: string;
-  isSuperUser: boolean;
+  isSuperUser?: boolean;
 }
 
 export type UpdateAdcmUserPayload = Omit<AdcmCreateUserPayload, 'username' | 'password'> & {

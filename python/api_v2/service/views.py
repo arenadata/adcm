@@ -18,10 +18,11 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from adcm.utils import delete_service_from_api, get_maintenance_mode_response
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject
+from cm.services.maintenance_mode import get_maintenance_mode_response
+from cm.services.service import delete_service_from_api
 from cm.services.status.notify import update_mm_objects
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin

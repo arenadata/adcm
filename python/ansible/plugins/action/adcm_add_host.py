@@ -51,7 +51,7 @@ from ansible.plugins.action import ActionBase
 
 sys.path.append("/adcm/python")
 import adcm.init_django  # noqa: F401, isort:skip
-from cm.ansible_plugin import get_object_id_from_context
+from ansible_plugin.utils import get_object_id_from_context
 from cm.api import add_host
 from cm.errors import AdcmEx
 from cm.logger import logger
@@ -65,7 +65,7 @@ class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
         super().run(tmp, task_vars)
 
-        provider_pk = get_object_id_from_context(
+        provider_pk, _ = get_object_id_from_context(
             task_vars=task_vars,
             id_type="provider_id",
             context_types=("provider",),

@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from adcm.serializers import EmptySerializer
-from adcm.utils import filter_actions
 from cm.adcm_config.config import get_main_info
 from cm.models import MAINTENANCE_MODE_BOTH_CASES_CHOICES, Action, ServiceComponent
 from cm.status_api import get_component_status
@@ -30,7 +29,7 @@ from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL
+from api.utils import CommonAPIURL, ObjectURL, filter_actions
 
 
 class ComponentSerializer(EmptySerializer):

@@ -19,3 +19,8 @@
   &__email { grid-area: email; }
   &__groups { grid-area: groups; }
 }
+
+.markerIcon {
+  position: absolute;
+  margin: 3px 10px 0;
+}

@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from adcm.serializers import EmptySerializer
-from adcm.utils import filter_actions
 from cm.adcm_config.config import get_main_info
 from cm.api import add_service_to_cluster, bind, multi_bind
 from cm.errors import AdcmEx
@@ -44,7 +43,7 @@ from api.component.serializers import ComponentUISerializer
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import StringListSerializer
-from api.utils import CommonAPIURL, ObjectURL, check_obj
+from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
 
 
 class ServiceSerializer(EmptySerializer):
