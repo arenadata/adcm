@@ -35,7 +35,8 @@ const ExpandableRow = ({
 
   const setRowNewWidth = useCallback(() => {
     if (!refRow.current) return;
-    setRowWidth(refRow.current.offsetWidth);
+    const parent = refRow.current.closest(`.${t.tableWrapper}`) as HTMLDivElement;
+    setRowWidth(parent ? parent.offsetWidth : refRow.current.offsetWidth);
   }, []);
 
   useResizeObserver(refRow, setRowNewWidth);
