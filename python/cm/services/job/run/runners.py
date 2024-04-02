@@ -269,7 +269,7 @@ class JobSequenceRunner(TaskRunner):
 
         if (
             self._runtime.status in {ExecutionStatus.FAILED, ExecutionStatus.ABORTED, ExecutionStatus.BROKEN}
-            and finished_task.hostcomponent.saved is not None
+            and finished_task.action.hc_acl
             and finished_task.hostcomponent.restore_on_fail
         ):
             set_hostcomponent(task=finished_task, logger=self._logger)
