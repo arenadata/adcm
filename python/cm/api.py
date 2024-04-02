@@ -15,6 +15,7 @@ from typing import Literal, TypedDict
 import json
 
 from adcm_version import compare_prototype_versions
+from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
 from django.db.transaction import atomic, on_commit
@@ -29,8 +30,8 @@ from cm.adcm_config.config import (
 )
 from cm.adcm_config.utils import proto_ref
 from cm.api_context import CTX
+from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx, raise_adcm_ex
-from cm.flag import update_object_flag
 from cm.issue import (
     add_concern_to_object,
     check_bound_components,
@@ -47,6 +48,7 @@ from cm.models import (
     Cluster,
     ClusterBind,
     ClusterObject,
+    ConcernItem,
     ConcernType,
     ConfigLog,
     GroupConfig,
@@ -61,6 +63,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.concern.flags import BuiltInFlag, raise_flag, update_hierarchy
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import (
     send_config_creation_event,
@@ -458,7 +461,19 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
     with atomic():
         config_log = save_object_config(object_config=obj_conf, config=new_conf, attr=attr, description=description)
         update_hierarchy_issues(obj=obj)
-        update_object_flag(obj=obj)
+
+        if obj.prototype.flag_autogeneration.get("enable_outdated_config", False):
+            # todo implement it in a better way
+            flag = BuiltInFlag.ADCM_OUTDATED_CONFIG.value
+            flag_exists = obj.concerns.filter(name=flag.name, type=ConcernType.FLAG).exists()
+            raise_flag(flag=flag, on_objects=[CoreObjectDescriptor(id=obj.id, type=orm_object_to_core_type(obj))])
+            if not flag_exists:
+                update_hierarchy(
+                    concern=ConcernItem.objects.get(
+                        name=flag.name, type=ConcernType.FLAG, owner_id=obj.id, owner_type=obj.content_type
+                    )
+                )
+
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     send_config_creation_event(object_=obj)

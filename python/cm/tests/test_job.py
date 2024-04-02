@@ -18,21 +18,17 @@ from urllib.parse import urljoin
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from django.conf import settings
 from django.urls import reverse
-from django.utils import timezone
 from init_db import init
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
 
-from cm.issue import lock_affected_objects
 from cm.models import (
     Action,
     Bundle,
     JobLog,
     JobStatus,
     Prototype,
-    TaskLog,
 )
-from cm.tests.utils import gen_cluster
 
 
 def get_bundle_root(action: Action) -> str:
@@ -105,39 +101,6 @@ class TestJob(BaseTestCase):
             JobLog.objects.filter(pk=target_job["id"]).update(status=force_job_status, pid=self.job_fake_pid)
 
         return response, target_job
-
-    def test_set_job_status(self):
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
-        action = Action.objects.create(prototype=prototype, name="action_name", display_name="Test Action")
-        cluster = gen_cluster(prototype=prototype)
-        task = TaskLog.objects.create(
-            task_object=cluster,
-            action=action,
-            object_id=1,
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-        )
-        job = JobLog.objects.create(task=task, start_date=timezone.now(), finish_date=timezone.now())
-        lock_affected_objects(task=task, objects=[cluster])
-        status = JobStatus.RUNNING
-        pid = 10
-
-        job = JobLog.objects.get(id=job.id)
-        job.status = JobStatus.RUNNING
-        job.start_date = timezone.now()
-        job.pid = pid
-        job.save(update_fields=["status", "start_date", "pid"])
-
-        if job.task.lock and job.task.task_object:
-            job.task.lock.reason = job.cook_reason()
-            job.task.lock.save(update_fields=["reason"])
-
-        job = JobLog.objects.get(id=job.id)
-
-        self.assertEqual(job.status, status)
-        self.assertEqual(job.pid, pid)
-        self.assertEqual(task.lock.reason["placeholder"]["job"]["name"], action.display_name)
 
     def test_get_bundle_root(self):
         bundle = Bundle.objects.create()

@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 DOCUMENTATION = """
 ---
 module: adcm_change_flag
@@ -66,13 +67,15 @@ import sys
 
 from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
+from cm.converters import orm_object_to_core_type
+from cm.services.concern.flags import BuiltInFlag, lower_flag, raise_flag
+from core.types import CoreObjectDescriptor
 
 sys.path.append("/adcm/python")
 
 import adcm.init_django  # noqa: F401, isort:skip
 
 from ansible_plugin.utils import check_context_type, get_context_object
-from cm.flag import remove_flag, update_object_flag
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
@@ -183,9 +186,9 @@ class ActionModule(ActionBase):
         super().run(tmp, task_vars)
         self._check_args()
 
-        msg = ""
-        if "msg" in self._task.args:
-            msg = str(self._task.args["msg"])
+        # msg = ""
+        # if "msg" in self._task.args:
+        #     msg = str(self._task.args["msg"])
 
         objects = []
         context_obj = get_context_object(task_vars=task_vars)
@@ -195,11 +198,14 @@ class ActionModule(ActionBase):
             objects.append(context_obj)
 
         for obj in objects:
+            target = CoreObjectDescriptor(id=obj.id, type=orm_object_to_core_type(obj))
             if self._task.args["operation"] == "up":
-                update_object_flag(obj=obj, msg=msg)
+                # todo rework
+                raise_flag(flag=BuiltInFlag.ADCM_OUTDATED_CONFIG.value, on_objects=[target])
                 send_object_update_event(object_=obj, changes={"status": ADCMEntityStatus.UP.value})
             elif self._task.args["operation"] == "down":
-                remove_flag(obj=obj, msg=msg)
+                # todo rework
+                lower_flag(name=BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name, on_objects=[target])
                 send_object_update_event(object_=obj, changes={"status": ADCMEntityStatus.DOWN.value})
 
         return {"failed": False, "changed": True}

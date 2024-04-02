@@ -425,7 +425,9 @@ def _get_kwargs_for_issue(concern_name: ConcernMessage, source: ADCMEntity) -> d
 def create_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernItem:
     concern_message = _issue_template_map[issue_cause]
     kwargs = _get_kwargs_for_issue(concern_name=concern_message, source=obj)
-    reason = build_concern_reason(concern_message=concern_message, placeholder_objects=PlaceholderObjectsDTO(**kwargs))
+    reason = build_concern_reason(
+        template=concern_message.template, placeholder_objects=PlaceholderObjectsDTO(**kwargs)
+    )
     type_: str = ConcernType.ISSUE.value
     cause: str = issue_cause.value
     return ConcernItem.objects.create(
@@ -555,7 +557,7 @@ def create_lock(owner: ADCMEntity, job: JobLog):
         type=type_,
         name=f"{cause or ''}_{type_}".strip("_"),
         reason=build_concern_reason(
-            ConcernMessage.LOCKED_BY_JOB, placeholder_objects=PlaceholderObjectsDTO(job=job, target=owner)
+            ConcernMessage.LOCKED_BY_JOB.template, placeholder_objects=PlaceholderObjectsDTO(job=job, target=owner)
         ),
         blocking=True,
         owner=owner,
@@ -565,7 +567,7 @@ def create_lock(owner: ADCMEntity, job: JobLog):
 
 def update_job_in_lock_reason(lock: ConcernItem, job: JobLog) -> ConcernItem:
     lock.reason = build_concern_reason(
-        ConcernMessage.LOCKED_BY_JOB, placeholder_objects=PlaceholderObjectsDTO(job=job, target=lock.owner)
+        ConcernMessage.LOCKED_BY_JOB.template, placeholder_objects=PlaceholderObjectsDTO(job=job, target=lock.owner)
     )
     lock.save(update_fields=["reason"])
     return lock

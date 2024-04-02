@@ -27,7 +27,7 @@ def remove_unlinked_concerns(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("contenttypes", "0002_remove_content_type_name"),
-        ("cm", "0116_delete_MessageTemplate"),
+        ("cm", "0119_delete_MessageTemplate"),
     ]
 
     operations = [
@@ -73,7 +73,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="concernitem",
             constraint=models.UniqueConstraint(
-                fields=("name", "owner_id", "owner_type"), name="cm_concernitem_name_owner_uc"
+                fields=("name", "owner_id", "owner_type", "type"), name="cm_concernitem_name_owner_uc"
             ),
         ),
     ]

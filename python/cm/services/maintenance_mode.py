@@ -15,9 +15,9 @@ from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
 
-from cm.flag import update_flags
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.models import Action, ClusterObject, Host, HostComponent, MaintenanceMode, Prototype, ServiceComponent
+from cm.services.concern.flags import update_flags
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import send_object_update_event

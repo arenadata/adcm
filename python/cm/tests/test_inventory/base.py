@@ -11,17 +11,16 @@
 # limitations under the License.
 from functools import reduce
 from pathlib import Path
-from typing import Any, Callable, Iterable, Literal, Mapping, TypeAlias
+from typing import Any, Iterable, Literal, Mapping, TypeAlias
 import json
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
-from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
 
 from cm.adcm_config.ansible import ansible_decrypt
-from cm.api import add_hc, update_obj_config
+from cm.api import add_hc
 from cm.converters import model_name_to_core_type
 from cm.models import (
     Action,
@@ -29,7 +28,6 @@ from cm.models import (
     ADCMModel,
     Cluster,
     ClusterObject,
-    ConfigLog,
     GroupConfig,
     Host,
     HostComponent,
@@ -38,7 +36,6 @@ from cm.models import (
 )
 from cm.services.job.inventory import get_inventory_data
 from cm.services.job.types import HcAclAction
-from cm.utils import deep_merge
 
 TemplatesData: TypeAlias = Mapping[tuple[str, ...], tuple[Path, Mapping[str, Any]]]
 MappingEntry: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], int]
@@ -94,30 +91,6 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
                 for host, component in entries
             ],
         )
-
-    @staticmethod
-    def change_configuration(
-        target: ADCMModel | GroupConfig,
-        config_diff: dict,
-        meta_diff: dict | None = None,
-        preprocess_config: Callable[[dict], dict] = lambda x: x,
-    ) -> ConfigLog:
-        meta = meta_diff or {}
-
-        target.refresh_from_db()
-        current_config = ConfigLog.objects.get(id=target.config.current)
-
-        updated = update_obj_config(
-            obj_conf=target.config,
-            config=deep_merge(origin=preprocess_config(current_config.config), renovator=config_diff),
-            attr=convert_adcm_meta_to_attr(
-                deep_merge(origin=convert_attr_to_adcm_meta(current_config.attr), renovator=meta)
-            ),
-            description="",
-        )
-        target.refresh_from_db()
-
-        return updated
 
     def check_data_by_template(self, data: Mapping[str, dict], templates_data: TemplatesData) -> None:
         for key_chain, template_data in templates_data.items():
