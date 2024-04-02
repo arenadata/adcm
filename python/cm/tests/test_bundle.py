@@ -13,7 +13,7 @@
 from pathlib import Path
 import json
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase, BundleLogicMixin
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase, BundleLogicMixin, BusinessLogicMixin
 from django.conf import settings
 from django.db import IntegrityError
 from django.urls import reverse
@@ -29,7 +29,7 @@ from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import delete_host_provider
 from cm.bundle import delete_bundle
 from cm.errors import AdcmEx
-from cm.models import Bundle, ConfigLog, SubAction
+from cm.models import ADCMEntity, Bundle, ClusterObject, ConfigLog, ServiceComponent, SubAction
 from cm.services.bundle import detect_path_for_file_in_bundle
 from cm.tests.test_upgrade import (
     cook_cluster,
@@ -39,11 +39,17 @@ from cm.tests.test_upgrade import (
 )
 
 
-class TestBundle(BaseTestCase):
+class TestBundle(BaseTestCase, BusinessLogicMixin):
     def setUp(self) -> None:
         super().setUp()
 
         self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
+
+    def get_component(self, service: ClusterObject, component_name: str) -> ServiceComponent:
+        return ServiceComponent.objects.get(service=service, prototype__name=component_name)
+
+    def enable_outdated_config_is(self, entity: ADCMEntity, expected_value: bool):
+        self.assertEqual(entity.prototype.flag_autogeneration["enable_outdated_config"], expected_value)
 
     def test_path_resolution(self) -> None:
         bundle_root = Path(__file__).parent / "files" / "files_with_symlinks"
@@ -63,6 +69,40 @@ class TestBundle(BaseTestCase):
 
         result = detect_path_for_file_in_bundle(bundle_root=bundle_root, config_yaml_dir=Path(), file="./another_link")
         self.assertEqual(result, bundle_root / "another_link")
+
+    def test_flag_autogeneration_inheritance(self) -> None:
+        directory = Path(__file__).parent / "bundles" / "flag_autogeneration"
+
+        for bundle_name, cluster_flag_value in (("cluster_true", True), ("cluster_undefined", False)):
+            bundle = self.add_bundle(source_dir=directory / bundle_name)
+            cluster = self.add_cluster(bundle=bundle, name=f"Cluster {cluster_flag_value}")
+            defined_false, defined_true, not_defined = self.add_services_to_cluster(
+                ["defined_false", "defined_true", "not_defined"], cluster=cluster
+            ).order_by("prototype__name")
+
+            self.enable_outdated_config_is(cluster, cluster_flag_value)
+            self.enable_outdated_config_is(not_defined, cluster_flag_value)
+            self.enable_outdated_config_is(defined_true, True)
+            self.enable_outdated_config_is(defined_false, False)
+            for service in not_defined, defined_true, defined_false:
+                parent_value = service.prototype.flag_autogeneration["enable_outdated_config"]
+                self.enable_outdated_config_is(self.get_component(service, "not_defined"), parent_value)
+                self.enable_outdated_config_is(self.get_component(service, "defined_true"), True)
+                self.enable_outdated_config_is(self.get_component(service, "defined_false"), False)
+
+        bundle = self.add_bundle(source_dir=directory / "provider_false_host_true")
+        provider = self.add_provider(bundle=bundle, name="Provider False")
+        host = self.add_host(bundle=bundle, provider=provider, fqdn="host-true")
+
+        self.enable_outdated_config_is(provider, False)
+        self.enable_outdated_config_is(host, True)
+
+        bundle = self.add_bundle(source_dir=directory / "provider_true_host_undefined")
+        provider = self.add_provider(bundle=bundle, name="Provider True")
+        host = self.add_host(bundle=bundle, provider=provider, fqdn="host-undef")
+
+        self.enable_outdated_config_is(provider, True)
+        self.enable_outdated_config_is(host, True)
 
     def test_bundle_upload_duplicate_upgrade_fail(self):
         with self.assertRaises(IntegrityError):

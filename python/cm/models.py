@@ -247,7 +247,7 @@ class Prototype(ADCMModel):
     config_group_customization = models.BooleanField(default=False)
     venv = models.CharField(default="default", max_length=1000, blank=False)
     allow_maintenance_mode = models.BooleanField(default=False)
-    allow_flags = models.BooleanField(default=False)
+    flag_autogeneration = models.JSONField(default=dict)
 
     __error_code__ = "PROTOTYPE_NOT_FOUND"
 
@@ -1508,7 +1508,7 @@ class StagePrototype(ADCMModel):
     config_group_customization = models.BooleanField(default=False)
     venv = models.CharField(default="default", max_length=1000, blank=False)
     allow_maintenance_mode = models.BooleanField(default=False)
-    allow_flags = models.BooleanField(default=False)
+    flag_autogeneration = models.JSONField(default=dict)
 
     __error_code__ = "PROTOTYPE_NOT_FOUND"
 
@@ -1625,7 +1625,9 @@ class ConcernItem(ADCMModel):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(name="cm_concernitem_name_owner_uc", fields=("name", "owner_id", "owner_type"))
+            models.UniqueConstraint(
+                name="cm_concernitem_name_owner_uc", fields=("name", "owner_id", "owner_type", "type")
+            )
         ]
 
     @property

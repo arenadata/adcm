@@ -118,8 +118,7 @@ class TestConcernsResponse(BaseAPITestCase):
     def test_outdated_config_flag(self):
         cluster = self.add_cluster(bundle=self.config_flag_bundle, name="config_flag_cluster")
         expected_concern_reason = {
-            # todo fix expectations, because it was expected CONFIG_FLAG
-            "message": ConcernMessage.FLAG.template.message,
+            "message": f"{ConcernMessage.FLAG.template.message}outdated config",
             "placeholder": {"source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster"}},
         }
 

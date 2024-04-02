@@ -281,7 +281,7 @@ def save_prototype(
 
     dict_to_obj(dictionary=conf, key="config_group_customization", obj=prototype)
     dict_to_obj(dictionary=conf, key="allow_maintenance_mode", obj=prototype)
-    dict_to_obj(dictionary=conf, key="allow_flags", obj=prototype)
+    dict_to_obj(dictionary=conf, key="flag_autogeneration", obj=prototype)
 
     fix_display_name(conf=conf, obj=prototype)
     license_hash = get_license_hash(proto=prototype, conf=conf, bundle_hash=bundle_hash)
@@ -360,11 +360,12 @@ def save_components(proto: StagePrototype, conf: dict, bundle_hash: str) -> None
         dict_to_obj(dictionary=component_conf, key="requires", obj=component)
         dict_to_obj(dictionary=component_conf, key="venv", obj=component)
         dict_to_obj(dictionary=component_conf, key="bound_to", obj=component)
+        dict_to_obj(dictionary=component_conf, key="flag_autogeneration", obj=component)
 
         process_config_group_customization(actual_config=component_conf, obj=component)
 
         dict_to_obj(dictionary=component_conf, key="config_group_customization", obj=component)
-        dict_to_obj(dictionary=component_conf, key="allow_flags", obj=component)
+        dict_to_obj(dictionary=component_conf, key="enable_outdated_config", obj=component)
 
         component.save()
 

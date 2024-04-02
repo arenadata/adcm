@@ -1,0 +1,36 @@
+- type: cluster
+  name: cluster_auto_undefined
+  version: 1
+
+- type: service
+  name: not_defined
+  version: 2
+
+  components: &components
+    not_defined:
+
+    defined_true:
+      flag_autogeneration:
+        enable_outdated_config: true
+
+    defined_false:
+      flag_autogeneration:
+        enable_outdated_config: false
+
+- type: service
+  name: defined_true
+  version: 3
+
+  flag_autogeneration:
+    enable_outdated_config: true
+
+  components: *components
+
+- type: service
+  name: defined_false
+  version: 4
+
+  flag_autogeneration:
+    enable_outdated_config: false
+
+  components: *components

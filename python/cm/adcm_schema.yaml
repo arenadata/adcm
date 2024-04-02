@@ -34,11 +34,16 @@ common_object: &common_object
     config: config_obj
     actions: actions_dict
     venv: string
-    allow_flags: boolean
+    flag_autogeneration: flag_autogeneration_object
   required_items:
     - type
     - name
     - version
+
+flag_autogeneration_object:
+  match: dict
+  items:
+    enable_outdated_config: boolean
 
 service_object:
   <<: *common_object
@@ -117,7 +122,7 @@ component_dict:
     config: config_obj
     actions: actions_dict
     config_group_customization: boolean
-    allow_flags: boolean
+    flag_autogeneration: flag_autogeneration_object
     venv: string
 
 comp_req_list:

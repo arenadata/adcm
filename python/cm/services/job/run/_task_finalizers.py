@@ -21,6 +21,7 @@ from cm.api import save_hc
 from cm.converters import core_type_to_model
 from cm.issue import unlock_affected_objects, update_hierarchy_issues
 from cm.models import ClusterObject, Host, JobLog, MaintenanceMode, ServiceComponent, TaskLog, get_object_cluster
+from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, build_concern_reason
 from cm.status_api import send_object_update_event
 
 # todo "unwrap" these functions to use repo without directly calling ORM,
@@ -31,7 +32,10 @@ from cm.status_api import send_object_update_event
 def set_job_lock(job_id: int) -> None:
     job = JobLog.objects.select_related("task").get(pk=job_id)
     if job.task.lock and job.task.task_object:
-        job.task.lock.reason = job.cook_reason()
+        job.task.lock.reason = build_concern_reason(
+            ConcernMessage.LOCKED_BY_JOB.template,
+            placeholder_objects=PlaceholderObjectsDTO(job=job, target=job.task.task_object),
+        )
         job.task.lock.save(update_fields=["reason"])
 
 

@@ -15,14 +15,15 @@ from operator import itemgetter
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import Iterable, TypedDict
+from typing import Callable, Iterable, TypedDict
 import random
 import string
 import tarfile
 
+from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from api_v2.prototype.utils import accept_license
 from api_v2.service.utils import bulk_add_services_to_cluster
-from cm.api import add_cluster, add_hc, add_host, add_host_provider, add_host_to_cluster
+from cm.api import add_cluster, add_hc, add_host, add_host_provider, add_host_to_cluster, update_obj_config
 from cm.bundle import prepare_bundle, process_file
 from cm.models import (
     ADCM,
@@ -32,6 +33,7 @@ from cm.models import (
     Cluster,
     ClusterObject,
     ConfigLog,
+    GroupConfig,
     Host,
     HostComponent,
     HostProvider,
@@ -39,6 +41,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.utils import deep_merge
 from core.rbac.dto import UserCreateDTO
 from django.conf import settings
 from django.db.models import QuerySet
@@ -538,3 +541,27 @@ class BusinessLogicMixin(BundleLogicMixin):
         if delete_role:
             custom_role.delete()
         group.delete()
+
+    @staticmethod
+    def change_configuration(
+        target: ADCMModel | GroupConfig,
+        config_diff: dict,
+        meta_diff: dict | None = None,
+        preprocess_config: Callable[[dict], dict] = lambda x: x,
+    ) -> ConfigLog:
+        meta = meta_diff or {}
+
+        target.refresh_from_db()
+        current_config = ConfigLog.objects.get(id=target.config.current)
+
+        updated = update_obj_config(
+            obj_conf=target.config,
+            config=deep_merge(origin=preprocess_config(current_config.config), renovator=config_diff),
+            attr=convert_adcm_meta_to_attr(
+                deep_merge(origin=convert_attr_to_adcm_meta(current_config.attr), renovator=meta)
+            ),
+            description="",
+        )
+        target.refresh_from_db()
+
+        return updated

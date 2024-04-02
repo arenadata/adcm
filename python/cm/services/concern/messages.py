@@ -77,30 +77,26 @@ def _retrieve_placeholder_from_prototype(entity: Prototype) -> dict:
 
 
 def _retrieve_placeholder_from_job(entity: JobLog) -> dict:
-    # todo should be updated after task rework feature branch is merged
-    #  name should be taken from `entity.task.display_name`
-    action = entity.sub_action or entity.action
-
     return {
         "type": "job",
-        "name": action.display_name or action.name,
+        "name": entity.display_name or entity.name,
         # todo should it be job id or task id?
         "params": {"job_id": entity.task.id},
     }
 
 
-ADCM_ENTITY_SOURCE_RESOLVER = Placeholders(retrieve_source=_retrieve_placeholder_from_adcm_entity)
+ADCM_ENTITY_AS_PLACEHOLDERS = Placeholders(retrieve_source=_retrieve_placeholder_from_adcm_entity)
 
 
 class ConcernMessage(Enum):
     CONFIG_ISSUE = ConcernMessageTemplate(
-        message="${source} has an issue with its config", placeholders=ADCM_ENTITY_SOURCE_RESOLVER
+        message="${source} has an issue with its config", placeholders=ADCM_ENTITY_AS_PLACEHOLDERS
     )
     HOST_COMPONENT_ISSUE = ConcernMessageTemplate(
-        message="${source} has an issue with host-component mapping", placeholders=ADCM_ENTITY_SOURCE_RESOLVER
+        message="${source} has an issue with host-component mapping", placeholders=ADCM_ENTITY_AS_PLACEHOLDERS
     )
     REQUIRED_IMPORT_ISSUE = ConcernMessageTemplate(
-        message="${source} has an issue with required import", placeholders=ADCM_ENTITY_SOURCE_RESOLVER
+        message="${source} has an issue with required import", placeholders=ADCM_ENTITY_AS_PLACEHOLDERS
     )
     REQUIRED_SERVICE_ISSUE = ConcernMessageTemplate(
         message="${source} require service ${target} to be installed",
@@ -122,17 +118,13 @@ class ConcernMessage(Enum):
         ),
     )
     # todo update message and naming here
-    FLAG = ConcernMessageTemplate(
-        message="${source} has an outdated configuration", placeholders=ADCM_ENTITY_SOURCE_RESOLVER
-    )
+    FLAG = ConcernMessageTemplate(message="${source} has a flag: ", placeholders=ADCM_ENTITY_AS_PLACEHOLDERS)
 
     def __init__(self, template: ConcernMessageTemplate):
-        self.template = template
+        self.template: ConcernMessageTemplate = template
 
 
-def build_concern_reason(concern_message: ConcernMessage, placeholder_objects: PlaceholderObjectsDTO) -> dict:
-    template = concern_message.template
-
+def build_concern_reason(template: ConcernMessageTemplate, placeholder_objects: PlaceholderObjectsDTO) -> dict:
     resolved_placeholders = {}
     for placeholder_name in ("source", "target", "job"):
         placeholder: Placeholder = getattr(template.placeholders, placeholder_name)
@@ -142,7 +134,7 @@ def build_concern_reason(concern_message: ConcernMessage, placeholder_objects: P
         entity = getattr(placeholder_objects, placeholder_name)
         if entity is None:
             # todo if there will be cases when those can be null, set placeholder to `{}` instead of error
-            message = f"Concern message {concern_message.name} requires `{placeholder_name}` to fill placeholders"
+            message = f"Concern message '{template.message}' requires `{placeholder_name}` to fill placeholders"
             raise RuntimeError(message)
 
         resolved_placeholders[placeholder_name] = placeholder.retrieve(entity)
