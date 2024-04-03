@@ -14,6 +14,7 @@ from adcm import settings
 from adcm.serializers import EmptySerializer
 from cm.models import Cluster, Host, HostComponent, HostProvider, MaintenanceMode, ServiceComponent
 from cm.validators import HostUniqueValidator, StartMidEndValidator
+from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import (
     CharField,
     ChoiceField,
@@ -87,6 +88,7 @@ class HostSerializer(WithStatusSerializer):
         ]
 
     @staticmethod
+    @extend_schema_field(field=HCComponentNameSerializer)
     def get_components(instance: Host) -> list[dict]:
         return HCComponentNameSerializer(
             instance=[hc.component for hc in instance.hostcomponent_set.all()], many=True
