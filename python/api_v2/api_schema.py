@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from adcm.serializers import EmptySerializer
+from drf_spectacular.utils import OpenApiParameter
 from rest_framework.fields import CharField
 
 
@@ -18,3 +19,8 @@ class ErrorSerializer(EmptySerializer):
     code = CharField()
     level = CharField()
     desc = CharField()
+
+
+class DefaultParams:
+    LIMIT = OpenApiParameter(name="limit", description="Number of records included in the selection.", type=int)
+    OFFSET = OpenApiParameter(name="offset", description="Record number from which the selection starts.", type=int)
