@@ -14,6 +14,7 @@ import {
 import { useParams } from 'react-router-dom';
 import { AdcmConfigGroup } from '@models/adcm';
 import ServiceConfigGroupDialogs from './ServiceConfigGroupDialogs/ServiceConfigGroupDialogs';
+import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const ServiceConfigurationGroups: React.FC = () => {
   const dispatch = useDispatch();
@@ -23,6 +24,7 @@ const ServiceConfigurationGroups: React.FC = () => {
   const serviceId = Number(serviceIdFromUrl);
 
   const { clusterServiceConfigGroups, isLoading } = useStore((s) => s.adcm.serviceConfigGroups);
+  const accessCheckStatus = useStore((s) => s.adcm.serviceConfigGroups.accessCheckStatus);
   const sortParams = useStore((s) => s.adcm.serviceConfigGroupsTable.sortParams);
   useRequestServiceConfigGroups();
 
@@ -42,7 +44,7 @@ const ServiceConfigurationGroups: React.FC = () => {
   };
 
   return (
-    <div>
+    <PermissionsChecker requestState={accessCheckStatus}>
       <ConfigGroupsHeader onCreate={handleCreateConfigGroup} />
       <ConfigGroupsTable
         configGroups={clusterServiceConfigGroups}
@@ -56,7 +58,7 @@ const ServiceConfigurationGroups: React.FC = () => {
       <ServiceConfigGroupTableFooter />
 
       <ServiceConfigGroupDialogs />
-    </div>
+    </PermissionsChecker>
   );
 };
 
