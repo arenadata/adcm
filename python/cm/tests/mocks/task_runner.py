@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from abc import ABC
 from datetime import datetime
 from functools import partial
 from typing import Any, Callable, Generator, Iterable, NamedTuple
@@ -26,7 +25,7 @@ from cm.services.job.run import get_default_runner, run_task
 from cm.services.job.run._target_factories import ExecutionTargetFactory
 
 
-def do_nothing():
+def do_nothing(*_, **__):
     return None
 
 
@@ -40,8 +39,12 @@ class FailedJobInfo(NamedTuple):
 
 
 class JobImitator(NamedTuple):
-    call: Callable[[], Any] = do_nothing
+    call: Callable[[Executor], Any] = do_nothing
     return_code: int = 0
+    use_call_return_code: bool = False
+
+
+default_imitator = JobImitator()
 
 
 # ExecutionTarget Factories
@@ -66,16 +69,15 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
                 executor = InternalExecutorMock(config=ExecutorConfig(work_dir=work_dir), script=script)
 
             else:
-                executor_class = SuccessExecutorMock
                 executor_kwargs = {}
                 if self._failed_job is not None and job_num == self._failed_job.position:
-                    executor_class = FailExecutorMock
                     executor_kwargs = {"return_code": self._failed_job.return_code}
 
-                executor = executor_class(
+                job_imitator = JobImitator(**executor_kwargs)
+                executor = MockExecutor(
                     script_type=job.script,
+                    imitator=job_imitator,
                     config=ExecutorConfig(work_dir=configuration.adcm.run_dir / str(job.id)),
-                    **executor_kwargs,
                 )
 
             yield ExecutionTarget(
@@ -91,7 +93,7 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
         super().__init__()
 
         self.imitators = change_jobs or {}
-        self.default_imitator = JobImitator()
+        self.default_imitator = default_imitator
 
     def __call__(
         self, task: Task, jobs: Iterable[Job], configuration: ExternalSettings
@@ -102,15 +104,10 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
                 continue
 
             imitator = self.imitators.get(i, self.default_imitator)
-            common_kwargs = {
-                "script_type": target.executor.script_type,
-                "config": ExecutorConfig(work_dir=configuration.adcm.run_dir / str(target.job.id)),
-                "on_execute_": imitator.call,
-            }
-            executor = (
-                SuccessExecutorMock(**common_kwargs)
-                if imitator.return_code == 0
-                else FailExecutorMock(**common_kwargs, return_code=imitator.return_code)
+            executor = MockExecutor(
+                script_type=target.executor.script_type,
+                config=ExecutorConfig(work_dir=configuration.adcm.run_dir / str(target.job.id)),
+                imitator=imitator,
             )
 
             yield ExecutionTarget(
@@ -124,18 +121,29 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
 # Executors
 
 
-class MockExecutor(Executor, ABC):
-    def __init__(self, *args, on_execute_: Callable[[], Any] = lambda: None, **kwargs):
+class MockExecutor(Executor):
+    def __init__(self, *args, script_type: str = "ansible", imitator: JobImitator = default_imitator, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._on_execute = on_execute_
+        self._script_type = script_type
+
+        if imitator.return_code < 0:
+            message = "Only integers >= 0 are allowed as return code"
+            raise ValueError(message)
+
+        self._imitator = imitator
+
+    @property
+    def script_type(self) -> str:
+        return self._script_type
 
     def execute(self) -> Self:
-        self._on_execute()
+        result = self._imitator.call(self)
+        code = result if self._imitator.use_call_return_code else self._imitator.return_code
+        self._result = ExecutionResult(code=code)
         return self
 
     def wait_finished(self) -> Self:
-        self._result = ExecutionResult(code=0)
         return self
 
 
@@ -147,30 +155,7 @@ class InternalExecutorMock(MockExecutor):
         self._script = script
 
     def execute(self) -> Self:
-        return self._script()
-
-
-class SuccessExecutorMock(MockExecutor):
-    def __init__(self, *args, script_type: str, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._script_type = script_type
-
-    @property
-    def script_type(self) -> str:
-        return self._script_type
-
-
-class FailExecutorMock(SuccessExecutorMock):
-    def __init__(self, *args, return_code: int, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        if return_code <= 0:
-            raise ValueError("Only positive integers allowed")
-
-        self._return_code = return_code
-
-    def wait_finished(self) -> Self:
-        self._result = ExecutionResult(code=self._return_code)
+        self._result = ExecutionResult(code=self._script())
         return self
 
 
@@ -217,3 +202,6 @@ class RunTaskMock:
             self._run_patch = None
 
         return return_
+
+    def run(self):
+        return self.runner.run(task_id=self.target_task.pk)

@@ -25,8 +25,10 @@ from api_v2.prototype.utils import accept_license
 from api_v2.service.utils import bulk_add_services_to_cluster
 from cm.api import add_cluster, add_hc, add_host, add_host_provider, add_host_to_cluster, update_obj_config
 from cm.bundle import prepare_bundle, process_file
+from cm.converters import orm_object_to_core_type
 from cm.models import (
     ADCM,
+    Action,
     ADCMEntity,
     ADCMModel,
     Bundle,
@@ -41,8 +43,12 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.job.prepare import prepare_task_for_action
 from cm.utils import deep_merge
+from core.job.dto import TaskPayloadDTO
+from core.job.types import Task
 from core.rbac.dto import UserCreateDTO
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.db.models import QuerySet
 from django.test import Client, TestCase, override_settings
@@ -459,9 +465,14 @@ class BusinessLogicMixin(BundleLogicMixin):
         return add_host_provider(prototype=prototype, name=name, description=description)
 
     def add_host(
-        self, bundle: Bundle, provider: HostProvider, fqdn: str, description: str = "", cluster: Cluster | None = None
+        self,
+        provider: HostProvider,
+        fqdn: str,
+        description: str = "",
+        cluster: Cluster | None = None,
+        bundle: Bundle | None = None,
     ) -> Host:
-        prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.HOST).first()
+        prototype = Prototype.objects.filter(bundle=bundle or provider.prototype.bundle, type=ObjectType.HOST).first()
         host = add_host(prototype=prototype, provider=provider, fqdn=fqdn, description=description)
         if cluster is not None:
             self.add_host_to_cluster(cluster=cluster, host=host)
@@ -565,3 +576,19 @@ class BusinessLogicMixin(BundleLogicMixin):
         target.refresh_from_db()
 
         return updated
+
+
+class TaskTestMixin:
+    def prepare_task(
+        self,
+        owner: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
+        payload: TaskPayloadDTO | None = None,
+        host: Host | None = None,
+        **action_search_kwargs,
+    ) -> Task:
+        owner_descriptor = CoreObjectDescriptor(id=owner.id, type=orm_object_to_core_type(owner))
+        action = Action.objects.get(prototype_id=owner.prototype_id, **action_search_kwargs)
+        target = owner_descriptor if not host else CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST)
+        return prepare_task_for_action(
+            target=target, owner=owner_descriptor, action=action.id, payload=payload or TaskPayloadDTO()
+        )

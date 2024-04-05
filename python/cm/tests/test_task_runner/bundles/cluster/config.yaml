@@ -14,10 +14,14 @@
           script_type: ansible
           script: ./actions.yaml
 
-- type: service
+- &service
+  type: service
   name: simple
   version: 1
 
   components:
     part_1:
     part_2:
+
+- <<: *service
+  name: second
