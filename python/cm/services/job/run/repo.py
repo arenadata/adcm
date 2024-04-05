@@ -341,7 +341,7 @@ class JobRepoImpl:
                 ClusterObject.objects.values(**cls._selector_fields_map[ClusterObject]).filter(id=service_id)
             )
             query = query.union(
-                ServiceComponent.objects.values(**cls._selector_fields_map[ServiceComponent]).filter(id=service_id)
+                ServiceComponent.objects.values(**cls._selector_fields_map[ServiceComponent]).filter(id=component_id)
             )
 
         return query

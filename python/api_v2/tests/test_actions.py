@@ -71,8 +71,8 @@ class TestActionsFiltering(BaseAPITestCase):
 
         provider_bundle = self.add_bundle(self.test_bundles_dir / "provider_actions")
         self.hostprovider = self.add_provider(provider_bundle, "Provider with Actions")
-        self.host_1 = self.add_host(provider_bundle, self.hostprovider, "host-1")
-        self.host_2 = self.add_host(provider_bundle, self.hostprovider, "host-2")
+        self.host_1 = self.add_host(provider=self.hostprovider, fqdn="host-1")
+        self.host_2 = self.add_host(provider=self.hostprovider, fqdn="host-2")
 
         self.available_at_any = ["state_any"]
         common_at_created = [*self.available_at_any, "state_created", "state_created_masking"]
