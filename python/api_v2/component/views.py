@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from adcm.permissions import (
     CHANGE_MM_PERM,
     VIEW_CLUSTER_PERM,
@@ -26,6 +25,7 @@ from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, ServiceComponent
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import update_mm_objects
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
@@ -33,6 +33,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
+from api_v2.api_schema import ErrorSerializer
 from api_v2.component.filters import ComponentFilter
 from api_v2.component.serializers import (
     ComponentMaintenanceModeSerializer,
@@ -48,6 +49,44 @@ from api_v2.views import (
 )
 
 
+@extend_schema_view(
+    statuses=extend_schema(
+        operation_id="getHostComponentStatusesOfComponent",
+        summary="GET host-component statuses of component on hoosts",
+        description="Get information about component on hosts statuses.",
+        responses={200: ComponentStatusSerializer, 404: ErrorSerializer},
+        parameters=[
+            OpenApiParameter(
+                name="status",
+                required=True,
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by status.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="clusterId",
+                required=True,
+                location=OpenApiParameter.PATH,
+                description="Cluster id.",
+                type=int,
+            ),
+            OpenApiParameter(
+                name="serviceId",
+                required=True,
+                location=OpenApiParameter.PATH,
+                description="Service id.",
+                type=int,
+            ),
+            OpenApiParameter(
+                name="componentId",
+                required=True,
+                location=OpenApiParameter.PATH,
+                description="Component id.",
+                type=int,
+            ),
+        ],
+    ),
+)
 class ComponentViewSet(
     PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet, ObjectWithStatusViewMixin
 ):

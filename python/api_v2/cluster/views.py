@@ -9,8 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HC_PERM,
@@ -31,6 +29,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
@@ -44,6 +43,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
+from api_v2.api_schema import ErrorSerializer
 from api_v2.cluster.filters import (
     ClusterFilter,
     ClusterHostFilter,
@@ -66,6 +66,52 @@ from api_v2.host.serializers import HostMappingSerializer
 from api_v2.views import CamelCaseModelViewSet, ObjectWithStatusViewMixin
 
 
+@extend_schema_view(
+    services_statuses=extend_schema(
+        operation_id="getClusterServiceStatuses",
+        summary="GET cluster service statuses",
+        description="Get information about cluster service statuses.",
+        responses={200: RelatedServicesStatusesSerializer, 404: ErrorSerializer},
+        parameters=[
+            OpenApiParameter(
+                name="status",
+                required=True,
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by status.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="clusterId",
+                required=True,
+                location=OpenApiParameter.PATH,
+                description="Cluster id.",
+                type=int,
+            ),
+        ],
+    ),
+    hosts_statuses=extend_schema(
+        operation_id="getClusterHostStatuses",
+        summary="Get information about cluster host statuses.",
+        description="Get information about cluster service statuses.",
+        responses={200: RelatedServicesStatusesSerializer, 403: ErrorSerializer, 404: ErrorSerializer},
+        parameters=[
+            OpenApiParameter(
+                name="status",
+                required=True,
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by status.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="clusterId",
+                required=True,
+                location=OpenApiParameter.PATH,
+                description="Cluster id.",
+                type=int,
+            ),
+        ],
+    ),
+)
 class ClusterViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewSet, ObjectWithStatusViewMixin):
     queryset = (
         Cluster.objects.prefetch_related("prototype", "concerns")
