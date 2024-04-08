@@ -44,6 +44,7 @@ from cm.issue import (
 )
 from cm.logger import logger
 from cm.models import (
+    ADCM,
     ADCMEntity,
     Cluster,
     ClusterBind,
@@ -55,6 +56,7 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
+    MainObject,
     MaintenanceMode,
     ObjectConfig,
     Prototype,
@@ -436,7 +438,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
         message = f"Both `config` and `attr` should be of `dict` type, not {type(config)} and {type(attr)} respectively"
         raise TypeError(message)
 
-    obj: ADCMEntity = obj_conf.object
+    obj: MainObject | ADCM | GroupConfig = obj_conf.object
     if obj is None:
         message = "Can't update configuration that have no linked object"
         raise ValueError(message)
@@ -444,7 +446,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
     group = None
     if isinstance(obj, GroupConfig):
         group = obj
-        obj = group.object
+        obj: MainObject = group.object
         proto = obj.prototype
     else:
         proto = obj.prototype
@@ -461,24 +463,30 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
     with atomic():
         config_log = save_object_config(object_config=obj_conf, config=new_conf, attr=attr, description=description)
         update_hierarchy_issues(obj=obj)
-
-        if obj.prototype.flag_autogeneration.get("enable_outdated_config", False):
-            # todo implement it in a better way
-            flag = BuiltInFlag.ADCM_OUTDATED_CONFIG.value
-            flag_exists = obj.concerns.filter(name=flag.name, type=ConcernType.FLAG).exists()
-            raise_flag(flag=flag, on_objects=[CoreObjectDescriptor(id=obj.id, type=orm_object_to_core_type(obj))])
-            if not flag_exists:
-                update_hierarchy(
-                    concern=ConcernItem.objects.get(
-                        name=flag.name, type=ConcernType.FLAG, owner_id=obj.id, owner_type=obj.content_type
-                    )
-                )
-
+        # flag on ADCM can't be raised (only objects of `ADCMCoreType` are supported)
+        if not isinstance(obj, ADCM):
+            raise_outdated_config_flag_if_required(object_=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     send_config_creation_event(object_=obj)
 
     return config_log
+
+
+def raise_outdated_config_flag_if_required(object_: MainObject):
+    if not object_.prototype.flag_autogeneration.get("enable_outdated_config", False):
+        return
+
+    flag = BuiltInFlag.ADCM_OUTDATED_CONFIG.value
+    flag_exists = object_.concerns.filter(name=flag.name, type=ConcernType.FLAG).exists()
+    # raise unconditionally here, because message should be from "default" flag
+    raise_flag(flag=flag, on_objects=[CoreObjectDescriptor(id=object_.id, type=orm_object_to_core_type(object_))])
+    if not flag_exists:
+        update_hierarchy(
+            concern=ConcernItem.objects.get(
+                name=flag.name, type=ConcernType.FLAG, owner_id=object_.id, owner_type=object_.content_type
+            )
+        )
 
 
 def set_object_config_with_plugin(obj: ADCMEntity, config: dict, attr: dict) -> ConfigLog:

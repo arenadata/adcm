@@ -20,7 +20,6 @@ from django.db.models import Q
 def remove_unlinked_concerns(apps, schema_editor):
     ConcernItem = apps.get_model("cm", "ConcernItem")
 
-    # todo add test on it
     ConcernItem.objects.filter(Q(owner_type__isnull=True) | Q(owner_id__isnull=True)).delete()
 
 

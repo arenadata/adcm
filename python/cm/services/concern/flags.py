@@ -28,6 +28,7 @@ from cm.issue import add_concern_to_object, remove_concern_from_object
 from cm.models import ADCMEntity, ConcernCause, ConcernItem, ConcernType
 from cm.services.concern.messages import (
     ADCM_ENTITY_AS_PLACEHOLDERS,
+    ConcernMessage,
     ConcernMessageTemplate,
     PlaceholderObjectsDTO,
     build_concern_reason,
@@ -47,9 +48,11 @@ class BuiltInFlag(Enum):
     )
 
 
-def raise_flag(flag: ConcernFlag, on_objects: Collection[CoreObjectDescriptor]) -> None:
+def raise_flag(flag: ConcernFlag, on_objects: Collection[CoreObjectDescriptor]) -> bool:
+    """Returns whether any objects were affected or not"""
     message_template = ConcernMessageTemplate(
-        message=f"${{source}} has a flag: {flag.message}".rstrip(), placeholders=ADCM_ENTITY_AS_PLACEHOLDERS
+        message=f"{ConcernMessage.FLAG.value.message}{flag.message}".rstrip(": "),
+        placeholders=ADCM_ENTITY_AS_PLACEHOLDERS,
     )
 
     content_type_id_map = _get_owner_ids_grouped_by_content_type(objects=on_objects)
@@ -59,12 +62,16 @@ def raise_flag(flag: ConcernFlag, on_objects: Collection[CoreObjectDescriptor]) 
     )
 
     processed_objects: dict[ContentType, set[int]] = {content_type: set() for content_type in content_type_id_map}
+    concerns_to_update = []
     for concern in existing_concerns:
-        concern.reason["message"] = message_template.message
+        if concern.reason["message"] != message_template.message:
+            concern.reason["message"] = message_template.message
+            concerns_to_update.append(concern)
+
         processed_objects[concern.owner_type].add(concern.owner_id)
 
-    if processed_objects:
-        ConcernItem.objects.bulk_update(objs=existing_concerns, fields=["reason"])
+    if concerns_to_update:
+        ConcernItem.objects.bulk_update(objs=concerns_to_update, fields=["reason"])
 
     objects_without_flags: tuple[ADCMEntity, ...] = tuple(
         chain.from_iterable(
@@ -74,7 +81,7 @@ def raise_flag(flag: ConcernFlag, on_objects: Collection[CoreObjectDescriptor]) 
     )
 
     if not objects_without_flags:
-        return
+        return bool(concerns_to_update)
 
     ConcernItem.objects.bulk_create(
         objs=(
@@ -92,20 +99,34 @@ def raise_flag(flag: ConcernFlag, on_objects: Collection[CoreObjectDescriptor]) 
         )
     )
 
+    return bool(concerns_to_update or objects_without_flags)
 
-def lower_flag(name: str, on_objects: Collection[CoreObjectDescriptor]) -> None:
-    ConcernItem.objects.filter(
+
+def lower_flag(name: str, on_objects: Collection[CoreObjectDescriptor]) -> bool:
+    deleted_count, _ = ConcernItem.objects.filter(
         Q(name=name)
         & _get_filter_for_flags_of_objects(
             content_type_id_map=_get_owner_ids_grouped_by_content_type(objects=on_objects)
         )
     ).delete()
+    return bool(deleted_count)
 
 
-def lower_all_flags(on_objects: Collection[CoreObjectDescriptor]) -> None:
-    ConcernItem.objects.filter(
+def lower_all_flags(on_objects: Collection[CoreObjectDescriptor]) -> bool:
+    deleted_count, _ = ConcernItem.objects.filter(
         _get_filter_for_flags_of_objects(content_type_id_map=_get_owner_ids_grouped_by_content_type(objects=on_objects))
     ).delete()
+    return bool(deleted_count)
+
+
+def update_hierarchy_for_flag(flag: ConcernFlag, on_objects: Collection[CoreObjectDescriptor]) -> None:
+    for concern in ConcernItem.objects.filter(
+        Q(name=flag.name, cause=flag.cause, type=ConcernType.FLAG)
+        & _get_filter_for_flags_of_objects(
+            content_type_id_map=_get_owner_ids_grouped_by_content_type(objects=on_objects)
+        )
+    ):
+        update_hierarchy(concern)
 
 
 def update_hierarchy(concern: ConcernItem) -> None:
@@ -122,12 +143,6 @@ def update_hierarchy(concern: ConcernItem) -> None:
 
     for new_object in affected.difference(related):
         add_concern_to_object(object_=new_object, concern=concern)
-
-
-# todo check if it's really should be a separate function in the place where it's called
-def update_flags() -> None:
-    for flag in ConcernItem.objects.filter(type=ConcernType.FLAG):
-        update_hierarchy(concern=flag)
 
 
 def _get_filter_for_flags_of_objects(content_type_id_map: dict[ContentType, set[int]]) -> Q:

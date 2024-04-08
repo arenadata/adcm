@@ -13,6 +13,7 @@ from functools import partial
 from typing import Iterable
 
 from api_v2.concern.serializers import ConcernSerializer
+from django.conf import settings
 from django.db.transaction import on_commit
 from djangorestframework_camel_case.util import camelize
 
@@ -439,10 +440,6 @@ def add_issue_on_linked_objects(obj: ADCMEntity, issue_cause: ConcernCause) -> N
     """Create newly discovered issue and add it to linked objects concerns"""
     issue = obj.get_own_issue(cause=issue_cause) or create_issue(obj=obj, issue_cause=issue_cause)
 
-    # todo here was a code that was re-creating issue if it has different name
-    #  but can't see why it may be needed, just re-check it.
-    #  Since we've got the `issue` by cause, I see no way it'll have different cause.
-
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(node=tree.built_from)
 
@@ -525,37 +522,24 @@ def lock_affected_objects(task: TaskLog, objects: Iterable[ADCMEntity]) -> None:
     if task.lock:
         return
 
-    # fixme It is possible that lock exists, but is not bound to task.
-    #  Not it's done for case like `test_delete_service_abort_own_actions_success`
-    #  thou it's not proven that it can happen in real world (the opposite wasn't proven either).
-    #  Most likely relation to task should be improved somehow (not just "let's check if it's None"),
-    #  but can't think of good and universal solution at the moment.
-    #  Problem with this fix is that such concern "may" be deleted during task cancellation,
-    #  so it'll be removed from this task too.
     owner: ADCMEntity = task.task_object
     first_job = JobLog.obj.filter(task=task).order_by("id").first()
-    existing_lock = ConcernItem.objects.filter(
-        owner_id=owner.pk, owner_type=owner.content_type, type=ConcernType.LOCK
-    ).first()
-    if existing_lock:
-        # it may be `lock` from another job
-        #  (case: delete service when another action on service is running)
-        task.lock = update_job_in_lock_reason(lock=existing_lock, job=first_job)
-    else:
-        task.lock = create_lock(owner=owner, job=first_job)
+    delete_service_action = settings.ADCM_DELETE_SERVICE_ACTION_NAME
+    custom_name = delete_service_action if task.action.name == delete_service_action else ""
 
+    task.lock = create_lock(owner=owner, job=first_job, custom_name=custom_name)
     task.save(update_fields=["lock"])
 
     for obj in objects:
         add_concern_to_object(object_=obj, concern=task.lock)
 
 
-def create_lock(owner: ADCMEntity, job: JobLog):
+def create_lock(owner: ADCMEntity, job: JobLog, custom_name: str = ""):
     type_: str = ConcernType.LOCK.value
     cause: str = ConcernCause.JOB.value
     return ConcernItem.objects.create(
         type=type_,
-        name=f"{cause or ''}_{type_}".strip("_"),
+        name=custom_name or f"{cause or ''}_{type_}".strip("_"),
         reason=build_concern_reason(
             ConcernMessage.LOCKED_BY_JOB.template, placeholder_objects=PlaceholderObjectsDTO(job=job, target=owner)
         ),

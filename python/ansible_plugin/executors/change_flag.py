@@ -19,6 +19,7 @@ from cm.services.concern.flags import (
     lower_all_flags,
     lower_flag,
     raise_flag,
+    update_hierarchy_for_flag,
 )
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
@@ -118,16 +119,15 @@ class ADCMChangeFlagPluginExecutor(ADCMAnsiblePluginExecutor[ChangeFlagArguments
                 else:
                     flag = ConcernFlag(name=arguments.name.lower(), message=arguments.msg, cause=None)
 
-                raise_flag(flag=flag, on_objects=targets)
-                # todo add updating concerns hierarchy
+                changed = raise_flag(flag=flag, on_objects=targets)
+                update_hierarchy_for_flag(flag=flag, on_objects=targets)
             case ChangeFlagOperation.DOWN:
-                # todo add tests on lower_flag (that related concerns are deleted)
                 if arguments.name:
-                    lower_flag(name=arguments.name.lower(), on_objects=targets)
+                    changed = lower_flag(name=arguments.name.lower(), on_objects=targets)
                 else:
-                    lower_all_flags(on_objects=targets)
+                    changed = lower_all_flags(on_objects=targets)
             case _:
                 message = f"Can't handle operation {arguments.operation}"
                 raise PluginRuntimeError(message=message, original_error=None)
 
-        return CallResult(value=None, changed=True, error=None)
+        return CallResult(value=None, changed=changed, error=None)

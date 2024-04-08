@@ -15,6 +15,12 @@
 from django.db import migrations, models
 
 
+def fill_default_flag_autogeneration_value(apps, schema_editor):
+    Prototype = apps.get_model("cm", "Prototype")
+
+    Prototype.objects.all().update(flag_autogeneration={"adcm_outdated_config": False})
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -40,4 +46,5 @@ class Migration(migrations.Migration):
             name='flag_autogeneration',
             field=models.JSONField(default=dict),
         ),
+        migrations.RunPython(code=fill_default_flag_autogeneration_value, reverse_code=migrations.RunPython.noop),
     ]
