@@ -17,7 +17,7 @@ from unittest.mock import patch
 from adcm.tests.ansible import ADCMAnsiblePluginTestMixin
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase, TaskTestMixin, TestCaseWithCommonSetUpTearDown
 from cm.models import ConcernItem, ServiceComponent
-from cm.services.concern.flags import BuiltInFlag, ConcernFlag
+from cm.services.concern.flags import BuiltInFlag, ConcernFlag, lower_all_flags, raise_flag
 from cm.services.job.run.repo import JobRepoImpl
 from core.job.types import Task
 from core.types import ADCMCoreType, CoreObjectDescriptor
@@ -75,42 +75,56 @@ class TestEffectsOfADCMAnsiblePlugins(
             patch(f"{EXECUTOR_MODULE}.raise_flag") as raise_flag_mock,
             patch(f"{EXECUTOR_MODULE}.lower_flag") as lower_flag_mock,
             patch(f"{EXECUTOR_MODULE}.lower_all_flags") as lower_all_flags_mock,
+            patch(f"{EXECUTOR_MODULE}.update_hierarchy_for_flag") as update_hierarchy_for_flag_mock,
         ):
             result = executor.execute()
 
         self.assertIsNone(result.error)
 
-        return raise_flag_mock, lower_flag_mock, lower_all_flags_mock
+        return raise_flag_mock, lower_flag_mock, lower_all_flags_mock, update_hierarchy_for_flag_mock
 
     def check_raise_called(
         self, flag: ConcernFlag, task: Task, arguments: str | dict, targets: Collection[CoreObjectDescriptor]
     ) -> None:
-        raise_flag_mock, lower_flag_mock, lower_all_flags_mock = self.execute_plugin_patched(task, arguments)
+        (
+            raise_flag_mock,
+            lower_flag_mock,
+            lower_all_flags_mock,
+            update_hierarchy_for_flag_mock,
+        ) = self.execute_plugin_patched(task, arguments)
 
-        raise_flag_mock.assert_called_once_with(
-            flag=flag,
-            on_objects=targets,
-        )
+        raise_flag_mock.assert_called_once_with(flag=flag, on_objects=targets)
+        update_hierarchy_for_flag_mock.assert_called_once_with(flag=flag, on_objects=targets)
         lower_flag_mock.assert_not_called()
         lower_all_flags_mock.assert_not_called()
-        # todo add check for update hierarchy call
-        #  and in check_lower* too
 
     def check_lower_called(
         self, flag_name: str, task: Task, arguments: str | dict, targets: Collection[CoreObjectDescriptor]
     ) -> None:
-        raise_flag_mock, lower_flag_mock, lower_all_flags_mock = self.execute_plugin_patched(task, arguments)
+        (
+            raise_flag_mock,
+            lower_flag_mock,
+            lower_all_flags_mock,
+            update_hierarchy_for_flag_mock,
+        ) = self.execute_plugin_patched(task, arguments)
 
         raise_flag_mock.assert_not_called()
+        update_hierarchy_for_flag_mock.assert_not_called()
         lower_flag_mock.assert_called_once_with(name=flag_name, on_objects=targets)
         lower_all_flags_mock.assert_not_called()
 
     def check_lower_all_called(
         self, task: Task, arguments: str | dict, targets: Collection[CoreObjectDescriptor]
     ) -> None:
-        raise_flag_mock, lower_flag_mock, lower_all_flags_mock = self.execute_plugin_patched(task, arguments)
+        (
+            raise_flag_mock,
+            lower_flag_mock,
+            lower_all_flags_mock,
+            update_hierarchy_for_flag_mock,
+        ) = self.execute_plugin_patched(task, arguments)
 
         raise_flag_mock.assert_not_called()
+        update_hierarchy_for_flag_mock.assert_not_called()
         lower_flag_mock.assert_not_called()
         lower_all_flags_mock.assert_called_once_with(on_objects=targets)
 
@@ -240,3 +254,136 @@ class TestEffectsOfADCMAnsiblePlugins(
         result = executor.execute()
         self.assertIsNotNone(result.error)
         self.assertIn("`name` should be at least 1 symbol", result.error.message)
+
+    def test_hierarchy_is_updated_on_raise(self) -> None:
+        flag_name = "custom"
+
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        executor = self.prepare_executor(
+            executor_type=ADCMChangeFlagPluginExecutor,
+            call_arguments={
+                "operation": "up",
+                "name": flag_name,
+                "objects": [
+                    {"type": "component", "service_name": self.service_1.name, "component_name": self.component_2.name},
+                ],
+            },
+            call_context=job,
+        )
+
+        result = executor.execute()
+        self.assertIsNone(result.error)
+
+        self.assertEqual(self.cluster.concerns.count(), 1)
+        self.assertTrue(
+            self.cluster.concerns.filter(
+                owner_id=self.component_2.id, owner_type=self.component_2.content_type
+            ).exists()
+        )
+
+        self.assertEqual(self.service_1.concerns.count(), 1)
+        self.assertTrue(
+            self.service_1.concerns.filter(
+                owner_id=self.component_2.id, owner_type=self.component_2.content_type
+            ).exists()
+        )
+
+        self.assertEqual(self.service_2.concerns.count(), 0)
+
+    def test_changed_on_raise(self) -> None:
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        executor = self.prepare_executor(
+            executor_type=ADCMChangeFlagPluginExecutor,
+            call_arguments={
+                "operation": "up",
+                "name": "adcm_outdated_config",
+                "objects": [
+                    {"type": "component", "service_name": self.service_1.name, "component_name": self.component_2.name},
+                ],
+            },
+            call_context=job,
+        )
+
+        result = executor.execute()
+        self.assertIsNone(result.error)
+        self.assertTrue(result.changed)
+
+        result = executor.execute()
+        self.assertIsNone(result.error)
+        self.assertFalse(result.changed)
+
+        result = executor.execute()
+        self.assertIsNone(result.error)
+        self.assertFalse(result.changed)
+
+        lower_all_flags(on_objects=[CoreObjectDescriptor(id=self.component_2.id, type=ADCMCoreType.COMPONENT)])
+
+        result = executor.execute()
+        self.assertIsNone(result.error)
+        self.assertTrue(result.changed)
+
+    def test_changed_on_lower(self) -> None:
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        executor = self.prepare_executor(
+            executor_type=ADCMChangeFlagPluginExecutor,
+            call_arguments={
+                "operation": "down",
+                "name": "adcm_outdated_config",
+                "objects": [{"type": "cluster"}, {"type": "service", "service_name": self.service_1.name}],
+            },
+            call_context=job,
+        )
+
+        result = executor.execute()
+        self.assertIsNone(result.error)
+        self.assertFalse(result.changed)
+
+        raise_flag(
+            flag=BuiltInFlag.ADCM_OUTDATED_CONFIG.value,
+            on_objects=(
+                CoreObjectDescriptor(id=self.cluster.id, type=ADCMCoreType.CLUSTER),
+                CoreObjectDescriptor(id=self.service_2.id, type=ADCMCoreType.SERVICE),
+            ),
+        )
+
+        result = executor.execute()
+        self.assertIsNone(result.error)
+        self.assertTrue(result.changed)
+
+        result = executor.execute()
+        self.assertIsNone(result.error)
+        self.assertFalse(result.changed)
+
+    def test_changed_on_lower_all(self) -> None:
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        executor = self.prepare_executor(
+            executor_type=ADCMChangeFlagPluginExecutor,
+            call_arguments={
+                "operation": "down",
+                "objects": [
+                    {"type": "cluster"},
+                ],
+            },
+            call_context=job,
+        )
+
+        result = executor.execute()
+        self.assertIsNone(result.error)
+        self.assertFalse(result.changed)
+
+        raise_flag(
+            flag=BuiltInFlag.ADCM_OUTDATED_CONFIG.value,
+            on_objects=(CoreObjectDescriptor(id=self.cluster.id, type=ADCMCoreType.CLUSTER),),
+        )
+
+        result = executor.execute()
+        self.assertIsNone(result.error)
+        self.assertTrue(result.changed)
+
+        result = executor.execute()
+        self.assertIsNone(result.error)
+        self.assertFalse(result.changed)

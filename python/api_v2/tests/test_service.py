@@ -321,10 +321,11 @@ class TestServiceDeleteAction(BaseAPITestCase):
                 )
             )
             self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-            self.assertEqual(
-                "adcm_delete_service",
-                self.service_to_delete.concerns.get(type=ConcernType.LOCK).reason["placeholder"]["job"]["name"],
-            )
+
+            service_concerns_qs = self.service_to_delete.concerns.filter(type=ConcernType.LOCK)
+            # one for old job, one for delete job
+            self.assertEqual(service_concerns_qs.count(), 2)
+            self.assertTrue(service_concerns_qs.filter(name="adcm_delete_service").exists())
 
     @staticmethod
     def imitate_task_running(action: Action, object_: Cluster | ClusterObject) -> TaskLog:

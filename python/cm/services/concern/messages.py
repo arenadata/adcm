@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, Generic, NamedTuple, TypeVar
 
-from cm.models import ADCMEntity, JobLog, Prototype
+from cm.models import ADCM, ADCMEntity, Cluster, ClusterObject, Host, HostProvider, JobLog, Prototype, ServiceComponent
 
 _PlaceholderObjectT = TypeVar("_PlaceholderObjectT", bound=Callable)
 
@@ -56,10 +56,12 @@ class ConcernMessageTemplate:
     placeholders: Placeholders
 
 
-def _retrieve_placeholder_from_adcm_entity(entity: ADCMEntity) -> dict:
+def _retrieve_placeholder_from_adcm_entity(
+    entity: Cluster | ClusterObject | ServiceComponent | HostProvider | Host | ADCM,
+) -> dict:
     return {
         "type": entity.prototype.type,
-        "name": entity.display_name,  # fixme only entities with display name can be here, not any ADCMEntity
+        "name": entity.display_name,
         "params": entity.get_id_chain(),
     }
 
@@ -80,8 +82,8 @@ def _retrieve_placeholder_from_job(entity: JobLog) -> dict:
     return {
         "type": "job",
         "name": entity.display_name or entity.name,
-        # todo should it be job id or task id?
-        "params": {"job_id": entity.task.id},
+        # thou it's named `job_id` it is task_id, because UI uses it in that way for routing
+        "params": {"job_id": entity.task_id},
     }
 
 
@@ -117,7 +119,8 @@ class ConcernMessage(Enum):
             retrieve_target=_retrieve_placeholder_from_adcm_entity,
         ),
     )
-    # todo update message and naming here
+    # Note that flag's message in template is just "left part"
+    # and should be combined with actual flag's message
     FLAG = ConcernMessageTemplate(message="${source} has a flag: ", placeholders=ADCM_ENTITY_AS_PLACEHOLDERS)
 
     def __init__(self, template: ConcernMessageTemplate):
@@ -133,7 +136,8 @@ def build_concern_reason(template: ConcernMessageTemplate, placeholder_objects: 
 
         entity = getattr(placeholder_objects, placeholder_name)
         if entity is None:
-            # todo if there will be cases when those can be null, set placeholder to `{}` instead of error
+            # if there will be cases when those can be null, set placeholder to `{}` instead of error
+            # check out commit history for more info
             message = f"Concern message '{template.message}' requires `{placeholder_name}` to fill placeholders"
             raise RuntimeError(message)
 
