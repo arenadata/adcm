@@ -47,7 +47,7 @@ const saveClusterImports = createAsyncThunk(
     try {
       await AdcmClusterImportsApi.postClusterImport(clusterId, clusterImportsList);
       thunkAPI.dispatch(loadClusterImports({ clusterId }));
-      thunkAPI.dispatch(showSuccess({ message: 'Import has been completed' }));
+      thunkAPI.dispatch(showSuccess({ message: 'Imported objects have been updated' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: (error as RequestError<AdcmError>).response?.data.desc ?? '' }));
       return thunkAPI.rejectWithValue(error);

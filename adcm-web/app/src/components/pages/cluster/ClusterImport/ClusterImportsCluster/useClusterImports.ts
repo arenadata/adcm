@@ -90,6 +90,7 @@ export const useClusterImports = () => {
     selectedImports,
     selectedImportsToggleHandler,
     selectedSingleBind,
+    initialSelected,
     isValid,
     onImportHandler,
     hasSaveError,
