@@ -22,6 +22,7 @@ const ClusterImportsCluster = () => {
     paginationParams,
     paginationHandler,
     totalCount,
+    initialSelected,
   } = useClusterImports();
 
   const dispatch = useDispatch();
@@ -43,7 +44,12 @@ const ClusterImportsCluster = () => {
 
   return (
     <>
-      <ClusterImportToolbar isDisabled={!isValid} onClick={onImportHandler} hasError={hasSaveError} />
+      <ClusterImportToolbar
+        isDisabled={!isValid}
+        onClick={onImportHandler}
+        hasError={hasSaveError}
+        isImportPresent={initialSelected.clusters.size > 0 || initialSelected.services.size > 0}
+      />
       <div>
         {isLoading && <ClusterImportLoading />}
         {!isLoading &&

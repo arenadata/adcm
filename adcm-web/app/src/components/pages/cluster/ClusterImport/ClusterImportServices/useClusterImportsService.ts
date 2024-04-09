@@ -146,5 +146,6 @@ export const useClusterImportsService = () => {
     serviceListOptions,
     handleServiceChange,
     totalCount,
+    initialImports,
   };
 };
