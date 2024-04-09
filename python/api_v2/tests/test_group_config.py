@@ -289,6 +289,38 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):
         self.assertEqual(self.host, Host.objects.get(id=self.host.pk))
         self.assertNotIn(self.host, self.cluster_1_group_config.hosts.all())
 
+    def test_config_description_inheritance(self):
+        """ADCM-5199"""
+
+        config_data = {
+            "config": {
+                "activatable_group": {"integer": 500},
+                "boolean": False,
+                "group": {"float": 2.7},
+                "list": ["value1", "value23", "value32", "value44"],
+                "variant_not_strict": "value55",
+            },
+            "adcmMeta": {"/activatable_group": {"isActive": False}},
+            "description": "new description",
+        }
+
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            data={"name": "Test group config", "description": ""},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config = GroupConfig.objects.get(pk=response.json()["id"])
+        self.assertEqual(ConfigLog.objects.get(pk=group_config.config.current).description, "init")
+
+        response = self.client.post(
+            path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}), data=config_data
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config.refresh_from_db()
+        self.assertEqual(ConfigLog.objects.get(pk=group_config.config.current).description, config_data["description"])
+
 
 class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):
     def test_list_success(self):
@@ -680,6 +712,43 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):
         self.assertEqual(len(response.json()), 1)
         self.assertEqual(response.json()[0]["name"], self.host_for_service.name)
 
+    def test_config_description_inheritance(self):
+        """ADCM-5199"""
+
+        config_data = {
+            "config": {
+                "group": {"password": "new_password"},
+                "activatable_group": {"text": "new_text"},
+                "string": "new_string",
+            },
+            "adcmMeta": {"/activatable_group": {"isActive": True}},
+            "description": "new config description",
+        }
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-group-config-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
+            ),
+            data={"name": "Test group config", "description": ""},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config = GroupConfig.objects.get(pk=response.json()["id"])
+        self.assertEqual(ConfigLog.objects.get(pk=group_config.config.current).description, "init")
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:service-config-list",
+                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
+            ),
+            data=config_data,
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config.refresh_from_db()
+        self.assertEqual(ConfigLog.objects.get(pk=group_config.config.current).description, config_data["description"])
+
 
 class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):
     def setUp(self) -> None:
@@ -1005,6 +1074,51 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):
         self.assertIn(self.host, self.service_1_group_config.hosts.all())
         self.assertNotIn(self.host, self.component_1_group_config.hosts.all())
 
+    def test_config_description_inheritance(self):
+        """ADCM-5199"""
+
+        config_data = {
+            "config": {
+                "group": {"file": "new_content"},
+                "activatable_group": {"secretfile": "new_content"},
+                "secrettext": "new_secrettext",
+            },
+            "adcmMeta": {"/activatable_group": {"isActive": True}},
+            "description": "New description",
+        }
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:component-group-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                },
+            ),
+            data={"name": "Test group config", "description": ""},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config = GroupConfig.objects.get(pk=response.json()["id"])
+        self.assertEqual(ConfigLog.objects.get(pk=group_config.config.current).description, "init")
+
+        response = self.client.post(
+            path=reverse(
+                viewname="v2:component-config-list",
+                kwargs={
+                    "cluster_pk": self.cluster_1.pk,
+                    "service_pk": self.service_1.pk,
+                    "component_pk": self.component_1.pk,
+                },
+            ),
+            data=config_data,
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config.refresh_from_db()
+        self.assertEqual(ConfigLog.objects.get(pk=group_config.config.current).description, config_data["description"])
+
 
 class TestHostProviderGroupConfig(BaseAPITestCase):
     def setUp(self) -> None:
@@ -1176,3 +1290,39 @@ class TestHostProviderGroupConfig(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertNotIn(self.host, self.group_config.hosts.all())
+
+    def test_config_description_inheritance(self):
+        """ADCM-5199"""
+
+        config_data = {
+            "config": {
+                "group": {"map": {"integer_key": "99", "string_key": "new_string"}},
+                "activatable_group": {
+                    "secretmap": {
+                        "integer_key": "101",
+                        "string_key": "new-string",
+                    }
+                },
+                "json": '{"key": "value", "new key": "new value"}',
+            },
+            "adcmMeta": {"/activatable_group": {"isActive": True}},
+            "description": "brand new config",
+        }
+
+        response = self.client.post(
+            path=reverse(viewname="v2:hostprovider-group-config-list", kwargs={"hostprovider_pk": self.provider.pk}),
+            data={"name": "Test group config", "description": ""},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config = GroupConfig.objects.get(pk=response.json()["id"])
+        self.assertEqual(ConfigLog.objects.get(pk=group_config.config.current).description, "init")
+
+        response = self.client.post(
+            path=reverse(viewname="v2:provider-config-list", kwargs={"hostprovider_pk": self.provider.pk}),
+            data=config_data,
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        group_config.refresh_from_db()
+        self.assertEqual(ConfigLog.objects.get(pk=group_config.config.current).description, config_data["description"])

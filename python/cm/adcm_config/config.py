@@ -295,6 +295,7 @@ def merge_config_of_group_with_primary_config(
     group: GroupConfig,
     primary_config: ConfigLog,
     current_config_of_group: ConfigLog,
+    description: str,
 ) -> ConfigLog:
     spec = group.get_config_spec()
     current_group_keys = current_config_of_group.attr["group_keys"]
@@ -319,9 +320,7 @@ def merge_config_of_group_with_primary_config(
     )
     attr["custom_group_keys"] = custom_group_keys
 
-    return ConfigLog.objects.create(
-        obj_ref=group.config, config=config, attr=attr, description=current_config_of_group.description
-    )
+    return ConfigLog.objects.create(obj_ref=group.config, config=config, attr=attr, description=description)
 
 
 def update_group_configs_by_primary_object(
@@ -331,7 +330,10 @@ def update_group_configs_by_primary_object(
         current_group_config = ConfigLog.objects.get(id=config_group.config.current)
 
         config_log = merge_config_of_group_with_primary_config(
-            group=config_group, primary_config=config, current_config_of_group=current_group_config
+            group=config_group,
+            primary_config=config,
+            current_config_of_group=current_group_config,
+            description=config.description,
         )
 
         config_log.save()
@@ -347,7 +349,10 @@ def update_group_config(group_config: GroupConfig, config: ConfigLog) -> ConfigL
     primary_config = ConfigLog.objects.get(id=group_config.object.config.current)
 
     return merge_config_of_group_with_primary_config(
-        group=group_config, primary_config=primary_config, current_config_of_group=config
+        group=group_config,
+        primary_config=primary_config,
+        current_config_of_group=config,
+        description=config.description,
     )
 
 
