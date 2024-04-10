@@ -16,7 +16,7 @@ from django.conf import settings
 
 from cm.adcm_config.utils import config_is_ro, group_keys_to_flat, proto_ref
 from cm.checker import FormatError, SchemaError, process_rule
-from cm.errors import raise_adcm_ex
+from cm.errors import AdcmEx, raise_adcm_ex
 from cm.models import GroupConfig, Prototype, StagePrototype
 
 
@@ -255,10 +255,11 @@ def check_config_type(
 
     if spec["type"] == "variant":
         source = spec["limits"]["source"]
-        if source["strict"] and source["type"] == "inline" and value not in source["value"]:
-            msg = f'not in variant list: "{source["value"]}"'
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))
+        if source["strict"]:
+            if source["type"] == "inline" and value not in source["value"]:
+                msg = f'not in variant list: "{source["value"]}"'
+                raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))
 
             if not default and source["type"] in ("config", "builtin") and value not in source["value"]:
                 msg = f'not in variant list: "{source["value"]}"'
-                raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))
+                raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))
