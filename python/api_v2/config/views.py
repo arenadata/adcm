@@ -14,9 +14,8 @@ from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
 from audit.utils import audit
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
-from cm.models import ADCM, ConfigLog, GroupConfig, PrototypeConfig
+from cm.models import ConfigLog, GroupConfig, PrototypeConfig
 from django.contrib.contenttypes.models import ContentType
-from django.http import Http404
 from guardian.mixins import PermissionListMixin
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
@@ -129,17 +128,20 @@ class ConfigLogViewSet(
         return super().list(request, *args, **kwargs)
 
     def _check_parent_permissions(self, parent_object: ParentObject = None):
-        parent_obj = parent_object if parent_object else self.get_parent_object()
+        parent_obj = parent_object or self.get_parent_object()
+        parent_view_perm = f"cm.view_{parent_obj.__class__.__name__.lower()}"
+        parent_config_view_perm = "cm.view_objectconfig"
 
         if parent_obj is None:
             raise NotFound
 
-        parent_view_perm = f"cm.view_{parent_obj.__class__.__name__.lower()}"
-        parent_config_view_perm = f"cm.view_{parent_obj.config.__class__.__name__.lower()}"
-        if not self.request.user.has_perm(parent_view_perm, parent_obj) and not isinstance(parent_obj, ADCM):
-            raise Http404
+        if not (
+            self.request.user.has_perm(parent_view_perm, parent_obj) or self.request.user.has_perm(parent_view_perm)
+        ):
+            raise NotFound
 
-        if not self.request.user.has_perm(
-            parent_config_view_perm, parent_obj.config
-        ) and not self.request.user.has_perm(parent_config_view_perm):
+        if not (
+            self.request.user.has_perm(parent_config_view_perm, parent_obj.config)
+            or self.request.user.has_perm(parent_config_view_perm)
+        ):
             raise PermissionDenied
