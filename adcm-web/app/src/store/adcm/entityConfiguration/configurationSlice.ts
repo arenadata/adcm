@@ -145,8 +145,13 @@ const entityConfigurationSlice = createSlice({
     });
     builder.addCase(getConfigurationsVersions.fulfilled, (state, action) => {
       state.configVersions = action.payload.results;
+      state.accessCheckStatus = RequestState.Completed;
     });
-    builder.addCase(getConfigurationsVersions.rejected, (state) => {
+    builder.addCase(getConfigurationsVersions.pending, (state) => {
+      state.accessCheckStatus = RequestState.Pending;
+    });
+    builder.addCase(getConfigurationsVersions.rejected, (state, action) => {
+      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.configVersions = [];
     });
   },

@@ -7,6 +7,7 @@ import ConfigurationFormContextProvider from '@commonComponents/configuration/Co
 import ConfigurationSubHeader from '@commonComponents/configuration/ConfigurationSubHeader/ConfigurationSubHeader';
 import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
 import { useComponentPrimaryConfigurationsCompare } from './useComponentPrimaryConfigurationCompare';
+import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const ComponentPrimaryConfiguration: React.FC = () => {
   const dispatch = useDispatch();
@@ -21,6 +22,7 @@ const ComponentPrimaryConfiguration: React.FC = () => {
     onReset,
     setDraftConfiguration,
     isConfigurationLoading,
+    accessCheckStatus,
   } = useComponentPrimaryConfiguration();
 
   const compareOptions = useComponentPrimaryConfigurationsCompare();
@@ -51,7 +53,7 @@ const ComponentPrimaryConfiguration: React.FC = () => {
   }, [component, dispatch]);
 
   return (
-    <div>
+    <PermissionsChecker requestState={accessCheckStatus}>
       <ConfigurationHeader
         configVersions={configVersions}
         selectedConfigId={selectedConfigId}
@@ -68,7 +70,7 @@ const ComponentPrimaryConfiguration: React.FC = () => {
           onChangeConfiguration={setDraftConfiguration}
         />
       </ConfigurationFormContextProvider>
-    </div>
+    </PermissionsChecker>
   );
 };
 
