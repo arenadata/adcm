@@ -16,7 +16,6 @@ from typing import Any
 import copy
 import json
 
-from adcm.mixins import ParentObject
 from cm.adcm_config.config import get_default
 from cm.errors import AdcmEx
 from cm.models import (
@@ -658,7 +657,7 @@ def get_config_schema(
 class ConfigSchemaMixin:
     @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
     def config_schema(self, request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
-        self._check_parent_permissions(request)
+        self._check_parent_permissions_in_config_schema(request)
 
         instance = self.get_object()
 
@@ -675,8 +674,8 @@ class ConfigSchemaMixin:
 
         return Response(data=schema, status=HTTP_200_OK)
 
-    def _check_parent_permissions(self, request, parent_object: ParentObject = None):
-        parent_obj = parent_object or self.get_parent_object()
+    def _check_parent_permissions_in_config_schema(self, request):
+        parent_obj = self.get_parent_object()
         parent_view_perm = f"cm.view_{parent_obj.__class__.__name__.lower()}"
 
         if parent_obj is None:
