@@ -106,14 +106,17 @@ def get_groups_by_user_dn(
         scope=user_search.scope,
         filterstr=user_search.filterstr.replace(replace, search_expr),
     )
+    # Remove references from the Search Result https://www.rfc-editor.org/rfc/rfc4511#section-4.5.3
+    users = [user for user in users if user[0] is not None]
+
     if len(users) != 1:
         err_msg = f"Not one user found by `{search_expr}` search"
-        return None, err_msg
+        return [], [], err_msg
 
     user_dn_, user_attrs = users[0]
     if user_dn_.strip().lower() != user_dn.strip().lower():
         err_msg = f"Got different user dn: {(user_dn_, user_dn)}. Tune search"
-        return None, err_msg
+        return [], [], err_msg
 
     group_cns = []
     group_dns_lower = []
@@ -251,7 +254,7 @@ class CustomLDAPBackend(LDAPBackend):
 
     @contextmanager
     def _ldap_connection(self) -> ldap.ldapobject.LDAPObject:
-        ldap.set_option(ldap.OPT_REFERRALS, 0)
+        ldap.set_option(ldap.OPT_REFERRALS, ldap.OPT_OFF)
         conn = ldap.initialize(self.default_settings["SERVER_URI"])
         conn.protocol_version = ldap.VERSION3
         configure_tls(self.is_tls, os.environ.get(CERT_ENV_KEY, ""), conn)

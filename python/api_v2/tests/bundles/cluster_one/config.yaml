@@ -94,7 +94,8 @@
   export:
     - boolean
 
-- name: service_1
+- &service_1
+  name: service_1
   type: service
   version: *version
   config:
@@ -225,3 +226,6 @@
 
   components:
     component: {}
+
+- <<: *service_1
+  name: service_1_clone
