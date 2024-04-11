@@ -25,6 +25,7 @@ from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.service import delete_service_from_api
 from cm.services.status.notify import update_mm_objects
 from django_filters.rest_framework.backends import DjangoFilterBackend
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import (
@@ -37,6 +38,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
+from api_v2.api_schema import ErrorSerializer
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.service.filters import ServiceFilter
 from api_v2.service.permissions import ServicePermissions
@@ -53,6 +55,37 @@ from api_v2.service.utils import (
 from api_v2.views import CamelCaseGenericViewSet, ObjectWithStatusViewMixin
 
 
+@extend_schema_view(
+    statuses=extend_schema(
+        operation_id="getServiceComponentStatuses",
+        summary="GET service component statuses",
+        description="Get information about service component statuses.",
+        responses={200: ServiceStatusSerializer, 403: ErrorSerializer, 404: ErrorSerializer},
+        parameters=[
+            OpenApiParameter(
+                name="status",
+                required=True,
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by status.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="clusterId",
+                required=True,
+                location=OpenApiParameter.PATH,
+                description="Cluster id.",
+                type=int,
+            ),
+            OpenApiParameter(
+                name="serviceId",
+                required=True,
+                location=OpenApiParameter.PATH,
+                description="Service id.",
+                type=int,
+            ),
+        ],
+    ),
+)
 class ServiceViewSet(
     PermissionListMixin,
     ConfigSchemaMixin,
