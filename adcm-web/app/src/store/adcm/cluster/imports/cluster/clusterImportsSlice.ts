@@ -5,7 +5,8 @@ import { AdcmClusterImport, AdcmClusterImportPostPayload, AdcmError } from '@mod
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { showError, showSuccess } from '@store/notificationsSlice';
-import { LoadState } from '@models/loadState';
+import { LoadState, RequestState } from '@models/loadState';
+import { processErrorResponse } from '@utils/responseUtils';
 
 type GetClusterImportsArg = {
   clusterId: number;
@@ -21,6 +22,7 @@ type AdcmClusterImportsState = {
   totalCount: number;
   loadState: LoadState;
   hasSaveError: boolean;
+  accessCheckStatus: RequestState;
 };
 
 const loadClusterImports = createAsyncThunk(
@@ -78,6 +80,7 @@ const createInitialState = (): AdcmClusterImportsState => ({
   hasSaveError: false,
   loadState: LoadState.NotLoaded,
   totalCount: 0,
+  accessCheckStatus: RequestState.NotRequested,
 });
 
 const clusterImportsSlice = createSlice({
@@ -95,8 +98,13 @@ const clusterImportsSlice = createSlice({
     builder.addCase(loadClusterImports.fulfilled, (state, action) => {
       state.clusterImports = action.payload.results;
       state.totalCount = action.payload.count;
+      state.accessCheckStatus = RequestState.Completed;
     });
-    builder.addCase(loadClusterImports.rejected, (state) => {
+    builder.addCase(loadClusterImports.pending, (state) => {
+      state.accessCheckStatus = RequestState.Pending;
+    });
+    builder.addCase(loadClusterImports.rejected, (state, action) => {
+      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.clusterImports = [];
     });
     builder.addCase(saveClusterImports.pending, (state) => {

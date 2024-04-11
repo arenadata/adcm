@@ -5,6 +5,7 @@ import ConfigurationSubHeader from '@commonComponents/configuration/Configuratio
 import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
 import { useServicesPrimaryConfiguration } from './useServicesPrimaryConfiguration';
 import { useServicesPrimaryConfigurationsCompare } from './useServicesPrimaryConfigurationCompare';
+import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const ServicesPrimaryConfiguration: React.FC = () => {
   const {
@@ -17,12 +18,13 @@ const ServicesPrimaryConfiguration: React.FC = () => {
     onReset,
     setDraftConfiguration,
     isConfigurationLoading,
+    accessCheckStatus,
   } = useServicesPrimaryConfiguration();
 
   const compareOptions = useServicesPrimaryConfigurationsCompare();
 
   return (
-    <div>
+    <PermissionsChecker requestState={accessCheckStatus}>
       <ConfigurationHeader
         configVersions={configVersions}
         selectedConfigId={selectedConfigId}
@@ -39,7 +41,7 @@ const ServicesPrimaryConfiguration: React.FC = () => {
           onChangeConfiguration={setDraftConfiguration}
         />
       </ConfigurationFormContextProvider>
-    </div>
+    </PermissionsChecker>
   );
 };
 
