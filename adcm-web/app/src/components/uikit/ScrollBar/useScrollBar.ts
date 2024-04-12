@@ -13,20 +13,30 @@ export const useScrollBar = ({ orientation, contentRef, thumbRef, trackRef }: Sc
 
   const resizeObserver = useObserver(updateScrollData);
 
-  useEffect(() => {
-    const curContent = contentRef?.current;
-    const curThumb = thumbRef?.current;
+  const scrollHandler = useCallback(() => {
+    if (!thumbRef?.current || !contentRef?.current) return;
 
-    curContent?.addEventListener('scroll', scrollHandler);
-    curThumb?.addEventListener('pointerdown', onMouseDown);
-    curContent?.classList.add('scrollBar');
+    thumbRef.current.style.transform = `translate${scrollData.upperCasedAxis}(${
+      contentRef.current[`scroll${scrollData.scrollTo}`] / scrollData.scrollFactor
+    }px)`;
+  }, [scrollData, contentRef, thumbRef]);
 
-    return () => {
-      clearDocumentHandlers();
-      curContent?.removeEventListener('scroll', scrollHandler);
-      curThumb?.removeEventListener('pointerdown', onMouseDown);
-    };
-  }, [scrollData, contentRef.current, thumbRef.current, orientation]);
+  const onPointerMove = useCallback(
+    (e: MouseEvent) => {
+      if (!contentRef?.current || !trackRef?.current || !thumbRef?.current) return;
+
+      contentRef.current[`scroll${scrollData.scrollTo}`] =
+        (e[`client${scrollData.upperCasedAxis}`] - initialMousePosition.current[scrollData.axisName]) *
+        scrollData.scrollFactor;
+    },
+    [scrollData, contentRef, thumbRef, trackRef],
+  );
+
+  const clearDocumentHandlers = useCallback(() => {
+    if (!thumbRef?.current) return;
+    thumbRef.current.removeEventListener('pointermove', onPointerMove);
+    thumbRef.current.removeEventListener('pointerup', clearDocumentHandlers);
+  }, [thumbRef, onPointerMove]);
 
   const onMouseDown = useCallback(
     (e: PointerEvent) => {
@@ -40,47 +50,34 @@ export const useScrollBar = ({ orientation, contentRef, thumbRef, trackRef }: Sc
 
       thumbRef.current.setPointerCapture(e.pointerId);
       thumbRef.current.addEventListener('pointermove', onPointerMove);
-      thumbRef.current.addEventListener('pointerup', onPointerUp);
+      thumbRef.current.addEventListener('pointerup', clearDocumentHandlers);
     },
-    [thumbRef?.current, trackRef?.current],
-  );
-
-  const scrollHandler = useCallback(() => {
-    if (!thumbRef?.current || !contentRef?.current) return;
-
-    thumbRef.current.style.transform = `translate${scrollData.upperCasedAxis}(${
-      contentRef.current[`scroll${scrollData.scrollTo}`] / scrollData.scrollFactor
-    }px)`;
-  }, [scrollData, contentRef?.current, thumbRef?.current]);
-
-  const onPointerMove = useCallback(
-    (e: MouseEvent) => {
-      if (!contentRef?.current || !trackRef?.current || !thumbRef?.current) return;
-
-      contentRef.current[`scroll${scrollData.scrollTo}`] =
-        (e[`client${scrollData.upperCasedAxis}`] - initialMousePosition.current[scrollData.axisName]) *
-        scrollData.scrollFactor;
-    },
-    [scrollData, contentRef?.current, thumbRef?.current],
+    [thumbRef, trackRef, onPointerMove, clearDocumentHandlers],
   );
 
   useEffect(() => {
-    if (!contentRef?.current) return;
-    resizeObserver.observe(contentRef.current);
+    const curContent = contentRef?.current;
+    const curThumb = thumbRef?.current;
+
+    curContent?.addEventListener('scroll', scrollHandler);
+    curThumb?.addEventListener('pointerdown', onMouseDown);
+    curContent?.classList.add('scrollBar');
 
     return () => {
-      if (!contentRef?.current) return;
-      resizeObserver.unobserve(contentRef.current);
+      clearDocumentHandlers();
+      curContent?.removeEventListener('scroll', scrollHandler);
+      curThumb?.removeEventListener('pointerdown', onMouseDown);
     };
-  }, [contentRef?.current]);
+  }, [contentRef, thumbRef, clearDocumentHandlers, scrollHandler, onMouseDown]);
 
-  const clearDocumentHandlers = () => {
-    if (!thumbRef?.current) return;
-    thumbRef.current.removeEventListener('pointermove', onPointerMove);
-    thumbRef.current.removeEventListener('pointerup', onPointerUp);
-  };
+  useEffect(() => {
+    if (!contentRef?.current) return;
+    const content = contentRef.current;
+    resizeObserver.observe(content);
 
-  const onPointerUp = () => {
-    clearDocumentHandlers();
-  };
+    return () => {
+      if (content) return;
+      resizeObserver.unobserve(content);
+    };
+  }, [contentRef, resizeObserver]);
 };
