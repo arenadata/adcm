@@ -21,7 +21,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("cm", "0116_autonomous_joblogs"),
+        ("cm", "0117_autonomous_joblogs"),
     ]
 
     operations = [

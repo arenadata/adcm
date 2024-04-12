@@ -15,8 +15,8 @@ from django_test_migrations.contrib.unittest_case import MigratorTestCase
 
 
 class TestDirectMigration(MigratorTestCase):
-    migrate_from = ("cm", "0115_auto_20231025_1823")
-    migrate_to = ("cm", "0117_post_autonomous_joblogs")
+    migrate_from = ("cm", "0116_fix_null_jsonfield")
+    migrate_to = ("cm", "0118_post_autonomous_joblogs")
 
     def prepare(self):
         TaskLog = self.old_state.apps.get_model("cm", "TaskLog")
@@ -80,7 +80,7 @@ class TestDirectMigration(MigratorTestCase):
         self.job_3 = JobLog.objects.create(action=action, task=task, sub_action=self.sub_3)
         self.job_4 = JobLog.objects.create(action=action, task=task, sub_action=None)
 
-    def test_migration_0116_0117_move_data(self):
+    def test_migration_0117_0118_move_data(self):
         Action = self.new_state.apps.get_model("cm", "Action")
         JobLog = self.new_state.apps.get_model("cm", "JobLog")
 

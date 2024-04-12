@@ -58,7 +58,7 @@ def return_sub_actions_into_actions(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("cm", "0117_post_autonomous_joblogs"),
+        ("cm", "0118_post_autonomous_joblogs"),
     ]
 
     operations = [
