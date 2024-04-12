@@ -3,7 +3,7 @@ APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
 SELENOID_HOST ?= 10.92.2.65
 SELENOID_PORT ?= 4444
-ADCM_VERSION = "2.1.0"
+ADCM_VERSION = "2.1.1"
 PY_FILES = license_checker.py python dev/linters
 
 .PHONY: help

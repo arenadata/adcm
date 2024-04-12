@@ -15,8 +15,8 @@ from django_test_migrations.contrib.unittest_case import MigratorTestCase
 
 
 class TestDirectMigration(MigratorTestCase):
-    migrate_from = ("cm", "0117_post_autonomous_joblogs")
-    migrate_to = ("cm", "0118_extract_sub_actions_from_actions")
+    migrate_from = ("cm", "0118_post_autonomous_joblogs")
+    migrate_to = ("cm", "0119_extract_sub_actions_from_actions")
 
     def prepare(self):
         Prototype = self.old_state.apps.get_model("cm", "Prototype")
@@ -85,7 +85,7 @@ class TestDirectMigration(MigratorTestCase):
 
         self.sub_action_pre_migration_amount = SubAction.objects.count()
 
-    def test_migration_0117_0118_move_data(self):
+    def test_migration_0118_0119_move_data(self):
         Action = self.new_state.apps.get_model("cm", "Action")
         SubAction = self.new_state.apps.get_model("cm", "SubAction")
 
@@ -113,8 +113,8 @@ class TestDirectMigration(MigratorTestCase):
 
 
 class TestReverseMigration(MigratorTestCase):
-    migrate_from = ("cm", "0118_extract_sub_actions_from_actions")
-    migrate_to = ("cm", "0117_post_autonomous_joblogs")
+    migrate_from = ("cm", "0119_extract_sub_actions_from_actions")
+    migrate_to = ("cm", "0118_post_autonomous_joblogs")
 
     def prepare(self):
         Prototype = self.old_state.apps.get_model("cm", "Prototype")
@@ -189,7 +189,7 @@ class TestReverseMigration(MigratorTestCase):
 
         self.sub_action_pre_migration_amount = SubAction.objects.count()
 
-    def test_migration_0118_to_0117_move_data(self):
+    def test_migration_0119_to_0118_move_data(self):
         Action = self.new_state.apps.get_model("cm", "Action")
         SubAction = self.new_state.apps.get_model("cm", "SubAction")
 
