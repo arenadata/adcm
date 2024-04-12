@@ -26,6 +26,7 @@ ALLOWED_IMPORTS = (
     "json",
     "operator",
     "os",
+    "pathlib",
     "typing",
     "uuid",
 )

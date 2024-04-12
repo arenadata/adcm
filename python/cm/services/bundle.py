@@ -9,49 +9,79 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from abc import ABC
 from pathlib import Path
 
+from django.conf import settings
 
-def detect_path_for_file_in_bundle(bundle_root: Path, config_yaml_dir: str | Path, file: str) -> Path:
+
+def detect_relative_path_to_bundle_root(source_file_dir: str | Path, raw_path: str) -> Path:
     """
-    Detect path to file within bundle directory without symlink resolution
-
-    :param bundle_root: Path to bundle root directory (like */adcm/data/bundle/somebundlehash/*)
-    :param config_yaml_dir: Directory containing *config.yaml* file with definition
-                            of the object that file belongs to.
-                            It is used when filename is specified in a "relative to config.yaml way":
-                            staring with *"./"*.
-                            May also be `""`, `"."`, `Path(".")`, `Path("")`
-                            (which will be considered the same as for `Path` rules).
-                            Those "empty" paths will make result equal for `file="./some.file"` and `file="some.file"`.
-    :param file: Filename string as it's specified in object definition in bundle.
+    :param source_file_dir: Directory with file where given `path` is defined
+    :param raw_path: Path to resolve
 
     >>> from pathlib import Path
-    >>> bundle_root_dir = Path("/adcm/data/bundle") / "bundle-hash"
-    >>> this = detect_path_for_file_in_bundle
-    >>> str(this(bundle_root_dir, "", "./script.yaml")) == str(bundle_root_dir / "script.yaml")
+    >>> this = detect_relative_path_to_bundle_root
+    >>> this("", "./script.yaml") == Path("script.yaml")
     True
-    >>> res = str(this(bundle_root_dir, ".", "./some/script.yaml"))
-    >>> exp = str(bundle_root_dir / "some" /"script.yaml")
-    >>> res == exp
+    >>> str(this(".", "./some/script.yaml")) == "some/script.yaml"
     True
-    >>> str(this(bundle_root_dir, Path(""), "script.yaml")) == str((bundle_root_dir / "script.yaml").resolve())
+    >>> str(this(Path(""), "script.yaml")) == "script.yaml"
     True
-    >>> res = str(this(bundle_root_dir, Path("inner"), "atroot/script.yaml"))
-    >>> exp = str(bundle_root_dir / "atroot" / "script.yaml")
-    >>> res == exp
+    >>> str(this(Path("inner"), "atroot/script.yaml")) == "atroot/script.yaml"
     True
-    >>> res = str(this(bundle_root_dir, Path("inner"), "./script.yaml"))
-    >>> exp = str(bundle_root_dir / "inner" / "script.yaml")
-    >>> res == exp
+    >>> str(this(Path("inner"), "./script.yaml")) == "inner/script.yaml"
     True
-    >>> res = str(this(bundle_root_dir, Path("inner"), "./alongside/script.yaml"))
-    >>> exp = str(bundle_root_dir / "inner" / "alongside" / "script.yaml")
-    >>> res == exp
+    >>> str(this(Path("inner"), "./alongside/script.yaml")) == "inner/alongside/script.yaml"
     True
     """
-    if file.startswith("./"):
-        return bundle_root / config_yaml_dir / file
+    if raw_path.startswith("./"):
+        return Path(source_file_dir) / raw_path
 
-    return bundle_root / file
+    return Path(raw_path)
+
+
+def is_path_correct(raw_path: str) -> bool:
+    """
+    Return whether given path meets ADCM path description requirements
+
+    >>> this = is_path_correct
+    >>> this("relative_to_bundle/path.yaml")
+    True
+    >>> this("./relative/to/file.yaml")
+    True
+    >>> this(".secret")
+    True
+    >>> this("../hack/system")
+    False
+    >>> this("/hack/system")
+    False
+    >>> this(".././hack/system")
+    False
+    >>> this("../../hack/system")
+    False
+    """
+    return raw_path.startswith("./") or not raw_path.startswith(("..", "/"))
+
+
+class PathResolver(ABC):
+    __slots__ = ("_root",)
+
+    _root: Path
+
+    @property
+    def bundle_root(self) -> Path:
+        return self._root
+
+    def resolve(self, path: str | Path) -> Path:
+        return self._root / path
+
+
+class BundlePathResolver(PathResolver):
+    def __init__(self, bundle_hash: str):
+        self._root = settings.BUNDLE_DIR / bundle_hash
+
+
+class ADCMBundlePathResolver(PathResolver):
+    def __init__(self):
+        self._root = settings.BASE_DIR / "conf" / "adcm"

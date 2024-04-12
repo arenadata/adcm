@@ -13,6 +13,7 @@
 from pathlib import Path
 
 from cm.models import Action, ADCMEntity, Cluster, ClusterObject, Host, PrototypeConfig, ServiceComponent
+from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
 from cm.services.cluster import retrieve_clusters_topology
 from cm.services.job.inventory import get_cluster_vars
 from django.conf import settings
@@ -41,10 +42,7 @@ def _get_limits(config: dict, root_path: Path) -> dict:
     limits = {}
 
     if "yspec" in config and config["type"] in settings.STACK_COMPLEX_FIELD_TYPES:
-        with Path(root_path, config["yspec"]).open(encoding=settings.ENCODING_UTF_8) as f:
-            data = f.read()
-
-        limits["yspec"] = safe_load(stream=data)
+        limits["yspec"] = safe_load(stream=(root_path / config["yspec"]).read_text(encoding="utf-8"))
 
     if "option" in config and config["type"] == "option":
         limits["option"] = config["option"]
@@ -101,6 +99,9 @@ def _normalize_config(config: dict, root_path: Path, name: str = "", subname: st
 
     config["limits"] = _get_limits(config=config, root_path=root_path)
 
+    if config["type"] in settings.STACK_FILE_FIELD_TYPES and config.get("default"):
+        config["default"] = detect_relative_path_to_bundle_root(source_file_dir=root_path, raw_path=config["default"])
+
     if "subs" in config:
         for subconf in config["subs"]:
             config_list.extend(
@@ -123,17 +124,16 @@ def get_jinja_config(action: Action, obj: ADCMEntity) -> tuple[list[PrototypeCon
         message = f"Can't detect cluster variables for {obj}"
         raise RuntimeError(message)
 
-    jinja_conf_file = Path(settings.BUNDLE_DIR, action.prototype.bundle.hash, action.config_jinja)
-    template = Template(source=jinja_conf_file.read_text(encoding=settings.ENCODING_UTF_8))
+    resolver = BundlePathResolver(bundle_hash=action.prototype.bundle.hash)
+    jinja_conf_file = resolver.resolve(action.config_jinja)
+    template = Template(source=jinja_conf_file.read_text(encoding="utf-8"))
     data_yaml = template.render(get_cluster_vars(topology=cluster_topology).dict(by_alias=True, exclude_defaults=True))
     data = load(stream=data_yaml, Loader=SafeLoader)
 
     configs = []
     attr = {}
     for config in data:
-        for normalized_config in _normalize_config(
-            config=config, root_path=Path(settings.BUNDLE_DIR, action.prototype.bundle.hash, action.prototype.path)
-        ):
+        for normalized_config in _normalize_config(config=config, root_path=jinja_conf_file.parent):
             configs.append(PrototypeConfig(prototype=action.prototype, action=action, **normalized_config))
             attr.update(**_get_attr(config=normalized_config))
 

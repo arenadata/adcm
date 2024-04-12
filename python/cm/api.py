@@ -15,6 +15,7 @@ from typing import Literal, TypedDict
 import json
 
 from adcm_version import compare_prototype_versions
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
 from django.db.transaction import atomic, on_commit
@@ -24,7 +25,7 @@ from rbac.roles import apply_policy_for_new_config
 from cm.adcm_config.config import (
     init_object_config,
     process_json_config,
-    read_bundle_file,
+    reraise_file_errors_as_adcm_ex,
     save_object_config,
 )
 from cm.adcm_config.utils import proto_ref
@@ -413,9 +414,10 @@ def get_license(proto: Prototype) -> str | None:
         return None
 
     if not isinstance(proto, Prototype):
-        raise_adcm_ex("LICENSE_ERROR")
+        raise AdcmEx("LICENSE_ERROR")
 
-    return read_bundle_file(proto=proto, fname=proto.license_path, bundle_hash=proto.bundle.hash, ref="license file")
+    with reraise_file_errors_as_adcm_ex(filepath=proto.license_path, reference="license file"):
+        return (settings.BUNDLE_DIR / proto.bundle.hash / proto.license_path).read_text(encoding="utf-8")
 
 
 def accept_license(proto: Prototype) -> None:

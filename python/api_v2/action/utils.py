@@ -27,6 +27,7 @@ from cm.models import (
     PrototypeConfig,
     ServiceComponent,
 )
+from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver
 from django.conf import settings
 from jinja_config import get_jinja_config
 from rbac.models import User
@@ -89,6 +90,11 @@ def get_action_configuration(
     config = defaultdict(dict)
     attr = {}
 
+    if action_.prototype.type == "adcm":
+        path_resolver = ADCMBundlePathResolver()
+    else:
+        path_resolver = BundlePathResolver(bundle_hash=action_.prototype.bundle.hash)
+
     for prototype_config in prototype_configs:
         name = prototype_config.name
         sub_name = prototype_config.subname
@@ -99,7 +105,7 @@ def get_action_configuration(
 
             continue
 
-        value = get_default(conf=prototype_config, prototype=action_.prototype)
+        value = get_default(conf=prototype_config, path_resolver=path_resolver)
 
         if prototype_config.type == "json":
             value = json.dumps(value) if value is not None else None

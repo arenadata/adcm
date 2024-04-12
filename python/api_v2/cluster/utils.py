@@ -91,7 +91,6 @@ def get_depend_on(
                 "status": required_service.license,
                 "text": get_license_text(
                     license_path=required_service.license_path,
-                    path=required_service.path,
                     bundle_hash=required_service.bundle.hash,
                 ),
             },

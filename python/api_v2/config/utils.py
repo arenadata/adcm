@@ -19,6 +19,7 @@ import json
 from cm.adcm_config.config import get_default
 from cm.errors import AdcmEx
 from cm.models import (
+    ADCM,
     Action,
     ADCMEntity,
     ConfigLog,
@@ -26,6 +27,7 @@ from cm.models import (
     Prototype,
     PrototypeConfig,
 )
+from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
 from cm.variant import get_variant
 from django.db.models import QuerySet
 from rest_framework.decorators import action
@@ -34,7 +36,9 @@ from rest_framework.status import HTTP_200_OK
 
 
 class Field(ABC):
-    def __init__(self, prototype_config: PrototypeConfig, object_: ADCMEntity | GroupConfig):
+    def __init__(
+        self, prototype_config: PrototypeConfig, object_: ADCMEntity | GroupConfig, path_resolver: PathResolver
+    ):
         self.object_ = object_
         self.is_group_config = False
 
@@ -49,6 +53,8 @@ class Field(ABC):
         self.description = prototype_config.description
         self.limits = self.prototype_config.limits
         self.required = self.prototype_config.required
+
+        self._path_resolver = path_resolver
 
     @property
     @abstractmethod
@@ -114,7 +120,7 @@ class Field(ABC):
 
     @property
     def default(self) -> Any:
-        return get_default(conf=self.prototype_config, prototype=self.prototype_config.prototype)
+        return get_default(conf=self.prototype_config, path_resolver=self._path_resolver)
 
     def to_dict(self) -> dict:
         return {
@@ -286,8 +292,10 @@ class SecretMap(Map):
 
 
 class Structure(Field):
-    def __init__(self, prototype_config: PrototypeConfig, object_: ADCMEntity | GroupConfig):
-        super().__init__(prototype_config=prototype_config, object_=object_)
+    def __init__(
+        self, prototype_config: PrototypeConfig, object_: ADCMEntity | GroupConfig, path_resolver: PathResolver
+    ):
+        super().__init__(prototype_config=prototype_config, object_=object_, path_resolver=path_resolver)
 
         self.yspec = self.limits["yspec"]
 
@@ -414,9 +422,10 @@ class Group(Field):
         self,
         prototype_config: PrototypeConfig,
         object_: ADCMEntity | GroupConfig,
+        path_resolver: PathResolver,
         group_fields: QuerySet[PrototypeConfig],
     ):
-        super().__init__(prototype_config=prototype_config, object_=object_)
+        super().__init__(prototype_config=prototype_config, object_=object_, path_resolver=path_resolver)
         self.group_fields = group_fields
         self.root_object = object_
 
@@ -561,41 +570,48 @@ def get_field(
     object_: ADCMEntity,
     group_fields: QuerySet[PrototypeConfig] | None = None,
 ):
+    path_resolver = (
+        ADCMBundlePathResolver()
+        if isinstance(object_, ADCM)
+        else BundlePathResolver(bundle_hash=object_.prototype.bundle.hash)
+    )
+    common_kwargs = {"prototype_config": prototype_config, "object_": object_, "path_resolver": path_resolver}
+
     match prototype_config.type:
         case "boolean":
-            field = Boolean(prototype_config=prototype_config, object_=object_)
+            field = Boolean(**common_kwargs)
         case "float":
-            field = Float(prototype_config=prototype_config, object_=object_)
+            field = Float(**common_kwargs)
         case "integer":
-            field = Integer(prototype_config=prototype_config, object_=object_)
+            field = Integer(**common_kwargs)
         case "file":
-            field = File(prototype_config=prototype_config, object_=object_)
+            field = File(**common_kwargs)
         case "json":
-            field = Json(prototype_config=prototype_config, object_=object_)
+            field = Json(**common_kwargs)
         case "password":
-            field = Password(prototype_config=prototype_config, object_=object_)
+            field = Password(**common_kwargs)
         case "secretfile":
-            field = SecretFile(prototype_config=prototype_config, object_=object_)
+            field = SecretFile(**common_kwargs)
         case "secrettext":
-            field = SecretText(prototype_config=prototype_config, object_=object_)
+            field = SecretText(**common_kwargs)
         case "string":
-            field = String(prototype_config=prototype_config, object_=object_)
+            field = String(**common_kwargs)
         case "text":
-            field = Text(prototype_config=prototype_config, object_=object_)
+            field = Text(**common_kwargs)
         case "map":
-            field = Map(prototype_config=prototype_config, object_=object_)
+            field = Map(**common_kwargs)
         case "secretmap":
-            field = SecretMap(prototype_config=prototype_config, object_=object_)
+            field = SecretMap(**common_kwargs)
         case "structure":
-            field = Structure(prototype_config=prototype_config, object_=object_)
+            field = Structure(**common_kwargs)
         case "group":
-            field = Group(prototype_config=prototype_config, object_=object_, group_fields=group_fields)
+            field = Group(**common_kwargs, group_fields=group_fields)
         case "list":
-            field = List(prototype_config=prototype_config, object_=object_)
+            field = List(**common_kwargs)
         case "option":
-            field = Option(prototype_config=prototype_config, object_=object_)
+            field = Option(**common_kwargs)
         case "variant":
-            field = Variant(prototype_config=prototype_config, object_=object_)
+            field = Variant(**common_kwargs)
         case _:
             raise TypeError
 
