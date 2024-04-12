@@ -41,7 +41,6 @@ class MainPrototypeLicenseSerializer(EmptySerializer):
     def get_text(bundle: Bundle):
         return get_license_text(
             license_path=bundle.main_prototype_license_path,  # This is the magic of annotations, see queryset
-            path=bundle.main_prototype_path,
             bundle_hash=bundle.hash,
         )
 
@@ -103,7 +102,6 @@ class UpgradeServicePrototypeSerializer(ModelSerializer):
             "status": prototype.license,
             "text": get_license_text(
                 license_path=prototype.license_path,
-                path=prototype.path,
                 bundle_hash=prototype.bundle.hash,
             ),
         }
