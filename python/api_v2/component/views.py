@@ -148,6 +148,11 @@ class ComponentViewSet(
         return Response(data=ComponentStatusSerializer(instance=component, context=self.get_serializer_context()).data)
 
 
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getHostComponents", summary="GET host components", description="Get a list of host components."
+    )
+)
 class HostComponentViewSet(PermissionListMixin, ListModelMixin, CamelCaseGenericViewSet, ObjectWithStatusViewMixin):
     queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("prototype__name")
     serializer_class = HostComponentSerializer

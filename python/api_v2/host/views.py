@@ -293,9 +293,9 @@ class HostViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMi
         operation_id="postCusterHosts",
         description="Add a new hosts to cluster.",
         summary="POST cluster hosts",
-        request=HostAddSerializer,
+        request=HostAddSerializer(many=True),
         responses={
-            HTTP_201_CREATED: HostSerializer,
+            HTTP_201_CREATED: HostSerializer(many=True),
             **{
                 err_code: ErrorSerializer
                 for err_code in (HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)

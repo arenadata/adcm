@@ -147,7 +147,6 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.OrderingFilter",
-        "rest_framework.filters.SearchFilter",
     ],
     "EXCEPTION_HANDLER": "cm.errors.custom_drf_exception_handler",
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.NamespaceVersioning",
@@ -364,6 +363,7 @@ SPECTACULAR_SETTINGS = {
     "REDOC_DIST": "SIDECAR",
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",
+        "adcm.api_schema.convert_pks_in_path_to_camel_case_ids",
         "drf_spectacular.contrib.djangorestframework_camel_case.camelize_serializer_fields",
         "adcm.api_schema.make_all_fields_required_in_response",
     ],
