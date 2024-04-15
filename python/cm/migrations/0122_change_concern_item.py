@@ -26,7 +26,7 @@ def remove_unlinked_concerns(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("contenttypes", "0002_remove_content_type_name"),
-        ("cm", "0119_delete_MessageTemplate"),
+        ("cm", "0121_delete_MessageTemplate"),
     ]
 
     operations = [

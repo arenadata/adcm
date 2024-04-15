@@ -24,7 +24,7 @@ def fill_default_flag_autogeneration_value(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cm', '0120_change_concern_item'),
+        ('cm', '0122_change_concern_item'),
     ]
 
     operations = [

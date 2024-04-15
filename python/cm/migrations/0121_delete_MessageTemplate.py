@@ -17,7 +17,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("cm", "0118_extract_sub_actions_from_actions"),
+        ("cm", "0120_adjust_paths"),
     ]
 
     operations = [migrations.DeleteModel(name="MessageTemplate")]
