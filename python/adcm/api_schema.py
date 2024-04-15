@@ -17,6 +17,12 @@ from rest_framework.request import Request
 
 _REF_PREFIX = "#/components/schemas/"
 
+_ID_REPLACE_MAP = {
+    "{login_id}": "{audit_login_id}",
+    "{operation_id}": "{audit_operation_id}",
+    "{group_config_id}": "{config_group_id}",
+}
+
 
 def make_all_fields_required_in_response(generator: SchemaGenerator, request: Request, public: bool, result: dict):
     _ = generator, request, public
@@ -61,6 +67,61 @@ def make_all_fields_required_in_response(generator: SchemaGenerator, request: Re
         continue
 
     return result
+
+
+def convert_pks_in_path_to_camel_case_ids(generator: SchemaGenerator, request: Request, public: bool, result: dict):
+    _ = generator, request, public
+
+    original_paths = result.pop("paths")
+    new_paths = {}
+
+    for path, description in original_paths.items():
+        new_key = path.replace("_pk}", "_id}")
+        altered_base_id = None
+
+        # unoptimized section start
+        if "{id}" in new_key:
+            before, _ = new_key.split("{id}")
+            *_, entry = before.rstrip("/").rsplit("/", maxsplit=1)
+            altered_base_id = "{" + f"{entry.rstrip('s')}_id".replace("-", "_") + "}"
+
+            new_key = new_key.replace("{id}", altered_base_id)
+
+        altered_keys = {}
+        if altered_base_id:
+            altered_keys["id"] = _ID_REPLACE_MAP.get(altered_base_id, altered_base_id)[1:-1]
+
+        # maybe use here regex to extract such keys
+        for id_to_replace, replacement in _ID_REPLACE_MAP.items():
+            if id_to_replace in new_key:
+                altered_keys[id_to_replace[1:-1]] = replacement[1:-1]
+                new_key = new_key.replace(id_to_replace, replacement)
+
+        new_paths[_to_camel_case(new_key)] = _replace_pk_with_id_for_path_parameters(
+            path_dict=description, replacements=altered_keys
+        )
+        # unoptimized section end
+
+    result["paths"] = new_paths
+
+    return result
+
+
+def _to_camel_case(line: str) -> str:
+    first, *rest = line.split("_")
+    return f"{first}{''.join(map(str.capitalize, rest))}"
+
+
+def _replace_pk_with_id_for_path_parameters(path_dict: dict, replacements: dict[str, str]) -> dict:
+    for entry in path_dict.values():
+        for param in entry.get("parameters", ()):
+            if param["in"] != "path":
+                continue
+
+            param["name"] = param["name"].replace("pk", "id")
+            param["name"] = replacements.get(param["name"], param["name"])
+
+    return path_dict
 
 
 def _deref_component(schemas: dict, component_ref: str) -> dict | None:
