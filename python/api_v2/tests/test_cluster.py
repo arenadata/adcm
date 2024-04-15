@@ -43,6 +43,11 @@ from api_v2.tests.base import BaseAPITestCase
 
 
 class TestCluster(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.cluster_action = Action.objects.get(prototype=self.cluster_1.prototype, name="action")
+
     def test_list_success(self):
         with patch("cm.services.status.client.api_request") as patched_request:
             response = self.client.get(path=reverse(viewname="v2:cluster-list"))
@@ -303,6 +308,32 @@ class TestCluster(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+    def test_update_locking_concern_fail(self):
+        with RunTaskMock():
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:cluster-action-run",
+                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action.pk},
+                ),
+                data={"configuration": None, "isVerbose": True, "hostComponentMap": []},
+            )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response = self.client.patch(
+                path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+                data={"name": "new_name"},
+            )
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            self.assertDictEqual(
+                response.json(),
+                {
+                    "code": "CLUSTER_CONFLICT",
+                    "desc": "Name change is available only if no locking concern exists",
+                    "level": "error",
+                },
+            )
 
     def test_update_success(self):
         new_test_cluster_name = "new_test_cluster_name"

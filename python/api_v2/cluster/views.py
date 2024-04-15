@@ -23,6 +23,7 @@ from cm.issue import update_hierarchy_issues
 from cm.models import (
     Cluster,
     ClusterObject,
+    ConcernType,
     Host,
     HostComponent,
     ObjectType,
@@ -167,6 +168,9 @@ class ClusterViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewS
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         valid_data = serializer.validated_data
+
+        if valid_data.get("name") and instance.concerns.filter(type=ConcernType.LOCK).exists():
+            raise AdcmEx(code="CLUSTER_CONFLICT", msg="Name change is available only if no locking concern exists")
 
         if valid_data.get("name") and valid_data.get("name") != instance.name and instance.state != "created":
             raise AdcmEx(code="CLUSTER_CONFLICT", msg="Name change is available only in the 'created' state")

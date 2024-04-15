@@ -25,7 +25,7 @@ from adcm.permissions import (
 from audit.utils import audit
 from cm.api import delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
-from cm.models import Cluster, GroupConfig, Host, HostProvider
+from cm.models import Cluster, ConcernType, GroupConfig, Host, HostProvider
 from cm.services.cluster import perform_host_to_cluster_map
 from cm.services.status import notify
 from core.cluster.errors import (
@@ -243,6 +243,9 @@ class HostViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMi
         serializer = self.get_serializer(instance=instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         valid = serializer.validated_data
+
+        if valid.get("fqdn") and instance.concerns.filter(type=ConcernType.LOCK).exists():
+            raise AdcmEx(code="HOST_CONFLICT", msg="Name change is available only if no locking concern exists")
 
         if (
             valid.get("fqdn")
