@@ -9,12 +9,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import sys
+
+sys.path.append("/adcm/python")
+
+import adcm.init_django  # noqa: F401, isort:skip
+from ansible_plugin.base import ADCMAnsiblePlugin
+from ansible_plugin.executors.change_flag import ADCMChangeFlagPluginExecutor
+
 DOCUMENTATION = """
----
 module: adcm_change_flag
-short_description: Raise or Lower flags on  Host, Service, Component or Cluster
+short_description: Raise or Lower flags on Cluster, Service, Component, Hostprovider or Host
 description:
-    - The C(adcm_change_flag) module is intended to raise or lower on Host, Service, Component.
+    - The C(adcm_change_flag) module is intended to raise or lower on Cluster, Service, Component, Hostprovider or Host.
 options:
   operation:
     description: Operation over flag.
@@ -22,184 +30,62 @@ options:
     choices:
       - up
       - down
+  name:
+    description: |
+      Internal flag name. Used for managing flags, including embedded ones.
+      If not specified in case of "down" operation all object's flags will be lowered.
+    required: False
+    type: string
   msg:
-    description: Additional flag message, to use in pattern "<object> has an outdated configuration: <msg>".
-    It might be used if you want several different flags in the same objects. In case of down operation,
-    if message specified then down only flag with specified message.
+    description: |
+      Additional flag message, to use in pattern "<object> has a flag: <msg>".
+      It might be used if you want several different flags on the same object.
+      In case of embedded flags management will overwrite the default message.
     required: False
     type: string
   objects:
-    description: List of Services or Components on which you need to raise/lower the flag.
-    If this parameter not specified raise or lower flag on action context object.
-    If you want to raise or lower flag on cluster you needed action in cluster context.
+    description: |
+      List of Services or Components on which you need to raise/lower the flag.
+      If this parameter is not specified, flag on action context object will be raised or lowered.
+      If you want to raise or lower flag on cluster you can add `- type: cluster` entry.
     required: False
     type: list
     elements: dict
     sample:
-      - type: service
-        service_name: hdfs
-      - type: component
-        service_name: service
-        component_name: component
       - type: cluster
 """
 
-EXAMPLES = r"""
-- adcm_change_flag:
-  operation: up
-  objects:
-  - type: service
-    service_name: hdfs
-  - type: component
-    service_name: service
-    component_name: component
-  - type: cluster
+EXAMPLES = """
+# raise / up
 
 - adcm_change_flag:
-  operation: down
-  objects:
-      - type: provider
-      - type: host
-        name: host_name
+    operation: up
+    name: my_custom_flag
+    objects:
+      - type: component
+        service_name: kafka
+        component_name: kafka_broker
+
+- adcm_change_flag:
+    operation: up
+    name: adcm_outdated_config
+    objects:
+      - type: component
+        service_name: kafka
+        component_name: kafka_broker
+
+# lower / down
+
+- adcm_change_flag:
+    name: my_custom_flag
+    operation: down
+
+- adcm_change_flag:
+    operation: down
+    objects:
+      - type: service
 """
-import sys
-
-from ansible.errors import AnsibleError
-from ansible.plugins.action import ActionBase
-
-sys.path.append("/adcm/python")
-
-import adcm.init_django  # noqa: F401, isort:skip
-
-from ansible_plugin.utils import check_context_type, get_context_object
-from cm.flag import remove_flag, update_object_flag
-from cm.logger import logger
-from cm.models import (
-    ADCMEntity,
-    ADCMEntityStatus,
-    ClusterObject,
-    Host,
-    HostProvider,
-    ServiceComponent,
-    get_object_cluster,
-)
-from cm.status_api import send_object_update_event
-
-cluster_context_type = ("cluster", "service", "component")
 
 
-class ActionModule(ActionBase):
-    TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(("operation", "msg", "objects"))
-
-    def _check_args(self):
-        if "operation" not in self._task.args:
-            raise AnsibleError("'Operation' is mandatory args of adcm_change_flag")
-
-        if self._task.args["operation"] not in ("up", "down"):
-            raise AnsibleError(f"'Operation' value must be 'up' or 'down', not {self._task.args['operation']}")
-
-        if "objects" in self._task.args:
-            if not isinstance(self._task.args["objects"], list):
-                raise AnsibleError("'Objects' value should be list of objects")
-
-            if not self._task.args["objects"]:
-                raise AnsibleError("'Objects' value should not be empty")
-
-            for item in self._task.args["objects"]:
-                item_type = item.get("type")
-                if not item_type:
-                    raise AnsibleError(message="'type' argument is mandatory for all items in 'objects'")
-
-                if item_type == "component" and ("service_name" not in item or "component_name" not in item):
-                    raise AnsibleError(message="'service_name' and 'component_name' is mandatory for type 'component'")
-                if item_type == "service" and "service_name" not in item:
-                    raise AnsibleError(message="'service_name' is mandatory for type 'service'")
-
-    def _process_objects(self, task_vars: dict, objects: list, context_obj: ADCMEntity) -> None:
-        err_msg = "Type {} should be used in {} context only"
-        cluster = get_object_cluster(obj=context_obj)
-
-        for item in self._task.args["objects"]:
-            obj = None
-            item_type = item.get("type")
-
-            if item_type == "component":
-                check_context_type(
-                    task_vars=task_vars,
-                    context_types=cluster_context_type,
-                    err_msg=err_msg.format(item_type, cluster_context_type),
-                )
-
-                obj = ServiceComponent.objects.filter(
-                    cluster=cluster,
-                    prototype__name=item["component_name"],
-                    service__prototype__name=item["service_name"],
-                ).first()
-            elif item_type == "service":
-                check_context_type(
-                    task_vars=task_vars,
-                    context_types=cluster_context_type,
-                    err_msg=err_msg.format(item_type, cluster_context_type),
-                )
-
-                obj = ClusterObject.objects.filter(cluster=cluster, prototype__name=item["service_name"]).first()
-            elif item_type == "cluster":
-                check_context_type(
-                    task_vars=task_vars,
-                    context_types=cluster_context_type,
-                    err_msg=err_msg.format(item_type, cluster_context_type),
-                )
-
-                obj = cluster
-            elif item_type == "provider":
-                check_context_type(
-                    task_vars=task_vars,
-                    context_types=("provider", "host"),
-                    err_msg=err_msg.format(item_type, ("provider", "host")),
-                )
-
-                if isinstance(context_obj, HostProvider):
-                    obj = context_obj
-                elif isinstance(context_obj, Host):
-                    obj = context_obj.provider
-
-            elif item_type == "host":
-                check_context_type(
-                    task_vars=task_vars,
-                    context_types=("host",),
-                    err_msg=err_msg.format(item_type, "host"),
-                )
-
-                obj = context_obj
-
-            if not obj:
-                logger.error("Object %s not found", item)
-                continue
-
-            objects.append(obj)
-
-    def run(self, tmp=None, task_vars=None):
-        super().run(tmp, task_vars)
-        self._check_args()
-
-        msg = ""
-        if "msg" in self._task.args:
-            msg = str(self._task.args["msg"])
-
-        objects = []
-        context_obj = get_context_object(task_vars=task_vars)
-        if "objects" in self._task.args:
-            self._process_objects(objects=objects, context_obj=context_obj, task_vars=task_vars)
-        else:
-            objects.append(context_obj)
-
-        for obj in objects:
-            if self._task.args["operation"] == "up":
-                update_object_flag(obj=obj, msg=msg)
-                send_object_update_event(object_=obj, changes={"status": ADCMEntityStatus.UP.value})
-            elif self._task.args["operation"] == "down":
-                remove_flag(obj=obj, msg=msg)
-                send_object_update_event(object_=obj, changes={"status": ADCMEntityStatus.DOWN.value})
-
-        return {"failed": False, "changed": True}
+class ActionModule(ADCMAnsiblePlugin):
+    executor_class = ADCMChangeFlagPluginExecutor

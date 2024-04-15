@@ -15,6 +15,7 @@ from typing import Literal, TypedDict
 import json
 
 from adcm_version import compare_prototype_versions
+from core.types import CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
@@ -30,8 +31,8 @@ from cm.adcm_config.config import (
 )
 from cm.adcm_config.utils import proto_ref
 from cm.api_context import CTX
+from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx, raise_adcm_ex
-from cm.flag import update_object_flag
 from cm.issue import (
     add_concern_to_object,
     check_bound_components,
@@ -44,16 +45,19 @@ from cm.issue import (
 )
 from cm.logger import logger
 from cm.models import (
+    ADCM,
     ADCMEntity,
     Cluster,
     ClusterBind,
     ClusterObject,
+    ConcernItem,
     ConcernType,
     ConfigLog,
     GroupConfig,
     Host,
     HostComponent,
     HostProvider,
+    MainObject,
     MaintenanceMode,
     ObjectConfig,
     Prototype,
@@ -62,6 +66,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.concern.flags import BuiltInFlag, raise_flag, update_hierarchy
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import (
     send_config_creation_event,
@@ -435,7 +440,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
         message = f"Both `config` and `attr` should be of `dict` type, not {type(config)} and {type(attr)} respectively"
         raise TypeError(message)
 
-    obj: ADCMEntity = obj_conf.object
+    obj: MainObject | ADCM | GroupConfig = obj_conf.object
     if obj is None:
         message = "Can't update configuration that have no linked object"
         raise ValueError(message)
@@ -443,7 +448,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
     group = None
     if isinstance(obj, GroupConfig):
         group = obj
-        obj = group.object
+        obj: MainObject = group.object
         proto = obj.prototype
     else:
         proto = obj.prototype
@@ -460,12 +465,30 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
     with atomic():
         config_log = save_object_config(object_config=obj_conf, config=new_conf, attr=attr, description=description)
         update_hierarchy_issues(obj=obj)
-        update_object_flag(obj=obj)
+        # flag on ADCM can't be raised (only objects of `ADCMCoreType` are supported)
+        if not isinstance(obj, ADCM):
+            raise_outdated_config_flag_if_required(object_=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     send_config_creation_event(object_=obj)
 
     return config_log
+
+
+def raise_outdated_config_flag_if_required(object_: MainObject):
+    if not object_.prototype.flag_autogeneration.get("enable_outdated_config", False):
+        return
+
+    flag = BuiltInFlag.ADCM_OUTDATED_CONFIG.value
+    flag_exists = object_.concerns.filter(name=flag.name, type=ConcernType.FLAG).exists()
+    # raise unconditionally here, because message should be from "default" flag
+    raise_flag(flag=flag, on_objects=[CoreObjectDescriptor(id=object_.id, type=orm_object_to_core_type(object_))])
+    if not flag_exists:
+        update_hierarchy(
+            concern=ConcernItem.objects.get(
+                name=flag.name, type=ConcernType.FLAG, owner_id=object_.id, owner_type=object_.content_type
+            )
+        )
 
 
 def set_object_config_with_plugin(obj: ADCMEntity, config: dict, attr: dict) -> ConfigLog:

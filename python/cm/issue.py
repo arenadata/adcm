@@ -13,6 +13,7 @@ from functools import partial
 from typing import Iterable
 
 from api_v2.concern.serializers import ConcernSerializer
+from django.conf import settings
 from django.db.transaction import on_commit
 from djangorestframework_camel_case.util import camelize
 
@@ -35,14 +36,13 @@ from cm.models import (
     Host,
     HostComponent,
     JobLog,
-    KnownNames,
-    MessageTemplate,
     ObjectType,
     Prototype,
     PrototypeImport,
     ServiceComponent,
     TaskLog,
 )
+from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, build_concern_reason
 from cm.status_api import send_concern_creation_event, send_concern_delete_event
 from cm.utils import obj_ref
 
@@ -382,33 +382,36 @@ _prototype_issue_map = {
     ObjectType.HOST: (ConcernCause.CONFIG,),
 }
 _issue_template_map = {
-    ConcernCause.CONFIG: KnownNames.CONFIG_ISSUE,
-    ConcernCause.IMPORT: KnownNames.REQUIRED_IMPORT_ISSUE,
-    ConcernCause.SERVICE: KnownNames.REQUIRED_SERVICE_ISSUE,
-    ConcernCause.HOSTCOMPONENT: KnownNames.HOST_COMPONENT_ISSUE,
-    ConcernCause.REQUIREMENT: KnownNames.UNSATISFIED_REQUIREMENT_ISSUE,
+    ConcernCause.CONFIG: ConcernMessage.CONFIG_ISSUE,
+    ConcernCause.IMPORT: ConcernMessage.REQUIRED_IMPORT_ISSUE,
+    ConcernCause.SERVICE: ConcernMessage.REQUIRED_SERVICE_ISSUE,
+    ConcernCause.HOSTCOMPONENT: ConcernMessage.HOST_COMPONENT_ISSUE,
+    ConcernCause.REQUIREMENT: ConcernMessage.UNSATISFIED_REQUIREMENT_ISSUE,
 }
 
 
-def _gen_issue_name(obj: ADCMEntity, cause: ConcernCause) -> str:
-    """Make human-understandable issue name for debug use"""
-    return f"{obj} has issue with {cause.value}"
+def _gen_issue_name(cause: ConcernCause) -> str:
+    return f"{ConcernType.ISSUE}_{cause.value}"
 
 
-def get_kwargs_for_issue(msg_name: KnownNames, source: ADCMEntity) -> dict:
+def _get_kwargs_for_issue(concern_name: ConcernMessage, source: ADCMEntity) -> dict:
     kwargs = {"source": source}
     target = None
 
-    if msg_name == KnownNames.REQUIRED_SERVICE_ISSUE:
+    if concern_name == ConcernMessage.REQUIRED_SERVICE_ISSUE:
         bundle = source.prototype.bundle
-        for proto in Prototype.objects.filter(bundle=bundle, type="service", required=True):
-            try:
-                ClusterObject.objects.get(cluster=source, prototype=proto)
-            except ClusterObject.DoesNotExist:
-                target = proto
-                break
+        # source is expected to be Cluster here
+        target = (
+            Prototype.objects.filter(
+                bundle=bundle,
+                type="service",
+                required=True,
+            )
+            .exclude(id__in=ClusterObject.objects.values_list("prototype_id", flat=True).filter(cluster=source))
+            .first()
+        )
 
-    elif msg_name == KnownNames.UNSATISFIED_REQUIREMENT_ISSUE:
+    elif concern_name == ConcernMessage.UNSATISFIED_REQUIREMENT_ISSUE:
         for require in source.prototype.requires:
             try:
                 ClusterObject.objects.get(prototype__name=require["service"], cluster=source.cluster)
@@ -420,30 +423,22 @@ def get_kwargs_for_issue(msg_name: KnownNames, source: ADCMEntity) -> dict:
     return kwargs
 
 
-def _create_concern_item(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernItem:
-    msg_name = _issue_template_map[issue_cause]
-    kwargs = get_kwargs_for_issue(msg_name=msg_name, source=obj)
-    reason = MessageTemplate.get_message_from_template(name=msg_name.value, **kwargs)
-    issue_name = _gen_issue_name(obj=obj, cause=issue_cause)
+def create_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernItem:
+    concern_message = _issue_template_map[issue_cause]
+    kwargs = _get_kwargs_for_issue(concern_name=concern_message, source=obj)
+    reason = build_concern_reason(
+        template=concern_message.template, placeholder_objects=PlaceholderObjectsDTO(**kwargs)
+    )
+    type_: str = ConcernType.ISSUE.value
+    cause: str = issue_cause.value
     return ConcernItem.objects.create(
-        type=ConcernType.ISSUE,
-        name=issue_name,
-        reason=reason,
-        owner=obj,
-        cause=issue_cause,
+        type=type_, name=f"{cause or ''}_{type_}".strip("_"), reason=reason, owner=obj, cause=cause
     )
 
 
-def create_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
+def add_issue_on_linked_objects(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
     """Create newly discovered issue and add it to linked objects concerns"""
-    issue = obj.get_own_issue(cause=issue_cause)
-
-    if issue is None:
-        issue = _create_concern_item(obj=obj, issue_cause=issue_cause)
-
-    if issue.name != _gen_issue_name(obj=obj, cause=issue_cause):
-        issue.delete()
-        issue = _create_concern_item(obj=obj, issue_cause=issue_cause)
+    issue = obj.get_own_issue(cause=issue_cause) or create_issue(obj=obj, issue_cause=issue_cause)
 
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(node=tree.built_from)
@@ -465,7 +460,7 @@ def recheck_issues(obj: ADCMEntity) -> None:
     issue_causes = _prototype_issue_map.get(obj.prototype.type, [])
     for issue_cause in issue_causes:
         if not _issue_check_map[issue_cause](obj):
-            create_issue(obj=obj, issue_cause=issue_cause)
+            add_issue_on_linked_objects(obj=obj, issue_cause=issue_cause)
         else:
             remove_issue(obj=obj, issue_cause=issue_cause)
 
@@ -527,19 +522,39 @@ def lock_affected_objects(task: TaskLog, objects: Iterable[ADCMEntity]) -> None:
     if task.lock:
         return
 
+    owner: ADCMEntity = task.task_object
     first_job = JobLog.obj.filter(task=task).order_by("id").first()
-    task.lock = ConcernItem.objects.create(
-        type=ConcernType.LOCK.value,
-        name=None,
-        reason=first_job.cook_reason(),
-        blocking=True,
-        owner=task.task_object,
-        cause=ConcernCause.JOB.value,
-    )
-    task.save()
+    delete_service_action = settings.ADCM_DELETE_SERVICE_ACTION_NAME
+    custom_name = delete_service_action if task.action.name == delete_service_action else ""
+
+    task.lock = create_lock(owner=owner, job=first_job, custom_name=custom_name)
+    task.save(update_fields=["lock"])
 
     for obj in objects:
         add_concern_to_object(object_=obj, concern=task.lock)
+
+
+def create_lock(owner: ADCMEntity, job: JobLog, custom_name: str = ""):
+    type_: str = ConcernType.LOCK.value
+    cause: str = ConcernCause.JOB.value
+    return ConcernItem.objects.create(
+        type=type_,
+        name=custom_name or f"{cause or ''}_{type_}".strip("_"),
+        reason=build_concern_reason(
+            ConcernMessage.LOCKED_BY_JOB.template, placeholder_objects=PlaceholderObjectsDTO(job=job, target=owner)
+        ),
+        blocking=True,
+        owner=owner,
+        cause=cause,
+    )
+
+
+def update_job_in_lock_reason(lock: ConcernItem, job: JobLog) -> ConcernItem:
+    lock.reason = build_concern_reason(
+        ConcernMessage.LOCKED_BY_JOB.template, placeholder_objects=PlaceholderObjectsDTO(job=job, target=lock.owner)
+    )
+    lock.save(update_fields=["reason"])
+    return lock
 
 
 def unlock_affected_objects(task: TaskLog) -> None:

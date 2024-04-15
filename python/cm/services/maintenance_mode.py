@@ -15,9 +15,19 @@ from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
 
-from cm.flag import update_flags
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
-from cm.models import Action, ClusterObject, Host, HostComponent, MaintenanceMode, Prototype, ServiceComponent
+from cm.models import (
+    Action,
+    ClusterObject,
+    ConcernItem,
+    ConcernType,
+    Host,
+    HostComponent,
+    MaintenanceMode,
+    Prototype,
+    ServiceComponent,
+)
+from cm.services.concern.flags import update_hierarchy
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import send_object_update_event
@@ -51,8 +61,13 @@ def _update_mm_hierarchy_issues(obj: Host | ClusterObject | ServiceComponent) ->
 
     update_hierarchy_issues(obj.cluster)
     update_issue_after_deleting()
-    update_flags()
+    _update_flags()
     reset_objects_in_mm()
+
+
+def _update_flags() -> None:
+    for flag in ConcernItem.objects.filter(type=ConcernType.FLAG):
+        update_hierarchy(concern=flag)
 
 
 def get_maintenance_mode_response(

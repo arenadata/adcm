@@ -54,7 +54,7 @@ class TestEffectsOfADCMAnsiblePlugins(TestCaseWithCommonSetUpTearDown, ParallelR
 
         with RunTaskMock(
             execution_target_factory=ETFMockWithEnvPreparation(
-                change_jobs={0: JobImitator(call=lambda: change_hc(1, self.cluster.id, operations))}
+                change_jobs={0: JobImitator(call=lambda _: change_hc(1, self.cluster.id, operations))}
             )
         ) as run_task:
             run_action(
