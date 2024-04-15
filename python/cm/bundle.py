@@ -54,6 +54,7 @@ from cm.models import (
     SubAction,
     Upgrade,
 )
+from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
 from cm.stack import get_config_files, read_definition, save_definition
 
 STAGE = (
@@ -71,7 +72,7 @@ def prepare_bundle(
 ) -> Bundle:
     try:
         check_stage()
-        prototypes, upgrades = process_bundle(path=path, bundle_hash=bundle_hash)
+        prototypes, upgrades = process_bundle(path_resolver=BundlePathResolver(bundle_hash))
         bundle_prototype = get_stage_bundle(bundle_file=bundle_file)
         check_services_requires()
         re_check_actions()
@@ -199,15 +200,15 @@ def get_verification_status(bundle_archive: Path | None, signature_file: Path | 
         return SignatureStatus.INVALID
 
     with open(signature_file, mode="rb") as sign_stream:
-        if bool(gpg.verify_file(fileobj_or_path=sign_stream, data_filename=bundle_archive)):
+        if bool(gpg.verify_file(fileobj_or_path=sign_stream, data_filename=str(bundle_archive))):
             return SignatureStatus.VALID
         else:
             return SignatureStatus.INVALID
 
 
 def upload_file(file) -> Path:
-    file_path = Path(settings.DOWNLOAD_DIR, file.name)
-    with open(file_path, "wb+") as f:
+    file_path = settings.DOWNLOAD_DIR / file.name
+    with file_path.open(mode="wb+") as f:
         for chunk in file.chunks():
             f.write(chunk)
 
@@ -217,7 +218,7 @@ def upload_file(file) -> Path:
 def update_bundle(bundle):
     try:
         check_stage()
-        process_bundle(settings.BUNDLE_DIR / bundle.hash, bundle.hash)
+        process_bundle(path_resolver=BundlePathResolver(bundle_hash=bundle.hash))
         get_stage_bundle(bundle.name)
         second_pass()
         update_bundle_from_stage(bundle)
@@ -316,7 +317,7 @@ def get_hash(bundle_file: str) -> str:
     return sha1.hexdigest()
 
 
-def load_adcm(adcm_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.yaml")):
+def load_adcm(adcm_file: Path = settings.BASE_DIR / "conf" / "adcm" / "config.yaml"):
     check_stage()
     conf = read_definition(conf_file=adcm_file)
 
@@ -326,7 +327,11 @@ def load_adcm(adcm_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.
 
     with atomic():
         prototypes, _ = save_definition(
-            path=Path(), fname=adcm_file, conf=conf, obj_list={}, bundle_hash="adcm", adcm_=True
+            path_resolver=ADCMBundlePathResolver(),
+            source_file_subdir=Path(),
+            config_yaml_file=adcm_file,
+            config=conf,
+            obj_list={},
         )
         process_adcm()
         StagePrototype.objects.filter(id__in=[prototype.id for prototype in prototypes]).delete()
@@ -440,11 +445,12 @@ def check_adcm_min_version(adcm_min_version: str) -> None:
         )
 
 
-def process_bundle(path: Path, bundle_hash: str) -> tuple[list[StagePrototype], list[StageUpgrade]]:
+def process_bundle(path_resolver: PathResolver) -> tuple[list[StagePrototype], list[StageUpgrade]]:
     all_prototypes = []
     all_upgrades = []
     obj_list = {}
-    for conf_path, conf_file in get_config_files(path=path):
+
+    for conf_path, conf_file in get_config_files(path=path_resolver.bundle_root):
         conf = read_definition(conf_file=conf_file)
         if not conf:
             continue
@@ -453,7 +459,14 @@ def process_bundle(path: Path, bundle_hash: str) -> tuple[list[StagePrototype], 
             if "adcm_min_version" in item:
                 check_adcm_min_version(adcm_min_version=item["adcm_min_version"])
 
-        prototypes, upgrades = save_definition(conf_path, conf_file, conf, obj_list, bundle_hash)
+        prototypes, upgrades = save_definition(
+            path_resolver=path_resolver,
+            source_file_subdir=conf_path,
+            config_yaml_file=conf_file,
+            config=conf,
+            obj_list=obj_list,
+        )
+
         all_prototypes.extend(prototypes)
         all_upgrades.extend(upgrades)
 

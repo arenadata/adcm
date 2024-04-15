@@ -149,7 +149,6 @@ class ServicePrototypeSerializer(ModelSerializer):
             "status": prototype.license,
             "text": get_license_text(
                 license_path=prototype.license_path,
-                path=prototype.path,
                 bundle_hash=prototype.bundle.hash,
             ),
         }

@@ -25,6 +25,7 @@ const ClusterImportsService = () => {
     serviceId,
     handleServiceChange,
     totalCount,
+    initialImports,
   } = useClusterImportsService();
 
   const dispatch = useDispatch();
@@ -46,7 +47,12 @@ const ClusterImportsService = () => {
 
   return (
     <>
-      <ClusterImportToolbar isDisabled={!isValid} onClick={onImportHandler} hasError={hasSaveError}>
+      <ClusterImportToolbar
+        isDisabled={!isValid}
+        onClick={onImportHandler}
+        hasError={hasSaveError}
+        isImportPresent={initialImports.services.size > 0 || initialImports.clusters.size > 0}
+      >
         <LabeledField label="Import to" direction="row">
           <Select
             maxHeight={200}

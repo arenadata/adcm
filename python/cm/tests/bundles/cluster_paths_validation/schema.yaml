@@ -1,0 +1,6 @@
+---
+root:
+  match: list
+  item: string
+string:
+  match: string

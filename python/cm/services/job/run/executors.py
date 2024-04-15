@@ -24,7 +24,6 @@ from core.job.executors import (
 from typing_extensions import Self
 
 from cm.errors import AdcmEx
-from cm.services.bundle import detect_path_for_file_in_bundle
 from cm.utils import get_env_with_venv_path
 
 
@@ -44,11 +43,6 @@ class AnsibleProcessExecutor(ProcessExecutor):
         super().__init__(config=config)
 
     def _prepare_command(self) -> list[str]:
-        playbook = detect_path_for_file_in_bundle(
-            bundle_root=self._config.bundle.root,
-            config_yaml_dir=self._config.bundle.config_dir,
-            file=self._config.job_script,
-        )
         cmd = [
             "ansible-playbook",
             "--vault-password-file",
@@ -57,7 +51,7 @@ class AnsibleProcessExecutor(ProcessExecutor):
             f"@{self._config.work_dir}/config.json",
             "-i",
             f"{self._config.work_dir}/inventory.json",
-            str(playbook),
+            str(self._config.bundle.root / self._config.job_script),
         ]
 
         if self._config.tags:
@@ -86,12 +80,7 @@ class PythonProcessExecutor(ProcessExecutor):
     script_type = "python"
 
     def _prepare_command(self) -> list[str]:
-        script_fullpath = detect_path_for_file_in_bundle(
-            bundle_root=self._config.bundle.root,
-            config_yaml_dir=self._config.bundle.config_dir,
-            file=self._config.job_script,
-        )
-        return ["python", str(script_fullpath)]
+        return ["python", str(self._config.bundle.root / self._config.job_script)]
 
 
 class InternalExecutor(Executor, WithErrOutLogsMixin):

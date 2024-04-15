@@ -1,0 +1,101 @@
+- name: service_1
+  type: service
+  version: 0.3
+
+  config: &config
+    - name: control
+      type: text
+      default: stuff
+    - name: no_default_p
+      type: file
+    - name: no_default_s
+      type: secretfile
+
+    - name: relative_plain
+      type: file
+      default: ./nicename.txt
+    - name: full_plain
+      type: file
+      default: nicename.txt
+    - name: relative_secret
+      type: secretfile
+      default: ./nicename.txt
+    - name: full_secret
+      type: secretfile
+      default: nicename.txt
+
+    - name: relative_inside_plain
+      type: file
+      default: ./inside/common.txt
+    - name: full_inside_secret
+      type: secretfile
+      default: inside/common.txt
+
+    - name: relative_complex
+      type: structure
+      yspec: ./schema.yaml
+    - name: full_complex
+      type: structure
+      yspec: schema.yaml
+    - name: relative_inside_complex
+      type: structure
+      yspec: ./inside/struct.yaml
+    - name: full_inside_complex
+      type: structure
+      yspec: inside/struct.yaml
+
+  actions: &actions
+    as_job_relative:
+      type: job
+      script_type: ansible
+      script: ./action.yaml
+      config_jinja: ./conf.j2
+
+    as_job_full:
+      type: job
+      script_type: python
+      script: action.yaml
+      config_jinja: conf.j2
+
+    as_job_inner_relative:
+      type: job
+      script_type: python
+      script: ./inside/action.yaml
+      config_jinja: ./inside/conf.j2
+
+    as_job_inner_full:
+      type: job
+      script_type: ansible
+      script: inside/action.yaml
+      config_jinja: inside/conf.j2
+
+    as_task_config_relative:
+      type: task
+      config_jinja: ./conf.j2
+      scripts:
+        - name: rel_1
+          script_type: python
+          script: ./action.yaml
+        - name: rel_2
+          script_type: ansible
+          script: action.yaml
+
+    as_task_config_inside_full:
+      type: task
+      config_jinja: inside/conf.j2
+      scripts:
+        - name: full_one
+          script_type: python
+          script: inside/action.yaml
+        - name: full_two
+          script_type: ansible
+          script: ./inside/action.yaml
+
+  components:
+    separate:
+      config:
+        - name: grouped
+          type: group
+          subs: *config
+
+      actions: *actions

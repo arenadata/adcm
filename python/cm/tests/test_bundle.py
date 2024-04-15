@@ -29,8 +29,8 @@ from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import delete_host_provider
 from cm.bundle import delete_bundle
 from cm.errors import AdcmEx
-from cm.models import ADCMEntity, Bundle, ClusterObject, ConfigLog, ServiceComponent, SubAction
 from cm.services.bundle import detect_path_for_file_in_bundle
+from cm.models import ADCMEntity, Action, Bundle, ClusterObject, ConfigLog, ServiceComponent, SubAction, Prototype, PrototypeConfig, SubAction
 from cm.tests.test_upgrade import (
     cook_cluster,
     cook_cluster_bundle,
@@ -329,6 +329,11 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
 
 
 class TestBundleParsing(BaseTestCase, BundleLogicMixin):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.maxDiff = None
+
     def get_ordered_subs(self, bundle: Bundle, action_name: str):
         return SubAction.objects.filter(action__name=action_name, action__prototype__bundle=bundle).order_by("id")
 
@@ -376,3 +381,142 @@ class TestBundleParsing(BaseTestCase, BundleLogicMixin):
         self.assertEqual(
             list(subs.values_list(*fields)), [("first", {"ansible_tags": "one"}), ("second", {"perfect": "thing"})]
         )
+
+    def test_config_paths_are_made_relative_to_bundle_root_on_upload(self) -> None:
+        # root/schema.yaml
+        expected_schema_1 = {"root": {"match": "list", "item": "string"}, "string": {"match": "string"}}
+        # root/inside/struct.yaml
+        expected_schema_2 = {"root": {"match": "dict", "items": {"integer": "integer"}}, "integer": {"match": "int"}}
+        # root/service_1/schema.yaml
+        expected_schema_3 = {"root": {"match": "dict", "items": {"integer": "string"}}, "string": {"match": "string"}}
+        # root/service_1/inside/struct.yaml
+        expected_schema_4 = {"root": {"match": "list", "item": "integer"}, "integer": {"match": "int"}}
+
+        expected_config_defaults = {
+            **{key: "nicename.txt" for key in ("relative_plain", "full_plain", "relative_secret", "full_secret")},
+            "relative_inside_plain": "inside/common.txt",
+            "full_inside_secret": "inside/common.txt",
+        }
+        expected_schemas = {
+            "relative_complex": expected_schema_1,
+            "full_complex": expected_schema_1,
+            "relative_inside_complex": expected_schema_2,
+            "full_inside_complex": expected_schema_2,
+        }
+
+        bundle = self.add_bundle(source_dir=Path(__file__).parent / "bundles" / "cluster_paths_validation")
+
+        # cluster defined in root config.yaml
+        proto_qs = PrototypeConfig.objects.filter(prototype=Prototype.objects.get(type="cluster", bundle=bundle))
+        config_params = {pc.name: pc.default for pc in proto_qs.filter(name__in=expected_config_defaults)}
+        self.assertDictEqual(config_params, expected_config_defaults)
+        config_yspecs = {pc.name: pc.limits["yspec"] for pc in proto_qs.filter(name__in=expected_schemas)}
+        self.assertDictEqual(config_yspecs, expected_schemas)
+
+        # service defined in root config.yaml
+        proto_qs = PrototypeConfig.objects.filter(
+            prototype=Prototype.objects.get(type="service", name="alongside_the_cluster", bundle=bundle)
+        )
+        config_params = {pc.subname: pc.default for pc in proto_qs.filter(subname__in=expected_config_defaults)}
+        self.assertDictEqual(config_params, expected_config_defaults)
+        config_yspecs = {pc.subname: pc.limits["yspec"] for pc in proto_qs.filter(subname__in=expected_schemas)}
+        self.assertDictEqual(config_yspecs, expected_schemas)
+
+        # component of service defined in root config.yaml
+        proto_qs = PrototypeConfig.objects.filter(
+            prototype=Prototype.objects.get(type="component", name="alongside_cluster", bundle=bundle)
+        )
+        config_params = {pc.name: pc.default for pc in proto_qs.filter(name__in=expected_config_defaults)}
+        self.assertDictEqual(config_params, expected_config_defaults)
+        config_yspecs = {pc.name: pc.limits["yspec"] for pc in proto_qs.filter(name__in=expected_schemas)}
+        self.assertDictEqual(config_yspecs, expected_schemas)
+
+        # definition outside of root
+        expected_config_defaults = {
+            **{key: "nicename.txt" for key in ("relative_plain", "full_plain", "relative_secret", "full_secret")},
+            "relative_plain": "service_1/nicename.txt",
+            "full_plain": "nicename.txt",
+            "relative_secret": "service_1/nicename.txt",
+            "full_secret": "nicename.txt",
+            "relative_inside_plain": "service_1/inside/common.txt",
+            "full_inside_secret": "inside/common.txt",
+        }
+        expected_schemas = {
+            "relative_complex": expected_schema_3,
+            "full_complex": expected_schema_1,
+            "relative_inside_complex": expected_schema_4,
+            "full_inside_complex": expected_schema_2,
+        }
+
+        # service defined in service_1/config.yaml
+        proto_qs = PrototypeConfig.objects.filter(
+            prototype=Prototype.objects.get(type="service", name="service_1", bundle=bundle)
+        )
+        config_params = {pc.name: pc.default for pc in proto_qs.filter(name__in=expected_config_defaults)}
+        self.assertDictEqual(config_params, expected_config_defaults)
+        config_yspecs = {pc.name: pc.limits["yspec"] for pc in proto_qs.filter(name__in=expected_schemas)}
+        self.assertDictEqual(config_yspecs, expected_schemas)
+
+        # component of service defined in root service_1/config.yaml
+        proto_qs = PrototypeConfig.objects.filter(
+            prototype=Prototype.objects.get(type="component", name="separate", bundle=bundle)
+        )
+        config_params = {pc.subname: pc.default for pc in proto_qs.filter(subname__in=expected_config_defaults)}
+        self.assertDictEqual(config_params, expected_config_defaults)
+        config_yspecs = {pc.subname: pc.limits["yspec"] for pc in proto_qs.filter(subname__in=expected_schemas)}
+        self.assertDictEqual(config_yspecs, expected_schemas)
+
+    def test_action_paths_are_made_relative_to_bundle_root_on_upload(self) -> None:
+        expected_task_jinja_paths = {
+            **{key: "conf.j2" for key in ("as_job_relative", "as_job_full", "as_task_config_relative")},
+            **{
+                key: "inside/conf.j2"
+                for key in ("as_job_inner_relative", "as_job_inner_full", "as_task_config_inside_full")
+            },
+        }
+        expected_scripts = {
+            **{key: "action.yaml" for key in ("as_job_relative", "as_job_full", "rel_1", "rel_2")},
+            **{
+                key: "inside/action.yaml"
+                for key in ("as_job_inner_relative", "as_job_inner_full", "full_one", "full_two")
+            },
+        }
+
+        bundle = self.add_bundle(source_dir=Path(__file__).parent / "bundles" / "cluster_paths_validation")
+
+        for proto in (
+            Prototype.objects.get(type="cluster", bundle=bundle),
+            Prototype.objects.get(type="service", name="alongside_the_cluster", bundle=bundle),
+            Prototype.objects.get(type="component", name="alongside_cluster", bundle=bundle),
+        ):
+            jinja_paths = {a.name: a.config_jinja for a in Action.objects.filter(prototype=proto)}
+            self.assertDictEqual(jinja_paths, expected_task_jinja_paths)
+            paths = {sa.name: sa.script for sa in SubAction.objects.filter(action__prototype=proto)}
+            self.assertDictEqual(paths, expected_scripts)
+
+        expected_task_jinja_paths = {
+            "as_job_relative": "service_1/conf.j2",
+            "as_job_full": "conf.j2",
+            "as_task_config_relative": "service_1/conf.j2",
+            "as_job_inner_relative": "service_1/inside/conf.j2",
+            "as_job_inner_full": "inside/conf.j2",
+            "as_task_config_inside_full": "inside/conf.j2",
+        }
+        expected_scripts = {
+            "as_job_relative": "service_1/action.yaml",
+            "as_job_full": "action.yaml",
+            "rel_1": "service_1/action.yaml",
+            "rel_2": "action.yaml",
+            "as_job_inner_relative": "service_1/inside/action.yaml",
+            "as_job_inner_full": "inside/action.yaml",
+            "full_one": "inside/action.yaml",
+            "full_two": "service_1/inside/action.yaml",
+        }
+        for proto in (
+            Prototype.objects.get(type="service", name="service_1", bundle=bundle),
+            Prototype.objects.get(type="component", name="separate", bundle=bundle),
+        ):
+            jinja_paths = {a.name: a.config_jinja for a in Action.objects.filter(prototype=proto)}
+            self.assertDictEqual(jinja_paths, expected_task_jinja_paths)
+            paths = {sa.name: sa.script for sa in SubAction.objects.filter(action__prototype=proto)}
+            self.assertDictEqual(paths, expected_scripts)

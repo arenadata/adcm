@@ -94,7 +94,7 @@ class TestActionAPI(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(Action.objects.last().config_jinja, "./config.j2")
+        self.assertEqual(Action.objects.last().config_jinja, "config.j2")
 
     def test_jinja_wrong_conf_fail(self):
         path = Path(

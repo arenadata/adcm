@@ -54,7 +54,7 @@ def do_nothing(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("cm", "0115_auto_20231025_1823"),
+        ("cm", "0116_fix_null_jsonfield"),
     ]
 
     operations = [

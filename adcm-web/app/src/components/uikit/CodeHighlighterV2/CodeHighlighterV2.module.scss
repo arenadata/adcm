@@ -156,16 +156,15 @@ pre.codeHighlighterCode {
   font-size: 13px;
 }
 
-.patch {
-  position: absolute;
-  box-sizing: unset;
-  left: 1px;
-  bottom: -1px;
-  height: 24px;
-  border-radius: 10px 0 0 10px;
-  overflow: hidden;
-  background: var(--code-highlite-numbers-backgroundV2);
-  border: 1px solid var(--code-highlite-borderV2);
-  z-index: 0;
-  border-bottom: none;
+div.highlighterScrollVertical {
+  top: var(--default-scroll-height);
+  height: calc(100% - calc(var(--default-scroll-height) * 2));
+  z-index: 2;
 }
+
+div.highlighterScrollHorizontal {
+  left: calc(var(--default-scroll-width) + var(--code-higlite-calc-line-width) + 0px);
+  width: calc(100% - var(--code-higlite-calc-line-width) - calc(var(--default-scroll-width) * 2) + 1px);
+  z-index: 2;
+}
+

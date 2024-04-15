@@ -17,7 +17,8 @@ from cm.adcm_config.config import get_default, restore_cluster_config, ui_config
 from cm.adcm_config.utils import group_is_activatable
 from cm.api import update_obj_config
 from cm.errors import AdcmEx, raise_adcm_ex
-from cm.models import ConfigLog, PrototypeConfig
+from cm.models import ConfigLog, Prototype, PrototypeConfig
+from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
@@ -136,8 +137,15 @@ class ConfigSerializer(EmptySerializer):
         return get_default(obj)
 
     def get_value(self, obj: PrototypeConfig) -> Any:
-        proto = self.context.get("prototype", None)
-        return get_default(obj, proto)
+        owner_prototype: Prototype = self.context.get("prototype", None)
+        if not owner_prototype:
+            resolver = None
+        elif owner_prototype.type == "adcm":
+            resolver = ADCMBundlePathResolver()
+        else:
+            resolver = BundlePathResolver(bundle_hash=owner_prototype.bundle.hash)
+
+        return get_default(obj, path_resolver=resolver)
 
 
 class ConfigSerializerUI(ConfigSerializer):
