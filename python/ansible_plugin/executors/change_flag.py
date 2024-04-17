@@ -23,7 +23,7 @@ from cm.services.concern.flags import (
 )
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
@@ -49,8 +49,9 @@ class ChangeFlagArguments(BaseModel):
     name: str | None = None
     msg: str = ""
 
-    @validator("name")
-    def check_name_length(cls, v: str | None) -> str | None:  # noqa: N805
+    @field_validator("name")
+    @classmethod
+    def check_name_length(cls, v: str | None) -> str | None:
         if v is None:
             return v
 

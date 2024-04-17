@@ -10,27 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Optional
+from typing import Any
 
 from core.types import ClusterID, ComponentID, HostID, HostProviderID, ObjectID, PrototypeID, ServiceID
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class DBModel(BaseModel):
     id: ObjectID
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Empty(BaseModel):
-    class Config:
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class RequiresData(BaseModel):
     service: str
-    component: Optional[str]
+    component: str | None = None
 
 
 class BoundToData(BaseModel):
@@ -43,7 +40,7 @@ class PrototypeData(DBModel):
     display_name: str
     type: str
     version: str
-    parent_id: PrototypeID | None
+    parent_id: PrototypeID | None = None
     requires: list[RequiresData]
     bound_to: BoundToData | Empty
     constraint: list[Any]

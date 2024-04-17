@@ -13,7 +13,7 @@
 from typing import TypeAlias
 
 from core.types import ADCMCoreType, ComponentID, HostID, ObjectID
-from pydantic import BaseModel, Extra, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 HostGroupName: TypeAlias = str
 
@@ -33,10 +33,10 @@ class _BeforeUpgradeInventoryNode(BaseModel):
     state: str | None
     config: dict | None = None
 
-    def dict(self, **_) -> dict:
+    def model_dump(self, **_) -> dict:
         # can't rely on `exclude_default` here, because it removes the whole `_BeforeUpgradeInventoryNode`
         # when `state` is `None`
-        original = super().dict()
+        original = super().model_dump()
 
         if self.config is None:
             original.pop("config", None)
@@ -66,10 +66,7 @@ class ServiceNode(_GenericInventoryNode):
     version: str
 
     maintenance_mode: bool
-
-    class Config:
-        # components are right in the root
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
 
 class ComponentNode(_GenericInventoryNode):
@@ -77,9 +74,7 @@ class ComponentNode(_GenericInventoryNode):
     display_name: str
 
     maintenance_mode: bool
-
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class HostProviderNode(_MultiStateConversionModel):
@@ -100,11 +95,7 @@ class HostNode(_MultiStateConversionModel):
 
     cluster: ClusterNode | None = None
     services: dict[str, ServiceNode] | None = None
-
-    class Config:
-        # config fields are right in the root
-        extra = Extra.allow
-        allow_population_by_field_name = True
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
 
 class ClusterVars(BaseModel):

@@ -126,7 +126,7 @@ def retrieve_mapping_data(
     cluster: Cluster, plain_hc: list[dict[Literal["host_id", "component_id"], int]]
 ) -> MappingData:
     mapping_data = {
-        "cluster": ClusterData.from_orm(obj=cluster),
+        "cluster": ClusterData.model_validate(obj=cluster),
         "services": {},
         "components": {},
         "hosts": {},
@@ -143,21 +143,21 @@ def retrieve_mapping_data(
         .prefetch_related("servicecomponent_set", "servicecomponent_set__prototype")
     ):
         service: ClusterObject
-        mapping_data["services"][service.pk] = ServiceData.from_orm(obj=service)
-        mapping_data["prototypes"][service.prototype.pk] = PrototypeData.from_orm(obj=service.prototype)
+        mapping_data["services"][service.pk] = ServiceData.model_validate(obj=service)
+        mapping_data["prototypes"][service.prototype.pk] = PrototypeData.model_validate(obj=service.prototype)
         for component in service.servicecomponent_set.all():
             component: ServiceComponent
-            mapping_data["components"][component.pk] = ComponentData.from_orm(obj=component)
-            mapping_data["prototypes"][component.prototype.pk] = PrototypeData.from_orm(obj=component.prototype)
+            mapping_data["components"][component.pk] = ComponentData.model_validate(obj=component)
+            mapping_data["prototypes"][component.prototype.pk] = PrototypeData.model_validate(obj=component.prototype)
 
     for host in Host.objects.filter(cluster=cluster).select_related("provider"):
         host: Host
-        mapping_data["hosts"][host.pk] = HostData.from_orm(obj=host)
+        mapping_data["hosts"][host.pk] = HostData.model_validate(obj=host)
         mapping_data["orm_objects"]["hosts"][host.pk] = host
         mapping_data["orm_objects"]["providers"][host.provider.pk] = host.provider
 
     for map_ in HostComponent.objects.filter(cluster=cluster):
-        mapping_data["existing_mapping"].append(HostComponentData.from_orm(obj=map_))
+        mapping_data["existing_mapping"].append(HostComponentData.model_validate(obj=map_))
 
     mapping_data = MappingData(**mapping_data)
 

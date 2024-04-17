@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Literal
+from typing import Any, Literal
 
 from ansible.errors import AnsibleActionFail, AnsibleError
 from cm.models import ClusterObject, Host, MaintenanceMode, ServiceComponent
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 
 from ansible_plugin.utils import get_object_id_from_context
 
@@ -28,9 +28,13 @@ TYPE_CLASS_MAP = {
 class TaskArgs(BaseModel):
     type: Literal["host", "service", "component"]
     value: bool
+    model_config = ConfigDict(frozen=True)
 
-    class Config:
-        frozen = True
+    @field_validator("type", mode="before")
+    @classmethod
+    def convert_type_to_string(cls, v: Any) -> str:
+        # requited to pre-process Ansible Strings
+        return str(v)
 
 
 def validate_args(task_args: dict) -> AnsibleActionFail | None:

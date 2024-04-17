@@ -293,7 +293,7 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
             status_api_token=configuration.integrations.status_server_token,
         ),
         job=job_data,
-    ).dict(exclude_unset=True)
+    ).model_dump(exclude_unset=True)
 
 
 def _get_owner_specific_data(
