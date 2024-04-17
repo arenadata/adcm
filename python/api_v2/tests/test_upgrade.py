@@ -261,7 +261,6 @@ class TestUpgrade(BaseAPITestCase):
                     "hostComponentMap": [
                         {"hostId": host_1.pk, "componentId": component_1.pk},
                         {"hostId": host_2.pk, "componentId": component_1.pk},
-                        {"hostId": host_1.pk, "componentId": component_2.pk},
                     ],
                     "configuration": {
                         "config": {"simple": "val", "grouped": {"simple": 5, "second": 4.3}, "after": ["x", "y"]},

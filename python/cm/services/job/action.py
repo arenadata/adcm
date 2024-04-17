@@ -19,6 +19,7 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.db.transaction import atomic, on_commit
 from rbac.roles import re_apply_policy_for_jobs
+from rest_framework.status import HTTP_409_CONFLICT
 
 from cm.adcm_config.checks import check_attr
 from cm.adcm_config.config import check_config_spec, get_prototype_config, process_config_spec, process_file_type
@@ -95,7 +96,16 @@ def run_action(
             cluster=cluster, upgrade=action.upgrade, host_comp_list=_get_actual_hc(cluster=cluster)
         )
 
-    host_map, post_upgrade_hc = check_hostcomponentmap(cluster=cluster, action=action, new_hc=payload.hostcomponent)
+    host_map, post_upgrade_hc, delta = check_hostcomponentmap(
+        cluster=cluster, action=action, new_hc=payload.hostcomponent
+    )
+    if action.hostcomponentmap and not (delta.get("add") or delta.get("remove")):
+        # means empty delta, shouldn't be like that
+        raise AdcmEx(
+            code="WRONG_ACTION_HC",
+            msg="Host-component is expected to be changed for this action",
+            http_code=HTTP_409_CONFLICT,
+        )
 
     with atomic():
         target = CoreObjectDescriptor(id=obj.pk, type=model_name_to_core_type(obj.__class__.__name__.lower()))

@@ -185,7 +185,7 @@ def _switch_hc_if_required(task: TaskLog):
             hostcomponent["component_id"] = comp.id
             hostcomponent["service_id"] = comp.service.id
 
-    host_map, _ = check_hostcomponentmap(cluster, task.action, new_hc)
+    host_map, *_ = check_hostcomponentmap(cluster, task.action, new_hc)
     if host_map is not None:
         save_hc(cluster, host_map)
 
