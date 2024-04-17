@@ -155,3 +155,24 @@
 
 - <<: *service
   name: another_service_two_components_3
+
+- name: with_hc_acl_actions
+  version: 3.2
+  type: service
+
+  actions:
+
+    with_hc:
+      type: job
+      script_type: ansible
+      script: ./run.yaml
+      states:
+        available: any
+      display_name: I have HC-ACL section, I'm the best
+      hc_acl:
+        - service: service_one_component
+          component: component_1
+          action: add
+        - service: service_two_components
+          component: component_2
+          action: remove
