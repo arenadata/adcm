@@ -23,7 +23,11 @@ class PluginRuntimeError(ADCMPluginError):
         self.original_error = original_error
 
 
-class PluginTargetDetectionError(ADCMPluginError):
+class PluginTargetError(ADCMPluginError):
+    ...
+
+
+class PluginTargetDetectionError(PluginTargetError):
     ...
 
 
