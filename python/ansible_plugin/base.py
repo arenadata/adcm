@@ -11,7 +11,7 @@
 # limitations under the License.
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Collection, Generic, Literal, Protocol, TypeVar
+from typing import Any, Collection, Generic, Literal, Protocol, TypeVar
 import fcntl
 
 from ansible.errors import AnsibleActionFail
@@ -20,7 +20,7 @@ from ansible.plugins.action import ActionBase
 from cm.models import ClusterObject, ServiceComponent
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, field_validator
 
 from ansible_plugin.errors import ADCMPluginError, PluginRuntimeError, PluginTargetDetectionError, PluginValidationError
 
@@ -40,6 +40,12 @@ class AnsibleJobContext(BaseModel):
     provider_id: int | None = None
     host_id: int | None = None
 
+    @field_validator("type", mode="before")
+    @classmethod
+    def convert_type_to_string(cls, v: Any) -> str:
+        # requited to pre-process Ansible Strings
+        return str(v)
+
 
 # Target
 
@@ -56,6 +62,12 @@ class CoreObjectTargetDescription(BaseModel):
 
     service_name: str | None = None
     component_name: str | None = None
+
+    @field_validator("type", mode="before")
+    @classmethod
+    def convert_type_to_string(cls, v: Any) -> str:
+        # requited to pre-process Ansible Strings
+        return str(v)
 
 
 def from_objects(

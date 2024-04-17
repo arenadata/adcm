@@ -206,7 +206,7 @@ class JobRepoImpl:
 
     @staticmethod
     def update_task(id: int, data: TaskUpdateDTO) -> None:  # noqa: A002
-        fields_to_change: dict = data.dict(exclude_unset=True)
+        fields_to_change: dict = data.model_dump(exclude_unset=True)
         if "status" in fields_to_change:
             fields_to_change["status"] = fields_to_change["status"].value
 
@@ -214,7 +214,7 @@ class JobRepoImpl:
 
     @staticmethod
     def update_job(id: int, data: JobUpdateDTO) -> None:  # noqa: A002
-        fields_to_change: dict = data.dict(exclude_unset=True)
+        fields_to_change: dict = data.model_dump(exclude_unset=True)
         if "status" in fields_to_change:
             fields_to_change["status"] = fields_to_change["status"].value
 

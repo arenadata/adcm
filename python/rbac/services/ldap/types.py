@@ -13,7 +13,7 @@
 from typing import Mapping, Pattern, TypeAlias
 import re
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 DistinguishedName: TypeAlias = str
 LDAPAttributes: TypeAlias = Mapping
@@ -22,8 +22,7 @@ LDAPGroup: TypeAlias = tuple[DistinguishedName, LDAPAttributes]
 
 
 class FrozenBaseModel(BaseModel):
-    class Config:
-        frozen = True
+    model_config = ConfigDict(frozen=True)
 
 
 class ConnectionSettings(FrozenBaseModel):
