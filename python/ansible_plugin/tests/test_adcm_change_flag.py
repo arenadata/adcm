@@ -10,12 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
 from typing import Collection
 from unittest.mock import patch
 
-from adcm.tests.ansible import ADCMAnsiblePluginTestMixin
-from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase, TaskTestMixin, TestCaseWithCommonSetUpTearDown
 from cm.models import ConcernItem, ServiceComponent
 from cm.services.concern.flags import BuiltInFlag, ConcernFlag, lower_all_flags, raise_flag
 from cm.services.job.run.repo import JobRepoImpl
@@ -23,32 +20,16 @@ from core.job.types import Task
 from core.types import ADCMCoreType, CoreObjectDescriptor
 
 from ansible_plugin.executors.change_flag import ADCMChangeFlagPluginExecutor
+from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
 EXECUTOR_MODULE = "ansible_plugin.executors.change_flag"
 
 
-class TestEffectsOfADCMAnsiblePlugins(
-    TestCaseWithCommonSetUpTearDown,
-    ParallelReadyTestCase,
-    BusinessLogicMixin,
-    ADCMAnsiblePluginTestMixin,
-    TaskTestMixin,
-):
+class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
     def setUp(self) -> None:
         super().setUp()
 
         ConcernItem.objects.all().delete()
-
-        self.bundles_dir = Path(__file__).parent / "bundles"
-
-        cluster_bundle = self.add_bundle(self.bundles_dir / "cluster")
-        provider_bundle = self.add_bundle(self.bundles_dir / "provider")
-
-        self.cluster = self.add_cluster(bundle=cluster_bundle, name="Just Cluster")
-
-        self.provider = self.add_provider(bundle=provider_bundle, name="Just HP")
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
 
         self.service_1, self.service_2 = self.add_services_to_cluster(
             ["service_1", "service_2"], cluster=self.cluster

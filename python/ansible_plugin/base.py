@@ -11,7 +11,7 @@
 # limitations under the License.
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Any, Collection, Generic, Literal, Protocol, TypeVar
+from typing import Any, Collection, Generic, Literal, Mapping, Protocol, TypeVar
 import fcntl
 
 from ansible.errors import AnsibleActionFail
@@ -172,7 +172,10 @@ ReturnValue = TypeVar("ReturnValue")
 
 @dataclass(frozen=True, slots=True)
 class CallResult(Generic[ReturnValue]):
-    value: ReturnValue
+    # If value is a mapping of some sort, it'll be unpacked into return dict.
+    # If it is `None`, nothing will be added to response dictionary.
+    # Otherwise, value will be placed under the "value" key.
+    value: ReturnValue | None
     changed: bool
     error: ADCMPluginError | None
 
@@ -280,10 +283,10 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
                 context_owner=owner_from_context, targets=targets, arguments=call_arguments, context=call_context
             )
         except ADCMPluginError as err:
-            return CallResult(value=None, changed=False, error=err)
+            return CallResult(value={}, changed=False, error=err)
         except Exception as err:  # noqa: BLE001
             message = f"Unhandled exception occurred during {self.__class__.__name__} call: {err}"
-            return CallResult(value=None, changed=False, error=PluginRuntimeError(message=message, original_error=err))
+            return CallResult(value={}, changed=False, error=PluginRuntimeError(message=message, original_error=err))
 
         return result
 
@@ -340,6 +343,8 @@ class ADCMAnsiblePlugin(ActionBase):
     The only time you'll need to override `run` is when more ansible runtime context awareness is required.
     """
 
+    TRANSFERS_FILES = False
+
     executor_class: type[ADCMAnsiblePluginExecutor]
 
     def run(self, tmp=None, task_vars=None):
@@ -368,4 +373,10 @@ class ADCMAnsiblePlugin(ActionBase):
             if execution_result.error:
                 raise AnsibleActionFail(message=to_native(execution_result.error.message)) from execution_result.error
 
-        return {"changed": execution_result.changed, "value": execution_result.value}
+        result_value = {}
+        if isinstance(execution_result.value, Mapping):
+            result_value |= execution_result.value
+        elif execution_result.value is not None:
+            result_value["value"] = execution_result.value
+
+        return {"changed": execution_result.changed, **result_value}

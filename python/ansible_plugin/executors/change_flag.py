@@ -131,4 +131,4 @@ class ADCMChangeFlagPluginExecutor(ADCMAnsiblePluginExecutor[ChangeFlagArguments
                 message = f"Can't handle operation {arguments.operation}"
                 raise PluginRuntimeError(message=message, original_error=None)
 
-        return CallResult(value=None, changed=changed, error=None)
+        return CallResult(value={}, changed=changed, error=None)

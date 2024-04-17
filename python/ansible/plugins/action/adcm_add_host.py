@@ -12,6 +12,15 @@
 # limitations under the License.
 
 
+import sys
+
+from ansible_plugin.base import ADCMAnsiblePlugin
+from ansible_plugin.executors.add_host import ADCMAddHostPluginExecutor
+
+sys.path.append("/adcm/python")
+
+import adcm.init_django  # noqa: F401, isort:skip
+
 ANSIBLE_METADATA = {"metadata_version": "1.1", "supported_by": "Arenadata"}
 
 DOCUMENTATION = r"""
@@ -44,48 +53,6 @@ result:
   host_id: ID of new created host
 """
 
-import sys
 
-from ansible.errors import AnsibleError
-from ansible.plugins.action import ActionBase
-
-sys.path.append("/adcm/python")
-import adcm.init_django  # noqa: F401, isort:skip
-from ansible_plugin.utils import get_object_id_from_context
-from cm.api import add_host
-from cm.errors import AdcmEx
-from cm.logger import logger
-from cm.models import HostProvider, Prototype
-
-
-class ActionModule(ActionBase):
-    TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(("fqdn", "description"))
-
-    def run(self, tmp=None, task_vars=None):
-        super().run(tmp, task_vars)
-
-        provider_pk, _ = get_object_id_from_context(
-            task_vars=task_vars,
-            id_type="provider_id",
-            context_types=("provider",),
-            err_msg="You can add host only in host provider context",
-        )
-        if "fqdn" not in self._task.args:
-            raise AnsibleError("fqdn is mandatory args of adcm_add_host")
-
-        fqdn = self._task.args["fqdn"]
-        desc = ""
-        if "description" in self._task.args:
-            desc = self._task.args["description"]
-
-        logger.info("ansible module adcm_add_host: provider %s, fqdn %s", provider_pk, fqdn)
-
-        try:
-            provider = HostProvider.obj.get(pk=provider_pk)
-            proto = Prototype.objects.get(bundle=provider.prototype.bundle, type="host")
-            host = add_host(prototype=proto, provider=provider, fqdn=fqdn, description=desc)
-        except AdcmEx as e:
-            raise AnsibleError(f"{e.code}:{e.msg}") from e
-
-        return {"failed": False, "changed": True, "host_id": host.pk}
+class ActionModule(ADCMAnsiblePlugin):
+    executor_class = ADCMAddHostPluginExecutor
