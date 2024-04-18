@@ -169,6 +169,23 @@ def check_object_definition(
             except (FileNotFoundError, TemplateError) as e:
                 raise AdcmEx(code="INVALID_OBJECT_DEFINITION", msg=str(e)) from e
 
+        if scripts_jinja_path := action_data.get("scripts_jinja"):
+            # "scripts" and "scripts_jinja" mutual exclusivity is handled in adcm_schema.yaml
+
+            if not is_path_correct(scripts_jinja_path):
+                raise AdcmEx(
+                    code="INVALID_OBJECT_DEFINITION",
+                    msg=f'"scripts_jinja" has unsupported path format: {scripts_jinja_path}',
+                )
+
+            scripts_jinja_file = path_resolver.resolve(
+                detect_relative_path_to_bundle_root(source_file_dir=prototype_dir, raw_path=scripts_jinja_path)
+            )
+            try:
+                Template(source=scripts_jinja_file.read_text(encoding="utf-8"))
+            except (FileNotFoundError, TemplateError) as e:
+                raise AdcmEx(code="INVALID_OBJECT_DEFINITION", msg=str(e)) from e
+
 
 def get_config_files(path: Path) -> list[tuple[Path, Path]]:
     conf_list = []
@@ -611,7 +628,7 @@ def save_sub_actions(conf, action, prototype_dir: Path | str):
         return
 
     action_wide_params = conf.get("params", {})
-    for sub in conf["scripts"]:
+    for sub in conf.get("scripts", []):
         sub_action = StageSubAction(
             action=action,
             script=sub["script"],
@@ -722,7 +739,7 @@ def save_actions(prototype: StagePrototype, config: dict, path_resolver: PathRes
                 is_hc_acl_present=is_hc_acl_present,
                 obj_ref=obj_ref,
             )
-        else:
+        elif "scripts" in action_config:
             for subaction_config in action_config["scripts"]:
                 check_internal_script(
                     config=subaction_config,
@@ -750,9 +767,16 @@ def save_action(proto: StagePrototype, config: dict, path_resolver: PathResolver
     dict_to_obj(dictionary=config, key="venv", obj=action)
     dict_to_obj(dictionary=config, key="allow_in_maintenance_mode", obj=action)
     dict_to_obj(dictionary=config, key="config_jinja", obj=action)
+    dict_to_obj(dictionary=config, key="scripts_jinja", obj=action)
+
     if action.config_jinja:
         action.config_jinja = detect_relative_path_to_bundle_root(
             source_file_dir=proto.path, raw_path=action.config_jinja
+        )
+
+    if action.scripts_jinja:
+        action.scripts_jinja = detect_relative_path_to_bundle_root(
+            source_file_dir=proto.path, raw_path=action.scripts_jinja
         )
 
     if "display_name" in config:
@@ -801,7 +825,9 @@ def save_action(proto: StagePrototype, config: dict, path_resolver: PathResolver
         action.multi_state_on_fail_unset = []
 
     action.save()
+
     save_sub_actions(conf=config, action=action, prototype_dir=proto.path)
+
     save_prototype_config(prototype=proto, proto_conf=config, path_resolver=path_resolver, action=action)
 
     return action
