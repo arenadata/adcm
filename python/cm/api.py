@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from functools import partial
 from typing import Literal, TypedDict
 import json
@@ -302,9 +303,22 @@ def delete_service_by_name(service_name, cluster_pk):
 def delete_service(service: ClusterObject) -> None:
     service_pk = service.pk
     service.delete()
+
     update_issue_after_deleting()
     update_hierarchy_issues(service.cluster)
-    re_apply_object_policy(service.cluster)
+
+    keep_objects = defaultdict(set)
+    for task in TaskLog.objects.filter(
+        object_type=ContentType.objects.get_for_model(ClusterObject), object_id=service_pk
+    ).prefetch_related("joblog_set", "joblog_set__logstorage_set"):
+        keep_objects[task.__class__].add(task.pk)
+        for job in task.joblog_set.all():
+            keep_objects[job.__class__].add(job.pk)
+            for log in job.logstorage_set.all():
+                keep_objects[log.__class__].add(log.pk)
+
+    re_apply_object_policy(apply_object=service.cluster, keep_objects=keep_objects)
+
     reset_hc_map()
     on_commit(func=partial(send_delete_service_event, service_id=service_pk))
     logger.info("service #%s is deleted", service_pk)

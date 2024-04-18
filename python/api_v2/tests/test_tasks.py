@@ -14,6 +14,7 @@ from io import BytesIO
 from operator import itemgetter
 from unittest.mock import patch
 
+from cm.api import delete_service
 from cm.converters import model_name_to_core_type
 from cm.models import (
     ADCM,
@@ -27,6 +28,7 @@ from cm.models import (
     TaskLog,
 )
 from cm.services.job.prepare import prepare_task_for_action
+from cm.tests.mocks.task_runner import RunTaskMock
 from core.job.dto import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
@@ -45,10 +47,10 @@ class TestTask(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
         self.adcm = ADCM.objects.first()
-        service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        component_1 = ServiceComponent.objects.filter(service=service_1, prototype__name="component_1").first()
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        component_1 = ServiceComponent.objects.filter(service=self.service_1, prototype__name="component_1").first()
         self.cluster_action = Action.objects.filter(name="action", prototype=self.cluster_1.prototype).first()
-        service_1_action = Action.objects.filter(name="action", prototype=service_1.prototype).first()
+        self.service_1_action = Action.objects.filter(name="action", prototype=self.service_1.prototype).first()
         component_1_action = Action.objects.filter(name="action_1_comp_1", prototype=component_1.prototype).first()
         cluster_object = CoreObjectDescriptor(id=self.cluster_1.pk, type=ADCMCoreType.CLUSTER)
         self.cluster_task = TaskLog.objects.get(
@@ -59,12 +61,12 @@ class TestTask(BaseAPITestCase):
                 payload=TaskPayloadDTO(),
             ).id
         )
-        service_object = CoreObjectDescriptor(id=service_1.pk, type=ADCMCoreType.SERVICE)
+        service_object = CoreObjectDescriptor(id=self.service_1.pk, type=ADCMCoreType.SERVICE)
         self.service_task = TaskLog.objects.get(
             id=prepare_task_for_action(
                 target=service_object,
                 owner=service_object,
-                action=service_1_action.pk,
+                action=self.service_1_action.pk,
                 payload=TaskPayloadDTO(),
             ).id
         )
@@ -163,6 +165,86 @@ class TestTask(BaseAPITestCase):
 
         response = self.client.get(path=reverse(viewname="v2:tasklog-list"))
         self.assertNotIn(self.adcm_task.pk, [task["id"] for task in response.json()["results"]])
+
+    def test_visibility_after_object_deletion(self):
+        """ADCM-4142"""
+
+        cluster_admin_credentials = self.test_user_credentials
+        cluster_admin = self.test_user
+        service_admin_credentials = {"username": "service_admin_username", "password": "service_admin_passwo"}
+        service_admin = self.create_user(**service_admin_credentials)
+
+        with self.grant_permissions(
+            to=cluster_admin, on=self.cluster_1, role_name="Cluster Administrator"
+        ) as _, self.grant_permissions(to=service_admin, on=self.service_1, role_name="Service Administrator") as _:
+            # run action as service admin (create all permissions we interested in)
+            self.client.login(**service_admin_credentials)
+            with RunTaskMock() as run_task:
+                response = self.client.post(
+                    path=reverse(
+                        viewname="v2:service-action-run",
+                        kwargs={
+                            "cluster_pk": self.cluster_1.pk,
+                            "service_pk": self.service_1.pk,
+                            "pk": self.service_1_action.pk,
+                        },
+                    ),
+                    data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+                )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(response.json()["id"], run_task.target_task.id)
+            self.assertEqual(run_task.target_task.status, "created")
+
+            service_task_pk = response.json()["id"]
+            child_job_pk = response.json()["childJobs"][0]["id"]
+
+            # check tasklog visibility for cluster admin
+            self.client.login(**cluster_admin_credentials)
+            cluster_admin_response = self.client.get(
+                path=reverse(viewname="v2:tasklog-detail", kwargs={"pk": service_task_pk}),
+            )
+            self.assertEqual(cluster_admin_response.status_code, HTTP_200_OK)
+            cluster_admin_response = self.client.get(
+                path=reverse(viewname="v2:log-list", kwargs={"job_pk": child_job_pk}),
+            )
+            self.assertSetEqual({log["type"] for log in cluster_admin_response.json()}, {"stdout", "stderr"})
+
+            # check tasklog visibility for service admin
+            self.client.login(**service_admin_credentials)
+            service_admin_response = self.client.get(
+                path=reverse(viewname="v2:tasklog-detail", kwargs={"pk": service_task_pk}),
+            )
+            self.assertEqual(service_admin_response.status_code, HTTP_200_OK)
+            service_admin_response = self.client.get(
+                path=reverse(viewname="v2:log-list", kwargs={"job_pk": child_job_pk}),
+            )
+            self.assertSetEqual({log["type"] for log in service_admin_response.json()}, {"stdout", "stderr"})
+
+            # delete service
+            delete_service(service=self.service_1)
+
+            # check tasklog visibility for cluster admin
+            self.client.login(**cluster_admin_credentials)
+            cluster_admin_response = self.client.get(
+                path=reverse(viewname="v2:tasklog-detail", kwargs={"pk": service_task_pk}),
+            )
+            self.assertEqual(cluster_admin_response.status_code, HTTP_200_OK)
+            cluster_admin_response = self.client.get(
+                path=reverse(viewname="v2:log-list", kwargs={"job_pk": child_job_pk}),
+            )
+            self.assertSetEqual({log["type"] for log in cluster_admin_response.json()}, {"stdout", "stderr"})
+
+            # check tasklog visibility for service admin
+            self.client.login(**service_admin_credentials)
+            service_admin_response = self.client.get(
+                path=reverse(viewname="v2:tasklog-detail", kwargs={"pk": service_task_pk}),
+            )
+            self.assertEqual(service_admin_response.status_code, HTTP_200_OK)
+            service_admin_response = self.client.get(
+                path=reverse(viewname="v2:log-list", kwargs={"job_pk": child_job_pk}),
+            )
+            self.assertSetEqual({log["type"] for log in service_admin_response.json()}, {"stdout", "stderr"})
 
 
 class TestTaskObjects(BaseAPITestCase):
