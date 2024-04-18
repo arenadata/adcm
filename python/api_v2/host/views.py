@@ -491,6 +491,38 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet, Obj
         )
 
 
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getObjectConfigGroupHosts",
+        summary="GET object's config-group hosts",
+        description="Get a list of hosts added to object's config-group.",
+        responses={HTTP_200_OK: HostGroupConfigSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    retrieve=extend_schema(
+        operation_id="getObjectConfigGroupHost",
+        summary="GET object's config-group host",
+        description="Get information about a specific host of object's config-group.",
+        responses={HTTP_200_OK: HostGroupConfigSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    create=extend_schema(
+        operation_id="postObjectConfigGroupHosts",
+        summary="POST object's config-group host",
+        description="Add host to object's config-group.",
+        responses={
+            HTTP_201_CREATED: HostGroupConfigSerializer,
+            HTTP_400_BAD_REQUEST: ErrorSerializer,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
+        },
+    ),
+    destroy=extend_schema(
+        operation_id="deleteObjectConfigGroupHosts",
+        summary="DELETE host from object's config-group",
+        description="Remove host from object's config-group.",
+        responses={HTTP_204_NO_CONTENT: None, HTTP_403_FORBIDDEN: ErrorSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+)
 class HostGroupConfigViewSet(PermissionListMixin, GetParentObjectMixin, CamelCaseReadOnlyModelViewSet):
     queryset = (
         Host.objects.select_related("provider", "cluster")

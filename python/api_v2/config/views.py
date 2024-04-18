@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
 from audit.utils import audit
@@ -17,13 +16,22 @@ from cm.api import update_obj_config
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, GroupConfig, PrototypeConfig
 from django.contrib.contenttypes.models import ContentType
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
+from api_v2.api_schema import ErrorSerializer
 from api_v2.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
 from api_v2.config.utils import (
     convert_adcm_meta_to_attr,
@@ -34,6 +42,31 @@ from api_v2.config.utils import (
 from api_v2.views import CamelCaseGenericViewSet
 
 
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getObjectConfigs",
+        summary="GET object's config versions",
+        description="Get information about object's config versions.",
+        responses={HTTP_200_OK: ConfigLogListSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    retrieve=extend_schema(
+        operation_id="getObjectConfig",
+        summary="GET object's config",
+        description="Get object's configuration information.",
+        responses={HTTP_200_OK: ConfigLogSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    create=extend_schema(
+        operation_id="postObjectConfigs",
+        summary="POST object's configs",
+        description="Create a new version of object's configuration.",
+        responses={
+            HTTP_200_OK: ConfigLogSerializer,
+            HTTP_400_BAD_REQUEST: ErrorSerializer,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
+        },
+    ),
+)
 class ConfigLogViewSet(
     PermissionListMixin,
     ListModelMixin,
