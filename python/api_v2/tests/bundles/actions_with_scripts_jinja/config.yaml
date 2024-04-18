@@ -1,0 +1,43 @@
+- type: cluster
+  name: cluster_with_plain_scripts_and_scripts_jinja
+  version: &version "1"
+
+  config: &config
+    - name: string
+      type: string
+      default: "some string"
+
+  actions: &actions
+    action_plain_scripts:
+      type: task
+      allow_to_terminate: true
+      scripts:
+        - name: script_1
+          display_name: Script 1
+          script: ./playbook.yaml
+          script_type: ansible
+          allow_to_terminate: false
+        - name: script_2
+          display_name: Script 2
+          script: ./playbook.yaml
+          script_type: ansible
+      states:
+        available: any
+    action_scripts_jinja:
+      type: task
+      allow_to_terminate: true
+      scripts_jinja: "./scripts.j2"
+      states:
+        available: any
+
+- name: service_one_component
+  type: service
+  version: *version
+  config: *config
+  actions: *actions
+
+  components:
+    component_1:
+      constraint: [ 0, + ]
+      config: *config
+      actions: *actions
