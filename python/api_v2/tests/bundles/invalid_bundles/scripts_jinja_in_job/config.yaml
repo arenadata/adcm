@@ -1,0 +1,29 @@
+- type: cluster
+  name: cluster_with_scripts_jinja_in_job
+  version: &version "1"
+
+  config: &config
+    - name: string
+      type: string
+      default: "some string"
+
+  actions: &actions
+    job_with_scripts_jinja:
+      type: job
+      script: ./actions.yaml
+      script_type: ansible
+      scripts_jinja: "./scripts.j2"
+      states:
+        available: any
+
+- name: service_one_component
+  type: service
+  version: *version
+  config: *config
+  actions: *actions
+
+  components:
+    component_1:
+      constraint: [ 0, + ]
+      config: *config
+      actions: *actions
