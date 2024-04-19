@@ -19,16 +19,17 @@ module: adcm_add_host_to_cluster
 short_description: add host to cluster
 description:
     - The C(adcm_add_host_to_cluster) module is intended to add existing host to cluster
-      in ADCM DB. This module should be run in cluster or service context.
+      in ADCM DB. This module should be run in cluster, service or component context.
+      Either `fqdn` or `host_id` option have to be specified.
 options:
   fqdn:
     description:
       - Fully qualified domain name of added host
-    required: yes
+    required: no
   host_id:
     description:
       - Host ID of added host
-    required: yes
+    required: no
 """
 
 EXAMPLES = r"""
@@ -43,36 +44,13 @@ result:
 
 import sys
 
-from ansible.errors import AnsibleError
-from ansible.plugins.action import ActionBase
-
 sys.path.append("/adcm/python")
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from ansible_plugin.utils import get_object_id_from_context
-from cm.errors import AdcmEx
-from cm.logger import logger
-import cm.api
+from ansible_plugin.base import ADCMAnsiblePlugin
+from ansible_plugin.executors.add_host_to_cluster import ADCMAddHostToClusterPluginExecutor
 
 
-class ActionModule(ActionBase):
-    TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(("fqdn", "host_id"))
-
-    def run(self, tmp=None, task_vars=None):
-        super().run(tmp, task_vars)
-        msg = "You can add host only in cluster or service context"
-        cluster_id, _ = get_object_id_from_context(
-            task_vars=task_vars, id_type="cluster_id", context_types=("cluster", "service"), err_msg=msg
-        )
-        fqdn = self._task.args.get("fqdn", None)
-        host_id = self._task.args.get("host_id", None)
-
-        logger.info("ansible module: cluster_id %s, fqdn %s, host_id: %s", cluster_id, fqdn, host_id)
-        try:
-            cm.api.add_host_to_cluster_by_pk(cluster_id, fqdn, host_id)
-        except AdcmEx as e:
-            raise AnsibleError(e.code + ": " + e.msg) from e
-
-        return {"failed": False, "changed": True}
+class ActionModule(ADCMAnsiblePlugin):
+    executor_class = ADCMAddHostToClusterPluginExecutor

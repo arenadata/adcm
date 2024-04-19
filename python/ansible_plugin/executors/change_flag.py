@@ -129,6 +129,6 @@ class ADCMChangeFlagPluginExecutor(ADCMAnsiblePluginExecutor[ChangeFlagArguments
                     changed = lower_all_flags(on_objects=targets)
             case _:
                 message = f"Can't handle operation {arguments.operation}"
-                raise PluginRuntimeError(message=message, original_error=None)
+                raise PluginRuntimeError(message=message)
 
         return CallResult(value={}, changed=changed, error=None)

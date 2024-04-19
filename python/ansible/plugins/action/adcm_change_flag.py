@@ -10,13 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-
-sys.path.append("/adcm/python")
-
-import adcm.init_django  # noqa: F401, isort:skip
-from ansible_plugin.base import ADCMAnsiblePlugin
-from ansible_plugin.executors.change_flag import ADCMChangeFlagPluginExecutor
 
 DOCUMENTATION = """
 module: adcm_change_flag
@@ -85,6 +78,14 @@ EXAMPLES = """
     objects:
       - type: service
 """
+
+import sys
+
+sys.path.append("/adcm/python")
+
+import adcm.init_django  # noqa: F401, isort:skip
+from ansible_plugin.base import ADCMAnsiblePlugin
+from ansible_plugin.executors.change_flag import ADCMChangeFlagPluginExecutor
 
 
 class ActionModule(ADCMAnsiblePlugin):

@@ -205,16 +205,6 @@ def get_cluster_and_host(cluster_pk, fqdn, host_pk):
     return cluster, host
 
 
-def add_host_to_cluster_by_pk(cluster_pk, fqdn, host_pk):
-    """
-    add host to cluster
-
-    This is intended for use in adcm_add_host_to_cluster ansible plugin only
-    """
-
-    return add_host_to_cluster(*get_cluster_and_host(cluster_pk=cluster_pk, fqdn=fqdn, host_pk=host_pk))
-
-
 def remove_host_from_cluster_by_pk(cluster_pk, fqdn, host_pk):
     """
     remove host from cluster

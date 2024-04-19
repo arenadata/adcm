@@ -14,9 +14,8 @@ from unittest.mock import patch
 from cm.converters import orm_object_to_core_type
 from cm.models import Host, Prototype, ServiceComponent
 from cm.services.job.run.repo import JobRepoImpl
-from django.db import IntegrityError
 
-from ansible_plugin.errors import PluginRuntimeError, PluginTargetError
+from ansible_plugin.errors import PluginContextError, PluginRuntimeError
 from ansible_plugin.executors.add_host import ADCMAddHostPluginExecutor
 from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
@@ -109,7 +108,6 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         result = executor.execute()
 
         self.assertIsInstance(result.error, PluginRuntimeError)
-        self.assertIsInstance(result.error.original_error, IntegrityError)
         self.assertIn("Failed to create host due to IntegrityError", result.error.message)
 
     def test_incorrect_context_call_fail(self) -> None:
@@ -126,7 +124,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
 
                 result = executor.execute()
 
-                self.assertIsInstance(result.error, PluginTargetError)
+                self.assertIsInstance(result.error, PluginContextError)
                 self.assertIn(
                     "Plugin should be called only in context of hostprovider, "
                     f"not {orm_object_to_core_type(object_).value}",

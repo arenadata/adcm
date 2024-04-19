@@ -22,7 +22,13 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from pydantic import BaseModel, ValidationError, field_validator
 
-from ansible_plugin.errors import ADCMPluginError, PluginRuntimeError, PluginTargetDetectionError, PluginValidationError
+from ansible_plugin.errors import (
+    ADCMPluginError,
+    PluginContextError,
+    PluginRuntimeError,
+    PluginTargetDetectionError,
+    PluginValidationError,
+)
 
 # Input
 
@@ -87,12 +93,12 @@ def from_objects(
                     targets.append(CoreObjectDescriptor(id=context.cluster_id, type=ADCMCoreType.CLUSTER))
                 else:
                     message = "Can't identify cluster from context"
-                    raise PluginRuntimeError(message=message, original_error=None)
+                    raise PluginRuntimeError(message=message)
             case "service":
                 if target_description.service_name:
                     if not context.cluster_id:
                         message = "Can't identify service by name without `cluster_id` in context"
-                        raise PluginRuntimeError(message=message, original_error=None)
+                        raise PluginRuntimeError(message=message)
 
                     targets.append(
                         CoreObjectDescriptor(
@@ -106,12 +112,12 @@ def from_objects(
                     targets.append(CoreObjectDescriptor(id=context.service_id, type=ADCMCoreType.SERVICE))
                 else:
                     message = f"Can't identify service based on {target_description=}"
-                    raise PluginRuntimeError(message=message, original_error=None)
+                    raise PluginRuntimeError(message=message)
             case "component":
                 if target_description.component_name:
                     if not context.cluster_id:
                         message = "Can't identify component by name without `cluster_id` in context"
-                        raise PluginRuntimeError(message=message, original_error=None)
+                        raise PluginRuntimeError(message=message)
 
                     component_id_qs = ServiceComponent.objects.values_list("id", flat=True)
                     kwargs = {"cluster_id": context.cluster_id, "prototype__name": target_description.component_name}
@@ -133,25 +139,25 @@ def from_objects(
                         )
                     else:
                         message = "Can't identify component by name without `service_name` or out of service context"
-                        raise PluginRuntimeError(message=message, original_error=None)
+                        raise PluginRuntimeError(message=message)
 
                 elif context.component_id:
                     targets.append(CoreObjectDescriptor(id=context.component_id, type=ADCMCoreType.COMPONENT))
                 else:
                     message = f"Can't identify component based on {target_description=}"
-                    raise PluginRuntimeError(message=message, original_error=None)
+                    raise PluginRuntimeError(message=message)
             case "provider":
                 if context.provider_id:
                     targets.append(CoreObjectDescriptor(id=context.provider_id, type=ADCMCoreType.HOSTPROVIDER))
                 else:
                     message = "Can't identify hostprovider from context"
-                    raise PluginRuntimeError(message=message, original_error=None)
+                    raise PluginRuntimeError(message=message)
             case "host":
                 if context.host_id:
                     targets.append(CoreObjectDescriptor(id=context.host_id, type=ADCMCoreType.HOST))
                 else:
                     message = "Can't identify host from context"
-                    raise PluginRuntimeError(message=message, original_error=None)
+                    raise PluginRuntimeError(message=message)
 
     return tuple(targets)
 
@@ -209,20 +215,43 @@ class TargetConfig:
                 (next in line won't be evaluated if previous returned non-empty result).
                 They shouldn't contain any logic, only extraction.
                 Sanity of evaluated targets should be checked either in `validators` or executor itself.
+                If plugin is applied to context's owner, you can skip specifying detectors or set them to `()`
+                and you'll get empty `targets` in plugin's `__call__`
+                (it's expected you'll use `context_owner` in this case).
 
     `validators` are designed to be evaluated before `detectors`
                 and check whether there are any conflicts specific to current plugin.
     """
 
-    detectors: tuple[TargetDetector, ...]
+    detectors: tuple[TargetDetector, ...] = ()
     # pre-detection validators
     validators: Collection[TargetValidator] = ()
+
+
+class ContextValidator(Protocol):
+    def __call__(self, context_owner: CoreObjectDescriptor, context: AnsibleJobContext) -> PluginValidationError | None:
+        ...
+
+
+@dataclass(frozen=True, slots=True)
+class ContextConfig:
+    """
+    It's a common situation that plugin is applied to context's owner
+    or has some restrictions on what's the type of the owner might be.
+    Use this config to provide universal validation for such requirements.
+    Empty attributes are consider unspecified and no action will be taken based on them
+    (e.g. empty `allow_only` won't check the type of owner).
+    """
+
+    allow_only: tuple[ADCMCoreType, ...] | frozenset[ADCMCoreType] = ()
+    validators: Collection[ContextValidator] = ()
 
 
 @dataclass(frozen=True, slots=True)
 class PluginExecutorConfig(Generic[CallArguments]):
     arguments: ArgumentsConfig[CallArguments]
-    target: TargetConfig
+    target: TargetConfig = TargetConfig()
+    context: ContextConfig = ContextConfig()
 
 
 class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
@@ -264,6 +293,8 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
         May raise exceptions, yet try to do so only in extraordinary cases.
         May access arguments (config, etc.) through `self`, but is generally discouraged.
         """
+        message = f"{self.__class__} can't be called due to missing implementation"
+        raise NotImplementedError(message)
 
     def execute(self) -> CallResult[ReturnValue]:
         """
@@ -277,6 +308,7 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
                 id=getattr(call_context, f"{call_context.type}_id"),
                 type=ADCMCoreType(call_context.type) if call_context.type != "provider" else ADCMCoreType.HOSTPROVIDER,
             )
+            self._validate_context(context_owner=owner_from_context, context=call_context)
             self._validate_targets(context_owner=owner_from_context, context=call_context)
             targets = self._detect_targets(context_owner=owner_from_context, context=call_context)
             result = self(
@@ -286,7 +318,7 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
             return CallResult(value={}, changed=False, error=err)
         except Exception as err:  # noqa: BLE001
             message = f"Unhandled exception occurred during {self.__class__.__name__} call: {err}"
-            return CallResult(value={}, changed=False, error=PluginRuntimeError(message=message, original_error=err))
+            return CallResult(value={}, changed=False, error=PluginRuntimeError(message=message))
 
         return result
 
@@ -310,6 +342,22 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
 
         return arguments, context
 
+    def _validate_context(self, context_owner: CoreObjectDescriptor, context: AnsibleJobContext) -> None:
+        allowed_context_owners = self._config.context.allow_only
+        # it's important that if it's empty no check is performed
+        if allowed_context_owners and context_owner.type not in allowed_context_owners:
+            message = (
+                "Plugin should be called only in context of "
+                f"{' or '.join(sorted(owner.value for owner in allowed_context_owners))}, "
+                f"not {context_owner.type.value}"
+            )
+            raise PluginContextError(message=message)
+
+        for validator in self._config.context.validators:
+            error = validator(context_owner=context_owner, context=context)
+            if error:
+                raise error
+
     def _validate_targets(self, context_owner: CoreObjectDescriptor, context: AnsibleJobContext) -> None:
         for validator in self._config.target.validators:
             error = validator(context_owner=context_owner, context=context, raw_arguments=self._raw_arguments)
@@ -319,6 +367,11 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
     def _detect_targets(
         self, context_owner: CoreObjectDescriptor, context: AnsibleJobContext
     ) -> tuple[CoreObjectDescriptor, ...]:
+        if not self._config.target.detectors:
+            # Note that only in this case it's ok to return empty targets.
+            # See `TargetConfig` and `ContextConfig` for more info.
+            return ()
+
         for detector in self._config.target.detectors:
             result = detector(context_owner=context_owner, context=context, raw_arguments=self._raw_arguments)
             if result:
