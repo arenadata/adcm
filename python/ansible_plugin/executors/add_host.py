@@ -23,12 +23,11 @@ from ansible_plugin.base import (
     AnsibleJobContext,
     ArgumentsConfig,
     CallResult,
+    ContextConfig,
     PluginExecutorConfig,
     ReturnValue,
-    TargetConfig,
-    from_context,
 )
-from ansible_plugin.errors import PluginRuntimeError, PluginTargetError
+from ansible_plugin.errors import PluginRuntimeError
 
 
 class AddHostArguments(BaseModel):
@@ -42,7 +41,8 @@ class AddHostReturnValue(TypedDict):
 
 class ADCMAddHostPluginExecutor(ADCMAnsiblePluginExecutor[AddHostArguments, AddHostReturnValue]):
     _config = PluginExecutorConfig(
-        arguments=ArgumentsConfig(represent_as=AddHostArguments), target=TargetConfig(detectors=(from_context,))
+        arguments=ArgumentsConfig(represent_as=AddHostArguments),
+        context=ContextConfig(allow_only=frozenset({ADCMCoreType.HOSTPROVIDER})),
     )
 
     def __call__(
@@ -54,15 +54,9 @@ class ADCMAddHostPluginExecutor(ADCMAnsiblePluginExecutor[AddHostArguments, AddH
     ) -> CallResult[ReturnValue]:
         _ = targets, context
 
-        target = context_owner
-
-        if target.type != ADCMCoreType.HOSTPROVIDER:
-            message = f"Plugin should be called only in context of hostprovider, not {target.type.value}"
-            raise PluginTargetError(message)
-
         with atomic():
             try:
-                hostprovider = HostProvider.objects.select_related("prototype__bundle").get(id=target.id)
+                hostprovider = HostProvider.objects.select_related("prototype__bundle").get(id=context_owner.id)
                 host_prototype = Prototype.objects.get(type="host", bundle=hostprovider.prototype.bundle)
                 host = add_host(
                     provider=hostprovider,
@@ -70,30 +64,25 @@ class ADCMAddHostPluginExecutor(ADCMAnsiblePluginExecutor[AddHostArguments, AddH
                     fqdn=arguments.fqdn,
                     description=arguments.description,
                 )
-            except HostProvider.DoesNotExist as err:
+            except HostProvider.DoesNotExist:
                 return CallResult(
                     value=None,
                     changed=False,
-                    error=PluginRuntimeError(
-                        message=f"Failed to find HostProvider with id {target.id}", original_error=err
-                    ),
+                    error=PluginRuntimeError(message=f"Failed to find HostProvider with id {context_owner.id}"),
                 )
-            except Prototype.DoesNotExist as err:
+            except Prototype.DoesNotExist:
                 return CallResult(
                     value=None,
                     changed=False,
                     error=PluginRuntimeError(
-                        message=f"Failed to locate host's prototype based on HostProvider with id {target.id}",
-                        original_error=err,
+                        message=f"Failed to locate host's prototype based on HostProvider with id {context_owner.id}"
                     ),
                 )
             except IntegrityError as err:
                 return CallResult(
                     value=None,
                     changed=False,
-                    error=PluginRuntimeError(
-                        message=f"Failed to create host due to IntegrityError: {err}", original_error=err
-                    ),
+                    error=PluginRuntimeError(message=f"Failed to create host due to IntegrityError: {err}"),
                 )
 
         return CallResult(value=AddHostReturnValue(host_id=int(host.pk)), changed=True, error=None)

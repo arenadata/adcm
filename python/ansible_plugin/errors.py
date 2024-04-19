@@ -18,9 +18,7 @@ class ADCMPluginError(Exception):
 
 
 class PluginRuntimeError(ADCMPluginError):
-    def __init__(self, message: str, original_error: Exception | None):
-        super().__init__(message=message)
-        self.original_error = original_error
+    ...
 
 
 class PluginTargetError(ADCMPluginError):
@@ -32,4 +30,8 @@ class PluginTargetDetectionError(PluginTargetError):
 
 
 class PluginValidationError(ADCMPluginError):
+    ...
+
+
+class PluginContextError(ADCMPluginError):
     ...
