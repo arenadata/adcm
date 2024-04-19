@@ -1,19 +1,28 @@
 import CircleDiagram from '@uikit/CircleDiagram/CircleDiagram';
 import s from './ClusterOverviewDiagram.module.scss';
-import { AdcmClusterStatus } from '@models/adcm';
+import cn from 'classnames';
+import { AdcmServiceStatus, AdcmHostStatus } from '@models/adcm';
 
 interface ClusterOverviewDiagramProps {
-  status: AdcmClusterStatus;
   currentCount: number;
   totalCount: number;
+  status?: AdcmServiceStatus | AdcmHostStatus;
 }
 
 const ClusterOverviewDiagram = ({ status, currentCount, totalCount }: ClusterOverviewDiagramProps) => {
-  const diagramClass = status === AdcmClusterStatus.Up ? s.clusterOverviewDiagram_up : s.clusterOverviewDiagram_down;
+  const diagramClass = cn(
+    totalCount > 0 ? (status === 'up' ? s.clusterOverviewDiagram_up : s.clusterOverviewDiagram_down) : undefined,
+    !status && currentCount > 0 ? s.clusterOverviewDiagram_empty : undefined,
+  );
 
   return (
     <div className={s.clusterOverviewDiagram__wrapper}>
-      <CircleDiagram totalCount={totalCount} currentCount={currentCount} colorClass={diagramClass} />
+      <CircleDiagram
+        totalCount={totalCount}
+        currentCount={currentCount}
+        className={diagramClass}
+        isDoubleMode={!status}
+      />
     </div>
   );
 };
