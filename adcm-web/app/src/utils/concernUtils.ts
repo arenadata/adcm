@@ -23,11 +23,11 @@ export const getConcernLinkObjectPathsDataArray = (
 
     const separatedMessage = concern.reason.message.split(keyRegexp);
 
-    Object.entries(concern.reason.placeholder).forEach(([key, placeHolderItem]) => {
-      const path = getConcernPath(concern, placeHolderItem);
+    Object.entries(concern.reason.placeholder).forEach(([key, placeholderItem]) => {
+      const path = getConcernPath(concern, placeholderItem);
       linksDataMap.set(key, {
         path,
-        text: placeHolderItem.name,
+        text: placeholderItem.name,
       });
     });
     const initialLinksData: ConcernObjectPathsData[] = [];
@@ -44,20 +44,20 @@ export const getConcernLinkObjectPathsDataArray = (
   });
 };
 
-export const getConcernObjectPath = (placeHolderProps: AdcmConcernPlaceholder): string => {
-  switch (placeHolderProps.type) {
+export const getConcernObjectPath = (placeholderProps: AdcmConcernPlaceholder): string => {
+  switch (placeholderProps.type) {
     case AdcmConcernType.Cluster:
-      return `/clusters/${placeHolderProps.params.clusterId}`;
+      return `/clusters/${placeholderProps.params.clusterId}`;
     case AdcmConcernType.Service:
-      return `/clusters/${placeHolderProps.params.clusterId}/services/${placeHolderProps.params.serviceId}`;
+      return `/clusters/${placeholderProps.params.clusterId}/services/${placeholderProps.params.serviceId}`;
     case AdcmConcernType.Component:
-      return `/clusters/${placeHolderProps.params.clusterId}/services/${placeHolderProps.params.serviceId}/components/${placeHolderProps.params.componentId}`;
+      return `/clusters/${placeholderProps.params.clusterId}/services/${placeholderProps.params.serviceId}/components/${placeholderProps.params.componentId}`;
     case AdcmConcernType.Host:
-      return `/hosts/${placeHolderProps.params.hostId}`;
+      return `/hosts/${placeholderProps.params.hostId}`;
     case AdcmConcernType.Provider:
-      return `/hostproviders/${placeHolderProps.params.providerId}`;
+      return `/hostproviders/${placeholderProps.params.providerId}`;
     case AdcmConcernType.Job:
-      return `/jobs/${placeHolderProps.params.jobId}`;
+      return `/jobs/${placeholderProps.params.jobId}`;
     case AdcmConcernType.Prototype:
     case AdcmConcernType.Adcm:
     default:
@@ -65,33 +65,46 @@ export const getConcernObjectPath = (placeHolderProps: AdcmConcernPlaceholder): 
   }
 };
 
-const getConcernPath = (concern: AdcmConcerns, placeHolderProps: AdcmConcernPlaceholder): string => {
-  if (placeHolderProps.type === AdcmConcernType.Prototype || placeHolderProps.type === AdcmConcernType.Adcm) {
+const getConcernObjectConfigPath = (placeholderProps: AdcmConcernPlaceholder, concernCause?: AdcmConcernCause) => {
+  const clusterPath = `/clusters/${(placeholderProps as AdcmConcernClusterPlaceholder).params.clusterId}`;
+  const concernObjectPath = getConcernObjectPath(placeholderProps);
+
+  if (placeholderProps.type === AdcmConcernType.Cluster && concernCause === AdcmConcernCause.Config) {
+    return `${clusterPath}/configuration`;
+  } else {
+    return `${concernObjectPath}/primary-configuration`;
+  }
+};
+
+const getConcernPath = (concern: AdcmConcerns, placeholderProps: AdcmConcernPlaceholder): string => {
+  if (placeholderProps.type === AdcmConcernType.Prototype || placeholderProps.type === AdcmConcernType.Adcm) {
     return '';
   }
 
-  const clusterPath = `/clusters/${(placeHolderProps as AdcmConcernClusterPlaceholder).params.clusterId}`;
+  const clusterPath = `/clusters/${(placeholderProps as AdcmConcernClusterPlaceholder).params.clusterId}`;
+
+  const concernObjectPath = getConcernObjectPath(placeholderProps);
 
   switch (concern.cause) {
     case AdcmConcernCause.Config:
-      return placeHolderProps.type === 'cluster'
-        ? `${clusterPath}/configuration`
-        : `${getConcernObjectPath(placeHolderProps)}/primary-configuration`;
+      return getConcernObjectConfigPath(placeholderProps, AdcmConcernCause.Config);
     case AdcmConcernCause.HostComponent:
       return `${clusterPath}/mapping`;
     case AdcmConcernCause.Import:
       return `${clusterPath}/import/${
-        placeHolderProps.type === 'service'
-          ? `services/?serviceId=${placeHolderProps.params.serviceId}`
-          : placeHolderProps.type
+        placeholderProps.type === AdcmConcernType.Service
+          ? `services/?serviceId=${placeholderProps.params.serviceId}`
+          : placeholderProps.type
       }`;
     case AdcmConcernCause.Service:
     case AdcmConcernCause.Requirement:
       return `${clusterPath}/services`;
     case AdcmConcernCause.Job:
-      return `${getConcernObjectPath(placeHolderProps)}`;
+      return concernObjectPath;
     default:
-      return '';
+      return placeholderProps.type === AdcmConcernType.Cluster
+        ? clusterPath
+        : getConcernObjectConfigPath(placeholderProps);
   }
 };
 
