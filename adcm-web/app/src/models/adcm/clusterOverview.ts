@@ -1,4 +1,6 @@
 import { AdcmClusterStatus } from './cluster';
+import { AdcmHostStatus } from './host';
+import { AdcmServiceStatus } from './service';
 
 export interface AdcmClusterOverviewStatusService {
   id: number;
@@ -23,9 +25,9 @@ export interface AdcmClusterOverviewStatusHost {
 }
 
 export interface AdcmClusterOverviewServicesFilter {
-  servicesStatus: AdcmClusterStatus;
+  servicesStatus: AdcmServiceStatus | undefined;
 }
 
 export interface AdcmClusterOverviewHostsFilter {
-  hostsStatus: AdcmClusterStatus;
+  hostsStatus: AdcmHostStatus | undefined;
 }

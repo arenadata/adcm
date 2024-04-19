@@ -14,7 +14,7 @@ export default {
     currentCount: {
       description: 'Current count',
     },
-    colorClass: {
+    className: {
       description: 'Class must includes "color" param',
     },
   },
@@ -24,20 +24,20 @@ export const CircleDiagramExample: Story = {
   args: {
     totalCount: 10,
     currentCount: 2,
-    colorClass: 'green',
+    className: 'green',
   },
-  render: ({ totalCount, currentCount, colorClass }) => {
-    return <DiagramExample totalCount={totalCount} currentCount={currentCount} colorClass={colorClass} />;
+  render: ({ totalCount, currentCount, className }) => {
+    return <DiagramExample totalCount={totalCount} currentCount={currentCount} className={className} />;
   },
 };
 
-const DiagramExample = ({ totalCount, currentCount, colorClass }: CircleDiagramProps) => {
-  const [currentColor, setCurrentColor] = useState(colorClass);
+const DiagramExample = ({ totalCount, currentCount, className }: CircleDiagramProps) => {
+  const [currentColor, setCurrentColor] = useState(className);
   const prepColorClass = currentColor === 'green' ? s.diagramExampleClass_green : s.diagramExampleClass_yellow;
 
   return (
     <div className={s.diagramExample}>
-      <CircleDiagram currentCount={currentCount} totalCount={totalCount} colorClass={prepColorClass} />
+      <CircleDiagram currentCount={currentCount} totalCount={totalCount} className={prepColorClass} />
       <div
         className={s.diagramExample__radioGroup}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentColor(e.target.value)}
