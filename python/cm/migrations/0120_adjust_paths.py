@@ -18,10 +18,10 @@ from django.db import migrations
 
 
 def adjust_paths(apps, schema_editor):
-    Action = apps.get_model('cm', 'Action')
+    Action = apps.get_model("cm", "Action")
     SubAction = apps.get_model("cm", "SubAction")
     Prototype = apps.get_model("cm", "Prototype")
-    PrototypeConfig = apps.get_model('cm', 'PrototypeConfig')
+    PrototypeConfig = apps.get_model("cm", "PrototypeConfig")
 
     objects_to_update = []
     for entry in Action.objects.select_related("prototype").filter(config_jinja__startswith="./"):
@@ -42,18 +42,17 @@ def adjust_paths(apps, schema_editor):
     Prototype.objects.bulk_update(objs=objects_to_update, fields=["license_path"])
 
     objects_to_update = []
-    for entry in PrototypeConfig.objects.select_related("prototype").filter(type__in=("text", "secrettext"), default__startswith="./"):
+    for entry in PrototypeConfig.objects.select_related("prototype").filter(
+        type__in=("text", "secrettext"), default__startswith="./"
+    ):
         entry.default = Path(entry.prototype.path) / entry.default
         objects_to_update.append(entry)
     PrototypeConfig.objects.bulk_update(objs=objects_to_update, fields=["default"])
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0119_extract_sub_actions_from_actions'),
+        ("cm", "0119_extract_sub_actions_from_actions"),
     ]
 
-    operations = [
-        migrations.RunPython(code=adjust_paths, reverse_code=migrations.RunPython.noop)
-    ]
+    operations = [migrations.RunPython(code=adjust_paths, reverse_code=migrations.RunPython.noop)]

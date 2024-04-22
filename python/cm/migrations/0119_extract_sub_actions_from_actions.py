@@ -41,7 +41,6 @@ def extract_sub_actions_from_actions(apps, schema_editor):
 
 def return_sub_actions_into_actions(apps, schema_editor):
     SubAction = apps.get_model("cm", "SubAction")
-    Action = apps.get_model("cm", "Action")
 
     fields_to_return = ("script", "script_type", "params")
 

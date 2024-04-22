@@ -123,6 +123,10 @@ class GroupConfigSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializ
         }
 
     def validate(self, attrs):
+        name = attrs.get("name")
+        if isinstance(name, str) and len(name.splitlines()) > 1:
+            raise ValidationError("the string field contains a line break character")
+
         object_type = attrs.get("object_type")
         object_id = attrs.get("object_id")
         if object_type is not None and object_id is not None:
