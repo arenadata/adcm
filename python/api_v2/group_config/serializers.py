@@ -25,6 +25,9 @@ class GroupConfigSerializer(ModelSerializer):
         fields = ["id", "name", "description", "hosts"]
 
     def validate_name(self, value):
+        if isinstance(value, str) and len(value.splitlines()) > 1:
+            raise ValidationError("the string field contains a line break character")
+
         object_ = self.context["view"].get_parent_object()
         parent_content_type = ContentType.objects.get_for_model(model=object_)
         queryset = GroupConfig.objects.filter(name=value, object_type=parent_content_type, object_id=object_.pk)

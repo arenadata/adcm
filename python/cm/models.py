@@ -12,6 +12,7 @@
 
 from collections.abc import Iterable, Mapping
 from copy import deepcopy
+from functools import partial
 from itertools import chain
 from typing import Optional, TypeAlias
 from uuid import uuid4
@@ -24,7 +25,7 @@ from core.types import ADCMCoreType
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
@@ -32,12 +33,6 @@ from django.dispatch import receiver
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.errors import AdcmEx
 from cm.logger import logger
-
-
-def validate_line_break_character(value: str) -> None:
-    """Check line break character in CharField"""
-    if len(value.splitlines()) > 1:
-        raise ValidationError("the string field contains a line break character")
 
 
 class ObjectType(models.TextChoices):
@@ -83,11 +78,6 @@ def get_object_cluster(obj):
         return obj.cluster
     else:
         return None
-
-
-def get_default_before_upgrade() -> dict:
-    """Return init value for before upgrade"""
-    return {"state": None}
 
 
 class ADCMManager(models.Manager):
@@ -204,10 +194,6 @@ class ProductCategory(ADCMModel):
                 category.delete()
 
 
-def get_default_from_edition():
-    return ["community"]
-
-
 MONITORING_TYPE = (
     ("active", "active"),
     ("passive", "passive"),
@@ -218,10 +204,6 @@ SERVICE_IN_MM = "The Action is not available. Service in 'Maintenance mode'"
 COMPONENT_IN_MM = "The Action is not available. Component in 'Maintenance mode'"
 HOST_IN_MM = "The Action is not available. Host in 'Maintenance mode'"
 MANY_HOSTS_IN_MM = "The Action is not available. One or more hosts in 'Maintenance mode'"
-
-
-def get_default_constraint():
-    return [0, "+"]
 
 
 class Prototype(ADCMModel):
@@ -238,7 +220,7 @@ class Prototype(ADCMModel):
     version_order = models.PositiveIntegerField(default=0)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
-    constraint = models.JSONField(default=get_default_constraint)
+    constraint = models.JSONField(default=partial(list, (0, "+")))
     requires = models.JSONField(default=list)
     bound_to = models.JSONField(default=dict)
     adcm_min_version = models.CharField(max_length=1000, default=None, null=True)
@@ -401,7 +383,7 @@ class Upgrade(ADCMModel):
     description = models.TextField(blank=True)
     min_version = models.CharField(max_length=1000)
     max_version = models.CharField(max_length=1000)
-    from_edition = models.JSONField(default=get_default_from_edition)
+    from_edition = models.JSONField(default=partial(list, ("community",)))
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
     state_available = models.JSONField(default=list)
@@ -453,7 +435,7 @@ class Cluster(ADCMEntity):
         content_type_field="object_type",
         on_delete=models.CASCADE,
     )
-    before_upgrade = models.JSONField(default=get_default_before_upgrade)
+    before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
 
     __error_code__ = "CLUSTER_NOT_FOUND"
 
@@ -492,7 +474,7 @@ class HostProvider(ADCMEntity):
         content_type_field="object_type",
         on_delete=models.CASCADE,
     )
-    before_upgrade = models.JSONField(default=get_default_before_upgrade)
+    before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
 
     __error_code__ = "PROVIDER_NOT_FOUND"
 
@@ -532,7 +514,7 @@ class Host(ADCMEntity):
         choices=MaintenanceMode.choices,
         default=MaintenanceMode.OFF,
     )
-    before_upgrade = models.JSONField(default=get_default_before_upgrade)
+    before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
 
     __error_code__ = "HOST_NOT_FOUND"
 
@@ -587,7 +569,7 @@ class ClusterObject(ADCMEntity):
         choices=MaintenanceMode.choices,
         default=MaintenanceMode.OFF,
     )
-    before_upgrade = models.JSONField(default=get_default_before_upgrade)
+    before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
 
     __error_code__ = "CLUSTER_SERVICE_NOT_FOUND"
 
@@ -689,7 +671,7 @@ class ServiceComponent(ADCMEntity):
         choices=MaintenanceMode.choices,
         default=MaintenanceMode.OFF,
     )
-    before_upgrade = models.JSONField(default=get_default_before_upgrade)
+    before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
 
     __error_code__ = "COMPONENT_NOT_FOUND"
 
@@ -774,7 +756,7 @@ class GroupConfig(ADCMModel):
     object_id = models.PositiveIntegerField()
     object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object = GenericForeignKey("object_type", "object_id")
-    name = models.CharField(max_length=1000, validators=[validate_line_break_character])
+    name = models.CharField(max_length=1000)
     description = models.TextField(blank=True)
     hosts = models.ManyToManyField(Host, blank=True, related_name="group_config")
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True, related_name="group_config")
@@ -1012,12 +994,6 @@ class ActionType(models.TextChoices):
 SCRIPT_TYPE = tuple((entry.value, entry.value) for entry in ScriptType)
 
 
-def get_any():
-    """Get `any` literal for JSON field default value"""
-
-    return "any"
-
-
 class AbstractAction(ADCMModel):
     prototype = None
 
@@ -1033,7 +1009,7 @@ class AbstractAction(ADCMModel):
     state_on_success = models.CharField(max_length=1000, blank=True)
     state_on_fail = models.CharField(max_length=1000, blank=True)
 
-    multi_state_available = models.JSONField(default=get_any)
+    multi_state_available = models.JSONField(default=partial(str, "any"))
     multi_state_unavailable = models.JSONField(default=list)
     multi_state_on_success_set = models.JSONField(default=list)
     multi_state_on_success_unset = models.JSONField(default=list)
@@ -1499,7 +1475,7 @@ class StagePrototype(ADCMModel):
     license_hash = models.CharField(max_length=1000, default=None, null=True)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
-    constraint = models.JSONField(default=get_default_constraint)
+    constraint = models.JSONField(default=partial(list, (0, "+")))
     requires = models.JSONField(default=list)
     bound_to = models.JSONField(default=dict)
     adcm_min_version = models.CharField(max_length=1000, default=None, null=True)
@@ -1527,7 +1503,7 @@ class StageUpgrade(ADCMModel):
     max_version = models.CharField(max_length=1000)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    from_edition = models.JSONField(default=get_default_from_edition)
+    from_edition = models.JSONField(default=partial(list, ("community",)))
     state_available = models.JSONField(default=list)
     state_on_success = models.CharField(max_length=1000, blank=True)
     action = models.OneToOneField("StageAction", on_delete=models.CASCADE, null=True)

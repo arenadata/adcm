@@ -22,6 +22,7 @@ ALLOWED_IMPORTS = (
     "ansible",
     "datetime",
     "django",
+    "functools",
     "hashlib",
     "json",
     "operator",

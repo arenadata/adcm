@@ -22,28 +22,27 @@ def fill_default_flag_autogeneration_value(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0122_change_concern_item'),
+        ("cm", "0122_change_concern_item"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='prototype',
-            name='allow_flags',
+            model_name="prototype",
+            name="allow_flags",
         ),
         migrations.RemoveField(
-            model_name='stageprototype',
-            name='allow_flags',
+            model_name="stageprototype",
+            name="allow_flags",
         ),
         migrations.AddField(
-            model_name='prototype',
-            name='flag_autogeneration',
+            model_name="prototype",
+            name="flag_autogeneration",
             field=models.JSONField(default=dict),
         ),
         migrations.AddField(
-            model_name='stageprototype',
-            name='flag_autogeneration',
+            model_name="stageprototype",
+            name="flag_autogeneration",
             field=models.JSONField(default=dict),
         ),
         migrations.RunPython(code=fill_default_flag_autogeneration_value, reverse_code=migrations.RunPython.noop),

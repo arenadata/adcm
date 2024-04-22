@@ -27,11 +27,7 @@ def migrate_logrotate_config(apps, schema_editor):
 
     adcm_configlog = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
 
-    
-    if adcm_configlog.config.get("logrotate", {}).get("nginx_server", False):
-        active_value = True
-    else:
-        active_value = False
+    active_value = adcm_configlog.config.get("logrotate", {}).get("nginx_server", False)
 
     adcm_configlog.attr = {"logrotate": {"active": active_value}}
     adcm_configlog.save()
