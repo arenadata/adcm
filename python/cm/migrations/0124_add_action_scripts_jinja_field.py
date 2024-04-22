@@ -16,20 +16,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cm', '0123_flag_autogeneration_object'),
+        ("cm", "0123_flag_autogeneration_object"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='action',
-            name='scripts_jinja',
-            field=models.CharField(blank=True, default='', max_length=512),
+            model_name="action",
+            name="scripts_jinja",
+            field=models.CharField(blank=True, default="", max_length=512),
         ),
         migrations.AddField(
-            model_name='stageaction',
-            name='scripts_jinja',
-            field=models.CharField(blank=True, default='', max_length=512),
+            model_name="stageaction",
+            name="scripts_jinja",
+            field=models.CharField(blank=True, default="", max_length=512),
         ),
     ]
