@@ -11,12 +11,11 @@
 # limitations under the License.
 from adcm.serializers import EmptySerializer
 from cm.models import Action
-from rest_framework.fields import IntegerField
+from drf_spectacular.utils import extend_schema_field
+from rest_framework.fields import CharField, ChoiceField, IntegerField
 from rest_framework.serializers import (
     BooleanField,
     DictField,
-    ListField,
-    ListSerializer,
     ModelSerializer,
     SerializerMethodField,
 )
@@ -33,9 +32,21 @@ class ActionListSerializer(ModelSerializer):
         return action.get_start_impossible_reason(obj=self.context["obj"])
 
 
+class HCMapRuleEntrySerializer(EmptySerializer):
+    action = ChoiceField(choices=("add", "remove"))
+    service = CharField()
+    component = CharField()
+
+
+class ActionConfigurationSerializer(EmptySerializer):
+    config_schema = DictField()
+    config = DictField()
+    adcm_meta = DictField()
+
+
 class ActionRetrieveSerializer(ActionListSerializer):
     is_allow_to_terminate = BooleanField(source="allow_to_terminate")
-    host_component_map_rules = ListField(source="hostcomponentmap")
+    host_component_map_rules = SerializerMethodField()
     disclaimer = SerializerMethodField()
     configuration = SerializerMethodField()
 
@@ -56,6 +67,11 @@ class ActionRetrieveSerializer(ActionListSerializer):
     def get_disclaimer(action: Action) -> str:
         return action.ui_options.get("disclaimer", "")
 
+    @extend_schema_field(field=HCMapRuleEntrySerializer(many=True))
+    def get_host_component_map_rules(self, action: Action) -> list[dict]:
+        return action.hostcomponentmap
+
+    @extend_schema_field(field=ActionConfigurationSerializer)
     def get_configuration(self, _: Action) -> dict | None:
         if (
             self.context["config_schema"] is None
@@ -76,14 +92,14 @@ class HostComponentEntry(EmptySerializer):
     component_id = IntegerField()
 
 
-class ActionConfiguration(EmptySerializer):
+class ActionRunConfiguration(EmptySerializer):
     config = DictField(allow_empty=True)
     adcm_meta = DictField(allow_empty=True)
 
 
 class ActionRunSerializer(EmptySerializer):
-    host_component_map = ListSerializer(child=HostComponentEntry(), required=False, default=[])
-    configuration = ActionConfiguration(required=False, default=None, allow_null=True)
+    host_component_map = HostComponentEntry(many=True, default=list)
+    configuration = ActionRunConfiguration(required=False, default=None, allow_null=True)
     is_verbose = BooleanField(required=False, default=False)
 
 
