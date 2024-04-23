@@ -7,6 +7,8 @@ import { AdcmServicesApi, RequestError } from '@api';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { RequestState } from '@models/loadState';
+import { processErrorResponse } from '@utils/responseUtils';
 
 interface AdcmServiceState {
   service?: AdcmService;
@@ -15,6 +17,7 @@ interface AdcmServiceState {
     successfulComponentsCount: number;
     totalComponentsCount: number;
   };
+  accessCheckStatus: RequestState;
 }
 
 interface LoadServicePayload {
@@ -84,6 +87,7 @@ const createInitialState = (): AdcmServiceState => ({
     successfulComponentsCount: 0,
     totalComponentsCount: 0,
   },
+  accessCheckStatus: RequestState.NotRequested,
 });
 
 const serviceSlice = createSlice({
@@ -99,9 +103,11 @@ const serviceSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(loadService.fulfilled, (state, action) => {
+      state.accessCheckStatus = RequestState.Completed;
       state.service = action.payload;
     });
-    builder.addCase(loadService.rejected, (state) => {
+    builder.addCase(loadService.rejected, (state, action) => {
+      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.service = undefined;
     });
     builder.addCase(getRelatedServiceComponentsStatuses.fulfilled, (state, action) => {

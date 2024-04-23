@@ -4,16 +4,18 @@ import HostComponentsTableToolbar from './HostComponentsTableToolbar/HostCompone
 import HostComponentsTableFooter from './HostComponentsTableFooter/HostComponentsTableFooter';
 import { useRequestHostComponents } from './useRequestHostComponents';
 import HostComponentsDynamicActionDialog from './HostComponentsDynamicActionDialog/HostComponentsDynamicActionDialog';
+import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const HostComponents: React.FC = () => {
-  useRequestHostComponents();
+  const { accessCheckStatus } = useRequestHostComponents();
+
   return (
-    <>
+    <PermissionsChecker requestState={accessCheckStatus}>
       <HostComponentsTableToolbar />
       <HostComponentsTable />
       <HostComponentsTableFooter />
       <HostComponentsDynamicActionDialog />
-    </>
+    </PermissionsChecker>
   );
 };
 

@@ -48,7 +48,7 @@ const ClusterImportsService = () => {
   }, [cluster, dispatch]);
 
   return (
-    <PermissionsChecker requestState={accessCheckStatus}>
+    <>
       <ClusterImportToolbar
         isDisabled={!isValid}
         onClick={onImportHandler}
@@ -66,7 +66,7 @@ const ClusterImportsService = () => {
           />
         </LabeledField>
       </ClusterImportToolbar>
-      <div>
+      <PermissionsChecker requestState={accessCheckStatus}>
         {isLoading && <ClusterImportLoading />}
         {!isLoading &&
           (clusterImports.length > 0 ? (
@@ -82,9 +82,9 @@ const ClusterImportsService = () => {
           ) : (
             <ClusterImportEmptyCard />
           ))}
-      </div>
-      <Pagination totalItems={totalCount} pageData={paginationParams} onChangeData={paginationHandler} />
-    </PermissionsChecker>
+        <Pagination totalItems={totalCount} pageData={paginationParams} onChangeData={paginationHandler} />
+      </PermissionsChecker>
+    </>
   );
 };
 

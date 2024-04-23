@@ -16,6 +16,7 @@ export const useRequestClusterHost = () => {
   const clusterId = Number(clusterIdFromUrl);
   const hostId = Number(hostIdFromUrl);
   const clusterHost = useStore(({ adcm }) => adcm.clusterHost.clusterHost);
+  const accessCheckStatus = useStore(({ adcm }) => adcm.clusterHost.accessCheckStatus);
 
   useEffect(() => {
     return () => {
@@ -38,4 +39,8 @@ export const useRequestClusterHost = () => {
   }, defaultDebounceDelay);
 
   useRequestTimer(debounceGetClusterHostData, () => {}, 0, [clusterId, hostId]);
+
+  return {
+    accessCheckStatus,
+  };
 };

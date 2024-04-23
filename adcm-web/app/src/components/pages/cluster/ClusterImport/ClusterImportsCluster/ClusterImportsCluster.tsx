@@ -5,13 +5,14 @@ import ClusterImportCard, {
 import { useClusterImports } from './useClusterImports';
 import ClusterImportToolbar from '@pages/cluster/ClusterImport/ClusterImportToolbar/ClusterImportToolbar';
 import { Pagination } from '@uikit';
-import { useDispatch, useStore } from '@hooks';
+import { useDispatch } from '@hooks';
 import { useEffect } from 'react';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const ClusterImportsCluster = () => {
   const {
+    cluster,
     isLoading,
     clusterImports,
     selectedSingleBind,
@@ -28,8 +29,6 @@ const ClusterImportsCluster = () => {
   } = useClusterImports();
 
   const dispatch = useDispatch();
-
-  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
 
   useEffect(() => {
     if (cluster) {

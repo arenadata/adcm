@@ -15,6 +15,7 @@ export const useRequestCluster = () => {
   const { clusterId: clusterIdFromUrl } = useParams();
   const clusterId = Number(clusterIdFromUrl);
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
+  const accessCheckStatus = useStore(({ adcm }) => adcm.cluster.accessCheckStatus);
 
   useEffect(() => {
     return () => {
@@ -37,4 +38,8 @@ export const useRequestCluster = () => {
   }, defaultDebounceDelay);
 
   useRequestTimer(debounceGetCluster, () => {}, 0, [clusterId]);
+
+  return {
+    accessCheckStatus,
+  };
 };

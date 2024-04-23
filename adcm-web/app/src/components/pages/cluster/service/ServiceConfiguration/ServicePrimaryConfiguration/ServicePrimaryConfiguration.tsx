@@ -32,7 +32,6 @@ const ServicesPrimaryConfiguration: React.FC = () => {
         draftConfiguration={draftConfiguration}
         compareOptions={compareOptions}
       />
-
       <ConfigurationFormContextProvider>
         <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
         <ConfigurationMain
