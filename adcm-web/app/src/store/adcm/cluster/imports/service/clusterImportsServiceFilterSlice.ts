@@ -1,9 +1,7 @@
 import { ListState } from '@models/table';
 import { createAsyncThunk, createListSlice } from '@store/redux';
 import { AdcmClusterImportServiceFilter, AdcmService } from '@models/adcm';
-import { AdcmServicesApi, RequestError } from '@api';
-import { RequestState } from '@models/loadState';
-import { processErrorResponse } from '@utils/responseUtils';
+import { AdcmServicesApi } from '@api';
 
 type GetClusterServiceImportsArg = {
   clusterId: number;
@@ -13,7 +11,6 @@ type AdcmImportClusterServiceFilterState = ListState<AdcmClusterImportServiceFil
   relatedData: {
     serviceList: AdcmService[];
   };
-  accessCheckStatus: RequestState;
 };
 
 const createInitialState = (): AdcmImportClusterServiceFilterState => ({
@@ -32,7 +29,6 @@ const createInitialState = (): AdcmImportClusterServiceFilterState => ({
   relatedData: {
     serviceList: [],
   },
-  accessCheckStatus: RequestState.NotRequested,
 });
 
 const loadServiceList = createAsyncThunk(
@@ -65,13 +61,8 @@ const clusterImportServiceFilterSlice = createListSlice({
   extraReducers: (builder) => {
     builder.addCase(loadServiceList.fulfilled, (state, action) => {
       state.relatedData.serviceList = action.payload.results;
-      state.accessCheckStatus = RequestState.Completed;
     });
-    builder.addCase(loadServiceList.pending, (state) => {
-      state.accessCheckStatus = RequestState.Pending;
-    });
-    builder.addCase(loadServiceList.rejected, (state, action) => {
-      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
+    builder.addCase(loadServiceList.rejected, (state) => {
       state.relatedData.serviceList = [];
     });
   },

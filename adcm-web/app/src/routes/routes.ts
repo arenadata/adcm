@@ -10,6 +10,18 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/clusters/:clusterId': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        label: ':clusterId',
+      },
+    ],
+  },
   '/clusters/:clusterId/overview': {
     pageTitle: 'Clusters',
     breadcrumbs: [
@@ -42,6 +54,26 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/clusters/:clusterId/services/:serviceId': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        href: '/clusters/:clusterId/services',
+        label: 'Services',
+      },
+      {
+        label: ':serviceId',
+      },
+    ],
+  },
   '/clusters/:clusterId/services/:serviceId/primary-configuration': {
     pageTitle: 'Clusters',
     breadcrumbs: [
@@ -56,6 +88,9 @@ const routes: RoutesConfigs = {
       {
         href: '/clusters/:clusterId/services',
         label: 'Services',
+      },
+      {
+        label: ':serviceId',
       },
     ],
   },
@@ -75,7 +110,6 @@ const routes: RoutesConfigs = {
         label: 'Services',
       },
       {
-        href: '/clusters/:clusterId/services/:serviceId',
         label: ':serviceId',
       },
     ],
@@ -114,6 +148,13 @@ const routes: RoutesConfigs = {
       {
         href: '/clusters/:clusterId/services',
         label: 'Services',
+      },
+      {
+        href: '/clusters/:clusterId/services/:serviceId',
+        label: ':serviceId',
+      },
+      {
+        label: 'Components',
       },
     ],
   },
@@ -215,6 +256,26 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/clusters/:clusterId/hosts/:hostId': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        href: '/clusters/:clusterId/hosts',
+        label: 'Hosts',
+      },
+      {
+        label: ':hostId',
+      },
+    ],
+  },
   '/clusters/:clusterId/hosts/:hostId/host-components': {
     pageTitle: 'Clusters',
     breadcrumbs: [
@@ -229,6 +290,10 @@ const routes: RoutesConfigs = {
       {
         href: '/clusters/:clusterId/hosts',
         label: 'Hosts',
+      },
+      {
+        href: '/clusters/:clusterId/hosts/:hostId',
+        label: ':hostId',
       },
       {
         label: 'host-components',

@@ -4,16 +4,19 @@ import ClusterServiceHeader from './ClusterServiceHeader/ClusterServiceHeader';
 import { useRequestService } from './useRequestService';
 import ClusterServiceNavigation from '@layouts/ClusterServiceLayout/ClusterServiceNavigation/ClusterServiceNavigation';
 import ClusterServiceDynamicActionDialog from '@pages/cluster/ClusterServices/ClusterServicesDialogs/ClusterServiceDynamicActionDialog/ClusterServiceDynamicActionDialog';
+import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const ClusterServiceLayout: React.FC = () => {
-  useRequestService();
+  const { accessCheckStatus } = useRequestService();
 
   return (
     <div>
-      <ClusterServiceHeader />
-      <ClusterServiceNavigation />
-      <Outlet />
-      <ClusterServiceDynamicActionDialog />
+      <PermissionsChecker requestState={accessCheckStatus}>
+        <ClusterServiceHeader />
+        <ClusterServiceNavigation />
+        <Outlet />
+        <ClusterServiceDynamicActionDialog />
+      </PermissionsChecker>
     </div>
   );
 };
