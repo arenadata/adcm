@@ -17,11 +17,7 @@ from rest_framework.serializers import ModelSerializer
 
 from api_v2.bundle.serializers import BundleRelatedSerializer
 from api_v2.prototype.utils import get_license_text
-
-
-class LicenseSerializer(EmptySerializer):
-    status = ChoiceField(choices=LICENSE_STATE)
-    text = SerializerMethodField(allow_null=True)
+from api_v2.serializers import LicenseSerializer
 
 
 class PrototypeSerializer(ModelSerializer):
@@ -48,7 +44,6 @@ class PrototypeSerializer(ModelSerializer):
             "status": prototype.license,
             "text": get_license_text(
                 license_path=prototype.license_path,
-                path=prototype.path,
                 bundle_hash=prototype.bundle.hash,
             ),
         }

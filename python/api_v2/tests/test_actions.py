@@ -27,6 +27,7 @@ from cm.models import (
 )
 from cm.tests.mocks.task_runner import RunTaskMock
 from django.urls import reverse
+from jinja_config import get_action_info
 from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
@@ -71,8 +72,8 @@ class TestActionsFiltering(BaseAPITestCase):
 
         provider_bundle = self.add_bundle(self.test_bundles_dir / "provider_actions")
         self.hostprovider = self.add_provider(provider_bundle, "Provider with Actions")
-        self.host_1 = self.add_host(provider_bundle, self.hostprovider, "host-1")
-        self.host_2 = self.add_host(provider_bundle, self.hostprovider, "host-2")
+        self.host_1 = self.add_host(provider=self.hostprovider, fqdn="host-1")
+        self.host_2 = self.add_host(provider=self.hostprovider, fqdn="host-2")
 
         self.available_at_any = ["state_any"]
         common_at_created = [*self.available_at_any, "state_created", "state_created_masking"]
@@ -576,6 +577,17 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
                         path=reverse(viewname=viewname.replace("-list", "-detail"), kwargs={**kwargs, "pk": action_id})
                     )
                     self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_get_action_info_success(self) -> None:
+        for object_, group in (
+            (self.cluster, "CLUSTER"),
+            (self.service_1, self.service_1.name),
+            (self.component_1, f"{self.component_1.service.name}.{self.component_1.name}"),
+        ):
+            action = Action.objects.filter(name="check_state", prototype=object_.prototype).get()
+            self.assertDictEqual(
+                get_action_info(action=action)["action"], {"name": "check_state", "owner_group": group}
+            )
 
 
 class TestAction(BaseAPITestCase):

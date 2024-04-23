@@ -34,7 +34,7 @@ def ansible_encrypt_and_format(msg: str) -> str:
     return f"{settings.ANSIBLE_VAULT_HEADER}\n{str(ciphertext, settings.ENCODING_UTF_8)}"
 
 
-def get_prototype_config(proto, PrototypeConfig):
+def get_prototype_config(proto, PrototypeConfig):  # noqa: N803
     spec = {}
     flist = ("default", "required", "type", "limits")
 
@@ -73,7 +73,7 @@ def process_password(spec, conf):
     return conf
 
 
-def process_objects(obj, ConfigLog, PrototypeConfig):
+def process_objects(obj, ConfigLog, PrototypeConfig):  # noqa: N803
     spec = get_prototype_config(obj.prototype, PrototypeConfig)
     if not spec:
         return

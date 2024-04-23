@@ -14,7 +14,7 @@ from enum import Enum
 from pathlib import Path
 from typing import NamedTuple
 
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, ConfigDict
 
 from core.types import (
     ActionID,
@@ -144,9 +144,7 @@ class JobSpec(BaseModel):
 # rather than when we will use it
 class JobParams(BaseModel):
     ansible_tags: str
-
-    class Config:
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
 
 class Job(BaseModel):

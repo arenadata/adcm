@@ -12,7 +12,7 @@
 
 from collections.abc import Iterable, Mapping
 from copy import deepcopy
-from enum import Enum
+from functools import partial
 from itertools import chain
 from typing import Optional, TypeAlias
 from uuid import uuid4
@@ -25,7 +25,7 @@ from core.types import ADCMCoreType
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
@@ -33,12 +33,6 @@ from django.dispatch import receiver
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.errors import AdcmEx
 from cm.logger import logger
-
-
-def validate_line_break_character(value: str) -> None:
-    """Check line break character in CharField"""
-    if len(value.splitlines()) > 1:
-        raise ValidationError("the string field contains a line break character")
 
 
 class ObjectType(models.TextChoices):
@@ -84,11 +78,6 @@ def get_object_cluster(obj):
         return obj.cluster
     else:
         return None
-
-
-def get_default_before_upgrade() -> dict:
-    """Return init value for before upgrade"""
-    return {"state": None}
 
 
 class ADCMManager(models.Manager):
@@ -205,10 +194,6 @@ class ProductCategory(ADCMModel):
                 category.delete()
 
 
-def get_default_from_edition():
-    return ["community"]
-
-
 MONITORING_TYPE = (
     ("active", "active"),
     ("passive", "passive"),
@@ -219,10 +204,6 @@ SERVICE_IN_MM = "The Action is not available. Service in 'Maintenance mode'"
 COMPONENT_IN_MM = "The Action is not available. Component in 'Maintenance mode'"
 HOST_IN_MM = "The Action is not available. Host in 'Maintenance mode'"
 MANY_HOSTS_IN_MM = "The Action is not available. One or more hosts in 'Maintenance mode'"
-
-
-def get_default_constraint():
-    return [0, "+"]
 
 
 class Prototype(ADCMModel):
@@ -239,7 +220,7 @@ class Prototype(ADCMModel):
     version_order = models.PositiveIntegerField(default=0)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
-    constraint = models.JSONField(default=get_default_constraint)
+    constraint = models.JSONField(default=partial(list, (0, "+")))
     requires = models.JSONField(default=list)
     bound_to = models.JSONField(default=dict)
     adcm_min_version = models.CharField(max_length=1000, default=None, null=True)
@@ -248,7 +229,7 @@ class Prototype(ADCMModel):
     config_group_customization = models.BooleanField(default=False)
     venv = models.CharField(default="default", max_length=1000, blank=False)
     allow_maintenance_mode = models.BooleanField(default=False)
-    allow_flags = models.BooleanField(default=False)
+    flag_autogeneration = models.JSONField(default=dict)
 
     __error_code__ = "PROTOTYPE_NOT_FOUND"
 
@@ -402,7 +383,7 @@ class Upgrade(ADCMModel):
     description = models.TextField(blank=True)
     min_version = models.CharField(max_length=1000)
     max_version = models.CharField(max_length=1000)
-    from_edition = models.JSONField(default=get_default_from_edition)
+    from_edition = models.JSONField(default=partial(list, ("community",)))
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
     state_available = models.JSONField(default=list)
@@ -454,7 +435,7 @@ class Cluster(ADCMEntity):
         content_type_field="object_type",
         on_delete=models.CASCADE,
     )
-    before_upgrade = models.JSONField(default=get_default_before_upgrade)
+    before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
 
     __error_code__ = "CLUSTER_NOT_FOUND"
 
@@ -493,7 +474,7 @@ class HostProvider(ADCMEntity):
         content_type_field="object_type",
         on_delete=models.CASCADE,
     )
-    before_upgrade = models.JSONField(default=get_default_before_upgrade)
+    before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
 
     __error_code__ = "PROVIDER_NOT_FOUND"
 
@@ -533,7 +514,7 @@ class Host(ADCMEntity):
         choices=MaintenanceMode.choices,
         default=MaintenanceMode.OFF,
     )
-    before_upgrade = models.JSONField(default=get_default_before_upgrade)
+    before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
 
     __error_code__ = "HOST_NOT_FOUND"
 
@@ -588,7 +569,7 @@ class ClusterObject(ADCMEntity):
         choices=MaintenanceMode.choices,
         default=MaintenanceMode.OFF,
     )
-    before_upgrade = models.JSONField(default=get_default_before_upgrade)
+    before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
 
     __error_code__ = "CLUSTER_SERVICE_NOT_FOUND"
 
@@ -690,7 +671,7 @@ class ServiceComponent(ADCMEntity):
         choices=MaintenanceMode.choices,
         default=MaintenanceMode.OFF,
     )
-    before_upgrade = models.JSONField(default=get_default_before_upgrade)
+    before_upgrade = models.JSONField(default=partial(dict, (("state", None),)))
 
     __error_code__ = "COMPONENT_NOT_FOUND"
 
@@ -775,7 +756,7 @@ class GroupConfig(ADCMModel):
     object_id = models.PositiveIntegerField()
     object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object = GenericForeignKey("object_type", "object_id")
-    name = models.CharField(max_length=1000, validators=[validate_line_break_character])
+    name = models.CharField(max_length=1000)
     description = models.TextField(blank=True)
     hosts = models.ManyToManyField(Host, blank=True, related_name="group_config")
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True, related_name="group_config")
@@ -1013,12 +994,6 @@ class ActionType(models.TextChoices):
 SCRIPT_TYPE = tuple((entry.value, entry.value) for entry in ScriptType)
 
 
-def get_any():
-    """Get `any` literal for JSON field default value"""
-
-    return "any"
-
-
 class AbstractAction(ADCMModel):
     prototype = None
 
@@ -1034,7 +1009,7 @@ class AbstractAction(ADCMModel):
     state_on_success = models.CharField(max_length=1000, blank=True)
     state_on_fail = models.CharField(max_length=1000, blank=True)
 
-    multi_state_available = models.JSONField(default=get_any)
+    multi_state_available = models.JSONField(default=partial(str, "any"))
     multi_state_unavailable = models.JSONField(default=list)
     multi_state_on_success_set = models.JSONField(default=list)
     multi_state_on_success_unset = models.JSONField(default=list)
@@ -1419,13 +1394,6 @@ class JobLog(AbstractSubAction):
         except (ObjectDoesNotExist, AttributeError):
             return None
 
-    def cook_reason(self):
-        return MessageTemplate.get_message_from_template(
-            KnownNames.LOCKED_BY_JOB.value,
-            job=self,
-            target=self.task.task_object,
-        )
-
     def cancel(self):
         if not self.allow_to_terminate:
             raise AdcmEx("JOB_TERMINATION_ERROR", f"Job #{self.pk} can not be terminated")
@@ -1507,7 +1475,7 @@ class StagePrototype(ADCMModel):
     license_hash = models.CharField(max_length=1000, default=None, null=True)
     required = models.BooleanField(default=False)
     shared = models.BooleanField(default=False)
-    constraint = models.JSONField(default=get_default_constraint)
+    constraint = models.JSONField(default=partial(list, (0, "+")))
     requires = models.JSONField(default=list)
     bound_to = models.JSONField(default=dict)
     adcm_min_version = models.CharField(max_length=1000, default=None, null=True)
@@ -1516,7 +1484,7 @@ class StagePrototype(ADCMModel):
     config_group_customization = models.BooleanField(default=False)
     venv = models.CharField(default="default", max_length=1000, blank=False)
     allow_maintenance_mode = models.BooleanField(default=False)
-    allow_flags = models.BooleanField(default=False)
+    flag_autogeneration = models.JSONField(default=dict)
 
     __error_code__ = "PROTOTYPE_NOT_FOUND"
 
@@ -1535,7 +1503,7 @@ class StageUpgrade(ADCMModel):
     max_version = models.CharField(max_length=1000)
     min_strict = models.BooleanField(default=False)
     max_strict = models.BooleanField(default=False)
-    from_edition = models.JSONField(default=get_default_from_edition)
+    from_edition = models.JSONField(default=partial(list, ("community",)))
     state_available = models.JSONField(default=list)
     state_on_success = models.CharField(max_length=1000, blank=True)
     action = models.OneToOneField("StageAction", on_delete=models.CASCADE, null=True)
@@ -1591,147 +1559,6 @@ class StagePrototypeImport(ADCMModel):
         unique_together = (("prototype", "name"),)
 
 
-class KnownNames(Enum):
-    LOCKED_BY_JOB = "locked by running job on target"  # kwargs=(job, target)
-    CONFIG_ISSUE = "object config issue"  # kwargs=(source, )
-    REQUIRED_SERVICE_ISSUE = "required service issue"  # kwargs=(source, )
-    REQUIRED_IMPORT_ISSUE = "required import issue"  # kwargs=(source, )
-    HOST_COMPONENT_ISSUE = "host component issue"  # kwargs=(source, )
-    UNSATISFIED_REQUIREMENT_ISSUE = "unsatisfied service requirement"  # kwargs=(source, )
-    CONFIG_FLAG = "outdated configuration flag"  # kwargs=(source, )
-
-
-class PlaceHolderType(Enum):
-    ACTION = "action"
-    JOB = "job"
-    ADCM_ENTITY = "adcm_entity"
-    ADCM = "adcm"
-    CLUSTER = "cluster"
-    SERVICE = "service"
-    COMPONENT = "component"
-    PROVIDER = "provider"
-    HOST = "host"
-    PROTOTYPE = "prototype"
-
-
-class MessageTemplate(ADCMModel):
-    """
-    Templates for `ConcernItem.reason
-    There are two sources of templates - they are pre-created in migrations or loaded from bundles
-
-    expected template format is
-        {
-            'message': 'Lorem ${ipsum} dolor sit ${amet}',
-            'placeholder': {
-                'lorem': {'type': 'cluster'},
-                'amet': {'type': 'action'}
-            }
-        }
-
-    placeholder fill functions have unified interface:
-      @classmethod
-      def _func(cls, placeholder_name, **kwargs) -> dict
-    """
-
-    name = models.CharField(max_length=1000, unique=True)
-    template = models.JSONField()
-
-    @classmethod
-    def get_message_from_template(cls, name: KnownNames, **kwargs) -> dict:
-        """Find message template by its name and fill placeholders"""
-
-        tpl = cls.obj.get(name=name).template
-        filled_placeholders = {}
-        try:
-            for ph_name, ph_data in tpl["placeholder"].items():
-                filled_placeholders[ph_name] = cls._fill_placeholder(ph_name, ph_data, **kwargs)
-        except (KeyError, AttributeError, TypeError, AssertionError) as e:
-            if isinstance(e, KeyError):
-                msg = f'Message templating KeyError: "{e.args[0]}" not found'
-            elif isinstance(e, AttributeError):
-                msg = f'Message templating AttributeError: "{e.args[0]}"'
-            elif isinstance(e, TypeError):
-                msg = f'Message templating TypeError: "{e.args[0]}"'
-            elif isinstance(e, AssertionError):
-                msg = "Message templating AssertionError: expected kwarg were not found"
-            else:
-                msg = None
-            raise AdcmEx("MESSAGE_TEMPLATING_ERROR", msg=msg) from e
-
-        tpl["placeholder"] = filled_placeholders
-
-        return tpl
-
-    @classmethod
-    def _fill_placeholder(cls, ph_name: str, ph_data: dict, **ph_source_data) -> dict:
-        type_map = {
-            PlaceHolderType.ACTION.value: cls._action_placeholder,
-            PlaceHolderType.ADCM_ENTITY.value: cls._adcm_entity_placeholder,
-            PlaceHolderType.ADCM.value: cls._adcm_entity_placeholder,
-            PlaceHolderType.CLUSTER.value: cls._adcm_entity_placeholder,
-            PlaceHolderType.SERVICE.value: cls._adcm_entity_placeholder,
-            PlaceHolderType.COMPONENT.value: cls._adcm_entity_placeholder,
-            PlaceHolderType.PROVIDER.value: cls._adcm_entity_placeholder,
-            PlaceHolderType.HOST.value: cls._adcm_entity_placeholder,
-            PlaceHolderType.JOB.value: cls._job_placeholder,
-            PlaceHolderType.PROTOTYPE.value: cls._prototype_placeholder,
-        }
-        return type_map[ph_data["type"]](ph_name, **ph_source_data)
-
-    @classmethod
-    def _action_placeholder(cls, _, **kwargs) -> dict:
-        action = kwargs.get("action")
-        target = kwargs.get("target")
-        if not target or not action:
-            return {}
-
-        ids = target.get_id_chain()
-        ids["action_id"] = action.pk
-        return {
-            "type": PlaceHolderType.ACTION.value,
-            "name": action.display_name,
-            "params": ids,
-        }
-
-    @classmethod
-    def _prototype_placeholder(cls, _, **kwargs) -> dict:
-        proto = kwargs.get("target")
-
-        if proto:
-            return {
-                "params": {"prototype_id": proto.id},
-                "type": "prototype",
-                "name": proto.display_name or proto.name,
-            }
-
-        return {}
-
-    @classmethod
-    def _adcm_entity_placeholder(cls, ph_name, **kwargs) -> dict:
-        obj = kwargs.get(ph_name)
-        if not obj:
-            return {}
-
-        return {
-            "type": obj.prototype.type,
-            "name": obj.display_name,
-            "params": obj.get_id_chain(),
-        }
-
-    @classmethod
-    def _job_placeholder(cls, _, **kwargs) -> dict:
-        job = kwargs.get("job")
-
-        if not job:
-            return {}
-
-        return {
-            "type": PlaceHolderType.JOB.value,
-            "name": job.display_name or job.name or job.action.display_name,
-            "params": {"job_id": job.task.id},
-        }
-
-
 class ConcernType(models.TextChoices):
     LOCK = "lock", "lock"
     ISSUE = "issue", "issue"
@@ -1757,21 +1584,27 @@ class ConcernItem(ADCMModel):
     `type` is literally type of concern
     `name` is used for (un)setting flags from ansible playbooks
     `reason` is used to display/notify on front-end, text template and data for URL generation
-        should be generated from pre-created templates model `MessageTemplate`
     `blocking` blocks actions from running
     `owner` is object-origin of concern
     `cause` is owner's parameter causing concern
     `related_objects` are back-refs from affected `ADCMEntities.concerns`
     """
 
-    type = models.CharField(max_length=1000, choices=ConcernType.choices, default=ConcernType.LOCK)
-    name = models.CharField(max_length=1000, null=True, unique=True)
+    type = models.CharField(max_length=100, choices=ConcernType.choices, default=ConcernType.LOCK)
+    name = models.CharField(max_length=1000, default="")
     reason = models.JSONField(default=dict)
     blocking = models.BooleanField(default=True)
-    owner_id = models.PositiveIntegerField(null=True)
-    owner_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)
+    owner_id = models.PositiveIntegerField()
+    owner_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     owner = GenericForeignKey("owner_type", "owner_id")
-    cause = models.CharField(max_length=1000, null=True, choices=ConcernCause.choices)
+    cause = models.CharField(max_length=100, null=True, choices=ConcernCause.choices)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                name="cm_concernitem_name_owner_uc", fields=("name", "owner_id", "owner_type", "type")
+            )
+        ]
 
     @property
     def related_objects(self) -> Iterable[ADCMEntity]:

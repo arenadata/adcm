@@ -28,7 +28,13 @@ from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
 from api_v2.action.filters import ActionFilter
 from api_v2.action.serializers import (
@@ -43,12 +49,73 @@ from api_v2.action.utils import (
     insert_service_ids,
     unique_hc_entries,
 )
-from api_v2.api_schema import ErrorSerializer
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
 
+_schema_common_filters = (
+    OpenApiParameter(
+        name="name",
+        required=False,
+        location=OpenApiParameter.QUERY,
+        description="System name of an action",
+        type=str,
+    ),
+    OpenApiParameter(
+        name="displayName",
+        required=False,
+        location=OpenApiParameter.QUERY,
+        description="Visible name of an action",
+        type=str,
+    ),
+)
 
+
+@extend_schema_view(
+    run=extend_schema(
+        operation_id="postObjectAction",
+        summary="POST object's action",
+        description="Run object's action.",
+        responses={
+            HTTP_200_OK: TaskListSerializer,
+            HTTP_400_BAD_REQUEST: ErrorSerializer,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
+        },
+    ),
+    list=extend_schema(
+        operation_id="getObjectActions",
+        summary="GET object's actions",
+        description="Get a list of object's actions.",
+        parameters=[
+            DefaultParams.ordering_by("id"),
+            OpenApiParameter(
+                name="isHostOwnAction",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Filter for host's own actions / actions from another objects",
+                type=bool,
+            ),
+            OpenApiParameter(
+                name="prototypeId",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Identifier of action's owner",
+                type=int,
+            ),
+            *_schema_common_filters,
+        ],
+        responses={HTTP_200_OK: ActionListSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    retrieve=extend_schema(
+        operation_id="getObjectAction",
+        summary="GET object's action",
+        description="Get information about a specific object's action.",
+        responses={HTTP_200_OK: ActionRetrieveSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+)
 class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, CamelCaseGenericViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ActionFilter
@@ -86,7 +153,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
 
     def get_serializer_class(
         self,
-    ) -> type[ActionRetrieveSerializer] | type[ActionListSerializer] | type[ActionRunSerializer]:
+    ) -> type[ActionRetrieveSerializer | ActionListSerializer | ActionRunSerializer]:
         if self.action == "retrieve":
             return ActionRetrieveSerializer
 
@@ -206,37 +273,29 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
 
 @extend_schema_view(
     run=extend_schema(
-        operation_id="postADCMaction",
-        summary="POST adcm action",
+        operation_id="postADCMAction",
+        summary="POST ADCM action",
         description="Run ADCM action.",
         responses={
-            200: TaskListSerializer,
-            400: ErrorSerializer,
-            403: ErrorSerializer,
-            404: ErrorSerializer,
-            409: ErrorSerializer,
+            HTTP_200_OK: TaskListSerializer,
+            HTTP_400_BAD_REQUEST: ErrorSerializer,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
         },
     ),
     list=extend_schema(
-        operation_id="getADCMactions",
-        summary="GET adcm actions",
+        operation_id="getADCMActions",
+        summary="GET ADCM actions",
         description="Get a list of ADCM actions.",
-        parameters=[
-            OpenApiParameter(
-                name="ordering",
-                required=False,
-                location=OpenApiParameter.QUERY,
-                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
-                type=str,
-            )
-        ],
-        responses={200: ActionListSerializer, 404: ErrorSerializer},
+        parameters=[DefaultParams.ordering_by("id"), *_schema_common_filters],
+        responses={HTTP_200_OK: ActionListSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
     retrieve=extend_schema(
-        operation_id="getADCMaction",
-        summary="GET adcm action",
+        operation_id="getADCMAction",
+        summary="GET ADCM action",
         description="Get information about a specific ADCM action.",
-        responses={200: ActionRetrieveSerializer, 404: ErrorSerializer},
+        responses={HTTP_200_OK: ActionRetrieveSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
 )
 class AdcmActionViewSet(ActionViewSet):

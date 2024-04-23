@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
     VIEW_HC_PERM,
@@ -24,6 +25,7 @@ from cm.issue import update_hierarchy_issues
 from cm.models import (
     Cluster,
     ClusterObject,
+    ConcernType,
     Host,
     HostComponent,
     ObjectType,
@@ -34,6 +36,7 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -59,15 +62,30 @@ from api_v2.cluster.serializers import (
     RelatedHostsStatusesSerializer,
     RelatedServicesStatusesSerializer,
     ServicePrototypeSerializer,
+    SetMappingSerializer,
 )
 from api_v2.cluster.utils import retrieve_mapping_data, save_mapping
 from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.host.serializers import HostMappingSerializer
-from api_v2.views import CamelCaseModelViewSet, ObjectWithStatusViewMixin
+from api_v2.views import CamelCaseGenericViewSet, ObjectWithStatusViewMixin
 
 
 @extend_schema_view(
+    list=extend_schema(
+        summary="GET clusters",
+        description="Get a list of ADCM clusters with information on them.",
+        operation_id="getClusters",
+    ),
+    retrieve=extend_schema(
+        summary="GET cluster",
+        description="Get information about a specific cluster.",
+        operation_id="getCluster",
+        responses={
+            200: ClusterSerializer,
+            404: ErrorSerializer,
+        },
+    ),
     services_statuses=extend_schema(
         operation_id="getClusterServiceStatuses",
         summary="GET cluster service statuses",
@@ -113,7 +131,14 @@ from api_v2.views import CamelCaseModelViewSet, ObjectWithStatusViewMixin
         ],
     ),
 )
-class ClusterViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewSet, ObjectWithStatusViewMixin):
+class ClusterViewSet(
+    PermissionListMixin,
+    ConfigSchemaMixin,
+    ListModelMixin,
+    RetrieveModelMixin,
+    CamelCaseGenericViewSet,
+    ObjectWithStatusViewMixin,
+):
     queryset = (
         Cluster.objects.prefetch_related("prototype", "concerns")
         .prefetch_related("clusterobject_set__prototype")
@@ -132,7 +157,7 @@ class ClusterViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewS
         match self.action:
             case "create":
                 return ClusterCreateSerializer
-            case "update" | "partial_update":
+            case "partial_update":
                 return ClusterUpdateSerializer
             case "service_prototypes" | "service_candidates":
                 return ServicePrototypeSerializer
@@ -145,6 +170,12 @@ class ClusterViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewS
             case _:
                 return ClusterSerializer
 
+    @extend_schema(
+        operation_id="postCluster",
+        summary="POST cluster",
+        description="Creates of a new ADCM cluster.",
+        responses={201: ClusterSerializer, 400: ErrorSerializer, 403: ErrorSerializer, 409: ErrorSerializer},
+    )
     @audit
     def create(self, request, *args, **kwargs):  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
@@ -162,12 +193,27 @@ class ClusterViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewS
             data=ClusterSerializer(cluster, context=self.get_serializer_context()).data, status=HTTP_201_CREATED
         )
 
+    @extend_schema(
+        operation_id="patchCluster",
+        summary="PATCH cluster",
+        description="Change cluster name.",
+        responses={
+            200: ClusterSerializer,
+            400: ErrorSerializer,
+            403: ErrorSerializer,
+            404: ErrorSerializer,
+            409: ErrorSerializer,
+        },
+    )
     @audit
-    def update(self, request, *args, **kwargs):  # noqa: ARG002
+    def partial_update(self, request, *args, **kwargs):  # noqa: ARG002
         instance = self.get_object()
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         valid_data = serializer.validated_data
+
+        if valid_data.get("name") and instance.concerns.filter(type=ConcernType.LOCK).exists():
+            raise AdcmEx(code="CLUSTER_CONFLICT", msg="Name change is available only if no locking concern exists")
 
         if valid_data.get("name") and valid_data.get("name") != instance.name and instance.state != "created":
             raise AdcmEx(code="CLUSTER_CONFLICT", msg="Name change is available only in the 'created' state")
@@ -181,6 +227,16 @@ class ClusterViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewS
             status=HTTP_200_OK, data=ClusterSerializer(instance, context=self.get_serializer_context()).data
         )
 
+    @extend_schema(
+        operation_id="deleteCluster",
+        summary="DELETE cluster",
+        description="Delete a specific ADCM cluster.",
+        responses={
+            204: None,
+            403: ErrorSerializer,
+            404: ErrorSerializer,
+        },
+    )
     @audit
     def destroy(self, request, *args, **kwargs):  # noqa: ARG002
         cluster = self.get_object()
@@ -188,7 +244,13 @@ class ClusterViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewS
 
         return Response(status=HTTP_204_NO_CONTENT)
 
-    @action(methods=["get"], detail=True, url_path="service-prototypes")
+    @extend_schema(
+        operation_id="getServicePrototypes",
+        summary="GET service prototypes",
+        description="Get service prototypes that is related to this cluster.",
+        responses={200: ServicePrototypeSerializer(many=True), 404: ErrorSerializer},
+    )
+    @action(methods=["get"], detail=True, url_path="service-prototypes", pagination_class=None)
     def service_prototypes(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = self.get_object()
         prototypes = Prototype.objects.filter(type=ObjectType.SERVICE, bundle=cluster.prototype.bundle).order_by(
@@ -198,7 +260,13 @@ class ClusterViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewS
 
         return Response(data=serializer.data)
 
-    @action(methods=["get"], detail=True, url_path="service-candidates")
+    @extend_schema(
+        operation_id="getServiceCandidates",
+        summary="GET service candidates",
+        description="Get service prototypes that can be added to this cluster.",
+        responses={200: ServicePrototypeSerializer(many=True), 404: ErrorSerializer},
+    )
+    @action(methods=["get"], detail=True, url_path="service-candidates", pagination_class=None)
     def service_candidates(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = self.get_object()
         prototypes = (
@@ -248,6 +316,27 @@ class ClusterViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewS
             ).data
         )
 
+    @extend_schema(
+        methods=["get"],
+        operation_id="getHostComponentMapping",
+        summary="GET host component mapping",
+        description="Get information about host and component mapping.",
+        responses={200: MappingSerializer(many=True), 403: ErrorSerializer, 404: ErrorSerializer},
+    )
+    @extend_schema(
+        methods=["post"],
+        operation_id="postHostComponentMapping",
+        summary="POST host component mapping",
+        description="Save host and component mapping information.",
+        request=SetMappingSerializer(many=True),
+        responses={
+            201: MappingSerializer(many=True),
+            400: ErrorSerializer,
+            403: ErrorSerializer,
+            404: ErrorSerializer,
+            409: ErrorSerializer,
+        },
+    )
     @audit
     @action(
         methods=["get", "post"],
@@ -279,22 +368,47 @@ class ClusterViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseModelViewS
         if not request.user.has_perm("cm.edit_host_components_of_cluster", cluster):
             return Response(status=HTTP_403_FORBIDDEN)
 
-        serializer = self.get_serializer(data=request.data, many=True)
+        serializer = SetMappingSerializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
-
         mapping_data = retrieve_mapping_data(cluster=cluster, plain_hc=serializer.validated_data)
         new_mapping = save_mapping(mapping_data=mapping_data)
 
         return Response(data=self.get_serializer(instance=new_mapping, many=True).data, status=HTTP_201_CREATED)
 
-    @action(methods=["get"], detail=True, url_path="mapping/hosts", url_name="mapping-hosts")
+    @extend_schema(
+        operation_id="getMappingHosts",
+        summary="GET mapping hosts",
+        description="Get a list of hosts to map.",
+        responses={200: HostMappingSerializer(many=True), 404: ErrorSerializer},
+    )
+    @action(
+        methods=["get"],
+        pagination_class=None,
+        filter_backends=[],
+        detail=True,
+        url_path="mapping/hosts",
+        url_name="mapping-hosts",
+    )
     def mapping_hosts(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = self.get_object()
         serializer = self.get_serializer(instance=Host.objects.filter(cluster=cluster), many=True)
 
         return Response(status=HTTP_200_OK, data=serializer.data)
 
-    @action(methods=["get"], detail=True, url_path="mapping/components", url_name="mapping-components")
+    @extend_schema(
+        operation_id="getMappingComponents",
+        summary="GET mapping components",
+        description="Get a list of components to map.",
+        responses={200: ComponentMappingSerializer, 404: ErrorSerializer},
+    )
+    @action(
+        methods=["get"],
+        detail=True,
+        pagination_class=None,
+        filter_backends=[],
+        url_path="mapping/components",
+        url_name="mapping-components",
+    )
     def mapping_components(self, request: Request, *args, **kwargs):  # noqa: ARG002
         cluster = self.get_object()
         serializer = self.get_serializer(

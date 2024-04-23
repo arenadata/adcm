@@ -33,7 +33,6 @@ from cm.models import (
     TaskLog,
 )
 from cm.services.adcm import adcm_config, get_adcm_config_id
-from cm.services.bundle import detect_path_for_file_in_bundle
 from cm.services.job._utils import cook_delta, get_old_hc
 from cm.services.job.checks import check_hostcomponentmap
 from cm.services.job.inventory import get_adcm_configuration, get_inventory_data
@@ -186,7 +185,7 @@ def _switch_hc_if_required(task: TaskLog):
             hostcomponent["component_id"] = comp.id
             hostcomponent["service_id"] = comp.service.id
 
-    host_map, _ = check_hostcomponentmap(cluster, task.action, new_hc)
+    host_map, *_ = check_hostcomponentmap(cluster, task.action, new_hc)
     if host_map is not None:
         save_hc(cluster, host_map)
 
@@ -254,12 +253,6 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
     context = {f"{k}_id": v["id"] for k, v in task.selector.items()}
     context["type"] = task.owner.type.value.replace("hostp", "p")
 
-    playbook = detect_path_for_file_in_bundle(
-        bundle_root=task.bundle.root,
-        config_yaml_dir=task.bundle.config_dir,
-        file=job.script,
-    )
-
     job_data = JobData(
         id=job.id,
         action=task.action.name,
@@ -267,7 +260,7 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
         command=job.name,
         script=job.script,
         verbose=task.verbose,
-        playbook=str(playbook),
+        playbook=str(task.bundle.root / job.script),
         action_type_specification=_get_owner_specific_data(task=task),
     )
 
@@ -300,7 +293,7 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
             status_api_token=configuration.integrations.status_server_token,
         ),
         job=job_data,
-    ).dict(exclude_unset=True)
+    ).model_dump(exclude_unset=True)
 
 
 def _get_owner_specific_data(

@@ -34,6 +34,9 @@ class TestHost(BaseAPITestCase):
             bundle=self.provider_bundle, description="description", provider=self.provider, fqdn="test_host"
         )
 
+        self.host_action = Action.objects.get(name="host_action", prototype=self.host.prototype)
+        self.cluster_action = Action.objects.filter(prototype=self.cluster_1.prototype, host_action=True).first()
+
     def test_list_success(self):
         response = self.client.get(
             path=reverse(viewname="v2:host-list"),
@@ -153,6 +156,67 @@ class TestHost(BaseAPITestCase):
             response.json(),
             {"code": "HOST_CONFLICT", "desc": "Host with the same name already exists.", "level": "error"},
         )
+
+    def test_update_name_locking_concern_fail(self):
+        with RunTaskMock():
+            response = self.client.post(
+                path=reverse(
+                    "v2:host-action-run",
+                    kwargs={
+                        "host_pk": self.host.pk,
+                        "pk": self.host_action.pk,
+                    },
+                ),
+                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+            )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response = self.client.patch(
+                path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host.pk}),
+                data={"name": "new-name"},
+            )
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            self.assertDictEqual(
+                response.json(),
+                {
+                    "code": "HOST_CONFLICT",
+                    "desc": "Name change is available only if no locking concern exists",
+                    "level": "error",
+                },
+            )
+
+    def test_update_name_locking_concern_from_cluster_fail(self):
+        self.add_host_to_cluster(self.cluster_1, self.host)
+
+        with RunTaskMock():
+            response = self.client.post(
+                path=reverse(
+                    "v2:host-cluster-action-run",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "host_pk": self.host.pk,
+                        "pk": self.cluster_action.pk,
+                    },
+                ),
+                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+            )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            response = self.client.patch(
+                path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host.pk}),
+                data={"name": "new-name"},
+            )
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            self.assertDictEqual(
+                response.json(),
+                {
+                    "code": "HOST_CONFLICT",
+                    "desc": "Name change is available only if no locking concern exists",
+                    "level": "error",
+                },
+            )
 
     def test_update_name_state_not_create_fail(self):
         self.host.state = "running"

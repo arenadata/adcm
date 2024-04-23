@@ -147,7 +147,6 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.OrderingFilter",
-        "rest_framework.filters.SearchFilter",
     ],
     "EXCEPTION_HANDLER": "cm.errors.custom_drf_exception_handler",
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.NamespaceVersioning",
@@ -224,6 +223,10 @@ if not DEBUG:
                 "format": "{asctime} {levelname} {module} {message}",
                 "style": "{",
             },
+            "ldap": {
+                "format": "{levelname} {module}: {message}",
+                "style": "{",
+            },
         },
         "handlers": {
             "adcm_file": {
@@ -267,6 +270,11 @@ if not DEBUG:
                 "formatter": "adcm",
                 "stream": "ext://sys.stderr",
             },
+            "ldap_stdout_handler": {
+                "class": "logging.StreamHandler",
+                "formatter": "ldap",
+                "stream": "ext://sys.stdout",
+            },
         },
         "loggers": {
             "adcm": {
@@ -298,6 +306,10 @@ if not DEBUG:
                 "handlers": ["stream_stdout_handler", "stream_stderr_handler"],
                 "level": LOG_LEVEL,
             },
+            "django_auth_ldap": {
+                "handlers": ["ldap_stdout_handler"],
+                "level": LOG_LEVEL,
+            },
         },
     }
 
@@ -327,6 +339,7 @@ ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
 ADCM_HIDDEN_USERS = {"status", "system"}
 
 STACK_COMPLEX_FIELD_TYPES = {"json", "structure", "list", "map", "secretmap"}
+STACK_FILE_FIELD_TYPES = {"file", "secretfile"}
 STACK_NUMERIC_FIELD_TYPES = {"integer", "float"}
 SECURE_PARAM_TYPES = {"password", "secrettext"}
 TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "read_only", "writable", "subs", "source"}
@@ -350,6 +363,7 @@ SPECTACULAR_SETTINGS = {
     "REDOC_DIST": "SIDECAR",
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",
+        "adcm.api_schema.convert_pks_in_path_to_camel_case_ids",
         "drf_spectacular.contrib.djangorestframework_camel_case.camelize_serializer_fields",
         "adcm.api_schema.make_all_fields_required_in_response",
     ],

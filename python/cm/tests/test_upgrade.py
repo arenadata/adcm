@@ -23,7 +23,7 @@ from cm.api import (
     update_obj_config,
 )
 from cm.errors import AdcmEx
-from cm.issue import create_issue
+from cm.issue import add_issue_on_linked_objects
 from cm.models import (
     Bundle,
     ClusterObject,
@@ -164,7 +164,7 @@ class TestUpgradeVersion(BaseTestCase):
         self.check_upgrade(self.obj, self.upgrade, True)
 
     def test_issue(self):
-        create_issue(self.obj, ConcernCause.CONFIG)
+        add_issue_on_linked_objects(self.obj, ConcernCause.CONFIG)
 
         self.check_upgrade(self.obj, self.upgrade, False)
 

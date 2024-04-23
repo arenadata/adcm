@@ -21,6 +21,4 @@ exec 2>>"${adcmlog}/service_wsgi.err"
 
 cd "${adcmroot}/python"
 touch /run/uwsgi.pid
-uwsgi --socket "${wsgisocketfile}" --pidfile "/run/uwsgi.pid" --module adcm.wsgi --chmod-socket=777 \
- --logger file:logfile="${adcmlog}/wsgi.log",maxsize=2000000 \
- --master --processes=4 --harakiri=6000
+uwsgi --ini /etc/adcm/adcm.cfg

@@ -9,8 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import (
@@ -24,6 +22,7 @@ from cm.models import (
 from cm.upgrade import get_upgrade
 from cm.validators import ClusterUniqueValidator, StartMidEndValidator
 from django.conf import settings
+from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import CharField, IntegerField
 from rest_framework.serializers import (
     BooleanField,
@@ -33,13 +32,13 @@ from rest_framework.serializers import (
 
 from api_v2.cluster.utils import get_depend_on
 from api_v2.concern.serializers import ConcernSerializer
-from api_v2.prototype.serializers import PrototypeRelatedSerializer
+from api_v2.prototype.serializers import LicenseSerializer, PrototypeRelatedSerializer
 from api_v2.prototype.utils import get_license_text
-from api_v2.serializers import WithStatusSerializer
+from api_v2.serializers import DependOnSerializer, WithStatusSerializer
 
 
 class ClusterSerializer(WithStatusSerializer):
-    prototype = PrototypeRelatedSerializer(read_only=True)
+    prototype = PrototypeRelatedSerializer()
     concerns = ConcernSerializer(many=True, read_only=True)
     is_upgradable = SerializerMethodField()
     main_info = SerializerMethodField()
@@ -137,6 +136,7 @@ class ServicePrototypeSerializer(ModelSerializer):
         fields = ["id", "name", "display_name", "version", "is_required", "depend_on", "license"]
 
     @staticmethod
+    @extend_schema_field(field=DependOnSerializer(many=True))
     def get_depend_on(prototype: Prototype) -> list[dict] | None:
         if prototype.requires:
             return get_depend_on(prototype=prototype)
@@ -144,15 +144,20 @@ class ServicePrototypeSerializer(ModelSerializer):
         return None
 
     @staticmethod
+    @extend_schema_field(field=LicenseSerializer)
     def get_license(prototype: Prototype) -> dict:
         return {
             "status": prototype.license,
             "text": get_license_text(
                 license_path=prototype.license_path,
-                path=prototype.path,
                 bundle_hash=prototype.bundle.hash,
             ),
         }
+
+
+class SetMappingSerializer(EmptySerializer):
+    host_id = IntegerField()
+    component_id = IntegerField()
 
 
 class MappingSerializer(ModelSerializer):

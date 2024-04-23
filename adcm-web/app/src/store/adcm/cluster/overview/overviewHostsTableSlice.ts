@@ -1,12 +1,12 @@
 import { ListState } from '@models/table';
 import { createListSlice } from '@store/redux';
-import { AdcmClusterOverviewHostsFilter, AdcmClusterStatus } from '@models/adcm';
+import { AdcmClusterOverviewHostsFilter } from '@models/adcm';
 
 type AdcmClusterOverviewHostsTableState = ListState<AdcmClusterOverviewHostsFilter>;
 
 const createInitialState = (): AdcmClusterOverviewHostsTableState => ({
   filter: {
-    hostsStatus: AdcmClusterStatus.Up,
+    hostsStatus: undefined,
   },
   paginationParams: {
     perPage: 10,

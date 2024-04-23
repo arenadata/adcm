@@ -43,7 +43,7 @@ description:
 options:
   - option-name: type
     required: true
-    choises:
+    choices:
       - cluster
       - service
       - host

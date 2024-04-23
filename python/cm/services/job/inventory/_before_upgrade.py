@@ -27,7 +27,6 @@ from cm.models import (
     HostProvider,
     Prototype,
     ServiceComponent,
-    get_default_before_upgrade,
 )
 from cm.services.config import retrieve_config_attr_pairs
 from cm.services.config.spec import retrieve_flat_spec_for_objects
@@ -81,7 +80,7 @@ def extract_objects_before_upgrade(
         ),
     )
 
-    default_before_upgrade = get_default_before_upgrade()
+    default_before_upgrade = {"state": None}
 
     result = {}
 

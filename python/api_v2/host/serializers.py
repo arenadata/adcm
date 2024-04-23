@@ -49,7 +49,7 @@ class HCComponentNameSerializer(ModelSerializer):
 
 class HostSerializer(WithStatusSerializer):
     hostprovider = HostProviderSerializer(source="provider")
-    prototype = PrototypeRelatedSerializer(read_only=True)
+    prototype = PrototypeRelatedSerializer()
     concerns = ConcernSerializer(many=True)
     name = CharField(
         max_length=253,
@@ -145,6 +145,8 @@ class HostAddSerializer(EmptySerializer):
 
 
 class HostMappingSerializer(ModelSerializer):
+    maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value))
+
     class Meta:
         model = Host
         fields = ["id", "name", "is_maintenance_mode_available", "maintenance_mode"]

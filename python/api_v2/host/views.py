@@ -25,7 +25,7 @@ from adcm.permissions import (
 from audit.utils import audit
 from cm.api import delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
-from cm.models import Cluster, GroupConfig, Host, HostProvider
+from cm.models import Cluster, ConcernType, GroupConfig, Host, HostProvider
 from cm.services.cluster import perform_host_to_cluster_map
 from cm.services.status import notify
 from core.cluster.errors import (
@@ -244,6 +244,9 @@ class HostViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMi
         serializer.is_valid(raise_exception=True)
         valid = serializer.validated_data
 
+        if valid.get("fqdn") and instance.concerns.filter(type=ConcernType.LOCK).exists():
+            raise AdcmEx(code="HOST_CONFLICT", msg="Name change is available only if no locking concern exists")
+
         if (
             valid.get("fqdn")
             and valid.get("fqdn") != instance.fqdn
@@ -290,9 +293,9 @@ class HostViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMi
         operation_id="postCusterHosts",
         description="Add a new hosts to cluster.",
         summary="POST cluster hosts",
-        request=HostAddSerializer,
+        request=HostAddSerializer(many=True),
         responses={
-            HTTP_201_CREATED: HostSerializer,
+            HTTP_201_CREATED: HostSerializer(many=True),
             **{
                 err_code: ErrorSerializer
                 for err_code in (HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
@@ -488,6 +491,38 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet, Obj
         )
 
 
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getObjectConfigGroupHosts",
+        summary="GET object's config-group hosts",
+        description="Get a list of hosts added to object's config-group.",
+        responses={HTTP_200_OK: HostGroupConfigSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    retrieve=extend_schema(
+        operation_id="getObjectConfigGroupHost",
+        summary="GET object's config-group host",
+        description="Get information about a specific host of object's config-group.",
+        responses={HTTP_200_OK: HostGroupConfigSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    create=extend_schema(
+        operation_id="postObjectConfigGroupHosts",
+        summary="POST object's config-group host",
+        description="Add host to object's config-group.",
+        responses={
+            HTTP_201_CREATED: HostGroupConfigSerializer,
+            HTTP_400_BAD_REQUEST: ErrorSerializer,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
+        },
+    ),
+    destroy=extend_schema(
+        operation_id="deleteObjectConfigGroupHosts",
+        summary="DELETE host from object's config-group",
+        description="Remove host from object's config-group.",
+        responses={HTTP_204_NO_CONTENT: None, HTTP_403_FORBIDDEN: ErrorSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+)
 class HostGroupConfigViewSet(PermissionListMixin, GetParentObjectMixin, CamelCaseReadOnlyModelViewSet):
     queryset = (
         Host.objects.select_related("provider", "cluster")

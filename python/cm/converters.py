@@ -9,8 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from core.types import ADCMCoreType
+from django.db.models import Model
 
 from cm.models import ADCM, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 
@@ -75,3 +75,11 @@ def model_name_to_core_type(model_name: str) -> ADCMCoreType:
             return ADCMCoreType.COMPONENT
 
         raise
+
+
+def model_to_core_type(model: type[Model]) -> ADCMCoreType:
+    return model_name_to_core_type(model_name=model.__name__.lower())
+
+
+def orm_object_to_core_type(object_: Cluster | ClusterObject | ServiceComponent | HostProvider | Host) -> ADCMCoreType:
+    return model_to_core_type(model=object_.__class__)

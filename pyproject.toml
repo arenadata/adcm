@@ -39,7 +39,7 @@ markupsafe = "1.1.1"
 multipledispatch = "1.0.0"
 psycopg2-binary = "2.9.9"
 pycryptodome = "3.18.0"
-pydantic = "1.10.13"
+pydantic = "2.7.0"
 python-gnupg = "0.5.2"
 requests-toolbelt = "1.0.0"
 rstr = "3.2.2"
@@ -79,15 +79,20 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 line-length = 120
-exclude = ["python/cm/migrations/*", "python/audit/migrations/*", "python/rbac/migrations/*"]
-
-[tool.ruff.format]
-exclude = ["python/cm/migrations/*", "python/audit/migrations/*", "python/rbac/migrations/*"]
 
 [tool.ruff.lint.isort]
 force-sort-within-sections = true
 length-sort-straight = true
 order-by-type = true
+
+[tool.ruff.lint.per-file-ignores]
+# Those rules are inadequate for migrations
+# ARG001 - for python code it's common for arguments not to be used
+# N803 - variables are in uppercase, because those are models
+# N999 - we already have incorrect module names, won't be easy to rework
+"python/cm/migrations/*" = ["ARG001", "N806", "N999"]
+"python/audit/migrations/*" = ["ARG001", "N806", "N999"]
+"python/rbac/migrations/*" = ["ARG001", "N806", "N999"]
 
 [tool.ruff.lint]
 ignore = [

@@ -24,6 +24,7 @@ export const useRequestClusters = () => {
     return () => {
       dispatch(cleanupClusters());
       dispatch(cleanupList());
+      dispatch(cleanupClusterDynamicActions());
     };
   }, [dispatch]);
 
@@ -32,10 +33,6 @@ export const useRequestClusters = () => {
       const clustersIds = clusters.map(({ id }) => id);
       dispatch(loadClustersDynamicActions(clustersIds));
     }
-
-    return () => {
-      dispatch(cleanupClusterDynamicActions());
-    };
   }, [dispatch, clusters]);
 
   const debounceGetClusters = useDebounce(() => {

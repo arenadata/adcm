@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from enum import Enum
-from typing import Any, Literal, Optional, TypeAlias, Union
+from typing import Any, Literal, TypeAlias
 
 from core.types import ClusterID, ComponentID, HostID, HostProviderID, ObjectID, PrototypeID, ServiceID
 from pydantic import BaseModel, Field, Json
@@ -72,9 +72,9 @@ class JobData(BaseModel):
     script: str
     verbose: bool
     playbook: str
-    config: Optional[Json]
-    params: Optional[Json]
-    cluster_id: Optional[ClusterID]
+    config: Json | None = None
+    params: Json | None = None
+    cluster_id: ClusterID | None = None
     action_type_specification: (
         ClusterActionType
         | ServiceActionType
@@ -84,44 +84,27 @@ class JobData(BaseModel):
         | ADCMActionType
     ) = Field(..., discriminator="action_proto_type")
 
-    def dict(
-        self,
-        *,
-        include: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,  # noqa: F821
-        exclude: Optional[Union["AbstractSetIntStr", "MappingIntStrAny"]] = None,  # noqa: F821
-        by_alias: bool = False,
-        skip_defaults: Optional[bool] = None,
-        exclude_unset: bool = False,
-        exclude_defaults: bool = False,
-        exclude_none: bool = False,
-    ) -> dict[str, Any]:
-        result: dict[str, Any] = super().dict(
-            include=include,
-            exclude=exclude,
-            by_alias=by_alias,
-            skip_defaults=skip_defaults,
-            exclude_unset=exclude_unset,
-            exclude_defaults=exclude_defaults,
-            exclude_none=exclude_none,
-        )
-
-        for key, value in result.pop("action_type_specification").items():
-            # Merge `action_type_specification` fields into root dict,
-            # exclude discriminator field.
-            # See https://docs.pydantic.dev/1.10/usage/types/#discriminated-unions-aka-tagged-unions
-            if key == "action_proto_type":
-                continue
-
-            result[key] = value
-
-        return result
-
 
 class JobConfig(BaseModel):
     adcm: dict[Literal["config"], dict[str, Any]]
     context: dict[str, Any]
     env: JobEnv
     job: JobData
+
+    def model_dump(self, **kwargs) -> dict[str, Any]:
+        result = super().model_dump(**kwargs)
+
+        # legacy of `dict` redefinition for `JobData`:
+        # Merge `action_type_specification` fields into root dict,
+        # exclude discriminator field.
+        # See https://docs.pydantic.dev/1.10/usage/types/#discriminated-unions-aka-tagged-unions
+        #
+        # Need to rework typing of JobData to remove it
+        type_specifics = result["job"].pop("action_type_specification")
+        type_specifics.pop("action_proto_type")
+        result["job"] |= type_specifics
+
+        return result
 
 
 class HcAclAction(Enum):

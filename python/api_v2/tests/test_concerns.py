@@ -11,12 +11,11 @@
 # limitations under the License.
 
 from cm.models import (
-    KnownNames,
-    MessageTemplate,
     ObjectType,
     Prototype,
     PrototypeImport,
 )
+from cm.services.concern.messages import ConcernMessage
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
@@ -49,7 +48,7 @@ class TestConcernsResponse(BaseAPITestCase):
     def test_required_service_concern(self):
         cluster = self.add_cluster(bundle=self.required_service_bundle, name="required_service_cluster")
         expected_concern_reason = {
-            "message": MessageTemplate.objects.get(name=KnownNames.REQUIRED_SERVICE_ISSUE.value).template["message"],
+            "message": ConcernMessage.REQUIRED_SERVICE_ISSUE.template.message,
             "placeholder": {
                 "source": {"type": "cluster", "name": cluster.name, "params": {"clusterId": cluster.pk}},
                 "target": {
@@ -76,7 +75,7 @@ class TestConcernsResponse(BaseAPITestCase):
     def test_required_config_concern(self):
         cluster = self.add_cluster(bundle=self.required_config_bundle, name="required_config_cluster")
         expected_concern_reason = {
-            "message": MessageTemplate.objects.get(name=KnownNames.CONFIG_ISSUE.value).template["message"],
+            "message": ConcernMessage.CONFIG_ISSUE.template.message,
             "placeholder": {"source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster"}},
         }
 
@@ -92,7 +91,7 @@ class TestConcernsResponse(BaseAPITestCase):
     def test_required_import_concern(self):
         cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
         expected_concern_reason = {
-            "message": MessageTemplate.objects.get(name=KnownNames.REQUIRED_IMPORT_ISSUE.value).template["message"],
+            "message": ConcernMessage.REQUIRED_IMPORT_ISSUE.template.message,
             "placeholder": {"source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster"}},
         }
 
@@ -106,7 +105,7 @@ class TestConcernsResponse(BaseAPITestCase):
         cluster = self.add_cluster(bundle=self.required_hc_bundle, name="required_hc_cluster")
         self.add_services_to_cluster(service_names=["service_1"], cluster=cluster)
         expected_concern_reason = {
-            "message": MessageTemplate.objects.get(name=KnownNames.HOST_COMPONENT_ISSUE.value).template["message"],
+            "message": ConcernMessage.HOST_COMPONENT_ISSUE.template.message,
             "placeholder": {"source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster"}},
         }
 
@@ -119,7 +118,7 @@ class TestConcernsResponse(BaseAPITestCase):
     def test_outdated_config_flag(self):
         cluster = self.add_cluster(bundle=self.config_flag_bundle, name="config_flag_cluster")
         expected_concern_reason = {
-            "message": MessageTemplate.objects.get(name=KnownNames.CONFIG_FLAG.value).template["message"],
+            "message": f"{ConcernMessage.FLAG.template.message}outdated config",
             "placeholder": {"source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster"}},
         }
 
@@ -142,9 +141,7 @@ class TestConcernsResponse(BaseAPITestCase):
         cluster = self.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")
         service = self.add_services_to_cluster(service_names=["service_1"], cluster=cluster).get()
         expected_concern_reason = {
-            "message": MessageTemplate.objects.get(name=KnownNames.UNSATISFIED_REQUIREMENT_ISSUE.value).template[
-                "message"
-            ],
+            "message": ConcernMessage.UNSATISFIED_REQUIREMENT_ISSUE.template.message,
             "placeholder": {
                 "source": {
                     "name": service.name,

@@ -22,9 +22,9 @@ from cm.services.job.types import HcAclAction
 
 def check_hostcomponentmap(
     cluster: Cluster | None, action: Action, new_hc: list[dict]
-) -> tuple[list[tuple[ClusterObject, Host, ServiceComponent]] | None, list]:
+) -> tuple[list[tuple[ClusterObject, Host, ServiceComponent]] | None, list, dict[str, dict]]:
     if not action.hostcomponentmap:
-        return None, []
+        return None, [], {}
 
     if not new_hc:
         raise AdcmEx(code="TASK_ERROR", msg="hc is required")
@@ -51,9 +51,9 @@ def check_hostcomponentmap(
         prepared_hc_list = make_host_comp_list(cluster=cluster, hc_in=clear_hc)
         check_constraints_for_upgrade(cluster=cluster, upgrade=action.upgrade, host_comp_list=prepared_hc_list)
 
-    cook_delta(cluster=cluster, new_hc=prepared_hc_list, action_hc=action.hostcomponentmap, old=old_hc)
+    delta = cook_delta(cluster=cluster, new_hc=prepared_hc_list, action_hc=action.hostcomponentmap, old=old_hc)
 
-    return prepared_hc_list, post_upgrade_hc
+    return prepared_hc_list, post_upgrade_hc, delta
 
 
 def check_constraints_for_upgrade(cluster, upgrade, host_comp_list):

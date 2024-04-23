@@ -65,7 +65,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     is_success,
 )
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from audit.cases.cases import get_audit_operation_and_object
 from audit.cases.common import get_or_create_audit_obj
@@ -275,7 +275,7 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
     pk = None
 
     if (
-        isinstance(view, (ModelViewSet, CamelCaseModelViewSet))
+        isinstance(view, (GenericViewSet, CamelCaseModelViewSet))
         and view.action in {"update", "partial_update"}
         and view.kwargs.get("pk")
     ):

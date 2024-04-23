@@ -25,11 +25,10 @@ def fix_task(apps, schema_editor):
         except Action.DoesNotExist:
             continue
         selector = json.loads(task.selector)
-        if action.prototype.type == "service":
-            if "service" not in selector:
-                selector["service"] = task.object_id
-                task.selector = json.dumps(selector)
-                task.save()
+        if action.prototype.type == "service" and "service" not in selector:
+            selector["service"] = task.object_id
+            task.selector = json.dumps(selector)
+            task.save()
 
 
 def fix_job(apps, schema_editor):
@@ -43,11 +42,10 @@ def fix_job(apps, schema_editor):
             continue
         task = TaskLog.objects.get(id=job.task_id)
         selector = json.loads(job.selector)
-        if action.prototype.type == "service":
-            if "service" not in selector:
-                selector["service"] = task.object_id
-                job.selector = json.dumps(selector)
-                job.save()
+        if action.prototype.type == "service" and "service" not in selector:
+            selector["service"] = task.object_id
+            job.selector = json.dumps(selector)
+            job.save()
 
 
 class Migration(migrations.Migration):

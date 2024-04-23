@@ -2,6 +2,10 @@
   type: boolean
   required: false
   default: true
+{% if action.name == "notexist" and action.owner_group == "clakj"%}
+- name: iwontappear
+  type: string
+{% endif %}
 {% if cluster.state == 'created' %}
 - name: float
   type: float

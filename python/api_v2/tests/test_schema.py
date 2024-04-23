@@ -10,16 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from adcm.tests.base import BaseTestCase
 from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK
 
 
-def test_swagger_available(self):
-    response = self.client.get(path=reverse(viewname="v2:swagger-ui"))
+class TestSchema(BaseTestCase):
+    def test_swagger_available(self):
+        response = self.client.get(path=reverse(viewname="v2:swagger-ui"))
 
-    self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
-    response = self.client.get(path=reverse(viewname="v2:schema"))
+        response = self.client.get(path=reverse(viewname="v2:schema"))
 
-    self.assertEqual(response.status_code, HTTP_200_OK)
-    self.assertIn("openapi", response.data)
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertIn("openapi", response.data)

@@ -206,7 +206,7 @@ class JobRepoImpl:
 
     @staticmethod
     def update_task(id: int, data: TaskUpdateDTO) -> None:  # noqa: A002
-        fields_to_change: dict = data.dict(exclude_unset=True)
+        fields_to_change: dict = data.model_dump(exclude_unset=True)
         if "status" in fields_to_change:
             fields_to_change["status"] = fields_to_change["status"].value
 
@@ -214,7 +214,7 @@ class JobRepoImpl:
 
     @staticmethod
     def update_job(id: int, data: JobUpdateDTO) -> None:  # noqa: A002
-        fields_to_change: dict = data.dict(exclude_unset=True)
+        fields_to_change: dict = data.model_dump(exclude_unset=True)
         if "status" in fields_to_change:
             fields_to_change["status"] = fields_to_change["status"].value
 
@@ -341,7 +341,7 @@ class JobRepoImpl:
                 ClusterObject.objects.values(**cls._selector_fields_map[ClusterObject]).filter(id=service_id)
             )
             query = query.union(
-                ServiceComponent.objects.values(**cls._selector_fields_map[ServiceComponent]).filter(id=service_id)
+                ServiceComponent.objects.values(**cls._selector_fields_map[ServiceComponent]).filter(id=component_id)
             )
 
         return query

@@ -5,18 +5,20 @@ import ClusterOverviewDiagram from '@pages/cluster/ClusterOverview/ClusterOvervi
 import { Pagination, Spinner } from '@uikit';
 import ClusterOverviewFilter from '@pages/cluster/ClusterOverview/ClusterOverviewFilter/ClusterOverviewFilter';
 import { useDispatch, useStore } from '@hooks';
-import { AdcmClusterStatus } from '@models/adcm';
+import { AdcmHostStatus, AdcmServiceStatus } from '@models/adcm';
 import { setFilter, setPaginationParams } from '@store/adcm/cluster/overview/overviewHostsTableSlice';
 import { PaginationParams } from '@uikit/types/list.types';
 import ClusterOverviewHostsTable from '@pages/cluster/ClusterOverview/ClusterOverviewHosts/ClusterOverviewHostsTable';
+import { resetCount } from '@store/adcm/cluster/overview/overviewHostsSlice';
 
 const ClusterOverviewHosts = () => {
-  const { hostsStatuses, count, allHostsCount, isLoading } = useStore((s) => s.adcm.clusterOverviewHosts);
+  const { hostsStatuses, count, upCount, downCount, isLoading } = useStore((s) => s.adcm.clusterOverviewHosts);
   const { filter, paginationParams } = useStore((s) => s.adcm.clusterOverviewHostsTable);
   const dispatch = useDispatch();
 
-  const onHostsStatusHandler = (status: AdcmClusterStatus) => {
-    dispatch(setFilter({ hostsStatus: status }));
+  const onHostsStatusHandler = (status?: AdcmHostStatus | AdcmServiceStatus) => {
+    dispatch(resetCount());
+    dispatch(setFilter({ hostsStatus: status as AdcmHostStatus }));
   };
 
   const onPaginationParamsHandler = (newPaginationParams: PaginationParams) => {
@@ -26,10 +28,17 @@ const ClusterOverviewHosts = () => {
   const firstHostsGroup = useMemo(() => hostsStatuses.filter((item, id) => id % 2 === 0), [hostsStatuses]);
   const secondHostsGroup = useMemo(() => hostsStatuses.filter((item, id) => id % 2 !== 0), [hostsStatuses]);
 
+  const currentCount = useMemo(() => (!filter.hostsStatus ? upCount : count), [upCount, count, filter.hostsStatus]);
+
+  const allCount = useMemo(
+    () => (!filter.hostsStatus ? downCount : downCount + upCount),
+    [downCount, upCount, filter.hostsStatus],
+  );
+
   return (
     <PageSection title="Hosts">
       <div className={s.clusterOverviewHosts__wrapper}>
-        <ClusterOverviewDiagram totalCount={allHostsCount} currentCount={count} status={filter.hostsStatus} />
+        <ClusterOverviewDiagram totalCount={allCount} currentCount={currentCount} status={filter.hostsStatus} />
         <div className={s.clusterOverviewHosts__hostsContainer}>
           <ClusterOverviewFilter
             status={filter.hostsStatus}
