@@ -246,50 +246,6 @@ def delete_host_by_pk(host_pk):
     delete_host(host, cancel_tasks=False)
 
 
-def _clean_up_related_hc(service: ClusterObject) -> None:
-    """Unconditional removal of HostComponents related to removing ClusterObject"""
-
-    queryset = (
-        HostComponent.objects.filter(cluster=service.cluster)
-        .exclude(service=service)
-        .select_related("host", "component")
-        .order_by("id")
-    )
-    new_hc_list = []
-    for hostcomponent in queryset:
-        new_hc_list.append((hostcomponent.service, hostcomponent.host, hostcomponent.component))
-
-    save_hc(service.cluster, new_hc_list)
-
-
-def delete_service_by_pk(service_pk):
-    """
-    Unconditional removal of service from cluster
-
-    This is intended for use in adcm_delete_service ansible plugin only
-    """
-
-    service = ClusterObject.obj.get(pk=service_pk)
-    with atomic():
-        _clean_up_related_hc(service=service)
-        ClusterBind.objects.filter(source_service=service).delete()
-        delete_service(service=service)
-
-
-def delete_service_by_name(service_name, cluster_pk):
-    """
-    Unconditional removal of service from cluster
-
-    This is intended for use in adcm_delete_service ansible plugin only
-    """
-
-    service = ClusterObject.obj.get(cluster__pk=cluster_pk, prototype__name=service_name)
-    with atomic():
-        _clean_up_related_hc(service=service)
-        ClusterBind.objects.filter(source_service=service).delete()
-        delete_service(service=service)
-
-
 def delete_service(service: ClusterObject) -> None:
     service_pk = service.pk
     service.delete()
