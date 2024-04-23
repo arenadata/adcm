@@ -90,7 +90,7 @@ _schema_common_filters = (
         summary="GET object's actions",
         description="Get a list of object's actions.",
         parameters=[
-            DefaultParams.ORDERING,
+            DefaultParams.ordering_by("id"),
             OpenApiParameter(
                 name="isHostOwnAction",
                 required=False,
@@ -288,7 +288,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
         operation_id="getADCMActions",
         summary="GET ADCM actions",
         description="Get a list of ADCM actions.",
-        parameters=[DefaultParams.ORDERING, *_schema_common_filters],
+        parameters=[DefaultParams.ordering_by("id"), *_schema_common_filters],
         responses={HTTP_200_OK: ActionListSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
     retrieve=extend_schema(

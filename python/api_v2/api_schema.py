@@ -31,3 +31,11 @@ class DefaultParams:
         description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
         type=str,
     )
+
+    @classmethod
+    def ordering_by(cls, *values: str | tuple[str, str], **kwargs: str | bool | type) -> OpenApiParameter:
+        return OpenApiParameter(
+            location=OpenApiParameter.QUERY,
+            enum=values,
+            **{attr: getattr(cls.ORDERING, attr) for attr in ("name", "required", "description", "type")} | kwargs,
+        )
