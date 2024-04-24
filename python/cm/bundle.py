@@ -23,6 +23,7 @@ from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.db.transaction import atomic
 from gnupg import GPG, ImportResult
+from graphlib import CycleError, TopologicalSorter
 from rbac.models import Role
 from rbac.upgrade.role import prepare_action_roles
 
@@ -75,6 +76,7 @@ def prepare_bundle(
         prototypes, upgrades = process_bundle(path_resolver=BundlePathResolver(bundle_hash))
         bundle_prototype = get_stage_bundle(bundle_file=bundle_file)
         check_services_requires()
+        check_absence_of_cyclic_dependencies()
         re_check_actions()
         re_check_components()
         re_check_config()
@@ -133,6 +135,39 @@ def propagate_flag_autogeneration(bundle_main_prototype: StagePrototype):
                 )["enable_outdated_config"]
             }
         )
+
+
+def check_absence_of_cyclic_dependencies():
+    requires = TopologicalSorter()
+
+    for component_name, requires_list, service_name in (
+        StagePrototype.objects.values_list("name", "requires", "parent__name")
+        .filter(type=ObjectType.COMPONENT)
+        .exclude(requires=[])
+    ):
+        dependencies = []
+        for entry in (item for item in requires_list if "component" in item):
+            dependency_service = entry.get("service", service_name)
+            dependencies.append(f"{dependency_service}.{entry['component']}")
+            dependencies.append(dependency_service)
+
+        requires.add(f"{service_name}.{component_name}", *dependencies)
+
+    for service_name, requires_list in (
+        StagePrototype.objects.values_list("name", "requires").exclude(requires=[]).filter(type=ObjectType.SERVICE)
+    ):
+        dependencies = []
+        for entry in (item for item in requires_list if "component" in item):
+            dependency_service = entry.get("service", service_name)
+            dependencies.append(f"{dependency_service}.{entry['component']}")
+            dependencies.append(dependency_service)
+
+        requires.add(service_name, *dependencies)
+
+    try:
+        requires.prepare()
+    except CycleError as err:
+        raise AdcmEx(code="REQUIRES_ERROR", msg=f"requires should not be cyclic: {err.args[1]}") from err
 
 
 def load_bundle(bundle_file: str) -> Bundle:

@@ -94,6 +94,20 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
         self.enable_outdated_config_is(provider, True)
         self.enable_outdated_config_is(host, True)
 
+    def test_cyclic_component_requires_are_forbidden(self) -> None:
+        directory = Path(__file__).parent / "bundles" / "cyclic_component_requires"
+
+        for bundle_path in directory.iterdir():
+            with self.subTest(bundle_path.name):
+                with self.assertRaises(AdcmEx) as err:
+                    self.add_bundle(source_dir=bundle_path)
+
+                self.assertEqual(err.exception.code, "REQUIRES_ERROR")
+                self.assertIn("requires should not be cyclic", err.exception.msg)
+
+    def test_upload_with_allowed_requires_success(self) -> None:
+        self.add_bundle(source_dir=Path(__file__).parent / "bundles" / "various_requires")
+
     def test_bundle_upload_duplicate_upgrade_fail(self):
         with self.assertRaises(IntegrityError):
             self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_duplicated.tar"))

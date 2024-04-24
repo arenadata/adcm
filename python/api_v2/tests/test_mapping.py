@@ -158,29 +158,6 @@ class TestMapping(BaseAPITestCase):
 
             self.assertEqual(len(component.prototype.requires), len(component_data["dependOn"]))
 
-    def test_mapping_components_with_cyclic_dependencies_success(self):
-        bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_cyclic_dependencies")
-        cluster = self.add_cluster(bundle=bundle, name="cluster_cyclic_dependencies")
-        self.add_services_to_cluster(
-            service_names=["serviceA", "serviceB", "serviceC", "serviceD", "serviceE"], cluster=cluster
-        )
-
-        response = self.client.get(path=reverse(viewname="v2:cluster-mapping-components", kwargs={"pk": cluster.pk}))
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        data = response.json()
-        self.assertEqual(len(data), 5)
-
-        for component_data in data:
-            component = ServiceComponent.objects.filter(prototype__name=component_data["name"], cluster=cluster).first()
-            requires = component.prototype.requires[0]
-            expected_service_name = component_data["dependOn"][0]["servicePrototype"]["name"]
-            expected_component_name = component_data["dependOn"][0]["servicePrototype"]["componentPrototypes"][0][
-                "name"
-            ]
-            self.assertEqual(requires["service"], expected_service_name)
-            self.assertEqual(requires["component"], expected_component_name)
-
     def test_get_requires(self):
         requires = [{"service": "service1", "component": "component1"}, {"service": "service1"}]
 
