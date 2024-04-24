@@ -51,6 +51,7 @@ from core.rbac.dto import UserCreateDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.db.models import QuerySet
+from django.db.transaction import atomic
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from init_db import init
@@ -121,6 +122,7 @@ class BundleLogicMixin:
 
         return bundle_file
 
+    @atomic()
     def add_bundle(self, source_dir: Path) -> Bundle:
         bundle_file = self.prepare_bundle_file(source_dir=source_dir)
         bundle_hash, path = process_file(bundle_file=bundle_file)

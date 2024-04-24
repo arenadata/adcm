@@ -1,0 +1,29 @@
+- type: cluster
+  name: cname
+  version: 23
+
+- type: service
+  name: A
+  version: 2
+
+  components:
+    a:
+      requires:
+        - service: B
+          component: a
+    control: {}
+
+- type: service
+  name: B
+  version: 4
+
+  requires:
+    - service: A
+      component: a
+
+  components:
+    a: {}
+
+- type: service
+  name: control
+  version: 3
