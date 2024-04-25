@@ -235,17 +235,6 @@ def delete_host(host: Host, cancel_tasks: bool = True) -> None:
     logger.info("host #%s is deleted", host_pk)
 
 
-def delete_host_by_pk(host_pk):
-    """
-    Host deleting
-
-    This is intended for use in adcm_delete_host ansible plugin only
-    """
-
-    host = Host.obj.get(pk=host_pk)
-    delete_host(host, cancel_tasks=False)
-
-
 def delete_service(service: ClusterObject) -> None:
     service_pk = service.pk
     service.delete()
