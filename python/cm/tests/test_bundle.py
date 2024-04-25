@@ -9,9 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from pathlib import Path
 import json
+import tempfile
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase, BundleLogicMixin, BusinessLogicMixin
 from django.conf import settings
@@ -24,6 +24,7 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_409_CONFLICT,
 )
+import yaml
 
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import delete_host_provider
@@ -53,12 +54,19 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
         super().setUp()
 
         self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
+        self.bundles_dir = Path(__file__).parent / "bundles"
 
     def get_component(self, service: ClusterObject, component_name: str) -> ServiceComponent:
         return ServiceComponent.objects.get(service=service, prototype__name=component_name)
 
     def enable_outdated_config_is(self, entity: ADCMEntity, expected_value: bool):
         self.assertEqual(entity.prototype.flag_autogeneration["enable_outdated_config"], expected_value)
+
+    def prepare_bundle_directory(self, config_yaml_content: list[dict]) -> Path:
+        bundle_dir = Path(tempfile.mkdtemp())
+        with (bundle_dir / "config.yaml").open(mode="w", encoding="utf-8") as f:
+            yaml.dump(data=config_yaml_content, stream=f)
+        return bundle_dir
 
     def test_flag_autogeneration_inheritance(self) -> None:
         directory = Path(__file__).parent / "bundles" / "flag_autogeneration"
@@ -107,6 +115,73 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
 
     def test_upload_with_allowed_requires_success(self) -> None:
         self.add_bundle(source_dir=Path(__file__).parent / "bundles" / "various_requires")
+
+    def test_upload_bundle_with_patterns_success(self) -> None:
+        expected_pattern = "[a-z][A-Z][0-9]*?"
+
+        bundle = self.add_bundle(source_dir=self.bundles_dir / "cluster_with_patterns")
+
+        for config_prototype in PrototypeConfig.objects.filter(name__startswith="plain", prototype__bundle=bundle):
+            self.assertEqual(config_prototype.limits, {})
+
+        for config_prototype in PrototypeConfig.objects.filter(name__startswith="patterned", prototype__bundle=bundle):
+            self.assertEqual(config_prototype.limits, {"pattern": expected_pattern})
+
+    def test_upload_incorrect_default_for_pattern_fail(self) -> None:
+        cluster_def = {"type": "cluster", "version": "34", "name": "incorrect_default"}
+
+        for type_ in ("string", "password", "text", "secrettext"):
+            with self.subTest(f"Field Type {type_}"):
+                bundle_dir = self.prepare_bundle_directory(
+                    [
+                        {
+                            **cluster_def,
+                            "config": [
+                                {"type": type_, "name": "param", "pattern": "[a-z][A-Z][0-9]*?", "default": "!"}
+                            ],
+                        }
+                    ]
+                )
+
+                with self.assertRaises(AdcmEx) as err_context:
+                    self.add_bundle(bundle_dir)
+
+                self.assertEqual(err_context.exception.status_code, HTTP_409_CONFLICT)
+                self.assertEqual(
+                    err_context.exception.msg,
+                    "There default attribute value of param config parameter is not satisfying pattern",
+                )
+
+    def test_upload_with_pattern_for_incorrect_types_fail(self) -> None:
+        cluster_def = {"type": "cluster", "version": "34", "name": "incorrect_default"}
+
+        for type_ in ("file", "secretfile"):
+            with self.subTest(f"Field Type {type_}"):
+                bundle_dir = self.prepare_bundle_directory(
+                    [{**cluster_def, "config": [{"type": type_, "name": "param", "pattern": "[a-z][A-Z][0-9]*?"}]}]
+                )
+
+                with self.assertRaises(AdcmEx) as err_context:
+                    self.add_bundle(bundle_dir)
+
+                self.assertEqual(err_context.exception.status_code, HTTP_409_CONFLICT)
+                self.assertIn('Map key "pattern" is not allowed here', err_context.exception.msg)
+
+    def test_upload_with_incorrect_pattern_fail(self) -> None:
+        cluster_def = {"type": "cluster", "version": "34", "name": "incorrect_default"}
+
+        bundle_dir = self.prepare_bundle_directory(
+            [{**cluster_def, "config": [{"type": "string", "name": "param", "display_name": "BstT", "pattern": "*"}]}]
+        )
+
+        with self.assertRaises(AdcmEx) as err_context:
+            self.add_bundle(bundle_dir)
+
+        self.assertEqual(err_context.exception.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(
+            err_context.exception.msg,
+            "The pattern attribute value of BstT config parameter is not valid regular expression",
+        )
 
     def test_bundle_upload_duplicate_upgrade_fail(self):
         with self.assertRaises(IntegrityError):

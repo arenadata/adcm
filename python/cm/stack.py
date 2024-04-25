@@ -57,6 +57,7 @@ from cm.models import (
     StageUpgrade,
 )
 from cm.services.bundle import PathResolver, detect_relative_path_to_bundle_root, is_path_correct
+from cm.services.config.patterns import Pattern
 
 ANY = "any"
 AVAILABLE = "available"
@@ -876,23 +877,40 @@ def process_limits(
     config: dict, name: str, subname: str, prototype: StagePrototype, path_resolver: PathResolver
 ) -> dict:
     limits = {}
+    param_type = config["type"]
 
-    if config["type"] == "option":
+    param_pattern = config.get("pattern")
+    if isinstance(param_pattern, str):
+        pattern = Pattern(regex_pattern=param_pattern)
+        if not pattern.is_valid:
+            display_name = config.get("display_name", config["name"])
+            message = f"The pattern attribute value of {display_name} config parameter is not valid regular expression"
+            raise AdcmEx(code="INVALID_CONFIG_DEFINITION", msg=message)
+
+        default = config.get("default")
+        if default is not None and not pattern.matches(str(default)):
+            display_name = config.get("display_name", config["name"])
+            message = f"There default attribute value of {display_name} config parameter is not satisfying pattern"
+            raise AdcmEx(code="INVALID_CONFIG_DEFINITION", msg=message)
+
+        limits["pattern"] = pattern.raw
+
+    if param_type == "option":
         limits = {"option": config["option"]}
-    elif config["type"] == "variant":
+    elif param_type == "variant":
         limits["source"] = check_variant(config=config)
-    elif config["type"] in settings.STACK_NUMERIC_FIELD_TYPES:
+    elif param_type in settings.STACK_NUMERIC_FIELD_TYPES:
         if "min" in config:
             limits["min"] = config["min"]
 
         if "max" in config:
             limits["max"] = config["max"]
 
-    elif config["type"] == "structure":
+    elif param_type == "structure":
         limits["yspec"] = get_yspec(
             path_resolver=path_resolver, prototype=prototype, conf=config, name=name, subname=subname
         )
-    elif config["type"] == "group" and "activatable" in config:
+    elif param_type == "group" and "activatable" in config:
         limits["activatable"] = config["activatable"]
         limits["active"] = False
 
