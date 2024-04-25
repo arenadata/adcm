@@ -12,7 +12,7 @@
 from abc import ABC, abstractmethod
 from collections import OrderedDict, defaultdict
 from copy import deepcopy
-from typing import Any
+from typing import Any, TypeAlias
 import copy
 import json
 
@@ -22,10 +22,15 @@ from cm.models import (
     ADCM,
     Action,
     ADCMEntity,
+    Cluster,
+    ClusterObject,
     ConfigLog,
     GroupConfig,
+    Host,
+    HostProvider,
     Prototype,
     PrototypeConfig,
+    ServiceComponent,
 )
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
 from cm.variant import get_variant
@@ -33,10 +38,13 @@ from django.db.models import QuerySet
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
 from api_v2.api_schema import ErrorSerializer
+
+ParentObject: TypeAlias = Cluster, ClusterObject, ServiceComponent, HostProvider, Host, GroupConfig
 
 
 class Field(ABC):
@@ -717,11 +725,10 @@ class ConfigSchemaMixin:
     )
     @action(methods=["get"], detail=True, url_path="config-schema", url_name="config-schema")
     def config_schema(self, request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
-        self._check_parent_permissions_in_config_schema(request)
-
         instance = self.get_object()
-
+        self._check_parent_permissions_in_config_schema(request=request, parent_object=instance)
         instance_config_view_perm = "cm.view_objectconfig"
+
         if not (
             request.user.has_perm(instance_config_view_perm, instance.config)
             or request.user.has_perm(instance_config_view_perm)
@@ -734,18 +741,14 @@ class ConfigSchemaMixin:
 
         return Response(data=schema, status=HTTP_200_OK)
 
-    def _check_parent_permissions_in_config_schema(self, request):
-        parent_obj = self.get_parent_object()
-        parent_view_perm = f"cm.view_{parent_obj.__class__.__name__.lower()}"
+    def _check_parent_permissions_in_config_schema(self, request: Request, parent_object: ParentObject):
+        parent_view_perm = f"cm.view_{parent_object.__class__.__name__.lower()}"
 
-        if parent_obj is None:
+        if parent_object is None:
             raise NotFound
 
-        if not (request.user.has_perm(parent_view_perm, parent_obj) or request.user.has_perm(parent_view_perm)):
+        if not (request.user.has_perm(parent_view_perm, parent_object) or request.user.has_perm(parent_view_perm)):
             raise NotFound
-
-    def get_parent_object(self):
-        return self.queryset.get(pk=self.kwargs["pk"])
 
 
 def convert_attr_to_adcm_meta(attr: dict) -> dict:

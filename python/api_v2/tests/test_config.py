@@ -282,8 +282,8 @@ class TestClusterConfig(BaseAPITestCase):
 
     def test_schema_cluster_permissions_another_object_role_denied(self):
         provider_bundle = self.add_bundle(self.test_bundles_dir / "provider_actions")
-        hostprovider = self.add_provider(provider_bundle, "Provider with Actions")
-        host_1 = self.add_host(provider_bundle, hostprovider, "host-1")
+        hostprovider = self.add_provider(bundle=provider_bundle, name="Provider with Actions")
+        host_1 = self.add_host(provider=hostprovider, fqdn="host-1")
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Map hosts"):
             with self.grant_permissions(to=self.test_user, on=host_1, role_name="Manage Maintenance mode"):
