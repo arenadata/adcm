@@ -9,20 +9,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from adcm.permissions import VIEW_TASKLOG_PERMISSION
 from audit.utils import audit
 from cm.models import TaskLog
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
 from django_filters.rest_framework.backends import DjangoFilterBackend
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
-from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.log_storage.utils import (
     get_task_download_archive_file_handler,
     get_task_download_archive_name,
@@ -33,7 +39,65 @@ from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet
 
 
-class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, CreateModelMixin, CamelCaseGenericViewSet):
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getTasks",
+        description="Get a list of ADCM tasks.",
+        summary="GET tasks",
+        parameters=[
+            OpenApiParameter(name="jobName", description="Case insensitive and partial filter by job name."),
+            OpenApiParameter(name="objectName", description="Case insensitive and partial filter by object name."),
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                type=str,
+                enum=("name", "-name", "id", "-id", "startTime", "-startTime", "endTime", "-endTime"),
+                default="-id",
+            ),
+        ],
+        responses={
+            HTTP_200_OK: TaskListSerializer(many=True),
+        },
+    ),
+    terminate=extend_schema(
+        operation_id="postTaskTerminate",
+        description="Terminate the execution of a specific task.",
+        summary="POST task terminate",
+        responses={
+            HTTP_200_OK: OpenApiResponse(description="OK"),
+            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)},
+        },
+    ),
+    retrieve=extend_schema(
+        operation_id="getTask",
+        description="Get information about a specific ADCM task.",
+        summary="GET task",
+        responses={
+            HTTP_200_OK: TaskListSerializer(many=False),
+            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)},
+        },
+    ),
+    download=extend_schema(
+        operation_id="getTaskLogsDownload",
+        description="Download all task logs.",
+        summary="GET task logs download",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="Task id.",
+            ),
+        ],
+        responses={
+            HTTP_200_OK: OpenApiResponse(description="OK"),
+            **{err_code: ErrorSerializer for err_code in (HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
+        },
+    ),
+)
+class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, CamelCaseGenericViewSet):
     queryset = TaskLog.objects.select_related("action").order_by("-pk")
     serializer_class = TaskListSerializer
     filterset_class = TaskFilter
