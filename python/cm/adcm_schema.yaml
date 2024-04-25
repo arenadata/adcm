@@ -288,10 +288,10 @@ config_dict_sub:
     boolean: config_dict_sub_boolean
     integer: config_dict_sub_integer
     float: config_dict_sub_float
-    string: config_dict_sub_string
-    password: config_dict_sub_string
-    secrettext: config_dict_sub_string
-    text: config_dict_sub_string
+    string: config_dict_sub_string_with_pattern
+    password: config_dict_sub_string_with_pattern
+    secrettext: config_dict_sub_string_with_pattern
+    text: config_dict_sub_string_with_pattern
     file: config_dict_sub_string
     secretfile: config_dict_sub_string
     list: config_dict_sub_list
@@ -344,6 +344,13 @@ config_dict_sub_string:
   items:
     <<: *config_dict_sub_items
     default: string
+
+config_dict_sub_string_with_pattern:
+  <<: *config_dict_sub_common
+  items:
+    <<: *config_dict_sub_items
+    default: string
+    pattern: string
 
 config_dict_sub_list:
   <<: *config_dict_sub_common
@@ -401,10 +408,10 @@ config_list_object:
     boolean: config_list_boolean
     integer: config_list_integer
     float: config_list_float
-    string: config_list_string
-    password: config_list_string
-    secrettext: config_list_string
-    text: config_list_string
+    string: config_list_string_with_pattern
+    password: config_list_string_with_pattern
+    secrettext: config_list_string_with_pattern
+    text: config_list_string_with_pattern
     file: config_list_string
     secretfile: config_list_string
     list: config_list_list
@@ -448,10 +455,10 @@ config_sub_list_object:
     boolean: config_list_boolean
     integer: config_list_integer
     float: config_list_float
-    string: config_list_string
-    password: config_list_string
-    secrettext: config_list_string
-    text: config_list_string
+    string: config_list_string_with_pattern
+    password: config_list_string_with_pattern
+    secrettext: config_list_string_with_pattern
+    text: config_list_string_with_pattern
     file: config_list_string
     secretfile: config_list_string
     list: config_list_list
@@ -473,6 +480,13 @@ config_list_string:
   items:
     <<: *config_list_items
     default: string
+
+config_list_string_with_pattern:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    default: string
+    pattern: string
 
 config_list_integer:
   <<: *config_list_common
