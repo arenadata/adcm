@@ -200,6 +200,38 @@ class TestImport(BaseAPITestCase):
 
             self.assertEqual(response.status_code, HTTP_200_OK)
 
+    def test_adcm_5488_another_cluster_imports_object_permission_create_success(self):
+        ClusterBind.objects.create(cluster=self.import_cluster, source_cluster=self.export_cluster)
+
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.import_cluster, role_name="Manage imports"):
+            with self.grant_permissions(to=self.test_user, on=self.export_cluster, role_name="View imports"):
+                response = self.client.post(
+                    path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
+                    data=[
+                        {"source": {"id": self.export_cluster.pk, "type": "cluster"}},
+                        {"source": {"id": self.export_service.pk, "type": "service"}},
+                    ],
+                )
+
+                self.assertEqual(response.status_code, HTTP_201_CREATED)
+                data = response.json()
+                self.assertEqual(len(data), 1)
+                self.assertEqual(ClusterBind.objects.count(), len(data[0]["binds"]))
+                self.assertListEqual(
+                    [
+                        {
+                            "id": ClusterBind.objects.first().pk,
+                            "source": {"id": self.export_cluster.pk, "type": "cluster"},
+                        },
+                        {
+                            "id": ClusterBind.objects.last().pk,
+                            "source": {"id": self.export_service.pk, "type": "service"},
+                        },
+                    ],
+                    data[0]["binds"],
+                )
+
     def test_another_cluster_imports_create_denied(self):
         ClusterBind.objects.create(cluster=self.import_cluster, source_cluster=self.export_cluster)
 
