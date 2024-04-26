@@ -58,6 +58,7 @@ class ImportViewSet(ListModelMixin, CreateModelMixin, CamelCaseGenericViewSet):
             kwargs_check.update({"second_perm": VIEW_CLUSTER_BIND})
 
         obj = get_object_for_user(user=request.user, **kwargs_get)
+
         check_custom_perm(user=request.user, obj=obj, **kwargs_check)
 
         if self.action == "create":

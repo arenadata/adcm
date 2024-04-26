@@ -14,6 +14,7 @@ import {
 import { setSortParams } from '@store/adcm/hostProvider/configurationGroups/hostProviderConfigGroupsTableSlice';
 import HostProviderConfigGroupDialogs from '@pages/HostProviderPage/HostProviderConfigurationGroups/HostProviderConfigGroupDialogs/HostProviderConfigGroupDialogs';
 import HostProviderConfigurationGroupTableFooter from '@pages/HostProviderPage/HostProviderConfigurationGroups/HostProviderConfigurationGroupTableFooter/HostProviderConfigurationConfigTableFooter';
+import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const HostProviderConfigurationGroups: React.FC = () => {
   const dispatch = useDispatch();
@@ -22,6 +23,7 @@ const HostProviderConfigurationGroups: React.FC = () => {
   const hostProviderId = Number(hostproviderIdFromUrl);
 
   const { hostProviderConfigGroups, isLoading } = useStore((s) => s.adcm.hostProviderConfigGroups);
+  const accessCheckStatus = useStore((s) => s.adcm.hostProviderConfigGroups.accessCheckStatus);
   const sortParams = useStore((s) => s.adcm.hostProviderConfigGroupsTable.sortParams);
   useRequestHostProviderConfigurationGroups();
 
@@ -41,7 +43,7 @@ const HostProviderConfigurationGroups: React.FC = () => {
   };
 
   return (
-    <div>
+    <PermissionsChecker requestState={accessCheckStatus}>
       <ConfigGroupsHeader onCreate={handleCreateConfigGroup} />
       <ConfigGroupsTable
         configGroups={hostProviderConfigGroups}
@@ -55,7 +57,7 @@ const HostProviderConfigurationGroups: React.FC = () => {
       <HostProviderConfigurationGroupTableFooter />
 
       <HostProviderConfigGroupDialogs />
-    </div>
+    </PermissionsChecker>
   );
 };
 

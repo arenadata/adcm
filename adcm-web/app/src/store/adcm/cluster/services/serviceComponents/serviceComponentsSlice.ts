@@ -9,12 +9,14 @@ import { executeWithMinDelay } from '@utils/requestUtils';
 import { updateIfExists } from '@utils/objectUtils';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { toggleMaintenanceMode } from '@store/adcm/cluster/services/serviceComponents/serviceComponentsActionsSlice';
-import { LoadState } from '@models/loadState';
+import { LoadState, RequestState } from '@models/loadState';
+import { processErrorResponse } from '@utils/responseUtils';
 
 interface AdcmServiceComponentsState {
   serviceComponents: AdcmServiceComponent[];
   totalCount: number;
   loadState: LoadState;
+  accessCheckStatus: RequestState;
 }
 
 interface LoadClusterServiceComponentsPayload {
@@ -75,6 +77,7 @@ const createInitialState = (): AdcmServiceComponentsState => ({
   serviceComponents: [],
   totalCount: 0,
   loadState: LoadState.NotLoaded,
+  accessCheckStatus: RequestState.NotRequested,
 });
 
 const serviceComponentsSlice = createSlice({
@@ -90,10 +93,12 @@ const serviceComponentsSlice = createSlice({
   },
   extraReducers(builder) {
     builder.addCase(loadClusterServiceComponentsFromBackend.fulfilled, (state, action) => {
+      state.accessCheckStatus = RequestState.Completed;
       state.serviceComponents = action.payload.results;
       state.totalCount = action.payload.count;
     });
-    builder.addCase(loadClusterServiceComponentsFromBackend.rejected, (state) => {
+    builder.addCase(loadClusterServiceComponentsFromBackend.rejected, (state, action) => {
+      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.serviceComponents = [];
     });
     builder.addCase(toggleMaintenanceMode.fulfilled, (state, action) => {

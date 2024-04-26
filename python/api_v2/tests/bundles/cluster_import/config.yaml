@@ -40,3 +40,20 @@
     - name: string
       type: string
       default: string
+
+- type: service
+  name: service_import_2
+  version: 1.0
+  import:
+    cluster_export:
+      versions:
+        min: 1.0
+        max: 2.0
+    service_export:
+      versions:
+        min: 1.0
+        max: 2.0
+  config:
+    - name: string
+      type: string
+      default: string

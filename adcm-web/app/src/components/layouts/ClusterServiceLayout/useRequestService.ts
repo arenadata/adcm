@@ -12,6 +12,7 @@ import { isBlockingConcernPresent } from '@utils/concernUtils';
 export const useRequestService = () => {
   const dispatch = useDispatch();
   const service = useStore(({ adcm }) => adcm.service.service);
+  const accessCheckStatus = useStore(({ adcm }) => adcm.service.accessCheckStatus);
   const { clusterId: clusterIdFromUrl, serviceId: serviceIdFromUrl } = useParams();
   const clusterId = Number(clusterIdFromUrl);
   const serviceId = Number(serviceIdFromUrl);
@@ -38,4 +39,8 @@ export const useRequestService = () => {
   }, defaultDebounceDelay);
 
   useRequestTimer(debounceGetCluster, () => {}, 0, [clusterId, serviceId]);
+
+  return {
+    accessCheckStatus,
+  };
 };
