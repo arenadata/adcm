@@ -80,7 +80,7 @@ type statusChangeParamsPayload struct {
 	ClusterId   int `json:"clusterId,omitempty"`
 	ServiceId   int `json:"serviceId,omitempty"`
 	ComponentId int `json:"componentId,omitempty"`
-	ProviderId  int `json:"ProviderId,omitempty"`
+	ProviderId  int `json:"providerId,omitempty"`
 	HostId      int `json:"hostId,omitempty"`
 	ActionId    int `json:"actionId,omitempty"`
 	JobId       int `json:"jobId,omitempty"`
