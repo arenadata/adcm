@@ -15,6 +15,10 @@ import json
 from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.models import (
     ADCM,
+    Action,
+    Cluster,
+    ClusterObject,
+    ConcernItem,
     ConfigLog,
     GroupConfig,
     Host,
@@ -22,8 +26,10 @@ from cm.models import (
     ServiceComponent,
     Upgrade,
 )
+from cm.tests.mocks.task_runner import RunTaskMock
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -32,6 +38,7 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
 )
 
 from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
@@ -2615,3 +2622,206 @@ class TestGroupConfigUpgrade(BaseAPITestCase):
                 },
             },
         )
+
+
+class TestPatternInConfig(BaseAPITestCase):
+    _PATTERNS = {
+        "patterned_string": r"[a-z][A-Z][0-9]*?",
+        "patterned_password": r"[A-z]{4,}[0-9]+[^A-z0-9]+",
+        "patterned_text": r"^(entry: [a-z]{2,16}_[0-9]+\n){1,3}summary: (OK|FAIL) [0-9]+$",
+        "patterned_secrettext": r"HEADER\s[A-z0-9]{8,}\n((OK(?=\s0+\n)|FAIL(?!\s0+\n))\s[0-9]+)+?\n",
+    }
+    _EXAMPLES = {
+        "ok": {
+            "patterned_string": ["oX4", "eH", "aA0"],
+            "patterned_password": ["Qwer8#", "oVEr3@"],
+            "patterned_text": [
+                "entry: bankrivver_439\nentry: seashore_3\nsummary: FAIL 423",
+                "entry: br_12\nsummary: OK 4",
+            ],
+            "patterned_secrettext": [
+                "HEADER 49583492\nOK 0\n",
+                "HEADER FuturisticSpace\nFAIL 00030\n",
+                "HEADER Secondary\nFAIL 1\n",
+            ],
+        },
+        "fail": {
+            "patterned_string": ["XX", "Aa", "nC00d"],
+            "patterned_password": ["a999!", "Cdkr493A", "cvhf123!43"],
+            "patterned_text": [
+                "FAIL 14",
+                # trailing `\n` will break the pattern
+                "entry: br_12\nOK 4\n",
+                "entry: eh_23\nsummary: OK",
+                "entry: eh_23\nentry: he_2\nentry: smth_3\nentry: smth_4\nsummary: FAIL 4",
+            ],
+            "patterned_secrettext": ["FAIL 001\n", "HEADER TestResults\nOK 010\n", "HEADER TRestl2343\nFAIL 000\n"],
+        },
+    }
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.api_v2_bundles_dir = Path(__file__).parent / "bundles"
+
+        bundle = self.add_bundle(self.api_v2_bundles_dir / "cluster_with_patterns")
+        self.cluster = self.add_cluster(bundle=bundle, name="With Patterns")
+        self.service = self.add_services_to_cluster(["with_patterns"], cluster=self.cluster).get()
+        self.component = ServiceComponent.objects.get(service=self.service, prototype__name="cwp")
+
+    def get_object_path(self, target: Cluster | ClusterObject | ServiceComponent) -> str:
+        prefix = "/api/v2/clusters"
+        if isinstance(target, Cluster):
+            return f"{prefix}/{target.id}/"
+
+        if isinstance(target, ClusterObject):
+            return f"{prefix}/{target.cluster_id}/services/{target.id}/"
+
+        if isinstance(target, ServiceComponent):
+            return f"{prefix}/{target.cluster_id}/services/{target.service_id}/components/{target.id}/"
+
+    def change_one_field(
+        self, target: Cluster | ClusterObject | ServiceComponent, field_name: str, new_value: str
+    ) -> Response:
+        path = f"{self.get_object_path(target)}configs/"
+        target.refresh_from_db(fields=["config"])
+        current_data = self.client.get(f"{path}{target.config.current}/").json()["config"]
+
+        return self.client.post(path=path, data={"config": current_data | {field_name: new_value}, "adcmMeta": {}})
+
+    def change_one_field_in_group(self, group: GroupConfig, field_name: str, new_value: str) -> Response:
+        path = f"{self.get_object_path(group.object)}config-groups/{group.id}/configs/"
+        group.refresh_from_db(fields=["config"])
+        current_data = self.client.get(f"{path}{group.config.current}/").json()
+
+        return self.client.post(
+            path=path,
+            data={
+                "config": current_data["config"] | {field_name: new_value},
+                "adcmMeta": current_data["adcmMeta"] | {f"/{field_name}": {"isSynchronized": False}},
+            },
+        )
+
+    def run_action(self, target: Cluster | ClusterObject | ServiceComponent, action: Action, config: dict) -> Response:
+        path = f"{self.get_object_path(target)}actions/{action.id}/run/"
+        return self.client.post(path=path, data={"configuration": {"config": config, "adcmMeta": {}}})
+
+    def test_pattern_in_schema(self) -> None:
+        for owner in (self.cluster, self.service, self.component):
+            response = self.client.get(path=f"{self.get_object_path(owner)}config-schema/")
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            fields_schema = response.json()["properties"]
+            for key, schema in fields_schema.items():
+                expected_pattern = self._PATTERNS.get(key)
+                if expected_pattern:
+                    self.assertIn("pattern", schema)
+                    self.assertEqual(schema["pattern"], expected_pattern)
+                else:
+                    self.assertNotIn("pattern", schema)
+
+    def test_pattern_in_action_schema(self) -> None:
+        target = self.cluster
+        action = Action.objects.get(prototype=self.cluster.prototype, name="with_jc")
+        path = f"{self.get_object_path(target)}actions/{action.id}/"
+        response = self.client.get(path=path)
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        fields_schema = response.json()["configuration"]["configSchema"]["properties"]
+        for key, schema in fields_schema.items():
+            expected_pattern = self._PATTERNS.get(key)
+            if expected_pattern:
+                self.assertIn("pattern", schema)
+                self.assertEqual(schema["pattern"], expected_pattern)
+            else:
+                self.assertNotIn("pattern", schema)
+
+    def test_change_config_of_main_object(self) -> None:
+        owners = (self.cluster, self.service, self.component)
+        for field, cases in self._EXAMPLES["ok"].items():
+            for i, correct_value in enumerate(cases):
+                owner = owners[i % 3]
+                with self.subTest(f"{owner.__class__.__name__}-{field}-pattern_{i}-success"):
+                    response = self.change_one_field(target=owner, field_name=field, new_value=correct_value)
+
+                    self.assertEqual(response.status_code, HTTP_201_CREATED)
+                    self.assertEqual(ansible_decrypt(response.json()["config"][field]), correct_value)
+
+        for field, cases in self._EXAMPLES["fail"].items():
+            expected_pattern = self._PATTERNS[field]
+            for i, incorrect_value in enumerate(cases):
+                owner = owners[i % 3]
+                with self.subTest(f"{owner.__class__.__name__}-{field}-pattern_{i}-fail"):
+                    response = self.change_one_field(target=owner, field_name=field, new_value=incorrect_value)
+
+                    self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+                    self.assertEqual(
+                        response.json()["desc"],
+                        f"The value of {field}/ config parameter does not match pattern: {expected_pattern}",
+                    )
+
+    def test_change_config_of_group_config(self) -> None:
+        groups = (
+            GroupConfig.objects.create(
+                object_type=ContentType.objects.get_for_model(model=self.cluster),
+                object_id=self.cluster.pk,
+                name="cluster group",
+            ),
+            GroupConfig.objects.create(
+                object_type=ContentType.objects.get_for_model(model=self.service),
+                object_id=self.service.pk,
+                name="service group",
+            ),
+            GroupConfig.objects.create(
+                object_type=ContentType.objects.get_for_model(model=self.component),
+                object_id=self.component.pk,
+                name="component group",
+            ),
+        )
+        for field, cases in self._EXAMPLES["ok"].items():
+            for i, correct_value in enumerate(cases):
+                group = groups[i % 3]
+
+                with self.subTest(f"{group.object.__class__.__name__}-{field}-pattern_{i}-success"):
+                    response = self.change_one_field_in_group(group=group, field_name=field, new_value=correct_value)
+
+                    self.assertEqual(response.status_code, HTTP_201_CREATED)
+                    self.assertEqual(ansible_decrypt(response.json()["config"][field]), correct_value)
+
+        for field, cases in self._EXAMPLES["fail"].items():
+            expected_pattern = self._PATTERNS[field]
+            for i, incorrect_value in enumerate(cases):
+                group = groups[i % 3]
+                with self.subTest(f"{group.object.__class__.__name__}-{field}-pattern_{i}-fail"):
+                    response = self.change_one_field_in_group(group=group, field_name=field, new_value=incorrect_value)
+
+                    self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+                    self.assertEqual(
+                        response.json()["desc"],
+                        f"The value of {field}/ config parameter does not match pattern: {expected_pattern}",
+                    )
+
+    def test_jinja_config(self) -> None:
+        ok_data = {key: values[-1] for key, values in self._EXAMPLES["ok"].items()} | {"control": "4"}
+        action = Action.objects.get(prototype=self.cluster.prototype, name="with_jc")
+
+        ConcernItem.objects.all().delete()
+
+        for key in self._EXAMPLES["ok"]:
+            with self.subTest(f"{key}-fail"):
+                with RunTaskMock():
+                    response = self.run_action(
+                        target=self.cluster, action=action, config=ok_data | {key: self._EXAMPLES["fail"][key][-1]}
+                    )
+
+                self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+                self.assertEqual(
+                    response.json()["desc"],
+                    f"The value of {key}/ config parameter does not match pattern: {self._PATTERNS[key]}",
+                )
+
+        with self.subTest("success"):
+            with RunTaskMock():
+                response = self.run_action(target=self.cluster, action=action, config=ok_data)
+
+            self.assertEqual(response.status_code, HTTP_200_OK)

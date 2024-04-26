@@ -13,12 +13,14 @@
 from typing import Any
 
 from django.conf import settings
+from rest_framework.status import HTTP_409_CONFLICT
 
 from cm.adcm_config.utils import config_is_ro, group_keys_to_flat, proto_ref
 from cm.checker import FormatError, SchemaError, process_rule
 from cm.errors import AdcmEx
 from cm.models import GroupConfig, Prototype, StagePrototype
 from cm.services.bundle import is_path_correct
+from cm.services.config.patterns import Pattern
 
 
 def check_agreement_group_attr(group_keys: dict, custom_group_keys: dict, spec: dict) -> None:
@@ -207,6 +209,14 @@ def check_config_type(
 
         if "required" in spec and spec["required"] and value == "":
             raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl1.format(should_not_be_empty))
+
+        if (
+            (saved_pattern := spec["limits"].get("pattern"))
+            and not value.startswith(settings.ANSIBLE_VAULT_HEADER)
+            and not Pattern(saved_pattern).matches(value)
+        ):
+            message = f"The value of {key}/{subkey} config parameter does not match pattern: {saved_pattern}"
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=message, http_code=HTTP_409_CONFLICT)
 
     if spec["type"] in {"file", "secretfile"}:
         if not isinstance(value, str):

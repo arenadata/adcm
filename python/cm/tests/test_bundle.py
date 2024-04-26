@@ -149,7 +149,7 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
                 self.assertEqual(err_context.exception.status_code, HTTP_409_CONFLICT)
                 self.assertEqual(
                     err_context.exception.msg,
-                    "There default attribute value of param config parameter is not satisfying pattern",
+                    "The default attribute value of param config parameter does not match pattern",
                 )
 
     def test_upload_with_pattern_for_incorrect_types_fail(self) -> None:

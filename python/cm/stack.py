@@ -890,7 +890,7 @@ def process_limits(
         default = config.get("default")
         if default is not None and not pattern.matches(str(default)):
             display_name = config.get("display_name", config["name"])
-            message = f"There default attribute value of {display_name} config parameter is not satisfying pattern"
+            message = f"The default attribute value of {display_name} config parameter does not match pattern"
             raise AdcmEx(code="INVALID_CONFIG_DEFINITION", msg=message)
 
         limits["pattern"] = pattern.raw
