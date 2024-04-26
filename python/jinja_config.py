@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from pathlib import Path
-from typing import Literal, TypedDict
 
 from cm.models import (
     Action,
@@ -19,23 +18,17 @@ from cm.models import (
     Cluster,
     ClusterObject,
     Host,
-    ObjectType,
-    Prototype,
     PrototypeConfig,
     ServiceComponent,
 )
 from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
 from cm.services.cluster import retrieve_clusters_topology
 from cm.services.job.inventory import get_cluster_vars
+from cm.services.job.jinja_scripts import get_action_info
 from django.conf import settings
 from jinja2 import Template
 from yaml import load, safe_load
 from yaml.loader import SafeLoader
-
-
-class ActionContext(TypedDict):
-    owner_group: str
-    name: str
 
 
 def _get_attr(config: dict) -> dict:
@@ -131,20 +124,6 @@ def _normalize_config(config: dict, root_path: Path, name: str = "", subname: st
     return config_list
 
 
-def get_action_info(action: Action) -> dict[Literal["action"], ActionContext]:
-    owner_prototype = action.prototype
-
-    if owner_prototype.type == ObjectType.SERVICE:
-        owner_group = owner_prototype.name
-    elif owner_prototype.type == ObjectType.COMPONENT:
-        parent_name = Prototype.objects.values_list("name", flat=True).get(id=owner_prototype.parent_id)
-        owner_group = f"{parent_name}.{owner_prototype}"
-    else:
-        owner_group = owner_prototype.type.upper()
-
-    return {"action": ActionContext(name=action.name, owner_group=owner_group)}
-
-
 def get_jinja_config(action: Action, obj: ADCMEntity) -> tuple[list[PrototypeConfig], dict]:
     if isinstance(obj, Cluster):
         cluster_topology = next(retrieve_clusters_topology([obj.pk]))
@@ -159,7 +138,7 @@ def get_jinja_config(action: Action, obj: ADCMEntity) -> tuple[list[PrototypeCon
     template = Template(source=jinja_conf_file.read_text(encoding="utf-8"))
     data_yaml = template.render(
         **get_cluster_vars(topology=cluster_topology).dict(by_alias=True, exclude_defaults=True),
-        **get_action_info(action=action),
+        action=get_action_info(action=action),
     )
     data = load(stream=data_yaml, Loader=SafeLoader)
 
