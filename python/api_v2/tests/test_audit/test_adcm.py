@@ -122,7 +122,7 @@ class TestADCMAudit(BaseAPITestCase):
         )
 
     def test_adcm_profile_password_change_success(self):
-        response = self.client.put(
+        response = self.client.patch(
             path=reverse(viewname="v2:profile"), data={"newPassword": "newtestpassword", "currentPassword": "admin"}
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -137,7 +137,7 @@ class TestADCMAudit(BaseAPITestCase):
 
     def test_adcm_put_user_can_change_own_profile_success(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.put(
+        response = self.client.patch(
             path=reverse(viewname="v2:profile"),
             data={"newPassword": "newtestpassword", "currentPassword": "test_user_password"},
         )

@@ -53,7 +53,7 @@ class RoleSerializer(RoleChildSerializer):
         extra_kwargs = {"name": {"read_only": True}, "type": {"read_only": True}}
 
 
-class RoleCreateUpdateSerializer(ModelSerializer):
+class RoleCreateSerializer(ModelSerializer):
     children = ManyRelatedField(child_relation=PrimaryKeyRelatedField(queryset=Role.objects.all()), source="child")
     name = CharField(max_length=1000, default="")
 
@@ -61,6 +61,17 @@ class RoleCreateUpdateSerializer(ModelSerializer):
         model = Role
         fields = ("name", "display_name", "description", "children")
         extra_kwargs = {"display_name": {"required": True}, "children": {"required": True}}
+
+
+class RoleUpdateSerializer(ModelSerializer):
+    children = ManyRelatedField(
+        child_relation=PrimaryKeyRelatedField(queryset=Role.objects.all()), source="child", required=False
+    )
+    name = CharField(max_length=1000, required=False)
+
+    class Meta:
+        model = Role
+        fields = ("name", "display_name", "description", "children")
 
 
 class RoleRelatedSerializer(ModelSerializer):
