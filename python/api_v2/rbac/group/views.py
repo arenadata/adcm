@@ -9,10 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from adcm.permissions import VIEW_GROUP_PERMISSION, CustomModelPermissionsByMethod
 from audit.utils import audit
 from cm.errors import AdcmEx
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rbac.models import Group
 from rbac.services.group import create as create_group
@@ -21,8 +21,17 @@ from rbac.utils import Empty
 from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.rbac.group.filters import GroupFilter
 from api_v2.rbac.group.serializers import (
     GroupCreateSerializer,
@@ -32,6 +41,69 @@ from api_v2.rbac.group.serializers import (
 from api_v2.views import CamelCaseModelViewSet
 
 
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getGroups",
+        description="Get information about ADCM user groups.",
+        summary="GET groups",
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            OpenApiParameter(name="name", description="Case insensitive and partial filter by group name."),
+            OpenApiParameter(name="type", description="Group type.", type=str, enum=("local", "ldap")),
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                type=str,
+                enum=("displayName", "-displayName"),
+                default="displayName",
+            ),
+        ],
+        responses={
+            HTTP_200_OK: GroupSerializer(many=True),
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+        },
+    ),
+    create=extend_schema(
+        operation_id="postGroups",
+        description="Create a new ADCM user group.",
+        summary="POST groups",
+        responses={
+            HTTP_201_CREATED: GroupSerializer(many=False),
+            **{err_code: ErrorSerializer for err_code in (HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST)},
+        },
+    ),
+    retrieve=extend_schema(
+        operation_id="getGroup",
+        description="Get information about a specific ADCM user group.",
+        summary="GET group",
+        responses={
+            HTTP_200_OK: GroupSerializer(many=False),
+            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)},
+        },
+    ),
+    partial_update=extend_schema(
+        operation_id="patchGroup",
+        description="Change user group information.",
+        summary="PATCH group",
+        responses={
+            HTTP_200_OK: GroupUpdateSerializer,
+            **{
+                err_code: ErrorSerializer
+                for err_code in (HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND)
+            },
+        },
+    ),
+    destroy=extend_schema(
+        operation_id="deleteGroup",
+        description="Delete groups from ADCM.",
+        summary="DELETE group",
+        responses={
+            HTTP_204_NO_CONTENT: None,
+            **{err_code: ErrorSerializer for err_code in (HTTP_409_CONFLICT, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
+        },
+    ),
+)
 class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):
     queryset = Group.objects.order_by("display_name").prefetch_related("user_set")
     filterset_class = GroupFilter

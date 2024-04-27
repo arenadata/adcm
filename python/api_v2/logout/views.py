@@ -9,7 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from adcm.serializers import EmptySerializer
 from django.contrib.auth import logout
 from djangorestframework_camel_case.parser import (
@@ -21,6 +20,7 @@ from djangorestframework_camel_case.render import (
     CamelCaseBrowsableAPIRenderer,
     CamelCaseJSONRenderer,
 )
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -28,6 +28,16 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
 
+@extend_schema_view(
+    perform_login=extend_schema(
+        operation_id="postLogout",
+        description="Perform logout from ADCM.",
+        summary="POST logout",
+        responses={
+            HTTP_200_OK: EmptySerializer,
+        },
+    ),
+)
 class LogoutView(GenericAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = EmptySerializer
