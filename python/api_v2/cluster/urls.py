@@ -18,7 +18,7 @@ from api_v2.component.views import ComponentViewSet, HostComponentViewSet
 from api_v2.config.views import ConfigLogViewSet
 from api_v2.group_config.views import GroupConfigViewSet
 from api_v2.host.views import HostClusterViewSet, HostGroupConfigViewSet
-from api_v2.imports.views import ImportViewSet
+from api_v2.imports.views import ClusterImportViewSet, ServiceImportViewSet
 from api_v2.service.views import ServiceViewSet
 from api_v2.upgrade.views import UpgradeViewSet
 
@@ -61,7 +61,7 @@ cluster_group_config_config_router.register(
     prefix=CONFIG_PREFIX, viewset=ConfigLogViewSet, basename="cluster-group-config-config"
 )
 import_cluster_router = NestedSimpleRouter(parent_router=cluster_router, parent_prefix=CLUSTER_PREFIX, lookup="cluster")
-import_cluster_router.register(prefix=IMPORT_PREFIX, viewset=ImportViewSet, basename="cluster-import")
+import_cluster_router.register(prefix=IMPORT_PREFIX, viewset=ClusterImportViewSet, basename="cluster-import")
 
 # service
 service_router = NestedSimpleRouter(parent_router=cluster_router, parent_prefix=CLUSTER_PREFIX, lookup="cluster")
@@ -93,7 +93,7 @@ service_group_config_hosts_router.register(
     prefix=r"hosts", viewset=HostGroupConfigViewSet, basename="service-group-config-hosts"
 )
 import_service_router = NestedSimpleRouter(parent_router=service_router, parent_prefix=SERVICE_PREFIX, lookup="service")
-import_service_router.register(prefix=IMPORT_PREFIX, viewset=ImportViewSet, basename="service-import")
+import_service_router.register(prefix=IMPORT_PREFIX, viewset=ServiceImportViewSet, basename="service-import")
 
 # component
 component_router = NestedSimpleRouter(parent_router=service_router, parent_prefix=SERVICE_PREFIX, lookup="service")
