@@ -140,6 +140,7 @@ def run_action(
                 hostcomponent=get_hc(cluster=cluster),
                 post_upgrade_hostcomponent=post_upgrade_hc,
             ),
+            delta=delta,
         )
         task_ = TaskLog.objects.get(id=task.id)
         if host_map or (is_upgrade_action and host_map is not None):

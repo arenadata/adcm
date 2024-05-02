@@ -1,0 +1,16 @@
+{% if (cluster.imports | length) > 0 %}
+- name: unreachable_job_if_cluster_imports_is_none
+  script_type: ansible
+  script: playbook.yaml
+{% else %}
+- name: job1
+  script_type: ansible
+  script: playbook.yaml
+  params:
+    ansible_tags: configure
+- name: job2
+  script_type: ansible
+  script: playbook.yaml
+  params:
+    ansible_tags: configure
+{% endif %}

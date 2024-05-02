@@ -25,10 +25,9 @@ from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundl
 from cm.services.cluster import retrieve_clusters_topology
 from cm.services.job.inventory import get_cluster_vars
 from cm.services.job.jinja_scripts import get_action_info
+from cm.services.template import TemplateBuilder
 from django.conf import settings
-from jinja2 import Template
-from yaml import load, safe_load
-from yaml.loader import SafeLoader
+from yaml import safe_load
 
 
 def _get_attr(config: dict) -> dict:
@@ -135,16 +134,17 @@ def get_jinja_config(action: Action, obj: ADCMEntity) -> tuple[list[PrototypeCon
 
     resolver = BundlePathResolver(bundle_hash=action.prototype.bundle.hash)
     jinja_conf_file = resolver.resolve(action.config_jinja)
-    template = Template(source=jinja_conf_file.read_text(encoding="utf-8"))
-    data_yaml = template.render(
-        **get_cluster_vars(topology=cluster_topology).dict(by_alias=True, exclude_defaults=True),
-        action=get_action_info(action=action),
+    template_builder = TemplateBuilder(
+        template_path=jinja_conf_file,
+        context={
+            **get_cluster_vars(topology=cluster_topology).dict(by_alias=True, exclude_defaults=True),
+            "action": get_action_info(action=action),
+        },
     )
-    data = load(stream=data_yaml, Loader=SafeLoader)
 
     configs = []
     attr = {}
-    for config in data:
+    for config in template_builder.data:
         for normalized_config in _normalize_config(config=config, root_path=jinja_conf_file.parent):
             configs.append(PrototypeConfig(prototype=action.prototype, action=action, **normalized_config))
             attr.update(**_get_attr(config=normalized_config))

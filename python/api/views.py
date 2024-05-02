@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from cm.services.authorization import has_google_oauth, has_yandex_oauth
-from cm.stack import NAME_REGEX
+from cm.utils import NAME_REGEX
 from django.conf import settings
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
