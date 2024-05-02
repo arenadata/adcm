@@ -11,8 +11,22 @@
 # limitations under the License.
 
 from collections.abc import Mapping
+from copy import deepcopy
 from typing import Any, Iterable, Protocol, TypeVar
 import os
+
+ANY = "any"
+AVAILABLE = "available"
+MASKING = "masking"
+MULTI_STATE = "multi_state"
+NAME_REGEX = r"[0-9a-zA-Z_\.-]+"
+ON_FAIL = "on_fail"
+ON_SUCCESS = "on_success"
+SET = "set"
+STATE = "state"
+STATES = "states"
+UNAVAILABLE = "unavailable"
+UNSET = "unset"
 
 
 class WithPK(Protocol):
@@ -99,3 +113,36 @@ def str_remove_non_alnum(value: str) -> str:
     while result.find("--") != -1:
         result = result.replace("--", "-")
     return result
+
+
+def deep_get(deep_dict: dict, *nested_keys: str, default: Any) -> Any:
+    """
+    Safe dict.get() for deep-nested dictionaries
+    dct[key1][key2][...] -> _deep_get(dct, key1, key2, ..., default_value)
+    """
+
+    val = deepcopy(deep_dict)
+    for key in nested_keys:
+        try:
+            val = val[key]
+        except (KeyError, TypeError):
+            return default
+
+    return val
+
+
+def get_on_fail_states(config: dict) -> tuple[str, list[str], list[str]]:
+    on_fail = config.get(ON_FAIL, "")
+
+    if isinstance(on_fail, str):
+        state_on_fail = on_fail
+        multi_state_on_fail_set = []
+        multi_state_on_fail_unset = []
+    elif isinstance(on_fail, dict):
+        state_on_fail = deep_get(on_fail, STATE, default="")
+        multi_state_on_fail_set = deep_get(on_fail, MULTI_STATE, SET, default=[])
+        multi_state_on_fail_unset = deep_get(on_fail, MULTI_STATE, UNSET, default=[])
+    else:
+        raise TypeError(f'Unsupported "{ON_FAIL}" type: "{type(on_fail)}"')
+
+    return state_on_fail, multi_state_on_fail_set, multi_state_on_fail_unset

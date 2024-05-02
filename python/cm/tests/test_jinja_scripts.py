@@ -13,8 +13,10 @@
 from pathlib import Path
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
+from rest_framework.status import HTTP_422_UNPROCESSABLE_ENTITY
 
-from cm.models import ConfigLog, MaintenanceMode, TaskLog
+from cm.errors import AdcmEx
+from cm.models import ConfigLog, JobLog, MaintenanceMode, ServiceComponent, TaskLog
 from cm.services.job.jinja_scripts import get_env
 from cm.tests.test_inventory.base import ansible_decrypt, decrypt_secrets
 
@@ -115,3 +117,44 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
             "action": {"name": "host_action_on_component", "owner_group": "service_one_component.component_1"},
         }
         self.assertDictEqual(env, expected_env)
+
+
+class TestJinjaScriptsJobs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
+    def setUp(self) -> None:
+        bundles_dir = Path(__file__).parent / "bundles"
+        cluster_bundle = self.add_bundle(source_dir=bundles_dir / "cluster_1")
+        provider_bundle = self.add_bundle(source_dir=bundles_dir / "provider")
+
+        self.cluster = self.add_cluster(bundle=cluster_bundle, name="test_cluster")
+        service = self.add_services_to_cluster(service_names=["service_one_component"], cluster=self.cluster).get()
+        self.component = ServiceComponent.objects.get(service=service)
+
+        provider = self.add_provider(bundle=provider_bundle, name="test_hostprovider")
+        self.host = self.add_host(provider=provider, fqdn="test_host", cluster=self.cluster)
+
+    def test_jobs_generation(self):
+        task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action").id
+
+        self.assertSetEqual(
+            set(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True)), {"job1", "job2"}
+        )
+
+        self.set_hostcomponent(cluster=self.cluster, entries=((self.host, self.component),))
+        task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action").id
+
+        self.assertSetEqual(
+            set(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True)),
+            {"job_if_component_1_group_exists"},
+        )
+
+    def test_unprocessable_template(self):
+        initial_jobs_count = JobLog.objects.count()
+
+        with self.assertRaises(expected_exception=AdcmEx) as err:
+            self.prepare_task(owner=self.cluster, name="unprocessable_jinja_scripts_action")
+
+        self.assertEqual(err.exception.code, "UNPROCESSABLE_ENTITY")
+        self.assertEqual(err.exception.level, "error")
+        self.assertEqual(err.exception.msg, "Can't render jinja template")
+        self.assertEqual(err.exception.status_code, HTTP_422_UNPROCESSABLE_ENTITY)
+        self.assertEqual(JobLog.objects.count(), initial_jobs_count)
