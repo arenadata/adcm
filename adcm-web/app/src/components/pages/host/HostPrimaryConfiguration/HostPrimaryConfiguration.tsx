@@ -5,6 +5,7 @@ import ConfigurationSubHeader from '@commonComponents/configuration/Configuratio
 import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
 import { useHostsPrimaryConfiguration } from './useHostPrimaryConfiguration';
 import { useHostsPrimaryConfigurationsCompare } from './useHostPrimaryConfigurationCompare';
+import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const HostPrimaryConfiguration: React.FC = () => {
   const {
@@ -17,12 +18,13 @@ const HostPrimaryConfiguration: React.FC = () => {
     onReset,
     setDraftConfiguration,
     isConfigurationLoading,
+    accessCheckStatus,
   } = useHostsPrimaryConfiguration();
 
   const compareOptions = useHostsPrimaryConfigurationsCompare();
 
   return (
-    <div>
+    <PermissionsChecker requestState={accessCheckStatus}>
       <ConfigurationHeader
         configVersions={configVersions}
         selectedConfigId={selectedConfigId}
@@ -39,7 +41,7 @@ const HostPrimaryConfiguration: React.FC = () => {
           onChangeConfiguration={setDraftConfiguration}
         />
       </ConfigurationFormContextProvider>
-    </div>
+    </PermissionsChecker>
   );
 };
 

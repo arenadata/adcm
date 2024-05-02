@@ -15,6 +15,7 @@ export const useServicesPrimaryConfiguration = () => {
   const loadedConfiguration = useStore(({ adcm }) => adcm.entityConfiguration.loadedConfiguration);
   const isConfigurationLoading = useStore(({ adcm }) => adcm.entityConfiguration.isConfigurationLoading);
   const isVersionsLoading = useStore(({ adcm }) => adcm.entityConfiguration.isVersionsLoading);
+  const accessCheckStatus = useStore(({ adcm }) => adcm.entityConfiguration.accessCheckStatus);
 
   useEffect(() => {
     if (service) {
@@ -88,5 +89,6 @@ export const useServicesPrimaryConfiguration = () => {
     isConfigurationLoading,
     isVersionsLoading,
     service,
+    accessCheckStatus,
   };
 };

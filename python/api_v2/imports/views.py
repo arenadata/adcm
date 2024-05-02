@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from adcm.permissions import (
     CHANGE_IMPORT_PERM,
     VIEW_CLUSTER_BIND,
@@ -22,13 +23,25 @@ from audit.utils import audit
 from cm.api import multi_bind
 from cm.models import Cluster, ClusterObject, PrototypeImport
 from django.db.transaction import atomic
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+)
 from rest_framework.mixins import CreateModelMixin, ListModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
-from api_v2.imports.serializers import ImportPostSerializer
+from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.imports.serializers import ImportPostSerializer, ImportSerializer
 from api_v2.imports.utils import cook_data_for_multibind, get_imports
 from api_v2.views import CamelCaseGenericViewSet
 
@@ -58,6 +71,7 @@ class ImportViewSet(ListModelMixin, CreateModelMixin, CamelCaseGenericViewSet):
             kwargs_check.update({"second_perm": VIEW_CLUSTER_BIND})
 
         obj = get_object_for_user(user=request.user, **kwargs_get)
+
         check_custom_perm(user=request.user, obj=obj, **kwargs_check)
 
         if self.action == "create":
@@ -86,3 +100,65 @@ class ImportViewSet(ListModelMixin, CreateModelMixin, CamelCaseGenericViewSet):
 
         multi_bind(cluster=obj, service=None, bind_list=bind_data)
         return Response(get_imports(obj=obj), status=HTTP_201_CREATED)
+
+
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getClusterImports",
+        description="Get information about cluster imports.",
+        summary="GET cluster imports",
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+        ],
+        responses={
+            HTTP_200_OK: ImportSerializer(many=True),
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+        },
+    ),
+    create=extend_schema(
+        operation_id="postClusterImports",
+        description="Import data.",
+        summary="POST cluster imports",
+        responses={
+            HTTP_201_CREATED: ImportPostSerializer,
+            **{
+                err_code: ErrorSerializer
+                for err_code in (HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+            },
+        },
+    ),
+)
+class ClusterImportViewSet(ImportViewSet):
+    pass
+
+
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getServiceImports",
+        description="Get information about service imports.",
+        summary="GET service imports",
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+        ],
+        responses={
+            HTTP_200_OK: ImportSerializer(many=True),
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+        },
+    ),
+    create=extend_schema(
+        operation_id="postServiceImports",
+        description="Import data.",
+        summary="POST service imports",
+        responses={
+            HTTP_201_CREATED: ImportPostSerializer,
+            **{
+                err_code: ErrorSerializer
+                for err_code in (HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+            },
+        },
+    ),
+)
+class ServiceImportViewSet(ImportViewSet):
+    pass

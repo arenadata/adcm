@@ -40,8 +40,11 @@ export const useClusterImports = () => {
     clusters: new Set(),
     services: new Set(),
   });
+
+  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
   const { clusterImports, hasSaveError, totalCount } = useStore(({ adcm }) => adcm.clusterImports);
   const isLoading = useStore((s) => isShowSpinner(s.adcm.clusterImports.loadState));
+  const accessCheckStatus = useStore(({ adcm }) => adcm.clusterImports.accessCheckStatus);
   const { paginationParams } = useStore(({ adcm }) => adcm.clusterImportsFilter);
 
   useEffect(() => {
@@ -86,6 +89,7 @@ export const useClusterImports = () => {
   };
 
   return {
+    cluster,
     clusterImports,
     selectedImports,
     selectedImportsToggleHandler,
@@ -98,5 +102,6 @@ export const useClusterImports = () => {
     paginationParams,
     paginationHandler,
     totalCount,
+    accessCheckStatus,
   };
 };

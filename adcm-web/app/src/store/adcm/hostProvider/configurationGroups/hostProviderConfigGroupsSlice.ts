@@ -3,7 +3,9 @@ import { createSlice } from '@reduxjs/toolkit';
 import { AdcmConfigGroup } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
-import { AdcmHostProviderConfigGroupsApi } from '@api';
+import { AdcmHostProviderConfigGroupsApi, RequestError } from '@api';
+import { RequestState } from '@models/loadState';
+import { processErrorResponse } from '@utils/responseUtils';
 
 const loadHostProviderConfigGroups = createAsyncThunk(
   'adcm/hostProviderConfigGroups/loadHostProviderConfigGroups',
@@ -55,12 +57,14 @@ type AdcmHostProviderConfigGroupsState = {
   hostProviderConfigGroups: AdcmConfigGroup[];
   totalCount: number;
   isLoading: boolean;
+  accessCheckStatus: RequestState;
 };
 
 const createInitialState = (): AdcmHostProviderConfigGroupsState => ({
   hostProviderConfigGroups: [],
   totalCount: 0,
   isLoading: true,
+  accessCheckStatus: RequestState.NotRequested,
 });
 
 const hostProviderConfigGroupsSlice = createSlice({
@@ -78,8 +82,13 @@ const hostProviderConfigGroupsSlice = createSlice({
     builder.addCase(loadHostProviderConfigGroups.fulfilled, (state, action) => {
       state.hostProviderConfigGroups = action.payload.results;
       state.totalCount = action.payload.count;
+      state.accessCheckStatus = RequestState.Completed;
     });
-    builder.addCase(loadHostProviderConfigGroups.rejected, (state) => {
+    builder.addCase(loadHostProviderConfigGroups.pending, (state) => {
+      state.accessCheckStatus = RequestState.Pending;
+    });
+    builder.addCase(loadHostProviderConfigGroups.rejected, (state, action) => {
+      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.hostProviderConfigGroups = [];
       state.totalCount = 0;
     });

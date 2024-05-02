@@ -25,7 +25,6 @@ from ansible_plugin.base import (
     CallResult,
     ContextConfig,
     PluginExecutorConfig,
-    ReturnValue,
 )
 from ansible_plugin.errors import PluginRuntimeError, PluginValidationError
 
@@ -71,7 +70,7 @@ class ADCMAddHostToClusterPluginExecutor(ADCMAnsiblePluginExecutor[AddHostToClus
         arguments: AddHostToClusterArguments,
         context_owner: CoreObjectDescriptor,
         context: AnsibleJobContext,
-    ) -> CallResult[ReturnValue]:
+    ) -> CallResult[None]:
         _ = targets, context_owner
 
         host_id = arguments.host_id

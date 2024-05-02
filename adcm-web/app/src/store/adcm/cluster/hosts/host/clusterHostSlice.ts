@@ -1,12 +1,14 @@
 import { AdcmClusterHostsApi, AdcmClustersApi, RequestError } from '@api';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmClusterHost, AdcmClusterHostComponentsStatus, AdcmServiceComponent } from '@models/adcm';
+import { RequestState } from '@models/loadState';
 import { createSlice } from '@reduxjs/toolkit';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { createAsyncThunk } from '@store/redux';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
+import { processErrorResponse } from '@utils/responseUtils';
 
 interface AdcmClusterHostState {
   clusterHost?: AdcmClusterHost;
@@ -18,6 +20,7 @@ interface AdcmClusterHostState {
   relatedData: {
     hostComponents: AdcmServiceComponent[];
   };
+  accessCheckStatus: RequestState;
 }
 
 interface ClusterHostPayload {
@@ -93,6 +96,7 @@ const createInitialState = (): AdcmClusterHostState => ({
     successfulHostComponentsCount: 0,
     totalHostComponentsCount: 0,
   },
+  accessCheckStatus: RequestState.NotRequested,
 });
 
 const clusterHostSlice = createSlice({
@@ -108,9 +112,14 @@ const clusterHostSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(loadClusterHost.fulfilled, (state, action) => {
+      state.accessCheckStatus = RequestState.Completed;
       state.clusterHost = action.payload;
     });
-    builder.addCase(loadClusterHost.rejected, (state) => {
+    builder.addCase(loadClusterHost.pending, (state) => {
+      state.accessCheckStatus = RequestState.Pending;
+    });
+    builder.addCase(loadClusterHost.rejected, (state, action) => {
+      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.clusterHost = undefined;
     });
     builder.addCase(getClusterHostComponentsStates.fulfilled, (state, action) => {

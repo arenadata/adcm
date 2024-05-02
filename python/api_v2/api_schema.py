@@ -24,3 +24,18 @@ class ErrorSerializer(EmptySerializer):
 class DefaultParams:
     LIMIT = OpenApiParameter(name="limit", description="Number of records included in the selection.", type=int)
     OFFSET = OpenApiParameter(name="offset", description="Record number from which the selection starts.", type=int)
+    ORDERING = OpenApiParameter(
+        name="ordering",
+        required=False,
+        location=OpenApiParameter.QUERY,
+        description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
+        type=str,
+    )
+
+    @classmethod
+    def ordering_by(cls, *values: str | tuple[str, str], **kwargs: str | bool | type) -> OpenApiParameter:
+        return OpenApiParameter(
+            location=OpenApiParameter.QUERY,
+            enum=values,
+            **{attr: getattr(cls.ORDERING, attr) for attr in ("name", "required", "description", "type")} | kwargs,
+        )

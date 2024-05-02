@@ -176,6 +176,12 @@ CallArguments = TypeVar("CallArguments", bound=BaseModel)
 ReturnValue = TypeVar("ReturnValue")
 
 
+class NoArguments(BaseModel):
+    """
+    Use it when plugin doesn't use any arguments
+    """
+
+
 @dataclass(frozen=True, slots=True)
 class CallResult(Generic[ReturnValue]):
     # If value is a mapping of some sort, it'll be unpacked into return dict.

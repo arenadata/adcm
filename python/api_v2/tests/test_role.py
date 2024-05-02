@@ -115,7 +115,7 @@ class TestRole(BaseAPITestCase):
         )
 
     def test_update_required_filed_success(self):
-        response = self.client.put(
+        response = self.client.patch(
             path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.cluster_config_role.pk}),
             data={
                 "display_name": "New change cluster config",
@@ -128,16 +128,6 @@ class TestRole(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual("New change cluster config", self.cluster_config_role.display_name)
         self.assertEqual([self.edit_cluster_config_role], list(self.cluster_config_role.child.all()))
-
-    def test_update_required_filed_failed(self):
-        response = self.client.put(
-            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.cluster_config_role.pk}),
-            data={"display_name": "New change cluster config"},
-        )
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertDictEqual(
-            response.json(), {"code": "BAD_REQUEST", "desc": "children - This field is required.;", "level": "error"}
-        )
 
     def test_partial_update_success(self):
         response = self.client.patch(

@@ -14,6 +14,7 @@ export const useRequestHostProviderPage = () => {
   const { hostproviderId: hostproviderIdFromUrl } = useParams();
   const hostproviderId = Number(hostproviderIdFromUrl);
   const hostProvider = useStore(({ adcm }) => adcm.hostProvider.hostProvider);
+  const accessCheckStatus = useStore(({ adcm }) => adcm.hostProvider.accessCheckStatus);
 
   useEffect(() => {
     if (hostProvider && !isBlockingConcernPresent(hostProvider.concerns)) {
@@ -40,4 +41,8 @@ export const useRequestHostProviderPage = () => {
   }, defaultDebounceDelay);
 
   useRequestTimer(debounceGetData, debounceRefreshData, 0, []);
+
+  return {
+    accessCheckStatus,
+  };
 };

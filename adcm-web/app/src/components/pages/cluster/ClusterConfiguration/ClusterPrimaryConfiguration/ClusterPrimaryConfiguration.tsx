@@ -7,6 +7,7 @@ import ConfigurationSubHeader from '@commonComponents/configuration/Configuratio
 import { useClusterPrimaryConfigurationsCompare } from '@pages/cluster/ClusterConfiguration/ClusterPrimaryConfiguration/useClusterPrimaryConfigurationsCompare';
 import ConfigurationHeader from '@commonComponents/configuration/ConfigurationHeader/ConfigurationHeader';
 import { useClusterPrimaryConfiguration } from './useClusterPrimaryConfiguration';
+import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const ClusterPrimaryConfiguration: React.FC = () => {
   const dispatch = useDispatch();
@@ -21,6 +22,7 @@ const ClusterPrimaryConfiguration: React.FC = () => {
     onReset,
     setDraftConfiguration,
     isConfigurationLoading,
+    accessCheckStatus,
   } = useClusterPrimaryConfiguration();
 
   const compareOptions = useClusterPrimaryConfigurationsCompare();
@@ -39,24 +41,26 @@ const ClusterPrimaryConfiguration: React.FC = () => {
   }, [cluster, dispatch]);
 
   return (
-    <div>
-      <ConfigurationHeader
-        configVersions={configVersions}
-        selectedConfigId={selectedConfigId}
-        setSelectedConfigId={setSelectedConfigId}
-        draftConfiguration={draftConfiguration}
-        compareOptions={compareOptions}
-      />
-
-      <ConfigurationFormContextProvider>
-        <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
-        <ConfigurationMain
-          isLoading={isConfigurationLoading}
-          configuration={selectedConfiguration}
-          onChangeConfiguration={setDraftConfiguration}
+    <PermissionsChecker requestState={accessCheckStatus}>
+      <div>
+        <ConfigurationHeader
+          configVersions={configVersions}
+          selectedConfigId={selectedConfigId}
+          setSelectedConfigId={setSelectedConfigId}
+          draftConfiguration={draftConfiguration}
+          compareOptions={compareOptions}
         />
-      </ConfigurationFormContextProvider>
-    </div>
+
+        <ConfigurationFormContextProvider>
+          <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
+          <ConfigurationMain
+            isLoading={isConfigurationLoading}
+            configuration={selectedConfiguration}
+            onChangeConfiguration={setDraftConfiguration}
+          />
+        </ConfigurationFormContextProvider>
+      </div>
+    </PermissionsChecker>
   );
 };
 

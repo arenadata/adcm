@@ -15,6 +15,7 @@ export const useHostProviderPrimaryConfiguration = () => {
   const loadedConfiguration = useStore(({ adcm }) => adcm.entityConfiguration.loadedConfiguration);
   const isConfigurationLoading = useStore(({ adcm }) => adcm.entityConfiguration.isConfigurationLoading);
   const isVersionsLoading = useStore(({ adcm }) => adcm.entityConfiguration.isVersionsLoading);
+  const accessCheckStatus = useStore(({ adcm }) => adcm.entityConfiguration.accessCheckStatus);
 
   useEffect(() => {
     if (hostProvider) {
@@ -78,5 +79,6 @@ export const useHostProviderPrimaryConfiguration = () => {
     isConfigurationLoading,
     isVersionsLoading,
     hostProvider,
+    accessCheckStatus,
   };
 };

@@ -188,3 +188,9 @@ class RelatedHostsStatusesSerializer(WithStatusSerializer):
     class Meta:
         model = Host
         fields = ["id", "name", "status"]
+
+
+class ClusterStatusSerializer(WithStatusSerializer):
+    class Meta:
+        model = Cluster
+        fields = ["id", "name", "state", "status"]

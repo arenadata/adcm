@@ -3,7 +3,9 @@ import { createSlice } from '@reduxjs/toolkit';
 import { AdcmConfigGroup } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
-import { AdcmClusterServiceComponentConfigGroupsApi } from '@api';
+import { AdcmClusterServiceComponentConfigGroupsApi, RequestError } from '@api';
+import { RequestState } from '@models/loadState';
+import { processErrorResponse } from '@utils/responseUtils';
 
 interface loadServiceComponentConfigGroupsPayload {
   clusterId: number;
@@ -63,12 +65,14 @@ interface AdcmServiceComponentConfigGroupsState {
   clusterServiceConfigGroups: AdcmConfigGroup[];
   totalCount: number;
   isLoading: boolean;
+  accessCheckStatus: RequestState;
 }
 
 const createInitialState = (): AdcmServiceComponentConfigGroupsState => ({
   clusterServiceConfigGroups: [],
   totalCount: 0,
   isLoading: true,
+  accessCheckStatus: RequestState.NotRequested,
 });
 
 const serviceComponentConfigGroupsSlice = createSlice({
@@ -86,8 +90,13 @@ const serviceComponentConfigGroupsSlice = createSlice({
     builder.addCase(loadServiceComponentConfigGroups.fulfilled, (state, action) => {
       state.clusterServiceConfigGroups = action.payload.results;
       state.totalCount = action.payload.count;
+      state.accessCheckStatus = RequestState.Completed;
     });
-    builder.addCase(loadServiceComponentConfigGroups.rejected, (state) => {
+    builder.addCase(loadServiceComponentConfigGroups.pending, (state) => {
+      state.accessCheckStatus = RequestState.Pending;
+    });
+    builder.addCase(loadServiceComponentConfigGroups.rejected, (state, action) => {
+      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.clusterServiceConfigGroups = [];
       state.totalCount = 0;
     });
