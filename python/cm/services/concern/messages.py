@@ -25,6 +25,14 @@ class PlaceholderObjectsDTO(NamedTuple):
     job: JobLog | None = None
 
 
+class PlaceholderTypeDTO(NamedTuple):
+    source: str | None = None
+    target: str | None = None
+
+
+NO_TYPES_IN_PLACEHOLDERS = PlaceholderTypeDTO()
+
+
 @dataclass(slots=True, frozen=True)
 class Placeholder(Generic[_PlaceholderObjectT]):
     retrieve: Callable[[_PlaceholderObjectT], dict] | None = None
@@ -127,7 +135,11 @@ class ConcernMessage(Enum):
         self.template: ConcernMessageTemplate = template
 
 
-def build_concern_reason(template: ConcernMessageTemplate, placeholder_objects: PlaceholderObjectsDTO) -> dict:
+def build_concern_reason(
+    template: ConcernMessageTemplate,
+    placeholder_objects: PlaceholderObjectsDTO,
+    placeholder_types: PlaceholderTypeDTO = NO_TYPES_IN_PLACEHOLDERS,
+) -> dict:
     resolved_placeholders = {}
     for placeholder_name in ("source", "target", "job"):
         placeholder: Placeholder = getattr(template.placeholders, placeholder_name)
@@ -142,5 +154,8 @@ def build_concern_reason(template: ConcernMessageTemplate, placeholder_objects: 
             raise RuntimeError(message)
 
         resolved_placeholders[placeholder_name] = placeholder.retrieve(entity)
+
+        if placeholder_type := getattr(placeholder_types, placeholder_name, None):
+            resolved_placeholders[placeholder_name]["type"] = placeholder_type
 
     return {"message": template.message, "placeholder": resolved_placeholders}

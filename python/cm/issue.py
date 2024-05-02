@@ -42,7 +42,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, build_concern_reason
+from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, PlaceholderTypeDTO, build_concern_reason
 from cm.status_api import send_concern_creation_event, send_concern_delete_event
 from cm.utils import obj_ref
 
@@ -394,11 +394,14 @@ def _gen_issue_name(cause: ConcernCause) -> str:
     return f"{ConcernType.ISSUE}_{cause.value}"
 
 
-def _get_kwargs_for_issue(concern_name: ConcernMessage, source: ADCMEntity) -> dict:
-    kwargs = {"source": source}
+def _get_kwargs_for_issue(concern_name: ConcernMessage, source: ADCMEntity) -> tuple[dict, dict]:
+    kwargs_for_objects = {"source": source}
+    kwargs_for_objects_types = {"source": None, "target": None}
     target = None
 
     if concern_name == ConcernMessage.REQUIRED_SERVICE_ISSUE:
+        kwargs_for_objects_types["source"] = "cluster_services"
+        kwargs_for_objects_types["target"] = "prototype"
         bundle = source.prototype.bundle
         # source is expected to be Cluster here
         target = (
@@ -412,6 +415,8 @@ def _get_kwargs_for_issue(concern_name: ConcernMessage, source: ADCMEntity) -> d
         )
 
     elif concern_name == ConcernMessage.UNSATISFIED_REQUIREMENT_ISSUE:
+        kwargs_for_objects_types["source"] = "cluster_services"
+        kwargs_for_objects_types["target"] = "prototype"
         for require in source.prototype.requires:
             try:
                 ClusterObject.objects.get(prototype__name=require["service"], cluster=source.cluster)
@@ -419,15 +424,26 @@ def _get_kwargs_for_issue(concern_name: ConcernMessage, source: ADCMEntity) -> d
                 target = Prototype.objects.get(name=require["service"], type="service", bundle=source.prototype.bundle)
                 break
 
-    kwargs["target"] = target
-    return kwargs
+    elif concern_name == ConcernMessage.CONFIG_ISSUE:
+        kwargs_for_objects_types["source"] = f"{source.prototype.type}_config"
+
+    elif concern_name == ConcernMessage.HOST_COMPONENT_ISSUE:
+        kwargs_for_objects_types["source"] = "cluster_mapping"
+
+    elif concern_name == ConcernMessage.REQUIRED_IMPORT_ISSUE:
+        kwargs_for_objects_types["source"] = "cluster_import"
+
+    kwargs_for_objects["target"] = target
+    return kwargs_for_objects, kwargs_for_objects_types
 
 
 def create_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernItem:
     concern_message = _issue_template_map[issue_cause]
-    kwargs = _get_kwargs_for_issue(concern_name=concern_message, source=obj)
+    kwargs_for_objects, kwargs_for_objects_types = _get_kwargs_for_issue(concern_name=concern_message, source=obj)
     reason = build_concern_reason(
-        template=concern_message.template, placeholder_objects=PlaceholderObjectsDTO(**kwargs)
+        template=concern_message.template,
+        placeholder_objects=PlaceholderObjectsDTO(**kwargs_for_objects),
+        placeholder_types=PlaceholderTypeDTO(**kwargs_for_objects_types),
     )
     type_: str = ConcernType.ISSUE.value
     cause: str = issue_cause.value
