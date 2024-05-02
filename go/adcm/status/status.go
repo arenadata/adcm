@@ -67,12 +67,18 @@ type statusChangePlaceholderPayload struct {
 	Source *statusChangeSourceTargetJobPayload `json:"source,omitempty"`
 	Target *statusChangeSourceTargetJobPayload `json:"target,omitempty"`
 	Job    *statusChangeSourceTargetJobPayload `json:"job,omitempty"`
+	Owner  *statusChangeOwnerPayload           `json:"owner,omitempty"`
 }
 
 type statusChangeSourceTargetJobPayload struct {
 	Type   string                     `json:"type"`
 	Name   string                     `json:"name"`
 	Params *statusChangeParamsPayload `json:"params"`
+}
+
+type statusChangeOwnerPayload struct {
+	Id     int                        `json:"id"`
+	Type   string                     `json:"type"`
 }
 
 type statusChangeParamsPayload struct {

@@ -11,11 +11,14 @@
 # limitations under the License.
 
 from cm.models import (
+    Action,
+    JobLog,
     ObjectType,
     Prototype,
     PrototypeImport,
 )
 from cm.services.concern.messages import ConcernMessage
+from cm.tests.mocks.task_runner import RunTaskMock
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
@@ -50,7 +53,7 @@ class TestConcernsResponse(BaseAPITestCase):
         expected_concern_reason = {
             "message": ConcernMessage.REQUIRED_SERVICE_ISSUE.template.message,
             "placeholder": {
-                "source": {"type": "cluster", "name": cluster.name, "params": {"clusterId": cluster.pk}},
+                "source": {"type": "cluster_services", "name": cluster.name, "params": {"clusterId": cluster.pk}},
                 "target": {
                     "params": {
                         "prototypeId": Prototype.objects.get(
@@ -76,7 +79,9 @@ class TestConcernsResponse(BaseAPITestCase):
         cluster = self.add_cluster(bundle=self.required_config_bundle, name="required_config_cluster")
         expected_concern_reason = {
             "message": ConcernMessage.CONFIG_ISSUE.template.message,
-            "placeholder": {"source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster"}},
+            "placeholder": {
+                "source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster_config"}
+            },
         }
 
         response: Response = self.client.get(path=reverse(viewname="v2:cluster-detail", kwargs={"pk": cluster.pk}))
@@ -92,7 +97,9 @@ class TestConcernsResponse(BaseAPITestCase):
         cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
         expected_concern_reason = {
             "message": ConcernMessage.REQUIRED_IMPORT_ISSUE.template.message,
-            "placeholder": {"source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster"}},
+            "placeholder": {
+                "source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster_import"}
+            },
         }
 
         response: Response = self.client.get(path=reverse(viewname="v2:cluster-detail", kwargs={"pk": cluster.pk}))
@@ -106,7 +113,9 @@ class TestConcernsResponse(BaseAPITestCase):
         self.add_services_to_cluster(service_names=["service_1"], cluster=cluster)
         expected_concern_reason = {
             "message": ConcernMessage.HOST_COMPONENT_ISSUE.template.message,
-            "placeholder": {"source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster"}},
+            "placeholder": {
+                "source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster_mapping"}
+            },
         }
 
         response: Response = self.client.get(path=reverse(viewname="v2:cluster-detail", kwargs={"pk": cluster.pk}))
@@ -146,7 +155,7 @@ class TestConcernsResponse(BaseAPITestCase):
                 "source": {
                     "name": service.name,
                     "params": {"clusterId": cluster.pk, "serviceId": service.pk},
-                    "type": "service",
+                    "type": "cluster_services",
                 },
                 "target": {
                     "name": "some_other_service",
@@ -166,6 +175,43 @@ class TestConcernsResponse(BaseAPITestCase):
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
 
+    def test_job_concern(self):
+        action = Action.objects.filter(prototype=self.cluster_1.prototype).first()
+
+        with RunTaskMock():
+            response = self.client.post(
+                path=reverse(
+                    viewname="v2:cluster-action-run",
+                    kwargs={
+                        "cluster_pk": self.cluster_1.pk,
+                        "pk": action.pk,
+                    },
+                ),
+                data={"configuration": None, "isVerbose": True, "hostComponentMap": []},
+            )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+            expected_concern_reason = {
+                "message": ConcernMessage.LOCKED_BY_JOB.template.message,
+                "placeholder": {
+                    "job": {
+                        "type": "job",
+                        "name": "action",
+                        "params": {"jobId": JobLog.objects.get(name=action.name).pk},
+                    },
+                    "target": {"type": "cluster", "name": "cluster_1", "params": {"clusterId": self.cluster_1.pk}},
+                },
+            }
+
+            response: Response = self.client.get(
+                path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk})
+            )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(len(response.json()["concerns"]), 1)
+            self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
+
 
 class TestConcernsLogic(BaseAPITestCase):
     def setUp(self) -> None:
@@ -173,6 +219,9 @@ class TestConcernsLogic(BaseAPITestCase):
 
         bundle_dir = self.test_bundles_dir / "cluster_with_required_import"
         self.required_import_bundle = self.add_bundle(source_dir=bundle_dir)
+
+        bundle_dir = self.test_bundles_dir / "cluster_with_service_requirements"
+        self.service_requirements_bundle = self.add_bundle(source_dir=bundle_dir)
 
     def test_import_concern_resolved_after_saving_import(self):
         import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
@@ -203,3 +252,24 @@ class TestConcernsLogic(BaseAPITestCase):
         )
         self.assertEqual(len(response.json()["concerns"]), 0)
         self.assertEqual(self.cluster_2.concerns.count(), 0)
+
+    def test_concern_owner_cluster(self):
+        import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
+
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": import_cluster.pk})
+        )
+        self.assertEqual(len(response.json()["concerns"]), 1)
+        self.assertEqual(response.json()["concerns"][0]["owner"]["id"], import_cluster.pk)
+        self.assertEqual(response.json()["concerns"][0]["owner"]["type"], "cluster")
+
+    def test_concern_owner_service(self):
+        cluster = self.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")
+        service = self.add_services_to_cluster(service_names=["service_1"], cluster=cluster).get()
+        response: Response = self.client.get(
+            path=reverse(viewname="v2:service-detail", kwargs={"cluster_pk": cluster.pk, "pk": service.pk})
+        )
+
+        self.assertEqual(len(response.json()["concerns"]), 1)
+        self.assertEqual(response.json()["concerns"][0]["owner"]["id"], service.pk)
+        self.assertEqual(response.json()["concerns"][0]["owner"]["type"], "service")
