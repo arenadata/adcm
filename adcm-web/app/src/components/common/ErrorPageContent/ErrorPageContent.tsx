@@ -8,7 +8,7 @@ export interface ErrorPageContentProps {
 
 const ErrorPageContent = ({ errorCode, children }: ErrorPageContentProps) => {
   return (
-    <div className={s.errorPageContent}>
+    <div className={s.errorPageContent} data-test={`error-${errorCode}`}>
       <div className={s.errorPageContent__errorCode}>{errorCode}</div>
       {children}
     </div>
