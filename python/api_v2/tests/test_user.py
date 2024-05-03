@@ -12,6 +12,7 @@
 import datetime
 
 from django.conf import settings
+from django.contrib.auth.models import Group as AuthGroup
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
@@ -795,6 +796,28 @@ class TestUserAPI(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["results"]), 1)
         self.assertEqual(response.json()["results"][0]["username"], target_user.username)
+
+    def test_list_users_when_auth_group_has_no_rbac_group_bug_adcm_5495(self) -> None:
+        user = self.create_user(user_data={"username": "test_user", "password": "test_user_password"})
+        # In regular usage it's not the case that there are `auth_group` without corresponding `rbac_group`,
+        # but this bug was originated from such situation.
+        # Thou it's unclear how's that happened, we shouldn't query
+        # and work with such incomplete instances anyway.
+        auth_group = AuthGroup.objects.create(name="single_group")
+        rbac_group = Group.objects.create(name="single_group [ldap]", type=OriginType.LDAP)
+        auth_group.user_set.add(user)
+        rbac_group.user_set.add(user)
+
+        response = (self.client.v2 / "rbac" / "users").get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        data = response.json()["results"]
+        self.assertEqual(len(data), 2)
+        user_data = next(entry for entry in data if entry["username"] == user.username)
+        self.assertEqual(
+            user_data["groups"],
+            [{"id": rbac_group.id, "name": rbac_group.name, "displayName": rbac_group.display_name}],
+        )
 
 
 class TestBlockUnblockAPI(BaseAPITestCase):
