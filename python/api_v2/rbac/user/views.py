@@ -154,7 +154,11 @@ class UserViewSet(
     CamelCaseGenericViewSet,
 ):
     queryset = (
-        User.objects.prefetch_related(Prefetch(lookup="groups", queryset=AuthGroup.objects.select_related("group")))
+        # Filtering by `group__isnull` to filter out possible `auth_group` that hasn't got `rbac_group` linked.
+        # Such groups are considered invalid.
+        User.objects.prefetch_related(
+            Prefetch(lookup="groups", queryset=AuthGroup.objects.select_related("group").filter(group__isnull=False))
+        )
         .exclude(username__in=settings.ADCM_HIDDEN_USERS)
         .order_by("username")
     )
