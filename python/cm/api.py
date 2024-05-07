@@ -189,36 +189,6 @@ def delete_host_provider(provider, cancel_tasks=True):
     logger.info("host provider #%s is deleted", provider.pk)
 
 
-def get_cluster_and_host(cluster_pk, fqdn, host_pk):
-    cluster = Cluster.obj.get(pk=cluster_pk)
-    host = None
-    if fqdn:
-        host = Host.obj.get(fqdn=fqdn)
-    elif host_pk:
-        if not isinstance(host_pk, int):
-            raise_adcm_ex("HOST_NOT_FOUND", f'host_id must be integer (got "{host_pk}")')
-
-        host = Host.obj.get(pk=host_pk)
-    else:
-        raise_adcm_ex("HOST_NOT_FOUND", "fqdn or host_id is mandatory args")
-
-    return cluster, host
-
-
-def remove_host_from_cluster_by_pk(cluster_pk, fqdn, host_pk):
-    """
-    remove host from cluster
-
-    This is intended for use in adcm_remove_host_from_cluster ansible plugin only
-    """
-
-    cluster, host = get_cluster_and_host(cluster_pk, fqdn, host_pk)
-    if host.cluster != cluster:
-        raise_adcm_ex("HOST_CONFLICT", "you can remove host only from you own cluster")
-
-    remove_host_from_cluster(host)
-
-
 def delete_host(host: Host, cancel_tasks: bool = True) -> None:
     cluster = host.cluster
     if cluster:
