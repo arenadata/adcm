@@ -94,7 +94,7 @@ def main():
     )
 
     if fails:
-        sys.stdout.write(f"Some files [{len(fails)}] contain foreign foreign imports:{os.linesep}")
+        sys.stdout.write(f"Some files [{len(fails)}] contain foreign imports:{os.linesep}")
         sys.stdout.write(os.linesep.join(result.comment for result in fails))
         sys.stdout.write(os.linesep)
         sys.exit(1)
