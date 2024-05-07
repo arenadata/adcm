@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from adcm.mixins import ParentObject
 from adcm.permissions import check_config_perm
 from cm.models import ADCM, ConfigLog, PrototypeConfig

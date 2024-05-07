@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from contextlib import suppress
 
 from cm.models import GroupConfig, Host, ObjectConfig, get_cm_model_by_type

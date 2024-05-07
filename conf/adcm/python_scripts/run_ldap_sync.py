@@ -25,9 +25,11 @@ from django.db.transaction import atomic
 from rbac.models import Group, OriginType, User
 from rbac.services.ldap import LDAPQuery, LDAPSettings, get_connection, get_ldap_settings
 from rbac.services.ldap.errors import LDAPDataError
-from rbac.services.ldap.types import LDAPAttributes, LDAPGroup, LDAPUser, LDAPUserAttrs, DistinguishedName
+from rbac.services.ldap.types import DistinguishedName, LDAPAttributes, LDAPGroup, LDAPUser, LDAPUserAttrs
 from rbac.services.ldap.utils import str_join_attr_list
 from rbac.utils import get_group_name_display_name
+
+UNIQUE_FIELDS = {User.__name__: (("username",),), Group.__name__: (("display_name", "type"), ("name",))}
 
 
 def _process_groups(groups: Iterable[LDAPGroup], group_name_attribute: str) -> dict[str, str]:
@@ -45,7 +47,7 @@ def _process_groups(groups: Iterable[LDAPGroup], group_name_attribute: str) -> d
     to_delete_groups = ldap_groups_qs.exclude(id__in=(group["id"] for group in existing_groups))
     if to_delete_groups.exists():
         deleted_group_names = os.linesep.join(
-            (f" - {name}" for name in to_delete_groups.values_list("display_name", flat=True))
+            f" - {name}" for name in to_delete_groups.values_list("display_name", flat=True)
         )
         to_delete_groups.delete()
         sys.stdout.write(f"Groups deleted:{os.linesep}{deleted_group_names}{os.linesep}")
@@ -53,7 +55,7 @@ def _process_groups(groups: Iterable[LDAPGroup], group_name_attribute: str) -> d
     created = []
     errors = []
     for adcm_group_name in set(dn_adcm_name_map.values()).difference(
-        set(group["display_name"] for group in existing_groups)
+        {group["display_name"] for group in existing_groups}
     ):
         name, display_name = get_group_name_display_name(name=adcm_group_name, type_=OriginType.LDAP.value)
         kwargs_get = {
@@ -93,7 +95,7 @@ def _process_users(users: Iterable[LDAPUser], group_dn_adcm_name_map: dict[str, 
 
     if to_delete_users.exists():
         to_delete_usernames = os.linesep.join(
-            (f" - {name}" for name in to_delete_users.values_list("username", flat=True))
+            f" - {name}" for name in to_delete_users.values_list("username", flat=True)
         )
         to_delete_users.delete()
         sys.stdout.write(f"Delete user(s):{os.linesep}{to_delete_usernames}{os.linesep}")
@@ -163,7 +165,7 @@ def _sync_ldap_user(attrs: LDAPUserAttrs, group_dn_adcm_name_map: dict[str, str]
     to_remove_groups = Group.objects.filter(~Q(display_name__in=user_group_names), user=user, type=OriginType.LDAP)
     if to_remove_groups.exists():
         to_remove_names = os.linesep.join(
-            (f" - {name}" for name in to_remove_groups.values_list("display_name", flat=True))
+            f" - {name}" for name in to_remove_groups.values_list("display_name", flat=True)
         )
         user.groups.remove(*to_remove_groups)
         sys.stdout.write(f"Remove user {user.username} from group(s):{os.linesep}{to_remove_names}{os.linesep}")
@@ -175,7 +177,7 @@ def _sync_ldap_user(attrs: LDAPUserAttrs, group_dn_adcm_name_map: dict[str, str]
         type=OriginType.LDAP,
     )
     if to_add_groups.exists():
-        to_add_names = os.linesep.join((f" - {name}" for name in to_add_groups.values_list("display_name", flat=True)))
+        to_add_names = os.linesep.join(f" - {name}" for name in to_add_groups.values_list("display_name", flat=True))
         user.groups.add(*to_add_groups)
         sys.stdout.write(f"Add user {user.username} to group(s):{os.linesep}{to_add_names}{os.linesep}")
 
@@ -240,9 +242,9 @@ def _extract_user_attributes(user_attrs: LDAPAttributes, settings: LDAPSettings)
         is_user_active = False
 
     attributes["is_active"] = is_user_active
-    attributes["groups"] = [group_dn for group_dn in user_attrs.get(settings.user.group_membership_attribute, [])]
+    attributes["groups"] = list(user_attrs.get(settings.user.group_membership_attribute, []))
     attributes["is_superuser"] = any(
-        (group_dn.lower() in settings.user.group_dn_adcm_admin for group_dn in attributes["groups"])
+        group_dn.lower() in settings.user.group_dn_adcm_admin for group_dn in attributes["groups"]
     )
 
     return LDAPUserAttrs(**attributes)
@@ -256,15 +258,13 @@ def _remove_all_ldap_users_and_groups() -> tuple[str, str]:
 
     user_usernames = ""
     if ldap_users.exists():
-        user_usernames = os.linesep.join(
-            (f" - {username}" for username in ldap_users.values_list("username", flat=True))
-        )
+        user_usernames = os.linesep.join(f" - {username}" for username in ldap_users.values_list("username", flat=True))
         ldap_users.delete()
 
     group_display_names = ""
     if ldap_groups.exists():
         group_display_names = os.linesep.join(
-            (f" - {display_name}" for display_name in ldap_groups.values_list("display_name", flat=True))
+            f" - {display_name}" for display_name in ldap_groups.values_list("display_name", flat=True)
         )
         ldap_groups.delete()
 
@@ -278,8 +278,6 @@ def _safe_get_or_create(
     Purpose of this function is to get or create `model` instance without raising database errors,
     since they are the reason of transaction rollback, even if handled. And this breaks ldap_sync logic.
     """
-
-    UNIQUE_FIELDS = {User.__name__: (("username",),), Group.__name__: (("display_name", "type"), ("name",))}
 
     qs = model.objects.filter(**kwargs_get)
     if qs.count() > 1:
@@ -338,7 +336,7 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         sys.stderr.write(
             f"Synchronization error:{os.linesep}{''.join(format_exception(type(e), e, e.__traceback__))}{os.linesep}"
         )
