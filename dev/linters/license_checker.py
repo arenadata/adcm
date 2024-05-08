@@ -144,7 +144,7 @@ def main():
     ):
         for file in files:
             if not checker.process(file):
-                sys.stdout.write(f"{file} has no license or incomplete one{os.linesep}")
+                sys.stdout.write(f"{file}:0 has no license or incomplete one{os.linesep}")
                 missing_license_counter += 1
 
     if missing_license_counter == 0:
