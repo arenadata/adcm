@@ -50,6 +50,11 @@
       name: plain_secrettext
       default: plain
 
+    - type: string
+      name: patterned_string_exclude_dot
+      pattern: "^[^\\.]*$"
+      default: string
+
   actions:
     with_jc:
       type: job

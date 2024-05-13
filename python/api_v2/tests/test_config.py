@@ -2630,6 +2630,7 @@ class TestPatternInConfig(BaseAPITestCase):
         "patterned_password": r"[A-z]{4,}[0-9]+[^A-z0-9]+",
         "patterned_text": r"^(entry: [a-z]{2,16}_[0-9]+\n){1,3}summary: (OK|FAIL) [0-9]+$",
         "patterned_secrettext": r"HEADER\s[A-z0-9]{8,}\n((OK(?=\s0+\n)|FAIL(?!\s0+\n))\s[0-9]+)+?\n",
+        "patterned_string_exclude_dot": r"^[^\.]*$",
     }
     _EXAMPLES = {
         "ok": {
@@ -2644,10 +2645,11 @@ class TestPatternInConfig(BaseAPITestCase):
                 "HEADER FuturisticSpace\nFAIL 00030\n",
                 "HEADER Secondary\nFAIL 1\n",
             ],
+            "patterned_string_exclude_dot": ["host-1", "qwe@Awe?"],
         },
         "fail": {
-            "patterned_string": ["XX", "Aa", "nC00d"],
-            "patterned_password": ["a999!", "Cdkr493A", "cvhf123!43"],
+            "patterned_string": ["XX", "Aa", "nc"],
+            "patterned_password": ["a999!", "Cdkr493A", "cvhf@123!43"],
             "patterned_text": [
                 "FAIL 14",
                 # trailing `\n` will break the pattern
@@ -2656,6 +2658,7 @@ class TestPatternInConfig(BaseAPITestCase):
                 "entry: eh_23\nentry: he_2\nentry: smth_3\nentry: smth_4\nsummary: FAIL 4",
             ],
             "patterned_secrettext": ["FAIL 001\n", "HEADER TestResults\nOK 010\n", "HEADER TRestl2343\nFAIL 000\n"],
+            "patterned_string_exclude_dot": ["host.1", "qwe."],
         },
     }
 

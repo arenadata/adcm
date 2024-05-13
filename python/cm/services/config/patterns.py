@@ -48,4 +48,4 @@ class Pattern:
         return self
 
     def matches(self, value: str) -> bool:
-        return bool(self.compiled.fullmatch(value))
+        return bool(self.compiled.search(value))
