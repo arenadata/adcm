@@ -102,6 +102,7 @@
           "django",
           "dropdown",
           "dom",
+          "ellipsed",
           "enum",
           "guid",
           "gz",
