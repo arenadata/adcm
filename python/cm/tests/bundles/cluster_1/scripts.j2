@@ -1,0 +1,12 @@
+{% if (groups['service_one_component.component_1'] | length) > 0 %}
+- name: job_if_component_1_group_exists
+  script_type: ansible
+  script: playbook.yaml
+{% else %}
+- name: job1
+  script_type: ansible
+  script: playbook.yaml
+- name: job2
+  script_type: ansible
+  script: playbook.yaml
+{% endif %}

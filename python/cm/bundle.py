@@ -844,6 +844,7 @@ def copy_stage_actions(stage_actions, prototype):
             "venv",
             "allow_in_maintenance_mode",
             "config_jinja",
+            "scripts_jinja",
         ),
     )
     Action.objects.bulk_create(actions)

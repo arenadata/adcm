@@ -48,6 +48,7 @@ class ActionInfo(NamedTuple):
     id: ActionID
     name: str
     owner_prototype: PrototypeDescriptor
+    scripts_jinja: str
 
 
 class StateChanges(NamedTuple):

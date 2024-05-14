@@ -23,12 +23,13 @@ HostProviderID: TypeAlias = ObjectID
 BundleID: TypeAlias = int
 PrototypeID: TypeAlias = int
 ActionID: TypeAlias = int
-
-ActionID: TypeAlias = int
+TaskID: TypeAlias = int
 
 ConfigID: TypeAlias = int
 
 HostName: TypeAlias = str
+ServiceName: TypeAlias = str
+ComponentName: TypeAlias = str
 
 
 class ADCMCoreError(Exception):

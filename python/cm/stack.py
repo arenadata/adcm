@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from copy import copy, deepcopy
+from copy import copy
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, List, Literal
@@ -57,19 +57,22 @@ from cm.models import (
     StageUpgrade,
 )
 from cm.services.bundle import PathResolver, detect_relative_path_to_bundle_root, is_path_correct
-
-ANY = "any"
-AVAILABLE = "available"
-MASKING = "masking"
-MULTI_STATE = "multi_state"
-NAME_REGEX = r"[0-9a-zA-Z_\.-]+"
-ON_FAIL = "on_fail"
-ON_SUCCESS = "on_success"
-SET = "set"
-STATE = "state"
-STATES = "states"
-UNAVAILABLE = "unavailable"
-UNSET = "unset"
+from cm.utils import (
+    ANY,
+    AVAILABLE,
+    MASKING,
+    MULTI_STATE,
+    NAME_REGEX,
+    ON_FAIL,
+    ON_SUCCESS,
+    SET,
+    STATE,
+    STATES,
+    UNAVAILABLE,
+    UNSET,
+    deep_get,
+    get_on_fail_states,
+)
 
 
 def save_definition(
@@ -166,6 +169,23 @@ def check_object_definition(
             )
             try:
                 Template(source=jinja_conf_file.read_text(encoding="utf-8"))
+            except (FileNotFoundError, TemplateError) as e:
+                raise AdcmEx(code="INVALID_OBJECT_DEFINITION", msg=str(e)) from e
+
+        if scripts_jinja_path := action_data.get("scripts_jinja"):
+            # "scripts" and "scripts_jinja" mutual exclusivity is handled in adcm_schema.yaml
+
+            if not is_path_correct(scripts_jinja_path):
+                raise AdcmEx(
+                    code="INVALID_OBJECT_DEFINITION",
+                    msg=f'"scripts_jinja" has unsupported path format: {scripts_jinja_path}',
+                )
+
+            scripts_jinja_file = path_resolver.resolve(
+                detect_relative_path_to_bundle_root(source_file_dir=prototype_dir, raw_path=scripts_jinja_path)
+            )
+            try:
+                Template(source=scripts_jinja_file.read_text(encoding="utf-8"))
             except (FileNotFoundError, TemplateError) as e:
                 raise AdcmEx(code="INVALID_OBJECT_DEFINITION", msg=str(e)) from e
 
@@ -603,15 +623,15 @@ def save_sub_actions(conf, action, prototype_dir: Path | str):
             sub_action.multi_state_on_fail_set = []
             sub_action.multi_state_on_fail_unset = []
         elif isinstance(on_fail, dict):
-            sub_action.state_on_fail = _deep_get(on_fail, STATE, default="")
-            sub_action.multi_state_on_fail_set = _deep_get(on_fail, MULTI_STATE, SET, default=[])
-            sub_action.multi_state_on_fail_unset = _deep_get(on_fail, MULTI_STATE, UNSET, default=[])
+            sub_action.state_on_fail = deep_get(on_fail, STATE, default="")
+            sub_action.multi_state_on_fail_set = deep_get(on_fail, MULTI_STATE, SET, default=[])
+            sub_action.multi_state_on_fail_unset = deep_get(on_fail, MULTI_STATE, UNSET, default=[])
 
         sub_action.save()
         return
 
     action_wide_params = conf.get("params", {})
-    for sub in conf["scripts"]:
+    for sub in conf.get("scripts", []):
         sub_action = StageSubAction(
             action=action,
             script=sub["script"],
@@ -632,15 +652,10 @@ def save_sub_actions(conf, action, prototype_dir: Path | str):
         if not sub_action.params and action_wide_params:
             sub_action.params = action_wide_params
 
-        on_fail = sub.get(ON_FAIL, "")
-        if isinstance(on_fail, str):
-            sub_action.state_on_fail = on_fail
-            sub_action.multi_state_on_fail_set = []
-            sub_action.multi_state_on_fail_unset = []
-        elif isinstance(on_fail, dict):
-            sub_action.state_on_fail = _deep_get(on_fail, STATE, default="")
-            sub_action.multi_state_on_fail_set = _deep_get(on_fail, MULTI_STATE, SET, default=[])
-            sub_action.multi_state_on_fail_unset = _deep_get(on_fail, MULTI_STATE, UNSET, default=[])
+        state_on_fail, multi_state_on_fail_set, multi_state_on_fail_unset = get_on_fail_states(config=sub)
+        sub_action.state_on_fail = state_on_fail
+        sub_action.multi_state_on_fail_set = multi_state_on_fail_set
+        sub_action.multi_state_on_fail_unset = multi_state_on_fail_unset
 
         sub_action.save()
 
@@ -722,7 +737,7 @@ def save_actions(prototype: StagePrototype, config: dict, path_resolver: PathRes
                 is_hc_acl_present=is_hc_acl_present,
                 obj_ref=obj_ref,
             )
-        else:
+        elif "scripts" in action_config:
             for subaction_config in action_config["scripts"]:
                 check_internal_script(
                     config=subaction_config,
@@ -750,9 +765,16 @@ def save_action(proto: StagePrototype, config: dict, path_resolver: PathResolver
     dict_to_obj(dictionary=config, key="venv", obj=action)
     dict_to_obj(dictionary=config, key="allow_in_maintenance_mode", obj=action)
     dict_to_obj(dictionary=config, key="config_jinja", obj=action)
+    dict_to_obj(dictionary=config, key="scripts_jinja", obj=action)
+
     if action.config_jinja:
         action.config_jinja = detect_relative_path_to_bundle_root(
             source_file_dir=proto.path, raw_path=action.config_jinja
+        )
+
+    if action.scripts_jinja:
+        action.scripts_jinja = detect_relative_path_to_bundle_root(
+            source_file_dir=proto.path, raw_path=action.scripts_jinja
         )
 
     if "display_name" in config:
@@ -770,17 +792,17 @@ def save_action(proto: StagePrototype, config: dict, path_resolver: PathResolver
                 msg=f'Action {action_name} uses both mutual excluding states "states" and "masking"',
             )
 
-        action.state_available = _deep_get(config, MASKING, STATE, AVAILABLE, default=ANY)
-        action.state_unavailable = _deep_get(config, MASKING, STATE, UNAVAILABLE, default=[])
-        action.state_on_success = _deep_get(config, ON_SUCCESS, STATE, default="")
-        action.state_on_fail = _deep_get(config, ON_FAIL, STATE, default="")
+        action.state_available = deep_get(config, MASKING, STATE, AVAILABLE, default=ANY)
+        action.state_unavailable = deep_get(config, MASKING, STATE, UNAVAILABLE, default=[])
+        action.state_on_success = deep_get(config, ON_SUCCESS, STATE, default="")
+        action.state_on_fail = deep_get(config, ON_FAIL, STATE, default="")
 
-        action.multi_state_available = _deep_get(config, MASKING, MULTI_STATE, AVAILABLE, default=ANY)
-        action.multi_state_unavailable = _deep_get(config, MASKING, MULTI_STATE, UNAVAILABLE, default=[])
-        action.multi_state_on_success_set = _deep_get(config, ON_SUCCESS, MULTI_STATE, SET, default=[])
-        action.multi_state_on_success_unset = _deep_get(config, ON_SUCCESS, MULTI_STATE, UNSET, default=[])
-        action.multi_state_on_fail_set = _deep_get(config, ON_FAIL, MULTI_STATE, SET, default=[])
-        action.multi_state_on_fail_unset = _deep_get(config, ON_FAIL, MULTI_STATE, UNSET, default=[])
+        action.multi_state_available = deep_get(config, MASKING, MULTI_STATE, AVAILABLE, default=ANY)
+        action.multi_state_unavailable = deep_get(config, MASKING, MULTI_STATE, UNAVAILABLE, default=[])
+        action.multi_state_on_success_set = deep_get(config, ON_SUCCESS, MULTI_STATE, SET, default=[])
+        action.multi_state_on_success_unset = deep_get(config, ON_SUCCESS, MULTI_STATE, UNSET, default=[])
+        action.multi_state_on_fail_set = deep_get(config, ON_FAIL, MULTI_STATE, SET, default=[])
+        action.multi_state_on_fail_unset = deep_get(config, ON_FAIL, MULTI_STATE, UNSET, default=[])
     else:
         if ON_SUCCESS in config or ON_FAIL in config:
             raise AdcmEx(
@@ -788,10 +810,10 @@ def save_action(proto: StagePrototype, config: dict, path_resolver: PathResolver
                 msg=f'Action {action_name} uses "on_success/on_fail" states without "masking"',
             )
 
-        action.state_available = _deep_get(config, STATES, AVAILABLE, default=[])
+        action.state_available = deep_get(config, STATES, AVAILABLE, default=[])
         action.state_unavailable = []
-        action.state_on_success = _deep_get(config, STATES, ON_SUCCESS, default="")
-        action.state_on_fail = _deep_get(config, STATES, ON_FAIL, default="")
+        action.state_on_success = deep_get(config, STATES, ON_SUCCESS, default="")
+        action.state_on_fail = deep_get(config, STATES, ON_FAIL, default="")
 
         action.multi_state_available = ANY
         action.multi_state_unavailable = []
@@ -801,7 +823,9 @@ def save_action(proto: StagePrototype, config: dict, path_resolver: PathResolver
         action.multi_state_on_fail_unset = []
 
     action.save()
+
     save_sub_actions(conf=config, action=action, prototype_dir=proto.path)
+
     save_prototype_config(prototype=proto, proto_conf=config, path_resolver=path_resolver, action=action)
 
     return action
@@ -1100,22 +1124,6 @@ def dict_to_obj(dictionary, key, obj, obj_key=None):
 def dict_json_to_obj(dictionary: dict, key: str, obj: StagePrototypeConfig) -> None:
     if isinstance(dictionary, dict) and key in dictionary:
         setattr(obj, key, json.dumps(dictionary[key]))
-
-
-def _deep_get(deep_dict: dict, *nested_keys: str, default: Any) -> Any:
-    """
-    Safe dict.get() for deep-nested dictionaries
-    dct[key1][key2][...] -> _deep_get(dct, key1, key2, ..., default_value)
-    """
-
-    val = deepcopy(deep_dict)
-    for key in nested_keys:
-        try:
-            val = val[key]
-        except (KeyError, TypeError):
-            return default
-
-    return val
 
 
 def check_hostcomponents_objects_exist(hostcomponent_map: List[dict[Literal["host_id", "component_id"], int]]):

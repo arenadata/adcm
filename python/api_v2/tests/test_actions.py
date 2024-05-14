@@ -26,9 +26,9 @@ from cm.models import (
     MaintenanceMode,
     ServiceComponent,
 )
+from cm.services.job.jinja_scripts import get_action_info
 from cm.tests.mocks.task_runner import RunTaskMock
 from django.urls import reverse
-from jinja_config import get_action_info
 from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
@@ -586,9 +586,7 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
             (self.component_1, f"{self.component_1.service.name}.{self.component_1.name}"),
         ):
             action = Action.objects.filter(name="check_state", prototype=object_.prototype).get()
-            self.assertDictEqual(
-                get_action_info(action=action)["action"], {"name": "check_state", "owner_group": group}
-            )
+            self.assertDictEqual(get_action_info(action=action), {"name": "check_state", "owner_group": group})
 
 
 class TestAction(BaseAPITestCase):

@@ -17,10 +17,22 @@ from cm.services.job.inventory._base import (
 from cm.services.job.inventory._config import get_adcm_configuration, get_objects_configurations
 from cm.services.job.inventory._groups import detect_host_groups_for_cluster_bundle_action
 from cm.services.job.inventory._imports import get_imports_for_inventory
-from cm.services.job.inventory._types import ClusterVars
+from cm.services.job.inventory._types import (
+    ClusterNode,
+    ClusterVars,
+    ComponentNode,
+    HostNode,
+    HostProviderNode,
+    ServiceNode,
+)
 
 __all__ = [
     "ClusterVars",
+    "ClusterNode",
+    "ServiceNode",
+    "HostNode",
+    "HostProviderNode",
+    "ComponentNode",
     "get_cluster_vars",
     "get_inventory_data",
     "get_imports_for_inventory",

@@ -20,6 +20,7 @@ from rest_framework.status import (
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
+    HTTP_422_UNPROCESSABLE_ENTITY,
     HTTP_500_INTERNAL_SERVER_ERROR,
     HTTP_501_NOT_IMPLEMENTED,
 )
@@ -242,6 +243,7 @@ ERRORS = {
     "HOSTPROVIDER_CREATE_ERROR": ("Error during process of host provider creating", HTTP_409_CONFLICT, ERR),
     "CONFIG_OPTION_ERROR": ("error in config option type", HTTP_409_CONFLICT, ERR),
     "DATABASE_IS_LOCKED": ("SQLite not for production", HTTP_500_INTERNAL_SERVER_ERROR, ERR),
+    "UNPROCESSABLE_ENTITY": ("Can't process data", HTTP_422_UNPROCESSABLE_ENTITY, ERR),
 }
 
 
