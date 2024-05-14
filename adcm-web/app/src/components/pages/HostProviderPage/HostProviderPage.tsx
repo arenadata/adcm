@@ -5,16 +5,19 @@ import HostProviderNavigation from './HostProviderNavigation/HostProviderNavigat
 import HostProviderHeader from './HostProviderHeader/HostProviderHeader';
 import { useRequestHostProviderPage } from './useRequestHostProviderPage';
 import HostProviderDialogs from './HostProviderDialogs/HostProviderDialogs';
+import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const HostProviderPage: React.FC = () => {
-  useRequestHostProviderPage();
+  const { accessCheckStatus } = useRequestHostProviderPage();
 
   return (
     <div className={s.hostProviderPage}>
-      <HostProviderHeader />
-      <HostProviderNavigation />
-      <Outlet />
-      <HostProviderDialogs />
+      <PermissionsChecker requestState={accessCheckStatus}>
+        <HostProviderHeader />
+        <HostProviderNavigation />
+        <Outlet />
+        <HostProviderDialogs />
+      </PermissionsChecker>
     </div>
   );
 };

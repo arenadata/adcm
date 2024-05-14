@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
 from audit.utils import audit
@@ -18,7 +19,7 @@ from cm.models import ConfigLog, GroupConfig, PrototypeConfig
 from django.contrib.contenttypes.models import ContentType
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -87,6 +88,7 @@ class ConfigLogViewSet(
 
     def get_queryset(self, *args, **kwargs):
         parent_object = self.get_parent_object()
+
         if parent_object is None:
             raise NotFound
 
@@ -105,6 +107,7 @@ class ConfigLogViewSet(
     def create(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         parent_object = self.get_parent_object()
 
+        self._check_parent_permissions(parent_object=parent_object)
         self._check_create_permissions(request=request, parent_object=parent_object)
 
         serializer = self.get_serializer(data=request.data, context={"object_": parent_object})
@@ -128,6 +131,7 @@ class ConfigLogViewSet(
 
     def retrieve(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         parent_object = self.get_parent_object()
+        self._check_parent_permissions(parent_object)
         instance = self.get_object()
         instance.attr = convert_attr_to_adcm_meta(attr=instance.attr)
         instance.config = represent_json_type_as_string(prototype=parent_object.prototype, value=instance.config)
@@ -153,3 +157,26 @@ class ConfigLogViewSet(
             model=ContentType.objects.get_for_model(model=owner_object).model,
             obj=owner_object,
         )
+
+    def list(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
+        self._check_parent_permissions()
+        return super().list(request, *args, **kwargs)
+
+    def _check_parent_permissions(self, parent_object: ParentObject = None):
+        parent_obj = parent_object or self.get_parent_object()
+        parent_view_perm = f"cm.view_{parent_obj.__class__.__name__.lower()}"
+        parent_config_view_perm = "cm.view_objectconfig"
+
+        if parent_obj is None:
+            raise NotFound
+
+        if not (
+            self.request.user.has_perm(parent_view_perm, parent_obj) or self.request.user.has_perm(parent_view_perm)
+        ):
+            raise NotFound
+
+        if not (
+            self.request.user.has_perm(parent_config_view_perm, parent_obj.config)
+            or self.request.user.has_perm(parent_config_view_perm)
+        ):
+            raise PermissionDenied

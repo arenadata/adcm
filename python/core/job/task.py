@@ -11,10 +11,11 @@
 # limitations under the License.
 
 
+from cm.services.job.jinja_scripts import get_job_specs_from_template
+
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.job.errors import TaskCreateError
 from core.job.repo import ActionRepoInterface, JobRepoInterface
-from core.job.types import JobSpec
 from core.types import ActionID, CoreObjectDescriptor
 
 
@@ -25,6 +26,7 @@ def compose_task(
     payload: TaskPayloadDTO,
     job_repo: JobRepoInterface,
     action_repo: ActionRepoInterface,
+    delta: dict | None = None,
 ):
     """
     Prepare task based on action, target object and task payload.
@@ -41,13 +43,17 @@ def compose_task(
     It may be changed if favor of creating logs when job is actually prepared/started.
     """
 
-    job_specifications = get_specifications_for_jobs(action=action, repo=action_repo)
+    action_info = action_repo.get_action(id=action)
+    task = job_repo.create_task(target=target, owner=owner, action=action_info, payload=payload)
+
+    if action_info.scripts_jinja:
+        job_specifications = tuple(get_job_specs_from_template(task_id=task.id, delta=delta))
+    else:
+        job_specifications = tuple(action_repo.get_job_specs(id=action))
+
     if not job_specifications:
         message = f"Can't compose task for action #{action}, because no associated jobs found"
         raise TaskCreateError(message)
-
-    action_info = action_repo.get_action(id=action)
-    task = job_repo.create_task(target=target, owner=owner, action=action_info, payload=payload)
 
     job_repo.create_jobs(task_id=task.id, jobs=job_specifications)
 
@@ -60,8 +66,3 @@ def compose_task(
         job_repo.create_logs(logs)
 
     return task
-
-
-def get_specifications_for_jobs(action: ActionID, repo: ActionRepoInterface) -> tuple[JobSpec, ...]:
-    # jinja_scripts will be used here
-    return tuple(repo.get_job_specs(id=action))

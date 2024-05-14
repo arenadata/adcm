@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from contextlib import suppress
 from copy import deepcopy
 from functools import reduce
@@ -449,13 +450,14 @@ class JobRepoImpl:
 class ActionRepoImpl:
     @staticmethod
     def get_action(id: ActionID) -> ActionInfo:  # noqa: A002
-        action = Action.objects.values("id", "name", "prototype_id", "prototype__type").get(id=id)
+        action = Action.objects.values("id", "name", "prototype_id", "prototype__type", "scripts_jinja").get(id=id)
         return ActionInfo(
             id=action["id"],
             name=action["name"],
             owner_prototype=PrototypeDescriptor(
                 id=action["prototype_id"], type=db_record_type_to_core_type(db_record_type=action["prototype__type"])
             ),
+            scripts_jinja=action["scripts_jinja"],
         )
 
     @classmethod

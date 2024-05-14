@@ -19,7 +19,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("cm", "0123_flag_autogeneration_object"),
+        ("cm", "0124_add_action_scripts_jinja_field"),
     ]
 
     operations = [

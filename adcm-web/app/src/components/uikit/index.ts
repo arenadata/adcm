@@ -57,7 +57,7 @@ import Spinner, { SpinnerPanel } from '@uikit/Spinner/Spinner';
 import Tooltip from '@uikit/Tooltip/Tooltip';
 import ToolbarPanel from './ToolbarPanel/ToolbarPanel';
 import ActionMenu from './ActionMenu/ActionMenu';
-import TableBigTextCell from './Table/TableCell/TableBigTextCell';
+import EllipsedTextTableCell from './Table/TableCell/EllipsedTextTableCell';
 
 export {
   ActionMenu,
@@ -110,7 +110,7 @@ export {
   Switch,
   Table,
   TableRow,
-  TableBigTextCell,
+  EllipsedTextTableCell,
   TableCell,
   TableCellProps,
   TableColumn,

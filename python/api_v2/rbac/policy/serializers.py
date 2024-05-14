@@ -14,7 +14,7 @@ from api.rbac.policy.serializers import ObjectField
 from api.rbac.serializers import BaseRelatedSerializer
 from rbac.models import Group, Policy, Role, RoleTypes
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import BooleanField
+from rest_framework.fields import BooleanField, CharField
 from rest_framework.relations import ManyRelatedField, PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
 
@@ -65,6 +65,33 @@ class PolicyCreateSerializer(ModelSerializer):
     groups = ManyRelatedField(child_relation=PrimaryKeyRelatedField(queryset=Group.objects.all()), source="group")
     objects = ObjectField(required=True, source="object")
     role = PolicyRoleCreateSerializer()
+
+    class Meta:
+        model = Policy
+        fields = [
+            "id",
+            "name",
+            "description",
+            "objects",
+            "groups",
+            "role",
+        ]
+
+    @staticmethod
+    def validate_role(role: Role) -> Role:
+        if role.type != RoleTypes.ROLE:
+            raise ValidationError(f'Role with type "{role.type}" could not be used in policy')
+
+        return role
+
+
+class PolicyUpdateSerializer(ModelSerializer):
+    groups = ManyRelatedField(
+        child_relation=PrimaryKeyRelatedField(queryset=Group.objects.all()), source="group", required=False
+    )
+    objects = ObjectField(required=False, source="object")
+    role = PolicyRoleCreateSerializer(required=False)
+    name = CharField(max_length=1000, required=False)
 
     class Meta:
         model = Policy

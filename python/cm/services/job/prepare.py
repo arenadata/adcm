@@ -23,7 +23,14 @@ def prepare_task_for_action(
     owner: CoreObjectDescriptor,
     action: ActionID,
     payload: TaskPayloadDTO,
+    delta: dict | None = None,
 ) -> Task:
     return compose_task(
-        target=target, owner=owner, action=action, payload=payload, job_repo=JobRepoImpl, action_repo=ActionRepoImpl
+        target=target,
+        owner=owner,
+        action=action,
+        payload=payload,
+        job_repo=JobRepoImpl,
+        action_repo=ActionRepoImpl,
+        delta=delta,
     )

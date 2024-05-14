@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Bundle
+from cm.models import Action, Bundle
 from django.conf import settings
 from rest_framework.reverse import reverse
 from rest_framework.status import (
@@ -222,3 +222,51 @@ class TestBundle(BaseAPITestCase):
                 "level": "error",
             },
         )
+
+    def test_upload_plain_scripts_and_scripts_jinja_fail(self):
+        bundle_file = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "invalid_bundles" / "plain_scripts_and_scripts_jinja"
+        )
+
+        with open(settings.DOWNLOAD_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+            response = self.client.post(
+                path=reverse(viewname="v2:bundle-list"),
+                data={"file": f},
+                format="multipart",
+            )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+        self.assertIn('Map key "scripts_jinja" is not allowed here', response.data["desc"])
+        self.assertIn('Map key "scripts" is not allowed here', response.data["desc"])
+
+    def test_upload_scripts_jinja_in_job_fail(self):
+        bundle_file = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "invalid_bundles" / "scripts_jinja_in_job"
+        )
+
+        with open(settings.DOWNLOAD_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+            response = self.client.post(
+                path=reverse(viewname="v2:bundle-list"),
+                data={"file": f},
+                format="multipart",
+            )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.data["code"], "INVALID_OBJECT_DEFINITION")
+        self.assertIn('Map key "scripts_jinja" is not allowed here', response.data["desc"])
+
+    def test_upload_scripts_jinja_success(self):
+        bundle_file = self.prepare_bundle_file(source_dir=self.test_bundles_dir / "actions_with_scripts_jinja")
+
+        self.assertEqual(Action.objects.filter(scripts_jinja="").count(), Action.objects.count())
+
+        with open(settings.DOWNLOAD_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+            response = self.client.post(
+                path=reverse(viewname="v2:bundle-list"),
+                data={"file": f},
+                format="multipart",
+            )
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertSetEqual(set(Action.objects.values_list("scripts_jinja", flat=True)), {"", "scripts.j2"})

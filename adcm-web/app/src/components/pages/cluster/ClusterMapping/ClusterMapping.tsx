@@ -13,6 +13,7 @@ import {
 } from '@store/adcm/cluster/mapping/mappingSlice';
 import { useClusterMapping } from './useClusterMapping';
 import s from './ClusterMapping.module.scss';
+import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const ClusterMapping: React.FC = () => {
   const dispatch = useDispatch();
@@ -48,6 +49,7 @@ const ClusterMapping: React.FC = () => {
 
   const { mapping, hosts, components, loading, saving } = useStore(({ adcm }) => adcm.clusterMapping);
   const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
+  const accessCheckStatus = useStore(({ adcm }) => adcm.clusterMapping.accessCheckStatus);
 
   const {
     localMapping,
@@ -67,38 +69,40 @@ const ClusterMapping: React.FC = () => {
   };
 
   return (
-    <div className={s.clusterMapping}>
-      <ClusterMappingToolbar
-        filter={mappingFilter}
-        isHostsPreviewMode={isHostsPreviewMode}
-        hasSaveError={saving.hasError}
-        isValid={mappingValidation.isAllMappingValid}
-        savingState={saving.state}
-        isMappingChanged={isMappingChanged}
-        onFilterChange={handleMappingFilterChange}
-        onHostsPreviewModeChange={setIsHostsPreviewMode}
-        onReset={handleReset}
-        onSave={handleSave}
-      />
-      {isHostsPreviewMode ? (
-        <HostsMapping
-          //
-          hostsMapping={hostsMapping}
-          mappingFilter={mappingFilter}
-          mappingValidation={mappingValidation}
+    <PermissionsChecker requestState={accessCheckStatus}>
+      <div className={s.clusterMapping}>
+        <ClusterMappingToolbar
+          filter={mappingFilter}
+          isHostsPreviewMode={isHostsPreviewMode}
+          hasSaveError={saving.hasError}
+          isValid={mappingValidation.isAllMappingValid}
+          savingState={saving.state}
+          isMappingChanged={isMappingChanged}
+          onFilterChange={handleMappingFilterChange}
+          onHostsPreviewModeChange={setIsHostsPreviewMode}
+          onReset={handleReset}
+          onSave={handleSave}
         />
-      ) : (
-        <ComponentsMapping
-          hosts={hosts}
-          servicesMapping={servicesMapping}
-          mappingValidation={mappingValidation}
-          mappingFilter={mappingFilter}
-          notAddedServicesDictionary={notAddedServicesDictionary}
-          onMap={handleMap}
-          onUnmap={handleUnmap}
-        />
-      )}
-    </div>
+        {isHostsPreviewMode ? (
+          <HostsMapping
+            //
+            hostsMapping={hostsMapping}
+            mappingFilter={mappingFilter}
+            mappingValidation={mappingValidation}
+          />
+        ) : (
+          <ComponentsMapping
+            hosts={hosts}
+            servicesMapping={servicesMapping}
+            mappingValidation={mappingValidation}
+            mappingFilter={mappingFilter}
+            notAddedServicesDictionary={notAddedServicesDictionary}
+            onMap={handleMap}
+            onUnmap={handleUnmap}
+          />
+        )}
+      </div>
+    </PermissionsChecker>
   );
 };
 

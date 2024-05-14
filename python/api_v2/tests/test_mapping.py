@@ -25,6 +25,7 @@ from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
     HTTP_409_CONFLICT,
 )
 
@@ -42,6 +43,9 @@ class TestMapping(BaseAPITestCase):
         self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
+        self.host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3")
+        self.add_host_to_cluster(cluster=self.cluster_2, host=self.host_3)
+
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.component_1 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
@@ -55,6 +59,9 @@ class TestMapping(BaseAPITestCase):
             hc_map=[{"host_id": self.host_1.pk, "service_id": self.service_1.pk, "component_id": self.component_1.pk}],
         )
 
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = self.create_user(**self.test_user_credentials)
+
     def test_list_mapping_success(self):
         response = self.client.get(
             path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
@@ -65,10 +72,10 @@ class TestMapping(BaseAPITestCase):
         self.assertDictEqual(response.json()[0], {"componentId": 1, "hostId": 1, "id": 1})
 
     def test_create_mapping_success(self):
-        host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=host_3)
+        host_4 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_4")
+        self.add_host_to_cluster(cluster=self.cluster_1, host=host_4)
         data = [
-            {"hostId": host_3.pk, "componentId": self.component_2.pk},
+            {"hostId": host_4.pk, "componentId": self.component_2.pk},
             {"hostId": self.host_1.pk, "componentId": self.component_1.pk},
         ]
 
@@ -78,9 +85,86 @@ class TestMapping(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(HostComponent.objects.count(), 2)
 
+    def test_permissions_mapping_host_another_cluster_role_create_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View imports"):
+            with self.grant_permissions(to=self.test_user, on=self.cluster_2, role_name="Cluster Administrator"):
+                data = [
+                    {"hostId": self.host_2.pk, "componentId": self.component_1.pk},
+                ]
+                response = self.client.post(
+                    path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}), data=data
+                )
+                self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+    def test_model_permissions_mapping_host_another_cluster_role_create_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View any object host-components"):
+            data = [
+                {"hostId": self.host_2.pk, "componentId": self.component_1.pk},
+            ]
+            response = self.client.post(
+                path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}), data=data
+            )
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+    def test_model_and_object_permissions_mapping_host_another_cluster_role_create_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View any object host-components"):
+            with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View imports"):
+                with self.grant_permissions(to=self.test_user, on=self.cluster_2, role_name="Cluster Administrator"):
+                    data = [
+                        {"hostId": self.host_2.pk, "componentId": self.component_1.pk},
+                    ]
+                    response = self.client.post(
+                        path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}), data=data
+                    )
+                    self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+    def test_permissions_mapping_host_another_cluster_role_retrieve_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View imports"):
+            with self.grant_permissions(to=self.test_user, on=self.cluster_2, role_name="Cluster Administrator"):
+                response = self.client.get(
+                    path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
+                )
+                self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+    def test_permissions_model_role_list_success(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View any object host-components"):
+            response = self.client.get(path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}))
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_permissions_object_role_list_success(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View host-components"):
+            response = self.client.get(path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}))
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def test_model_permissions_mapping_host_another_cluster_role_retrieve_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View any object import"):
+            response = self.client.get(
+                path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
+            )
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+    def test_model_and_object_permissions_mapping_host_another_cluster_role_retrieve_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[], role_name="View any object import"):
+            with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View imports"):
+                with self.grant_permissions(to=self.test_user, on=self.cluster_2, role_name="Cluster Administrator"):
+                    response = self.client.get(
+                        path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
+                    )
+                    self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
     def test_create_mapping_duplicates_fail(self):
-        host_3 = self.add_host(
-            bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3", cluster=self.cluster_1
+        host_4 = self.add_host(
+            bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_4", cluster=self.cluster_1
         )
 
         data = [
@@ -90,7 +174,7 @@ class TestMapping(BaseAPITestCase):
             {"hostId": self.host_2.pk, "componentId": self.component_2.pk},
             {"hostId": self.host_2.pk, "componentId": self.component_2.pk},  # duplicate h2 c2
             {"hostId": self.host_2.pk, "componentId": self.component_2.pk},  # another duplicate h2 c2
-            {"hostId": host_3.pk, "componentId": self.component_1.pk},
+            {"hostId": host_4.pk, "componentId": self.component_1.pk},
         ]
 
         duplicate_ids = (

@@ -1,4 +1,4 @@
-import { AdcmClustersApi } from '@api';
+import { AdcmClustersApi, RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
@@ -6,10 +6,13 @@ import { AdcmCluster } from '@models/adcm';
 import { createSlice } from '@reduxjs/toolkit';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { showError } from '@store/notificationsSlice';
+import { RequestState } from '@models/loadState';
+import { processErrorResponse } from '@utils/responseUtils';
 
 interface AdcmClusterState {
   cluster?: AdcmCluster;
   isLoading: boolean;
+  accessCheckStatus: RequestState;
 }
 
 const loadClusterFromBackend = createAsyncThunk(
@@ -44,6 +47,7 @@ const getCluster = createAsyncThunk('adcm/cluster/getCluster', async (arg: numbe
 const createInitialState = (): AdcmClusterState => ({
   cluster: undefined,
   isLoading: true,
+  accessCheckStatus: RequestState.NotRequested,
 });
 
 const clusterSlice = createSlice({
@@ -59,9 +63,14 @@ const clusterSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(loadClusterFromBackend.fulfilled, (state, action) => {
+      state.accessCheckStatus = RequestState.Completed;
       state.cluster = action.payload;
     });
-    builder.addCase(loadClusterFromBackend.rejected, (state) => {
+    builder.addCase(loadClusterFromBackend.pending, (state) => {
+      state.accessCheckStatus = RequestState.Pending;
+    });
+    builder.addCase(loadClusterFromBackend.rejected, (state, action) => {
+      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.cluster = undefined;
     });
     builder.addCase(wsActions.update_cluster, (state, action) => {

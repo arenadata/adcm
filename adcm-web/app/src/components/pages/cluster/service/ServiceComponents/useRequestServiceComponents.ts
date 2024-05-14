@@ -11,8 +11,10 @@ import { useParams } from 'react-router-dom';
 
 export const useRequestServiceComponents = () => {
   const dispatch = useDispatch();
+
   const { clusterId: clusterIdFromUrl, serviceId: serviceIdFromUrl } = useParams();
   const components = useStore(({ adcm }) => adcm.serviceComponents.serviceComponents);
+
   const clusterId = Number(clusterIdFromUrl);
   const serviceId = Number(serviceIdFromUrl);
 

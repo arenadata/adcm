@@ -15,6 +15,7 @@ import { AdcmConfigGroup } from '@models/adcm';
 import ServiceComponentConfigGroupDialogs from './ServiceComponentConfigGroupDialogs/ServiceComponentConfigGroupDialogs';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import { useServiceComponentParams } from '@pages/cluster/service/component/useServiceComponentParams';
+import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const ServiceComponentConfigurationGroups: React.FC = () => {
   const dispatch = useDispatch();
@@ -45,6 +46,7 @@ const ServiceComponentConfigurationGroups: React.FC = () => {
   }, [cluster, service, component, dispatch]);
 
   const { clusterServiceConfigGroups, isLoading } = useStore((s) => s.adcm.serviceComponentConfigGroups);
+  const accessCheckStatus = useStore((s) => s.adcm.serviceComponentConfigGroups.accessCheckStatus);
   const sortParams = useStore((s) => s.adcm.serviceComponentConfigGroupsTable.sortParams);
   useRequestServiceComponentConfigGroups();
 
@@ -64,7 +66,7 @@ const ServiceComponentConfigurationGroups: React.FC = () => {
   };
 
   return (
-    <div>
+    <PermissionsChecker requestState={accessCheckStatus}>
       <ConfigGroupsHeader onCreate={handleCreateConfigGroup} />
       <ConfigGroupsTable
         configGroups={clusterServiceConfigGroups}
@@ -78,7 +80,7 @@ const ServiceComponentConfigurationGroups: React.FC = () => {
       <ServiceComponentConfigGroupTableFooter />
 
       <ServiceComponentConfigGroupDialogs />
-    </div>
+    </PermissionsChecker>
   );
 };
 

@@ -736,6 +736,12 @@ action_item:
     job: action_job_dict
     task: action_task_dict
 
+action_task_dict:
+  match: one_of
+  variants:
+    - action_task_dict_scripts_plain
+    - action_task_dict_scripts_jinja
+
 common_action:
   match: dict
   items: &common_action_items
@@ -753,13 +759,13 @@ common_action:
     on_fail: post_action
     on_success: post_action
     hc_acl: action_hc_acl_list
-    config: config_obj
     venv: string
     allow_in_maintenance_mode: boolean
+    config: config_obj
     config_jinja: string
 
 ## Task action
-action_task_dict:
+action_task_dict_scripts_plain:
   match: dict
   items:
     <<: *common_action_items
@@ -767,6 +773,15 @@ action_task_dict:
   required_items:
     - type
     - scripts
+
+action_task_dict_scripts_jinja:
+  match: dict
+  items:
+    <<: *common_action_items
+    scripts_jinja: string
+  required_items:
+    - type
+    - scripts_jinja
 
 task_list:
   match: list

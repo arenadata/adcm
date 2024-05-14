@@ -2,13 +2,14 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package status
 
 import (
@@ -67,6 +68,7 @@ type statusChangePlaceholderPayload struct {
 	Source *statusChangeSourceTargetJobPayload `json:"source,omitempty"`
 	Target *statusChangeSourceTargetJobPayload `json:"target,omitempty"`
 	Job    *statusChangeSourceTargetJobPayload `json:"job,omitempty"`
+	Owner  *statusChangeOwnerPayload           `json:"owner,omitempty"`
 }
 
 type statusChangeSourceTargetJobPayload struct {
@@ -75,12 +77,17 @@ type statusChangeSourceTargetJobPayload struct {
 	Params *statusChangeParamsPayload `json:"params"`
 }
 
+type statusChangeOwnerPayload struct {
+	Id     int                        `json:"id"`
+	Type   string                     `json:"type"`
+}
+
 type statusChangeParamsPayload struct {
 	AdcmId      int `json:"adcmId,omitempty"`
 	ClusterId   int `json:"clusterId,omitempty"`
 	ServiceId   int `json:"serviceId,omitempty"`
 	ComponentId int `json:"componentId,omitempty"`
-	ProviderId  int `json:"ProviderId,omitempty"`
+	ProviderId  int `json:"providerId,omitempty"`
 	HostId      int `json:"hostId,omitempty"`
 	ActionId    int `json:"actionId,omitempty"`
 	JobId       int `json:"jobId,omitempty"`

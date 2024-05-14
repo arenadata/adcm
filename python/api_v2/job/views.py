@@ -15,20 +15,63 @@ from adcm.serializers import EmptySerializer
 from audit.utils import audit
 from cm.models import JobLog
 from django.contrib.contenttypes.models import ContentType
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
-from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.job.permissions import JobPermissions
 from api_v2.job.serializers import JobRetrieveSerializer
 from api_v2.task.serializers import JobListSerializer
 from api_v2.views import CamelCaseGenericViewSet
 
 
-class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, CreateModelMixin, CamelCaseGenericViewSet):
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getJobs",
+        description="Get a list of ADCM jobs.",
+        summary="GET jobs",
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            OpenApiParameter(
+                name="ordering",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
+                type=str,
+            ),
+        ],
+    ),
+    terminate=extend_schema(
+        operation_id="postJobTerminate",
+        description="Terminate the execution of a specific job.",
+        summary="POST job terminate",
+        responses={
+            HTTP_200_OK: OpenApiResponse(description="OK"),
+            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)},
+        },
+    ),
+    retrieve=extend_schema(
+        operation_id="getJob",
+        description="Get information about a specific ADCM job.",
+        summary="GET job",
+        responses={
+            HTTP_200_OK: JobRetrieveSerializer,
+            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)},
+        },
+    ),
+)
+class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, CamelCaseGenericViewSet):
     queryset = JobLog.objects.select_related("task__action").order_by("pk")
     filter_backends = []
     permission_classes = [JobPermissions]

@@ -11,8 +11,11 @@
 # limitations under the License.
 
 from adcm.serializers import EmptySerializer
-from cm.models import ObjectType
-from rest_framework.fields import ChoiceField, IntegerField
+from cm.models import Cluster, ObjectType
+from drf_spectacular.utils import extend_schema_field
+from rest_framework.fields import BooleanField, CharField, ChoiceField, IntegerField, SerializerMethodField
+
+from api_v2.cluster.serializers import ClusterStatusSerializer
 
 
 class SourceSerializer(EmptySerializer):
@@ -22,3 +25,50 @@ class SourceSerializer(EmptySerializer):
 
 class ImportPostSerializer(EmptySerializer):
     source = SourceSerializer()
+
+
+class UIPrototypeSerializer(EmptySerializer):
+    id = IntegerField()
+    name = CharField()
+    display_name = CharField()
+    version = CharField()
+
+
+class UIImportClusterSerializer(EmptySerializer):
+    id = IntegerField()
+    is_multi_bind = BooleanField()
+    is_required = BooleanField()
+    prototype = UIPrototypeSerializer()
+
+
+class UIIMportServicesSerializer(EmptySerializer):
+    id = IntegerField()
+    name = CharField()
+    display_name = CharField()
+    version = CharField()
+    is_required = BooleanField()
+    is_multi_bind = BooleanField()
+    prototype = UIPrototypeSerializer()
+
+
+class UIBindSourceSerializer(EmptySerializer):
+    id = IntegerField()
+    type = ChoiceField(choices=[ObjectType.CLUSTER, ObjectType.SERVICE])
+
+
+class UIBindSerializer(EmptySerializer):
+    id = IntegerField()
+    source = UIBindSourceSerializer()
+
+
+class ImportSerializer(EmptySerializer):
+    import_cluster = UIImportClusterSerializer(many=False)
+    import_services = UIIMportServicesSerializer(many=True)
+    binds = UIBindSerializer(many=True)
+
+    cluster = SerializerMethodField()
+
+    @staticmethod
+    @extend_schema_field(field=ClusterStatusSerializer)
+    def get_cluster(obj: Cluster) -> dict | None:
+        return ClusterStatusSerializer(instance=obj).data

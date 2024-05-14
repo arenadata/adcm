@@ -15,6 +15,7 @@ from adcm.permissions import (
     VIEW_HC_PERM,
     VIEW_HOST_PERM,
     VIEW_SERVICE_PERM,
+    check_custom_perm,
     get_object_for_user,
 )
 from audit.utils import audit
@@ -345,6 +346,14 @@ class ClusterViewSet(
     )
     def mapping(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = self.get_object()
+
+        check_custom_perm(
+            user=request.user,
+            action_type="view_host_components_of",
+            model="cluster",
+            obj=cluster,
+            second_perm="view_hostcomponent",
+        )
 
         if request.method == "GET":
             queryset = get_objects_for_user(user=request.user, perms=VIEW_HC_PERM, klass=HostComponent).filter(

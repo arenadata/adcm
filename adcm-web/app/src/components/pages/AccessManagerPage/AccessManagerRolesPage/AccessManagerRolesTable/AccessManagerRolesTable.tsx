@@ -1,4 +1,4 @@
-import { Table, TableCell, IconButton, Button, ExpandableRowComponent, TableBigTextCell } from '@uikit';
+import { Table, TableCell, IconButton, Button, ExpandableRowComponent, EllipsedTextTableCell } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { columns } from './AccessManagerRolesTable.constants';
 import { setSortParams } from '@store/adcm/roles/rolesTableSlice';
@@ -59,8 +59,8 @@ const AccessManagerRolesTable = () => {
           >
             <TableCell className={s.roleName}>{role.displayName}</TableCell>
             <TableCell>{role.description}</TableCell>
-            <TableBigTextCell
-              isMultilineText
+            <EllipsedTextTableCell
+              minWidth="600px"
               value={orElseGet(role.children?.map((child) => child.displayName).join(', '))}
             />
             <TableCell>

@@ -9,11 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from pathlib import Path
 from shutil import rmtree
 from typing import Any, TypeAlias
 
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
+from adcm.tests.client import ADCMTestClient
 from audit.models import AuditLog, AuditSession
 from cm.models import (
     ADCM,
@@ -37,6 +39,9 @@ AuditTarget: TypeAlias = (
 
 
 class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
+    client: ADCMTestClient
+    client_class = ADCMTestClient
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

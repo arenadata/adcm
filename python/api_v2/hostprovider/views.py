@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from adcm.permissions import VIEW_PROVIDER_PERM
 from audit.utils import audit
 from cm.api import add_host_provider, delete_host_provider

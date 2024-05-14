@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from adcm.mixins import ParentObject
 from adcm.permissions import check_config_perm
 from cm.models import ADCM, ConfigLog, PrototypeConfig
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -103,3 +105,6 @@ class ADCMConfigView(ConfigLogViewSet):
             raise NotFound("Can't find config's parent object")
 
         check_config_perm(user=request.user, action_type="change", model=ADCM._meta.model_name, obj=parent_object)
+
+    def _check_parent_permissions(self, parent_object: ParentObject = None):
+        pass

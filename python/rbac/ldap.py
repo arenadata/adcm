@@ -245,7 +245,14 @@ class CustomLDAPBackend(LDAPBackend):
     def _get_local_groups_by_username(username: str) -> list[Group]:
         with suppress(User.DoesNotExist):
             user = User.objects.get(username__iexact=username, type=OriginType.LDAP)
-            return [g.group for g in user.groups.order_by("id") if g.group.type == OriginType.LOCAL]
+            # Filtering by `group__isnull` to filter out possible `auth_group` that hasn't got `rbac_group` linked.
+            # Such groups are considered invalid.
+            return [
+                g.group
+                for g in user.groups.select_related("group")
+                .filter(group__isnull=False, group__type=OriginType.LOCAL)
+                .order_by("id")
+            ]
 
         return []
 

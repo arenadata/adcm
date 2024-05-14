@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from collections import defaultdict
 from collections.abc import Iterable
 from pathlib import Path
@@ -843,6 +844,7 @@ def copy_stage_actions(stage_actions, prototype):
             "venv",
             "allow_in_maintenance_mode",
             "config_jinja",
+            "scripts_jinja",
         ),
     )
     Action.objects.bulk_create(actions)

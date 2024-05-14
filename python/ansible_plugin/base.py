@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Any, Collection, Generic, Literal, Mapping, Protocol, TypeVar
@@ -174,6 +175,12 @@ def from_context(
 
 CallArguments = TypeVar("CallArguments", bound=BaseModel)
 ReturnValue = TypeVar("ReturnValue")
+
+
+class NoArguments(BaseModel):
+    """
+    Use it when plugin doesn't use any arguments
+    """
 
 
 @dataclass(frozen=True, slots=True)

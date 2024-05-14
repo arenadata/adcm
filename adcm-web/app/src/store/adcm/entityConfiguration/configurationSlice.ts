@@ -1,23 +1,26 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmConfiguration, AdcmConfigShortView } from '@models/adcm/configuration';
+import { AdcmConfigShortView, AdcmConfiguration } from '@models/adcm/configuration';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { ApiRequests } from './entityConfiguration.constants';
 import {
-  LoadEntityConfigurationVersionsArgs,
-  LoadEntityConfigurationArgs,
   CreateEntityConfigurationArgs,
+  LoadEntityConfigurationArgs,
+  LoadEntityConfigurationVersionsArgs,
 } from './entityConfiguration.types';
+import { RequestState } from '@models/loadState';
+import { processErrorResponse } from '@utils/responseUtils';
 
 type AdcmEntityConfigurationState = {
   isConfigurationLoading: boolean;
   loadedConfiguration: AdcmConfiguration | null;
   configVersions: AdcmConfigShortView[];
   isVersionsLoading: boolean;
+  accessCheckStatus: RequestState;
 };
 
 const createConfiguration = createAsyncThunk(
@@ -97,6 +100,7 @@ const createInitialState = (): AdcmEntityConfigurationState => ({
   isConfigurationLoading: false,
   loadedConfiguration: null,
   configVersions: [],
+  accessCheckStatus: RequestState.NotRequested,
 });
 
 const entityConfigurationSlice = createSlice({
@@ -130,14 +134,24 @@ const entityConfigurationSlice = createSlice({
       };
 
       state.isConfigurationLoading = false;
+      state.accessCheckStatus = RequestState.Completed;
     });
-    builder.addCase(getConfiguration.rejected, (state) => {
+    builder.addCase(getConfiguration.pending, (state) => {
+      state.accessCheckStatus = RequestState.Pending;
+    });
+    builder.addCase(getConfiguration.rejected, (state, action) => {
+      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.loadedConfiguration = null;
     });
     builder.addCase(getConfigurationsVersions.fulfilled, (state, action) => {
       state.configVersions = action.payload.results;
+      state.accessCheckStatus = RequestState.Completed;
     });
-    builder.addCase(getConfigurationsVersions.rejected, (state) => {
+    builder.addCase(getConfigurationsVersions.pending, (state) => {
+      state.accessCheckStatus = RequestState.Pending;
+    });
+    builder.addCase(getConfigurationsVersions.rejected, (state, action) => {
+      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.configVersions = [];
     });
   },

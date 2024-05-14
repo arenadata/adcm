@@ -56,6 +56,16 @@
         - service: service_two_components
           component: component_2
           action: remove
+    jinja_scripts_action:
+      type: task
+      scripts_jinja: "./scripts.j2"
+      states:
+        available: any
+    unprocessable_jinja_scripts_action:
+      type: task
+      scripts_jinja: "./unprocessable_scripts.j2"
+      states:
+        available: any
 
 - name: service_one_component
   type: service
