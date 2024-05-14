@@ -173,6 +173,9 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
         ):
             raise NotFound()
 
+        return self._list_actions_available_to_user(request)
+
+    def _list_actions_available_to_user(self, request: Request) -> Response:
         actions = self.filter_queryset(self.get_queryset())
         allowed_actions_mask = [act.allowed(self.prototype_objects[act.prototype]) for act in actions]
         actions = list(compress(actions, allowed_actions_mask))
@@ -301,3 +304,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
 class AdcmActionViewSet(ActionViewSet):
     def get_parent_object(self):
         return ADCM.objects.first()
+
+    def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+        self.parent_object = self.get_parent_object()
+        return self._list_actions_available_to_user(request)
