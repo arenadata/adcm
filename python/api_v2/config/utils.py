@@ -212,6 +212,9 @@ class String(Field):
     def to_dict(self) -> dict:
         data = super().to_dict()
 
+        if "pattern" in self.limits:
+            data["pattern"] = self.limits["pattern"]
+
         if self.required:
             data.update({"minLength": 1})
         else:

@@ -23,6 +23,7 @@ from cm.models import (
 )
 from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
 from cm.services.cluster import retrieve_clusters_topology
+from cm.services.config.patterns import Pattern
 from cm.services.job.inventory import get_cluster_vars
 from cm.services.job.jinja_scripts import get_action_info
 from cm.services.template import TemplateBuilder
@@ -48,6 +49,25 @@ def _get_attr(config: dict) -> dict:
 
 def _get_limits(config: dict, root_path: Path) -> dict:
     limits = {}
+
+    if "pattern" in config:
+        if config["type"] not in ("string", "text", "password", "secrettext"):
+            message = f"Incorrectly rendered `config_jinja` file. `pattern` is not allowed in {config['type']}"
+            raise RuntimeError(message)
+
+        pattern = Pattern(regex_pattern=config.pop("pattern"))
+        if not pattern.is_valid:
+            display_name = config.get("display_name", config["name"])
+            message = f"The pattern attribute value of {display_name} config parameter is not valid regular expression"
+            raise RuntimeError(message)
+
+        default = config.get("default")
+        if default is not None and not pattern.matches(str(default)):
+            display_name = config.get("display_name", config["name"])
+            message = f"Default attribute value of {display_name} config parameter does not match pattern"
+            raise RuntimeError(message)
+
+        limits["pattern"] = pattern.raw
 
     if "yspec" in config and config["type"] in settings.STACK_COMPLEX_FIELD_TYPES:
         limits["yspec"] = safe_load(stream=(root_path / config["yspec"]).read_text(encoding="utf-8"))
