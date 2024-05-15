@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import CodeEditor from '@uikit/CodeEditor/CodeEditor';
-import ConfigurationField from './ConfigurationField';
+import ConfigurationField from '../ConfigurationField';
 import { SingleSchemaDefinition } from '@models/adcm';
 import { JSONPrimitive } from '@models/json';
 import { prettifyJson } from '@utils/stringUtils';
-import s from './ConfigurationField.module.scss';
+import { validate } from './StringControls.utils';
 
 const textTransformers: { [format: string]: (value: string) => string } = {
   json: prettifyJson,
@@ -28,6 +28,7 @@ const MultilineStringControl = ({
   const stringValue = value?.toString() ?? '';
   const format = fieldSchema.format ?? 'text';
   const [isFormatted, setIsFormatted] = useState(false);
+  const [error, setError] = useState<string | undefined>(undefined);
 
   const code = useMemo(() => {
     if (!isFormatted) {
@@ -43,13 +44,20 @@ const MultilineStringControl = ({
   }, [stringValue]);
 
   const handleChange = (code: string) => {
+    const error = validate(code, fieldSchema);
+    setError(error);
     onChange(code);
   };
 
   return (
-    <ConfigurationField label={fieldName} fieldSchema={fieldSchema} disabled={isReadonly} onResetToDefault={onChange}>
+    <ConfigurationField
+      label={fieldName}
+      fieldSchema={fieldSchema}
+      disabled={isReadonly}
+      error={error}
+      onResetToDefault={onChange}
+    >
       <CodeEditor
-        className={s.configurationField__codeEditor}
         isSecret={fieldSchema.adcmMeta.isSecret}
         language={format}
         code={code}
