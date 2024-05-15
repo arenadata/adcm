@@ -4,11 +4,11 @@ import { Node } from '@uikit/CollapseTree2/CollapseNode.types';
 import { JSONPrimitive } from '@models/json';
 import { ConfigurationField, ConfigurationNodeView } from '../../ConfigurationEditor.types';
 import EnumControl from '../FieldControls/EnumControl';
-import StringControl from '../FieldControls/StringControl';
-import MultilineStringControl from '../FieldControls/MultilineStringControl';
+import StringControl from '../FieldControls/StringControls/StringControl';
+import MultilineStringControl from '../FieldControls/StringControls/MultilineStringControl';
 import BooleanControl from '../FieldControls/BooleanControl';
 import NumberControl from '../FieldControls/NumberControl';
-import SecretControl from '../FieldControls/SecretControl';
+import SecretControl from '../FieldControls/StringControls/SecretControl';
 
 export interface ConfigurationEditInputFieldDialogProps {
   node: ConfigurationNodeView;

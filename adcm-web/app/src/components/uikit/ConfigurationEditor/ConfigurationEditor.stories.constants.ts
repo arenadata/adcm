@@ -67,7 +67,7 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
               isSecret: false,
               stringExtra: null,
             },
-            required: ['cluster_name'],
+            required: ['cluster_name', 'cluster_password'],
             properties: {
               cluster_name: {
                 type: 'string',
@@ -81,6 +81,29 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
                   isSecret: false,
                   stringExtra: null,
                 },
+              },
+              cluster_password: {
+                oneOf: [
+                  {
+                    type: 'string',
+                    pattern: '^[a-z]*$',
+                    default: 'default cluster password [a-z]',
+                    readOnly: false,
+                    adcmMeta: {
+                      isAdvanced: false,
+                      isInvisible: false,
+                      activation: null,
+                      synchronization: null,
+                      isSecret: false,
+                      stringExtra: {
+                        isMultiline: false,
+                      },
+                    },
+                  },
+                  {
+                    type: 'null',
+                  },
+                ],
               },
               shard: {
                 type: 'array',
@@ -192,6 +215,7 @@ export const initialClusterConfiguration = {
     cluster: [
       {
         cluster_name: 'Lorem ipsum cluster',
+        cluster_password: '123',
         shard: [
           { internal_replica: 1, replicas: [{ host: 'host111' }], weight: 11 },
           { internal_replica: 2, replicas: [{ host: 'host111' }], weight: 110 },

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import InputPassword from '@uikit/InputPassword/InputPassword';
-import ConfigurationField from './ConfigurationField';
+import ConfigurationField from '../ConfigurationField';
 import { SingleSchemaDefinition } from '@models/adcm';
 import { JSONPrimitive } from '@models/json';
+import { validate } from './StringControls.utils';
 
 const mismatchErrorText = 'Please, make sure your secrets match';
 
@@ -18,8 +19,11 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
   const [secret, setSecret] = useState(value as string);
   const [confirm, setConfirm] = useState(value as string);
   const [error, setError] = useState<string | undefined>(undefined);
+  const [confirmError, setConfirmError] = useState<string | undefined>(undefined);
 
   const handleSecretChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const error = validate(event.target.value, fieldSchema);
+    setError(error);
     setSecret(event.target.value);
   };
 
@@ -30,7 +34,7 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
   useEffect(() => {
     const areEqual = secret === confirm;
     onChange(secret, areEqual);
-    setError(!areEqual ? mismatchErrorText : undefined);
+    setConfirmError(!areEqual ? mismatchErrorText : undefined);
   }, [confirm, onChange, secret]);
 
   const handleResetToDefault = (defaultValue: JSONPrimitive) => {
@@ -44,6 +48,7 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
       <ConfigurationField
         label={fieldName}
         fieldSchema={fieldSchema}
+        error={error}
         disabled={isReadonly}
         onResetToDefault={handleResetToDefault}
       >
@@ -53,7 +58,7 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
         <ConfigurationField
           label="Confirm"
           fieldSchema={fieldSchema}
-          error={error}
+          error={confirmError}
           disabled={isReadonly}
           onResetToDefault={handleResetToDefault}
         >

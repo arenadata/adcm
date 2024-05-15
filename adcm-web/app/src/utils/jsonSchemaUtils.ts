@@ -46,6 +46,10 @@ const getAllErrorInstancePaths = (errors: ErrorObject[] | undefined | null) => {
     let instancePath = error.instancePath;
     let errorMessage = error.message;
 
+    if (result[instancePath]) {
+      continue;
+    }
+
     // extend error from structure to field
     if (error.keyword === 'required') {
       instancePath += `/${error.params.missingProperty}`;
@@ -60,6 +64,7 @@ const getAllErrorInstancePaths = (errors: ErrorObject[] | undefined | null) => {
         result[path] = true;
       }
     }
+
     result[instancePath] = errorMessage ?? '';
   }
 
@@ -87,3 +92,5 @@ export const generateFromSchema = <T>(schema: Schema): T | null => {
 };
 
 export { Schema };
+
+export const getPatternErrorMessage = (pattern: string) => `The value must match pattern: ${pattern}`;
