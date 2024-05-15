@@ -51,6 +51,7 @@ type statusChangePayload struct {
 	Id              int                        `json:"id,omitempty"`
 	Reason          *statusChangeReasonPayload `json:"reason,omitempty"`
 	IsBlocking      bool                       `json:"isBlocking,omitempty"`
+	Owner           *statusChangeOwnerPayload  `json:"owner,omitempty"`
 	Type            string                     `json:"type,omitempty"`
 	Cause           string                     `json:"cause,omitempty"`
 	Status          string                     `json:"status,omitempty"`
@@ -78,8 +79,8 @@ type statusChangeSourceTargetJobPayload struct {
 }
 
 type statusChangeOwnerPayload struct {
-	Id     int                        `json:"id"`
-	Type   string                     `json:"type"`
+	Id   int    `json:"id"`
+	Type string `json:"type"`
 }
 
 type statusChangeParamsPayload struct {
