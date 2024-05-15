@@ -91,7 +91,7 @@ def _retrieve_placeholder_from_job(entity: JobLog) -> dict:
         "type": "job",
         "name": entity.display_name or entity.name,
         # thou it's named `job_id` it is task_id, because UI uses it in that way for routing
-        "params": {"job_id": entity.task_id},
+        "params": {"task_id": entity.task_id},
     }
 
 
@@ -109,7 +109,7 @@ class ConcernMessage(Enum):
         message="${source} has an issue with required import", placeholders=ADCM_ENTITY_AS_PLACEHOLDERS
     )
     REQUIRED_SERVICE_ISSUE = ConcernMessageTemplate(
-        message="${source} require service ${target} to be installed",
+        message="${source} has an issue with required service: ${target}",
         placeholders=Placeholders(
             retrieve_source=_retrieve_placeholder_from_adcm_entity, retrieve_target=_retrieve_placeholder_from_prototype
         ),

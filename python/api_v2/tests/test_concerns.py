@@ -198,7 +198,7 @@ class TestConcernsResponse(BaseAPITestCase):
                     "job": {
                         "type": "job",
                         "name": "action",
-                        "params": {"jobId": JobLog.objects.get(name=action.name).pk},
+                        "params": {"taskId": JobLog.objects.get(name=action.name).pk},
                     },
                     "target": {"type": "cluster", "name": "cluster_1", "params": {"clusterId": self.cluster_1.pk}},
                 },
