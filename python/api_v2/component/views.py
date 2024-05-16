@@ -32,9 +32,15 @@ from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
-from api_v2.api_schema import ErrorSerializer
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.component.filters import ComponentFilter
 from api_v2.component.serializers import (
     ComponentMaintenanceModeSerializer,
@@ -55,7 +61,7 @@ from api_v2.views import (
         operation_id="getHostComponentStatusesOfComponent",
         summary="GET host-component statuses of component on hoosts",
         description="Get information about component on hosts statuses.",
-        responses={200: ComponentStatusSerializer, 404: ErrorSerializer},
+        responses={HTTP_200_OK: ComponentStatusSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
         parameters=[
             OpenApiParameter(
                 name="status",
@@ -87,9 +93,38 @@ from api_v2.views import (
             ),
         ],
     ),
+    retrieve=extend_schema(
+        operation_id="getServiceComponent",
+        description="Get information about a specific service component.",
+        summary="GET service components",
+        responses={HTTP_200_OK: ComponentSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    list=extend_schema(
+        operation_id="getServiceComponents",
+        description="Get a list of all components of a particular service with information on them.",
+        summary="GET service components",
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            DefaultParams.ordering_by("Name", "Display Name"),
+        ],
+        responses={HTTP_200_OK: ComponentSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    maintenance_mode=extend_schema(
+        operation_id="postComponentMaintenanceMode",
+        description="Turn on/off maintenance mode on the component.",
+        summary="POST component maintenance-mode",
+        responses={
+            HTTP_200_OK: ComponentMaintenanceModeSerializer,
+            **{
+                err_code: ErrorSerializer
+                for err_code in (HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+            },
+        },
+    ),
 )
 class ComponentViewSet(
-    PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet, ObjectWithStatusViewMixin
+    PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMixin, CamelCaseReadOnlyModelViewSet
 ):
     queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("pk")
     permission_classes = [DjangoModelPermissionsAudit]
