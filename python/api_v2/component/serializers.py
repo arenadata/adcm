@@ -88,6 +88,7 @@ class ComponentSerializer(WithStatusSerializer):
             "main_info",
         ]
 
+    @extend_schema_field(field=HostShortSerializer(many=True))
     def get_hosts(self, instance: ServiceComponent) -> HostShortSerializer:
         host_pks = set()
         for host_component in HostComponent.objects.filter(component=instance).select_related("host"):
