@@ -52,8 +52,8 @@ class APINode:
     def get(self, *, query: dict | None = None) -> Response:
         return self._client.get(path=self.path, data=query)
 
-    def post(self, *, data: dict | list[dict]) -> Response:
-        return self._client.post(path=self.path, data=data)
+    def post(self, *, data: dict | list[dict], format_: str | None = None) -> Response:
+        return self._client.post(path=self.path, data=data, format=format_)
 
     def patch(self, *, data: dict) -> Response:
         return self._client.patch(path=self.path, data=data)
