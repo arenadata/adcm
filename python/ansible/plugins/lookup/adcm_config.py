@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import deepcopy
+from typing import NamedTuple
 import sys
 
 from ansible.errors import AnsibleError
@@ -19,14 +21,20 @@ sys.path.append("/adcm/python")
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from ansible_plugin.utils import (
-    set_cluster_config,
-    set_host_config,
-    set_provider_config,
-    set_service_config,
-    set_service_config_by_name,
-)
+from ansible_plugin.utils import cast_to_type, get_service_by_name
+from cm.adcm_config.ansible import ansible_decrypt
+from cm.api import set_object_config_with_plugin
 from cm.logger import logger
+from cm.models import (
+    ADCMEntity,
+    Cluster,
+    ClusterObject,
+    ConfigLog,
+    Host,
+    HostProvider,
+    PrototypeConfig,
+)
+from cm.status_api import send_config_creation_event
 
 DOCUMENTATION = """
     lookup: file
@@ -107,3 +115,120 @@ class LookupModule(LookupBase):
 
         ret.append(res.value)
         return ret
+
+
+class PluginResult(NamedTuple):
+    value: dict | int | str
+    changed: bool
+
+
+def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> PluginResult:
+    config_log = ConfigLog.objects.get(id=obj.config.current)
+
+    new_config = deepcopy(config_log.config)
+    new_attr = deepcopy(config_log.attr) if config_log.attr is not None else {}
+
+    for keys, value in conf.items():
+        keys_list = keys.split("/")
+        key = keys_list[0]
+        subkey = None
+        if len(keys_list) > 1:
+            subkey = keys_list[1]
+
+        if subkey:
+            try:
+                prototype_conf = PrototypeConfig.objects.get(
+                    name=key, subname=subkey, prototype=obj.prototype, action=None
+                )
+            except PrototypeConfig.DoesNotExist as error:
+                raise AnsibleError(f"Config parameter '{key}/{subkey}' does not exist") from error
+            new_config[key][subkey] = cast_to_type(
+                field_type=prototype_conf.type, value=value, limits=prototype_conf.limits
+            )
+        else:
+            try:
+                prototype_conf = PrototypeConfig.objects.get(name=key, subname="", prototype=obj.prototype, action=None)
+            except PrototypeConfig.DoesNotExist as error:
+                raise AnsibleError(f"Config parameter '{key}' does not exist") from error
+            new_config[key] = cast_to_type(field_type=prototype_conf.type, value=value, limits=prototype_conf.limits)
+
+        if key in attr:
+            prototype_conf = PrototypeConfig.objects.filter(
+                name=key, prototype=obj.prototype, type="group", action=None
+            )
+
+            if not prototype_conf or "activatable" not in prototype_conf.first().limits:
+                raise AnsibleError("'active' key should be used only with activatable group")
+
+            new_attr.update(attr)
+
+    for key in attr:
+        for subkey, value in config_log.config[key].items():
+            if not new_config[key] or subkey not in new_config[key]:
+                new_config[key][subkey] = value
+
+    if _does_contain(base_dict=config_log.config, part=new_config) and _does_contain(
+        base_dict=config_log.attr, part=new_attr
+    ):
+        return PluginResult(conf, False)
+
+    set_object_config_with_plugin(obj=obj, config=new_config, attr=new_attr)
+    send_config_creation_event(object_=obj)
+
+    if len(conf) == 1:
+        return PluginResult(next(iter(conf.values())), True)
+
+    return PluginResult(conf, True)
+
+
+def set_cluster_config(cluster_id: int, config: dict, attr: dict) -> PluginResult:
+    obj = Cluster.obj.get(id=cluster_id)
+
+    return update_config(obj=obj, conf=config, attr=attr)
+
+
+def set_host_config(host_id: int, config: dict, attr: dict) -> PluginResult:
+    obj = Host.obj.get(id=host_id)
+
+    return update_config(obj=obj, conf=config, attr=attr)
+
+
+def set_provider_config(provider_id: int, config: dict, attr: dict) -> PluginResult:
+    obj = HostProvider.obj.get(id=provider_id)
+
+    return update_config(obj=obj, conf=config, attr=attr)
+
+
+def set_service_config_by_name(cluster_id: int, service_name: str, config: dict, attr: dict) -> PluginResult:
+    obj = get_service_by_name(cluster_id, service_name)
+
+    return update_config(obj=obj, conf=config, attr=attr)
+
+
+def set_service_config(cluster_id: int, service_id: int, config: dict, attr: dict) -> PluginResult:
+    obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type="service")
+
+    return update_config(obj=obj, conf=config, attr=attr)
+
+
+def _does_contain(base_dict: dict, part: dict) -> bool:
+    """
+    Check fields in `part` have the same value in `base_dict`
+    """
+
+    for key, val2 in part.items():
+        if key not in base_dict:
+            return False
+
+        val1 = base_dict[key]
+
+        if isinstance(val1, dict) and isinstance(val2, dict):
+            if not _does_contain(val1, val2):
+                return False
+        else:
+            val1 = ansible_decrypt(val1)
+            val2 = ansible_decrypt(val2)
+            if val1 != val2:
+                return False
+
+    return True

@@ -35,3 +35,7 @@ class PluginValidationError(ADCMPluginError):
 
 class PluginContextError(ADCMPluginError):
     ...
+
+
+class PluginIncorrectCallError(ADCMPluginError):
+    ...

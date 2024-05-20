@@ -69,6 +69,7 @@ class CoreObjectTargetDescription(BaseModel):
 
     service_name: str | None = None
     component_name: str | None = None
+    host_id: int | str | None = None
 
     @field_validator("type", mode="before")
     @classmethod
@@ -85,82 +86,23 @@ def from_objects(
     if not isinstance(objects := raw_arguments.get("objects"), list):
         return ()
 
-    targets = []
+    return tuple(
+        _from_target_description(target_description=target_description, context=context)
+        for target_description in (CoreObjectTargetDescription(**entry) for entry in objects)
+    )
 
-    for target_description in (CoreObjectTargetDescription(**entry) for entry in objects):
-        match target_description.type:
-            case "cluster":
-                if context.cluster_id:
-                    targets.append(CoreObjectDescriptor(id=context.cluster_id, type=ADCMCoreType.CLUSTER))
-                else:
-                    message = "Can't identify cluster from context"
-                    raise PluginRuntimeError(message=message)
-            case "service":
-                if target_description.service_name:
-                    if not context.cluster_id:
-                        message = "Can't identify service by name without `cluster_id` in context"
-                        raise PluginRuntimeError(message=message)
 
-                    targets.append(
-                        CoreObjectDescriptor(
-                            id=ClusterObject.objects.values_list("id", flat=True).get(
-                                cluster_id=context.cluster_id, prototype__name=target_description.service_name
-                            ),
-                            type=ADCMCoreType.SERVICE,
-                        )
-                    )
-                elif context.service_id:
-                    targets.append(CoreObjectDescriptor(id=context.service_id, type=ADCMCoreType.SERVICE))
-                else:
-                    message = f"Can't identify service based on {target_description=}"
-                    raise PluginRuntimeError(message=message)
-            case "component":
-                if target_description.component_name:
-                    if not context.cluster_id:
-                        message = "Can't identify component by name without `cluster_id` in context"
-                        raise PluginRuntimeError(message=message)
+def from_arguments_root(
+    context_owner: CoreObjectDescriptor,  # noqa: ARG001
+    context: AnsibleJobContext,
+    raw_arguments: dict,
+) -> tuple[CoreObjectDescriptor, ...]:
+    try:
+        target = CoreObjectTargetDescription(**raw_arguments)
+    except ValidationError:
+        return ()
 
-                    component_id_qs = ServiceComponent.objects.values_list("id", flat=True)
-                    kwargs = {"cluster_id": context.cluster_id, "prototype__name": target_description.component_name}
-                    if target_description.service_name:
-                        targets.append(
-                            CoreObjectDescriptor(
-                                id=component_id_qs.get(
-                                    **kwargs, service__prototype__name=target_description.service_name
-                                ),
-                                type=ADCMCoreType.COMPONENT,
-                            )
-                        )
-                    elif context.service_id:
-                        targets.append(
-                            CoreObjectDescriptor(
-                                id=component_id_qs.get(**kwargs, service_id=context.service_id),
-                                type=ADCMCoreType.COMPONENT,
-                            )
-                        )
-                    else:
-                        message = "Can't identify component by name without `service_name` or out of service context"
-                        raise PluginRuntimeError(message=message)
-
-                elif context.component_id:
-                    targets.append(CoreObjectDescriptor(id=context.component_id, type=ADCMCoreType.COMPONENT))
-                else:
-                    message = f"Can't identify component based on {target_description=}"
-                    raise PluginRuntimeError(message=message)
-            case "provider":
-                if context.provider_id:
-                    targets.append(CoreObjectDescriptor(id=context.provider_id, type=ADCMCoreType.HOSTPROVIDER))
-                else:
-                    message = "Can't identify hostprovider from context"
-                    raise PluginRuntimeError(message=message)
-            case "host":
-                if context.host_id:
-                    targets.append(CoreObjectDescriptor(id=context.host_id, type=ADCMCoreType.HOST))
-                else:
-                    message = "Can't identify host from context"
-                    raise PluginRuntimeError(message=message)
-
-    return tuple(targets)
+    return (_from_target_description(target_description=target, context=context),)
 
 
 def from_context(
@@ -169,6 +111,87 @@ def from_context(
     raw_arguments: dict,  # noqa: ARG001
 ) -> tuple[CoreObjectDescriptor, ...]:
     return (context_owner,)
+
+
+def _from_target_description(
+    target_description: CoreObjectTargetDescription, context: AnsibleJobContext
+) -> CoreObjectDescriptor:
+    match target_description.type:
+        case "cluster":
+            if context.cluster_id:
+                return CoreObjectDescriptor(id=context.cluster_id, type=ADCMCoreType.CLUSTER)
+
+            message = "Can't identify cluster from context"
+            raise PluginRuntimeError(message=message)
+
+        case "service":
+            if target_description.service_name:
+                if not context.cluster_id:
+                    message = "Can't identify service by name without `cluster_id` in context"
+                    raise PluginRuntimeError(message=message)
+
+                return CoreObjectDescriptor(
+                    id=ClusterObject.objects.values_list("id", flat=True).get(
+                        cluster_id=context.cluster_id, prototype__name=target_description.service_name
+                    ),
+                    type=ADCMCoreType.SERVICE,
+                )
+
+            if context.service_id:
+                return CoreObjectDescriptor(id=context.service_id, type=ADCMCoreType.SERVICE)
+
+            message = f"Can't identify service based on {target_description=}"
+            raise PluginRuntimeError(message=message)
+
+        case "component":
+            if target_description.component_name:
+                if not context.cluster_id:
+                    message = "Can't identify component by name without `cluster_id` in context"
+                    raise PluginRuntimeError(message=message)
+
+                component_id_qs = ServiceComponent.objects.values_list("id", flat=True)
+                kwargs = {"cluster_id": context.cluster_id, "prototype__name": target_description.component_name}
+                if target_description.service_name:
+                    return CoreObjectDescriptor(
+                        id=component_id_qs.get(**kwargs, service__prototype__name=target_description.service_name),
+                        type=ADCMCoreType.COMPONENT,
+                    )
+
+                if context.service_id:
+                    return CoreObjectDescriptor(
+                        id=component_id_qs.get(**kwargs, service_id=context.service_id),
+                        type=ADCMCoreType.COMPONENT,
+                    )
+
+                message = "Can't identify component by name without `service_name` or out of service context"
+                raise PluginRuntimeError(message=message)
+
+            if context.component_id:
+                return CoreObjectDescriptor(id=context.component_id, type=ADCMCoreType.COMPONENT)
+
+            message = f"Can't identify component based on {target_description=}"
+            raise PluginRuntimeError(message=message)
+
+        case "provider":
+            if context.provider_id:
+                return CoreObjectDescriptor(id=context.provider_id, type=ADCMCoreType.HOSTPROVIDER)
+
+            message = "Can't identify hostprovider from context"
+            raise PluginRuntimeError(message=message)
+
+        case "host":
+            if target_description.host_id:
+                return CoreObjectDescriptor(id=int(target_description.host_id), type=ADCMCoreType.HOST)
+
+            if context.host_id:
+                return CoreObjectDescriptor(id=context.host_id, type=ADCMCoreType.HOST)
+
+            message = "Can't identify host from context"
+            raise PluginRuntimeError(message=message)
+
+        case _:
+            message = f"Can't identify object of type {target_description.type}"
+            raise PluginRuntimeError(message=message)
 
 
 # Plugin
