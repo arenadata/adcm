@@ -11,8 +11,7 @@
 # limitations under the License.
 
 from collections import defaultdict
-from copy import deepcopy
-from typing import Any, NamedTuple
+from typing import Any
 import json
 import fcntl
 
@@ -35,9 +34,8 @@ from ansible_plugin.messages import (
     MSG_NO_SERVICE_NAME,
     MSG_NO_MULTI_STATE_TO_DELETE,
 )
-from cm.adcm_config.ansible import ansible_decrypt
 from cm.adcm_config.config import get_option_value
-from cm.api import add_hc, get_hc, set_object_config_with_plugin
+from cm.api import add_hc, get_hc
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
@@ -45,7 +43,6 @@ from cm.models import (
     CheckLog,
     Cluster,
     ClusterObject,
-    ConfigLog,
     GroupCheckLog,
     Host,
     HostProvider,
@@ -53,11 +50,9 @@ from cm.models import (
     JobStatus,
     LogStorage,
     Prototype,
-    PrototypeConfig,
     ServiceComponent,
-    get_model_by_type,
 )
-from cm.status_api import send_object_update_event, send_config_creation_event
+from cm.status_api import send_object_update_event
 from rbac.models import Role, Policy
 from rbac.roles import assign_group_perm
 # isort: on
@@ -116,20 +111,6 @@ def get_object_id_from_context(
     return context[id_type], None
 
 
-def get_context_object(task_vars: dict, err_msg: str = None) -> ADCMEntity:
-    obj_type = task_vars["context"]["type"]
-
-    obj_pk, _ = get_object_id_from_context(
-        task_vars=task_vars, id_type=f"{obj_type}_id", context_types=(obj_type,), err_msg=err_msg
-    )
-    obj = get_model_by_type(object_type=obj_type).objects.filter(pk=obj_pk).first()
-
-    if not obj:
-        raise AnsibleError(f'Object of type "{obj_type}" with PK "{obj_pk}" does not exist')
-
-    return obj
-
-
 class ContextActionModule(ActionBase):
     TRANSFERS_FILES = False
     _VALID_ARGS = None
@@ -137,11 +118,10 @@ class ContextActionModule(ActionBase):
 
     def _wrap_call(self, func, *args):
         try:
-            res = func(*args)
+            func(*args)
         except AdcmEx as e:
             return {"failed": True, "msg": e.msg}
-        if isinstance(res, PluginResult):
-            return {"changed": res.changed}
+
         return {"changed": True}
 
     def _check_mandatory(self):
@@ -397,142 +377,6 @@ def cast_to_type(field_type: str, value: Any, limits: dict) -> Any:
                 return value
     except ValueError as error:
         raise AnsibleError(f"Could not convert '{value}' to '{field_type}'") from error
-
-
-class PluginResult(NamedTuple):
-    value: dict | int | str
-    changed: bool
-
-
-def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> PluginResult:
-    config_log = ConfigLog.objects.get(id=obj.config.current)
-
-    new_config = deepcopy(config_log.config)
-    new_attr = deepcopy(config_log.attr) if config_log.attr is not None else {}
-
-    for keys, value in conf.items():
-        keys_list = keys.split("/")
-        key = keys_list[0]
-        subkey = None
-        if len(keys_list) > 1:
-            subkey = keys_list[1]
-
-        if subkey:
-            try:
-                prototype_conf = PrototypeConfig.objects.get(
-                    name=key, subname=subkey, prototype=obj.prototype, action=None
-                )
-            except PrototypeConfig.DoesNotExist as error:
-                raise AnsibleError(f"Config parameter '{key}/{subkey}' does not exist") from error
-            new_config[key][subkey] = cast_to_type(
-                field_type=prototype_conf.type, value=value, limits=prototype_conf.limits
-            )
-        else:
-            try:
-                prototype_conf = PrototypeConfig.objects.get(name=key, subname="", prototype=obj.prototype, action=None)
-            except PrototypeConfig.DoesNotExist as error:
-                raise AnsibleError(f"Config parameter '{key}' does not exist") from error
-            new_config[key] = cast_to_type(field_type=prototype_conf.type, value=value, limits=prototype_conf.limits)
-
-        if key in attr:
-            prototype_conf = PrototypeConfig.objects.filter(
-                name=key, prototype=obj.prototype, type="group", action=None
-            )
-
-            if not prototype_conf or "activatable" not in prototype_conf.first().limits:
-                raise AnsibleError("'active' key should be used only with activatable group")
-
-            new_attr.update(attr)
-
-    for key in attr:
-        for subkey, value in config_log.config[key].items():
-            if not new_config[key] or subkey not in new_config[key]:
-                new_config[key][subkey] = value
-
-    if _does_contain(base_dict=config_log.config, part=new_config) and _does_contain(
-        base_dict=config_log.attr, part=new_attr
-    ):
-        return PluginResult(conf, False)
-
-    set_object_config_with_plugin(obj=obj, config=new_config, attr=new_attr)
-    send_config_creation_event(object_=obj)
-
-    if len(conf) == 1:
-        return PluginResult(list(conf.values())[0], True)
-
-    return PluginResult(conf, True)
-
-
-def set_cluster_config(cluster_id: int, config: dict, attr: dict) -> PluginResult:
-    obj = Cluster.obj.get(id=cluster_id)
-
-    return update_config(obj=obj, conf=config, attr=attr)
-
-
-def set_host_config(host_id: int, config: dict, attr: dict) -> PluginResult:
-    obj = Host.obj.get(id=host_id)
-
-    return update_config(obj=obj, conf=config, attr=attr)
-
-
-def set_provider_config(provider_id: int, config: dict, attr: dict) -> PluginResult:
-    obj = HostProvider.obj.get(id=provider_id)
-
-    return update_config(obj=obj, conf=config, attr=attr)
-
-
-def set_service_config_by_name(cluster_id: int, service_name: str, config: dict, attr: dict) -> PluginResult:
-    obj = get_service_by_name(cluster_id, service_name)
-
-    return update_config(obj=obj, conf=config, attr=attr)
-
-
-def set_service_config(cluster_id: int, service_id: int, config: dict, attr: dict) -> PluginResult:
-    obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type="service")
-
-    return update_config(obj=obj, conf=config, attr=attr)
-
-
-def _does_contain(base_dict: dict, part: dict) -> bool:
-    """
-    Check fields in `part` have the same value in `base_dict`
-    """
-
-    for key, val2 in part.items():
-        if key not in base_dict:
-            return False
-
-        val1 = base_dict[key]
-
-        if isinstance(val1, dict) and isinstance(val2, dict):
-            if not _does_contain(val1, val2):
-                return False
-        else:
-            val1 = ansible_decrypt(val1)
-            val2 = ansible_decrypt(val2)
-            if val1 != val2:
-                return False
-
-    return True
-
-
-def set_component_config_by_name(
-    cluster_id: int,
-    service_id: int,
-    component_name: str,
-    service_name: str,
-    config: dict,
-    attr: dict,
-):
-    obj = get_component_by_name(cluster_id, service_id, component_name, service_name)
-
-    return update_config(obj=obj, conf=config, attr=attr)
-
-
-def set_component_config(component_id: int, config: dict, attr: dict):
-    obj = ServiceComponent.obj.get(id=component_id)
-
-    return update_config(obj=obj, conf=config, attr=attr)
 
 
 def check_missing_ok(obj: ADCMEntity, multi_state: str, missing_ok):

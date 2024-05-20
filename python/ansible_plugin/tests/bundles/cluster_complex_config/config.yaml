@@ -1,0 +1,81 @@
+- type: cluster
+  name: with_config
+  version: 3
+
+  actions: &actions
+    dummy: &action
+      type: job
+      script_type: ansible
+      script: ./playbook.yaml
+      masking:
+
+    on_host:
+      <<: *action
+      host_action: true
+
+  config: &config
+    - name: plain_s
+      type: string
+      default: "4"
+    - name: plain_i
+      type: integer
+      default: 3
+    - name: g1
+      type: group
+      subs:
+        - name: plain_s
+          type: string
+          default: "inside of group"
+        - name: records
+          type: list
+          required: false
+        - name: group_b
+          type: boolean
+          default: false
+    - name: ag1
+      type: group
+      activatable: true
+      active: false
+      subs:
+        - name: kv_pairs
+          type: map
+          required: false
+        - name: records
+          type: list
+          default:
+            - "first"
+            - "sec:ond"
+    - name: ag2
+      type: group
+      activatable: true
+      active: true
+      subs:
+        - name: sec1
+          type: password
+          required: false
+        - name: sec2
+          type: secretmap
+          default:
+            k1: v1
+
+- &service
+  type: service
+  name: service_1
+  version: 2
+
+  actions: *actions
+
+  config: *config
+
+  components:
+    component_1:
+      actions: *actions
+
+      config: *config
+
+    component_2:
+      actions: *actions
+
+- <<: *service
+  name: service_2
+
