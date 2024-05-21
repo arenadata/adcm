@@ -47,7 +47,7 @@ def _get_attr(config: dict) -> dict:
     return attr
 
 
-def _get_limits(config: dict, root_path: Path) -> dict:
+def _get_limits(config: dict, dir_with_config: Path, resolver: BundlePathResolver) -> dict:
     limits = {}
 
     if "pattern" in config:
@@ -70,7 +70,8 @@ def _get_limits(config: dict, root_path: Path) -> dict:
         limits["pattern"] = pattern.raw
 
     if "yspec" in config and config["type"] in settings.STACK_COMPLEX_FIELD_TYPES:
-        limits["yspec"] = safe_load(stream=(root_path / config["yspec"]).read_text(encoding="utf-8"))
+        spec_path = detect_relative_path_to_bundle_root(source_file_dir=dir_with_config, raw_path=config["yspec"])
+        limits["yspec"] = safe_load(stream=resolver.resolve(spec_path).read_text(encoding="utf-8"))
 
     if "option" in config and config["type"] == "option":
         limits["option"] = config["option"]
@@ -114,7 +115,10 @@ def _get_limits(config: dict, root_path: Path) -> dict:
     return limits
 
 
-def _normalize_config(config: dict, root_path: Path, name: str = "", subname: str = "") -> list[dict]:
+def _normalize_config(
+    config: dict, dir_with_config: Path, resolver: BundlePathResolver, name: str = "", subname: str = ""
+) -> list[dict]:
+    """`dir_with_config` should be relative to bundle root"""
     config_list = [config]
 
     name = name or config["name"]
@@ -125,15 +129,23 @@ def _normalize_config(config: dict, root_path: Path, name: str = "", subname: st
     if config.get("display_name") is None:
         config["display_name"] = subname or name
 
-    config["limits"] = _get_limits(config=config, root_path=root_path)
+    config["limits"] = _get_limits(config=config, dir_with_config=dir_with_config, resolver=resolver)
 
     if config["type"] in settings.STACK_FILE_FIELD_TYPES and config.get("default"):
-        config["default"] = detect_relative_path_to_bundle_root(source_file_dir=root_path, raw_path=config["default"])
+        config["default"] = detect_relative_path_to_bundle_root(
+            source_file_dir=dir_with_config, raw_path=config["default"]
+        )
 
     if "subs" in config:
         for subconf in config["subs"]:
             config_list.extend(
-                _normalize_config(config=subconf, root_path=root_path, name=name, subname=subconf["name"]),
+                _normalize_config(
+                    config=subconf,
+                    dir_with_config=dir_with_config,
+                    resolver=resolver,
+                    name=name,
+                    subname=subconf["name"],
+                ),
             )
 
     for field in settings.TEMPLATE_CONFIG_DELETE_FIELDS:
@@ -165,7 +177,9 @@ def get_jinja_config(action: Action, obj: ADCMEntity) -> tuple[list[PrototypeCon
     configs = []
     attr = {}
     for config in template_builder.data:
-        for normalized_config in _normalize_config(config=config, root_path=jinja_conf_file.parent):
+        for normalized_config in _normalize_config(
+            config=config, dir_with_config=jinja_conf_file.parent.relative_to(resolver.bundle_root), resolver=resolver
+        ):
             configs.append(PrototypeConfig(prototype=action.prototype, action=action, **normalized_config))
             attr.update(**_get_attr(config=normalized_config))
 

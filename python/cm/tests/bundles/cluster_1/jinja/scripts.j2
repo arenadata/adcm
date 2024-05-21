@@ -8,5 +8,11 @@
   script: playbook.yaml
 - name: job2
   script_type: ansible
-  script: playbook.yaml
+  script: ./playbook.yaml
 {% endif %}
+- name: job3
+  script_type: ansible
+  script: inner/playbook.yaml
+- name: job4
+  script_type: ansible
+  script: ./inner/playbook.yaml

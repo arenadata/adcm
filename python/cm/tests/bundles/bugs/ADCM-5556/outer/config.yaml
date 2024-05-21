@@ -1,0 +1,11 @@
+- type: cluster
+  version: 3
+  name: with_jinja_config
+
+  actions:
+    with_j2_config:
+      type: job
+      script: action.yaml
+      script_type: ansible
+      masking: {}
+      config_jinja: outer/configs/config_1.j2

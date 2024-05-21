@@ -135,8 +135,18 @@ class TestJinjaScriptsJobs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
     def test_jobs_generation(self):
         task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action").id
 
-        self.assertSetEqual(
-            set(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True)), {"job1", "job2"}
+        self.assertListEqual(
+            list(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True).order_by("id")),
+            ["job1", "job2", "job3", "job4"],
+        )
+        self.assertEqual(
+            dict(JobLog.objects.filter(task_id=task_id).values_list("name", "script")),
+            {
+                "job1": "playbook.yaml",
+                "job2": "jinja/playbook.yaml",
+                "job3": "inner/playbook.yaml",
+                "job4": "jinja/inner/playbook.yaml",
+            },
         )
 
         self.set_hostcomponent(cluster=self.cluster, entries=((self.host, self.component),))
@@ -144,7 +154,7 @@ class TestJinjaScriptsJobs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
 
         self.assertSetEqual(
             set(JobLog.objects.filter(task_id=task_id).values_list("name", flat=True)),
-            {"job_if_component_1_group_exists"},
+            {"job_if_component_1_group_exists", "job3", "job4"},
         )
 
     def test_unprocessable_template(self):
