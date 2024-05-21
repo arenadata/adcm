@@ -58,7 +58,7 @@
           action: remove
     jinja_scripts_action:
       type: task
-      scripts_jinja: "./scripts.j2"
+      scripts_jinja: "./jinja/scripts.j2"
       states:
         available: any
     unprocessable_jinja_scripts_action:

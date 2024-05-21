@@ -27,7 +27,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from cm.services.bundle import BundlePathResolver
+from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
 from cm.services.cluster import retrieve_clusters_topology
 from cm.services.job.inventory import (
     ClusterNode,
@@ -95,9 +95,8 @@ def get_env(task: TaskLog, delta: dict | None = None) -> JinjaScriptsEnvironment
 def get_job_specs_from_template(task_id: TaskID, delta: dict | None) -> Generator[JobSpec, None, None]:
     task = TaskLog.objects.select_related("action", "action__prototype__bundle").get(pk=task_id)
 
-    scripts_jinja_file = BundlePathResolver(bundle_hash=task.action.prototype.bundle.hash).resolve(
-        task.action.scripts_jinja
-    )
+    path_resolver = BundlePathResolver(bundle_hash=task.action.prototype.bundle.hash)
+    scripts_jinja_file = path_resolver.resolve(task.action.scripts_jinja)
     template_builder = TemplateBuilder(
         template_path=scripts_jinja_file,
         context=get_env(task=task, delta=delta),
@@ -107,13 +106,15 @@ def get_job_specs_from_template(task_id: TaskID, delta: dict | None) -> Generato
     if not template_builder.data:
         raise RuntimeError(f'Template "{scripts_jinja_file}" has no jobs')
 
+    dir_with_jinja = scripts_jinja_file.parent.relative_to(path_resolver.bundle_root)
+
     for job in template_builder.data:
         state_on_fail, multi_state_on_fail_set, multi_state_on_fail_unset = get_on_fail_states(config=job)
 
         yield JobSpec(
             name=job["name"],
             display_name=job.get("display_name", ""),
-            script=job["script"],
+            script=str(detect_relative_path_to_bundle_root(source_file_dir=dir_with_jinja, raw_path=job["script"])),
             script_type=job["script_type"],
             allow_to_terminate=job.get("allow_to_terminate", task.action.allow_to_terminate),
             state_on_fail=state_on_fail,
