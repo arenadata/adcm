@@ -9,6 +9,7 @@ import { useDispatch, useStore } from '@hooks';
 import { useEffect } from 'react';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
+import s from './ClusterImportsService.module.scss';
 
 const ClusterImportsService = () => {
   const {
@@ -40,7 +41,7 @@ const ClusterImportsService = () => {
         setBreadcrumbs([
           { href: '/clusters', label: 'Clusters' },
           { href: `/clusters/${cluster.id}`, label: cluster.name },
-          { label: 'Import' },
+          { href: `/clusters/${cluster.id}/import`, label: 'Import' },
           { label: 'Services' },
         ]),
       );
@@ -48,7 +49,7 @@ const ClusterImportsService = () => {
   }, [cluster, dispatch]);
 
   return (
-    <>
+    <div className={s.clusterImportToolbarWrapper}>
       <ClusterImportToolbar
         isDisabled={!isValid}
         onClick={onImportHandler}
@@ -84,7 +85,7 @@ const ClusterImportsService = () => {
           ))}
         <Pagination totalItems={totalCount} pageData={paginationParams} onChangeData={paginationHandler} />
       </PermissionsChecker>
-    </>
+    </div>
   );
 };
 
