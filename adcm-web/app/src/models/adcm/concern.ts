@@ -7,30 +7,47 @@ export enum AdcmConcernCause {
   Job = 'job',
 }
 
-export enum AdcmConcernType {
+export enum AdcmConcernOwnerType {
   Adcm = 'adcm',
   Cluster = 'cluster',
   Service = 'service',
   Component = 'component',
   Host = 'host',
   Provider = 'provider',
+}
+
+export enum AdcmConcernType {
+  AdcmConfig = 'adcm_config',
+  ClusterConfig = 'cluster_config',
+  ComponentConfig = 'component_config',
+  HostConfig = 'host_config',
+  ProviderConfig = 'provider_config',
+  ServiceConfig = 'service_config',
+  ClusterServices = 'cluster_services', // the same value for the type "Requirement"
+  ClusterImport = 'cluster_import',
+  HostComponent = 'cluster_mapping',
   Job = 'job',
   Prototype = 'prototype',
+  Adcm = 'adcm',
+  Cluster = 'cluster',
+  Service = 'service',
+  Component = 'component',
+  Provider = 'provider',
+  Host = 'host',
 }
 
 export interface AdcmConcernCommonPlaceholder {
   name: string;
+  type: AdcmConcernType;
 }
 
 export interface AdcmConcernClusterPlaceholder extends AdcmConcernCommonPlaceholder {
-  type: AdcmConcernType.Cluster;
   params: {
     clusterId: number;
   };
 }
 
 export interface AdcmConcernServicePlaceholder extends AdcmConcernCommonPlaceholder {
-  type: AdcmConcernType.Service;
   params: {
     clusterId: number;
     serviceId: number;
@@ -38,7 +55,6 @@ export interface AdcmConcernServicePlaceholder extends AdcmConcernCommonPlacehol
 }
 
 export interface AdcmConcernComponentPlaceholder extends AdcmConcernCommonPlaceholder {
-  type: AdcmConcernType.Component;
   params: {
     clusterId: number;
     serviceId: number;
@@ -47,35 +63,30 @@ export interface AdcmConcernComponentPlaceholder extends AdcmConcernCommonPlaceh
 }
 
 export interface AdcmConcernHostPlaceholder extends AdcmConcernCommonPlaceholder {
-  type: AdcmConcernType.Host;
   params: {
     hostId: number;
   };
 }
 
 export interface AdcmConcernHostProviderPlaceholder extends AdcmConcernCommonPlaceholder {
-  type: AdcmConcernType.Provider;
   params: {
     providerId: number;
   };
 }
 
 export interface AdcmConcernJobPlaceholder extends AdcmConcernCommonPlaceholder {
-  type: AdcmConcernType.Job;
   params: {
     jobId: number;
   };
 }
 
 export interface AdcmConcernPrototypePlaceholder extends AdcmConcernCommonPlaceholder {
-  type: AdcmConcernType.Prototype;
   params: {
     prototypeId: number;
   };
 }
 
 export interface AdcmPrototypePlaceholder extends AdcmConcernCommonPlaceholder {
-  type: AdcmConcernType.Adcm;
   params: {
     adcmId: number;
   };
@@ -96,9 +107,15 @@ export interface AdcmConcernReason {
   placeholder: Record<string, AdcmConcernPlaceholder>;
 }
 
+interface AdcmConcernOwner {
+  id: number;
+  type: AdcmConcernOwnerType;
+}
+
 export interface AdcmConcerns {
   id: number;
   reason: AdcmConcernReason;
   isBlocking: boolean;
   cause: AdcmConcernCause;
+  owner: AdcmConcernOwner;
 }
