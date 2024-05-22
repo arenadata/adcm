@@ -27,12 +27,13 @@ from pydantic import BaseModel, field_validator
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
-    AnsibleJobContext,
     ArgumentsConfig,
     CallResult,
     PluginExecutorConfig,
     ReturnValue,
+    RuntimeEnvironment,
     TargetConfig,
+    VarsContextSection,
     from_context,
     from_objects,
 )
@@ -64,7 +65,7 @@ class ChangeFlagArguments(BaseModel):
 
 def validate_objects(
     context_owner: CoreObjectDescriptor,
-    context: AnsibleJobContext,  # noqa: ARG001
+    context: VarsContextSection,  # noqa: ARG001
     raw_arguments: dict,
 ) -> PluginValidationError | None:
     match context_owner.type:
@@ -102,13 +103,9 @@ class ADCMChangeFlagPluginExecutor(ADCMAnsiblePluginExecutor[ChangeFlagArguments
 
     @atomic()
     def __call__(
-        self,
-        targets: Collection[CoreObjectDescriptor],
-        arguments: ChangeFlagArguments,
-        context_owner: CoreObjectDescriptor,
-        context: AnsibleJobContext,
+        self, targets: Collection[CoreObjectDescriptor], arguments: ChangeFlagArguments, runtime: RuntimeEnvironment
     ) -> CallResult[ReturnValue]:
-        _ = context, context_owner
+        _ = runtime
 
         match arguments.operation:
             case ChangeFlagOperation.UP:

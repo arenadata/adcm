@@ -20,11 +20,11 @@ from typing_extensions import Self
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
-    AnsibleJobContext,
     ArgumentsConfig,
     CallResult,
     ContextConfig,
     PluginExecutorConfig,
+    RuntimeEnvironment,
 )
 from ansible_plugin.errors import (
     PluginRuntimeError,
@@ -56,10 +56,9 @@ class ADCMRemoveHostFromClusterPluginExecutor(ADCMAnsiblePluginExecutor[RemoveHo
         self,
         targets: Collection[CoreObjectDescriptor],
         arguments: RemoveHostFromClusterArguments,
-        context_owner: CoreObjectDescriptor,
-        context: AnsibleJobContext,
+        runtime: RuntimeEnvironment,
     ) -> CallResult[None]:
-        _ = targets, context_owner, context
+        _ = targets
 
         # eventually would be better to set explicit restriction to arguments - either on id or one fqdn
         # for now, we'll leave it as it is in order to support old behavior
@@ -80,11 +79,13 @@ class ADCMRemoveHostFromClusterPluginExecutor(ADCMAnsiblePluginExecutor[RemoveHo
                 changed=False,
                 error=PluginRuntimeError(message=f"Host {host.fqdn} is unbound to any cluster"),
             )
-        elif host.cluster_id != context.cluster_id:
+        elif host.cluster_id != runtime.vars.context.cluster_id:
             return CallResult(
                 value=None,
                 changed=False,
-                error=PluginRuntimeError(message=f"Host {host.fqdn} is not in cluster id: {context.cluster_id}"),
+                error=PluginRuntimeError(
+                    message=f"Host {host.fqdn} is not in cluster id: {runtime.vars.context.cluster_id}"
+                ),
             )
         remove_host_from_cluster(host)
 

@@ -13,15 +13,18 @@
 from pathlib import Path
 import json
 
+from adcm.tests.ansible import ADCMAnsiblePluginTestMixin
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase, TestCaseWithCommonSetUpTearDown
-from ansible_plugin.utils import change_hc
+from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
 
 from cm.models import Action, ServiceComponent
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.tests.mocks.task_runner import ETFMockWithEnvPreparation, JobImitator, RunTaskMock
 
 
-class TestEffectsOfADCMAnsiblePlugins(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, BusinessLogicMixin):
+class TestEffectsOfADCMAnsiblePlugins(
+    TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, BusinessLogicMixin, ADCMAnsiblePluginTestMixin
+):
     def setUp(self) -> None:
         super().setUp()
 
@@ -53,9 +56,21 @@ class TestEffectsOfADCMAnsiblePlugins(TestCaseWithCommonSetUpTearDown, ParallelR
             {"action": "remove", "service": service.name, "component": component_1.name, "host": self.host_1.name},
         ]
 
+        def plugin_call(executor):
+            executor = self.prepare_executor(
+                executor_type=ADCMHostComponentPluginExecutor,
+                call_arguments={"operations": operations},
+                call_context=int(executor._config.work_dir.name),  # id of job
+            )
+            result = executor.execute()
+            if result.error:
+                return 1
+
+            return 0
+
         with RunTaskMock(
             execution_target_factory=ETFMockWithEnvPreparation(
-                change_jobs={0: JobImitator(call=lambda _: change_hc(1, self.cluster.id, operations))}
+                change_jobs={0: JobImitator(call=plugin_call, use_call_return_code=True)}
             )
         ) as run_task:
             run_action(

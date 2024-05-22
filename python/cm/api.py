@@ -427,17 +427,7 @@ def get_hc(cluster: Cluster | None) -> list[dict] | None:
     if not cluster:
         return None
 
-    hc_map = []
-    for hostcomponent in HostComponent.objects.filter(cluster=cluster):
-        hc_map.append(
-            {
-                "host_id": hostcomponent.host.pk,
-                "service_id": hostcomponent.service.pk,
-                "component_id": hostcomponent.component.pk,
-            },
-        )
-
-    return hc_map
+    return list(HostComponent.objects.values("host_id", "service_id", "component_id").filter(cluster=cluster))
 
 
 def check_sub_key(hc_in):

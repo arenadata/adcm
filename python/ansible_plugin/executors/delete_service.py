@@ -20,11 +20,11 @@ from pydantic import BaseModel
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
-    AnsibleJobContext,
     ArgumentsConfig,
     CallResult,
     ContextConfig,
     PluginExecutorConfig,
+    RuntimeEnvironment,
 )
 from ansible_plugin.errors import PluginRuntimeError, PluginTargetDetectionError
 
@@ -40,20 +40,16 @@ class ADCMDeleteServicePluginExecutor(ADCMAnsiblePluginExecutor[DeleteServiceArg
     )
 
     def __call__(
-        self,
-        targets: Collection[CoreObjectDescriptor],
-        arguments: DeleteServiceArguments,
-        context_owner: CoreObjectDescriptor,
-        context: AnsibleJobContext,
+        self, targets: Collection[CoreObjectDescriptor], arguments: DeleteServiceArguments, runtime: RuntimeEnvironment
     ) -> CallResult[None]:
         _ = targets
 
         if arguments.service:
-            search_kwargs = {"cluster_id": context.cluster_id, "prototype__name": arguments.service}
-        elif context_owner.type == ADCMCoreType.SERVICE:
-            search_kwargs = {"id": context_owner.id}
+            search_kwargs = {"cluster_id": runtime.vars.context.cluster_id, "prototype__name": arguments.service}
+        elif runtime.context_owner.type == ADCMCoreType.SERVICE:
+            search_kwargs = {"id": runtime.context_owner.id}
         else:
-            message = f"Incorrect plugin call for {arguments.service=} in context {context_owner}"
+            message = f"Incorrect plugin call for {arguments.service=} in context {runtime.context_owner}"
             raise PluginRuntimeError(message)
 
         try:

@@ -15,10 +15,10 @@ import json
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
-    AnsibleJobContext,
     CallArguments,
     CallResult,
     PluginExecutorConfig,
+    RuntimeEnvironment,
 )
 from cm.models import JobLog
 from cm.services.job.run._target_factories import prepare_ansible_job_config
@@ -64,12 +64,11 @@ class ADCMAnsiblePluginTestMixin:
             job_id = call_context if isinstance(call_context, int) else call_context.id
             task_id = JobLog.objects.values_list("task_id", flat=True).get(id=job_id)
 
-            job_ansible_config = prepare_ansible_job_config(
+            context = prepare_ansible_job_config(
                 task=JobRepoImpl.get_task(id=task_id), job=JobRepoImpl.get_job(id=job_id), configuration=configuration
             )
-            context = job_ansible_config["context"]
 
-        return executor_type(arguments=arguments, context=context)
+        return executor_type(arguments=arguments, runtime_vars=context)
 
     def build_executor_call(
         self,
@@ -90,8 +89,7 @@ class ADCMAnsiblePluginTestMixin:
 class PassedArguments(NamedTuple):
     targets: Collection[CoreObjectDescriptor]
     arguments: CallArguments
-    context_owner: CoreObjectDescriptor
-    context: AnsibleJobContext
+    runtime: RuntimeEnvironment
 
 
 def DummyExecutor(  # noqa: N802
@@ -101,16 +99,10 @@ def DummyExecutor(  # noqa: N802
         _config: PluginExecutorConfig[CallArguments] = config
 
         def __call__(
-            self,
-            targets: Collection[CoreObjectDescriptor],
-            arguments: CallArguments,
-            context_owner: CoreObjectDescriptor,
-            context: AnsibleJobContext,
+            self, targets: Collection[CoreObjectDescriptor], arguments: CallArguments, runtime: RuntimeEnvironment
         ) -> CallResult[PassedArguments]:
             return CallResult(
-                value=PassedArguments(
-                    targets=targets, arguments=arguments, context_owner=context_owner, context=context
-                ),
+                value=PassedArguments(targets=targets, arguments=arguments, runtime=runtime),
                 changed=True,
                 error=None,
             )

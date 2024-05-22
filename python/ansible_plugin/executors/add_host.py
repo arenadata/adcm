@@ -21,12 +21,12 @@ from pydantic import BaseModel
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
-    AnsibleJobContext,
     ArgumentsConfig,
     CallResult,
     ContextConfig,
     PluginExecutorConfig,
     ReturnValue,
+    RuntimeEnvironment,
 )
 from ansible_plugin.errors import PluginRuntimeError
 
@@ -47,17 +47,13 @@ class ADCMAddHostPluginExecutor(ADCMAnsiblePluginExecutor[AddHostArguments, AddH
     )
 
     def __call__(
-        self,
-        targets: Collection[CoreObjectDescriptor],
-        arguments: AddHostArguments,
-        context_owner: CoreObjectDescriptor,
-        context: AnsibleJobContext,
+        self, targets: Collection[CoreObjectDescriptor], arguments: AddHostArguments, runtime: RuntimeEnvironment
     ) -> CallResult[ReturnValue]:
-        _ = targets, context
+        _ = targets
 
         with atomic():
             try:
-                hostprovider = HostProvider.objects.select_related("prototype__bundle").get(id=context_owner.id)
+                hostprovider = HostProvider.objects.select_related("prototype__bundle").get(id=runtime.context_owner.id)
                 host_prototype = Prototype.objects.get(type="host", bundle=hostprovider.prototype.bundle)
                 host = add_host(
                     provider=hostprovider,
@@ -69,14 +65,15 @@ class ADCMAddHostPluginExecutor(ADCMAnsiblePluginExecutor[AddHostArguments, AddH
                 return CallResult(
                     value=None,
                     changed=False,
-                    error=PluginRuntimeError(message=f"Failed to find HostProvider with id {context_owner.id}"),
+                    error=PluginRuntimeError(message=f"Failed to find HostProvider with id {runtime.context_owner.id}"),
                 )
             except Prototype.DoesNotExist:
                 return CallResult(
                     value=None,
                     changed=False,
                     error=PluginRuntimeError(
-                        message=f"Failed to locate host's prototype based on HostProvider with id {context_owner.id}"
+                        message="Failed to locate host's prototype based on HostProvider "
+                        f"with id {runtime.context_owner.id}"
                     ),
                 )
             except IntegrityError as err:
