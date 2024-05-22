@@ -15,7 +15,7 @@ interface MultilineStringControlProps {
   value: JSONPrimitive;
   fieldSchema: SingleSchemaDefinition;
   isReadonly: boolean;
-  onChange: (newValue: JSONPrimitive) => void;
+  onChange: (newValue: JSONPrimitive, isValid?: boolean) => void;
 }
 
 const MultilineStringControl = ({
@@ -46,7 +46,7 @@ const MultilineStringControl = ({
   const handleChange = (code: string) => {
     const error = validate(code, fieldSchema);
     setError(error);
-    onChange(code);
+    onChange(code, error === undefined);
   };
 
   return (
