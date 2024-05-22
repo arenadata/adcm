@@ -18,12 +18,12 @@ export interface StringControlProps {
 const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: StringControlProps) => {
   const [secret, setSecret] = useState(value as string);
   const [confirm, setConfirm] = useState(value as string);
-  const [error, setError] = useState<string | undefined>(undefined);
+  const [secretError, setSecretError] = useState<string | undefined>(undefined);
   const [confirmError, setConfirmError] = useState<string | undefined>(undefined);
 
   const handleSecretChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const error = validate(event.target.value, fieldSchema);
-    setError(error);
+    setSecretError(error);
     setSecret(event.target.value);
   };
 
@@ -33,9 +33,9 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
 
   useEffect(() => {
     const areEqual = secret === confirm;
-    onChange(secret, areEqual);
+    onChange(secret, areEqual && secretError === undefined);
     setConfirmError(!areEqual ? mismatchErrorText : undefined);
-  }, [confirm, onChange, secret]);
+  }, [secret, secretError, confirm, onChange]);
 
   const handleResetToDefault = (defaultValue: JSONPrimitive) => {
     onChange(defaultValue, true);
@@ -48,7 +48,7 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
       <ConfigurationField
         label={fieldName}
         fieldSchema={fieldSchema}
-        error={error}
+        error={secretError}
         disabled={isReadonly}
         onResetToDefault={handleResetToDefault}
       >
