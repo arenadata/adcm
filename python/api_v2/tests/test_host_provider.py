@@ -12,7 +12,6 @@
 
 from cm.models import Action, HostProvider
 from cm.tests.mocks.task_runner import RunTaskMock
-from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -34,29 +33,24 @@ class TestHostProvider(BaseAPITestCase):
         self.host_provider = self.add_provider(self.host_provider_bundle, "test host provider")
 
     def test_list_success(self):
-        response = self.client.get(path=reverse(viewname="v2:hostprovider-list"))
+        response = (self.client.v2 / "hostproviders").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
 
     def test_retrieve_success(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:hostprovider-detail", kwargs={"pk": self.host_provider.pk}),
-        )
+        response = self.client.v2[self.host_provider].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], self.host_provider.pk)
 
     def test_retrieve_not_found_fail(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:hostprovider-detail", kwargs={"pk": self.host_provider.pk + 1}),
-        )
+        response = (self.client.v2 / "hostproviders" / str(self.get_non_existent_pk(model=HostProvider))).get()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_create_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:hostprovider-list"),
+        response = (self.client.v2 / "hostproviders").post(
             data={
                 "prototypeId": self.host_provider_bundle.pk,
                 "name": self.host_provider.name + " new",
@@ -67,8 +61,7 @@ class TestHostProvider(BaseAPITestCase):
         self.assertEqual(response.json()["name"], self.host_provider.name + " new")
 
     def test_create_no_description_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:hostprovider-list"),
+        response = (self.client.v2 / "hostproviders").post(
             data={
                 "prototypeId": self.host_provider_bundle.pk,
                 "name": self.host_provider.name + " new",
@@ -78,8 +71,7 @@ class TestHostProvider(BaseAPITestCase):
         self.assertEqual(response.json()["name"], self.host_provider.name + " new")
 
     def test_host_provider_duplicate_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:hostprovider-list"),
+        response = (self.client.v2 / "hostproviders").post(
             data={
                 "prototype": self.host_provider.pk,
                 "name": self.host_provider.name,
@@ -89,17 +81,13 @@ class TestHostProvider(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     def test_delete_success(self):
-        response = self.client.delete(
-            path=reverse(viewname="v2:hostprovider-detail", kwargs={"pk": self.host_provider.pk}),
-        )
+        response = self.client.v2[self.host_provider].delete()
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertFalse(HostProvider.objects.filter(pk=self.host_provider.pk).exists())
 
     def test_delete_not_found_fail(self):
-        response = self.client.delete(
-            path=reverse(viewname="v2:hostprovider-detail", kwargs={"pk": self.host_provider.pk + 1}),
-        )
+        response = (self.client.v2 / "hostproviders" / str(self.get_non_existent_pk(model=HostProvider))).delete()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
@@ -111,40 +99,20 @@ class TestProviderActions(BaseAPITestCase):
         self.action = Action.objects.get(prototype=self.provider.prototype, name="provider_action")
 
     def test_action_list_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:provider-action-list",
-                kwargs={"hostprovider_pk": self.provider.pk},
-            ),
-        )
+        response = self.client.v2[self.provider, "actions"].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 1)
 
     def test_action_retrieve_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:provider-action-detail",
-                kwargs={
-                    "hostprovider_pk": self.provider.pk,
-                    "pk": self.action.pk,
-                },
-            ),
-        )
+        response = self.client.v2[self.provider, "actions", self.action].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertTrue(response.json())
 
     def test_action_run_success(self):
         with RunTaskMock() as run_task:
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:provider-action-run",
-                    kwargs={
-                        "hostprovider_pk": self.provider.pk,
-                        "pk": self.action.pk,
-                    },
-                ),
+            response = self.client.v2[self.provider, "actions", self.action, "run"].post(
                 data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
             )
 
