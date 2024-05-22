@@ -19,7 +19,7 @@ from ansible.errors import AnsibleActionFail
 from ansible.module_utils._text import to_native
 from ansible.plugins.action import ActionBase
 from cm.models import ClusterObject, ServiceComponent
-from core.types import ADCMCoreType, CoreObjectDescriptor
+from core.types import ADCMCoreType, CoreObjectDescriptor, ObjectID
 from django.conf import settings
 from pydantic import BaseModel, ValidationError, field_validator
 
@@ -37,8 +37,11 @@ from ansible_plugin.errors import (
 TargetTypeLiteral = Literal["cluster", "service", "component", "provider", "host"]
 
 
-class AnsibleJobContext(BaseModel):
-    """Context from `config.json`'s `context` section"""
+class VarsContextSection(BaseModel):
+    """
+    Context from `config.json`'s `context` section
+    (actually from "vars" available during ansible run)
+    """
 
     type: TargetTypeLiteral
     cluster_id: int | None = None
@@ -54,12 +57,39 @@ class AnsibleJobContext(BaseModel):
         return str(v)
 
 
+class VarsJobSection(BaseModel):
+    """
+    Job related info from ansible runtime vars' "job" dictionary
+    """
+
+    id: ObjectID
+    action: str
+
+
+class AnsibleRuntimeVars(BaseModel):
+    """
+    Container for ansible runtime variables required for plugin execution
+    """
+
+    context: VarsContextSection
+    job: VarsJobSection
+
+
+class RuntimeEnvironment(BaseModel):
+    """
+    Container for things dependent on ansible runtime
+    """
+
+    context_owner: CoreObjectDescriptor
+    vars: AnsibleRuntimeVars
+
+
 # Target
 
 
 class TargetDetector(Protocol):
     def __call__(
-        self, context_owner: CoreObjectDescriptor, context: AnsibleJobContext, raw_arguments: dict
+        self, context_owner: CoreObjectDescriptor, context: VarsContextSection, raw_arguments: dict
     ) -> tuple[CoreObjectDescriptor, ...]:
         ...
 
@@ -80,7 +110,7 @@ class CoreObjectTargetDescription(BaseModel):
 
 def from_objects(
     context_owner: CoreObjectDescriptor,  # noqa: ARG001
-    context: AnsibleJobContext,
+    context: VarsContextSection,
     raw_arguments: dict,
 ) -> tuple[CoreObjectDescriptor, ...]:
     if not isinstance(objects := raw_arguments.get("objects"), list):
@@ -94,7 +124,7 @@ def from_objects(
 
 def from_arguments_root(
     context_owner: CoreObjectDescriptor,  # noqa: ARG001
-    context: AnsibleJobContext,
+    context: VarsContextSection,
     raw_arguments: dict,
 ) -> tuple[CoreObjectDescriptor, ...]:
     try:
@@ -107,14 +137,14 @@ def from_arguments_root(
 
 def from_context(
     context_owner: CoreObjectDescriptor,
-    context: AnsibleJobContext,  # noqa: ARG001
+    context: VarsContextSection,  # noqa: ARG001
     raw_arguments: dict,  # noqa: ARG001
 ) -> tuple[CoreObjectDescriptor, ...]:
     return (context_owner,)
 
 
 def _from_target_description(
-    target_description: CoreObjectTargetDescription, context: AnsibleJobContext
+    target_description: CoreObjectTargetDescription, context: VarsContextSection
 ) -> CoreObjectDescriptor:
     match target_description.type:
         case "cluster":
@@ -230,7 +260,7 @@ class ArgumentsConfig(Generic[CallArguments]):
 
 class TargetValidator(Protocol):
     def __call__(
-        self, context_owner: CoreObjectDescriptor, context: AnsibleJobContext, raw_arguments: dict
+        self, context_owner: CoreObjectDescriptor, context: VarsContextSection, raw_arguments: dict
     ) -> PluginValidationError | None:
         ...
 
@@ -259,7 +289,9 @@ class TargetConfig:
 
 
 class ContextValidator(Protocol):
-    def __call__(self, context_owner: CoreObjectDescriptor, context: AnsibleJobContext) -> PluginValidationError | None:
+    def __call__(
+        self, context_owner: CoreObjectDescriptor, context: VarsContextSection
+    ) -> PluginValidationError | None:
         ...
 
 
@@ -299,17 +331,13 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
 
     _config: PluginExecutorConfig[CallArguments]
 
-    def __init__(self, arguments: dict, context: dict):
+    def __init__(self, arguments: dict, runtime_vars: dict):
         self._raw_arguments = arguments
-        self._raw_context = context
+        self._raw_vars = runtime_vars
 
     @abstractmethod
     def __call__(
-        self,
-        targets: Collection[CoreObjectDescriptor],
-        arguments: CallArguments,
-        context_owner: CoreObjectDescriptor,
-        context: AnsibleJobContext,
+        self, targets: Collection[CoreObjectDescriptor], arguments: CallArguments, runtime: RuntimeEnvironment
     ) -> CallResult[ReturnValue]:
         """
         Perform plugin operation.
@@ -333,7 +361,8 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
         """
 
         try:
-            call_arguments, call_context = self._validate_inputs()
+            call_arguments, ansible_vars = self._validate_inputs()
+            call_context = ansible_vars.context
             owner_from_context = CoreObjectDescriptor(
                 id=getattr(call_context, f"{call_context.type}_id"),
                 type=ADCMCoreType(call_context.type) if call_context.type != "provider" else ADCMCoreType.HOSTPROVIDER,
@@ -342,7 +371,9 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
             self._validate_targets(context_owner=owner_from_context, context=call_context)
             targets = self._detect_targets(context_owner=owner_from_context, context=call_context)
             result = self(
-                context_owner=owner_from_context, targets=targets, arguments=call_arguments, context=call_context
+                targets=targets,
+                arguments=call_arguments,
+                runtime=RuntimeEnvironment(context_owner=owner_from_context, vars=ansible_vars),
             )
         except ADCMPluginError as err:
             return CallResult(value={}, changed=False, error=err)
@@ -352,7 +383,7 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
 
         return result
 
-    def _validate_inputs(self) -> tuple[CallArguments, AnsibleJobContext]:
+    def _validate_inputs(self) -> tuple[CallArguments, AnsibleRuntimeVars]:
         try:
             arguments = self._config.arguments.represent_as(**self._raw_arguments)
         except ValidationError as err:
@@ -365,14 +396,14 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
                 raise error
 
         try:
-            context = AnsibleJobContext(**self._raw_context)
+            ansible_vars = AnsibleRuntimeVars(**self._raw_vars)
         except ValidationError as err:
-            message = f"Context doesn't match expected schema:\n{err}"
+            message = f"Ansible variables doesn't match expected schema:\n{err}"
             raise PluginValidationError(message=message) from err
 
-        return arguments, context
+        return arguments, ansible_vars
 
-    def _validate_context(self, context_owner: CoreObjectDescriptor, context: AnsibleJobContext) -> None:
+    def _validate_context(self, context_owner: CoreObjectDescriptor, context: VarsContextSection) -> None:
         allowed_context_owners = self._config.context.allow_only
         # it's important that if it's empty no check is performed
         if allowed_context_owners and context_owner.type not in allowed_context_owners:
@@ -388,14 +419,14 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
             if error:
                 raise error
 
-    def _validate_targets(self, context_owner: CoreObjectDescriptor, context: AnsibleJobContext) -> None:
+    def _validate_targets(self, context_owner: CoreObjectDescriptor, context: VarsContextSection) -> None:
         for validator in self._config.target.validators:
             error = validator(context_owner=context_owner, context=context, raw_arguments=self._raw_arguments)
             if error:
                 raise error
 
     def _detect_targets(
-        self, context_owner: CoreObjectDescriptor, context: AnsibleJobContext
+        self, context_owner: CoreObjectDescriptor, context: VarsContextSection
     ) -> tuple[CoreObjectDescriptor, ...]:
         if not self._config.target.detectors:
             # Note that only in this case it's ok to return empty targets.
@@ -450,7 +481,7 @@ class ADCMAnsiblePlugin(ActionBase):
         with (settings.RUN_DIR / str(task_vars["job"]["id"]) / "config.json").open(encoding="utf-8") as file:
             fcntl.flock(file.fileno(), fcntl.LOCK_EX)
 
-            executor = self.executor_class(arguments=self._task.args, context=task_vars.get("context", {}))
+            executor = self.executor_class(arguments=self._task.args, runtime_vars=task_vars)
             execution_result = executor.execute()
 
             if execution_result.error:

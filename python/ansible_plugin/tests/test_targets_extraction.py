@@ -223,7 +223,4 @@ class TestObjectsTargetsExtraction(BaseTestCase, BusinessLogicMixin, ADCMAnsible
         result = executor.execute()
         self.assertIsNone(result.error, result.error.message if result.error else "")
 
-        self.assertListEqual(
-            list(result.value.targets),
-            expected_targets,
-        )
+        self.assertListEqual(list(result.value.targets), expected_targets)

@@ -18,12 +18,12 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
-    AnsibleJobContext,
     ArgumentsConfig,
     CallResult,
     ContextConfig,
     NoArguments,
     PluginExecutorConfig,
+    RuntimeEnvironment,
 )
 from ansible_plugin.errors import PluginTargetDetectionError
 
@@ -35,21 +35,17 @@ class ADCMDeleteHostPluginExecutor(ADCMAnsiblePluginExecutor[NoArguments, None])
     )
 
     def __call__(
-        self,
-        targets: Collection[CoreObjectDescriptor],
-        arguments: NoArguments,
-        context_owner: CoreObjectDescriptor,
-        context: AnsibleJobContext,
+        self, targets: Collection[CoreObjectDescriptor], arguments: NoArguments, runtime: RuntimeEnvironment
     ) -> CallResult[None]:
-        _ = targets, context, arguments
+        _ = targets, arguments
 
         try:
-            delete_host(Host.obj.get(pk=context_owner.id), cancel_tasks=False)
+            delete_host(Host.obj.get(pk=runtime.context_owner.id), cancel_tasks=False)
         except Host.DoesNotExist:
             return CallResult(
                 value=None,
                 changed=False,
-                error=PluginTargetDetectionError(message=f"Host #{context_owner.id} wasn't found"),
+                error=PluginTargetDetectionError(message=f"Host #{runtime.context_owner.id} wasn't found"),
             )
 
         return CallResult(value=None, changed=True, error=None)

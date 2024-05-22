@@ -21,11 +21,12 @@ from typing_extensions import Self
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
-    AnsibleJobContext,
     ArgumentsConfig,
     CallResult,
     ContextConfig,
     PluginExecutorConfig,
+    RuntimeEnvironment,
+    VarsContextSection,
 )
 from ansible_plugin.errors import PluginRuntimeError, PluginValidationError
 
@@ -45,7 +46,7 @@ class AddHostToClusterArguments(BaseModel):
 
 
 def cluster_id_must_be_in_context(
-    context_owner: CoreObjectDescriptor, context: AnsibleJobContext
+    context_owner: CoreObjectDescriptor, context: VarsContextSection
 ) -> PluginValidationError | None:
     _ = context_owner
 
@@ -69,10 +70,9 @@ class ADCMAddHostToClusterPluginExecutor(ADCMAnsiblePluginExecutor[AddHostToClus
         self,
         targets: Collection[CoreObjectDescriptor],
         arguments: AddHostToClusterArguments,
-        context_owner: CoreObjectDescriptor,
-        context: AnsibleJobContext,
+        runtime: RuntimeEnvironment,
     ) -> CallResult[None]:
-        _ = targets, context_owner
+        _ = targets
 
         host_id = arguments.host_id
         if arguments.fqdn is not None:
@@ -89,6 +89,6 @@ class ADCMAddHostToClusterPluginExecutor(ADCMAnsiblePluginExecutor[AddHostToClus
             # at this point it can't be None due to validation => raising instead of returning
             raise PluginRuntimeError(message="Failed to detect what host to add")
 
-        perform_host_to_cluster_map(cluster_id=context.cluster_id, hosts=[host_id], status_service=notify)
+        perform_host_to_cluster_map(cluster_id=runtime.vars.context.cluster_id, hosts=[host_id], status_service=notify)
 
         return CallResult(value=None, changed=True, error=None)

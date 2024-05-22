@@ -13,6 +13,13 @@
       <<: *action
       host_action: true
 
+    with_hc:
+      <<: *action
+      hc_acl:
+        - action: add
+          service: service_1
+          component: component_1
+
 - &service
   type: service
   name: service_1
@@ -29,4 +36,3 @@
 
 - <<: *service
   name: service_2
-

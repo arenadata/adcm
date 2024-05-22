@@ -28,11 +28,12 @@ from typing_extensions import Self
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
-    AnsibleJobContext,
     ArgumentsConfig,
     CallResult,
     PluginExecutorConfig,
+    RuntimeEnvironment,
     TargetConfig,
+    VarsContextSection,
     from_arguments_root,
 )
 from ansible_plugin.errors import PluginIncorrectCallError, PluginTargetDetectionError, PluginValidationError
@@ -98,7 +99,7 @@ class ChangeConfigReturn(TypedDict):
 
 def validate_type_is_present(
     context_owner: CoreObjectDescriptor,
-    context: AnsibleJobContext,  # noqa: ARG001
+    context: VarsContextSection,  # noqa: ARG001
     raw_arguments: dict,
 ) -> PluginValidationError | None:
     _ = context, context_owner
@@ -117,17 +118,11 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeConfigArguments, 
 
     @atomic()
     def __call__(
-        self,
-        targets: Collection[CoreObjectDescriptor],
-        arguments: ChangeConfigArguments,
-        context_owner: CoreObjectDescriptor,
-        context: AnsibleJobContext,
+        self, targets: Collection[CoreObjectDescriptor], arguments: ChangeConfigArguments, runtime: RuntimeEnvironment
     ) -> CallResult[ChangeConfigReturn]:
-        _ = context
-
         target, *_ = targets
 
-        if error := validate_target_allowed_for_context_owner(context_owner=context_owner, target=target):
+        if error := validate_target_allowed_for_context_owner(context_owner=runtime.context_owner, target=target):
             return CallResult(value={}, changed=False, error=error)
 
         changes = ConfigAttrPair(config={}, attr={})

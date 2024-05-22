@@ -35,10 +35,8 @@ from ansible_plugin.messages import (
     MSG_NO_MULTI_STATE_TO_DELETE,
 )
 from cm.adcm_config.config import get_option_value
-from cm.api import add_hc, get_hc
 from cm.errors import AdcmEx
 from cm.models import (
-    Action,
     ADCMEntity,
     CheckLog,
     Cluster,
@@ -322,46 +320,6 @@ def set_provider_multi_state(provider_id, multi_state):
 def set_host_multi_state(host_id, multi_state):
     obj = Host.obj.get(id=host_id)
     return _set_object_multi_state(obj, multi_state)
-
-
-def change_hc(job_id, cluster_id, operations):
-    """
-    For use in ansible plugin adcm_hc
-    """
-    file_descriptor = job_lock(job_id)
-    action_id = JobLog.objects.values_list("task__action_id", flat=True).get(id=job_id)
-    action = Action.objects.get(id=action_id)
-    if action.hostcomponentmap:
-        raise AdcmEx("ACTION_ERROR", "You can not change hc in plugin for action with hc_acl")
-
-    cluster = Cluster.obj.get(id=cluster_id)
-    hostcomponent = get_hc(cluster)
-    for operation in operations:
-        service = ClusterObject.obj.get(cluster=cluster, prototype__name=operation["service"])
-        component = ServiceComponent.obj.get(cluster=cluster, service=service, prototype__name=operation["component"])
-        host = Host.obj.get(cluster=cluster, fqdn=operation["host"])
-        item = {
-            "host_id": host.id,
-            "service_id": service.id,
-            "component_id": component.id,
-        }
-        if operation["action"] == "add":
-            if item not in hostcomponent:
-                hostcomponent.append(item)
-            else:
-                msg = 'There is already component "{}" on host "{}"'
-                raise AdcmEx("COMPONENT_CONFLICT", msg.format(component.prototype.name, host.fqdn))
-        elif operation["action"] == "remove":
-            if item in hostcomponent:
-                hostcomponent.remove(item)
-            else:
-                msg = 'There is no component "{}" on host "{}"'
-                raise AdcmEx("COMPONENT_CONFLICT", msg.format(component.prototype.name, host.fqdn))
-        else:
-            raise AdcmEx("INVALID_INPUT", f'unknown hc action "{operation["action"]}"')
-
-    add_hc(cluster, hostcomponent)
-    file_descriptor.close()
 
 
 def cast_to_type(field_type: str, value: Any, limits: dict) -> Any:
