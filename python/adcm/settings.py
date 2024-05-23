@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from json import JSONDecodeError
 from pathlib import Path
 import os
 import sys
@@ -157,6 +158,18 @@ REST_FRAMEWORK = {
     },
 }
 
+
+def get_db_options() -> dict:
+    db_options = os.getenv("DB_OPTIONS", "{}")
+    try:
+        parsed = json.loads(db_options)
+    except JSONDecodeError as json_error:
+        raise RuntimeError("Failed to decode DB_OPTIONS as JSON") from json_error
+    if not isinstance(parsed, dict):
+        raise RuntimeError("DB_OPTIONS should be dict")  # noqa: TRY004
+    return parsed
+
+
 DB_PASS = os.getenv("DB_PASS")
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
@@ -172,6 +185,7 @@ if all((DB_PASS, DB_NAME, DB_USER, DB_HOST, DB_PORT)):
         "HOST": DB_HOST,
         "PORT": DB_PORT,
         "CONN_MAX_AGE": 60,
+        "OPTIONS": get_db_options(),
     }
 else:
     DB_DEFAULT = {
