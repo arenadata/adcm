@@ -241,47 +241,6 @@ def get_service_by_name(cluster_id, service_name):
     return ClusterObject.obj.get(cluster=cluster, prototype=proto)
 
 
-def _set_object_state(obj: ADCMEntity, state: str) -> ADCMEntity:
-    obj.set_state(state)
-    send_object_update_event(object_=obj, changes={"state": state})
-    return obj
-
-
-def set_cluster_state(cluster_id, state):
-    obj = Cluster.obj.get(id=cluster_id)
-    return _set_object_state(obj, state)
-
-
-def set_host_state(host_id, state):
-    obj = Host.obj.get(id=host_id)
-    return _set_object_state(obj, state)
-
-
-def set_component_state(component_id, state):
-    obj = ServiceComponent.obj.get(id=component_id)
-    return _set_object_state(obj, state)
-
-
-def set_component_state_by_name(cluster_id, service_id, component_name, service_name, state):
-    obj = get_component_by_name(cluster_id, service_id, component_name, service_name)
-    return _set_object_state(obj, state)
-
-
-def set_provider_state(provider_id, state):
-    obj = HostProvider.obj.get(id=provider_id)
-    return _set_object_state(obj, state)
-
-
-def set_service_state_by_name(cluster_id, service_name, state):
-    obj = get_service_by_name(cluster_id, service_name)
-    return _set_object_state(obj, state)
-
-
-def set_service_state(cluster_id, service_id, state):
-    obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type="service")
-    return _set_object_state(obj, state)
-
-
 def _set_object_multi_state(obj: ADCMEntity, multi_state: str) -> ADCMEntity:
     obj.set_multi_state(multi_state)
     return obj
