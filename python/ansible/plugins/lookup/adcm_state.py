@@ -14,18 +14,14 @@ import sys
 
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
+from cm.models import ADCMEntity, Cluster, ClusterObject, Host, HostProvider
+from cm.status_api import send_object_update_event
 
 sys.path.append("/adcm/python")
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from ansible_plugin.utils import (
-    set_cluster_state,
-    set_host_state,
-    set_provider_state,
-    set_service_state,
-    set_service_state_by_name,
-)
+from ansible_plugin.utils import get_service_by_name
 from cm.logger import logger
 
 DOCUMENTATION = """
@@ -99,3 +95,34 @@ class LookupModule(LookupBase):
             raise AnsibleError(f"unknown object type: {terms[0]}")
         ret.append(res)
         return ret
+
+
+def set_cluster_state(cluster_id, state):
+    obj = Cluster.obj.get(id=cluster_id)
+    return _set_object_state(obj, state)
+
+
+def set_host_state(host_id, state):
+    obj = Host.obj.get(id=host_id)
+    return _set_object_state(obj, state)
+
+
+def set_provider_state(provider_id, state):
+    obj = HostProvider.obj.get(id=provider_id)
+    return _set_object_state(obj, state)
+
+
+def set_service_state_by_name(cluster_id, service_name, state):
+    obj = get_service_by_name(cluster_id, service_name)
+    return _set_object_state(obj, state)
+
+
+def set_service_state(cluster_id, service_id, state):
+    obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type="service")
+    return _set_object_state(obj, state)
+
+
+def _set_object_state(obj: ADCMEntity, state: str) -> ADCMEntity:
+    obj.set_state(state)
+    send_object_update_event(object_=obj, changes={"state": state})
+    return obj

@@ -14,7 +14,8 @@ from operator import attrgetter
 
 from core.types import ADCMCoreType, CoreObjectDescriptor
 
-from ansible_plugin.errors import PluginTargetError
+from ansible_plugin.base import VarsContextSection
+from ansible_plugin.errors import PluginTargetError, PluginValidationError
 
 _CLUSTER_TYPES = {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT}
 _HOSTPROVIDER_TYPES = {ADCMCoreType.HOSTPROVIDER, ADCMCoreType.HOST}
@@ -49,5 +50,18 @@ def validate_target_allowed_for_context_owner(
         # only case it'll happen (in terms of plugin call):
         # context is "host" AND "type" is "host" AND "host_id" is specified as not the same as one in context
         return PluginTargetError(message="Wrong context. One host can't be changed from another's context.")
+
+    return None
+
+
+def validate_type_is_present(
+    context_owner: CoreObjectDescriptor,
+    context: VarsContextSection,  # noqa: ARG001
+    raw_arguments: dict,
+) -> PluginValidationError | None:
+    _ = context, context_owner
+
+    if "type" not in raw_arguments:
+        return PluginValidationError(message="`type` is required")
 
     return None

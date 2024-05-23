@@ -33,11 +33,10 @@ from ansible_plugin.base import (
     PluginExecutorConfig,
     RuntimeEnvironment,
     TargetConfig,
-    VarsContextSection,
     from_arguments_root,
 )
-from ansible_plugin.errors import PluginIncorrectCallError, PluginTargetDetectionError, PluginValidationError
-from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner
+from ansible_plugin.errors import PluginIncorrectCallError, PluginTargetDetectionError
+from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner, validate_type_is_present
 from ansible_plugin.utils import cast_to_type
 
 # don't want to typehint due to serialization problems and serialization priority
@@ -95,19 +94,6 @@ class ChangeConfigArguments(ParameterToChange):
 
 class ChangeConfigReturn(TypedDict):
     value: dict[str, ParamValue] | ParamValue
-
-
-def validate_type_is_present(
-    context_owner: CoreObjectDescriptor,
-    context: VarsContextSection,  # noqa: ARG001
-    raw_arguments: dict,
-) -> PluginValidationError | None:
-    _ = context, context_owner
-
-    if "type" not in raw_arguments:
-        return PluginValidationError(message="`type` is required")
-
-    return None
 
 
 class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeConfigArguments, ChangeConfigReturn]):
