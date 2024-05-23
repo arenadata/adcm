@@ -42,3 +42,7 @@ interface Named {
 export const isNameUniq = <T extends Named>(name: string, items: T[]): boolean => {
   return !items.some((item) => item.name === name);
 };
+
+export const isWhiteSpaceOnly = (value: string) => {
+  return /^\s+$/.test(value);
+};
