@@ -13,7 +13,6 @@
 from datetime import timedelta
 from unittest.mock import patch
 
-from adcm.tests.base import BaseTestCase
 from cm.models import (
     ADCM,
     Action,
@@ -26,13 +25,14 @@ from cm.models import (
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
-from django.urls import reverse
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
+from api_v2.tests.base import BaseAPITestCase
 
-class TestJob(BaseTestCase):
+
+class TestJob(BaseAPITestCase):
     TRUNCATED_LOG_MESSAGE = settings.STDOUT_STDERR_TRUNCATED_LOG_MESSAGE
 
     def setUp(self) -> None:
@@ -128,25 +128,25 @@ class TestJob(BaseTestCase):
         )
 
     def test_job_list_success(self):
-        response: Response = self.client.get(path=reverse(viewname="v2:joblog-list"))
+        response: Response = (self.client.v2 / "jobs").get()
+
         self.assertEqual(len(response.data["results"]), 3)
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_job_retrieve_success(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:joblog-detail", kwargs={"pk": self.job_2.pk}),
-        )
+        response: Response = self.client.v2[self.job_2].get()
+
         self.assertEqual(response.data["id"], self.job_2.pk)
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_job_retrieve_not_found_fail(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:joblog-detail", kwargs={"pk": self.job_2.pk + 10}),
-        )
+        response: Response = (self.client.v2 / "jobs" / self.get_non_existent_pk(JobLog)).get()
+
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_job_log_list_success(self):
-        response: Response = self.client.get(path=reverse(viewname="v2:log-list", kwargs={"job_pk": self.job_1.pk}))
+        response: Response = self.client.v2[self.job_1, "logs"].get()
+
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 1)
 
@@ -156,12 +156,8 @@ class TestJob(BaseTestCase):
         )
 
         with self.subTest("Many lines [CUT]"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:log-detail",
-                    kwargs={"job_pk": self.job_with_logs.pk, "pk": self.ansible_stdout_many_lines.pk},
-                )
-            )
+            response = self.client.v2[self.ansible_stdout_many_lines].get()
+
             self.assertEqual(response.status_code, HTTP_200_OK)
             log = response.json()["content"].splitlines()
             self.assertEqual(log[0], self.TRUNCATED_LOG_MESSAGE)
@@ -171,12 +167,7 @@ class TestJob(BaseTestCase):
             self.assertTrue(all(line == self.word_10_symbols for line in log_itself))
 
         with self.subTest("Long lines, less than cutoff [UNCUT]"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:log-detail",
-                    kwargs={"job_pk": self.job_with_logs.pk, "pk": self.ansible_stderr_long_lines.pk},
-                )
-            )
+            response = self.client.v2[self.ansible_stderr_long_lines].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
             log = response.json()["content"].splitlines()
             self.assertEqual(
@@ -192,23 +183,13 @@ class TestJob(BaseTestCase):
             )
 
         with self.subTest("Custom log [UNCUT]"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:log-detail",
-                    kwargs={"job_pk": self.job_with_logs.pk, "pk": self.custom_log_long_and_many_lines.pk},
-                )
-            )
+            response = self.client.v2[self.custom_log_long_and_many_lines].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
             log = response.json()["content"]
             self.assertEqual(log, self.custom_log_long_and_many_lines.body)
 
         with self.subTest("Long both ways non-ansible stdout [CUT]"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:log-detail",
-                    kwargs={"job_pk": self.job_with_logs.pk, "pk": self.another_stdout_long_and_many_lines.pk},
-                )
-            )
+            response = self.client.v2[self.another_stdout_long_and_many_lines].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
             log = response.json()["content"].splitlines()
             self.assertEqual(log[0], self.TRUNCATED_LOG_MESSAGE)
@@ -226,12 +207,7 @@ class TestJob(BaseTestCase):
             self.assertTrue(all(line == self.word_10_symbols for line in main_log))
 
         with self.subTest("Long one line [CUT]"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:log-detail",
-                    kwargs={"job_pk": self.job_with_logs.pk, "pk": self.long_one_liner_log.pk},
-                )
-            )
+            response = self.client.v2[self.long_one_liner_log].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
             log = response.json()["content"]
             self.assertEqual(
@@ -248,12 +224,7 @@ class TestJob(BaseTestCase):
         self.ansible_stdout_many_lines.save(update_fields=["body"])
 
         with patch("api_v2.log_storage.serializers.extract_log_content_from_fs", return_value=log_content):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:log-detail",
-                    kwargs={"job_pk": self.job_with_logs.pk, "pk": self.ansible_stdout_many_lines.pk},
-                )
-            )
+            response = self.client.v2[self.ansible_stdout_many_lines].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         log = response.json()["content"].splitlines()
@@ -264,18 +235,12 @@ class TestJob(BaseTestCase):
         self.assertTrue(all(line == self.word_10_symbols for line in log_itself))
 
     def test_job_log_download_success(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:log-download", kwargs={"job_pk": self.job_1.pk, "pk": self.log_1.pk})
-        )
+        response: Response = self.client.v2[self.log_1, "download"].get()
+
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_adcm_5212_job_log_download_full_success(self) -> None:
-        response: HttpResponse = self.client.get(
-            path=reverse(
-                viewname="v2:log-download",
-                kwargs={"job_pk": self.job_with_logs.pk, "pk": self.ansible_stdout_many_lines.pk},
-            )
-        )
+        response: HttpResponse = self.client.v2[self.ansible_stdout_many_lines, "download"].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         log = response.content.decode("utf-8")
@@ -283,15 +248,13 @@ class TestJob(BaseTestCase):
         self.assertEqual(self.ansible_stdout_many_lines.body, log)
 
     def test_job_log_not_found_download_fail(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:log-download", kwargs={"job_pk": self.job_1.pk, "pk": self.log_1.pk + 10})
-        )
+        response: Response = self.client.v2[self.job_1, "logs", self.get_non_existent_pk(LogStorage), "download"].get()
+
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_job_terminate_success(self):
         with patch("cm.models.os.kill") as kill_mock:
-            response: Response = self.client.post(
-                path=reverse(viewname="v2:joblog-terminate", kwargs={"pk": self.job_2.pk}), data={}
-            )
-            kill_mock.assert_called()
+            response: Response = self.client.v2[self.job_2, "terminate"].post(data={})
+
         self.assertEqual(response.status_code, HTTP_200_OK)
+        kill_mock.assert_called()
