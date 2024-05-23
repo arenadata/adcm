@@ -12,7 +12,6 @@
 
 from cm.models import ClusterObject, Host, MaintenanceMode, ServiceComponent
 from cm.tests.mocks.task_runner import ExecutionTargetFactoryDummyMock, FailedJobInfo, RunTaskMock
-from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
@@ -50,25 +49,14 @@ class TestMMActions(BaseAPITestCase):
             case _:
                 raise ValueError(f"Unexpected mm status: {obj.maintenance_mode}")
 
-        match type(obj).__name__:
-            case Host.__name__:
-                viewname = "v2:host-cluster-maintenance-mode"
-                kwargs = {"cluster_pk": obj.cluster_id, "pk": obj.pk}
-            case ClusterObject.__name__:
-                viewname = "v2:service-maintenance-mode"
-                kwargs = {"cluster_pk": obj.cluster_id, "pk": obj.pk}
-            case ServiceComponent.__name__:
-                viewname = "v2:component-maintenance-mode"
-                kwargs = {"cluster_pk": obj.cluster_id, "service_pk": obj.service_id, "pk": obj.pk}
-            case _:
-                raise ValueError(f"Wrong obj type: {type(obj).__name__}")
+        object_endpoint = self.client.v2[(obj.cluster, "hosts", obj) if isinstance(obj, Host) else obj]
 
         run_task_mock_kwargs = {}
         if failed_job:
             run_task_mock_kwargs = {"execution_target_factory": ExecutionTargetFactoryDummyMock(failed_job=failed_job)}
 
         with RunTaskMock(**run_task_mock_kwargs) as run_task_mock:
-            response = self.client.post(path=reverse(viewname=viewname, kwargs=kwargs), data=data)
+            response = (object_endpoint / "maintenance-mode").post(data=data)
 
         return response, run_task_mock
 
