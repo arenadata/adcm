@@ -10,7 +10,6 @@ import JobPageStopJobDialog from './Dialogs/JobPageStopJobDialog';
 
 const JobPage: React.FC = () => {
   const { task, dispatch } = useRequestJobPage();
-
   useEffect(() => {
     if (task.displayName) {
       const jobBreadcrumbs = [{ href: '/jobs', label: 'Jobs' }, { label: task.displayName }];

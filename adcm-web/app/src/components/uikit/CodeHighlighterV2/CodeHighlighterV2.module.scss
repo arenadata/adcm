@@ -1,39 +1,39 @@
 :global {
   body.theme-dark {
-    --code-highlite-textV2: var(--color-xwhite-off);
-    --code-highlite-borderV2: var(--color-xdark);
-    --code-highlite-shadowV2: unset;
-    --code-highlite-numbersV2: var(--color-xgray-light);
-    --code-highlite-numbers-backgroundV2: #181619;
-    --code-highlite-scrollbar-thumbV2: var(--color-xdark);
+    --code-highlight-textV2: var(--color-xwhite-off);
+    --code-highlight-borderV2: var(--color-xdark);
+    --code-highlight-shadowV2: unset;
+    --code-highlight-numbersV2: var(--color-xgray-light);
+    --code-highlight-numbers-backgroundV2: #181619;
+    --code-highlight-scrollbar-thumbV2: var(--color-xdark);
+    --code-highlight-backgroundV2: rgba(17,15,18,1);
+    --code-highlight-background-hoverV2:  rgba(50,50,57,0.5);
   }
   body.theme-light {
-    --code-highlite-textV2: var(--color-xdark);
-    --code-highlite-borderV2: var(--color-xgray);
-    --code-highlite-shadowV2: 0px 15px 20px rgba(169, 180, 203, 0.05), inset 0px 0px 3px rgba(119, 231, 255, 0.12);
-    --code-highlite-numbersV2: #c1bfbf;
-    --code-highlite-numbers-backgroundV2: var(--color-xgray-alt);
-    --code-highlite-scrollbar-thumbV2: var(--color-xgray-alt);
+    --code-highlight-textV2: var(--color-xdark);
+    --code-highlight-borderV2: var(--color-xgray);
+    --code-highlight-shadowV2: 0px 15px 20px rgba(169, 180, 203, 0.05), inset 0px 0px 3px rgba(119, 231, 255, 0.12);
+    --code-highlight-numbersV2: #c1bfbf;
+    --code-highlight-numbers-backgroundV2: var(--color-xgray-alt);
+    --code-highlight-scrollbar-thumbV2: var(--color-xgray-alt);
+    --code-highlight-backgroundV2: rgba(227, 234, 238, 0.5);
+    --code-highlight-background-hoverV2: rgba(255,255,255,1);
   }
 }
 
 body {
-  --code-highlite-lines-padding: 33px;
+  --code-highlight-lines-padding: 33px;
 }
 
 :global(body.theme-dark) {
   .codeHighlighter {
-    --code-higlite-calc-line-width: calc(var(--code-highlite-lines-width) + var(--code-highlite-lines-padding));
-    --code-highlite-backgroundV2: linear-gradient(90deg, rgba(0,0,0,0) var(--code-higlite-calc-line-width), rgba(17,15,18,1) var(--code-higlite-calc-line-width));
-    --code-highlite-background-hoverV2: linear-gradient(90deg, rgba(0,0,0,0) var(--code-higlite-calc-line-width), rgba(50,50,57,0.5) var(--code-higlite-calc-line-width));
+    --code-higlite-calc-line-width: calc(var(--code-highlight-lines-width) + var(--code-highlight-lines-padding));
   }
 }
 
 :global(body.theme-light) {
   .codeHighlighter {
-    --code-higlite-calc-line-width: calc(var(--code-highlite-lines-width) + var(--code-highlite-lines-padding));
-    --code-highlite-backgroundV2: linear-gradient(90deg, rgba(0,0,0,0) var(--code-higlite-calc-line-width), rgba(227, 234, 238, 0.5) var(--code-higlite-calc-line-width));
-    --code-highlite-background-hoverV2: linear-gradient(90deg, rgba(0,0,0,0) var(--code-higlite-calc-line-width), rgba(255,255,255,1) var(--code-higlite-calc-line-width));
+    --code-higlite-calc-line-width: calc(var(--code-highlight-lines-width) + var(--code-highlight-lines-padding));
   }
 }
 
@@ -41,7 +41,10 @@ body {
   margin-bottom: 20px;
   position: relative;
   height: inherit;
+  border: 1px solid var(--code-highlight-borderV2);
   border-radius: 10px;
+  background: var(--code-highlight-backgroundV2);
+  overflow: hidden;
 
   & .codeHighlighter__showSecretBtn {
     display: none;
@@ -59,13 +62,15 @@ body {
   }
 
   &:hover {
+    background: var(--code-highlight-background-hoverV2);
+
     & .codeHighlighter__copyBtn {
       display: block;
 
       &:global(.isCopied) {
         &:hover + .codeHighlighterWrapper {
-          border-color: var(--code-highlite-borderV2);
-          background: var(--code-highlite-background-hoverV2);
+          border-color: var(--code-highlight-borderV2);
+          background: var(--code-highlight-background-hoverV2);
         }
       }
 
@@ -78,25 +83,21 @@ body {
       display: block;
     }
   }
+
+  div[data-scroll='scroll-track-horizontal'] {
+    left: calc(var(--default-scroll-width) + var(--code-higlite-calc-line-width));
+    width: calc(100% - var(--code-higlite-calc-line-width) - calc(var(--default-scroll-width) * 2) + 4px);
+    z-index: 2;
+  }
 }
 
 .codeHighlighterWrapper {
-  max-height: 100%;
-  height: fit-content;
-  background: var(--code-highlite-backgroundV2);
   display: flex;
   width: 100%;
-  overflow: auto;
   justify-content: flex-start;
   font-weight: 400;
   font-size: 13px;
-  border: 1px solid var(--code-highlite-borderV2);
-  border-radius: 10px;
   position: relative;
-
-  &:hover {
-    background: var(--code-highlite-background-hoverV2);
-  }
 
   * {
     line-height: 17px;
@@ -105,7 +106,7 @@ body {
 }
 
 .codeHighlighterLinesWrapper {
-  background: var(--code-highlite-numbers-backgroundV2);
+  background: var(--code-highlight-numbers-backgroundV2);
   z-index: 2;
   position: sticky;
   left: 0;
@@ -114,9 +115,9 @@ body {
 .codeHighlighterLines {
   height: fit-content;
   padding: 24px 16px;
-  color: var(--code-highlite-numbersV2);
-  background: var(--code-highlite-numbers-backgroundV2);
-  border-right: 1px solid var(--code-highlite-borderV2);
+  color: var(--code-highlight-numbersV2);
+  background: var(--code-highlight-numbers-backgroundV2);
+  border-right: 1px solid var(--code-highlight-borderV2);
   box-sizing: border-box;
 }
 
@@ -155,16 +156,3 @@ pre.codeHighlighterCode {
   font-weight: 400;
   font-size: 13px;
 }
-
-div.highlighterScrollVertical {
-  top: var(--default-scroll-height);
-  height: calc(100% - calc(var(--default-scroll-height) * 2));
-  z-index: 2;
-}
-
-div.highlighterScrollHorizontal {
-  left: calc(var(--default-scroll-width) + var(--code-higlite-calc-line-width) + 0px);
-  width: calc(100% - var(--code-higlite-calc-line-width) - calc(var(--default-scroll-width) * 2) + 1px);
-  z-index: 2;
-}
-

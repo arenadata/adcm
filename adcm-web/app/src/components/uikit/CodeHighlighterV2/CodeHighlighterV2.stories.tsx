@@ -91,7 +91,7 @@ export const CodeHighlighterV2Example: Story = {
   },
   render: (args) => {
     return (
-      <div style={{ height: '500px', width: '1100px' }}>
+      <div style={{ height: '500px', maxWidth: '1100px' }}>
         <CodeHighlighterV2 code={args.code} lang={args.lang} isNotCopy={args.isNotCopy} />
       </div>
     );

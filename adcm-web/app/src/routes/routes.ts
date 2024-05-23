@@ -497,6 +497,18 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/jobs/:jobId/:withAutoStop': {
+    pageTitle: 'Jobs',
+    breadcrumbs: [
+      {
+        href: '/jobs',
+        label: 'Jobs',
+      },
+      {
+        label: ':jobId',
+      },
+    ],
+  },
 
   // Access manager
   '/access-manager': {

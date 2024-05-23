@@ -17,18 +17,20 @@
   height: 500px;
   font-size: 18px;
   line-height: 30px;
-  margin-bottom: 30px;
+  margin-bottom: 40px;
+  margin-top: 10px;
+  border: 1px solid dimgray;
+  padding: 20px;
+}
 
+.scrollMainWrapper {
+  height: inherit;
+  overflow: auto;
 }
 
 .contentWrapper {
-  box-sizing: border-box;
-  overflow: auto;
   width: 100%;
-  border: 1px solid rebeccapurple;
-  padding: 40px;
-  position: relative;
-  height: 100%;
+  height: inherit;
   background: var(--scroll-content-wrapper);
 }
 
@@ -37,7 +39,7 @@
 }
 
 .stretchableBlock {
-  min-width: 700px;
+  min-width: 900px;
   width: 100%;
 }
 

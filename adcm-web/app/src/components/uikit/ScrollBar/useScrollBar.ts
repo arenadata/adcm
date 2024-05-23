@@ -5,17 +5,25 @@ import { defaultScrollData, getScrollData, useObserver } from '@uikit/ScrollBar/
 export const useScrollBar = ({ orientation, contentRef, thumbRef, trackRef }: ScrollDataProps) => {
   const [scrollData, setScrollData] = useState<GetScrollDataResponse>(defaultScrollData);
   const initialMousePosition = useRef({ x: 0, y: 0 });
+  const [contentWrapper, setContentWrapper] = useState<Element | null>(null);
+
+  // Problem place. Here used useEffect with useState instead of useMemo because with some reason
+  // contentWrapper = useMemo( () => contentRef?.current?.children[0] || null, [contentRef]); doesn't update, so
+  // contentWrapper always equal null, but useEffect + useState works well.
+  useEffect(() => {
+    setContentWrapper(contentRef?.current?.children[0] || null);
+  }, [contentRef]);
 
   const updateScrollData = useCallback(() => {
-    if (!contentRef.current || !thumbRef.current || !thumbRef.current) return;
+    if (!contentRef.current || !thumbRef.current || !trackRef.current) return;
     setScrollData(getScrollData({ contentRef, trackRef, thumbRef, orientation }));
-  }, [contentRef, orientation, trackRef, thumbRef]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentRef?.current, orientation, trackRef, thumbRef]);
 
   const resizeObserver = useObserver(updateScrollData);
 
   const scrollHandler = useCallback(() => {
     if (!thumbRef?.current || !contentRef?.current) return;
-
     thumbRef.current.style.transform = `translate${scrollData.upperCasedAxis}(${
       contentRef.current[`scroll${scrollData.scrollTo}`] / scrollData.scrollFactor
     }px)`;
@@ -71,13 +79,13 @@ export const useScrollBar = ({ orientation, contentRef, thumbRef, trackRef }: Sc
   }, [contentRef, thumbRef, clearDocumentHandlers, scrollHandler, onMouseDown]);
 
   useEffect(() => {
-    if (!contentRef?.current) return;
-    const content = contentRef.current;
+    if (contentWrapper === null) return;
+    const content = contentWrapper;
     resizeObserver.observe(content);
 
     return () => {
-      if (content) return;
+      if (!content) return;
       resizeObserver.unobserve(content);
     };
-  }, [contentRef, resizeObserver]);
+  }, [contentWrapper, resizeObserver]);
 };
