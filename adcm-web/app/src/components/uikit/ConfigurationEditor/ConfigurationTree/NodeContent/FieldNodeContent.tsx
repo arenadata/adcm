@@ -1,7 +1,7 @@
 import { useCallback, useRef, useMemo, useState } from 'react';
 import { IconButton, Tooltip } from '@uikit';
 import { ConfigurationField, ConfigurationNodeView } from '../../ConfigurationEditor.types';
-import { emptyStringStub, nullStub, secretStub } from '../ConfigurationTree.constants';
+import { emptyStringStub, nullStub, secretStub, whiteSpaceStringStub } from '../ConfigurationTree.constants';
 import s from '../ConfigurationTree.module.scss';
 import cn from 'classnames';
 import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
@@ -9,6 +9,7 @@ import SynchronizedAttribute from './SyncronizedAttribute/SynchronizedAttribute'
 import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import { isPrimitiveValueSet } from '@models/json';
+import { isWhiteSpaceOnly } from '@utils/validationsUtils.ts';
 
 interface FieldNodeContentProps {
   node: ConfigurationNodeView;
@@ -88,6 +89,10 @@ const FieldNodeContent = ({
 
     if (fieldNodeData.value === '') {
       return emptyStringStub;
+    }
+
+    if (isWhiteSpaceOnly(fieldNodeData.value.toString())) {
+      return whiteSpaceStringStub;
     }
 
     if (adcmMeta.isSecret) {
