@@ -157,6 +157,8 @@
           "ssl",
           "statusable",
           "stderr",
+          "scrollend",
+          "scroller",
           "stdout",
           "str",
           "svg",

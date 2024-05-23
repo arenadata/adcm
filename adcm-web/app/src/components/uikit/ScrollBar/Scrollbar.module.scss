@@ -49,7 +49,6 @@ body {
 
 .scrollBarWrapper {
   position: absolute;
-
   &_top {
     top: 0;
     left: 0;
@@ -76,5 +75,27 @@ body {
     right: 0;
     width: var(--default-scroll-width);
     height: 100%;
+  }
+}
+
+.scrollerContainer {
+  overflow: auto;
+  height: inherit;
+  width: 100%;
+
+  .scrollBarWrapper {
+    &_right,
+    &_left {
+      top: var(--default-scroll-height);
+      height: calc(100% - calc(var(--default-scroll-height) * 2));
+      z-index: 2;
+    }
+
+    &_top,
+    &_bottom {
+      left: var(--default-scroll-height);
+      width: calc(100% - calc(var(--default-scroll-width) * 2));
+      z-index: 2;
+    }
   }
 }

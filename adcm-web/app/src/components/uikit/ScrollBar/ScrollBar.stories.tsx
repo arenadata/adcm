@@ -1,9 +1,10 @@
-import React, { PropsWithChildren, RefObject, useRef } from 'react';
+import React, { PropsWithChildren, useRef } from 'react';
 import { Meta, StoryObj } from '@storybook/react';
 import ScrollBar from '@uikit/ScrollBar/ScrollBar';
 import ScrollBarWrapper from '@uikit/ScrollBar/ScrollBarWrapper';
 import s from './ScrollBarStories.module.scss';
 import { Text } from '@uikit';
+import Scroller from '@uikit/ScrollBar/Scroller';
 
 type Story = StoryObj<typeof ScrollBar>;
 
@@ -21,14 +22,10 @@ export const ScrollBarStory: Story = {
   render: () => <ScrollBarExample />,
 };
 
-interface TextContentProps extends PropsWithChildren {
-  contentRef: RefObject<HTMLDivElement>;
-}
-
-const TextContent = ({ contentRef, children }: TextContentProps) => {
+const TextContent = ({ children }: PropsWithChildren) => {
   return (
-    <div className={s.contentWrapper} ref={contentRef}>
-      <Text variant="h1">Chicken Coder: the incredible coder journey!</Text>
+    <div className={s.contentWrapper}>
+      <Text variant="h2">Chicken Coder: the incredible coder journey!</Text>
       <p>
         Once upon a time, in the bustling town of Techtopia, there lived a peculiar chicken named Cluckbert. Unlike the
         other chickens in the coop, Cluckbert was not content with the simple life of pecking at grains and strutting
@@ -84,7 +81,7 @@ const TextContent = ({ contentRef, children }: TextContentProps) => {
         possibilities.
       </p>
 
-      <Text variant="h1">Unchecked Lines: The Story of Matilda's Code Catastrophe</Text>
+      <Text variant="h2">Unchecked Lines: The Story of Matilda's Code Catastrophe</Text>
       <p>
         Once upon a time, in the bustling world of tech, there was a small but talented mouse named Matilda who worked
         as a software engineer in a vibrant company called ByteTech Inc. Matilda was known for her exceptional coding
@@ -135,38 +132,59 @@ const TextContent = ({ contentRef, children }: TextContentProps) => {
   );
 };
 
+// Use 'Scroller' component if you ok with default scroll bar position with orientation as 'horizontal = bottom', 'vertical = right'
+// Just put wrapper with your content as child.
+// Also, you can customize track and thumb through passing class which override props by using something like
+//
+//  .someClassName {
+//    div['scroll-track-${orientation}'] { some props }
+//  }
+
+// For use scroll bar without Scroller component, keep next structure:
+// <div className={someContainer}>
+//   <div className={mainWrapper} ref={mainWrapperRef}> this wrapper should have scrolling content wrapper as only child
+//     <div className={wrapperForScrollingContent}>
+//       some content which we want to scroll
+//     </div>
+//   </div>
+//   <div className={scrollBarWrapper}> wrapper for set position for scroll bar
+//     <ScrollBar
+//       contentRef={mainWrapperRef}
+//       orientation="vertical" or orientation="horizontal"
+//     />
+//   </div>
+// </div>
+
 const ScrollBarExample = () => {
   const contentRef = useRef<HTMLDivElement>(null);
-  const contentRefSecond = useRef<HTMLDivElement>(null);
 
   return (
     <>
-      <Text variant="h1">Default scrollbar</Text>
+      <Text variant="h1">Scrollbar with "Scroller"</Text>
       <div className={s.allMightyWrapper}>
-        <ScrollBarWrapper position="right">
-          <ScrollBar contentRef={contentRef} orientation="vertical" />
-        </ScrollBarWrapper>
-        <ScrollBarWrapper position="bottom">
-          <ScrollBar contentRef={contentRef} orientation="horizontal" />
-        </ScrollBarWrapper>
-
-        <TextContent contentRef={contentRef}>
-          <div className={s.longBlock}>
-            <p>
-              "Test long text" is a phrase often used to verify the display and formatting of text in various contexts,
-              particularly in software development. It's a placeholder for content, allowing developers to assess how
-              text appears within a layout or interface before finalizing it with actual content.
-            </p>
-          </div>
-        </TextContent>
+        <Scroller>
+          <TextContent />
+        </Scroller>
       </div>
 
       <Text variant="h1">Custom scroll bar, with container stretchable by width</Text>
       <div className={s.allMightyWrapper}>
+        <div className={s.scrollMainWrapper} ref={contentRef}>
+          <TextContent>
+            <div className={s.stretchableBlock}>
+              <p>
+                "Test long text" is a phrase often used to verify the display and formatting of text in various
+                contexts, particularly in software development. It's a placeholder for content, allowing developers to
+                assess how text appears within a layout or interface before finalizing it with actual content.
+              </p>
+            </div>
+          </TextContent>
+        </div>
+
         <div className={s.scrollWrapperLeft}>
           <ScrollBar
             trackClasses={s.scrollWrapperLeft_track}
-            contentRef={contentRefSecond}
+            contentRef={contentRef}
             thumbClasses={s.thumb}
             orientation="vertical"
           />
@@ -175,7 +193,7 @@ const ScrollBarExample = () => {
           <ScrollBar
             trackClasses={s.scrollTop}
             thumbClasses={s.thumb}
-            contentRef={contentRefSecond}
+            contentRef={contentRef}
             orientation="horizontal"
           />
         </ScrollBarWrapper>
@@ -184,20 +202,10 @@ const ScrollBarExample = () => {
           <ScrollBar
             trackClasses={s.scrollBottom}
             thumbClasses={s.thumb}
-            contentRef={contentRefSecond}
+            contentRef={contentRef}
             orientation="horizontal"
           />
         </ScrollBarWrapper>
-
-        <TextContent contentRef={contentRefSecond}>
-          <div className={s.stretchableBlock}>
-            <p>
-              "Test long text" is a phrase often used to verify the display and formatting of text in various contexts,
-              particularly in software development. It's a placeholder for content, allowing developers to assess how
-              text appears within a layout or interface before finalizing it with actual content.
-            </p>
-          </div>
-        </TextContent>
       </div>
     </>
   );

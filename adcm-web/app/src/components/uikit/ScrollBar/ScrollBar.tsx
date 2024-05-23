@@ -18,7 +18,13 @@ const ScrollBar = ({ contentRef, orientation, trackClasses, thumbClasses, thumbC
   };
 
   return (
-    <div ref={trackRef} className={trackClassName} draggable={false} style={thumbStyles}>
+    <div
+      ref={trackRef}
+      className={trackClassName}
+      draggable={false}
+      style={thumbStyles}
+      data-scroll={`scroll-track-${orientation}`}
+    >
       <div ref={thumbRef} className={thumbClassName} draggable={false} />
     </div>
   );

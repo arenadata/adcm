@@ -26,9 +26,9 @@ export const getScrollData = ({ contentRef, trackRef, thumbRef, orientation }: S
 
   if (contentMagnitude !== contentScrollMagnitude) {
     thumbRef.current.style[lowerCasedMagnitudeName] = `${(contentMagnitude * 100) / contentScrollMagnitude}%`;
-    trackRef.current.style.display = '';
+    trackRef.current.style.visibility = '';
   } else {
-    trackRef.current.style.display = 'none';
+    trackRef.current.style.visibility = 'hidden';
   }
 
   return {
