@@ -26,6 +26,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from rbac.models import Policy, User
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 
@@ -88,6 +89,8 @@ class V2RootNode(RootNode):
         Host: "hosts",
         TaskLog: "tasks",
         JobLog: "jobs",
+        Policy: "rbac/policies",
+        User: "rbac/users",
     }
 
     def __getitem__(self, item: PathObject | tuple[PathObject, str | int | WithID, ...]) -> APINode:
