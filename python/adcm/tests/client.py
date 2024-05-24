@@ -14,11 +14,23 @@ from abc import ABC, abstractmethod
 from itertools import chain
 from typing import Protocol
 
-from cm.models import Bundle, Cluster, ClusterObject, GroupConfig, Host, HostProvider, JobLog, ServiceComponent, TaskLog
+from cm.models import (
+    Bundle,
+    Cluster,
+    ClusterObject,
+    GroupConfig,
+    Host,
+    HostProvider,
+    JobLog,
+    LogStorage,
+    ServiceComponent,
+    TaskLog,
+)
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 
-PathObject = Bundle | Cluster | ClusterObject | ServiceComponent | HostProvider | Host | TaskLog | JobLog | GroupConfig
+_RootPathObject = Bundle | Cluster | HostProvider | Host | TaskLog | JobLog
+PathObject = _RootPathObject | ClusterObject | ServiceComponent | LogStorage | GroupConfig
 
 
 class WithID(Protocol):
@@ -116,6 +128,11 @@ class V2RootNode(RootNode):
         if isinstance(path_object, GroupConfig):
             # generally it's move clean and obvious when multiple `/` is used, but in here it looks like an overkill
             return self[path_object.object] / "/".join(("config-groups", str(path_object.id), *tail))
+
+        if isinstance(path_object, LogStorage):
+            return APINode(
+                *self._path, "jobs", str(path_object.job_id), "logs", str(path_object.id), *tail, client=self._client
+            )
 
         message = f"Node auto-detection isn't defined for {path_object.__class__}"
         raise NotImplementedError(message)
