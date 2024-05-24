@@ -481,7 +481,7 @@ class ADCMAnsiblePlugin(ActionBase):
         with (settings.RUN_DIR / str(task_vars["job"]["id"]) / "config.json").open(encoding="utf-8") as file:
             fcntl.flock(file.fileno(), fcntl.LOCK_EX)
 
-            executor = self.executor_class(arguments=self._task.args, runtime_vars=task_vars)
+            executor = self._get_executor(tmp=tmp, task_vars=task_vars)
             execution_result = executor.execute()
 
             if execution_result.error:
@@ -494,3 +494,7 @@ class ADCMAnsiblePlugin(ActionBase):
             result_value["value"] = execution_result.value
 
         return {"changed": execution_result.changed, **result_value}
+
+    def _get_executor(self, tmp: Any, task_vars: Any) -> ADCMAnsiblePluginExecutor:
+        _ = tmp
+        return self.executor_class(arguments=self._task.args, runtime_vars=task_vars)

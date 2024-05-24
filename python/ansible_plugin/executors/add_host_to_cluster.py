@@ -39,7 +39,7 @@ class AddHostToClusterArguments(BaseModel):
     def check_either_is_specified(self) -> Self:
         # won't filter out empty strings or 0 `host_id`, leave it to plugin logic to handle
         if self.fqdn is None and self.host_id is None:
-            message = "either `fqdn` or `host_id` have to be specified"
+            message = "either `fqdn` or `host_id` has to be specified"
             raise ValueError(message)
 
         return self
