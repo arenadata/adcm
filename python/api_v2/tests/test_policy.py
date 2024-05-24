@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import reverse
 from rbac.models import Group, Policy, Role
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
@@ -50,7 +49,7 @@ class TestPolicy(BaseAPITestCase):
         )
 
     def test_list_policy_success(self) -> None:
-        response = self.client.get(path=reverse(viewname="v2:rbac:policy-list"))
+        response = (self.client.v2 / "rbac" / "policies").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
@@ -60,9 +59,7 @@ class TestPolicy(BaseAPITestCase):
         self.assertTrue(all(set(policy).issuperset({"id", "name", "objects", "groups"}) for policy in policies))
 
     def test_retrieve_policy_success(self) -> None:
-        response = self.client.get(
-            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.create_user_policy.pk})
-        )
+        response = self.client.v2[self.create_user_policy].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
@@ -88,14 +85,13 @@ class TestPolicy(BaseAPITestCase):
         )
 
     def test_create_parametrized_policy_only_required_fields_success(self) -> None:
-        response = self.client.post(
-            path=reverse(viewname="v2:rbac:policy-list"),
+        response = (self.client.v2 / "rbac" / "policies").post(
             data={
                 "name": "New Policy",
                 "role": {"id": self.remove_hostprovider_role.pk},
                 "objects": [{"id": self.provider.pk, "type": "provider"}],
                 "groups": [self.group_1.pk],
-            },
+            }
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -125,10 +121,7 @@ class TestPolicy(BaseAPITestCase):
             "objects": [],
             "groups": [self.group_2.pk],
         }
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.remove_hostprovider_policy.pk}),
-            data=new_data,
-        )
+        response = self.client.v2[self.remove_hostprovider_policy].patch(data=new_data)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
@@ -141,43 +134,39 @@ class TestPolicy(BaseAPITestCase):
         )
 
     def test_delete_policy_success(self) -> None:
-        response = self.client.delete(
-            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.create_user_policy.pk})
-        )
+        response = self.client.v2[self.create_user_policy].delete()
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertFalse(Policy.objects.filter(pk=self.create_user_policy.pk).exists())
 
     def test_create_policy_no_group_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:rbac:policy-list"),
+        response = (self.client.v2 / "rbac" / "policies").post(
             data={
                 "name": "test_policy_new",
                 "description": "description",
                 "role": self.create_user_role.pk,
                 "objects": [{"type": "cluster", "id": self.cluster_1.pk}],
-            },
+            }
         )
+
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
     def test_update_policy_no_operation_success(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.create_user_policy.pk}),
+        response = self.client.v2[self.create_user_policy].patch(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_update_policy_wrong_object_fail(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.create_user_policy.pk}),
-            data={"objects": [{"type": "role", "id": self.create_user_role.pk}]},
+        response = self.client.v2[self.create_user_policy].patch(
+            data={"objects": [{"type": "role", "id": self.create_user_role.pk}]}
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
     def test_adcm_5103_policy_ordering_success(self) -> None:
         for name in ("Test", "Best", "Good", "Class"):
             policy_create(name=name, role=self.create_user_role, group=[self.group_1], object=[])
-        response = self.client.get(path=reverse(viewname="v2:rbac:policy-list"))
+        response = (self.client.v2 / "rbac" / "policies").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         policies = [p["name"] for p in response.json()["results"]]
