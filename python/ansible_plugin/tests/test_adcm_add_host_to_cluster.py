@@ -116,7 +116,7 @@ class TestAddHostToClusterPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         result = executor.execute()
 
         self.assertIsInstance(result.error, PluginValidationError)
-        self.assertIn("either `fqdn` or `host_id` have to be specified", result.error.message)
+        self.assertIn("either `fqdn` or `host_id` has to be specified", result.error.message)
 
     def test_incorrect_context_call_fail(self) -> None:
         for object_ in (self.provider, self.host_1):
