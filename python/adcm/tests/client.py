@@ -23,6 +23,7 @@ from cm.models import (
     HostProvider,
     JobLog,
     LogStorage,
+    Prototype,
     ServiceComponent,
     TaskLog,
 )
@@ -30,7 +31,7 @@ from rbac.models import Policy, User
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 
-_RootPathObject = Bundle | Cluster | HostProvider | Host | TaskLog | JobLog
+_RootPathObject = Bundle | Cluster | HostProvider | Host | TaskLog | JobLog | Prototype
 PathObject = _RootPathObject | ClusterObject | ServiceComponent | LogStorage | GroupConfig
 
 
@@ -89,6 +90,7 @@ class V2RootNode(RootNode):
         Host: "hosts",
         TaskLog: "tasks",
         JobLog: "jobs",
+        Prototype: "prototypes",
         Policy: "rbac/policies",
         User: "rbac/users",
     }
