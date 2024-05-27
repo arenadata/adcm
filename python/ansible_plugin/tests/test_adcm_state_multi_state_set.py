@@ -15,13 +15,15 @@ from typing import TypeAlias
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 from cm.services.job.run.repo import JobRepoImpl
 
+from ansible_plugin.base import ADCMAnsiblePluginExecutor
+from ansible_plugin.executors.multi_state_set import ADCMMultiStateSetPluginExecutor
 from ansible_plugin.executors.state import ADCMStatePluginExecutor
 from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
-ADCM_OBJECT: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+ADCMObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
 
 
-class TestADCMStatePluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
+class TestADCMStateMultiStatePluginExecutors(BaseTestEffectsOfADCMAnsiblePlugins):
     def setUp(self) -> None:
         super().setUp()
 
@@ -29,7 +31,7 @@ class TestADCMStatePluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         self.service = services.get(prototype__name="service_1")
         self.component = self.service.servicecomponent_set.first()
 
-        self.new_state = "brand new object's state"
+        self.new_state = "brand new object's (multi)state"
 
         provider = self.add_provider(bundle=self.provider_bundle, name="Control provider")
         cluster = self.add_cluster(bundle=self.cluster_bundle, name="Control cluster")
@@ -38,41 +40,57 @@ class TestADCMStatePluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         self.control_objects = [cluster, service_2, *list(other_components), provider, self.host_2]
 
     def _execute_test(
-        self, owner: ADCM_OBJECT, target: ADCM_OBJECT, call_arguments: str | dict, expect_fail: bool = False
+        self,
+        owner: ADCMObject,
+        target: ADCMObject,
+        call_arguments: str | dict,
+        executor_class: type[ADCMAnsiblePluginExecutor],
+        expected_value: str | list[str] | None = None,
+        expect_fail: bool = False,
     ) -> None:
-        old_state = target.state
+        match executor_class.__name__:
+            case ADCMStatePluginExecutor.__name__:
+                model_field = "state"
+                control_value = ["created"]
+            case ADCMMultiStateSetPluginExecutor.__name__:
+                model_field = "multi_state"
+                control_value = [[]]
+            case _:
+                raise NotImplementedError(str(executor_class))
 
         task = self.prepare_task(owner=owner, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
-            executor_type=ADCMStatePluginExecutor,
+            executor_type=executor_class,
             call_arguments=call_arguments,
             call_context=job,
         )
         result = executor.execute()
 
         if expect_fail:
-            target_state = old_state
             self.assertIsNotNone(result.error)
             self.assertFalse(result.changed)
         else:
-            target_state = self.new_state
             self.assertIsNone(result.error)
             self.assertTrue(result.changed)
 
         target.refresh_from_db()
-        self.assertEqual(target.state, target_state)
+        expected_value = control_value[0] if expect_fail else expected_value
+        self.assertEqual(getattr(target, model_field), expected_value)
 
-    def _check_control_group(self):
-        states = set()
+        if expect_fail:
+            return
+
+        # check control objects' states
+        states = []
         for object_ in self.control_objects:
             object_.refresh_from_db()
-            states.add(object_.state)
+            states.append(getattr(object_, model_field))
 
-        self.assertEqual(states, {"created"})
+        self.assertListEqual(states, control_value * len(self.control_objects))
 
-    def test_states(self):
+    def test_set_states(self):
         for owner, target, call_args in (
             (self.cluster, self.cluster, {"type": "cluster", "state": self.new_state}),
             (
@@ -105,13 +123,53 @@ class TestADCMStatePluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
             (self.host_1, self.provider, {"type": "provider", "state": self.new_state}),
             (self.host_1, self.host_1, {"type": "host", "state": self.new_state}),
         ):
-            with self.subTest(owner=owner, target=target, call_args=call_args):
-                self._execute_test(owner=owner, target=target, call_arguments=call_args)
-                self._check_control_group()
+            for executor_class, expected_value in (
+                (ADCMStatePluginExecutor, self.new_state),
+                (ADCMMultiStateSetPluginExecutor, [self.new_state]),
+            ):
+                with self.subTest(
+                    owner=owner,
+                    target=target,
+                    call_args=call_args,
+                    executor_class=executor_class,
+                    expected_value=expected_value,
+                ):
+                    self._execute_test(
+                        owner=owner,
+                        target=target,
+                        call_arguments=call_args,
+                        executor_class=executor_class,
+                        expected_value=expected_value,
+                    )
 
     def test_forbidden_owner_targert_pairs(self):
         for owner, target, call_args in (
             (self.host_1, self.host_2, {"type": "host", "host_id": self.host_2.pk, "state": self.new_state}),
         ):
-            with self.subTest(owner=owner, target=target, call_args=call_args):
-                self._execute_test(owner=owner, target=target, call_arguments=call_args, expect_fail=True)
+            for executor_class in (ADCMStatePluginExecutor, ADCMMultiStateSetPluginExecutor):
+                with self.subTest(owner=owner, target=target, call_args=call_args, executor_class=executor_class):
+                    self._execute_test(
+                        owner=owner,
+                        target=target,
+                        call_arguments=call_args,
+                        executor_class=executor_class,
+                        expect_fail=True,
+                    )
+
+    def test_multi_state_adds_value(self):
+        self._execute_test(
+            owner=self.service,
+            target=self.cluster,
+            call_arguments={"type": "cluster", "state": self.new_state},
+            executor_class=ADCMMultiStateSetPluginExecutor,
+            expected_value=[self.new_state],
+        )
+
+        another_state = "another state"
+        self._execute_test(
+            owner=self.component,
+            target=self.cluster,
+            call_arguments={"type": "cluster", "state": another_state},
+            executor_class=ADCMMultiStateSetPluginExecutor,
+            expected_value=sorted([self.new_state, another_state]),
+        )

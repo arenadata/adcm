@@ -12,15 +12,17 @@
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Any, Collection, Generic, Literal, Mapping, Protocol, TypeVar
+from typing import Any, Collection, Generic, Literal, Mapping, Protocol, TypeAlias, TypeVar
 import fcntl
 
 from ansible.errors import AnsibleActionFail
 from ansible.module_utils._text import to_native
 from ansible.plugins.action import ActionBase
-from cm.models import ClusterObject, ServiceComponent
+from cm.converters import core_type_to_model
+from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 from core.types import ADCMCoreType, CoreObjectDescriptor, ObjectID
 from django.conf import settings
+from django.db.models import ObjectDoesNotExist
 from pydantic import BaseModel, ValidationError, field_validator
 
 from ansible_plugin.errors import (
@@ -35,6 +37,7 @@ from ansible_plugin.errors import (
 
 
 TargetTypeLiteral = Literal["cluster", "service", "component", "provider", "host"]
+ProductORMObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
 
 
 class VarsContextSection(BaseModel):
@@ -224,6 +227,15 @@ def _from_target_description(
             raise PluginRuntimeError(message=message)
 
 
+def retrieve_orm_object(
+    object_: CoreObjectDescriptor, error_class: type[ADCMPluginError] = PluginTargetDetectionError
+) -> ProductORMObject:
+    try:
+        return core_type_to_model(core_type=object_.type).objects.get(pk=object_.id)
+    except ObjectDoesNotExist:
+        raise error_class(message=f'Failed to locate {object_.type} with id "{object_.id}"') from None
+
+
 # Plugin
 
 CallArguments = TypeVar("CallArguments", bound=BaseModel)
@@ -234,6 +246,10 @@ class NoArguments(BaseModel):
     """
     Use it when plugin doesn't use any arguments
     """
+
+
+class SingleStateArgument(BaseModel):
+    state: str
 
 
 @dataclass(frozen=True, slots=True)
