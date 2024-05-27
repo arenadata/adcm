@@ -3,7 +3,7 @@ import CollapseNode from '@uikit/CollapseTree2/CollapseNode';
 import FieldNodeContent from './NodeContent/FieldNodeContent';
 import AddItemNodeContent from './NodeContent/AddItemNodeContent';
 import NodeWithChildrenContent from './NodeContent/NodeWithChildrenContent';
-import {
+import type {
   ConfigurationNode,
   ConfigurationNodeView,
   ConfigurationArray,
@@ -12,8 +12,8 @@ import {
   ConfigurationObject,
 } from '../ConfigurationEditor.types';
 import { buildConfigurationNodes, buildConfigurationTree, validate } from './ConfigurationTree.utils';
-import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
-import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from './ConfigurationTree.types';
+import type { ConfigurationAttributes, ConfigurationData, ConfigurationSchema, FieldErrors } from '@models/adcm';
+import type { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from './ConfigurationTree.types';
 import s from './ConfigurationTree.module.scss';
 import cn from 'classnames';
 import { rootNodeKey, toggleAllNodesEventName } from './ConfigurationTree.constants';
@@ -67,9 +67,9 @@ const ConfigurationTree = memo(
 
     const viewConfigTree = buildConfigurationTree(configNode, filter);
 
-    const { isValid, errorsPaths } = validate(schema, configuration, attributes);
+    const { isValid, configurationErrors } = validate(schema, configuration, attributes);
     // todo: remove commented for debugging process
-    // !isValid && console.error(errorsPaths);
+    // !isValid && console.error(configurationErrors);
 
     useEffect(() => {
       onChangeIsValid?.(isValid);
@@ -88,7 +88,7 @@ const ConfigurationTree = memo(
     };
 
     const handleGetNodeClassName = (node: ConfigurationNodeView) => {
-      const hasError = errorsPaths[node.key] !== undefined;
+      const hasError = configurationErrors[node.key] !== undefined;
       const isSelected = node.key === selectedNode?.key;
       return getNodeClassName(node, hasError, isSelected);
     };
@@ -98,13 +98,14 @@ const ConfigurationTree = memo(
       isExpanded: boolean,
       onExpand: (isOpen: boolean) => void,
     ) => {
-      const error = typeof errorsPaths[node.key] === 'string' ? (errorsPaths[node.key] as string) : undefined;
+      const errors =
+        typeof configurationErrors[node.key] === 'object' ? (configurationErrors[node.key] as FieldErrors) : undefined;
       switch (node.data.type) {
         case 'field': {
           return (
             <FieldNodeContent
               node={node}
-              error={error}
+              errors={errors}
               onClick={handleClick}
               onClear={onClear}
               onDelete={onDelete}
@@ -126,7 +127,7 @@ const ConfigurationTree = memo(
             <NodeWithChildrenContent
               node={node}
               isExpanded={isExpanded}
-              error={error}
+              errors={errors}
               onClear={onClear}
               onDelete={onDelete}
               onExpand={onExpand}

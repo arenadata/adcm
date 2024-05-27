@@ -68,8 +68,8 @@ describe('validate', () => {
       },
     };
 
-    const result = validate(schema, object);
-    expect(result.isValid).toBe(true);
+    const errors = validate(schema, object);
+    expect(errors).toBe(null);
   });
 
   test('validate incorrect data', () => {
@@ -84,18 +84,14 @@ describe('validate', () => {
       },
     };
 
-    const result = validate(schema, object);
-    expect(result.isValid).toBe(false);
-    expect(result.errorsPaths).toStrictEqual({
-      '/': true,
-      '/clusterConfiguration': true,
-      '/clusterConfiguration/cluster_config': true,
-      '/clusterConfiguration/cluster_config/cluster': true,
-      '/clusterConfiguration/cluster_config/cluster/shard': true,
-      '/clusterConfiguration/cluster_config/cluster/shard/0': true,
-      '/clusterConfiguration/cluster_config/cluster/shard/0/internal_replica': 'must be >= 12',
-      '/clusterConfiguration/cluster_config/cluster/shard/0/weight': 'must be <= 10',
-    });
+    const errors = validate(schema, object);
+
+    expect(errors).not.toBe(null);
+    expect(errors?.length).toBe(2);
+    expect(errors![0].instancePath).toBe('/clusterConfiguration/cluster_config/cluster/shard/0/internal_replica');
+    expect(errors![0].message).toBe('must be >= 12');
+    expect(errors![1].instancePath).toBe('/clusterConfiguration/cluster_config/cluster/shard/0/weight');
+    expect(errors![1].message).toBe('must be <= 10');
   });
 
   test('validate multiple types', () => {
@@ -137,52 +133,14 @@ describe('validate', () => {
       some_field: null,
     };
 
-    const result1 = validate(schema, object1);
-    expect(result1.isValid).toBe(true);
+    const errors1 = validate(schema, object1);
+    expect(errors1).toBe(null);
 
-    const result2 = validate(schema, object2);
-    expect(result2.isValid).toBe(true);
+    const errors2 = validate(schema, object2);
+    expect(errors2).toBe(null);
 
-    const result3 = validate(schema, object3);
-    expect(result3.isValid).toBe(false);
-  });
-
-  test('test required fields', () => {
-    const schema: Schema = {
-      $schema: 'https://json-schema.org/draft/2020-12/schema',
-      type: 'object',
-      required: ['structure'],
-      properties: {
-        structure: {
-          type: 'object',
-          required: ['field1', 'field2'],
-          properties: {
-            field1: { type: 'string' },
-            field2: { type: 'string' },
-          },
-        },
-      },
-    };
-
-    const object1 = {
-      structure: {
-        field1: 'value1',
-      },
-    };
-
-    const object2 = {
-      structure: {
-        field1: 'value1',
-        field2: 'value2',
-      },
-    };
-
-    const result1 = validate(schema, object1);
-    expect(result1.isValid).toBe(false);
-    expect(result1.errorsPaths).toStrictEqual({ '/': true, '/structure': true, '/structure/field2': 'required' });
-
-    const result2 = validate(schema, object2);
-    expect(result2.isValid).toBe(true);
+    const errors3 = validate(schema, object3);
+    expect(errors3).not.toBe(null);
   });
 });
 

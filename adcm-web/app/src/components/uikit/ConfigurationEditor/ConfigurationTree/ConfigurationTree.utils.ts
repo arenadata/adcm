@@ -2,10 +2,12 @@ import {
   ConfigurationData,
   ConfigurationSchema,
   SchemaDefinition,
+  ConfigurationErrors,
   SingleSchemaDefinition,
   MultipleSchemaDefinitions,
   ConfigurationAttributes,
   FieldAttributes,
+  FieldErrors,
 } from '@models/adcm';
 import { JSONValue, JSONObject, JSONPrimitive } from '@models/json';
 import {
@@ -17,30 +19,108 @@ import {
   ConfigurationNodeView,
 } from '../ConfigurationEditor.types';
 import { validate as validateJsonSchema } from '@utils/jsonSchemaUtils';
-import { primitiveFieldTypes, rootNodeKey, rootNodeTitle } from './ConfigurationTree.constants';
+import {
+  primitiveFieldTypes,
+  rootNodeKey,
+  rootNodeTitle,
+  secretFieldValuePrefixToIgnore,
+} from './ConfigurationTree.constants';
 
 export const validate = (schema: SchemaDefinition, configuration: JSONObject, attributes: ConfigurationAttributes) => {
-  const { errorsPaths } = validateJsonSchema(schema, configuration);
+  const errors = validateJsonSchema(schema, configuration);
 
-  // TODO: Optimize (get rid nested loop)
+  const configurationErrors = getConfigurationErrors(errors);
+  filterConfigurationErrors(configurationErrors, attributes);
+  fillParentPathParts(configurationErrors);
+
+  const isValid = Object.keys(configurationErrors).length === 0;
+
+  return { isValid, configurationErrors };
+};
+
+export const getConfigurationErrors = (errors: ReturnType<typeof validateJsonSchema>) => {
+  const result: ConfigurationErrors = {};
+
+  if (!errors || errors.length === 0) {
+    return result;
+  }
+
+  // group error by fieldPath
+  for (const error of errors) {
+    let instancePath = error.instancePath;
+    let errorMessage = error.message || '';
+
+    // extend error from structure to field
+    if (error.keyword === 'required') {
+      instancePath += `/${error.params.missingProperty}`;
+      errorMessage = 'required';
+    }
+
+    if (!result[instancePath]) {
+      result[instancePath] = {
+        schema: error.parentSchema as SchemaDefinition,
+        value: error.data,
+        messages: {},
+      };
+    }
+
+    const fieldErrors = result[instancePath] as FieldErrors;
+    fieldErrors.messages[error.keyword] = errorMessage;
+  }
+
+  return result;
+};
+
+export const filterConfigurationErrors = (errors: ConfigurationErrors, attributes: ConfigurationAttributes) => {
   // ignore errors for not active groups
   for (const [path, value] of Object.entries(attributes)) {
     if (value.isActive === false) {
-      for (const [errorPath] of Object.entries(errorsPaths)) {
+      for (const [errorPath] of Object.entries(errors)) {
         if (errorPath === path || errorPath.startsWith(`${path}/`)) {
-          delete errorsPaths[errorPath];
+          delete errors[errorPath];
         }
       }
     }
   }
 
-  if (Object.keys(errorsPaths).length === 1 && errorsPaths['/'] === true) {
-    delete errorsPaths['/'];
+  for (const [errorPath, error] of Object.entries(errors)) {
+    const fieldErrors = error as FieldErrors;
+    const { fieldSchema } = determineFieldSchema(fieldErrors.schema);
+
+    if (fieldSchema.type === 'string' && fieldSchema.adcmMeta.isSecret) {
+      const fieldValue = fieldErrors.value as string;
+      const isIgnoredKeyword =
+        fieldErrors.messages['pattern'] || fieldErrors.messages['minLength'] || fieldErrors.messages['maxLength'];
+
+      // ignore hashed secrets from backend
+      if (isIgnoredKeyword && fieldValue.startsWith(secretFieldValuePrefixToIgnore)) {
+        delete errors[errorPath];
+      }
+    }
+  }
+};
+
+export const fillParentPathParts = (errors: ConfigurationErrors) => {
+  // root always has children with errors
+  if (Object.keys(errors).length > 0) {
+    errors['/'] = true;
   }
 
-  const isValid = Object.keys(errorsPaths).length === 0;
+  // errorPath - is full path to field
+  // like /configuration/cluster/clusterName
+  for (const errorPath of Object.keys(errors)) {
+    const parts = errorPath.split('/');
+    let path = '';
 
-  return { isValid, errorsPaths };
+    // skip first part and last:
+    // - first part is empty string
+    // - last part represents full path and it already exists in errors
+    for (let i = 1; i < parts.length - 1; i++) {
+      const part = parts[i];
+      path = `${path}/${part}`;
+      errors[path] = true;
+    }
+  }
 };
 
 export const getTitle = (keyName: string, fieldSchema: SingleSchemaDefinition) =>
