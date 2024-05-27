@@ -45,7 +45,6 @@ from cm.models import (
     Host,
     HostProvider,
     JobLog,
-    JobStatus,
     LogStorage,
     Prototype,
     ServiceComponent,
@@ -343,17 +342,6 @@ def unset_host_multi_state(host_id, multi_state, missing_ok):
     return _unset_object_multi_state(obj, multi_state, missing_ok)
 
 
-def log_group_check(group: GroupCheckLog, fail_msg: str, success_msg: str):
-    logs = CheckLog.objects.filter(group=group).values("result")
-    result = all(log["result"] for log in logs)
-
-    msg = success_msg if result else fail_msg
-
-    group.message = msg
-    group.result = result
-    group.save()
-
-
 def assign_view_logstorage_permissions_by_job(log_storage: LogStorage) -> None:
     task_role = Role.objects.filter(name=f"View role for task {log_storage.job.task_id}", built_in=True).first()
     view_logstorage_permission, _ = Permission.objects.get_or_create(
@@ -369,35 +357,6 @@ def create_custom_log(job_id: int, name: str, log_format: str, body: str) -> Log
     log = LogStorage.objects.create(job_id=job_id, name=name, type="custom", format=log_format, body=body)
     assign_view_logstorage_permissions_by_job(log_storage=log)
     return log
-
-
-def create_checklog_object(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
-    file_descriptor = job_lock(job_id)
-    job = JobLog.obj.get(id=job_id)
-    if job.status != JobStatus.RUNNING:
-        raise AdcmEx("JOB_NOT_FOUND", f'job #{job.pk} has status "{job.status}", not "running"')
-
-    group_title = group_data.pop("title")
-
-    if group_title:
-        group, _ = GroupCheckLog.objects.get_or_create(job=job, title=group_title)
-    else:
-        group = None
-
-    check_data.update({"job": job, "group": group})
-    check_log = CheckLog.objects.create(**check_data)
-
-    if group is not None:
-        group_data.update({"group": group})
-        log_group_check(**group_data)
-
-    log_storage, _ = LogStorage.objects.get_or_create(job=job, name="ansible", type="check", format="json")
-
-    assign_view_logstorage_permissions_by_job(log_storage)
-
-    file_descriptor.close()
-
-    return check_log
 
 
 def get_checklogs_data_by_job_id(job_id: int) -> list[dict[str, Any]]:

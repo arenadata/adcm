@@ -44,7 +44,6 @@ from cm.services.job.run.executors import (
     PythonProcessExecutor,
 )
 from cm.services.job.types import (
-    ADCMActionType,
     ClusterActionType,
     ComponentActionType,
     HostActionType,
@@ -299,14 +298,7 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
 
 def _get_owner_specific_data(
     task: Task,
-) -> (
-    ClusterActionType
-    | ServiceActionType
-    | ComponentActionType
-    | HostProviderActionType
-    | HostActionType
-    | ADCMActionType
-):
+) -> ClusterActionType | ServiceActionType | ComponentActionType | HostProviderActionType | HostActionType:
     owner = task.owner
     if not owner:
         message = "Can't get owner task data for task without owner"
@@ -346,7 +338,6 @@ def _get_owner_specific_data(
                 component_type_id=owner.prototype_id,
             )
         case _:
-            # ADCM will go in here for now, because ansible config is undefined for it
             message = f"Can't get task data for task with owner {owner.type}"
             raise NotImplementedError(message)
 
