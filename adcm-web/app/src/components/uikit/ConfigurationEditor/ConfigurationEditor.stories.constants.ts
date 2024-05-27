@@ -1,5 +1,5 @@
 /* eslint-disable spellcheck/spell-checker */
-import { ConfigurationSchema } from '@models/adcm';
+import type { ConfigurationSchema } from '@models/adcm';
 
 export const clusterConfigurationSchema: ConfigurationSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -98,7 +98,7 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
                       isInvisible: false,
                       activation: null,
                       synchronization: null,
-                      isSecret: false,
+                      isSecret: true,
                       stringExtra: {
                         isMultiline: false,
                       },
@@ -219,7 +219,7 @@ export const initialClusterConfiguration = {
     cluster: [
       {
         cluster_name: 'Lorem ipsum cluster',
-        cluster_password: '123',
+        cluster_password: '$ANSIBLE_VAULT;1.1;AES256\n34326665616563333065323730386465316132646533343764663738',
         shard: [
           { internal_replica: 1, replicas: [{ host: 'host111' }], weight: 11 },
           { internal_replica: 2, replicas: [{ host: 'host111' }], weight: 110 },
