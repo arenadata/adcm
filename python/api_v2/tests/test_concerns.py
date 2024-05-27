@@ -19,7 +19,6 @@ from cm.models import (
 )
 from cm.services.concern.messages import ConcernMessage
 from cm.tests.mocks.task_runner import RunTaskMock
-from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
@@ -66,7 +65,7 @@ class TestConcernsResponse(BaseAPITestCase):
             },
         }
 
-        response: Response = self.client.get(path=reverse(viewname="v2:cluster-detail", kwargs={"pk": cluster.pk}))
+        response: Response = self.client.v2[cluster].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
@@ -84,7 +83,7 @@ class TestConcernsResponse(BaseAPITestCase):
             },
         }
 
-        response: Response = self.client.get(path=reverse(viewname="v2:cluster-detail", kwargs={"pk": cluster.pk}))
+        response: Response = self.client.v2[cluster].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
@@ -102,7 +101,7 @@ class TestConcernsResponse(BaseAPITestCase):
             },
         }
 
-        response: Response = self.client.get(path=reverse(viewname="v2:cluster-detail", kwargs={"pk": cluster.pk}))
+        response: Response = self.client.v2[cluster].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["concerns"]), 1)
@@ -118,7 +117,7 @@ class TestConcernsResponse(BaseAPITestCase):
             },
         }
 
-        response: Response = self.client.get(path=reverse(viewname="v2:cluster-detail", kwargs={"pk": cluster.pk}))
+        response: Response = self.client.v2[cluster].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["concerns"]), 1)
@@ -131,13 +130,12 @@ class TestConcernsResponse(BaseAPITestCase):
             "placeholder": {"source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster"}},
         }
 
-        response: Response = self.client.post(
-            path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": cluster.pk}),
+        response: Response = self.client.v2[cluster, "configs"].post(
             data={"config": {"string": "new_string"}, "adcmMeta": {}, "description": ""},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        response: Response = self.client.get(path=reverse(viewname="v2:cluster-detail", kwargs={"pk": cluster.pk}))
+        response: Response = self.client.v2[cluster].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
@@ -167,9 +165,7 @@ class TestConcernsResponse(BaseAPITestCase):
             },
         }
 
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:service-detail", kwargs={"cluster_pk": cluster.pk, "pk": service.pk})
-        )
+        response: Response = self.client.v2[service].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["concerns"]), 1)
@@ -179,14 +175,7 @@ class TestConcernsResponse(BaseAPITestCase):
         action = Action.objects.filter(prototype=self.cluster_1.prototype).first()
 
         with RunTaskMock():
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:cluster-action-run",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "pk": action.pk,
-                    },
-                ),
+            response = self.client.v2[self.cluster_1, "actions", action, "run"].post(
                 data={"configuration": None, "isVerbose": True, "hostComponentMap": []},
             )
 
@@ -204,9 +193,7 @@ class TestConcernsResponse(BaseAPITestCase):
                 },
             }
 
-            response: Response = self.client.get(
-                path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk})
-            )
+            response: Response = self.client.v2[self.cluster_1].get()
 
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(len(response.json()["concerns"]), 1)
@@ -227,38 +214,29 @@ class TestConcernsLogic(BaseAPITestCase):
         import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
         export_cluster = self.cluster_1
 
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": import_cluster.pk})
-        )
+        response: Response = self.client.v2[import_cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertEqual(import_cluster.concerns.count(), 1)
 
-        self.client.post(
-            path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": import_cluster.pk}),
+        self.client.v2[import_cluster, "imports"].post(
             data=[{"source": {"id": export_cluster.pk, "type": ObjectType.CLUSTER}}],
         )
 
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": import_cluster.pk})
-        )
+        response: Response = self.client.v2[import_cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 0)
         self.assertEqual(import_cluster.concerns.count(), 0)
 
     def test_non_required_import_do_not_raises_concern(self):
         self.assertGreater(PrototypeImport.objects.filter(prototype=self.cluster_2.prototype).count(), 0)
 
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_2.pk})
-        )
+        response: Response = self.client.v2[self.cluster_2].get()
         self.assertEqual(len(response.json()["concerns"]), 0)
         self.assertEqual(self.cluster_2.concerns.count(), 0)
 
     def test_concern_owner_cluster(self):
         import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
 
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": import_cluster.pk})
-        )
+        response: Response = self.client.v2[import_cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertEqual(response.json()["concerns"][0]["owner"]["id"], import_cluster.pk)
         self.assertEqual(response.json()["concerns"][0]["owner"]["type"], "cluster")
@@ -266,9 +244,7 @@ class TestConcernsLogic(BaseAPITestCase):
     def test_concern_owner_service(self):
         cluster = self.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")
         service = self.add_services_to_cluster(service_names=["service_1"], cluster=cluster).get()
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:service-detail", kwargs={"cluster_pk": cluster.pk, "pk": service.pk})
-        )
+        response: Response = self.client.v2[service].get()
 
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertEqual(response.json()["concerns"][0]["owner"]["id"], service.pk)
