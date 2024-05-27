@@ -74,6 +74,7 @@ const ClusterImportsService = () => {
             clusterImports.map((item) => (
               <ClusterImportCard
                 key={item.cluster.id}
+                dataTest={`serviceTab_cluster-${item.cluster.id}`}
                 clusterImport={item}
                 selectedSingleBind={selectedSingleBind}
                 selectedImports={selectedImports}
