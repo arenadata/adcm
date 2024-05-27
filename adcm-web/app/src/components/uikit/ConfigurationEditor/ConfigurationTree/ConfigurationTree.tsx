@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import CollapseNode from '@uikit/CollapseTree2/CollapseNode';
 import FieldNodeContent from './NodeContent/FieldNodeContent';
 import AddItemNodeContent from './NodeContent/AddItemNodeContent';
@@ -16,7 +16,7 @@ import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from 
 import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from './ConfigurationTree.types';
 import s from './ConfigurationTree.module.scss';
 import cn from 'classnames';
-import { rootNodeKey } from './ConfigurationTree.constants';
+import { rootNodeKey, toggleAllNodesEventName } from './ConfigurationTree.constants';
 
 export interface ConfigurationTreeProps {
   schema: ConfigurationSchema;
@@ -61,6 +61,7 @@ const ConfigurationTree = memo(
     onFieldAttributesChange,
     onChangeIsValid,
   }: ConfigurationTreeProps) => {
+    const ref = useRef<HTMLDivElement>(null);
     const configNode: ConfigurationNode = buildConfigurationNodes(schema, configuration, attributes);
     const [selectedNode, setSelectedNode] = useState<ConfigurationNodeView | null>(null);
 
@@ -73,6 +74,13 @@ const ConfigurationTree = memo(
     useEffect(() => {
       onChangeIsValid?.(isValid);
     }, [isValid, onChangeIsValid]);
+
+    useEffect(() => {
+      if (ref.current) {
+        const eventData = { detail: areExpandedAll };
+        ref.current.dispatchEvent(new CustomEvent(toggleAllNodesEventName, eventData));
+      }
+    }, [areExpandedAll]);
 
     const handleClick = (node: ConfigurationNodeView, ref: React.RefObject<HTMLElement>) => {
       setSelectedNode(node);
@@ -130,13 +138,15 @@ const ConfigurationTree = memo(
     };
 
     return (
-      <CollapseNode
-        node={viewConfigTree}
-        isInitiallyExpanded={viewConfigTree.key === rootNodeKey}
-        areExpandedAll={areExpandedAll}
-        getNodeClassName={handleGetNodeClassName}
-        renderNodeContent={handleRenderNodeContent}
-      />
+      <div ref={ref}>
+        <CollapseNode
+          node={viewConfigTree}
+          treeRef={ref}
+          isInitiallyExpanded={viewConfigTree.key === rootNodeKey}
+          getNodeClassName={handleGetNodeClassName}
+          renderNodeContent={handleRenderNodeContent}
+        />
+      </div>
     );
   },
 );

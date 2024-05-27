@@ -6,3 +6,5 @@ export const whiteSpaceStringStub = '<whitespace symbols>';
 export const rootNodeKey = '/';
 export const rootNodeTitle = 'Configuration';
 export const primitiveFieldTypes = new Set(['string', 'integer', 'number', 'boolean']);
+
+export const toggleAllNodesEventName = 'toggle-all-nodes';
