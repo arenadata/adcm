@@ -31,7 +31,6 @@ from cm.tests.mocks.task_runner import RunTaskMock
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -44,6 +43,9 @@ from rest_framework.status import (
 
 from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from api_v2.tests.base import BaseAPITestCase
+
+CONFIGS = "configs"
+CONFIG_SCHEMA = "config-schema"
 
 
 class TestClusterConfig(BaseAPITestCase):
@@ -58,9 +60,7 @@ class TestClusterConfig(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk})
-        )
+        response = self.client.v2[self.cluster_1, CONFIGS].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -70,12 +70,7 @@ class TestClusterConfig(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:cluster-config-detail",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_config.pk},
-            )
-        )
+        response = self.client.v2[self.cluster_1, CONFIGS, self.cluster_1_config].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = {
@@ -106,9 +101,7 @@ class TestClusterConfig(BaseAPITestCase):
             "adcmMeta": {"/activatable_group": {"isActive": False}},
             "description": "new config",
         }
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}), data=data
-        )
+        response = self.client.v2[self.cluster_1, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         response_data = response.json()
@@ -130,9 +123,7 @@ class TestClusterConfig(BaseAPITestCase):
             "adcmMeta": {"bad_key": "bad_value"},
             "description": "new config",
         }
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}), data=data
-        )
+        response = self.client.v2[self.cluster_1, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -157,9 +148,7 @@ class TestClusterConfig(BaseAPITestCase):
             "adcmMeta": {"/activatable_group": {"isActive": False}, "/bad_key": {"isActive": False}},
             "description": "new config",
         }
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}), data=data
-        )
+        response = self.client.v2[self.cluster_1, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -172,7 +161,7 @@ class TestClusterConfig(BaseAPITestCase):
         )
 
     def test_schema(self):
-        response = self.client.get(path=reverse(viewname="v2:cluster-config-schema", kwargs={"pk": self.cluster_1.pk}))
+        response = self.client.v2[self.cluster_1, CONFIG_SCHEMA].get()
 
         expected_data = json.loads(
             (self.test_files_dir / "responses" / "config_schemas" / "for_cluster.json").read_text(encoding="utf-8")
@@ -184,75 +173,50 @@ class TestClusterConfig(BaseAPITestCase):
     def test_schema_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.get(
-                path=reverse(viewname="v2:cluster-config-schema", kwargs={"pk": self.cluster_1.pk})
-            )
+            response = self.client.v2[self.cluster_1, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.get(
-                path=reverse(viewname="v2:cluster-config-schema", kwargs={"pk": self.cluster_1.pk})
-            )
+            response = self.client.v2[self.cluster_1, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_another_object_role_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:cluster-config-schema",
-                    kwargs={"pk": self.cluster_1.pk},
-                )
-            )
+            response = self.client.v2[self.cluster_1, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.get(
-                path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk})
-            )
+            response = self.client.v2[self.cluster_1, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.get(
-                path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk})
-            )
+            response = self.client.v2[self.cluster_1, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_another_object_role_list_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
-            response = self.client.get(
-                path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk})
-            )
+            response = self.client.v2[self.cluster_1, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_another_object_role_retrieve_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:cluster-config-detail",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_config.pk},
-                )
-            )
+            response = self.client.v2[self.cluster_1, CONFIGS, self.cluster_1_config].get()
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_schema_permissions_another_model_role_denied(self):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object import"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:cluster-config-schema",
-                    kwargs={"pk": self.cluster_1.pk},
-                )
-            )
+            response = self.client.v2[self.cluster_1, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_schema_permissions_another_model_and_object_role_denied(self):
@@ -260,31 +224,19 @@ class TestClusterConfig(BaseAPITestCase):
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object import"):
             with self.grant_permissions(to=self.test_user, on=self.cluster_2, role_name="Cluster Administrator"):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:cluster-config-schema",
-                        kwargs={"pk": self.cluster_1.pk},
-                    )
-                )
+                response = self.client.v2[self.cluster_1, CONFIG_SCHEMA].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_another_object_role_create_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
-            response = self.client.post(
-                path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}), data={}
-            )
+            response = self.client.v2[self.cluster_1, CONFIGS].post(data={})
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_model_role_list_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object import"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:cluster-config-list",
-                    kwargs={"cluster_pk": self.cluster_1.pk},
-                )
-            )
+            response = self.client.v2[self.cluster_1, CONFIGS].get()
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
@@ -295,12 +247,7 @@ class TestClusterConfig(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Map hosts"):
             with self.grant_permissions(to=self.test_user, on=host_1, role_name="Manage Maintenance mode"):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:cluster-config-schema",
-                        kwargs={"pk": self.cluster_1.pk},
-                    )
-                )
+                response = self.client.v2[self.cluster_1, CONFIG_SCHEMA].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
 
@@ -315,13 +262,7 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
         ).get()
 
     def test_save_empty_config_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service.pk},
-            ),
-            data={"config": {}, "adcmMeta": {}},
-        )
+        response = self.client.v2[self.service, CONFIGS].post(data={"config": {}, "adcmMeta": {}})
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         self.service.refresh_from_db()
@@ -330,11 +271,7 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
         self.assertDictEqual(current_config, {})
 
     def test_save_config_without_not_required_map_in_group_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service.pk},
-            ),
+        response = self.client.v2[self.service, CONFIGS].post(
             data={
                 "config": {
                     "map_not_required": {"key": "value"},
@@ -376,12 +313,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:cluster-group-config-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
-            )
-        )
+        response = self.client.v2[self.group_config, CONFIGS].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
@@ -390,16 +322,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:cluster-group-config-config-detail",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "group_config_pk": self.group_config.pk,
-                    "pk": self.group_config_config.pk,
-                },
-            )
-        )
+        response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = {
             "id": self.group_config_config.pk,
@@ -444,13 +367,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-group-config-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -481,13 +398,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
                 "description": "new config",
             }
 
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:cluster-group-config-config-list",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
-                ),
-                data=data,
-            )
+            response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
             self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -519,25 +430,10 @@ class TestClusterGroupConfig(BaseAPITestCase):
         ):
             self.client.login(username=user_with_view_rights.username, password=user_password)
 
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:cluster-group-config-config-detail",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "group_config_pk": self.group_config.pk,
-                        "pk": self.group_config_config.pk,
-                    },
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:cluster-group-config-config-list",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
-                ),
-                data=data,
-            )
+            response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertSetEqual(initial_configlog_ids, set(ConfigLog.objects.values_list("id", flat=True)))
@@ -579,13 +475,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-group-config-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -616,9 +506,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
             "adcmMeta": {"/activatable_group": {"isActive": False}},
             "description": "new config",
         }
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}), data=data
-        )
+        response = self.client.v2[self.cluster_1, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -629,13 +517,11 @@ class TestClusterGroupConfig(BaseAPITestCase):
         self.assertFalse(config_log.attr["activatable_group"]["active"])
 
     def test_adcm_4894_duplicate_name_fail(self):
-        self.client.post(
-            path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data={"name": "group-config-new", "description": "group-config-new"},
+        self.client.v2[self.cluster_1, "config-groups"].post(
+            data={"name": "group-config-new", "description": "group-config-new"}
         )
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
-            data={"name": "group-config-new", "description": "group-config-new"},
+        response = self.client.v2[self.cluster_1, "config-groups"].post(
+            data={"name": "group-config-new", "description": "group-config-new"}
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -663,13 +549,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-group-config-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -702,13 +582,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-group-config-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -717,12 +591,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
         )
 
     def test_schema(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:cluster-group-config-config-schema",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.group_config.pk},
-            )
-        )
+        response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
 
         expected_data = json.loads(
             (self.test_files_dir / "responses" / "config_schemas" / "for_cluster_group_config.json").read_text(
@@ -736,34 +605,19 @@ class TestClusterGroupConfig(BaseAPITestCase):
     def test_schema_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:cluster-group-config-config-schema",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.group_config.pk},
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:cluster-group-config-config-schema",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.group_config.pk},
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:cluster-group-config-config-list",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.group_config.pk},
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
 
@@ -779,12 +633,7 @@ class TestServiceConfig(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:service-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
-            )
-        )
+        response = self.client.v2[self.service_1, CONFIGS].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -794,16 +643,7 @@ class TestServiceConfig(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:service-config-detail",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "pk": self.service_1_initial_config.pk,
-                },
-            )
-        )
+        response = self.client.v2[self.service_1, CONFIGS, self.service_1_initial_config].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = {
@@ -833,13 +673,7 @@ class TestServiceConfig(BaseAPITestCase):
             "adcmMeta": {"/activatable_group": {"isActive": True}},
             "description": "new config",
         }
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.service_1, CONFIGS].post(data=data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response_data = response.json()
@@ -851,11 +685,7 @@ class TestServiceConfig(BaseAPITestCase):
         self.assertEqual(response_data["isCurrent"], True)
 
     def test_schema(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:service-config-schema", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk}
-            )
-        )
+        response = self.client.v2[self.service_1, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = json.loads(
@@ -870,56 +700,31 @@ class TestServiceConfig(BaseAPITestCase):
     def test_schema_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:service-config-schema",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk},
-                )
-            )
+            response = self.client.v2[self.service_1, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:service-config-schema",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk},
-                )
-            )
+            response = self.client.v2[self.service_1, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_object_role_list_fail(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_2, role_name="View cluster configurations"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:service-config-schema",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk},
-                )
-            )
+            response = self.client.v2[self.service_1, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:service-config-schema",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk},
-                )
-            )
+            response = self.client.v2[self.service_2, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:service-config-schema",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk},
-                )
-            )
+            response = self.client.v2[self.service_2, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_another_object_role_denied(self):
@@ -928,12 +733,7 @@ class TestServiceConfig(BaseAPITestCase):
             to=self.test_user, on=self.service_2, role_name="Service Action: action_1_service_2"
         ):
             with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:service-config-schema",
-                        kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_2.pk},
-                    )
-                )
+                response = self.client.v2[self.service_2, CONFIG_SCHEMA].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_another_object_role_create_denied(self):
@@ -942,13 +742,7 @@ class TestServiceConfig(BaseAPITestCase):
             to=self.test_user, on=self.service_2, role_name="Service Action: action_1_service_2"
         ):
             with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
-                response = self.client.post(
-                    path=reverse(
-                        viewname="v2:service-config-list",
-                        kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_2.pk},
-                    ),
-                    data={},
-                )
+                response = self.client.v2[self.service_2, CONFIGS].post(data={})
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_another_object_role_retrieve_denied(self):
@@ -957,16 +751,7 @@ class TestServiceConfig(BaseAPITestCase):
             to=self.test_user, on=self.service_2, role_name="Service Action: action_1_service_2"
         ):
             with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:service-config-detail",
-                        kwargs={
-                            "cluster_pk": self.cluster_1.pk,
-                            "service_pk": self.service_2.pk,
-                            "pk": self.service_2.config.pk,
-                        },
-                    )
-                )
+                response = self.client.v2[self.service_2, CONFIGS, self.service_2.config.current].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_another_object_role_list_denied(self):
@@ -975,12 +760,7 @@ class TestServiceConfig(BaseAPITestCase):
             to=self.test_user, on=self.service_2, role_name="Service Action: action_1_service_2"
         ):
             with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Service Administrator"):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:service-config-list",
-                        kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_2.pk},
-                    )
-                )
+                response = self.client.v2[self.service_2, CONFIGS].get()
 
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
@@ -991,27 +771,13 @@ class TestServiceConfig(BaseAPITestCase):
             with self.grant_permissions(
                 to=self.test_user, on=self.service_2, role_name="Service Action: action_1_service_2"
             ):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:service-config-detail",
-                        kwargs={
-                            "cluster_pk": self.cluster_1.pk,
-                            "service_pk": self.service_2.pk,
-                            "pk": self.service_2.config.pk,
-                        },
-                    )
-                )
+                response = self.client.v2[self.service_2, CONFIGS, self.service_2.config.current].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_model_role_list_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object import"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:service-config-list",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_2.pk},
-                )
-            )
+            response = self.client.v2[self.service_2, CONFIGS].get()
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
@@ -1032,16 +798,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:service-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "group_config_pk": self.group_config.pk,
-                },
-            )
-        )
+        response = self.client.v2[self.group_config, CONFIGS].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
@@ -1050,17 +807,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:service-group-config-config-detail",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "group_config_pk": self.group_config.pk,
-                    "pk": self.group_config_config.pk,
-                },
-            )
-        )
+        response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         expected_data = {
             "id": self.group_config_config.pk,
@@ -1099,17 +846,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "group_config_pk": self.group_config.pk,
-                },
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -1145,30 +882,10 @@ class TestServiceGroupConfig(BaseAPITestCase):
         ):
             self.client.login(username=user_with_view_rights.username, password=user_password)
 
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:service-group-config-config-detail",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "group_config_pk": self.group_config.pk,
-                        "pk": self.group_config_config.pk,
-                    },
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:service-group-config-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "group_config_pk": self.group_config.pk,
-                    },
-                ),
-                data=data,
-            )
+            response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertSetEqual(initial_configlog_ids, set(ConfigLog.objects.values_list("id", flat=True)))
@@ -1205,17 +922,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "group_config_pk": self.group_config.pk,
-                },
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -1246,16 +953,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                },
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.service_1, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -1280,17 +978,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "group_config_pk": self.group_config.pk,
-                },
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -1319,17 +1007,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "group_config_pk": self.group_config.pk,
-                },
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -1338,16 +1016,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
         )
 
     def test_schema(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:service-group-config-config-schema",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "pk": self.group_config.pk,
-                },
-            )
-        )
+        response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = json.loads(
@@ -1365,76 +1034,31 @@ class TestServiceGroupConfig(BaseAPITestCase):
     def test_schema_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:service-group-config-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "group_config_pk": self.group_config.pk,
-                    },
-                ),
-            )
+            response = self.client.v2[self.group_config, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:service-group-config-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "group_config_pk": self.group_config.pk,
-                    },
-                ),
-            )
+            response = self.client.v2[self.group_config, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_model_role_list_fail(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_2, role_name="View cluster configurations"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:service-group-config-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "group_config_pk": self.group_config.pk,
-                    },
-                ),
-            )
+            response = self.client.v2[self.group_config, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:service-group-config-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "group_config_pk": self.group_config.pk,
-                    },
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:service-group-config-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "group_config_pk": self.group_config.pk,
-                    },
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
 
@@ -1460,16 +1084,7 @@ class TestComponentConfig(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:component-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                },
-            )
-        )
+        response = self.client.v2[self.component_1, CONFIGS].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -1479,17 +1094,7 @@ class TestComponentConfig(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:component-config-detail",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "pk": self.component_1_initial_config.pk,
-                },
-            )
-        )
+        response = self.client.v2[self.component_1, CONFIGS, self.component_1_initial_config].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = {
@@ -1522,17 +1127,7 @@ class TestComponentConfig(BaseAPITestCase):
             "adcmMeta": {"/activatable_group": {"isActive": True}},
             "description": "new config",
         }
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                },
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.component_1, CONFIGS].post(data=data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response_data = response.json()
@@ -1547,12 +1142,7 @@ class TestComponentConfig(BaseAPITestCase):
         self.assertEqual(response_data["isCurrent"], True)
 
     def test_schema(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:component-config-schema",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk, "pk": self.component_1.pk},
-            )
-        )
+        response = self.client.v2[self.component_1, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = json.loads(
@@ -1575,46 +1165,19 @@ class TestComponentConfig(BaseAPITestCase):
             with self.grant_permissions(
                 to=self.test_user, on=self.component_1, role_name="View component configurations"
             ):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:component-config-schema",
-                        kwargs={
-                            "cluster_pk": self.cluster_1.pk,
-                            "service_pk": self.service_1.pk,
-                            "pk": self.component_2.pk,
-                        },
-                    )
-                )
+                response = self.client.v2[self.component_2, CONFIG_SCHEMA].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:component-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_1.pk,
-                    },
-                )
-            )
+            response = self.client.v2[self.component_1, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:component-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_1.pk,
-                    },
-                )
-            )
+            response = self.client.v2[self.component_1, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_model_role_denied(self):
@@ -1623,31 +1186,13 @@ class TestComponentConfig(BaseAPITestCase):
             with self.grant_permissions(
                 to=self.test_user, on=self.component_1, role_name="View component configurations"
             ):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:component-config-schema",
-                        kwargs={
-                            "cluster_pk": self.cluster_1.pk,
-                            "service_pk": self.service_1.pk,
-                            "pk": self.component_2.pk,
-                        },
-                    )
-                )
+                response = self.client.v2[self.component_2, CONFIG_SCHEMA].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_schema_permissions_object_role_list_fail(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.service_2, role_name="View service configurations"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:component-config-schema",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "pk": self.component_2.pk,
-                    },
-                )
-            )
+            response = self.client.v2[self.component_2, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_schema_permissions_model_and_object_role_denied(self):
@@ -1656,16 +1201,7 @@ class TestComponentConfig(BaseAPITestCase):
             with self.grant_permissions(
                 to=self.test_user, on=self.component_2, role_name="Component Action: action_1_comp_2"
             ):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:component-config-schema",
-                        kwargs={
-                            "cluster_pk": self.cluster_1.pk,
-                            "service_pk": self.service_1.pk,
-                            "pk": self.component_2.pk,
-                        },
-                    )
-                )
+                response = self.client.v2[self.component_2, CONFIG_SCHEMA].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_another_object_role_create_denied(self):
@@ -1676,17 +1212,7 @@ class TestComponentConfig(BaseAPITestCase):
             with self.grant_permissions(
                 to=self.test_user, on=self.component_1, role_name="View component configurations"
             ):
-                response = self.client.post(
-                    path=reverse(
-                        viewname="v2:component-config-list",
-                        kwargs={
-                            "cluster_pk": self.cluster_1.pk,
-                            "service_pk": self.service_1.pk,
-                            "component_pk": self.component_2.pk,
-                        },
-                    ),
-                    data={},
-                )
+                response = self.client.v2[self.component_2, CONFIGS].post(data={})
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_another_object_role_retrieve_denied(self):
@@ -1697,17 +1223,7 @@ class TestComponentConfig(BaseAPITestCase):
             with self.grant_permissions(
                 to=self.test_user, on=self.component_1, role_name="View component configurations"
             ):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:component-config-detail",
-                        kwargs={
-                            "cluster_pk": self.cluster_1.pk,
-                            "service_pk": self.service_1.pk,
-                            "component_pk": self.component_2.pk,
-                            "pk": self.component_2_initial_config.pk,
-                        },
-                    )
-                )
+                response = self.client.v2[self.component_2, CONFIGS, self.component_2_initial_config].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_another_object_role_list_denied(self):
@@ -1718,32 +1234,14 @@ class TestComponentConfig(BaseAPITestCase):
             with self.grant_permissions(
                 to=self.test_user, on=self.component_1, role_name="View component configurations"
             ):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:component-config-list",
-                        kwargs={
-                            "cluster_pk": self.cluster_1.pk,
-                            "service_pk": self.service_1.pk,
-                            "component_pk": self.component_2.pk,
-                        },
-                    )
-                )
+                response = self.client.v2[self.component_2, CONFIGS].get()
 
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_model_role_list_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object host-components"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:component-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_2.pk,
-                    },
-                )
-            )
+            response = self.client.v2[self.component_2, CONFIGS].get()
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
@@ -1767,17 +1265,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:component-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "group_config_pk": self.group_config.pk,
-                },
-            )
-        )
+        response = self.client.v2[self.group_config, CONFIGS].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
@@ -1786,18 +1274,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:component-group-config-config-detail",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "group_config_pk": self.group_config.pk,
-                    "pk": self.group_config_config.pk,
-                },
-            )
-        )
+        response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         expected_data = {
             "id": self.group_config_config.pk,
@@ -1839,18 +1316,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "group_config_pk": self.group_config.pk,
-                },
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -1889,32 +1355,10 @@ class TestComponentGroupConfig(BaseAPITestCase):
         ):
             self.client.login(username=user_with_view_rights.username, password=user_password)
 
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:component-group-config-config-detail",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_1.pk,
-                        "group_config_pk": self.group_config.pk,
-                        "pk": self.group_config_config.pk,
-                    },
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:component-group-config-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_1.pk,
-                        "group_config_pk": self.group_config.pk,
-                    },
-                ),
-                data=data,
-            )
+            response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertSetEqual(initial_configlog_ids, set(ConfigLog.objects.values_list("id", flat=True)))
@@ -1950,18 +1394,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "group_config_pk": self.group_config.pk,
-                },
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -2009,17 +1442,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                },
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.component_1, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -2064,18 +1487,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "group_config_pk": self.group_config.pk,
-                },
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -2104,18 +1516,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "group_config_pk": self.group_config.pk,
-                },
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -2124,17 +1525,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
         )
 
     def test_schema(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:component-group-config-config-schema",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "pk": self.group_config.pk,
-                },
-            )
-        )
+        response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = json.loads(
@@ -2154,81 +1545,31 @@ class TestComponentGroupConfig(BaseAPITestCase):
     def test_schema_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:component-group-config-config-schema",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_1.pk,
-                        "pk": self.group_config.pk,
-                    },
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:component-group-config-config-schema",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_1.pk,
-                        "pk": self.group_config.pk,
-                    },
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_object_role_list_fail(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_2, role_name="View cluster configurations"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:component-group-config-config-schema",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_1.pk,
-                        "pk": self.group_config.pk,
-                    },
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:component-group-config-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_1.pk,
-                        "group_config_pk": self.group_config.pk,
-                    },
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:component-group-config-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_1.pk,
-                        "group_config_pk": self.group_config.pk,
-                    },
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
 
@@ -2244,14 +1585,7 @@ class TestProviderConfig(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:provider-config-list",
-                kwargs={
-                    "hostprovider_pk": self.provider.pk,
-                },
-            )
-        )
+        response = self.client.v2[self.provider, CONFIGS].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -2261,15 +1595,7 @@ class TestProviderConfig(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:provider-config-detail",
-                kwargs={
-                    "hostprovider_pk": self.provider.pk,
-                    "pk": self.provider_initial_config.pk,
-                },
-            )
-        )
+        response = self.client.v2[self.provider, CONFIGS, self.provider_initial_config].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = {
@@ -2299,27 +1625,17 @@ class TestProviderConfig(BaseAPITestCase):
         self.assertDictEqual(actual_data, expected_data)
 
     def test_retrieve_wrong_pk_fail(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:provider-config-detail",
-                kwargs={
-                    "hostprovider_pk": self.provider.pk,
-                    "pk": self.get_non_existent_pk(model=ConfigLog),
-                },
-            )
-        )
+        response = self.client.v2[self.provider, CONFIGS, self.get_non_existent_pk(model=ConfigLog)].get()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_retrieve_wrong_provider_pk_fail(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:provider-config-detail",
-                kwargs={
-                    "hostprovider_pk": self.get_non_existent_pk(model=HostProvider),
-                    "pk": self.provider_initial_config.pk,
-                },
-            )
-        )
+        response = (
+            self.client.v2
+            / "hostproviders"
+            / self.get_non_existent_pk(model=HostProvider)
+            / CONFIGS
+            / self.provider_initial_config
+        ).get()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_create_success(self):
@@ -2337,15 +1653,7 @@ class TestProviderConfig(BaseAPITestCase):
             "adcmMeta": {"/activatable_group": {"isActive": True}},
             "description": "new config",
         }
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:provider-config-list",
-                kwargs={
-                    "hostprovider_pk": self.provider.pk,
-                },
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.provider, CONFIGS].post(data=data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response_data = response.json()
@@ -2361,12 +1669,7 @@ class TestProviderConfig(BaseAPITestCase):
         self.assertEqual(response_data["isCurrent"], True)
 
     def test_schema(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:hostprovider-config-schema",
-                kwargs={"pk": self.provider.pk},
-            )
-        )
+        response = self.client.v2[self.provider, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = json.loads(
@@ -2396,40 +1699,26 @@ class TestProviderConfig(BaseAPITestCase):
     def test_provider_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.get(
-                path=reverse(viewname="v2:provider-config-list", kwargs={"hostprovider_pk": self.provider.pk})
-            )
+            response = self.client.v2[self.provider, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_provider_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.provider, role_name="Provider Administrator"):
-            response = self.client.get(
-                path=reverse(viewname="v2:provider-config-list", kwargs={"hostprovider_pk": self.provider.pk})
-            )
+            response = self.client.v2[self.provider, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_provider_permissions_another_object_role_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.provider, role_name="Provider Action: provider_action"):
             with self.grant_permissions(to=self.test_user, on=self.host_1, role_name="Manage Maintenance mode"):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:hostprovider-config-schema",
-                        kwargs={"pk": self.provider.pk},
-                    )
-                )
+                response = self.client.v2[self.provider, CONFIG_SCHEMA].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_schema_provider_permissions_another_model_role_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="Create provider"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:hostprovider-config-schema",
-                    kwargs={"pk": self.provider.pk},
-                )
-            )
+            response = self.client.v2[self.provider, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_schema_provider_permissions_another_model_and_object_role_denied(self):
@@ -2438,46 +1727,28 @@ class TestProviderConfig(BaseAPITestCase):
             with self.grant_permissions(
                 to=self.test_user, on=self.provider, role_name="Provider Action: provider_action"
             ):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:provider-config-detail",
-                        kwargs={"hostprovider_pk": self.provider.pk, "pk": self.provider.config.pk},
-                    )
-                )
+                response = self.client.v2[self.provider, CONFIGS, self.provider.config.current].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_provider_another_object_role_create_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.provider, role_name="Provider Action: provider_action"):
             with self.grant_permissions(to=self.test_user, on=self.host_1, role_name="Manage Maintenance mode"):
-                response = self.client.post(
-                    path=reverse(viewname="v2:provider-config-list", kwargs={"hostprovider_pk": self.provider.pk}),
-                    data={},
-                )
+                response = self.client.v2[self.provider, CONFIGS].post(data={})
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_provider_another_object_role_retrieve_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.provider, role_name="Provider Action: provider_action"):
             with self.grant_permissions(to=self.test_user, on=self.host_1, role_name="Manage Maintenance mode"):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:provider-config-detail",
-                        kwargs={"hostprovider_pk": self.provider.pk, "pk": self.provider.config.pk},
-                    )
-                )
+                response = self.client.v2[self.provider, CONFIGS, self.provider.config.current].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_provider_another_object_role_list_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.provider, role_name="Provider Action: provider_action"):
             with self.grant_permissions(to=self.test_user, on=self.host_1, role_name="Manage Maintenance mode"):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:provider-config-list",
-                        kwargs={"hostprovider_pk": self.provider.pk},
-                    )
-                )
+                response = self.client.v2[self.provider, CONFIGS].get()
 
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
@@ -2485,44 +1756,27 @@ class TestProviderConfig(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Map hosts"):
             with self.grant_permissions(to=self.test_user, on=self.host_1, role_name="Manage Maintenance mode"):
-                response = self.client.post(
-                    path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}), data={}
-                )
+                response = self.client.v2[self.cluster_1, CONFIGS].post(data={})
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_cluster_another_object_role_retrieve_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Map hosts"):
             with self.grant_permissions(to=self.test_user, on=self.host_1, role_name="Manage Maintenance mode"):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:cluster-config-detail",
-                        kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1.config.pk},
-                    )
-                )
+                response = self.client.v2[self.cluster_1, CONFIGS, self.cluster_1.config.current].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_cluster_another_object_role_list_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Map hosts"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:cluster-config-list",
-                    kwargs={"cluster_pk": self.cluster_1.pk},
-                )
-            )
+            response = self.client.v2[self.cluster_1, CONFIGS].get()
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_model_role_list_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="Create provider"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:provider-config-list",
-                    kwargs={"hostprovider_pk": self.provider.pk},
-                )
-            )
+            response = self.client.v2[self.provider, CONFIGS].get()
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
@@ -2541,12 +1795,7 @@ class TestProviderGroupConfig(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-config-list",
-                kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": self.group_config.pk},
-            )
-        )
+        response = self.client.v2[self.group_config, CONFIGS].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -2556,16 +1805,7 @@ class TestProviderGroupConfig(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-config-detail",
-                kwargs={
-                    "hostprovider_pk": self.provider.pk,
-                    "group_config_pk": self.group_config.pk,
-                    "pk": self.group_config_config.pk,
-                },
-            )
-        )
+        response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = {
@@ -2600,28 +1840,17 @@ class TestProviderGroupConfig(BaseAPITestCase):
         self.assertDictEqual(actual_data, expected_data)
 
     def test_retrieve_wrong_pk_fail(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-config-detail",
-                kwargs={
-                    "hostprovider_pk": self.provider.pk,
-                    "group_config_pk": self.group_config.pk,
-                    "pk": self.get_non_existent_pk(model=ConfigLog),
-                },
-            )
-        )
+        response = self.client.v2[self.group_config, CONFIGS, self.get_non_existent_pk(model=ConfigLog)].get()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_retrieve_wrong_provider_pk_fail(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:provider-config-detail",
-                kwargs={
-                    "hostprovider_pk": self.get_non_existent_pk(model=HostProvider),
-                    "pk": self.group_config.pk,
-                },
-            )
-        )
+        response = (
+            self.client.v2
+            / "hostproviders"
+            / self.get_non_existent_pk(model=HostProvider)
+            / CONFIGS
+            / self.provider.config.current
+        ).get()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_create_success(self):
@@ -2644,16 +1873,7 @@ class TestProviderGroupConfig(BaseAPITestCase):
             },
             "description": "new config",
         }
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-config-list",
-                kwargs={
-                    "hostprovider_pk": self.provider.pk,
-                    "group_config_pk": self.group_config.pk,
-                },
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response_data = response.json()
@@ -2697,28 +1917,10 @@ class TestProviderGroupConfig(BaseAPITestCase):
         ):
             self.client.login(username=user_with_view_rights.username, password=user_password)
 
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:hostprovider-group-config-config-detail",
-                    kwargs={
-                        "hostprovider_pk": self.provider.pk,
-                        "group_config_pk": self.group_config.pk,
-                        "pk": self.group_config_config.pk,
-                    },
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:hostprovider-group-config-config-list",
-                    kwargs={
-                        "hostprovider_pk": self.provider.pk,
-                        "group_config_pk": self.group_config.pk,
-                    },
-                ),
-                data=data,
-            )
+            response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertSetEqual(initial_configlog_ids, set(ConfigLog.objects.values_list("id", flat=True)))
@@ -2759,16 +1961,7 @@ class TestProviderGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-config-list",
-                kwargs={
-                    "hostprovider_pk": self.provider.pk,
-                    "group_config_pk": self.group_config.pk,
-                },
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -2815,15 +2008,7 @@ class TestProviderGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:provider-config-list",
-                kwargs={
-                    "hostprovider_pk": self.provider.pk,
-                },
-            ),
-            data=data,
-        )
+        response = self.client.v2[self.provider, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -2849,12 +2034,7 @@ class TestProviderGroupConfig(BaseAPITestCase):
         self.assertFalse(config_log.attr["activatable_group"]["active"])
 
     def test_schema(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-config-schema",
-                kwargs={"hostprovider_pk": self.provider.pk, "pk": self.group_config.pk},
-            )
-        )
+        response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = json.loads(
@@ -2886,55 +2066,30 @@ class TestProviderGroupConfig(BaseAPITestCase):
     def test_provider_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:hostprovider-group-config-config-schema",
-                    kwargs={"hostprovider_pk": self.provider.pk, "pk": self.group_config.pk},
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.provider, role_name="Provider Administrator"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:hostprovider-group-config-config-schema",
-                    kwargs={"hostprovider_pk": self.provider.pk, "pk": self.group_config.pk},
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_list_fail(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-config-schema",
-                kwargs={"hostprovider_pk": self.provider.pk, "pk": self.group_config.pk},
-            )
-        )
+        response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_schema_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:hostprovider-group-config-config-list",
-                    kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": self.group_config.pk},
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.provider, role_name="Provider Administrator"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:hostprovider-group-config-config-list",
-                    kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": self.group_config.pk},
-                )
-            )
+            response = self.client.v2[self.group_config, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
 
@@ -2952,7 +2107,7 @@ class TestHostConfig(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
-        response = self.client.get(path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host.pk}))
+        response = self.client.v2[self.host, CONFIGS].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -2962,9 +2117,7 @@ class TestHostConfig(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:host-config-detail", kwargs={"host_pk": self.host.pk, "pk": self.host_config.pk})
-        )
+        response = self.client.v2[self.host, CONFIGS, self.host_config].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         data = {
@@ -2997,10 +2150,7 @@ class TestHostConfig(BaseAPITestCase):
             "adcmMeta": {"/activatable_group": {"isActive": True}},
             "description": "new config",
         }
-        response = self.client.post(
-            path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host.pk}),
-            data=data,
-        )
+        response = self.client.v2[self.host, CONFIGS].post(data=data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response_data = response.json()
@@ -3009,23 +2159,16 @@ class TestHostConfig(BaseAPITestCase):
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
 
-        response = self.client.get(path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host.pk}))
+        response = self.client.v2[self.host, CONFIGS].get()
         self.assertEqual(response.json()["count"], 2)
 
     def test_list_wrong_pk_fail(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.get_non_existent_pk(Host)})
-        )
+        response = (self.client.v2 / "hosts" / self.get_non_existent_pk(Host) / CONFIGS).get()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_schema(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:host-config-schema",
-                kwargs={"pk": self.host.pk},
-            )
-        )
+        response = self.client.v2[self.host, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = json.loads(
@@ -3038,80 +2181,48 @@ class TestHostConfig(BaseAPITestCase):
     def test_schema_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.host, role_name="View host configurations"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:host-config-schema",
-                    kwargs={"pk": self.host.pk},
-                )
-            )
+            response = self.client.v2[self.host, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:host-config-schema",
-                    kwargs={"pk": self.host.pk},
-                )
-            )
+            response = self.client.v2[self.host, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_another_object_role_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.host, role_name="Host Action: host_action"):
             with self.grant_permissions(to=self.test_user, on=self.host_2, role_name="Manage Maintenance mode"):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:host-config-schema",
-                        kwargs={"pk": self.host.pk},
-                    )
-                )
+                response = self.client.v2[self.host, CONFIG_SCHEMA].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_another_object_role_create_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.host, role_name="Host Action: host_action"):
             with self.grant_permissions(to=self.test_user, on=self.host_2, role_name="Manage Maintenance mode"):
-                response = self.client.post(
-                    path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host.pk}), data={}
-                )
+                response = self.client.v2[self.host, CONFIGS].post(data={})
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_another_object_role_retrieve_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.host, role_name="Host Action: host_action"):
             with self.grant_permissions(to=self.test_user, on=self.host_2, role_name="Manage Maintenance mode"):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:host-config-detail",
-                        kwargs={"host_pk": self.host.pk, "pk": self.host.config.pk},
-                    )
-                )
+                response = self.client.v2[self.host, CONFIGS, self.host.config.current].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_another_object_role_list_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.host, role_name="Host Action: host_action"):
             with self.grant_permissions(to=self.test_user, on=self.host_2, role_name="Manage Maintenance mode"):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:host-config-list",
-                        kwargs={"host_pk": self.host.pk},
-                    )
-                )
+                response = self.client.v2[self.host, CONFIGS].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_schema_permissions_another_model_role_denied(self):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object host-components"):
-            response = self.client.get(
-                path=reverse(
-                    viewname="v2:host-config-schema",
-                    kwargs={"pk": self.host.pk},
-                )
-            )
+            response = self.client.v2[self.host, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_schema_permissions_another_model_and_object_role_denied(self):
@@ -3119,24 +2230,19 @@ class TestHostConfig(BaseAPITestCase):
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object host-components"):
             with self.grant_permissions(to=self.test_user, on=self.host, role_name="Host Action: host_action"):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:host-config-detail",
-                        kwargs={"host_pk": self.host.pk, "pk": self.host.config.pk},
-                    )
-                )
+                response = self.client.v2[self.host, CONFIGS, self.host.config.current].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.get(path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host.pk}))
+            response = self.client.v2[self.host, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.provider, role_name="Provider Administrator"):
-            response = self.client.get(path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host.pk}))
+            response = self.client.v2[self.host, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
 
@@ -3147,7 +2253,7 @@ class TestADCMConfig(BaseAPITestCase):
         self.adcm_current_config = ConfigLog.objects.get(id=self.adcm.config.current)
 
     def test_list_success(self):
-        response = self.client.get(path=reverse(viewname="v2:adcm-config-list"))
+        response = (self.client.v2 / "adcm" / CONFIGS).get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
@@ -3158,9 +2264,7 @@ class TestADCMConfig(BaseAPITestCase):
         self.assertTrue(data["results"][0]["isCurrent"])
 
     def test_retrieve_success(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:adcm-config-detail", kwargs={"pk": self.adcm_current_config.pk})
-        )
+        response = (self.client.v2 / "adcm" / CONFIGS / self.adcm_current_config).get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
@@ -3221,7 +2325,7 @@ class TestADCMConfig(BaseAPITestCase):
             "description": "new ADCM config",
         }
 
-        response = self.client.post(path=reverse(viewname="v2:adcm-config-list"), data=data)
+        response = (self.client.v2 / "adcm" / CONFIGS).post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(ConfigLog.objects.filter(obj_ref=self.adcm.config).count(), 2)
@@ -3229,7 +2333,7 @@ class TestADCMConfig(BaseAPITestCase):
         self.assertEqual(response.json()["description"], "new ADCM config")
 
     def test_schema(self):
-        response = self.client.get(path=reverse(viewname="v2:adcm-config-schema"))
+        response = (self.client.v2 / "adcm" / CONFIG_SCHEMA).get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = json.loads(
@@ -3301,11 +2405,7 @@ class TestConfigSchemaEnumWithoutValues(BaseAPITestCase):
         ).get()
 
     def test_schema(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:service-config-schema", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service.pk}
-            )
-        )
+        response = self.client.v2[self.service, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertDictEqual(
             response.json(),
@@ -3509,9 +2609,7 @@ class TestGroupConfigUpgrade(BaseAPITestCase):
             },
         )
 
-        response = self.client.post(
-            path=reverse(viewname="v2:upgrade-run", kwargs={"cluster_pk": self.cluster.pk, "pk": self.upgrade.pk})
-        )
+        response = self.client.v2[self.cluster, "upgrades", self.upgrade, "run"].post(data={})
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
