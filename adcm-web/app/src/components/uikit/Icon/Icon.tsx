@@ -1,11 +1,7 @@
 import React from 'react';
 import cn from 'classnames';
-import { allowIconsNames, IconsNames } from './sprite';
-import { Size } from '@uikit/types/size.types';
-
-allowIconsNames.forEach(async (name) => {
-  await import(`./icons/${name}.svg`);
-});
+import type { IconsNames } from './sprite';
+import type { Size } from '@uikit/types/size.types';
 
 const iconSizesConfig: { [key in Size]: number } = {
   small: 12,
@@ -24,7 +20,7 @@ const Icon = React.forwardRef<SVGSVGElement, IconProps>(({ name, size = 'medium'
 
   return (
     <svg className={classString} width={sizeVal} height={sizeVal} {...props} ref={ref}>
-      <use href={`#icon-${name}`} />
+      <use xlinkHref={`#${name}`} />
     </svg>
   );
 });
