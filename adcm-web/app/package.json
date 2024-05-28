@@ -89,7 +89,7 @@
     "vite": "4.4.1",
     "vite-plugin-eslint": "1.8.1",
     "vite-plugin-react-remove-attributes": "1.0.3",
-    "vite-plugin-svg-sprite": "0.3.2",
+    "vite-plugin-svg-spriter": "1.0.0",
     "vite-plugin-svgr": "3.2.0",
     "vite-tsconfig-paths": "4.2.0"
   },
