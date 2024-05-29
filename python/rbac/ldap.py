@@ -91,15 +91,15 @@ def get_ldap_config() -> dict | None:
     return None
 
 
-def get_groups_by_user_dn(
-    user_dn: str,
+def get_groups_by_username(
+    user: User | _LDAPUser,
     user_search: LDAPSearch,
     conn: ldap.ldapobject.LDAPObject,
 ) -> tuple[list[str], list[str], str | None]:
     err_msg = None
     user_name_attr = get_ldap_config()["user_name_attribute"]
     replace = f"{user_name_attr}={USER_PLACEHOLDER}"
-    search_expr = f"distinguishedName={user_dn}"
+    search_expr = f"{user_name_attr}={user.ldap_username}"
 
     users = conn.search_s(
         base=user_search.base_dn,
@@ -109,13 +109,18 @@ def get_groups_by_user_dn(
     # Remove references from the Search Result https://www.rfc-editor.org/rfc/rfc4511#section-4.5.3
     users = [user for user in users if user[0] is not None]
 
-    if len(users) != 1:
+    if len(users) == 0:
         err_msg = f"Not one user found by `{search_expr}` search"
         return [], [], err_msg
 
+    if len(users) > 1:
+        users_dn = [user_dn for user_dn, _ in users]
+        err_msg = f"More then one user found by `{search_expr}` search: {';'.join(users_dn)}"
+        return [], [], err_msg
+
     user_dn_, user_attrs = users[0]
-    if user_dn_.strip().lower() != user_dn.strip().lower():
-        err_msg = f"Got different user dn: {(user_dn_, user_dn)}. Tune search"
+    if user_dn_.strip().lower() != user.ldap_user.dn.strip().lower():
+        err_msg = f"Got different user dn: {(user_dn_, user.ldap_user.dn)}. Tune search"
         return [], [], err_msg
 
     group_cns = []
@@ -128,7 +133,7 @@ def get_groups_by_user_dn(
         if group_name:
             group_cns.append(group_name)
 
-    logger.debug("Found %s groups by user dn `%s`: %s", len(group_cns), user_dn, group_cns)
+    logger.debug("Found %s groups by user %s `%s`: %s", len(group_cns), user_name_attr, user.ldap_username, group_cns)
     return group_cns, group_dns_lower, err_msg
 
 
@@ -228,12 +233,12 @@ class CustomLDAPBackend(LDAPBackend):
         if isinstance(user_or_none, User):
             user_or_none.type = OriginType.LDAP
             user_or_none.is_active = True
-            is_in_admin_group = self._process_groups(user_or_none, ldap_user.dn, user_local_groups)
+            user_or_none.is_superuser = False
+            user_or_none.save(update_fields=["type", "is_active", "is_superuser"])
+            is_in_admin_group = self._process_groups(user_or_none, user_local_groups)
             if is_in_admin_group:
                 user_or_none.is_superuser = True
-            elif user_or_none.is_superuser:
-                user_or_none.is_superuser = False
-            user_or_none.save(update_fields=["type", "is_active", "is_superuser"])
+                user_or_none.save(update_fields=["is_superuser"])
 
         return user_or_none
 
@@ -277,11 +282,11 @@ class CustomLDAPBackend(LDAPBackend):
         logger.debug("Found %s groups: %s", len(groups), [i[0] for i in groups])
         return groups
 
-    def _process_groups(self, user: User | _LDAPUser, user_dn: str, additional_groups: list[Group] = ()) -> bool:
+    def _process_groups(self, user: User | _LDAPUser, additional_groups: list[Group] = ()) -> bool:
         is_in_admin_group = False
         with self._ldap_connection() as conn:
-            ldap_group_names, ldap_group_dns, err_msg = get_groups_by_user_dn(
-                user_dn=user_dn,
+            ldap_group_names, ldap_group_dns, err_msg = get_groups_by_username(
+                user=user,
                 user_search=self.default_settings["USER_SEARCH"],
                 conn=conn,
             )
