@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from contextlib import suppress
-from typing import Collection, TypedDict
+from typing import Collection
 
 from cm.status_api import send_object_update_event
 from core.types import CoreObjectDescriptor
@@ -23,6 +23,7 @@ from ansible_plugin.base import (
     PluginExecutorConfig,
     RuntimeEnvironment,
     SingleStateArgument,
+    SingleStateReturnValue,
     TargetConfig,
     from_arguments_root,
     retrieve_orm_object,
@@ -30,11 +31,7 @@ from ansible_plugin.base import (
 from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner, validate_type_is_present
 
 
-class ChangeStateReturnValue(TypedDict):
-    state: str
-
-
-class ADCMStatePluginExecutor(ADCMAnsiblePluginExecutor[SingleStateArgument, ChangeStateReturnValue]):
+class ADCMStatePluginExecutor(ADCMAnsiblePluginExecutor[SingleStateArgument, SingleStateReturnValue]):
     _config = PluginExecutorConfig(
         arguments=ArgumentsConfig(represent_as=SingleStateArgument),
         target=TargetConfig(detectors=(from_arguments_root,), validators=(validate_type_is_present,)),
@@ -45,7 +42,7 @@ class ADCMStatePluginExecutor(ADCMAnsiblePluginExecutor[SingleStateArgument, Cha
         targets: Collection[CoreObjectDescriptor],
         arguments: SingleStateArgument,
         runtime: RuntimeEnvironment,
-    ) -> CallResult[ChangeStateReturnValue]:
+    ) -> CallResult[SingleStateReturnValue]:
         target, *_ = targets
 
         if error := validate_target_allowed_for_context_owner(context_owner=runtime.context_owner, target=target):
@@ -56,4 +53,4 @@ class ADCMStatePluginExecutor(ADCMAnsiblePluginExecutor[SingleStateArgument, Cha
         with suppress(Exception):
             send_object_update_event(object_=target_object, changes={"state": arguments.state})
 
-        return CallResult(value=ChangeStateReturnValue(state=arguments.state), changed=True, error=None)
+        return CallResult(value=SingleStateReturnValue(state=arguments.state), changed=True, error=None)

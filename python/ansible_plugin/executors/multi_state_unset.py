@@ -10,9 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from contextlib import suppress
 from typing import Collection
 
+from cm.status_api import send_object_update_event
 from core.types import CoreObjectDescriptor
+from pydantic import BaseModel
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
@@ -20,25 +23,30 @@ from ansible_plugin.base import (
     CallResult,
     PluginExecutorConfig,
     RuntimeEnvironment,
-    SingleStateArgument,
     SingleStateReturnValue,
     TargetConfig,
     from_arguments_root,
     retrieve_orm_object,
 )
+from ansible_plugin.errors import PluginRuntimeError
 from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner, validate_type_is_present
 
 
-class ADCMMultiStateSetPluginExecutor(ADCMAnsiblePluginExecutor[SingleStateArgument, SingleStateReturnValue]):
+class MultiStateUnsetArguments(BaseModel):
+    state: str
+    missing_ok: bool = False
+
+
+class ADCMMultiStateUnsetPluginExecutor(ADCMAnsiblePluginExecutor[MultiStateUnsetArguments, SingleStateReturnValue]):
     _config = PluginExecutorConfig(
-        arguments=ArgumentsConfig(represent_as=SingleStateArgument),
+        arguments=ArgumentsConfig(represent_as=MultiStateUnsetArguments),
         target=TargetConfig(detectors=(from_arguments_root,), validators=(validate_type_is_present,)),
     )
 
     def __call__(
         self,
         targets: Collection[CoreObjectDescriptor],
-        arguments: SingleStateArgument,
+        arguments: MultiStateUnsetArguments,
         runtime: RuntimeEnvironment,
     ) -> CallResult[SingleStateReturnValue]:
         target, *_ = targets
@@ -47,6 +55,15 @@ class ADCMMultiStateSetPluginExecutor(ADCMAnsiblePluginExecutor[SingleStateArgum
             return CallResult(value=None, changed=False, error=error)
 
         target_object = retrieve_orm_object(object_=target)
-        target_object.set_multi_state(arguments.state)
+
+        if not arguments.missing_ok and arguments.state not in target_object.multi_state:
+            raise PluginRuntimeError(
+                f'Can not delete missing multi-state "{arguments.state}". '
+                f'Set missing_ok to "True" or choose an existing multi-state'
+            )
+
+        target_object.unset_multi_state(arguments.state)
+        with suppress(Exception):
+            send_object_update_event(object_=target_object, changes={"state": arguments.state})
 
         return CallResult(value=SingleStateReturnValue(state=arguments.state), changed=True, error=None)
