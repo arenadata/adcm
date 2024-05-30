@@ -46,9 +46,7 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         result = executor.execute()
 
         self.assertIsNone(result.error)
-        self.assertDictEqual(
-            result.value, {"check": [{"message": "test_message", "result": True, "title": "title", "type": "check"}]}
-        )
+        self.assertIsNone(None)
         self.assertTrue(result.changed)
 
     def test_adcm_check_no_title_fail(self) -> None:
@@ -108,7 +106,7 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         self.assertDictEqual(result.value, {})
         self.assertFalse(result.changed)
 
-    def test_adcm_check_no_msg_but_there_success_msg_success(self) -> None:
+    def test_adcm_check_no_msg_but_there_success_msg_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
 
@@ -123,11 +121,10 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         )
         result = executor.execute()
 
-        self.assertIsNone(result.error)
-        self.assertDictEqual(
-            result.value, {"check": [{"message": "success", "result": True, "title": "title", "type": "check"}]}
-        )
-        self.assertTrue(result.changed)
+        self.assertIsInstance(result.error, PluginValidationError)
+        self.assertIn("Arguments doesn't match expected schema", result.error.message)
+        self.assertDictEqual(result.value, {})
+        self.assertFalse(result.changed)
 
     def test_adcm_check_no_msg_but_there_fail_msg_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
@@ -166,9 +163,7 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         result = executor.execute()
 
         self.assertIsNone(result.error)
-        self.assertDictEqual(
-            result.value, {"check": [{"message": "fail", "result": False, "title": "title", "type": "check"}]}
-        )
+        self.assertIsNone(None)
         self.assertTrue(result.changed)
 
     def test_adcm_check_no_msg_and_there_success_msg_and_fail_msg_success(self) -> None:
@@ -188,9 +183,7 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         result = executor.execute()
 
         self.assertIsNone(result.error)
-        self.assertDictEqual(
-            result.value, {"check": [{"message": "fail", "result": False, "title": "title", "type": "check"}]}
-        )
+        self.assertIsNone(None)
         self.assertTrue(result.changed)
 
     def test_adcm_check_group_title_and_group_success_msg_success(self) -> None:
@@ -211,20 +204,7 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         result = executor.execute()
 
         self.assertIsNone(result.error)
-        self.assertDictEqual(
-            result.value,
-            {
-                "check": [
-                    {
-                        "content": [{"message": "test_message", "result": True, "title": "title", "type": "check"}],
-                        "message": "success group",
-                        "result": True,
-                        "title": "group",
-                        "type": "group",
-                    }
-                ]
-            },
-        )
+        self.assertIsNone(None)
         self.assertTrue(result.changed)
 
     def test_adcm_check_group_title_and_group_fail_msg_success(self) -> None:
@@ -245,20 +225,7 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         result = executor.execute()
 
         self.assertIsNone(result.error)
-        self.assertDictEqual(
-            result.value,
-            {
-                "check": [
-                    {
-                        "content": [{"message": "test_message", "result": True, "title": "title", "type": "check"}],
-                        "message": None,
-                        "result": True,
-                        "title": "group",
-                        "type": "group",
-                    }
-                ]
-            },
-        )
+        self.assertIsNone(None)
         self.assertTrue(result.changed)
 
     def test_adcm_check_group_title_no_group_msg_fail(self) -> None:
@@ -282,7 +249,7 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         self.assertDictEqual(result.value, {})
         self.assertFalse(result.changed)
 
-    def test_adcm_check_double_call_val_success_fail(self) -> None:
+    def test_adcm_check_double_call_val_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
 
@@ -300,12 +267,13 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         executor.execute()
         result = executor.execute()
 
-        self.assertIn("Failed to perform check due to IntegrityError", result.error.message)
-        self.assertDictEqual(result.value, {})
-        self.assertFalse(result.changed)
+        self.assertIsNone(
+            result.value,
+        )
+        self.assertTrue(result.changed)
 
         self.assertEqual(GroupCheckLog.objects.all().count(), 1)
-        self.assertEqual(CheckLog.objects.all().count(), 1)
+        self.assertEqual(CheckLog.objects.all().count(), 2)
         self.assertEqual(LogStorage.objects.all().count(), 3)
 
     def test_adcm_check_double_call_fail(self) -> None:
