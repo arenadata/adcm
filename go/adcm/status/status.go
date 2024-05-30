@@ -201,8 +201,24 @@ func getClusterServiceStatus(h Hub, clusterId int) (int, map[int]serviceStatus) 
 		srvStatus, hcStatus := getServiceStatus(h, clusterId, serviceId)
 		componentStatusMap := make(map[int]Status)
 		for _, hcStatusEntry := range hcStatus {
-			status, _ := getComponentStatus(h, hcStatusEntry.Component)
-			componentStatusMap[hcStatusEntry.Component] = status
+			entry, exists := componentStatusMap[hcStatusEntry.Component]
+			hostOrComponentInMM := h.MMObjects.IsComponentInMM(hcStatusEntry.Component) || h.MMObjects.IsHostInMM(hcStatusEntry.Host)
+			if !exists {
+				if hostOrComponentInMM {
+					componentStatusMap[hcStatusEntry.Component] = Status{Status: 0}
+				} else {
+					componentStatusMap[hcStatusEntry.Component] = Status{Status: hcStatusEntry.Status}
+				}
+
+				continue
+			}
+
+			if hostOrComponentInMM || entry.Status != 0 {
+				// it's in MM OR already not ok, no need to calculate
+				continue
+			}
+
+			componentStatusMap[hcStatusEntry.Component] = Status{Status: hcStatusEntry.Status}
 		}
 		services[serviceId] = serviceStatus{
 			Status:     srvStatus.Status,
