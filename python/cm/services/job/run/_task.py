@@ -34,6 +34,10 @@ def restart_task(task: TaskLog) -> None:
 
 
 def _run_task(task: TaskLog, command: Literal["start", "restart"]):
+    tree = Tree(obj=task.task_object)
+    affected_objs = (node.value for node in tree.get_all_affected(node=tree.built_from))
+    lock_affected_objects(task=task, objects=affected_objs)
+
     err_file = open(  # noqa: SIM115
         Path(settings.LOG_DIR, "task_runner.err"),
         "a+",
@@ -50,7 +54,3 @@ def _run_task(task: TaskLog, command: Literal["start", "restart"]):
         args=cmd, stderr=err_file, env=get_env_with_venv_path(venv=task.action.venv)
     )
     logger.info("task run #%s, python process %s", task.pk, proc.pid)
-
-    tree = Tree(obj=task.task_object)
-    affected_objs = (node.value for node in tree.get_all_affected(node=tree.built_from))
-    lock_affected_objects(task=task, objects=affected_objs)
