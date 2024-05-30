@@ -86,10 +86,7 @@ EXAMPLES = r"""
     result: yes
 """
 
-RETURN = r"""
-result:
-  check: JSON log of all checks for this ADCM job
-"""
+RETURN = ""
 
 import sys
 

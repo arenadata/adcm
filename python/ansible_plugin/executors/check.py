@@ -11,13 +11,11 @@
 # limitations under the License.
 
 from typing import Collection, TypedDict
-import json
 
 from cm.errors import AdcmEx
 from cm.logger import logger
 from cm.models import CheckLog, GroupCheckLog, JobLog, LogStorage
 from core.types import CoreObjectDescriptor
-from django.db import IntegrityError
 from django.db.transaction import atomic
 from pydantic import BaseModel, model_validator
 from typing_extensions import Self
@@ -33,7 +31,7 @@ from ansible_plugin.base import (
 from ansible_plugin.errors import (
     PluginRuntimeError,
 )
-from ansible_plugin.utils import assign_view_logstorage_permissions_by_job, get_checklogs_data_by_job_id
+from ansible_plugin.utils import assign_view_logstorage_permissions_by_job
 
 
 class CheckArguments(BaseModel):
@@ -55,17 +53,12 @@ class CheckArguments(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def check_success_msg_is_specified_if_no_msg(self) -> Self:
-        if self.msg is None and self.success_msg is None:
-            message = "'success_msg' must be specified if 'msg' are not specified"
-            raise ValueError(message)
+    def check_success_msg_and_fail_msg_are_specified_if_no_msg(self) -> Self:
+        if self.msg:
+            return self
 
-        return self
-
-    @model_validator(mode="after")
-    def check_fail_msg_is_specified_if_no_msg(self) -> Self:
-        if self.msg is None and self.success_msg is None:
-            message = "'fail_msg' must be specified if 'msg' are not specified"
+        if self.success_msg is None or self.fail_msg is None:
+            message = "Both success_msg and fail_msg should be specified when msg is absent"
             raise ValueError(message)
 
         return self
@@ -88,7 +81,7 @@ class JSONLogReturnValue(TypedDict):
     check: dict
 
 
-class ADCMCheckPluginExecutor(ADCMAnsiblePluginExecutor[CheckArguments, JSONLogReturnValue]):
+class ADCMCheckPluginExecutor(ADCMAnsiblePluginExecutor[CheckArguments, None]):
     _config = PluginExecutorConfig(
         arguments=ArgumentsConfig(represent_as=CheckArguments),
     )
@@ -125,8 +118,6 @@ class ADCMCheckPluginExecutor(ADCMAnsiblePluginExecutor[CheckArguments, JSONLogR
             ", ".join([f"{k}: {v}" for k, v in check_data.items() if v]),
         )
 
-        check = {}
-
         try:
             with atomic():
                 job = JobLog.objects.get(id=runtime.vars.job.id)
@@ -149,23 +140,13 @@ class ADCMCheckPluginExecutor(ADCMAnsiblePluginExecutor[CheckArguments, JSONLogR
 
                     group.message = msg
                     group.result = result
-                    group.save()
+                    group.save(update_fields=["message", "result"])
 
-                check = get_checklogs_data_by_job_id(runtime.vars.job.id)
-
-                log_storage, _ = LogStorage.objects.get_or_create(
-                    job=job, name="ansible", type="check", format="json", body=json.dumps(check)
-                )
+                log_storage, _ = LogStorage.objects.get_or_create(job=job, name="ansible", type="check", format="json")
 
                 assign_view_logstorage_permissions_by_job(log_storage)
         except AdcmEx as e:
             error_message = f"Failed to create checklog: {check_data}, group: {group_data}, error: {e}"
-            return CallResult(value={}, changed=False, error=PluginRuntimeError(message=error_message))
-        except IntegrityError as e:
-            return CallResult(
-                value={},
-                changed=False,
-                error=PluginRuntimeError(message=f"Failed to perform check due to IntegrityError: {e}"),
-            )
+            return CallResult(value=None, changed=False, error=PluginRuntimeError(message=error_message))
 
-        return CallResult(value=JSONLogReturnValue(check=check), changed=True, error=None)
+        return CallResult(value=None, changed=True, error=None)
