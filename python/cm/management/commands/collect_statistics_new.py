@@ -10,11 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import NamedTuple
+from urllib.parse import urlunparse
+import os
 import socket
 
 from django.conf import settings
 from django.core.management import BaseCommand
 
+from cm.adcm_config.config import get_adcm_config
 from cm.collect_statistics.collectors import (
     ADCMEntities,
     CommunityBundleCollector,
@@ -22,9 +26,20 @@ from cm.collect_statistics.collectors import (
     RBACCollector,
 )
 from cm.collect_statistics.encoders import TarFileEncoder
-from cm.collect_statistics.senders import StatisticSender
+from cm.collect_statistics.senders import SenderSettings, StatisticSender
 from cm.collect_statistics.storages import JSONFile, TarFileWithJSONFileStorage, TarFileWithTarFileStorage
 from cm.models import ADCM
+
+SENDER_REQUEST_TIMEOUT = 15.0
+
+
+class URLComponents(NamedTuple):
+    scheme: str
+    netloc: str
+    path: str
+    params: str = ""
+    query: str = ""
+    fragment: str = ""
 
 
 def is_internal() -> bool:
@@ -33,6 +48,21 @@ def is_internal() -> bool:
             return True
     except TimeoutError:
         return False
+
+
+def get_statistics_url() -> str:
+    scheme = "http"
+    url_path = "/api/v1/statistic/adcm"
+
+    if (netloc := os.getenv("STATISTICS_URL")) is None:
+        _, config = get_adcm_config(section="statistics_collection")
+        netloc = config["url"]
+
+    if len(splitted := netloc.split("://")) == 2:
+        scheme = splitted[0]
+        netloc = splitted[1]
+
+    return urlunparse(components=URLComponents(scheme=scheme, netloc=netloc, path=url_path))
 
 
 class Command(BaseCommand):
@@ -89,5 +119,12 @@ class Command(BaseCommand):
             encoder.encode(final_archive)
 
         if send:
-            sender = StatisticSender()
+            sender_settings = SenderSettings(
+                url=get_statistics_url(),
+                adcm_uuid=statistics_data["adcm"]["uuid"],
+                retries_limit=int(os.getenv("STATISTICS_RETRIES", 10)),
+                retries_frequency=int(os.getenv("STATISTICS_FREQUENCY", 1 * 60 * 60)),  # in seconds
+                request_timeout=SENDER_REQUEST_TIMEOUT,
+            )
+            sender = StatisticSender(settings=sender_settings)
             sender.send([community_archive])
