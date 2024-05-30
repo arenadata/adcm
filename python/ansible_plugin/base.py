@@ -12,7 +12,7 @@
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Any, Collection, Generic, Literal, Mapping, Protocol, TypeAlias, TypeVar
+from typing import Any, Collection, Generic, Literal, Mapping, Protocol, TypeAlias, TypedDict, TypeVar
 import fcntl
 
 from ansible.errors import AnsibleActionFail
@@ -249,6 +249,10 @@ class NoArguments(BaseModel):
 
 
 class SingleStateArgument(BaseModel):
+    state: str
+
+
+class SingleStateReturnValue(TypedDict):
     state: str
 
 
