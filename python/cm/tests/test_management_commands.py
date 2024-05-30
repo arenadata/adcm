@@ -10,12 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
+from unittest.mock import Mock, call, mock_open, patch
 
-from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.base import BaseAPITestCase, ParallelReadyTestCase
 from django.conf import settings
 from django.core.management import load_command_class
+from django.test import TestCase
 from rbac.models import Policy, Role, User
+from requests.exceptions import ConnectionError
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_405_METHOD_NOT_ALLOWED
 
+from cm.collect_statistics.errors import RetriesExceededError, SenderConnectionError
+from cm.collect_statistics.senders import SenderSettings, StatisticSender
 from cm.models import ADCM, Bundle, ServiceComponent
 from cm.tests.utils import gen_cluster, gen_provider
 
@@ -196,3 +203,102 @@ class TestStatistics(BaseAPITestCase):
         self.assertListEqual(data["data"]["providers"], expected_data["data"]["providers"])
         self.assertListEqual(data["data"]["users"], expected_data["data"]["users"])
         self.assertListEqual(data["data"]["roles"], expected_data["data"]["roles"])
+
+
+class MockResponse:
+    def __init__(self, status_code):
+        self.status_code = status_code
+
+
+class TestSender(TestCase, ParallelReadyTestCase):
+    maxDiff = None
+
+    def setUp(self):
+        self.settings = SenderSettings(
+            url="https://www.test.url",
+            adcm_uuid="TEST",
+            retries_limit=2,
+            retries_frequency=0,
+            request_timeout=0.1,
+        )
+
+    @patch.object(target=Path, attribute="open", new_callable=mock_open())
+    @patch("cm.collect_statistics.senders.requests")
+    def test_success(self, mocked_requests, mocked_open):
+        mocked_requests.head.return_value = MockResponse(status_code=HTTP_405_METHOD_NOT_ALLOWED)
+        mocked_requests.post.return_value = MockResponse(status_code=HTTP_201_CREATED)
+
+        sender = StatisticSender(settings=self.settings)
+        sender.send(targets=[Path("/some/path.file"), Path("/other/path.file")])
+
+        self.assertEqual(mocked_open.call_count, 2)
+
+        mocked_requests.head.assert_called_once_with(
+            url=self.settings.url, headers={}, timeout=self.settings.request_timeout
+        )
+
+        self.assertEqual(mocked_requests.post.call_count, 2)
+        self.assertListEqual(
+            mocked_requests.post.call_args_list,
+            [
+                call(
+                    url=self.settings.url,
+                    headers={"Adcm-UUID": "TEST", "accept": "application/json"},
+                    files={"file": mocked_open().__enter__()},
+                    timeout=self.settings.request_timeout,
+                )
+            ]
+            * 2,
+        )
+
+    @patch("cm.collect_statistics.senders.requests")
+    def test_connection_fail(self, mocked_requests):
+        sender = StatisticSender(settings=self.settings)
+
+        mocked_requests.head.return_value = MockResponse(status_code=HTTP_200_OK)
+
+        with self.assertRaises(expected_exception=SenderConnectionError) as err_status:
+            sender.send(targets=[Path("/some/path.file")])
+        self.assertEqual(
+            str(err_status.exception), f"Check connection: wrong return code for {self.settings.url}: {HTTP_200_OK}"
+        )
+
+        mocked_requests.head.return_value = MockResponse(status_code=HTTP_405_METHOD_NOT_ALLOWED)
+        mocked_requests.head = Mock(side_effect=ConnectionError)
+
+        with self.assertRaises(expected_exception=SenderConnectionError) as err_post:
+            sender.send(targets=[Path("/some/path.file")])
+        self.assertEqual(str(err_post.exception), f"Check connection: can't connect to {self.settings.url}")
+
+    @patch.object(target=Path, attribute="open", new_callable=mock_open())
+    @patch("cm.collect_statistics.senders.requests")
+    def test_retries_fail(self, mocked_requests, mocked_open):  # noqa: ARG002
+        mocked_requests.head.return_value = MockResponse(status_code=HTTP_405_METHOD_NOT_ALLOWED)
+        mocked_requests.post = Mock(side_effect=ConnectionError)
+
+        sender = StatisticSender(settings=self.settings)
+        with self.assertRaises(expected_exception=RetriesExceededError) as err_retries:
+            sender.send(targets=[Path("/some/path.file")])
+        self.assertEqual(
+            str(err_retries.exception), f"None of the {self.settings.retries_limit} attempts was successful"
+        )
+
+    @patch.object(target=Path, attribute="open", new_callable=mock_open())
+    @patch("cm.collect_statistics.senders.requests")
+    def test_retry_only_failed(self, mocked_requests, mocked_open):  # noqa: ARG002
+        mocked_requests.head.return_value = MockResponse(status_code=HTTP_405_METHOD_NOT_ALLOWED)
+        mocked_requests.post.side_effect = [
+            MockResponse(status_code=HTTP_201_CREATED),
+            MockResponse(status_code=0),
+            MockResponse(status_code=HTTP_201_CREATED),
+        ]
+
+        file_1, file_2 = Path("/some/path.file"), Path("/other/path.file")
+
+        sender = StatisticSender(settings=self.settings)
+        with patch.object(target=sender, attribute="_send", wraps=sender._send) as mocked_inner_send:
+            sender.send(targets=[file_1, file_2])
+
+        self.assertListEqual(
+            mocked_inner_send.call_args_list, [call(target=file_1), call(target=file_2), call(target=file_2)]
+        )
