@@ -14,6 +14,10 @@ from hashlib import md5
 from operator import itemgetter
 from pathlib import Path
 from unittest.mock import Mock, call, mock_open, patch
+import os
+import json
+import tarfile
+import datetime
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from api_v2.tests.base import BaseAPITestCase, ParallelReadyTestCase
@@ -28,6 +32,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_405_METHOD
 from cm.collect_statistics.collectors import BundleCollector
 from cm.collect_statistics.errors import RetriesExceededError, SenderConnectionError
 from cm.collect_statistics.senders import SenderSettings, StatisticSender
+from cm.collect_statistics.storages import JSONFile, StorageError, TarFileWithJSONFileStorage
 from cm.models import ADCM, Bundle, ServiceComponent
 from cm.tests.utils import gen_cluster, gen_provider
 
@@ -428,3 +433,113 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
             entry["host_component_map"] = sorted(entry["host_component_map"], key=order_hc_by)
 
         self.assertDictEqual(actual, expected)
+
+
+class TestStorage(TestStatistics):
+    def read_tar(self, path: Path) -> list[dict]:
+        content = []
+        with tarfile.open(path) as tar:
+            for member in tar.getmembers():
+                with tar.extractfile(member) as f:
+                    content.append(json.loads(f.read()))
+        return content
+
+    def test_storage_one_file_success(self):
+        data = load_command_class(app_name="cm", name="collect_statistics").collect_statistics()
+
+        community_storage = TarFileWithJSONFileStorage()
+        expected_name = (
+            f"{datetime.datetime.now(tz=datetime.timezone.utc).date().strftime('%Y-%m-%d')}_statistics_full.tgz"
+        )
+
+        community_storage.add(
+            JSONFile(
+                filename="data.json",
+                data=data,
+            )
+        )
+        community_archive = community_storage.gather()
+        self.assertTrue(community_archive.exists())
+        self.assertTrue(community_archive.is_file())
+        self.assertTrue(community_archive.suffix == ".tgz")
+        self.assertEqual(community_archive.name, expected_name)
+
+        self.assertListEqual(self.read_tar(community_archive), [data])
+
+    def test_storage_archive_written_twice_success(self):
+        data = load_command_class(app_name="cm", name="collect_statistics").collect_statistics()
+
+        community_storage = TarFileWithJSONFileStorage()
+        expected_name = (
+            f"{datetime.datetime.now(tz=datetime.timezone.utc).date().strftime('%Y-%m-%d')}_statistics_full.tgz"
+        )
+
+        community_storage.add(
+            JSONFile(
+                filename="data.json",
+                data=data,
+            )
+        )
+        community_archive = community_storage.gather()
+        self.assertEqual(community_archive.name, expected_name)
+        self.assertListEqual(self.read_tar(community_archive), [data])
+
+        community_archive = community_storage.gather()
+        self.assertEqual(community_archive.name, expected_name)
+        self.assertListEqual(self.read_tar(community_archive), [data])
+
+    def test_storage_several_files_success(self):
+        data_cm = load_command_class(app_name="cm", name="collect_statistics").collect_statistics()
+        full_stat = [data_cm, data_cm, data_cm, data_cm, data_cm, data_cm]
+
+        community_storage = TarFileWithJSONFileStorage()
+
+        for data in full_stat:
+            community_storage.add(
+                JSONFile(
+                    filename="data.json",
+                    data=data,
+                )
+            )
+        community_archive = community_storage.gather()
+
+        for content, expected_data in zip(self.read_tar(community_archive), full_stat):
+            self.assertDictEqual(content, expected_data)
+
+    def test_storage_clear_fail(self):
+        data = load_command_class(app_name="cm", name="collect_statistics").collect_statistics()
+        community_storage = TarFileWithJSONFileStorage()
+        community_storage.add(
+            JSONFile(
+                filename="data.json",
+                data=data,
+            )
+        )
+        community_storage.clear()
+        with self.assertRaises(StorageError):
+            community_storage.gather()
+
+    def test_storage_empty_json_fail(self):
+        community_storage = TarFileWithJSONFileStorage()
+        community_storage.add(
+            JSONFile(
+                filename="data.json",
+                data={},
+            )
+        )
+        with self.assertRaises(StorageError):
+            community_storage.gather()
+
+    def test_no_intermediate_files_created(self):
+        data = load_command_class(app_name="cm", name="collect_statistics").collect_statistics()
+        community_storage = TarFileWithJSONFileStorage()
+
+        json_file = JSONFile(
+            filename="data.json",
+            data=data,
+        )
+
+        community_storage.add(json_file)
+        community_archive = community_storage.gather()
+        self.assertFalse(community_archive.is_dir())
+        self.assertFalse(os.path.exists(json_file.filename))
