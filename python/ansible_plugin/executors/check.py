@@ -64,14 +64,19 @@ class CheckArguments(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def check_group_msg_if_group_is_specified(self) -> Self:
+    def check_group_msg_if_group_is_specified_if_no_msg(self) -> Self:
+        if self.msg:
+            return self
+
         if (
             self.group_title is not None
             and self.group_success_msg is None
             and self.group_title is not None
             and self.group_fail_msg is None
         ):
-            message = "either 'group_fail_msg' or 'group_success_msg' must be specified if 'group_titile' is specified"
+            message = (
+                "either 'group_fail_msg' or 'group_success_msg' or msg must be specified if 'group_title' is specified"
+            )
             raise ValueError(message)
 
         return self

@@ -183,7 +183,7 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         result = executor.execute()
 
         self.assertIsNone(result.error)
-        self.assertIsNone(None)
+        self.assertIsNone(result.value)
         self.assertTrue(result.changed)
 
     def test_adcm_check_group_title_and_group_success_msg_success(self) -> None:
@@ -228,7 +228,7 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         self.assertIsNone(None)
         self.assertTrue(result.changed)
 
-    def test_adcm_check_group_title_no_group_msg_fail(self) -> None:
+    def test_adcm_check_group_title_no_group_msg_but_there_msg_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
 
@@ -238,6 +238,25 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
                 title: title
                 result: true
                 msg: test_message
+                group_title: group
+            """,
+            call_context=job,
+        )
+        result = executor.execute()
+
+        self.assertIsNone(result.error)
+        self.assertIsNone(result.value, None)
+        self.assertTrue(result.changed)
+
+    def test_adcm_check_group_title_no_group_msg_fail(self) -> None:
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=ADCMCheckPluginExecutor,
+            call_arguments="""
+                title: title
+                result: true
                 group_title: group
             """,
             call_context=job,
@@ -285,7 +304,6 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
             call_arguments="""
                 title: title
                 result: true
-                msg: test_message
                 group_title: group
             """,
             call_context=job,
