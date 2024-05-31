@@ -19,18 +19,17 @@ from django.conf import settings
 from django.core.management import BaseCommand
 
 from cm.adcm_config.config import get_adcm_config
-from cm.collect_statistics.collectors import (
-    ADCMEntities,
-    CommunityBundleCollector,
-    EnterpriseBundleCollector,
-    RBACCollector,
-)
+from cm.collect_statistics.collectors import ADCMEntities, BundleCollector, RBACCollector
 from cm.collect_statistics.encoders import TarFileEncoder
 from cm.collect_statistics.senders import SenderSettings, StatisticSender
 from cm.collect_statistics.storages import JSONFile, TarFileWithJSONFileStorage, TarFileWithTarFileStorage
 from cm.models import ADCM
 
 SENDER_REQUEST_TIMEOUT = 15.0
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+collect_community = BundleCollector(date_format=DATE_FORMAT, include_editions=["community"])
+collect_enterprise = BundleCollector(date_format=DATE_FORMAT, include_editions=["enterprise"])
 
 
 class URLComponents(NamedTuple):
@@ -68,14 +67,15 @@ def get_statistics_url() -> str:
 class Command(BaseCommand):
     help = "Collect data and send to Statistic Server"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     def add_arguments(self, parser):
         parser.add_argument("--full", action="store_true", help="collect all data")
         parser.add_argument("--send", action="store_true", help="send data to Statistic Server")
         parser.add_argument("--encode", action="store_true", help="encode data")
 
     def handle(self, *_, full: bool, send: bool, encode: bool, **__):
-        date_format = "%Y-%m-%d %H:%M:%S"
-
         statistics_data = {
             "adcm": {
                 "uuid": str(ADCM.objects.values_list("uuid", flat=True).get()),
@@ -84,9 +84,9 @@ class Command(BaseCommand):
             },
             "format_version": "0.2",
         }
-        rbac_entries_data: dict = RBACCollector(date_format=date_format)().model_dump()
+        rbac_entries_data: dict = RBACCollector(date_format=DATE_FORMAT)().model_dump()
 
-        community_bundle_data: ADCMEntities = CommunityBundleCollector(date_format=date_format)()
+        community_bundle_data: ADCMEntities = collect_community()
         community_storage = TarFileWithJSONFileStorage()
 
         community_storage.add(
@@ -101,7 +101,7 @@ class Command(BaseCommand):
         final_storage.add(community_archive)
 
         if full:
-            enterprise_bundle_data: ADCMEntities = EnterpriseBundleCollector(date_format=date_format)()
+            enterprise_bundle_data: ADCMEntities = collect_enterprise()
             enterprise_storage = TarFileWithJSONFileStorage()
 
             enterprise_storage.add(

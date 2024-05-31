@@ -12,7 +12,7 @@
 
 from collections import defaultdict
 from hashlib import md5
-from typing import Literal
+from typing import Collection, Literal
 
 from django.db.models import Count, F
 from pydantic import BaseModel
@@ -89,15 +89,16 @@ class RBACCollector:
 
 
 class BundleCollector:
-    EDITION: str
-
-    def __init__(self, date_format: str):
+    def __init__(self, date_format: str, include_editions: Collection[str]):
         self._date_format = date_format
+        self._editions = include_editions
 
     def __call__(self) -> ADCMEntities:
         bundles: dict[int, BundleData] = {
             entry.pop("id"): BundleData(date=entry.pop("date").strftime(self._date_format), **entry)
-            for entry in Bundle.objects.filter(edition=self.EDITION).values("id", *BundleData.__annotations__.keys())
+            for entry in Bundle.objects.filter(edition__in=self._editions).values(
+                "id", *BundleData.__annotations__.keys()
+            )
         }
 
         hostproviders_data = [
@@ -143,11 +144,3 @@ class BundleCollector:
             bundles=bundles.values(),
             providers=hostproviders_data,
         )
-
-
-class CommunityBundleCollector(BundleCollector):
-    EDITION = "community"
-
-
-class EnterpriseBundleCollector(BundleCollector):
-    EDITION = "enterprise"
