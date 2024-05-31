@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import reverse
 from rbac.models import Group, OriginType
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -31,7 +30,7 @@ class TestGroupAPI(BaseAPITestCase):
         self.group_ldap = Group.objects.create(name="test_ldap_group", type=OriginType.LDAP)
 
     def test_list_success(self):
-        response: Response = self.client.get(path=reverse(viewname="v2:rbac:group-list"))
+        response: Response = (self.client.v2 / "rbac" / "groups").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 2)
@@ -49,16 +48,13 @@ class TestGroupAPI(BaseAPITestCase):
         self.create_user(user_data=user_create_data)
         self.client.login(**user_credentials)
 
-        response: Response = self.client.get(path=reverse(viewname="v2:rbac:group-list"))
+        response: Response = (self.client.v2 / "rbac" / "groups").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 0)
 
     def test_create_required_fields_success(self):
-        response: Response = self.client.post(
-            path=reverse(viewname="v2:rbac:group-list"),
-            data={"display_name": "new group name"},
-        )
+        response: Response = (self.client.v2 / "rbac" / "groups").post(data={"display_name": "new group name"})
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(Group.objects.count(), 3)
@@ -72,10 +68,7 @@ class TestGroupAPI(BaseAPITestCase):
         new_user = self.create_user()
         create_data = {"display_name": "new group name", "description": "new group description", "users": [new_user.pk]}
 
-        response: Response = self.client.post(
-            path=reverse(viewname="v2:rbac:group-list"),
-            data=create_data,
-        )
+        response: Response = (self.client.v2 / "rbac" / "groups").post(data=create_data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(Group.objects.count(), 3)
@@ -89,10 +82,7 @@ class TestGroupAPI(BaseAPITestCase):
             "users": [new_user.pk],
         }
 
-        response: Response = self.client.patch(
-            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group_local.pk}),
-            data=update_data,
-        )
+        response: Response = self.client.v2[self.group_local].patch(data=update_data)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.group_local.refresh_from_db()
@@ -100,10 +90,7 @@ class TestGroupAPI(BaseAPITestCase):
         self.assertEqual(self.group_local.description, update_data["description"])
         self.assertListEqual(list(self.group_local.user_set.values_list("id", flat=True)), update_data["users"])
 
-        response: Response = self.client.patch(
-            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group_local.pk}),
-            data={"display_name": "new_display name"},
-        )
+        response: Response = self.client.v2[self.group_local].patch(data={"display_name": "new_display name"})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.group_local.refresh_from_db()
@@ -113,18 +100,14 @@ class TestGroupAPI(BaseAPITestCase):
 
     def test_delete_success(self):
         group_ldap_pk = self.group_ldap.pk
-        response: Response = self.client.delete(
-            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": group_ldap_pk})
-        )
+        response: Response = self.client.v2[self.group_ldap].delete()
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         with self.assertRaises(Group.DoesNotExist):
             Group.objects.get(pk=group_ldap_pk)
 
     def test_ordering_by_name_success(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:rbac:group-list"), data={"ordering": "displayName"}
-        )
+        response: Response = (self.client.v2 / "rbac" / "groups").get(query={"ordering": "displayName"})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertListEqual(
@@ -132,9 +115,7 @@ class TestGroupAPI(BaseAPITestCase):
             [group.display_name for group in Group.objects.order_by("name")],
         )
 
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:rbac:group-list"), data={"ordering": "-displayName"}
-        )
+        response: Response = (self.client.v2 / "rbac" / "groups").get(query={"ordering": "-displayName"})
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertListEqual(
             [group["displayName"] for group in response.json()["results"]],
@@ -142,29 +123,23 @@ class TestGroupAPI(BaseAPITestCase):
         )
 
     def test_filtering_by_display_name_success(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:rbac:group-list"), data={"displayName": "nonexistentname"}
-        )
+        response: Response = (self.client.v2 / "rbac" / "groups").get(query={"displayName": "nonexistentname"})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 0)
 
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:rbac:group-list"), data={"displayName": "_lDaP_"}
-        )
+        response: Response = (self.client.v2 / "rbac" / "groups").get(query={"displayName": "_lDaP_"})
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
 
     def test_filtering_by_type_success(self):
-        response: Response = self.client.get(path=reverse(viewname="v2:rbac:group-list"), data={"type": "local"})
+        response: Response = (self.client.v2 / "rbac" / "groups").get(query={"type": "local"})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
 
     def test_filtering_by_wrong_type_fail(self):
-        response: Response = self.client.get(
-            path=reverse(viewname="v2:rbac:group-list"), data={"type": "wrong-group-type"}
-        )
+        response: Response = (self.client.v2 / "rbac" / "groups").get(query={"type": "wrong-group-type"})
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
@@ -176,7 +151,7 @@ class TestGroupAPI(BaseAPITestCase):
         user_2 = self.create_user(user_data={"username": "somebody22", "password": "very_long_veryvery", "groups": []})
         self.assertEqual(group.user_set.count(), 1)
 
-        update_path = reverse(viewname="v2:rbac:group-detail", kwargs={"pk": group.pk})
+        update_path = self.client.v2[group].path
         response = self.client.patch(path=update_path, data={"users": []})
 
         self.assertEqual(response.status_code, HTTP_200_OK)

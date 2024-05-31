@@ -28,7 +28,7 @@ from cm.models import (
     TaskLog,
 )
 from django.test.client import AsyncClient
-from rbac.models import Policy, Role, User
+from rbac.models import Group, Policy, Role, User
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 
@@ -106,6 +106,7 @@ class V2RootNode(RootNode):
         Policy: "rbac/policies",
         User: "rbac/users",
         Role: "rbac/roles",
+        Group: "rbac/groups",
     }
 
     def __getitem__(self, item: PathObject | tuple[PathObject, str | int | WithID, ...]) -> APINode:
