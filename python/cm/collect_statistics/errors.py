@@ -25,3 +25,7 @@ class SenderConnectionError(SenderError):
 
 class RetriesExceededError(SenderError):
     pass
+
+
+class StorageError(Exception):
+    pass
