@@ -152,6 +152,6 @@ class ADCMCheckPluginExecutor(ADCMAnsiblePluginExecutor[CheckArguments, None]):
                 assign_view_logstorage_permissions_by_job(log_storage)
         except AdcmEx as e:
             error_message = f"Failed to create checklog: {check_data}, group: {group_data}, error: {e}"
-            return CallResult(value=None, changed=False, error=PluginRuntimeError(message=error_message))
+            return CallResult(value="", changed=False, error=PluginRuntimeError(message=error_message))
 
-        return CallResult(value=None, changed=True, error=None)
+        return CallResult(value="", changed=True, error=None)
