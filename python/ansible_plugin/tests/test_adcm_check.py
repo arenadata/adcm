@@ -183,7 +183,7 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         result = executor.execute()
 
         self.assertIsNone(result.error)
-        self.assertIsNone(result.value)
+        self.assertEqual(result.value, "")
         self.assertTrue(result.changed)
 
     def test_adcm_check_group_title_and_group_success_msg_success(self) -> None:
@@ -245,7 +245,7 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         result = executor.execute()
 
         self.assertIsNone(result.error)
-        self.assertIsNone(result.value, None)
+        self.assertEqual(result.value, "")
         self.assertTrue(result.changed)
 
     def test_adcm_check_group_title_no_group_msg_fail(self) -> None:
@@ -286,9 +286,7 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         executor.execute()
         result = executor.execute()
 
-        self.assertIsNone(
-            result.value,
-        )
+        self.assertEqual(result.value, "")
         self.assertTrue(result.changed)
 
         self.assertEqual(GroupCheckLog.objects.all().count(), 1)
