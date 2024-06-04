@@ -14,8 +14,8 @@ from operator import attrgetter
 
 from core.types import ADCMCoreType, CoreObjectDescriptor
 
-from ansible_plugin.base import VarsContextSection, retrieve_orm_object
-from ansible_plugin.errors import PluginTargetError, PluginValidationError
+from ansible_plugin.base import retrieve_orm_object
+from ansible_plugin.errors import PluginTargetError
 
 _CLUSTER_TYPES = {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT}
 _HOSTPROVIDER_TYPES = {ADCMCoreType.HOSTPROVIDER, ADCMCoreType.HOST}
@@ -57,18 +57,5 @@ def validate_target_allowed_for_context_owner(
         and retrieve_orm_object(object_=target).provider_id != context_owner.id
     ):
         return PluginTargetError(message="Wrong context. Can't operate on not own host.")
-
-    return None
-
-
-def validate_type_is_present(
-    context_owner: CoreObjectDescriptor,
-    context: VarsContextSection,  # noqa: ARG001
-    raw_arguments: dict,
-) -> PluginValidationError | None:
-    _ = context, context_owner
-
-    if "type" not in raw_arguments:
-        return PluginValidationError(message="`type` is required")
 
     return None

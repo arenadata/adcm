@@ -12,8 +12,13 @@
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Any, Collection, Generic, Literal, Mapping, Protocol, TypeAlias, TypedDict, TypeVar
+from typing import Any, Collection, Generic, Literal, Mapping, Protocol, TypeAlias, TypeVar
 import fcntl
+
+try:  # TODO: refactor when python >= 3.11
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 from ansible.errors import AnsibleActionFail
 from ansible.module_utils._text import to_native
@@ -23,7 +28,7 @@ from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceCompone
 from core.types import ADCMCoreType, CoreObjectDescriptor, ObjectID
 from django.conf import settings
 from django.db.models import ObjectDoesNotExist
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from ansible_plugin.errors import (
     ADCMPluginError,
@@ -90,13 +95,6 @@ class RuntimeEnvironment(BaseModel):
 # Target
 
 
-class TargetDetector(Protocol):
-    def __call__(
-        self, context_owner: CoreObjectDescriptor, context: VarsContextSection, raw_arguments: dict
-    ) -> tuple[CoreObjectDescriptor, ...]:
-        ...
-
-
 class CoreObjectTargetDescription(BaseModel):
     type: TargetTypeLiteral
 
@@ -110,38 +108,77 @@ class CoreObjectTargetDescription(BaseModel):
         # requited to pre-process Ansible Strings
         return str(v)
 
+    @model_validator(mode="after")
+    def validate_args_allowed_for_type(self) -> Self:
+        match self.type:
+            case "cluster":
+                forbidden = ("service_name", "component_name", "host_id")
+            case "service":
+                forbidden = ("component_name", "host_id")
+            case "component":
+                forbidden = ("host_id",)
+            case "provider":
+                forbidden = ("service_name", "component_name", "host_id")
+            case "host":
+                forbidden = ("service_name", "component_name")
+            case _:
+                raise PluginTargetDetectionError(f"Unsupported type: {self.type}")
+
+        if error_fields := [field for field in forbidden if getattr(self, field) is not None]:
+            raise ValidationError(f"{', '.join(error_fields)} option(s) is not allowed for {self.type} type")
+
+        return self
+
+
+class BaseTypedArguments(CoreObjectTargetDescription):
+    model_config = ConfigDict(extra="forbid")
+
+
+class BaseArgumentsWithTypedObjects(BaseModel):
+    objects: list[CoreObjectTargetDescription] = Field(default_factory=list)
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class TargetDetector(Protocol):
+    def __call__(
+        self,
+        context_owner: CoreObjectDescriptor,
+        context: VarsContextSection,
+        parsed_arguments: Any,
+    ) -> tuple[CoreObjectDescriptor, ...]:
+        ...
+
 
 def from_objects(
     context_owner: CoreObjectDescriptor,  # noqa: ARG001
     context: VarsContextSection,
-    raw_arguments: dict,
+    parsed_arguments: Any,
 ) -> tuple[CoreObjectDescriptor, ...]:
-    if not isinstance(objects := raw_arguments.get("objects"), list):
+    if not isinstance(parsed_arguments, BaseArgumentsWithTypedObjects):
         return ()
 
     return tuple(
         _from_target_description(target_description=target_description, context=context)
-        for target_description in (CoreObjectTargetDescription(**entry) for entry in objects)
+        for target_description in parsed_arguments.objects
     )
 
 
 def from_arguments_root(
     context_owner: CoreObjectDescriptor,  # noqa: ARG001
     context: VarsContextSection,
-    raw_arguments: dict,
+    parsed_arguments: Any,
 ) -> tuple[CoreObjectDescriptor, ...]:
-    try:
-        target = CoreObjectTargetDescription(**raw_arguments)
-    except ValidationError:
+    if not isinstance(parsed_arguments, BaseTypedArguments):
         return ()
 
-    return (_from_target_description(target_description=target, context=context),)
+    return (_from_target_description(target_description=parsed_arguments, context=context),)
 
 
 def from_context(
     context_owner: CoreObjectDescriptor,
     context: VarsContextSection,  # noqa: ARG001
-    raw_arguments: dict,  # noqa: ARG001
+    parsed_arguments: Any,  # noqa: ARG001
 ) -> tuple[CoreObjectDescriptor, ...]:
     return (context_owner,)
 
@@ -246,14 +283,6 @@ class NoArguments(BaseModel):
     """
     Use it when plugin doesn't use any arguments
     """
-
-
-class SingleStateArgument(BaseModel):
-    state: str
-
-
-class SingleStateReturnValue(TypedDict):
-    state: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -389,7 +418,9 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
             )
             self._validate_context(context_owner=owner_from_context, context=call_context)
             self._validate_targets(context_owner=owner_from_context, context=call_context)
-            targets = self._detect_targets(context_owner=owner_from_context, context=call_context)
+            targets = self._detect_targets(
+                context_owner=owner_from_context, context=call_context, parsed_arguments=call_arguments
+            )
             result = self(
                 targets=targets,
                 arguments=call_arguments,
@@ -446,7 +477,10 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
                 raise error
 
     def _detect_targets(
-        self, context_owner: CoreObjectDescriptor, context: VarsContextSection
+        self,
+        context_owner: CoreObjectDescriptor,
+        context: VarsContextSection,
+        parsed_arguments: BaseTypedArguments | BaseArgumentsWithTypedObjects,
     ) -> tuple[CoreObjectDescriptor, ...]:
         if not self._config.target.detectors:
             # Note that only in this case it's ok to return empty targets.
@@ -454,7 +488,7 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
             return ()
 
         for detector in self._config.target.detectors:
-            result = detector(context_owner=context_owner, context=context, raw_arguments=self._raw_arguments)
+            result = detector(context_owner=context_owner, context=context, parsed_arguments=parsed_arguments)
             if result:
                 return result
 

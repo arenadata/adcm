@@ -23,11 +23,12 @@ from cm.services.concern.flags import (
 )
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
-from pydantic import BaseModel, field_validator
+from pydantic import field_validator
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
     ArgumentsConfig,
+    BaseArgumentsWithTypedObjects,
     CallResult,
     PluginExecutorConfig,
     ReturnValue,
@@ -45,7 +46,7 @@ class ChangeFlagOperation(str, Enum):
     DOWN = "down"
 
 
-class ChangeFlagArguments(BaseModel):
+class ChangeFlagArguments(BaseArgumentsWithTypedObjects):
     operation: ChangeFlagOperation
     name: str | None = None
     msg: str = ""
