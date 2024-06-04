@@ -67,11 +67,8 @@ class AnsibleProcessExecutor(ProcessExecutor):
 
         env = get_env_with_venv_path(venv=self._config.venv, existing_env=env)
 
-        # This condition is intended to support compatibility.
-        # Since older bundle versions may contain their own ansible.cfg
-        if not Path(self._config.bundle.root, "ansible.cfg").is_file():
-            # bundle root dir (workdir) is used as in `stack_dir` in ansible job config
-            env["ANSIBLE_CONFIG"] = str(self._config.work_dir / "ansible.cfg")
+        # According to ADCM-4975 we now always use `ansible.cfg` from job's run directory
+        env["ANSIBLE_CONFIG"] = str(self._config.work_dir / "ansible.cfg")
 
         return env
 
