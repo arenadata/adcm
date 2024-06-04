@@ -10,37 +10,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Collection
+from typing import Collection, TypedDict
 
 from core.types import CoreObjectDescriptor
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
     ArgumentsConfig,
+    BaseTypedArguments,
     CallResult,
     PluginExecutorConfig,
     RuntimeEnvironment,
-    SingleStateArgument,
-    SingleStateReturnValue,
     TargetConfig,
     from_arguments_root,
     retrieve_orm_object,
 )
-from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner, validate_type_is_present
+from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner
 
 
-class ADCMMultiStateSetPluginExecutor(ADCMAnsiblePluginExecutor[SingleStateArgument, SingleStateReturnValue]):
+class MultiStateSetArguments(BaseTypedArguments):
+    state: str
+
+
+class MultiStateSetReturnValue(TypedDict):
+    state: str
+
+
+class ADCMMultiStateSetPluginExecutor(ADCMAnsiblePluginExecutor[MultiStateSetArguments, MultiStateSetReturnValue]):
     _config = PluginExecutorConfig(
-        arguments=ArgumentsConfig(represent_as=SingleStateArgument),
-        target=TargetConfig(detectors=(from_arguments_root,), validators=(validate_type_is_present,)),
+        arguments=ArgumentsConfig(represent_as=MultiStateSetArguments),
+        target=TargetConfig(detectors=(from_arguments_root,)),
     )
 
     def __call__(
         self,
         targets: Collection[CoreObjectDescriptor],
-        arguments: SingleStateArgument,
+        arguments: MultiStateSetArguments,
         runtime: RuntimeEnvironment,
-    ) -> CallResult[SingleStateReturnValue]:
+    ) -> CallResult[MultiStateSetReturnValue]:
         target, *_ = targets
 
         if error := validate_target_allowed_for_context_owner(context_owner=runtime.context_owner, target=target):
@@ -49,4 +56,4 @@ class ADCMMultiStateSetPluginExecutor(ADCMAnsiblePluginExecutor[SingleStateArgum
         target_object = retrieve_orm_object(object_=target)
         target_object.set_multi_state(arguments.state)
 
-        return CallResult(value=SingleStateReturnValue(state=arguments.state), changed=True, error=None)
+        return CallResult(value=MultiStateSetReturnValue(state=arguments.state), changed=True, error=None)

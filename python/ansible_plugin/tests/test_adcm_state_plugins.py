@@ -76,11 +76,48 @@ class TestADCMStatePluginExecutors(BaseTestEffectsOfADCMAnsiblePlugins):
             (self.host_1, self.host_1, {"type": "host", "state": self.target_state}),
         )
         self.forbidden_owner_target_args = (
-            (self.host_1, self.host_2, {"type": "host", "host_id": self.host_2.pk, "state": self.target_state}),
-            (
+            (  # owner host, target host, not self
+                self.host_1,
+                self.host_2,
+                {"type": "host", "host_id": self.host_2.pk, "state": self.target_state},
+            ),
+            (  # foreign host
                 self.another_provider,
                 self.host_2,
                 {"type": "host", "host_id": self.host_2.pk, "state": self.target_state},
+            ),
+            # forbidden args for target type
+            (self.cluster, self.cluster, {"type": "cluster", "state": self.target_state, "test": "test"}),
+            (self.service, self.cluster, {"type": "cluster", "state": self.target_state, "service_name": "some_name"}),
+            (
+                self.component,
+                self.cluster,
+                {"type": "cluster", "state": self.target_state, "component_name": "some_name"},
+            ),
+            (self.cluster, self.cluster, {"type": "cluster", "state": self.target_state, "host_id": 8}),
+            (
+                self.service,
+                self.service,
+                {"type": "service", "state": self.target_state, "component_name": "some_name"},
+            ),
+            (self.component, self.service, {"type": "service", "state": self.target_state, "host_id": 8}),
+            (self.component, self.component, {"type": "component", "state": self.target_state, "host_id": 8}),
+            (
+                self.provider,
+                self.provider,
+                {"type": "provider", "state": self.target_state, "service_name": "some_name"},
+            ),
+            (
+                self.provider,
+                self.provider,
+                {"type": "provider", "state": self.target_state, "component_name": "some_name"},
+            ),
+            (self.host_1, self.provider, {"type": "provider", "state": self.target_state, "host_id": 8}),
+            (self.host_1, self.host_1, {"type": "host", "state": self.target_state, "service_name": "some_name"}),
+            (
+                self.provider,
+                self.host_1,
+                {"type": "host", "host_id": self.host_1.pk, "state": self.target_state, "component_name": "some_name"},
             ),
         )
 
@@ -193,7 +230,7 @@ class TestADCMStatePluginExecutors(BaseTestEffectsOfADCMAnsiblePlugins):
                         expect_fail=True,
                     )
 
-    def test_forbidden_owner_targert_pairs(self):
+    def test_forbidden_owner_targert_args(self):
         for owner, target, call_args in self.forbidden_owner_target_args:
             for executor_class, extra_args in (
                 (ADCMStatePluginExecutor, {}),

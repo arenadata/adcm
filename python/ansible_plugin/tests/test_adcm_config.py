@@ -84,6 +84,20 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         self.assertEqual(after.config["plain_s"], changed_value)
         self.assertEqual(after.config["g1"]["plain_s"], in_group_value)
 
+    def test_simple_change_not_allowed_arg_fail(self) -> None:
+        result = self.execute_plugin(
+            task=self.prepare_task(owner=self.cluster, name="dummy"),
+            call_arguments="""
+                some_arg: some_value
+                type: cluster
+                key: plain_s
+                value: awesomenewstring
+            """,
+        )
+
+        self.assertIsNotNone(result.error)
+        self.assertFalse(result.changed)
+
     def test_multi_change_with_activation_success(self) -> None:
         values_to_change = {
             "plain_i": 4,
