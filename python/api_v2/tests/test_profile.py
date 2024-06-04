@@ -10,16 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.tests.base import BaseTestCase
-from django.urls import reverse
 from rest_framework.status import HTTP_401_UNAUTHORIZED
 
+from api_v2.tests.base import BaseAPITestCase
 
-class TestProfile(BaseTestCase):
+
+class TestProfile(BaseAPITestCase):
     def test_unauthenticated_access_adcm_4946_fail(self):
         self.client.logout()
 
-        path = reverse(viewname="v2:profile")
+        path = self.client.v2["profile"].path
 
         for method in ("get", "put", "patch"):
             with self.subTest(f"[{method.upper()}]"):
