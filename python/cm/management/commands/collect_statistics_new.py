@@ -10,26 +10,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from logging import getLogger
 from typing import NamedTuple
 from urllib.parse import urlunparse
 import os
 import socket
 
+from audit.utils import audit_background_task
 from django.conf import settings
 from django.core.management import BaseCommand
+from django.db.models import Q
+from django.utils import timezone
 
 from cm.adcm_config.config import get_adcm_config
 from cm.collect_statistics.collectors import ADCMEntities, BundleCollector, RBACCollector
 from cm.collect_statistics.encoders import TarFileEncoder
 from cm.collect_statistics.senders import SenderSettings, StatisticSender
-from cm.collect_statistics.storages import JSONFile, TarFileWithJSONFileStorage, TarFileWithTarFileStorage
+from cm.collect_statistics.storages import JSONFile, TarFileWithJSONFileStorage
 from cm.models import ADCM
 
 SENDER_REQUEST_TIMEOUT = 15.0
-DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+DATE_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+DATE_FORMAT = "%Y-%m-%d"
+STATISTIC_DIR = settings.TMP_DIR / "statistics"
+STATISTIC_DIR.mkdir(exist_ok=True)
 
-collect_community = BundleCollector(date_format=DATE_FORMAT, include_editions=["community"])
-collect_enterprise = BundleCollector(date_format=DATE_FORMAT, include_editions=["enterprise"])
+logger = getLogger("background_tasks")
+
+collect_not_enterprise = BundleCollector(date_format=DATE_TIME_FORMAT, filters=[~Q(edition="enterprise")])
+collect_all = BundleCollector(date_format=DATE_TIME_FORMAT, filters=[])
 
 
 class URLComponents(NamedTuple):
@@ -64,6 +73,14 @@ def get_statistics_url() -> str:
     return urlunparse(components=URLComponents(scheme=scheme, netloc=netloc, path=url_path))
 
 
+def get_enabled() -> bool:
+    if os.getenv("STATISTICS_ENABLED") is not None:
+        return os.environ["STATISTICS_ENABLED"].upper() in {"1", "TRUE"}
+
+    attr, _ = get_adcm_config(section="statistics_collection")
+    return bool(attr["active"])
+
+
 class Command(BaseCommand):
     help = "Collect data and send to Statistic Server"
 
@@ -71,11 +88,19 @@ class Command(BaseCommand):
         super().__init__(*args, **kwargs)
 
     def add_arguments(self, parser):
-        parser.add_argument("--full", action="store_true", help="collect all data")
-        parser.add_argument("--send", action="store_true", help="send data to Statistic Server")
-        parser.add_argument("--encode", action="store_true", help="encode data")
+        parser.add_argument(
+            "--mode",
+            choices=["send", "archive-all"],
+            help=(
+                "'send' - collect archive with only community bundles and send to Statistic Server, "
+                "'archive-all' - collect community and enterprise bundles to archive and return path to file"
+            ),
+            default="archive-all",
+        )
 
-    def handle(self, *_, full: bool, send: bool, encode: bool, **__):
+    @audit_background_task(start_operation_status="launched", end_operation_status="completed")
+    def handle(self, *_, mode: str, **__):
+        logger.debug(msg="Statistics collector: started")
         statistics_data = {
             "adcm": {
                 "uuid": str(ADCM.objects.values_list("uuid", flat=True).get()),
@@ -84,47 +109,63 @@ class Command(BaseCommand):
             },
             "format_version": "0.2",
         }
-        rbac_entries_data: dict = RBACCollector(date_format=DATE_FORMAT)().model_dump()
+        logger.debug(msg="Statistics collector: RBAC data preparation")
+        rbac_entries_data: dict = RBACCollector(date_format=DATE_TIME_FORMAT)().model_dump()
+        storage = TarFileWithJSONFileStorage(date_format=DATE_FORMAT)
 
-        community_bundle_data: ADCMEntities = collect_community()
-        community_storage = TarFileWithJSONFileStorage()
+        match mode:
+            case "send":
+                logger.debug(msg="Statistics collector: 'send' mode is used")
 
-        community_storage.add(
-            JSONFile(
-                filename="community.json",
-                data={**statistics_data, **rbac_entries_data, **community_bundle_data.model_dump()},
-            )
-        )
-        community_archive = community_storage.gather()
+                if not get_enabled():
+                    logger.debug(msg="Statistics collector: disabled")
+                    return
 
-        final_storage = TarFileWithTarFileStorage()
-        final_storage.add(community_archive)
-
-        if full:
-            enterprise_bundle_data: ADCMEntities = collect_enterprise()
-            enterprise_storage = TarFileWithJSONFileStorage()
-
-            enterprise_storage.add(
-                JSONFile(
-                    filename="enterprise.json",
-                    data={**statistics_data, **rbac_entries_data, **enterprise_bundle_data.model_dump()},
+                logger.debug(
+                    msg="Statistics collector: bundles data preparation, collect everything except 'enterprise' edition"
                 )
-            )
-            final_storage.add(enterprise_storage.gather())
+                bundle_data: ADCMEntities = collect_not_enterprise()
+                storage.add(
+                    JSONFile(
+                        filename=f"{timezone.now().strftime(DATE_FORMAT)}_statistics.json",
+                        data={**statistics_data, **rbac_entries_data, **bundle_data.model_dump()},
+                    )
+                )
+                logger.debug(msg="Statistics collector: archive preparation")
+                archive = storage.gather()
+                sender_settings = SenderSettings(
+                    url=get_statistics_url(),
+                    adcm_uuid=statistics_data["adcm"]["uuid"],
+                    retries_limit=int(os.getenv("STATISTICS_RETRIES", 10)),
+                    retries_frequency=int(os.getenv("STATISTICS_FREQUENCY", 1 * 60 * 60)),  # in seconds
+                    request_timeout=SENDER_REQUEST_TIMEOUT,
+                )
+                logger.debug(msg="Statistics collector: sender preparation")
+                sender = StatisticSender(settings=sender_settings)
+                logger.debug(msg="Statistics collector: statistics sending has started")
+                sender.send([archive])
+                logger.debug(msg="Statistics collector: sending statistics completed")
 
-        final_archive = final_storage.gather()
+            case "archive-all":
+                logger.debug(msg="Statistics collector: 'archive-all' mode is used")
+                logger.debug(msg="Statistics collector: bundles data preparation, collect everything")
+                bundle_data: ADCMEntities = collect_all()
+                storage.add(
+                    JSONFile(
+                        filename=f"{timezone.now().strftime(DATE_FORMAT)}_statistics.json",
+                        data={**statistics_data, **rbac_entries_data, **bundle_data.model_dump()},
+                    )
+                )
+                logger.debug(msg="Statistics collector: archive preparation")
+                archive = storage.gather()
 
-        if encode:
-            encoder = TarFileEncoder()
-            encoder.encode(final_archive)
+                logger.debug(msg="Statistics collector: archive encoding")
+                encoder = TarFileEncoder(suffix=".enc")
+                encoded_file = encoder.encode(path_file=archive)
+                encoded_file = encoded_file.replace(STATISTIC_DIR / encoded_file.name)
 
-        if send:
-            sender_settings = SenderSettings(
-                url=get_statistics_url(),
-                adcm_uuid=statistics_data["adcm"]["uuid"],
-                retries_limit=int(os.getenv("STATISTICS_RETRIES", 10)),
-                retries_frequency=int(os.getenv("STATISTICS_FREQUENCY", 1 * 60 * 60)),  # in seconds
-                request_timeout=SENDER_REQUEST_TIMEOUT,
-            )
-            sender = StatisticSender(settings=sender_settings)
-            sender.send([community_archive])
+                self.stdout.write(f"Data saved in: {str(encoded_file.absolute())}")
+            case _:
+                pass
+
+        logger.debug(msg="Statistics collector: finished")

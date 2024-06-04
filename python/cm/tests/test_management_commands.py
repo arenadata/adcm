@@ -13,6 +13,7 @@
 from hashlib import md5
 from operator import itemgetter
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from unittest.mock import Mock, call, mock_open, patch
 import os
 import json
@@ -23,6 +24,7 @@ from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from api_v2.tests.base import BaseAPITestCase, ParallelReadyTestCase
 from django.conf import settings
 from django.core.management import load_command_class
+from django.db.models import Q
 from django.test import TestCase
 from django.utils import timezone
 from rbac.models import Policy, Role, User
@@ -30,6 +32,7 @@ from requests.exceptions import ConnectionError
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_405_METHOD_NOT_ALLOWED
 
 from cm.collect_statistics.collectors import BundleCollector
+from cm.collect_statistics.encoders import TarFileEncoder
 from cm.collect_statistics.errors import RetriesExceededError, SenderConnectionError
 from cm.collect_statistics.senders import SenderSettings, StatisticSender
 from cm.collect_statistics.storages import JSONFile, StorageError, TarFileWithJSONFileStorage
@@ -353,7 +356,7 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
         # prepare expected
         order_hc_by = itemgetter("component_name")
         by_name = itemgetter("name")
-        collect = BundleCollector(date_format="%Y", include_editions=["community"])
+        collect = BundleCollector(date_format="%Y", filters=[Q(edition="community")])
         current_year = str(timezone.now().year)
         host_1_name_hash = md5(host_1.fqdn.encode("utf-8")).hexdigest()  # noqa: S324
         host_2_name_hash = md5(host_2.fqdn.encode("utf-8")).hexdigest()  # noqa: S324
@@ -449,7 +452,7 @@ class TestStorage(TestStatistics):
 
         community_storage = TarFileWithJSONFileStorage()
         expected_name = (
-            f"{datetime.datetime.now(tz=datetime.timezone.utc).date().strftime('%Y-%m-%d')}_statistics_full.tgz"
+            f"{datetime.datetime.now(tz=datetime.timezone.utc).date().strftime('%Y-%m-%d')}_statistics.tar.gz"
         )
 
         community_storage.add(
@@ -461,7 +464,7 @@ class TestStorage(TestStatistics):
         community_archive = community_storage.gather()
         self.assertTrue(community_archive.exists())
         self.assertTrue(community_archive.is_file())
-        self.assertTrue(community_archive.suffix == ".tgz")
+        self.assertTrue(community_archive.suffixes == [".tar", ".gz"])
         self.assertEqual(community_archive.name, expected_name)
 
         self.assertListEqual(self.read_tar(community_archive), [data])
@@ -471,7 +474,7 @@ class TestStorage(TestStatistics):
 
         community_storage = TarFileWithJSONFileStorage()
         expected_name = (
-            f"{datetime.datetime.now(tz=datetime.timezone.utc).date().strftime('%Y-%m-%d')}_statistics_full.tgz"
+            f"{datetime.datetime.now(tz=datetime.timezone.utc).date().strftime('%Y-%m-%d')}_statistics.tar.gz"
         )
 
         community_storage.add(
@@ -543,3 +546,55 @@ class TestStorage(TestStatistics):
         community_archive = community_storage.gather()
         self.assertFalse(community_archive.is_dir())
         self.assertFalse(os.path.exists(json_file.filename))
+
+
+class TestEncoder(TestCase, ParallelReadyTestCase):
+    def test_uncorrected_suffix(self):
+        with self.assertRaises(ValueError) as error:
+            TarFileEncoder(suffix="enc")
+
+        self.assertEqual(str(error.exception), "Invalid suffix 'enc'")
+
+    def test_uncorrected_filename(self):
+        with self.assertRaises(ValueError) as error:
+            encoder = TarFileEncoder(suffix=".enc")
+            encoder.decode(Path("test.tar.gz"))
+
+        self.assertEqual(str(error.exception), "The file name must end with '.enc'")
+
+    def test_encode(self):
+        path_file = Path(NamedTemporaryFile(suffix=".tar.gz").name)
+        path_file.write_text("content")
+
+        encoder = TarFileEncoder(suffix=".enc")
+        encoded_file = encoder.encode(path_file=path_file)
+
+        self.assertTrue(encoded_file.exists())
+        self.assertTrue(encoded_file.is_file())
+        self.assertTrue(encoded_file.suffix == ".enc")
+        self.assertTrue(encoded_file.read_bytes() == b"dpoufou")
+
+    def test_decode(self):
+        encoded_file = Path(NamedTemporaryFile(suffix=".tar.gz.enc").name)
+        encoded_file.write_bytes(b"dpoufou")
+
+        encoder = TarFileEncoder(suffix=".enc")
+        decoded_file = encoder.decode(path_file=encoded_file)
+
+        self.assertTrue(decoded_file.exists())
+        self.assertTrue(decoded_file.is_file())
+        self.assertTrue(decoded_file.suffixes == [".tar", ".gz"])
+        self.assertTrue(decoded_file.read_bytes() == b"content")
+
+    def test_encode_decode(self):
+        path_file = Path(NamedTemporaryFile(suffix=".tar.gz").name)
+        path_file.write_text("content")
+
+        encoder = TarFileEncoder(suffix=".enc")
+        encoded_file = encoder.encode(path_file=path_file)
+        decoded_file = encoder.decode(path_file=encoded_file)
+
+        self.assertTrue(decoded_file.exists())
+        self.assertTrue(decoded_file.is_file())
+        self.assertTrue(decoded_file.suffixes, [".tar", ".gz"])
+        self.assertTrue(decoded_file.read_bytes() == b"content")

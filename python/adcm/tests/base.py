@@ -104,6 +104,7 @@ class ParallelReadyTestCase:
             "FILE_DIR": stack / "data" / "file",
             "LOG_DIR": data / "log",
             "VAR_DIR": data / "var",
+            "TMP_DIR": data / "tmp",
         }
 
         for directory in temporary_directories.values():
