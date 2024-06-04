@@ -47,7 +47,12 @@ class JobFinalizer(Protocol):
 
 
 class JobEnvironmentBuilder(Protocol):
-    def __call__(self, task: Task, job: Job, configuration: ExternalSettings) -> None:
+    def __call__(
+        self,
+        task: Task,
+        job: Job,
+        configuration: ExternalSettings,
+    ) -> None:
         ...
 
 

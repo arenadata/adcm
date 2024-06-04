@@ -21,11 +21,13 @@ from core.job.executors import BundleExecutorConfig, ExecutorConfig
 from core.job.runners import ExecutionTarget, ExternalSettings
 from core.job.types import Job, ScriptType, Task
 from core.types import ADCMCoreType
+from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
 from cm.api import get_hc, save_hc
 from cm.models import (
+    AnsibleConfig,
     Cluster,
     HostComponent,
     LogStorage,
@@ -33,7 +35,6 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from cm.services.adcm import adcm_config, get_adcm_config_id
 from cm.services.job._utils import cook_delta, get_old_hc
 from cm.services.job.checks import check_hostcomponentmap
 from cm.services.job.inventory import get_adcm_configuration, get_inventory_data
@@ -54,6 +55,7 @@ from cm.services.job.types import (
     ServiceActionType,
 )
 from cm.status_api import send_prototype_and_state_update_event
+from cm.utils import deep_merge
 
 
 class ExecutionTargetFactory:
@@ -203,21 +205,9 @@ def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSet
     with (job_run_dir / "inventory.json").open(mode="w", encoding="utf-8") as file_descriptor:
         json.dump(obj=inventory, fp=file_descriptor, separators=(",", ":"))
 
-    config_parser = ConfigParser()
-    config_parser["defaults"] = {
-        "stdout_callback": "yaml",
-        "callback_whitelist": "profile_tasks",
-    }
-
-    forks = adcm_config(get_adcm_config_id()).config["ansible_settings"]["forks"]
-    config_parser["defaults"]["forks"] = str(forks)
-
-    jinja_2_native = getattr(job.params, "jinja2_native", None)
-    if jinja_2_native is not None:
-        config_parser["defaults"]["jinja2_native"] = str(jinja_2_native)
-
+    ansible_cfg_config_parser: ConfigParser = prepare_ansible_cfg(task=task)
     with (job_run_dir / "ansible.cfg").open(mode="w", encoding="utf-8") as config_file:
-        config_parser.write(config_file)
+        ansible_cfg_config_parser.write(config_file)
 
 
 def prepare_ansible_inventory(task: Task) -> dict[str, Any]:
@@ -294,6 +284,35 @@ def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSett
         ),
         job=job_data,
     ).model_dump(exclude_unset=True)
+
+
+def prepare_ansible_cfg(task: Task) -> ConfigParser:
+    config_parser = ConfigParser()
+
+    ansible_cfg_from_bundle = task.bundle.root / "ansible.cfg"
+    if ansible_cfg_from_bundle.is_file():
+        config_parser.read(filenames=ansible_cfg_from_bundle, encoding="utf-8")
+    else:
+        config_parser["defaults"] = {
+            "deprecation_warnings": False,
+            "callback_whitelist": "profile_tasks",
+            "stdout_callback": "yaml",
+        }
+        config_parser["ssh_connection"] = {"retries": "3", "pipelining": True}
+
+    if task.owner.type in {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT}:
+        cluster_id = task.owner.id if task.owner.type == ADCMCoreType.CLUSTER else task.owner.related_objects.cluster.id
+
+        settings_to_override = (
+            AnsibleConfig.objects.values_list("value", flat=True)
+            .filter(object_id=cluster_id, object_type=ContentType.objects.get_for_model(Cluster))
+            .first()
+        )
+        # we consider that if we got settings, they are of correct form (string values),
+        # otherwise `deep_merge` might fail
+        deep_merge(origin=config_parser, renovator=settings_to_override or {})
+
+    return config_parser
 
 
 def _get_owner_specific_data(

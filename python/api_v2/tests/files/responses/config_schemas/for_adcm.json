@@ -265,46 +265,6 @@
         "secret"
       ]
     },
-    "ansible_settings": {
-      "title": "Ansible Settings",
-      "type": "object",
-      "description": "",
-      "default": {},
-      "readOnly": false,
-      "adcmMeta": {
-        "isAdvanced": false,
-        "isInvisible": false,
-        "activation": null,
-        "synchronization": null,
-        "isSecret": false,
-        "stringExtra": null,
-        "enumExtra": null
-      },
-      "additionalProperties": false,
-      "properties": {
-        "forks": {
-          "title": "Forks",
-          "type": "integer",
-          "description": "This is the default number of parallel processes to spawn when communicating with remote hosts.\n",
-          "default": 5,
-          "readOnly": false,
-          "adcmMeta": {
-            "isAdvanced": false,
-            "isInvisible": false,
-            "activation": null,
-            "synchronization": null,
-            "isSecret": false,
-            "stringExtra": null,
-            "enumExtra": null
-          },
-          "minimum": 1,
-          "maximum": 100
-        }
-      },
-      "required": [
-        "forks"
-      ]
-    },
     "logrotate": {
       "title": "Nginx Server Logrotate",
       "type": "object",
@@ -959,7 +919,6 @@
     "statistics_collection",
     "google_oauth",
     "yandex_oauth",
-    "ansible_settings",
     "logrotate",
     "audit_data_retention",
     "ldap_integration",
