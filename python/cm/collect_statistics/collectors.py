@@ -14,7 +14,7 @@ from collections import defaultdict
 from hashlib import md5
 from typing import Collection, Literal
 
-from django.db.models import Count, F
+from django.db.models import Count, F, Q
 from pydantic import BaseModel
 from rbac.models import Policy, Role, User
 from typing_extensions import TypedDict
@@ -89,16 +89,14 @@ class RBACCollector:
 
 
 class BundleCollector:
-    def __init__(self, date_format: str, include_editions: Collection[str]):
+    def __init__(self, date_format: str, filters: Collection[Q]):
         self._date_format = date_format
-        self._editions = include_editions
+        self._filters = filters
 
     def __call__(self) -> ADCMEntities:
         bundles: dict[int, BundleData] = {
             entry.pop("id"): BundleData(date=entry.pop("date").strftime(self._date_format), **entry)
-            for entry in Bundle.objects.filter(edition__in=self._editions).values(
-                "id", *BundleData.__annotations__.keys()
-            )
+            for entry in Bundle.objects.filter(*self._filters).values("id", *BundleData.__annotations__.keys())
         }
 
         hostproviders_data = [

@@ -29,11 +29,13 @@ class JSONFile(BaseModel):
 
 
 class TarFileWithJSONFileStorage(Storage[JSONFile]):
-    def __init__(self, compresslevel=9, timeformat="%Y-%m-%d"):
+    __slots__ = ("json_files", "tmp_dir", "compresslevel", "date_format")
+
+    def __init__(self, compresslevel=9, date_format="%Y-%m-%d"):
         self.json_files = []
         self.tmp_dir = Path(mkdtemp()).absolute()
         self.compresslevel = compresslevel
-        self.timeformat = timeformat
+        self.date_format = date_format
 
     def add(self, data: JSONFile) -> None:
         """
@@ -66,8 +68,8 @@ class TarFileWithJSONFileStorage(Storage[JSONFile]):
         if not self:
             raise StorageError("No JSON files to gather")
 
-        today_date = datetime.datetime.now(tz=datetime.timezone.utc).strftime(self.timeformat)
-        archive_name = self.tmp_dir / f"{today_date}_statistics_full.tgz"
+        today_date = datetime.datetime.now(tz=datetime.timezone.utc).strftime(self.date_format)
+        archive_name = self.tmp_dir / f"{today_date}_statistics.tar.gz"
         archive_path = Path(archive_name)
 
         with tarfile.open(archive_name, "w:gz", compresslevel=self.compresslevel) as tar:

@@ -12,6 +12,7 @@
 
 from contextlib import suppress
 from functools import wraps
+from typing import Callable
 import re
 
 from api.cluster.serializers import ClusterAuditSerializer
@@ -648,3 +649,35 @@ def audit_job_finish(owner: NamedCoreObject, display_name: str, is_upgrade: bool
     )
 
     cef_logger(audit_instance=audit_log, signature_id="Action completion")
+
+
+def audit_background_task(start_operation_status: str, end_operation_status: str) -> Callable:
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapped(*args, **kwargs):
+            make_audit_log(
+                operation_type="statistics",
+                result=AuditLogOperationResult.SUCCESS,
+                operation_status=start_operation_status,
+            )
+            try:
+                result = func(*args, **kwargs)
+            except Exception as error:
+                make_audit_log(
+                    operation_type="statistics",
+                    result=AuditLogOperationResult.FAIL,
+                    operation_status=end_operation_status,
+                )
+                raise error
+
+            make_audit_log(
+                operation_type="statistics",
+                result=AuditLogOperationResult.SUCCESS,
+                operation_status=end_operation_status,
+            )
+
+            return result
+
+        return wrapped
+
+    return decorator
