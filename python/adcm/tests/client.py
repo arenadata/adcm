@@ -23,14 +23,16 @@ from cm.models import (
     HostProvider,
     JobLog,
     LogStorage,
+    Prototype,
     ServiceComponent,
     TaskLog,
 )
-from rbac.models import Policy, User
+from django.test.client import AsyncClient
+from rbac.models import Group, Policy, Role, User
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 
-_RootPathObject = Bundle | Cluster | HostProvider | Host | TaskLog | JobLog
+_RootPathObject = Bundle | Cluster | HostProvider | Host | TaskLog | JobLog | Prototype
 PathObject = _RootPathObject | ClusterObject | ServiceComponent | LogStorage | GroupConfig
 
 
@@ -38,19 +40,23 @@ class WithID(Protocol):
     id: int
 
 
-class APINode:
-    __slots__ = ("_client", "_path", "_resolved_path")
+API_NODES_SLOTS = ("_client", "_path", "_resolved_path", "_node_class")
 
-    def __init__(self, *path: str, client: APIClient):
+
+class APINode:
+    __slots__ = API_NODES_SLOTS
+
+    def __init__(self, *path: str, client: APIClient | AsyncClient, node_class: type["APINode"] | type["AsyncAPINode"]):
         self._client = client
         self._path = tuple(path)
         self._resolved_path = None
+        self._node_class = node_class
 
     def __truediv__(self, other: str | int | WithID):
         if isinstance(other, (str, int)):
-            return APINode(*self._path, str(other), client=self._client)
+            return self._node_class(*self._path, str(other), client=self._client, node_class=self._node_class)
 
-        return APINode(*self._path, str(other.id), client=self._client)
+        return self._node_class(*self._path, str(other.id), client=self._client, node_class=self._node_class)
 
     @property
     def path(self) -> str:
@@ -65,7 +71,7 @@ class APINode:
     def get(self, *, query: dict | None = None) -> Response:
         return self._client.get(path=self.path, data=query)
 
-    def post(self, *, data: dict | list[dict], format_: str | None = None) -> Response:
+    def post(self, *, data: dict | list[dict] | None = None, format_: str | None = None) -> Response:
         return self._client.post(path=self.path, data=data, format=format_)
 
     def patch(self, *, data: dict) -> Response:
@@ -73,6 +79,13 @@ class APINode:
 
     def delete(self) -> Response:
         return self._client.delete(path=self.path)
+
+
+class AsyncAPINode(APINode):
+    __slots__ = API_NODES_SLOTS
+
+    def post(self, *, data: dict | list[dict] | None = None, format_: str | None = None) -> Response:
+        return self._client.post(path=self.path, data=data, content_type=format_)
 
 
 class RootNode(APINode, ABC):
@@ -89,8 +102,11 @@ class V2RootNode(RootNode):
         Host: "hosts",
         TaskLog: "tasks",
         JobLog: "jobs",
+        Prototype: "prototypes",
         Policy: "rbac/policies",
         User: "rbac/users",
+        Role: "rbac/roles",
+        Group: "rbac/groups",
     }
 
     def __getitem__(self, item: PathObject | tuple[PathObject, str | int | WithID, ...]) -> APINode:
@@ -102,10 +118,12 @@ class V2RootNode(RootNode):
 
         root_endpoint = self._CLASS_ROOT_EP_MAP.get(path_object.__class__)
         if root_endpoint:
-            return APINode(*self._path, root_endpoint, str(path_object.id), *tail, client=self._client)
+            return self._node_class(
+                *self._path, root_endpoint, str(path_object.id), *tail, client=self._client, node_class=self._node_class
+            )
 
         if isinstance(path_object, ClusterObject):
-            return APINode(
+            return self._node_class(
                 *self._path,
                 "clusters",
                 str(path_object.cluster_id),
@@ -113,10 +131,11 @@ class V2RootNode(RootNode):
                 str(path_object.id),
                 *tail,
                 client=self._client,
+                node_class=self._node_class,
             )
 
         if isinstance(path_object, ServiceComponent):
-            return APINode(
+            return self._node_class(
                 *self._path,
                 "clusters",
                 str(path_object.cluster_id),
@@ -126,6 +145,7 @@ class V2RootNode(RootNode):
                 str(path_object.id),
                 *tail,
                 client=self._client,
+                node_class=self._node_class,
             )
 
         if isinstance(path_object, GroupConfig):
@@ -133,8 +153,15 @@ class V2RootNode(RootNode):
             return self[path_object.object] / "/".join(("config-groups", str(path_object.id), *tail))
 
         if isinstance(path_object, LogStorage):
-            return APINode(
-                *self._path, "jobs", str(path_object.job_id), "logs", str(path_object.id), *tail, client=self._client
+            return self._node_class(
+                *self._path,
+                "jobs",
+                str(path_object.job_id),
+                "logs",
+                str(path_object.id),
+                *tail,
+                client=self._client,
+                node_class=self._node_class,
             )
 
         message = f"Node auto-detection isn't defined for {path_object.__class__}"
@@ -145,4 +172,11 @@ class ADCMTestClient(APIClient):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.v2 = V2RootNode("api", "v2", client=self)
+        self.v2 = V2RootNode("api", "v2", client=self, node_class=APINode)
+
+
+class ADCMAsyncTestClient(AsyncClient):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.v2 = V2RootNode("api", "v2", client=self, node_class=AsyncAPINode)

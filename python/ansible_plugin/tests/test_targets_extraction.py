@@ -18,12 +18,17 @@ from cm.models import ClusterObject, ServiceComponent
 from cm.services.job.run.repo import JobRepoImpl
 from core.job.types import Task
 from core.types import ADCMCoreType, CoreObjectDescriptor
-from pydantic import BaseModel
 
-from ansible_plugin.base import ArgumentsConfig, PluginExecutorConfig, TargetConfig, from_objects
+from ansible_plugin.base import (
+    ArgumentsConfig,
+    BaseArgumentsWithTypedObjects,
+    PluginExecutorConfig,
+    TargetConfig,
+    from_objects,
+)
 
 
-class EmptyArguments(BaseModel):
+class EmptyArguments(BaseArgumentsWithTypedObjects):
     ...
 
 

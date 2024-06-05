@@ -58,6 +58,7 @@ const ClusterImportsCluster = () => {
             clusterImports.map((item) => (
               <ClusterImportCard
                 key={item.cluster.id}
+                dataTest={`clusterTab_cluster-${item.cluster.id}`}
                 clusterImport={item}
                 selectedSingleBind={selectedSingleBind}
                 selectedImports={selectedImports}

@@ -27,37 +27,48 @@ from ansible_plugin.base import (
     from_arguments_root,
     retrieve_orm_object,
 )
+from ansible_plugin.errors import PluginRuntimeError
 from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner
 
 
-class StateArguments(BaseTypedArguments):
+class MultiStateUnsetArguments(BaseTypedArguments):
+    state: str
+    missing_ok: bool = False
+
+
+class MultiStateUnsetReturnValue(TypedDict):
     state: str
 
 
-class StateReturnValue(TypedDict):
-    state: str
-
-
-class ADCMStatePluginExecutor(ADCMAnsiblePluginExecutor[StateArguments, StateReturnValue]):
+class ADCMMultiStateUnsetPluginExecutor(
+    ADCMAnsiblePluginExecutor[MultiStateUnsetArguments, MultiStateUnsetReturnValue]
+):
     _config = PluginExecutorConfig(
-        arguments=ArgumentsConfig(represent_as=StateArguments),
+        arguments=ArgumentsConfig(represent_as=MultiStateUnsetArguments),
         target=TargetConfig(detectors=(from_arguments_root,)),
     )
 
     def __call__(
         self,
         targets: Collection[CoreObjectDescriptor],
-        arguments: StateArguments,
+        arguments: MultiStateUnsetArguments,
         runtime: RuntimeEnvironment,
-    ) -> CallResult[StateReturnValue]:
+    ) -> CallResult[MultiStateUnsetReturnValue]:
         target, *_ = targets
 
         if error := validate_target_allowed_for_context_owner(context_owner=runtime.context_owner, target=target):
             return CallResult(value=None, changed=False, error=error)
 
         target_object = retrieve_orm_object(object_=target)
-        target_object.set_state(state=arguments.state)
+
+        if not arguments.missing_ok and arguments.state not in target_object.multi_state:
+            raise PluginRuntimeError(
+                f'Can not delete missing multi-state "{arguments.state}". '
+                f'Set missing_ok to "True" or choose an existing multi-state'
+            )
+
+        target_object.unset_multi_state(arguments.state)
         with suppress(Exception):
             send_object_update_event(object_=target_object, changes={"state": arguments.state})
 
-        return CallResult(value=StateReturnValue(state=arguments.state), changed=True, error=None)
+        return CallResult(value=MultiStateUnsetReturnValue(state=arguments.state), changed=True, error=None)

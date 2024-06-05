@@ -1,17 +1,19 @@
 import { useCallback, useRef, useState } from 'react';
 import { IconButton, MarkerIcon, Tooltip } from '@uikit';
 import { isValueSet } from '@models/json';
-import { ConfigurationArray, ConfigurationObject, ConfigurationNodeView } from '../../ConfigurationEditor.types';
-import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
+import type { ConfigurationArray, ConfigurationObject, ConfigurationNodeView } from '../../ConfigurationEditor.types';
+import type { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
 import s from '../ConfigurationTree.module.scss';
 import cn from 'classnames';
 import SynchronizedAttribute from './SyncronizedAttribute/SynchronizedAttribute';
 import ActivationAttribute from './ActivationAttribute/ActivationAttribute';
+import FieldNodeErrors from './FieldNodeErrors/FieldNodeErrors';
 import { nullStub } from '../ConfigurationTree.constants';
+import type { FieldErrors } from '@models/adcm';
 
 interface NodeWithChildrenContentProps {
   node: ConfigurationNodeView;
-  error?: string;
+  errors?: FieldErrors;
   isExpanded: boolean;
   onClear: ChangeConfigurationNodeHandler;
   onDelete: ChangeConfigurationNodeHandler;
@@ -22,7 +24,7 @@ interface NodeWithChildrenContentProps {
 const NodeWithChildrenContent = ({
   node,
   isExpanded,
-  error,
+  errors,
   onClear,
   onDelete,
   onExpand,
@@ -74,7 +76,7 @@ const NodeWithChildrenContent = ({
 
   const className = cn(s.nodeContent, {
     'is-open': isExpanded,
-    'is-failed': error !== undefined,
+    'is-failed': errors !== undefined,
   });
 
   const hasChildren = Boolean(node.children?.length);
@@ -94,8 +96,8 @@ const NodeWithChildrenContent = ({
         <IconButton size={14} icon="g3-clear" onClick={handleClearClick} data-test="clear-btn" />
       )}
       {isDeletable && <IconButton size={14} icon="g3-delete" onClick={handleDeleteClick} data-test="delete-btn" />}
-      {error && (
-        <Tooltip label={error}>
+      {errors && (
+        <Tooltip label={<FieldNodeErrors fieldErrors={errors} />}>
           <MarkerIcon variant="round" type="alert" size={16} data-test="error" />
         </Tooltip>
       )}

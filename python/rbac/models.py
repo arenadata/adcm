@@ -41,7 +41,6 @@ from django.db.models import (
 from django.db.transaction import atomic
 from guardian.models import GroupObjectPermission
 from guardian.shortcuts import get_perms_for_model
-from rest_framework.exceptions import ValidationError
 
 from rbac.utils import get_query_tuple_str
 
@@ -63,14 +62,6 @@ class RoleTypes(TextChoices):
     BUSINESS = "business", "business"
     ROLE = "role", "role"
     HIDDEN = "hidden", "hidden"
-
-
-def validate_object_type(value):
-    if not isinstance(value, list):
-        raise ValidationError("Not a valid list.")
-
-    if not all(v in ObjectType.values for v in value):
-        raise ValidationError("Not a valid object type.")
 
 
 class User(AuthUser):
@@ -118,7 +109,8 @@ class Role(Model):
     type = CharField(max_length=1000, choices=RoleTypes.choices, null=False, default=RoleTypes.ROLE)
     category = ManyToManyField(ProductCategory)
     any_category = BooleanField(default=False)
-    parametrized_by_type = JSONField(default=list, null=False, validators=[validate_object_type])
+    # should be a list of `ObjectType` strings
+    parametrized_by_type = JSONField(default=list, null=False)
     __obj__ = None
 
     class Meta:

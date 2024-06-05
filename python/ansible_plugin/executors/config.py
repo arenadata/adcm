@@ -29,6 +29,7 @@ from typing_extensions import Self
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
     ArgumentsConfig,
+    BaseTypedArguments,
     CallResult,
     PluginExecutorConfig,
     RuntimeEnvironment,
@@ -36,7 +37,7 @@ from ansible_plugin.base import (
     from_arguments_root,
 )
 from ansible_plugin.errors import PluginIncorrectCallError, PluginTargetDetectionError
-from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner, validate_type_is_present
+from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner
 from ansible_plugin.utils import cast_to_type
 
 # don't want to typehint due to serialization problems and serialization priority
@@ -67,7 +68,7 @@ class ParameterToChange(BaseModel):
         return self
 
 
-class ChangeConfigArguments(ParameterToChange):
+class ChangeConfigArguments(ParameterToChange, BaseTypedArguments):
     # new API to change multiple parameters
     parameters: list[ParameterToChange] | None = None
 
@@ -99,7 +100,7 @@ class ChangeConfigReturn(TypedDict):
 class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeConfigArguments, ChangeConfigReturn]):
     _config = PluginExecutorConfig(
         arguments=ArgumentsConfig(represent_as=ChangeConfigArguments),
-        target=TargetConfig(detectors=(from_arguments_root,), validators=(validate_type_is_present,)),
+        target=TargetConfig(detectors=(from_arguments_root,)),
     )
 
     @atomic()

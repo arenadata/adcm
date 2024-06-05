@@ -13,10 +13,9 @@
 import asyncio
 
 from adcm.tests.base import APPLICATION_JSON
+from adcm.tests.client import ADCMAsyncTestClient
 from asgiref.sync import sync_to_async
 from cm.models import ClusterBind
-from django.test import AsyncClient
-from django.urls import reverse
 from rbac.models import User
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN
 
@@ -44,13 +43,11 @@ class TestImport(BaseAPITestCase):
         self.import_service_2 = self.add_services_to_cluster(
             service_names=["service_import_2"], cluster=self.import_cluster
         ).get()
-        self.aclient = AsyncClient()
+        self.aclient = ADCMAsyncTestClient()
         self.aclient.force_login(User.objects.get(username="admin"))
 
     def test_cluster_imports_list_success(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk})
-        )
+        response = self.client.v2[self.import_cluster, "imports"].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -95,12 +92,7 @@ class TestImport(BaseAPITestCase):
         )
 
     def test_service_imports_list_success(self):
-        response = self.client.get(
-            path=reverse(
-                viewname="v2:service-import-list",
-                kwargs={"cluster_pk": self.import_cluster.pk, "service_pk": self.import_service.pk},
-            )
-        )
+        response = self.client.v2[self.import_service, "imports"].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -146,8 +138,7 @@ class TestImport(BaseAPITestCase):
         )
 
     def test_cluster_imports_create_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
+        response = self.client.v2[self.import_cluster, "imports"].post(
             data=[
                 {"source": {"id": self.export_cluster.pk, "type": "cluster"}},
                 {"source": {"id": self.export_service.pk, "type": "service"}},
@@ -169,10 +160,7 @@ class TestImport(BaseAPITestCase):
     def test_cluster_imports_create_empty_success(self):
         ClusterBind.objects.create(cluster=self.import_cluster, source_cluster=self.export_cluster)
 
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
-            data=[],
-        )
+        response = self.client.v2[self.import_cluster, "imports"].post(data=[])
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertFalse(ClusterBind.objects.exists())
@@ -182,10 +170,7 @@ class TestImport(BaseAPITestCase):
 
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object import"):
-            response = self.client.get(
-                path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
-                data=[],
-            )
+            response = self.client.v2[self.import_cluster, "imports"].get(query=[])
 
             self.assertEqual(response.status_code, HTTP_200_OK)
 
@@ -194,10 +179,7 @@ class TestImport(BaseAPITestCase):
 
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.import_cluster, role_name="View imports"):
-            response = self.client.get(
-                path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
-                data=[],
-            )
+            response = self.client.v2[self.import_cluster, "imports"].get(query=[])
 
             self.assertEqual(response.status_code, HTTP_200_OK)
 
@@ -207,8 +189,7 @@ class TestImport(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.import_cluster, role_name="Manage imports"):
             with self.grant_permissions(to=self.test_user, on=self.export_cluster, role_name="View imports"):
-                response = self.client.post(
-                    path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
+                response = self.client.v2[self.import_cluster, "imports"].post(
                     data=[
                         {"source": {"id": self.export_cluster.pk, "type": "cluster"}},
                         {"source": {"id": self.export_service.pk, "type": "service"}},
@@ -238,10 +219,7 @@ class TestImport(BaseAPITestCase):
 
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.import_cluster, role_name="Map hosts"):
-            response = self.client.post(
-                path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
-                data=[],
-            )
+            response = self.client.v2[self.import_cluster, "imports"].post(data=[])
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
@@ -250,10 +228,7 @@ class TestImport(BaseAPITestCase):
 
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object host-components"):
-            response = self.client.post(
-                path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
-                data=[],
-            )
+            response = self.client.v2[self.import_cluster, "imports"].post(data=[])
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
@@ -263,10 +238,7 @@ class TestImport(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object host-components"):
             with self.grant_permissions(to=self.test_user, on=self.import_cluster, role_name="Map hosts"):
-                response = self.client.post(
-                    path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
-                    data=[],
-                )
+                response = self.client.v2[self.import_cluster, "imports"].post(data=[])
 
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
@@ -277,12 +249,7 @@ class TestImport(BaseAPITestCase):
                 with self.grant_permissions(
                     to=self.test_user, on=self.import_service, role_name="View service configurations"
                 ):
-                    response = self.client.get(
-                        path=reverse(
-                            viewname="v2:service-import-list",
-                            kwargs={"cluster_pk": self.import_cluster.pk, "service_pk": self.import_service.pk},
-                        )
-                    )
+                    response = self.client.v2[self.import_service, "imports"].get()
 
                     self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
@@ -293,12 +260,7 @@ class TestImport(BaseAPITestCase):
                 with self.grant_permissions(
                     to=self.test_user, on=self.import_service, role_name="View service configurations"
                 ):
-                    response = self.client.get(
-                        path=reverse(
-                            viewname="v2:service-import-list",
-                            kwargs={"cluster_pk": self.import_cluster.pk, "service_pk": self.import_service.pk},
-                        )
-                    )
+                    response = self.client.v2[self.import_service, "imports"].get()
 
                     self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
@@ -308,21 +270,15 @@ class TestImport(BaseAPITestCase):
             with self.grant_permissions(
                 to=self.test_user, on=self.import_service, role_name="View service configurations"
             ):
-                response = self.client.get(
-                    path=reverse(
-                        viewname="v2:service-import-list",
-                        kwargs={"cluster_pk": self.import_cluster.pk, "service_pk": self.import_service.pk},
-                    )
-                )
+                response = self.client.v2[self.import_service, "imports"].get()
 
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     async def test_adcm_5295_cluster_imports_no_requests_race_success(self):
         async def import_list():
-            resp = await self.aclient.post(
-                path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
+            resp = await self.aclient.v2[self.import_cluster, "imports"].post(
                 data=[{"source": {"id": self.export_service.pk, "type": "service"}}],
-                content_type=APPLICATION_JSON,
+                format_=APPLICATION_JSON,
             )
             count = await sync_to_async(ClusterBind.objects.count)()
             return resp, count

@@ -86,85 +86,17 @@ EXAMPLES = r"""
     result: yes
 """
 
-RETURN = r"""
-result:
-  check: JSON log of all checks for this ADCM job
-"""
+RETURN = ""
 
 import sys
-
-from ansible.plugins.action import ActionBase
 
 sys.path.append("/adcm/python")
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from ansible_plugin.utils import create_checklog_object
-from cm.errors import AdcmEx
-from cm.logger import logger
+from ansible_plugin.base import ADCMAnsiblePlugin
+from ansible_plugin.executors.check import ADCMCheckPluginExecutor
 
 
-class ActionModule(ActionBase):
-    TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(
-        (
-            "title",
-            "result",
-            "msg",
-            "fail_msg",
-            "success_msg",
-            "group_title",
-            "group_success_msg",
-            "group_fail_msg",
-        )
-    )
-
-    def run(self, tmp=None, task_vars=None):
-        super().run(tmp, task_vars)
-        job_id = None
-        if task_vars is not None and "job" in task_vars or "id" in task_vars["job"]:
-            job_id = task_vars["job"]["id"]
-
-        old_optional_condition = "msg" in self._task.args
-        new_optional_condition = "fail_msg" in self._task.args and "success_msg" in self._task.args
-        optional_condition = old_optional_condition or new_optional_condition
-        required_condition = "title" in self._task.args and "result" in self._task.args and optional_condition
-
-        if not required_condition:
-            return {
-                "failed": True,
-                "msg": "title, result and msg, fail_msg or success" "_msg are mandatory args of adcm_check",
-            }
-
-        title = self._task.args["title"]
-        result = self._task.args["result"]
-        msg = self._task.args.get("msg", "")
-        fail_msg = self._task.args.get("fail_msg", "")
-        success_msg = self._task.args.get("success_msg", "")
-
-        group_title = self._task.args.get("group_title", "")
-        group_fail_msg = self._task.args.get("group_fail_msg", "")
-        group_success_msg = self._task.args.get("group_success_msg", "")
-
-        msg = (success_msg if success_msg else msg) if result else fail_msg if fail_msg else msg
-
-        group = {"title": group_title, "success_msg": group_success_msg, "fail_msg": group_fail_msg}
-
-        check = {
-            "title": title.replace("\x00", ""),
-            "result": result,
-            "message": msg.replace("\x00", ""),
-        }
-
-        logger.debug(
-            "ansible adcm_check: %s, %s",
-            ", ".join([f"{k}: {v}" for k, v in group.items() if v]),
-            ", ".join([f"{k}: {v}" for k, v in check.items() if v]),
-        )
-
-        try:
-            create_checklog_object(job_id=job_id, group_data=group, check_data=check)
-        except AdcmEx as e:
-            return {"failed": True, "msg": e.code + ":" + e.msg}
-
-        return {"failed": False, "changed": False}
+class ActionModule(ADCMAnsiblePlugin):
+    executor_class = ADCMCheckPluginExecutor

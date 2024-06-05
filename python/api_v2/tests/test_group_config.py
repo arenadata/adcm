@@ -78,16 +78,7 @@ class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):
         self.component_2 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
         )
-        self.add_hostcomponent_map(
-            cluster=self.cluster_1,
-            hc_map=[
-                {
-                    "host_id": self.host_for_service.pk,
-                    "service_id": self.service_1.pk,
-                    "component_id": self.component_1.pk,
-                }
-            ],
-        )
+        self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_for_service, self.component_1)])
 
 
 class TestGroupConfigNaming(BaseServiceGroupConfigTestCase):
@@ -630,16 +621,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_for_component"
         )
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_for_component)
-        self.add_hostcomponent_map(
-            cluster=self.cluster_1,
-            hc_map=[
-                {
-                    "host_id": self.host_for_component.pk,
-                    "service_id": self.service_1.pk,
-                    "component_id": self.component_1.pk,
-                }
-            ],
-        )
+        self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_for_component, self.component_1)])
 
     def test_list_success(self):
         response = self.client.v2[self.component_1, CONFIG_GROUPS].get()

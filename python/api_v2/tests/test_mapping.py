@@ -53,10 +53,7 @@ class TestMapping(BaseAPITestCase):
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
         )
 
-        self.add_hostcomponent_map(
-            cluster=self.cluster_1,
-            hc_map=[{"host_id": self.host_1.pk, "service_id": self.service_1.pk, "component_id": self.component_1.pk}],
-        )
+        self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_1, self.component_1)])
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)

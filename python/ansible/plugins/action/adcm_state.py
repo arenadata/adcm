@@ -58,7 +58,7 @@ options:
   - option-name: host_id
     required: false
     type: int
-    description: ID of the host
+    description: ID of the host. Useful in provider context only
 
 notes:
   - If type is 'service' ('component') there is no needs to specify service_name (component_name)
