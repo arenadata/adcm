@@ -700,29 +700,13 @@ class TestClusterHostComponent(BaseAPITestCase):
         self.component_2 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
         )
-        self.add_hostcomponent_map(
+        self.set_hostcomponent(
             cluster=self.cluster_1,
-            hc_map=[
-                {
-                    "host_id": self.host_1.pk,
-                    "service_id": self.service_1.pk,
-                    "component_id": self.component_1.pk,
-                },
-                {
-                    "host_id": self.host_1.pk,
-                    "service_id": self.service_1.pk,
-                    "component_id": self.component_2.pk,
-                },
-                {
-                    "host_id": self.host_2.pk,
-                    "service_id": self.service_1.pk,
-                    "component_id": self.component_1.pk,
-                },
-                {
-                    "host_id": self.host_2.pk,
-                    "service_id": self.service_1.pk,
-                    "component_id": self.component_2.pk,
-                },
+            entries=[
+                (self.host_1, self.component_1),
+                (self.host_1, self.component_2),
+                (self.host_2, self.component_1),
+                (self.host_2, self.component_2),
             ],
         )
 

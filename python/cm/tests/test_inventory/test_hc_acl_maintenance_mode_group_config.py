@@ -36,20 +36,9 @@ class TestInventoryHcAclMaintenanceModeGroupConfig(BaseInventoryTestCase):
         self.component_1 = ServiceComponent.objects.get(prototype__name="component_1", service=self.service)
         self.component_2 = ServiceComponent.objects.get(prototype__name="component_2", service=self.service)
 
-        self.initial_hc = [
-            {
-                "service_id": self.service.pk,
-                "component_id": self.component_1.pk,
-                "host_id": self.host_1.pk,
-            },
-            {
-                "service_id": self.service.pk,
-                "component_id": self.component_2.pk,
-                "host_id": self.host_2.pk,
-            },
-        ]
-
-        self.add_hostcomponent_map(cluster=self.cluster, hc_map=self.initial_hc)
+        self.set_hostcomponent(
+            cluster=self.cluster, entries=[(self.host_1, self.component_1), (self.host_2, self.component_2)]
+        )
 
         self.cluster_group = self.add_group_config(parent=self.cluster, hosts=[self.host_1, self.host_2])
         self.service_group = self.add_group_config(parent=self.service, hosts=[self.host_1, self.host_2])
@@ -90,7 +79,9 @@ class TestInventoryHcAclMaintenanceModeGroupConfig(BaseInventoryTestCase):
         ]
         delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster, new_mapping=action_hc_map)
 
-        self.add_hostcomponent_map(cluster=self.cluster, hc_map=action_hc_map)
+        self.set_hostcomponent(
+            cluster=self.cluster, entries=[(self.host_3, self.component_1), (self.host_4, self.component_2)]
+        )
 
         expected_topology = {
             "CLUSTER": [self.host_2.fqdn, self.host_3.fqdn, self.host_4.fqdn],

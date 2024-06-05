@@ -73,10 +73,7 @@ class TestMMActions(BaseAPITestCase):
 
     def test_task_run_if_hc_exists_service(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
-        self.add_hostcomponent_map(
-            cluster=self.cluster,
-            hc_map=[{"host_id": self.host.pk, "service_id": self.service.pk, "component_id": self.component.pk}],
-        )
+        self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
 
         response, run_task_mock = self._do_change_mm_request(obj=self.service)
 
@@ -100,10 +97,7 @@ class TestMMActions(BaseAPITestCase):
 
     def test_task_run_if_hc_exists_component(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
-        self.add_hostcomponent_map(
-            cluster=self.cluster,
-            hc_map=[{"host_id": self.host.pk, "service_id": self.service.pk, "component_id": self.component.pk}],
-        )
+        self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
 
         response, run_task_mock = self._do_change_mm_request(obj=self.component)
 
@@ -128,10 +122,7 @@ class TestMMActions(BaseAPITestCase):
 
     def test_task_run_if_obj_is_host_hc_exists(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
-        self.add_hostcomponent_map(
-            cluster=self.cluster,
-            hc_map=[{"host_id": self.host.pk, "service_id": self.service.pk, "component_id": self.component.pk}],
-        )
+        self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
 
         response, run_task_mock = self._do_change_mm_request(obj=self.host)
 
@@ -144,10 +135,7 @@ class TestMMActions(BaseAPITestCase):
 
     def test_mm_not_changed_on_fail_service(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
-        self.add_hostcomponent_map(
-            cluster=self.cluster,
-            hc_map=[{"host_id": self.host.pk, "service_id": self.service.pk, "component_id": self.component.pk}],
-        )
+        self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
         initial_object_mm = self.service.maintenance_mode
 
         response, run_task_mock = self._do_change_mm_request(
@@ -167,10 +155,7 @@ class TestMMActions(BaseAPITestCase):
 
     def test_mm_not_changed_on_fail_component(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
-        self.add_hostcomponent_map(
-            cluster=self.cluster,
-            hc_map=[{"host_id": self.host.pk, "service_id": self.service.pk, "component_id": self.component.pk}],
-        )
+        self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
         initial_object_mm = self.component.maintenance_mode
 
         response, run_task_mock = self._do_change_mm_request(
@@ -190,10 +175,7 @@ class TestMMActions(BaseAPITestCase):
 
     def test_mm_not_changed_on_fail_host(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
-        self.add_hostcomponent_map(
-            cluster=self.cluster,
-            hc_map=[{"host_id": self.host.pk, "service_id": self.service.pk, "component_id": self.component.pk}],
-        )
+        self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
         initial_object_mm = self.host.maintenance_mode
 
         response, run_task_mock = self._do_change_mm_request(

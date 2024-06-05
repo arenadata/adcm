@@ -10,17 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable
 from unittest.mock import patch
 
-from cm.api import add_hc
+from adcm.tests.base import BusinessLogicMixin
 from cm.models import (
     Action,
     ADCMEntityStatus,
     Cluster,
     ClusterObject,
     Host,
-    HostComponent,
     Prototype,
     ServiceComponent,
 )
@@ -608,17 +606,7 @@ class TestClusterMM(BaseAPITestCase):
                 self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
 
-class TestClusterStatuses(BaseAPITestCase):
-    @staticmethod
-    def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, ServiceComponent]]) -> list[HostComponent]:
-        return add_hc(
-            cluster=cluster,
-            hc_in=[
-                {"host_id": host.pk, "component_id": component.pk, "service_id": component.service_id}
-                for host, component in entries
-            ],
-        )
-
+class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
