@@ -6,12 +6,13 @@ import {
   AdcmLicenseStatus,
   AdcmPrototypeType,
 } from '@models/adcm';
-import { HostMapping, ServiceMapping, ValidateRelatedData } from './ClusterMapping.types';
+import { HostMapping, ComponentsMappingErrors, ServiceMapping, ValidateRelatedData } from './ClusterMapping.types';
 import {
   getComponentsMapping,
   getHostsMapping,
   getServicesMapping,
   mapHostsToComponent,
+  mapComponentsToHost,
   getConstraintsLimit,
   validate,
   validateConstraints,
@@ -354,14 +355,34 @@ describe('Cluster mapping utils', () => {
       { hostId: hostsDictionaryByName.host3.id, componentId: componentsDictionaryByName.zookeeperServer.id },
     ];
 
-    const componentsMapping = getComponentsMapping(mapping, components, hostsDictionary);
-    const servicesMapping = getServicesMapping(componentsMapping);
-
     // moving hbaseMaster from host1 to host2
     const newMapping = mapHostsToComponent(
-      servicesMapping,
+      mapping,
       [hostsDictionaryByName.host2],
       componentsDictionaryByName.hBaseMaster,
+    );
+
+    const expected: AdcmMapping[] = [
+      { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseClient.id },
+      { hostId: hostsDictionaryByName.host2.id, componentId: componentsDictionaryByName.hBaseMaster.id },
+      { hostId: hostsDictionaryByName.host3.id, componentId: componentsDictionaryByName.zookeeperServer.id },
+    ];
+
+    expect(newMapping).toEqual(expect.arrayContaining(expected));
+  });
+
+  test('test mapComponentsToHost', () => {
+    const mapping: AdcmMapping[] = [
+      { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseClient.id },
+      { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseMaster.id },
+      { hostId: hostsDictionaryByName.host3.id, componentId: componentsDictionaryByName.zookeeperServer.id },
+    ];
+
+    // moving hbaseMaster from host1 to host2
+    const newMapping = mapComponentsToHost(
+      mapping,
+      [componentsDictionaryByName.hBaseMaster],
+      hostsDictionaryByName.host2,
     );
 
     const expected: AdcmMapping[] = [
@@ -376,52 +397,52 @@ describe('Cluster mapping utils', () => {
   test('test validateConstraints', () => {
     // Check all hosts constraints
     expect(validateConstraints(['+'], 2, 0)).toEqual({
-      isValid: false,
-      errors: ['Component should be installed on all hosts of cluster.'],
+      type: 'constraint',
+      message: 'Component should be mapped on all hosts of cluster.',
     });
     expect(validateConstraints(['+'], 2, 1)).toEqual({
-      isValid: false,
-      errors: ['Component should be installed on all hosts of cluster.'],
+      type: 'constraint',
+      message: 'Component should be mapped on all hosts of cluster.',
     });
-    expect(validateConstraints(['+'], 2, 2)).toEqual({ isValid: true });
+    expect(validateConstraints(['+'], 2, 2)).toBeUndefined();
 
     // Check range constraints
-    expect(validateConstraints([0, 1], 2, 0)).toEqual({ isValid: true });
-    expect(validateConstraints([0, 1], 2, 1)).toEqual({ isValid: true });
+    expect(validateConstraints([0, 1], 2, 0)).toBeUndefined();
+    expect(validateConstraints([0, 1], 2, 1)).toBeUndefined();
     expect(validateConstraints([0, 1], 2, 2)).toEqual({
-      isValid: false,
-      errors: ['From 0 to 1 components should be installed.'],
+      type: 'constraint',
+      message: 'From 0 to 1 components should be mapped.',
     });
-    expect(validateConstraints([3, 10], 5, 5)).toEqual({ isValid: true });
+    expect(validateConstraints([3, 10], 5, 5)).toBeUndefined();
 
-    expect(validateConstraints([0, '+'], 5, 0)).toEqual({ isValid: true });
+    expect(validateConstraints([0, '+'], 5, 0)).toBeUndefined();
     expect(validateConstraints([1, '+'], 5, 0)).toEqual({
-      isValid: false,
-      errors: ['1 or more components should be installed.'],
+      type: 'constraint',
+      message: '1 or more components should be mapped.',
     });
     expect(validateConstraints([2, '+'], 5, 1)).toEqual({
-      isValid: false,
-      errors: ['2 or more components should be installed.'],
+      type: 'constraint',
+      message: '2 or more components should be mapped.',
     });
 
     // Check exact constraints
     expect(validateConstraints([1], 2, 0)).toEqual({
-      isValid: false,
-      errors: ['Exactly 1 component should be installed.'],
+      type: 'constraint',
+      message: 'Exactly 1 component should be mapped.',
     });
-    expect(validateConstraints([1], 2, 1)).toEqual({ isValid: true });
-    expect(validateConstraints([2], 2, 2)).toEqual({ isValid: true });
+    expect(validateConstraints([1], 2, 1)).toBeUndefined();
+    expect(validateConstraints([2], 2, 2)).toBeUndefined();
     expect(validateConstraints([1], 2, 2)).toEqual({
-      isValid: false,
-      errors: ['Exactly 1 component should be installed.'],
+      type: 'constraint',
+      message: 'Exactly 1 component should be mapped.',
     });
 
     // Check odd constraints
-    expect(validateConstraints(['odd'], 4, 3)).toEqual({ isValid: true });
-    expect(validateConstraints([1, 'odd'], 4, 3)).toEqual({ isValid: true });
+    expect(validateConstraints(['odd'], 4, 3)).toBeUndefined();
+    expect(validateConstraints([1, 'odd'], 4, 3)).toBeUndefined();
     expect(validateConstraints([1, 'odd'], 4, 2)).toEqual({
-      isValid: false,
-      errors: ['1 or more components should be installed. Total amount should be odd.'],
+      type: 'constraint',
+      message: '1 or more components should be mapped. Total amount should be odd.',
     });
   });
 
@@ -449,26 +470,17 @@ describe('Cluster mapping utils', () => {
 
     const validationResult = validate(componentMapping, relatedData);
 
-    expect(validationResult).toStrictEqual({
-      isAllMappingValid: false,
-      byComponents: {
-        [componentsDictionaryByName.hBaseClient.id]: {
-          constraintsValidationResult: { isValid: true },
-          requireValidationResults: { isValid: true },
-          isValid: true,
+    const expected: ComponentsMappingErrors = {
+      [componentsDictionaryByName.hBaseMaster.id]: {
+        constraintsError: {
+          type: 'constraint',
+          message: '1 or more components should be mapped.',
         },
-        [componentsDictionaryByName.hBaseMaster.id]: {
-          constraintsValidationResult: { isValid: false, errors: ['1 or more components should be installed.'] },
-          requireValidationResults: { isValid: true },
-          isValid: false,
-        },
-        [componentsDictionaryByName.zookeeperServer.id]: {
-          constraintsValidationResult: { isValid: true },
-          requireValidationResults: { isValid: true },
-          isValid: true,
-        },
+        dependenciesErrors: undefined,
       },
-    });
+    };
+
+    expect(validationResult).toStrictEqual(expected);
   });
 
   test('test validate service without component', () => {
@@ -490,33 +502,13 @@ describe('Cluster mapping utils', () => {
 
     const validationResult = validate(componentMapping, relatedData);
 
-    expect(validationResult).toStrictEqual({
-      isAllMappingValid: true,
-      byComponents: {
-        [componentsDictionaryByName.hBaseClient.id]: {
-          constraintsValidationResult: { isValid: true },
-          requireValidationResults: { isValid: true },
-          isValid: true,
-        },
-        [componentsDictionaryByName.hBaseMaster.id]: {
-          constraintsValidationResult: { isValid: true },
-          requireValidationResults: { isValid: true },
-          isValid: true,
-        },
-        [componentsDictionaryByName.zookeeperServer.id]: {
-          constraintsValidationResult: { isValid: true },
-          requireValidationResults: { isValid: true },
-          isValid: true,
-        },
-      },
-    });
+    expect(validationResult).toStrictEqual({});
   });
 
   test('test validate dependOn', () => {
     const mapping: AdcmMapping[] = [
       { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseClient.id },
       { hostId: hostsDictionaryByName.host1.id, componentId: componentsDictionaryByName.hBaseMaster.id },
-      { hostId: hostsDictionaryByName.host3.id, componentId: componentsDictionaryByName.zookeeperServer.id },
     ];
 
     const componentMapping = getComponentsMapping(mapping, components, hostsDictionary);
@@ -533,31 +525,66 @@ describe('Cluster mapping utils', () => {
 
     const validationResult = validate(componentMapping, relatedData);
 
-    expect(validationResult).toStrictEqual({
-      isAllMappingValid: false,
-      byComponents: {
-        [componentsDictionaryByName.hBaseClient.id]: {
-          constraintsValidationResult: { isValid: true },
-          requireValidationResults: {
-            errors: ['Requires mapping of service "HDFS" (components: HDFS NameNode)'],
-            isValid: false,
-          },
-          isValid: false,
+    const expected: ComponentsMappingErrors = {
+      [componentsDictionaryByName.zookeeperServer.id]: {
+        constraintsError: {
+          type: 'constraint',
+          message: '1 or more components should be mapped. Total amount should be odd.',
         },
-        [componentsDictionaryByName.hBaseMaster.id]: {
-          constraintsValidationResult: { isValid: true },
-          requireValidationResults: {
-            errors: ['Requires mapping of service "HDFS" (components: HDFS NameNode)'],
-            isValid: false,
-          },
-          isValid: false,
-        },
-        [componentsDictionaryByName.zookeeperServer.id]: {
-          constraintsValidationResult: { isValid: true },
-          requireValidationResults: { isValid: true },
-          isValid: true,
+        dependenciesErrors: undefined,
+      },
+      [componentsDictionaryByName.hBaseClient.id]: {
+        constraintsError: undefined,
+        dependenciesErrors: {
+          requiredErrors: [
+            {
+              type: 'required',
+              params: {
+                components: [
+                  componentsDictionaryByName.hBaseClient.dependOn[0].servicePrototype.componentPrototypes[0]
+                    .displayName,
+                ],
+                service: servicesDictionaryByName.Zookeeper.displayName,
+              },
+            },
+          ],
+          notAddedErrors: [
+            {
+              type: 'not-added',
+              params: {
+                service: componentsDictionaryByName.hBaseClient.dependOn![1].servicePrototype,
+              },
+            },
+          ],
         },
       },
-    });
+      [componentsDictionaryByName.hBaseMaster.id]: {
+        constraintsError: undefined,
+        dependenciesErrors: {
+          requiredErrors: [
+            {
+              type: 'required',
+              params: {
+                components: [
+                  componentsDictionaryByName.hBaseClient.dependOn[0].servicePrototype.componentPrototypes[0]
+                    .displayName,
+                ],
+                service: servicesDictionaryByName.Zookeeper.displayName,
+              },
+            },
+          ],
+          notAddedErrors: [
+            {
+              type: 'not-added',
+              params: {
+                service: componentsDictionaryByName.hBaseClient.dependOn![1].servicePrototype,
+              },
+            },
+          ],
+        },
+      },
+    };
+
+    expect(validationResult).toStrictEqual(expected);
   });
 });

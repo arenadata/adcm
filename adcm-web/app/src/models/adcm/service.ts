@@ -1,5 +1,5 @@
 import { AdcmConcerns } from './concern';
-import { AdcmLicense, AdcmLicenseStatus } from './license';
+import { AdcmLicense } from './license';
 import { AdcmPrototypeShortView, AdcmPrototypeType } from './prototype';
 import { AdcmMaintenanceMode } from './maintenanceMode';
 
@@ -8,11 +8,13 @@ export enum AdcmServiceStatus {
   Down = 'down',
 }
 
+export interface AdcmComponentDependency extends AdcmPrototypeShortView {
+  license: AdcmLicense;
+  componentPrototypes: AdcmPrototypeShortView[];
+}
+
 export interface AdcmDependOnService {
-  servicePrototype: AdcmPrototypeShortView & {
-    license: AdcmLicense;
-    componentPrototypes: AdcmPrototypeShortView[];
-  };
+  servicePrototype: AdcmComponentDependency;
 }
 
 export interface AdcmService {
@@ -35,16 +37,9 @@ export interface AdcmService {
 
 export type ServicePrototypeId = AdcmServicePrototype['id'];
 
-export interface AdcmServicePrototype {
-  id: number;
-  name: string;
-  displayName: string;
+export interface AdcmServicePrototype extends AdcmPrototypeShortView {
   type: AdcmPrototypeType.Service;
-  version: string;
-  license: {
-    status: AdcmLicenseStatus;
-    text: string | null;
-  };
+  license: AdcmLicense;
   isRequired: boolean;
   dependOn: AdcmDependOnService[] | null;
 }

@@ -1,14 +1,14 @@
 import React, { useMemo } from 'react';
 import LicenseAcceptanceList from '@commonComponents/license/LicenseAcceptanceList/LicenseAcceptanceList';
 import { useDispatch } from '@hooks';
-import { AdcmDependOnService, AdcmLicenseStatus } from '@models/adcm';
+import { AdcmComponentDependency, AdcmLicenseStatus } from '@models/adcm';
 import { acceptServiceLicense } from '@store/adcm/cluster/services/servicesSlice';
 import { RequiredServicesFormData } from '../RequiredServicesDialog.types';
 
 interface ServicesLicensesStepProps {
   formData: RequiredServicesFormData;
   onChange: (changes: Partial<RequiredServicesFormData>) => void;
-  unacceptedSelectedServices: AdcmDependOnService['servicePrototype'][];
+  unacceptedSelectedServices: AdcmComponentDependency[];
 }
 
 const ServicesLicensesStep: React.FC<ServicesLicensesStepProps> = ({
