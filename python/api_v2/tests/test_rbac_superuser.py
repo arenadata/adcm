@@ -19,9 +19,8 @@ from rbac.services.role import role_create
 from rbac.services.user import perform_user_creation
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT
-from rest_framework.test import APIClient
 
-from api_v2.tests.base import BaseAPITestCase
+from api_v2.tests.base import ADCMTestClient, BaseAPITestCase
 
 
 class TestUserCreateEdit(BaseAPITestCase):
@@ -55,9 +54,9 @@ class TestUserCreateEdit(BaseAPITestCase):
             )
         )
 
-        self.creator_client = APIClient()
+        self.creator_client = self.client_class()
         self.creator_client.login(username="icancreate", password=self.password)
-        self.editor_client = APIClient()
+        self.editor_client = self.client_class()
         self.editor_client.login(username="icanedit", password=self.password)
 
         policy_create(name="Creators policy", role=create_user_role, group=[creators_group])
@@ -72,12 +71,12 @@ class TestUserCreateEdit(BaseAPITestCase):
         }
 
     @staticmethod
-    def request_create_user(client: APIClient, data: dict) -> Response:
-        return client.post(path="/api/v2/rbac/users/", data=data)
+    def request_create_user(client: ADCMTestClient, data: dict) -> Response:
+        return (client.v2 / "rbac" / "users").post(data=data)
 
     @staticmethod
-    def request_edit_user(client: APIClient, user_id: int, data: dict) -> Response:
-        return client.patch(path=f"/api/v2/rbac/users/{user_id}/", data=data)
+    def request_edit_user(client: ADCMTestClient, user_id: int, data: dict) -> Response:
+        return (client.v2 / "rbac" / "users" / str(user_id)).patch(data=data)
 
     # Create Restrictions
 
