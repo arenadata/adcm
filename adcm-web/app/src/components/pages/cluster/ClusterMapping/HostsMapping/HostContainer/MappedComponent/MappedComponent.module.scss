@@ -1,19 +1,17 @@
 :global {
   body.theme-dark {
-    --mapping-tag-background-color: var(--color-new-light);
+    --mapping-tag-background-color: var(--color-xdark-new-20);
 
     --mapping-tag-valid-border-color: var(--color-green-dark);
     --mapping-tag-valid-border-color-hover: var(--color-xgreen-saturated);
     --mapping-tag-valid-color: var(--color-xgreen-saturated);
     --mapping-tag-valid-color-hover: var(--color-xwhite-off);
-    --mapping-tag-valid-background-color: var(--color-xdark-new-20);
     --mapping-tag-valid-background-color-hover: var(--color-xgreen-saturated15);
 
     --mapping-tag-error-border-color: var(--color-dark-red);
     --mapping-tag-error-border-color-hover: var(--color-xred);
     --mapping-tag-error-color: var(--color-xred);
     --mapping-tag-error-color-hover: var(--color-xwhite-off);
-    --mapping-tag-valid-background-color: var(--color-xdark-new-20);
     --mapping-tag-error-background-color-hover: var(--color-red-15);
 
     --mapping-tag-error-tooltip-color: var(--color-xwhite-off);
@@ -23,7 +21,7 @@
   }
 
   body.theme-light {
-    --mapping-tag-background-color: var(--color-popup-light);
+    --mapping-tag-background-color: var(--color-xgray-alt-30);
 
     --mapping-tag-valid-border-color: var(--color-xgreen);
     --mapping-tag-valid-border-color-hover: var(--color-xgreen-saturated);
@@ -51,16 +49,19 @@
   &__tooltip {
     border-radius: 8px;
     border: 1px solid var(--mapping-tag-error-tooltip-border-color);
-    color: var(--mapping-tag-error-tooltip-color);
+    
     background-color: var(--mapping-tag-error-tooltip-background-color);
     box-shadow: var(--mapping-tag-error-tooltip-shadow);
+
+    * {
+      color: var(--mapping-tag-error-tooltip-color) !important;
+    }
   }
 
   &_valid {
     padding: 4px 6px;
     color: var(--mapping-tag-valid-color);
     border: 2px solid var(--mapping-tag-valid-border-color);
-    background-color: var(--mapping-tag-valid-background-color);
 
     &:hover {
       color: var(--mapping-tag-valid-color-hover);
@@ -73,7 +74,6 @@
     padding: 4px 6px;
     color: var(--mapping-tag-error-color);
     border: 2px solid var(--mapping-tag-error-border-color);
-    background-color: var(--mapping-tag-background-color);
 
     &:hover {
       color: var(--mapping-tag-error-color-hover);

@@ -1,6 +1,7 @@
 export const allowIconsNames = [
   //
   'alert-circle',
+  'arrow',
   'arrow-sorting',
   'check',
   'check-hollow',

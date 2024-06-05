@@ -6,16 +6,13 @@ import {
   AdcmError,
   AdcmHostShortView,
   AdcmMapping,
+  NotAddedServicesDictionary,
   AdcmMappingComponent,
-  AdcmServicePrototype,
-  ServiceId,
 } from '@models/adcm';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
 import { arrayToHash } from '@utils/arrayUtils';
 import { ActionState, RequestState } from '@models/loadState';
 import { processErrorResponse } from '@utils/responseUtils';
-
-export type NotAddedServicesDictionary = Record<ServiceId, AdcmServicePrototype>;
 
 type GetClusterMappingArg = {
   clusterId: number;
@@ -35,7 +32,6 @@ type AdcmClusterMappingsState = {
   };
   saving: {
     state: ActionState;
-    hasError: boolean;
   };
   relatedData: {
     notAddedServicesDictionary: NotAddedServicesDictionary;
@@ -127,7 +123,6 @@ const createInitialState = (): AdcmClusterMappingsState => ({
   },
   saving: {
     state: 'not-started',
-    hasError: false,
   },
   relatedData: {
     notAddedServicesDictionary: {},
@@ -186,7 +181,6 @@ const mappingSlice = createSlice({
     });
     builder.addCase(saveMapping.rejected, (state) => {
       state.saving.state = 'completed';
-      state.saving.hasError = true;
     });
     builder.addCase(getNotAddedServices.fulfilled, (state, action) => {
       state.relatedData.notAddedServicesDictionary = arrayToHash(action.payload, (s) => s.id);

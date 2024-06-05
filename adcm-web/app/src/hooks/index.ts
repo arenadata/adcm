@@ -18,3 +18,4 @@ export { useForwardRef } from './useForwardRef';
 export { useLocalPagination } from './useLocalPagination';
 export { useMediaQuery } from './useMediaQuery';
 export { useSelectedItems } from './useSelectedItems';
+export { usePrevious } from './usePrevious';
