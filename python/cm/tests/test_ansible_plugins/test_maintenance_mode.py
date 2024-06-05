@@ -32,16 +32,7 @@ class TestMaintenanceModePlugin(BusinessLogicMixin, BaseTestCase):
         provider_bundle = self.add_bundle(source_dir=bundles_dir / "provider")
         provider = self.add_provider(bundle=provider_bundle, name="test_provider")
         self.host = self.add_host(bundle=provider_bundle, provider=provider, fqdn="test_host", cluster=self.cluster)
-        self.add_hostcomponent_map(
-            cluster=self.cluster,
-            hc_map=[
-                {
-                    "host_id": self.host.pk,
-                    "service_id": self.service.pk,
-                    "component_id": self.component.pk,
-                }
-            ],
-        )
+        self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
 
     def _set_objects_mm(
         self,

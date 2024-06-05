@@ -67,16 +67,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
             object_type=ContentType.objects.get_for_model(self.provider),
             object_id=self.provider.pk,
         )
-        self.add_hostcomponent_map(
-            cluster=self.cluster_1,
-            hc_map=[
-                {
-                    "host_id": self.host_for_service.pk,
-                    "service_id": self.service_1.pk,
-                    "component_id": self.component_1.pk,
-                }
-            ],
-        )
+        self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_for_service, self.component_1)])
         self.cluster_config_data = {
             "config": {
                 "activatable_group": {"integer": 100},

@@ -55,25 +55,8 @@ class TestStatistics(BaseAPITestCase):
             cluster=self.cluster_1, service=service, prototype__name="component_2"
         )
 
-        self.add_hostcomponent_map(
-            cluster=self.cluster_1,
-            hc_map=[
-                {
-                    "host_id": host_1.pk,
-                    "service_id": service.pk,
-                    "component_id": component_1.pk,
-                },
-                {
-                    "host_id": host_2.pk,
-                    "service_id": service.pk,
-                    "component_id": component_1.pk,
-                },
-                {
-                    "host_id": host_3.pk,
-                    "service_id": service.pk,
-                    "component_id": component_2.pk,
-                },
-            ],
+        self.set_hostcomponent(
+            cluster=self.cluster_1, entries=[(host_1, component_1), (host_2, component_1), (host_3, component_2)]
         )
 
     @staticmethod

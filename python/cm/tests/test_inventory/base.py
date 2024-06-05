@@ -21,13 +21,11 @@ from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
 
 from cm.adcm_config.ansible import ansible_decrypt
-from cm.api import add_hc
 from cm.converters import model_name_to_core_type
 from cm.models import (
     Action,
     ADCMEntity,
     ADCMModel,
-    Cluster,
     ClusterObject,
     GroupConfig,
     Host,
@@ -83,16 +81,6 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
         for group_name, host_names in expected.items():
             self.assertSetEqual(set(data[group_name]["hosts"].keys()), set(host_names))
 
-    @staticmethod
-    def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, ServiceComponent]]) -> list[HostComponent]:
-        return add_hc(
-            cluster=cluster,
-            hc_in=[
-                {"host_id": host.pk, "component_id": component.pk, "service_id": component.service_id}
-                for host, component in entries
-            ],
-        )
-
     def check_data_by_template(self, data: Mapping[str, dict], templates_data: TemplatesData) -> None:
         for key_chain, template_data in templates_data.items():
             template_path, kwargs = template_data
@@ -130,9 +118,9 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
 
     @staticmethod
     def get_mapping_delta_for_hc_acl(cluster, new_mapping: list[MappingEntry]) -> Delta:
-        existing_mapping_ids = {
-            (hc.host.pk, hc.component.pk, hc.service.pk) for hc in HostComponent.objects.filter(cluster=cluster)
-        }
+        existing_mapping_ids = set(
+            HostComponent.objects.values_list("host_id", "component_id", "service_id").filter(cluster=cluster)
+        )
         new_mapping_ids = {(hc["host_id"], hc["component_id"], hc["service_id"]) for hc in new_mapping}
 
         added = {}
