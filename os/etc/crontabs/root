@@ -4,4 +4,4 @@
 0       8       */1     *       *       python /adcm/python/manage.py logrotate --target all
 0       10      */1     *       *       python /adcm/python/manage.py clearaudit
 */1     *       *       *       *       python /adcm/python/manage.py run_ldap_sync
-0       0       *       *       1       python /adcm/python/manage.py collect_statistics --mode send
+0       0       *       *       *       python /adcm/python/manage.py collect_statistics --mode send
