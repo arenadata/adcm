@@ -98,6 +98,7 @@ class ParallelReadyTestCase:
             "FILE_DIR": stack / "data" / "file",
             "LOG_DIR": data / "log",
             "VAR_DIR": data / "var",
+            "TMP_DIR": data / "tmp",
         }
 
         for directory in temporary_directories.values():
@@ -414,15 +415,6 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         return host
-
-    def add_host_to_cluster(self, cluster_pk: int, host_pk: int) -> None:
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:host", kwargs={"cluster_id": cluster_pk}),
-            data={"host_id": host_pk},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     @staticmethod
     def get_hostcomponent_data(service_pk: int, host_pk: int) -> list[dict[str, int]]:

@@ -189,8 +189,8 @@ class TestHC(BaseTestCase, BusinessLogicMixin):
         host_1 = self.add_host(provider=hostprovider, fqdn="host-1")
         host_2 = self.add_host(provider=hostprovider, fqdn="host-2")
 
-        self.add_host_to_cluster(cluster.pk, host_1.pk)
-        self.add_host_to_cluster(cluster.pk, host_2.pk)
+        self.add_host_to_cluster(cluster, host_1)
+        self.add_host_to_cluster(cluster, host_2)
 
         component_1_1 = ServiceComponent.objects.get(service=service_1, prototype__name="component_1")
         component_2_1 = ServiceComponent.objects.get(service=service_2, prototype__name="component_1")

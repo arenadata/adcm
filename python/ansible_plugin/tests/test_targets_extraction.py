@@ -202,7 +202,7 @@ class TestObjectsTargetsExtraction(BaseTestCase, BusinessLogicMixin, ADCMAnsible
         parent_cluster = self.cluster_1
         component = ServiceComponent.objects.filter(cluster=parent_cluster).first()
 
-        self.add_host_to_cluster(cluster_pk=parent_cluster.pk, host_pk=host.pk)
+        self.add_host_to_cluster(cluster=parent_cluster, host=host)
         self.set_hostcomponent(cluster=parent_cluster, entries=[(host, component)])
 
         self.check_target_detection(
