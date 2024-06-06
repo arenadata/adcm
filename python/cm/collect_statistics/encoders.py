@@ -18,7 +18,7 @@ from cm.collect_statistics.types import Encoder
 class TarFileEncoder(Encoder[Path]):
     """Encode and decode a file in place"""
 
-    __slots__ = ["suffix"]
+    __slots__ = ("suffix",)
 
     def __init__(self, suffix: str) -> None:
         if suffix and not suffix.startswith(".") or suffix == ".":

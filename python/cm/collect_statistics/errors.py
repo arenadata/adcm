@@ -27,5 +27,5 @@ class RetriesExceededError(SenderError):
     pass
 
 
-class StorageError(Exception):
+class StorageError(BaseStatisticsError):
     pass

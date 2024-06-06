@@ -89,6 +89,8 @@ class RBACCollector:
 
 
 class BundleCollector:
+    __slots__ = ("_date_format", "_filters")
+
     def __init__(self, date_format: str, filters: Collection[Q]):
         self._date_format = date_format
         self._filters = filters

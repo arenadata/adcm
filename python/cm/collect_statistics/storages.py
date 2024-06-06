@@ -31,7 +31,7 @@ class JSONFile(BaseModel):
 class TarFileWithJSONFileStorage(Storage[JSONFile]):
     __slots__ = ("json_files", "tmp_dir", "compresslevel", "date_format")
 
-    def __init__(self, compresslevel=9, date_format="%Y-%m-%d"):
+    def __init__(self, compresslevel: int = 9, date_format: str = "%Y-%m-%d") -> None:
         self.json_files = []
         self.tmp_dir = Path(mkdtemp()).absolute()
         self.compresslevel = compresslevel
