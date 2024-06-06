@@ -16,14 +16,14 @@ from cm.models import (
     ClusterObject,
     ConfigLog,
     ObjectConfig,
-    ObjectType,
     ServiceComponent,
 )
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK
 
 from api_v2.tests.base import BaseAPITestCase
+
+CONFIGS = "configs"
 
 
 class TestBulkAddServices(BaseAPITestCase):
@@ -82,23 +82,13 @@ class TestBulkAddServices(BaseAPITestCase):
 
             for request_type, obj in product(["object", "config"], chain(services_qs, components_qs)):
                 obj: ClusterObject | ServiceComponent
-                if obj.prototype.type == ObjectType.SERVICE:
-                    if request_type == "object":
-                        viewname = "v2:service-detail"
-                        kwargs = {"cluster_pk": self.cluster_1.pk, "pk": obj.pk}
-                    elif request_type == "config":
-                        viewname = "v2:service-config-list"
-                        kwargs = {"cluster_pk": self.cluster_1.pk, "service_pk": obj.pk}
-                elif obj.prototype.type == ObjectType.COMPONENT:
-                    if request_type == "object":
-                        viewname = "v2:component-detail"
-                        kwargs = {"cluster_pk": self.cluster_1.pk, "service_pk": obj.service.pk, "pk": obj.pk}
-                    elif request_type == "config":
-                        viewname = "v2:component-config-list"
-                        kwargs = {"cluster_pk": self.cluster_1.pk, "service_pk": obj.service.pk, "component_pk": obj.pk}
+                if request_type == "object":
+                    viewname = self.client.v2[obj]
+                elif request_type == "config":
+                    viewname = self.client.v2[obj, CONFIGS]
                 else:
                     raise AssertionError("Wrong object type")
 
-                with self.subTest(f"View: {viewname}, kwargs: {kwargs}"):
-                    response: Response = self.client.get(path=reverse(viewname=viewname, kwargs=kwargs))
+                with self.subTest(f"View: {viewname.path}"):
+                    response: Response = viewname.get()
                     self.assertEqual(response.status_code, HTTP_200_OK)
