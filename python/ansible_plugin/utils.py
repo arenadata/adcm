@@ -19,12 +19,6 @@ from ansible.errors import AnsibleError
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 
-from ansible_plugin.messages import (
-    MSG_NO_CONFIG,
-    MSG_NO_CONTEXT,
-    MSG_WRONG_CONTEXT,
-    MSG_WRONG_CONTEXT_ID,
-)
 from cm.adcm_config.config import get_option_value
 from cm.models import (
     CheckLog,
@@ -38,46 +32,6 @@ from cm.models import (
 from rbac.models import Role, Policy
 from rbac.roles import assign_group_perm
 # isort: on
-
-
-def check_context_type(task_vars: dict, context_types: tuple, err_msg: str | None = None) -> None:
-    """
-    Check context type. Check if inventory.json and config.json were passed
-    and check if `context` exists in task variables, сheck if a context is of a given type.
-    """
-    if not task_vars:
-        raise AnsibleError(MSG_NO_CONFIG)
-
-    if "context" not in task_vars:
-        raise AnsibleError(MSG_NO_CONTEXT)
-
-    if not isinstance(task_vars["context"], dict):
-        raise AnsibleError(MSG_NO_CONTEXT)
-
-    context = task_vars["context"]
-    if context["type"] not in context_types:
-        if err_msg is None:
-            err_msg = MSG_WRONG_CONTEXT.format(", ".join(context_types), context["type"])
-        raise AnsibleError(err_msg)
-
-
-def get_object_id_from_context(
-    task_vars: dict, id_type: str, context_types: tuple, err_msg: str | None = None, raise_: bool = True
-) -> tuple[int | None, None | AnsibleError]:
-    """
-    Get object id from context.
-    """
-    check_context_type(task_vars=task_vars, context_types=context_types, err_msg=err_msg)
-    context = task_vars["context"]
-
-    if id_type not in context:
-        error = AnsibleError(MSG_WRONG_CONTEXT_ID.format(id_type))
-        if raise_:
-            raise error
-
-        return None, error
-
-    return context[id_type], None
 
 
 # Helper functions for ansible plugins

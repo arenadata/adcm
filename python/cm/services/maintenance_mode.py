@@ -178,11 +178,3 @@ def get_maintenance_mode_response(
         data={"error": f'Unknown {obj_name} maintenance mode "{obj.maintenance_mode}"'},
         status=HTTP_400_BAD_REQUEST,
     )
-
-
-def set_maintenance_mode(obj: ClusterObject | ServiceComponent | Host, value: MaintenanceMode) -> None:
-    obj.maintenance_mode = value
-    obj.save(update_fields=["maintenance_mode"] if isinstance(obj, Host) else ["_maintenance_mode"])
-    send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
-    update_hierarchy_issues(obj.cluster)
-    reset_objects_in_mm()
