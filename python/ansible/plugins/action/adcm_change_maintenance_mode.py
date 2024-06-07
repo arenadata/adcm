@@ -45,41 +45,13 @@ EXAMPLES = r"""
 
 import sys
 
-from ansible.errors import AnsibleActionFail
-from ansible.plugins.action import ActionBase
-
 sys.path.append("/adcm/python")
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from ansible_plugin.maintenance_mode import get_object, validate_args, validate_obj
-from cm.models import MaintenanceMode
-from cm.services.maintenance_mode import set_maintenance_mode
+from ansible_plugin.base import ADCMAnsiblePlugin
+from ansible_plugin.executors.change_maintenance_mode import ADCMChangeMMExecutor
 
 
-class ActionModule(ActionBase):
-    TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(["type", "value"])
-
-    def run(self, tmp=None, task_vars=None):
-        super().run(tmp, task_vars)
-
-        error = validate_args(task_args=self._task.args)
-        if error is not None:
-            raise error
-
-        obj, error = get_object(task_vars=task_vars, obj_type=self._task.args["type"])
-        if error is not None:
-            raise error
-
-        error = validate_obj(obj=obj)
-        if error is not None:
-            raise error
-
-        value = MaintenanceMode.ON if self._task.args["value"] else MaintenanceMode.OFF
-        try:
-            set_maintenance_mode(obj=obj, value=value)
-        except Exception as e:  # noqa: BLE001
-            raise AnsibleActionFail("Unexpected error occurred while changing object's maintenance mode") from e
-
-        return {"failed": False, "changed": True}
+class ActionModule(ADCMAnsiblePlugin):
+    executor_class = ADCMChangeMMExecutor

@@ -95,18 +95,20 @@ class RuntimeEnvironment(BaseModel):
 # Target
 
 
-class CoreObjectTargetDescription(BaseModel):
+class ObjectWithType(BaseModel):
     type: TargetTypeLiteral
-
-    service_name: str | None = None
-    component_name: str | None = None
-    host_id: int | str | None = None
 
     @field_validator("type", mode="before")
     @classmethod
     def convert_type_to_string(cls, v: Any) -> str:
         # requited to pre-process Ansible Strings
         return str(v)
+
+
+class CoreObjectTargetDescription(ObjectWithType):
+    service_name: str | None = None
+    component_name: str | None = None
+    host_id: int | str | None = None
 
     @model_validator(mode="after")
     def validate_args_allowed_for_type(self) -> Self:
