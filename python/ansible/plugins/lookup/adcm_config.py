@@ -22,7 +22,6 @@ sys.path.append("/adcm/python")
 import adcm.init_django  # noqa: F401, isort:skip
 
 from ansible_plugin.utils import cast_to_type, get_service_by_name
-from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import set_object_config_with_plugin
 from cm.logger import logger
 from cm.models import (
@@ -79,7 +78,6 @@ class LookupModule(LookupBase):
             raise AnsibleError(msg.format(len(terms)))
 
         conf = {terms[1]: terms[2]}
-        attr = {}
 
         if terms[0] == "service":
             if "cluster" not in variables:
@@ -87,11 +85,11 @@ class LookupModule(LookupBase):
             cluster = variables["cluster"]
             if "service_name" in kwargs:
                 res = set_service_config_by_name(
-                    cluster_id=cluster["id"], service_name=kwargs["service_name"], config=conf, attr=attr
+                    cluster_id=cluster["id"], service_name=kwargs["service_name"], config=conf
                 )
             elif "job" in variables and "service_id" in variables["job"]:
                 res = set_service_config(
-                    cluster_id=cluster["id"], service_id=variables["job"]["service_id"], config=conf, attr=attr
+                    cluster_id=cluster["id"], service_id=variables["job"]["service_id"], config=conf
                 )
             else:
                 msg = "no service_id in job or service_name and service_version in params"
@@ -100,16 +98,16 @@ class LookupModule(LookupBase):
             if "cluster" not in variables:
                 raise AnsibleError("there is no cluster in hostvars")
             cluster = variables["cluster"]
-            res = set_cluster_config(cluster_id=cluster["id"], config=conf, attr=attr)
+            res = set_cluster_config(cluster_id=cluster["id"], config=conf)
         elif terms[0] == "provider":
             if "provider" not in variables:
                 raise AnsibleError("there is no host provider in hostvars")
             provider = variables["provider"]
-            res = set_provider_config(provider_id=provider["id"], config=conf, attr=attr)
+            res = set_provider_config(provider_id=provider["id"], config=conf)
         elif terms[0] == "host":
             if "adcm_hostid" not in variables:
                 raise AnsibleError("there is no adcm_hostid in hostvars")
-            res = set_host_config(host_id=variables["adcm_hostid"], config=conf, attr=attr)
+            res = set_host_config(host_id=variables["adcm_hostid"], config=conf)
         else:
             raise AnsibleError(f"unknown object type: {terms[0]}")
 
@@ -122,11 +120,13 @@ class PluginResult(NamedTuple):
     changed: bool
 
 
-def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> PluginResult:
+def update_config(obj: ADCMEntity, conf: dict) -> PluginResult:
     config_log = ConfigLog.objects.get(id=obj.config.current)
 
     new_config = deepcopy(config_log.config)
     new_attr = deepcopy(config_log.attr) if config_log.attr is not None else {}
+
+    changed = False
 
     for keys, value in conf.items():
         keys_list = keys.split("/")
@@ -142,34 +142,23 @@ def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> PluginResult:
                 )
             except PrototypeConfig.DoesNotExist as error:
                 raise AnsibleError(f"Config parameter '{key}/{subkey}' does not exist") from error
-            new_config[key][subkey] = cast_to_type(
-                field_type=prototype_conf.type, value=value, limits=prototype_conf.limits
-            )
+
+            cast_value = cast_to_type(field_type=prototype_conf.type, value=value, limits=prototype_conf.limits)
+            if new_config[key][subkey] != cast_value:
+                new_config[key][subkey] = cast_value
+                changed = True
         else:
             try:
                 prototype_conf = PrototypeConfig.objects.get(name=key, subname="", prototype=obj.prototype, action=None)
             except PrototypeConfig.DoesNotExist as error:
                 raise AnsibleError(f"Config parameter '{key}' does not exist") from error
-            new_config[key] = cast_to_type(field_type=prototype_conf.type, value=value, limits=prototype_conf.limits)
 
-        if key in attr:
-            prototype_conf = PrototypeConfig.objects.filter(
-                name=key, prototype=obj.prototype, type="group", action=None
-            )
+            cast_value = cast_to_type(field_type=prototype_conf.type, value=value, limits=prototype_conf.limits)
+            if new_config[key] != cast_value:
+                new_config[key] = cast_value
+                changed = True
 
-            if not prototype_conf or "activatable" not in prototype_conf.first().limits:
-                raise AnsibleError("'active' key should be used only with activatable group")
-
-            new_attr.update(attr)
-
-    for key in attr:
-        for subkey, value in config_log.config[key].items():
-            if not new_config[key] or subkey not in new_config[key]:
-                new_config[key][subkey] = value
-
-    if _does_contain(base_dict=config_log.config, part=new_config) and _does_contain(
-        base_dict=config_log.attr, part=new_attr
-    ):
+    if not changed:
         return PluginResult(conf, False)
 
     set_object_config_with_plugin(obj=obj, config=new_config, attr=new_attr)
@@ -181,54 +170,31 @@ def update_config(obj: ADCMEntity, conf: dict, attr: dict) -> PluginResult:
     return PluginResult(conf, True)
 
 
-def set_cluster_config(cluster_id: int, config: dict, attr: dict) -> PluginResult:
+def set_cluster_config(cluster_id: int, config: dict) -> PluginResult:
     obj = Cluster.obj.get(id=cluster_id)
 
-    return update_config(obj=obj, conf=config, attr=attr)
+    return update_config(obj=obj, conf=config)
 
 
-def set_host_config(host_id: int, config: dict, attr: dict) -> PluginResult:
+def set_host_config(host_id: int, config: dict) -> PluginResult:
     obj = Host.obj.get(id=host_id)
 
-    return update_config(obj=obj, conf=config, attr=attr)
+    return update_config(obj=obj, conf=config)
 
 
-def set_provider_config(provider_id: int, config: dict, attr: dict) -> PluginResult:
+def set_provider_config(provider_id: int, config: dict) -> PluginResult:
     obj = HostProvider.obj.get(id=provider_id)
 
-    return update_config(obj=obj, conf=config, attr=attr)
+    return update_config(obj=obj, conf=config)
 
 
-def set_service_config_by_name(cluster_id: int, service_name: str, config: dict, attr: dict) -> PluginResult:
+def set_service_config_by_name(cluster_id: int, service_name: str, config: dict) -> PluginResult:
     obj = get_service_by_name(cluster_id, service_name)
 
-    return update_config(obj=obj, conf=config, attr=attr)
+    return update_config(obj=obj, conf=config)
 
 
-def set_service_config(cluster_id: int, service_id: int, config: dict, attr: dict) -> PluginResult:
+def set_service_config(cluster_id: int, service_id: int, config: dict) -> PluginResult:
     obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type="service")
 
-    return update_config(obj=obj, conf=config, attr=attr)
-
-
-def _does_contain(base_dict: dict, part: dict) -> bool:
-    """
-    Check fields in `part` have the same value in `base_dict`
-    """
-
-    for key, val2 in part.items():
-        if key not in base_dict:
-            return False
-
-        val1 = base_dict[key]
-
-        if isinstance(val1, dict) and isinstance(val2, dict):
-            if not _does_contain(val1, val2):
-                return False
-        else:
-            val1 = ansible_decrypt(val1)
-            val2 = ansible_decrypt(val2)
-            if val1 != val2:
-                return False
-
-    return True
+    return update_config(obj=obj, conf=config)
