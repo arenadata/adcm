@@ -177,7 +177,7 @@ class TestHC(BaseTestCase, BusinessLogicMixin):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_run_same_hc_bug_adcm_4929(self) -> None:
+    def test_adcm_4929_run_same_hc_bug(self) -> None:
         bundles_dir = Path(__file__).parent / "bundles"
         bundle = self.add_bundle(bundles_dir / "cluster_1")
         cluster = self.add_cluster(bundle=bundle, name="Cool")

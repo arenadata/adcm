@@ -164,7 +164,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
 
                 self.assertDictEqual(job_config, expected_data)
 
-    def test_action_config_with_secrets_bug_adcm_5305(self):
+    def test_adcm_5305_action_config_with_secrets_bug(self):
         """
         Actually bug is about `run_action`, because it prepares `config` for task,
         but it was caught within `prepare_ansible_job_config` generation, so checked here
@@ -188,7 +188,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.assertIn("__ansible_vault", job_config["job"]["config"]["rolepass"])
         self.assertEqual(ansible_decrypt(job_config["job"]["config"]["rolepass"]["__ansible_vault"]), raw_value)
 
-    def test_action_jinja_config_with_secrets_bug_adcm_5314(self):
+    def test_adcm_5314_action_jinja_config_with_secrets_bug(self):
         """
         Actually bug is about `run_action`, because it prepares `config` for task,
         but it was caught within `get_job_config` generation, so checked here
@@ -214,7 +214,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.assertIn("__ansible_vault", job_config["job"]["config"]["rolepass"])
         self.assertEqual(ansible_decrypt(job_config["job"]["config"]["rolepass"]["__ansible_vault"]), raw_value)
 
-    def test_action_jinja_config_with_secret_map_and_default_null_password_bug_adcm_5314(self):
+    def test_adcm_5314_action_jinja_config_with_secret_map_and_default_null_password_bug(self):
         """
         Actually bug is about `run_action`, because it prepares `config` for task,
         but it was caught within `get_job_config` generation, so checked here
