@@ -18,6 +18,7 @@ from core.types import HostID, HostName, ServiceName, TaskID
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
+    ActionHostGroup,
     Cluster,
     ClusterObject,
     Host,
@@ -59,7 +60,11 @@ class JinjaScriptsEnvironment(TypedDict):
 
 
 def get_env(task: TaskLog, delta: dict | None = None) -> JinjaScriptsEnvironment:
+    action_group = None
     target_object = task.task_object
+    if isinstance(target_object, ActionHostGroup):
+        action_group = target_object
+        target_object = target_object.object
 
     if isinstance(target_object, Cluster):
         cluster_topology = next(retrieve_clusters_topology([target_object.pk]))
@@ -76,9 +81,19 @@ def get_env(task: TaskLog, delta: dict | None = None) -> JinjaScriptsEnvironment
             "id", flat=True
         )
     )
-    host_groups = detect_host_groups_for_cluster_bundle_action(
-        cluster_topology=cluster_topology, hosts_in_maintenance_mode=hosts_in_maintenance_mode, hc_delta=delta
+    host_groups = _get_host_group_names_only(
+        host_groups=detect_host_groups_for_cluster_bundle_action(
+            cluster_topology=cluster_topology, hosts_in_maintenance_mode=hosts_in_maintenance_mode, hc_delta=delta
+        )
     )
+    if action_group:
+        host_groups |= {
+            "target": Host.objects.values_list("fqdn", flat=True).filter(
+                id__in=ActionHostGroup.hosts.through.objects.filter(actionhostgroup_id=action_group.id).values_list(
+                    "host_id", flat=True
+                )
+            )
+        }
 
     return JinjaScriptsEnvironment(
         cluster=cluster_vars.cluster.dict(by_alias=True),
@@ -86,7 +101,7 @@ def get_env(task: TaskLog, delta: dict | None = None) -> JinjaScriptsEnvironment
             service_name: service_data.dict(by_alias=True)
             for service_name, service_data in cluster_vars.services.items()
         },
-        groups=_get_host_group_names_only(host_groups=host_groups),
+        groups=host_groups,
         task=TaskContext(config=task.config, verbose=task.verbose),
         action=get_action_info(action=task.action),
     )

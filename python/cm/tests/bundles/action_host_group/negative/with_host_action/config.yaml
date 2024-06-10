@@ -1,0 +1,12 @@
+- type: cluster
+  version: 3
+  name: "cl"
+
+  actions:
+    host_action_with_host_group:
+      masking:
+      allow_for_action_host_group: true
+      host_action: true
+      type: job
+      script: ./some.yaml
+      script_type: ansible

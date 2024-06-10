@@ -12,9 +12,10 @@
 
 from logging import Logger
 from operator import itemgetter
+from typing import Protocol
 
 from core.job.types import Task
-from core.types import CoreObjectDescriptor
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 
 from cm.api import save_hc
@@ -27,6 +28,11 @@ from cm.status_api import send_object_update_event
 # todo "unwrap" these functions to use repo without directly calling ORM,
 #  try to rework functions like `save_hc` also, because they rely on API v1 input
 #  which is in no way correct approach
+
+
+class WithIDAndCoreType(Protocol):
+    id: int
+    type: ADCMCoreType
 
 
 def set_job_lock(job_id: int) -> None:
@@ -79,7 +85,7 @@ def update_issues(object_: CoreObjectDescriptor):
     update_hierarchy_issues(obj=core_type_to_model(core_type=object_.type).objects.get(id=object_.id))
 
 
-def update_object_maintenance_mode(action_name: str, object_: CoreObjectDescriptor):
+def update_object_maintenance_mode(action_name: str, object_: WithIDAndCoreType):
     """
     If maintenance mode wasn't changed during action execution, set "opposite" (to action's name) MM
     """

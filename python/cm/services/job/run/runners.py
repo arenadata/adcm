@@ -18,7 +18,7 @@ import signal
 from core.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.job.runners import ExecutionTarget, RunnerRuntime, TaskRunner
 from core.job.types import ExecutionStatus, Job, Task
-from core.types import CoreObjectDescriptor
+from core.types import ADCMCoreType, CoreObjectDescriptor
 
 from cm.services.job.run._task_finalizers import (
     remove_task_lock,
@@ -238,7 +238,7 @@ class JobSequenceRunner(TaskRunner):
         remove_task_lock(task_id=task.id)
 
         audit_job_finish(
-            owner=task.target,
+            target=task.target,
             display_name=task.action.display_name,
             is_upgrade=task.action.is_upgrade,
             job_result=task_result,
@@ -253,7 +253,12 @@ class JobSequenceRunner(TaskRunner):
             )
 
         if finished_task.target:
-            update_object_maintenance_mode(action_name=finished_task.action.name, object_=finished_task.target)
+            update_object_maintenance_mode(
+                action_name=finished_task.action.name,
+                object_=finished_task.target
+                if isinstance(finished_task.target.type, ADCMCoreType)
+                else finished_task.owner,
+            )
 
         self._repo.update_task(id=task.id, data=TaskUpdateDTO(finish_date=self._environment.now(), status=task_result))
         self._notifier.send_task_status_update_event(task_id=self._runtime.task_id, status=task_result)

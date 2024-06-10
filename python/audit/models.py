@@ -51,6 +51,7 @@ class AuditObjectType(TextChoices):
     GROUP = "group", "group"
     ROLE = "role", "role"
     POLICY = "policy", "policy"
+    ACTION_HOST_GROUP = "actionhostgroup", "actionhostgroup"
 
 
 class AuditLogOperationType(TextChoices):

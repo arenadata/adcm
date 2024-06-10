@@ -19,7 +19,7 @@ from django.conf import settings
 
 from cm.hierarchy import Tree
 from cm.issue import lock_affected_objects
-from cm.models import TaskLog
+from cm.models import ActionHostGroup, TaskLog
 from cm.utils import get_env_with_venv_path
 
 logger = logging.getLogger("adcm")
@@ -34,9 +34,12 @@ def restart_task(task: TaskLog) -> None:
 
 
 def _run_task(task: TaskLog, command: Literal["start", "restart"]):
-    tree = Tree(obj=task.task_object)
+    owner = task.task_object
+    if isinstance(owner, ActionHostGroup):
+        owner = owner.object
+    tree = Tree(obj=owner)
     affected_objs = (node.value for node in tree.get_all_affected(node=tree.built_from))
-    lock_affected_objects(task=task, objects=affected_objs)
+    lock_affected_objects(task=task, objects=affected_objs, lock_target=owner)
 
     err_file = open(  # noqa: SIM115
         Path(settings.LOG_DIR, "task_runner.err"),

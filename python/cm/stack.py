@@ -758,10 +758,18 @@ def save_action(proto: StagePrototype, config: dict, path_resolver: PathResolver
     action = StageAction(prototype=proto, name=action_name)
     action.type = config["type"]
 
+    if config.get("host_action", False) and config.get("allow_for_action_host_group", False):
+        message = (
+            "The allow_for_action_host_group and host_action attributes are mutually exclusive. "
+            f"Check {action_name} action definition"
+        )
+        raise AdcmEx(code="INVALID_ACTION_DEFINITION", msg=message)
+
     dict_to_obj(dictionary=config, key="description", obj=action)
     dict_to_obj(dictionary=config, key="allow_to_terminate", obj=action)
     dict_to_obj(dictionary=config, key="partial_execution", obj=action)
     dict_to_obj(dictionary=config, key="host_action", obj=action)
+    dict_to_obj(dictionary=config, key="allow_for_action_host_group", obj=action)
     dict_to_obj(dictionary=config, key="ui_options", obj=action)
     dict_to_obj(dictionary=config, key="venv", obj=action)
     dict_to_obj(dictionary=config, key="allow_in_maintenance_mode", obj=action)
@@ -1124,8 +1132,8 @@ def in_dict(dictionary: dict, key: str) -> bool:
         if dictionary[key] is None:
             return False
         return True
-    else:  # noqa: RET505
-        return False
+
+    return False
 
 
 def dict_to_obj(dictionary, key, obj, obj_key=None):

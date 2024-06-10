@@ -10,15 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.types import ADCMCoreType
+from typing import TypeAlias
+
+from core.types import ADCMCoreType, ExtraActionTargetType
 from django.db.models import Model
 
-from cm.models import ADCM, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from cm.models import ADCM, ActionHostGroup, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+
+CoreObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
 
 
-def core_type_to_model(
-    core_type: ADCMCoreType,
-) -> type[Cluster | ClusterObject | ServiceComponent | HostProvider | Host | ADCM]:
+def core_type_to_model(core_type: ADCMCoreType) -> type[CoreObject | ADCM]:
     match core_type:
         case ADCMCoreType.CLUSTER:
             return Cluster
@@ -79,8 +81,19 @@ def model_name_to_core_type(model_name: str) -> ADCMCoreType:
 
 
 def model_to_core_type(model: type[Model]) -> ADCMCoreType:
-    return model_name_to_core_type(model_name=model.__name__.lower())
+    return model_name_to_core_type(model_name=model.__name__)
 
 
-def orm_object_to_core_type(object_: Cluster | ClusterObject | ServiceComponent | HostProvider | Host) -> ADCMCoreType:
+def orm_object_to_core_type(object_: CoreObject) -> ADCMCoreType:
     return model_to_core_type(model=object_.__class__)
+
+
+def model_to_action_target_type(model: type[Model]) -> ADCMCoreType | ExtraActionTargetType:
+    if model == ActionHostGroup:
+        return ExtraActionTargetType.ACTION_HOST_GROUP
+
+    return model_to_core_type(model=model)
+
+
+def orm_object_to_action_target_type(object_: CoreObject | ActionHostGroup) -> ADCMCoreType | ExtraActionTargetType:
+    return model_to_action_target_type(model=object_.__class__)

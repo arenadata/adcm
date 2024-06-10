@@ -235,7 +235,9 @@ def prepare_ansible_inventory(task: Task) -> dict[str, Any]:
             raise RuntimeError(message)
 
         new_hc = []
-        for hostcomponent in HostComponent.objects.filter(cluster_id=cluster_id):
+        for hostcomponent in HostComponent.objects.select_related("service", "host", "component").filter(
+            cluster_id=cluster_id
+        ):
             new_hc.append((hostcomponent.service, hostcomponent.host, hostcomponent.component))
 
         delta = cook_delta(
@@ -250,7 +252,7 @@ def prepare_ansible_inventory(task: Task) -> dict[str, Any]:
 
 def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSettings) -> dict[str, Any]:
     # prepare context
-    context = {f"{k}_id": v["id"] for k, v in task.selector.items()}
+    context = {f"{k}_id": v["id"] for k, v in task.selector.items() if k != "action_host_group"}
     context["type"] = task.owner.type.value.replace("hostp", "p")
 
     job_data = JobData(

@@ -12,14 +12,24 @@
 
 from itertools import chain
 from operator import itemgetter
+from typing import Iterable
 
 from core.cluster.operations import calculate_maintenance_mode_for_cluster_objects
 from core.cluster.types import ClusterTopology, MaintenanceModeOfObjects, ObjectMaintenanceModeState
-from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, HostName, ObjectID
+from core.types import (
+    ActionTargetDescriptor,
+    ADCMCoreType,
+    CoreObjectDescriptor,
+    ExtraActionTargetType,
+    HostID,
+    HostName,
+    ObjectID,
+)
 from django.db.models import F
 
 from cm.converters import core_type_to_model
 from cm.models import (
+    ActionHostGroup,
     Cluster,
     ClusterObject,
     Host,
@@ -51,13 +61,29 @@ from cm.services.job.inventory._types import (
 )
 
 
-def get_inventory_data(target: CoreObjectDescriptor, is_host_action: bool, delta: dict | None = None) -> dict:
+def get_inventory_data(target: ActionTargetDescriptor, is_host_action: bool, delta: dict | None = None) -> dict:
+    if target.type == ExtraActionTargetType.ACTION_HOST_GROUP:
+        group = ActionHostGroup.objects.prefetch_related("hosts", "object").get(id=target.id)
+        return _get_inventory_for_action_from_cluster_bundle(
+            object_=group.object,
+            delta=delta or {},
+            target_hosts=tuple((host.pk, host.fqdn) for host in group.hosts.all()),
+        )
+
     target_object = core_type_to_model(target.type).objects.get(id=target.id)
     if isinstance(target_object, HostProvider) or (isinstance(target_object, Host) and not is_host_action):
         return _get_inventory_for_action_from_hostprovider_bundle(object_=target_object)
 
+    target_hosts = ()
+    if isinstance(target_object, Host):
+        if not is_host_action:
+            message = "Only actions with `host_action: true` can be launched on host"
+            raise RuntimeError(message)
+
+        target_hosts = ((target_object.pk, target_object.fqdn),)
+
     return _get_inventory_for_action_from_cluster_bundle(
-        object_=target_object, is_host_action=is_host_action, delta=delta or {}
+        object_=target_object, delta=delta or {}, target_hosts=target_hosts
     )
 
 
@@ -84,16 +110,14 @@ def get_cluster_vars(topology: ClusterTopology) -> ClusterVars:
 
 
 def _get_inventory_for_action_from_cluster_bundle(
-    object_: Cluster | ClusterObject | ServiceComponent | Host, is_host_action: bool, delta: dict
+    object_: Cluster | ClusterObject | ServiceComponent | Host | ActionHostGroup,
+    delta: dict,
+    target_hosts: Iterable[tuple[HostID, HostName]],
 ) -> dict:
     host_groups: dict[HostGroupName, set[tuple[HostID, HostName]]] = {}
 
-    if isinstance(object_, Host):
-        if not is_host_action:
-            message = "Only actions with `host_action: true` can be launched on host"
-            raise RuntimeError(message)
-
-        host_groups["target"] = {(object_.pk, object_.fqdn)}
+    if target_hosts:
+        host_groups["target"] = set(target_hosts)
 
     if isinstance(object_, Cluster):
         cluster_topology = next(retrieve_clusters_topology([object_.pk]))

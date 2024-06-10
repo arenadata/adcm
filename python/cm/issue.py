@@ -535,11 +535,11 @@ def remove_concern_from_object(object_: ADCMEntity, concern: ConcernItem | None)
     )
 
 
-def lock_affected_objects(task: TaskLog, objects: Iterable[ADCMEntity]) -> None:
+def lock_affected_objects(task: TaskLog, objects: Iterable[ADCMEntity], lock_target: ADCMEntity | None = None) -> None:
     if task.lock:
         return
 
-    owner: ADCMEntity = task.task_object
+    owner: ADCMEntity = lock_target or task.task_object
     first_job = JobLog.obj.filter(task=task).order_by("id").first()
     delete_service_action = settings.ADCM_DELETE_SERVICE_ACTION_NAME
     custom_name = delete_service_action if task.action.name == delete_service_action else ""

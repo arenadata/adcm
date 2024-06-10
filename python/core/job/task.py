@@ -16,11 +16,11 @@ from cm.services.job.jinja_scripts import get_job_specs_from_template
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.job.errors import TaskCreateError
 from core.job.repo import ActionRepoInterface, JobRepoInterface
-from core.types import ActionID, CoreObjectDescriptor
+from core.types import ActionID, ActionTargetDescriptor, CoreObjectDescriptor
 
 
 def compose_task(
-    target: CoreObjectDescriptor,
+    target: ActionTargetDescriptor,
     owner: CoreObjectDescriptor,
     action: ActionID,
     payload: TaskPayloadDTO,
