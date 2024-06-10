@@ -550,7 +550,7 @@ class TestUserAPI(BaseAPITestCase):
             HTTP_200_OK,
         )
 
-    def test_update_remove_from_groups_bug_adcm_5355(self) -> None:
+    def test_adcm_5355_update_remove_from_groups_bug(self) -> None:
         group_2 = Group.objects.create(name="test_group_2")
         user = self.create_user(
             user_data={"username": "somebody", "password": "very_long_veryvery", "groups": [{"id": self.group.pk}]}
@@ -764,7 +764,7 @@ class TestUserAPI(BaseAPITestCase):
         self.assertEqual(len(response.json()["results"]), 1)
         self.assertEqual(response.json()["results"][0]["username"], target_user.username)
 
-    def test_list_users_when_auth_group_has_no_rbac_group_bug_adcm_5495(self) -> None:
+    def test_adcm_5495_list_users_when_auth_group_has_no_rbac_group_bug(self) -> None:
         user = self.create_user(user_data={"username": "test_user", "password": "test_user_password"})
         # In regular usage it's not the case that there are `auth_group` without corresponding `rbac_group`,
         # but this bug was originated from such situation.

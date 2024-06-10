@@ -220,9 +220,7 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):
         self.assertEqual(self.host, Host.objects.get(id=self.host.pk))
         self.assertNotIn(self.host, self.cluster_1_group_config.hosts.all())
 
-    def test_config_description_inheritance(self):
-        """ADCM-5199"""
-
+    def test_adcm_5199_config_description_inheritance(self):
         config_data = {
             "config": {
                 "activatable_group": {"integer": 500},
@@ -525,9 +523,7 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):
         self.assertEqual(len(response.json()), 1)
         self.assertEqual(response.json()[0]["name"], self.host_for_service.name)
 
-    def test_config_description_inheritance(self):
-        """ADCM-5199"""
-
+    def test_adcm_5199_config_description_inheritance(self):
         config_data = {
             "config": {
                 "group": {"password": "new_password"},
@@ -761,9 +757,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):
         self.assertIn(self.host, self.service_1_group_config.hosts.all())
         self.assertNotIn(self.host, self.component_1_group_config.hosts.all())
 
-    def test_config_description_inheritance(self):
-        """ADCM-5199"""
-
+    def test_adcm_5199_config_description_inheritance(self):
         config_data = {
             "config": {
                 "group": {"file": "new_content"},
@@ -953,9 +947,7 @@ class TestHostProviderGroupConfig(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertNotIn(self.host, self.group_config.hosts.all())
 
-    def test_config_description_inheritance(self):
-        """ADCM-5199"""
-
+    def test_adcm_5199_config_description_inheritance(self):
         config_data = {
             "config": {
                 "group": {"map": {"integer_key": "99", "string_key": "new_string"}},

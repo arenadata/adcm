@@ -26,7 +26,7 @@ class TestJinjaConfigBugs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
 
         self.bugs_bundle_dir = Path(__file__).parent / "bundles" / "bugs"
 
-    def test_incorrect_path_bug_adcm_5556(self) -> None:
+    def test_adcm_5556_incorrect_path_bug(self) -> None:
         expected_full_limits = {
             "root": {
                 "match": "dict_key_selection",
