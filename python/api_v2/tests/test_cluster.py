@@ -17,6 +17,7 @@ from cm.api import add_hc
 from cm.models import (
     Action,
     ADCMEntityStatus,
+    AnsibleConfig,
     Cluster,
     ClusterObject,
     Host,
@@ -27,6 +28,7 @@ from cm.models import (
 from cm.services.status.client import FullStatusMap
 from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.utils import gen_component, gen_host, gen_service, generate_hierarchy
+from django.contrib.contenttypes.models import ContentType
 from guardian.models import GroupObjectPermission
 from rbac.models import User
 from rest_framework.status import (
@@ -341,6 +343,52 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(response.json()[0]["name"], service_prototype.name)
         self.assertEqual(ClusterObject.objects.get(cluster_id=self.cluster_1.pk).name, "service_1")
+
+    def test_retrieve_ansible_config_success(self):
+        expected_response = {"adcmMeta": {}, "config": {"defaults": {"forks": 5}}}
+
+        response = self.client.v2[self.cluster_1, "ansible-config"].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json(), expected_response)
+
+    def test_retrieve_ansible_config_fail(self):
+        response = (self.client.v2 / "clusters" / str(self.get_non_existent_pk(model=Cluster)) / "ansible-config").get()
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_update_ansible_config_success(self):
+        response = self.client.v2[self.cluster_1, "ansible-config"].post(data={"config": {"defaults": {"forks": 13}}})
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        ansible_config = AnsibleConfig.objects.get(
+            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get_for_model(model=self.cluster_1),
+        )
+        self.assertDictEqual(ansible_config.value, {"defaults": {"forks": "13"}})
+
+    def test_update_ansible_config_fail(self):
+        ansible_config = AnsibleConfig.objects.get(
+            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get_for_model(model=self.cluster_1),
+        )
+
+        for value in (
+            {"defaults": {"forks": 0}},
+            {"defaults": {"forks": "13"}},
+            {"defaults": {"forks": "13.0"}},
+            {"defaults": {"forks": 13, "stdout_callback": "not_yaml"}},
+            {"defaults": {"not_forks": "not_13"}},
+            {"defaults": {}},
+            {"not_defaults": {}},
+        ):
+            with self.subTest(value=value):
+                response = self.client.v2[self.cluster_1, "ansible-config"].post(data={"config": value})
+
+                self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+                ansible_config.refresh_from_db()
+                self.assertDictEqual(ansible_config.value, {"defaults": {"forks": "5"}})
 
 
 class TestClusterActions(BaseAPITestCase):

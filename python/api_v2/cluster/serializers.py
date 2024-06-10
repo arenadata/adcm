@@ -13,6 +13,7 @@
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
 from cm.models import (
+    AnsibleConfig,
     Cluster,
     ClusterObject,
     Host,
@@ -24,11 +25,12 @@ from cm.upgrade import get_upgrade
 from cm.validators import ClusterUniqueValidator, StartMidEndValidator
 from django.conf import settings
 from drf_spectacular.utils import extend_schema_field
-from rest_framework.fields import CharField, IntegerField
+from rest_framework.fields import CharField, DictField, IntegerField
 from rest_framework.serializers import (
     BooleanField,
     ModelSerializer,
     SerializerMethodField,
+    ValidationError,
 )
 
 from api_v2.cluster.utils import get_depend_on
@@ -195,3 +197,43 @@ class ClusterStatusSerializer(WithStatusSerializer):
     class Meta:
         model = Cluster
         fields = ["id", "name", "state", "status"]
+
+
+class AnsibleConfigUpdateSerializer(EmptySerializer):
+    config = DictField(write_only=True)
+
+    @staticmethod
+    def validate_config(value: dict) -> dict:
+        if set(value) != {"defaults"}:
+            raise ValidationError("Only `defaults` section can be modified")
+
+        defaults = value["defaults"]
+
+        if set(defaults) != {"forks"}:
+            raise ValidationError("Only `defaults.forks` parameter can be modified")
+
+        if not isinstance(defaults["forks"], int) or defaults["forks"] < 1:
+            raise ValidationError("`defaults.forks` parameter must be an integer greater than 0")
+
+        defaults["forks"] = str(defaults["forks"])
+        value["defaults"] = defaults
+
+        return value
+
+
+class AnsibleConfigRetrieveSerializer(ModelSerializer):
+    config = DictField(source="value", read_only=True)
+    adcm_meta = SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = AnsibleConfig
+        fields = ["config", "adcm_meta"]
+
+    def get_adcm_meta(self, instance: AnsibleConfig) -> dict:  # noqa: ARG002
+        return {}
+
+    def to_representation(self, instance: AnsibleConfig) -> dict:
+        data = super().to_representation(instance=instance)
+        data["config"]["defaults"]["forks"] = int(data["config"]["defaults"]["forks"])
+
+        return data
