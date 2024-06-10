@@ -104,6 +104,7 @@
       type: job
       script: ./playbook.yaml
       script_type: ansible
+      allow_for_action_host_group: true
       states:
         available: any
 
@@ -114,6 +115,7 @@
     with_config_on_host:
       <<: *job
       config: *config
+      allow_for_action_host_group: false
       host_action: true
 
     name_and_pass:
@@ -135,6 +137,7 @@
     with_jinja:
       script: ./playbool.yaml
       script_type: ansible
+      allow_for_action_host_group: true
       config_jinja: action.j2
       states:
         available: any

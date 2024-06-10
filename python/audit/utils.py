@@ -51,7 +51,7 @@ from cm.models import (
     get_model_by_type,
 )
 from core.job.types import ExecutionStatus
-from core.types import ADCMCoreType, NamedCoreObject
+from core.types import ADCMCoreType, NamedActionObject
 from django.contrib.auth.models import User as DjangoUser
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import Model, ObjectDoesNotExist
@@ -623,17 +623,19 @@ def get_client_ip(request: WSGIRequest) -> str | None:
     return host
 
 
-def audit_job_finish(owner: NamedCoreObject, display_name: str, is_upgrade: bool, job_result: ExecutionStatus) -> None:
+def audit_job_finish(
+    target: NamedActionObject, display_name: str, is_upgrade: bool, job_result: ExecutionStatus
+) -> None:
     operation_name = f"{display_name} {'upgrade' if is_upgrade else 'action'} completed"
 
-    if owner.type == ADCMCoreType.HOSTPROVIDER:
+    if target.type == ADCMCoreType.HOSTPROVIDER:
         obj_type = AuditObjectType.PROVIDER
     else:
-        obj_type = AuditObjectType(owner.type.value)
+        obj_type = AuditObjectType(target.type.value)
 
     audit_object = get_or_create_audit_obj(
-        object_id=str(owner.id),
-        object_name=owner.name,
+        object_id=str(target.id),
+        object_name=target.name,
         object_type=obj_type,
     )
     operation_result = (

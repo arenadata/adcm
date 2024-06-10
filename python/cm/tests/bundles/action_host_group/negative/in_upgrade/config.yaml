@@ -1,0 +1,22 @@
+- type: cluster
+  version: 2
+  name: "cl"
+
+  upgrade:
+    - name: cool
+      versions:
+        min: '1.0'
+        max: '2.0'
+      states:
+        available: any
+      allow_for_action_host_group: false
+      scripts:
+        - name: pre
+          script: ./playbook.yaml
+          script_type: ansible
+        - name: switch
+          script: bundle_switch
+          script_type: internal
+        - name: post
+          script: ./playbook.yaml
+          script_type: ansible

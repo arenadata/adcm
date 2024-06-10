@@ -14,7 +14,7 @@ from typing import Collection, Iterable, Protocol
 
 from core.job.dto import JobUpdateDTO, LogCreateDTO, TaskMutableFieldsDTO, TaskPayloadDTO, TaskUpdateDTO
 from core.job.types import ActionInfo, Job, JobSpec, Task
-from core.types import ActionID, CoreObjectDescriptor
+from core.types import ActionID, ActionTargetDescriptor, CoreObjectDescriptor
 
 
 class JobRepoInterface(Protocol):
@@ -22,7 +22,7 @@ class JobRepoInterface(Protocol):
         """Should raise `NotFoundError` on fail"""
 
     def create_task(
-        self, target: CoreObjectDescriptor, owner: CoreObjectDescriptor, action: ActionInfo, payload: TaskPayloadDTO
+        self, target: ActionTargetDescriptor, owner: CoreObjectDescriptor, action: ActionInfo, payload: TaskPayloadDTO
     ) -> Task:
         ...
 
