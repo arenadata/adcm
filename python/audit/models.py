@@ -95,6 +95,7 @@ class AuditLog(Model):
     user = ForeignKey(AuditUser, on_delete=CASCADE, null=True)
     object_changes = JSONField(default=dict)
     address = CharField(max_length=255, null=True)
+    agent = CharField(max_length=255, null=True)
 
 
 class AuditSession(Model):
@@ -103,6 +104,7 @@ class AuditSession(Model):
     login_time = DateTimeField(auto_now_add=True)
     login_details = JSONField(default=dict, null=True)
     address = CharField(max_length=255, null=True)
+    agent = CharField(max_length=255, null=True)
 
 
 @dataclass

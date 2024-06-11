@@ -572,6 +572,7 @@ def audit(func):
                 user=audit_user,
                 object_changes=object_changes,
                 address=get_client_ip(request=request),
+                agent=get_client_agent(request=request),
             )
             cef_logger(audit_instance=auditlog, signature_id=resolve(request.path).route)
 
@@ -621,7 +622,14 @@ def get_client_ip(request: WSGIRequest) -> str | None:
             break
 
     return host
+    
 
+def get_client_agent(request: WSGIRequest) -> str | None:
+    user_agent = request.META.get("HTTP_USER_AGENT")
+    if user_agent:
+        return user_agent[:255]
+    return None
+    
 
 def audit_job_finish(owner: NamedCoreObject, display_name: str, is_upgrade: bool, job_result: ExecutionStatus) -> None:
     operation_name = f"{display_name} {'upgrade' if is_upgrade else 'action'} completed"
