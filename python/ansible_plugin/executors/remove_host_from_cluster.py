@@ -15,12 +15,13 @@ from typing import Collection
 from cm.api import remove_host_from_cluster
 from cm.models import Host
 from core.types import ADCMCoreType, CoreObjectDescriptor
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
 from typing_extensions import Self
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
     ArgumentsConfig,
+    BaseStrictModel,
     CallResult,
     ContextConfig,
     PluginExecutorConfig,
@@ -32,7 +33,7 @@ from ansible_plugin.errors import (
 )
 
 
-class RemoveHostFromClusterArguments(BaseModel):
+class RemoveHostFromClusterArguments(BaseStrictModel):
     fqdn: str | None = None
     host_id: int | None = None
 

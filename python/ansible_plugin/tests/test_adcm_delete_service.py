@@ -54,6 +54,23 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         self.assertTrue(ClusterObject.objects.filter(pk=self.service_2.pk).exists())
         self.assertEqual(HostComponent.objects.filter(cluster_id=self.cluster.pk).count(), 0)
 
+    def test_delete_service_forbidden_arg_fail(self) -> None:
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        executor = self.prepare_executor(
+            executor_type=ADCMDeleteServicePluginExecutor,
+            call_arguments="""
+                service: service_1
+                argument: value
+            """,
+            call_context=job,
+        )
+
+        result = executor.execute()
+
+        self.assertIsNotNone(result.error)
+        self.assertTrue(ClusterObject.objects.filter(pk=self.service_1.pk).exists())
+
     def test_delete_service_from_own_context(self) -> None:
         task = self.prepare_task(owner=self.service_2, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)

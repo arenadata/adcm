@@ -17,12 +17,13 @@ from cm.logger import logger
 from cm.models import CheckLog, GroupCheckLog, JobLog, LogStorage
 from core.types import CoreObjectDescriptor
 from django.db.transaction import atomic
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
 from typing_extensions import Self
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
     ArgumentsConfig,
+    BaseStrictModel,
     CallArguments,
     CallResult,
     PluginExecutorConfig,
@@ -34,7 +35,7 @@ from ansible_plugin.errors import (
 from ansible_plugin.utils import assign_view_logstorage_permissions_by_job
 
 
-class CheckArguments(BaseModel):
+class CheckArguments(BaseStrictModel):
     title: str
     result: bool
     msg: str | None = None

@@ -20,12 +20,13 @@ from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 from cm.status_api import send_config_creation_event
 from core.types import CoreObjectDescriptor
 from django.db.transaction import atomic
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
 from typing_extensions import Self
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
     ArgumentsConfig,
+    BaseStrictModel,
     BaseTypedArguments,
     CallResult,
     PluginExecutorConfig,
@@ -43,7 +44,7 @@ ParamValue: TypeAlias = Any
 OriginalValues: TypeAlias = ConfigAttrPair
 
 
-class ParameterToChange(BaseModel):
+class ParameterToChange(BaseStrictModel):
     key: str
     value: ParamValue = None
     active: bool | None = None

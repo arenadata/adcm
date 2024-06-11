@@ -173,6 +173,25 @@ class TestRemoveHostFromClusterPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugin
         self.assertIsInstance(result.error, PluginValidationError)
         self.assertIn("either `fqdn` or `host_id` have to be specified", result.error.message)
 
+    def test_remove_host_from_cluster_forbidden_arg_fail(self) -> None:
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=ADCMRemoveHostFromClusterPluginExecutor,
+            call_arguments=f"""
+                host_id: {self.host_1.id}
+                argument: value
+            """,
+            call_context=job,
+        )
+        result = executor.execute()
+
+        self.assertIsNotNone(result.error)
+        self.assertFalse(result.changed)
+        self.host_1.refresh_from_db()
+        self.assertIsNotNone(self.host_1.cluster_id)
+
     def test_remove_host_from_cluster_wrong_arguments_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
@@ -187,7 +206,6 @@ class TestRemoveHostFromClusterPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugin
         result = executor.execute()
 
         self.assertIsInstance(result.error, PluginValidationError)
-        self.assertIn("either `fqdn` or `host_id` have to be specified", result.error.message)
 
     def test_remove_host_from_cluster_no_host_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")

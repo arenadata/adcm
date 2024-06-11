@@ -38,6 +38,11 @@ from ansible_plugin.errors import (
     PluginValidationError,
 )
 
+
+class BaseStrictModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
 # Input
 
 
@@ -95,7 +100,7 @@ class RuntimeEnvironment(BaseModel):
 # Target
 
 
-class ObjectWithType(BaseModel):
+class ObjectWithType(BaseStrictModel):
     type: TargetTypeLiteral
 
     @field_validator("type", mode="before")
@@ -133,13 +138,11 @@ class CoreObjectTargetDescription(ObjectWithType):
 
 
 class BaseTypedArguments(CoreObjectTargetDescription):
-    model_config = ConfigDict(extra="forbid")
+    pass
 
 
-class BaseArgumentsWithTypedObjects(BaseModel):
+class BaseArgumentsWithTypedObjects(BaseStrictModel):
     objects: list[CoreObjectTargetDescription] = Field(default_factory=list)
-
-    model_config = ConfigDict(extra="forbid")
 
 
 class TargetDetector(Protocol):

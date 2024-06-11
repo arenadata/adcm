@@ -49,6 +49,25 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         self.assertIsNone(None)
         self.assertTrue(result.changed)
 
+    def test_adcm_check_forbidden_arg_fail(self) -> None:
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=ADCMCheckPluginExecutor,
+            call_arguments="""
+                title: title
+                result: true
+                msg: test_message
+                extraarg: somevalue
+            """,
+            call_context=job,
+        )
+        result = executor.execute()
+
+        self.assertIsNotNone(result.error)
+        self.assertFalse(result.changed)
+
     def test_adcm_check_no_title_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
