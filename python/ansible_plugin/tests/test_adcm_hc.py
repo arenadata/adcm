@@ -69,6 +69,49 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
                 self.assertEqual(len(actual_hc), 2)
                 self.assertListEqual(actual_hc, expected_hc)
 
+    def test_simple_call_forbidden_arg_fail(self) -> None:
+        self.set_hostcomponent(
+            cluster=self.cluster,
+            entries=((self.host_1, self.component_1),),
+        )
+        hostcomponent = self.get_current_hc_dicts()
+        self.assertEqual(len(hostcomponent), 1)
+        expected_hc = [hostcomponent[0]]
+
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        extra_arg_outer = f"""
+        test: arg
+        operations:
+          - action: add
+            service: {self.service_1.name}
+            component: {self.component_1.name}
+            host: {self.host_2.fqdn}
+        """
+        extra_arg_inner = f"""
+        operations:
+          - action: add
+            test: arg
+            service: {self.service_1.name}
+            component: {self.component_1.name}
+            host: {self.host_2.fqdn}
+        """
+        for invalid_args in (extra_arg_outer, extra_arg_inner):
+            with self.subTest(call_arguments=invalid_args):
+                executor = self.prepare_executor(
+                    executor_type=ADCMHostComponentPluginExecutor,
+                    call_arguments=invalid_args,
+                    call_context=job,
+                )
+
+                result = executor.execute()
+                self.assertIsNotNone(result.error)
+
+                actual_hc = sorted(self.get_current_hc_dicts(), key=itemgetter("host_id"))
+                self.assertEqual(len(actual_hc), 1)
+                self.assertListEqual(actual_hc, expected_hc)
+
     def test_complex_call_success(self) -> None:
         service_2 = self.add_services_to_cluster(["service_2"], cluster=self.cluster).get()
         component_2 = self.service_1.servicecomponent_set.get(prototype__name="component_2")

@@ -16,11 +16,11 @@ from cm.api import delete_service, save_hc
 from cm.models import ClusterBind, ClusterObject, HostComponent
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
-from pydantic import BaseModel
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
     ArgumentsConfig,
+    BaseStrictModel,
     CallResult,
     ContextConfig,
     PluginExecutorConfig,
@@ -29,7 +29,7 @@ from ansible_plugin.base import (
 from ansible_plugin.errors import PluginRuntimeError, PluginTargetDetectionError
 
 
-class DeleteServiceArguments(BaseModel):
+class DeleteServiceArguments(BaseStrictModel):
     service: str | None = None
 
 

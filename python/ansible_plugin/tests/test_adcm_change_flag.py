@@ -236,6 +236,19 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         self.assertIsNotNone(result.error)
         self.assertIn("`name` should be at least 1 symbol", result.error.message)
 
+    def test_forbidden_arg_fail(self):
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=ADCMChangeFlagPluginExecutor,
+            call_arguments={"operation": "up", "name": "adcm_outdated_config", "test": "arg"},
+            call_context=job,
+        )
+        result = executor.execute()
+
+        self.assertIsNotNone(result.error)
+
     def test_hierarchy_is_updated_on_raise(self) -> None:
         flag_name = "custom"
 

@@ -17,11 +17,11 @@ from cm.models import HostProvider, Prototype
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db import IntegrityError
 from django.db.transaction import atomic
-from pydantic import BaseModel
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
     ArgumentsConfig,
+    BaseStrictModel,
     CallResult,
     ContextConfig,
     PluginExecutorConfig,
@@ -31,7 +31,7 @@ from ansible_plugin.base import (
 from ansible_plugin.errors import PluginRuntimeError
 
 
-class AddHostArguments(BaseModel):
+class AddHostArguments(BaseStrictModel):
     fqdn: str
     description: str = ""
 

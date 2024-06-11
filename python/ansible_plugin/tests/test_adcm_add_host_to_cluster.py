@@ -104,6 +104,22 @@ class TestAddHostToClusterPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         self.host_1.refresh_from_db()
         self.assertIsNone(self.host_1.cluster_id)
 
+    def test_forbidden_arg_fail(self):
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        executor = self.prepare_executor(
+            executor_type=ADCMAddHostToClusterPluginExecutor,
+            call_arguments={"host_id": self.host_2.id, "some": "argument"},
+            call_context=job,
+        )
+
+        result = executor.execute()
+
+        self.assertIsNotNone(result.error)
+        self.assertFalse(result.changed)
+        self.host_2.refresh_from_db()
+        self.assertIsNone(self.host_2.cluster_id)
+
     def test_absent_arguments_call_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)

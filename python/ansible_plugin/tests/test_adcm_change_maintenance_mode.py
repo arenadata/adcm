@@ -127,3 +127,21 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
 
                 self.assertIsInstance(result.error, PluginValidationError)
                 self.assertIn(f"plugin can't be called to change {type_}'s MM", result.error.message)
+
+    def test_forbidden_arg_fail(self):
+        self.host_1.maintenance_mode = MaintenanceMode.CHANGING
+        self.host_1.save()
+
+        task = self.prepare_task(owner=self.host_1, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=ADCMChangeMMExecutor,
+            call_arguments={"type": "host", "value": True, "arg": "ument"},
+            call_context=job,
+        )
+
+        result = executor.execute()
+        self.assertIsNotNone(result.error)
+        self.host_1.refresh_from_db()
+        self.assertEqual(self.host_1.maintenance_mode, MaintenanceMode.CHANGING)

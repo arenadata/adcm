@@ -98,6 +98,26 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
             self.assertTrue(result.changed)
             self.assertEqual(result.value, {"host_id": Host.objects.get(fqdn=fqdn).id})
 
+    def test_add_host_forbidden_arg_fail(self):
+        task = self.prepare_task(owner=self.target_provider, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=ADCMAddHostPluginExecutor,
+            call_arguments="""
+                fqdn: special
+                test: arg
+                description: this is the best host ever
+            """,
+            call_context=job,
+        )
+
+        with patch(f"{EXECUTOR_MODULE}.add_host") as add_host_mock:
+            result = executor.execute()
+
+        self.assertIsNotNone(result.error)
+        add_host_mock.assert_not_called()
+
     def test_duplicate_fqdn_fail(self) -> None:
         task = self.prepare_task(owner=self.target_provider, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
