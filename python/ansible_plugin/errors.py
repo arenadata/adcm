@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pydantic import ValidationError
+
 
 class ADCMPluginError(Exception):
     def __init__(self, message: str):
@@ -39,3 +41,7 @@ class PluginContextError(ADCMPluginError):
 
 class PluginIncorrectCallError(ADCMPluginError):
     ...
+
+
+def compose_validation_error_details_message(err: ValidationError) -> str:
+    return "\n".join(f"\t{'.'.join(error['loc'])} - {error['msg']}" for error in err.errors())

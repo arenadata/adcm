@@ -14,6 +14,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Any, Collection, Generic, Literal, Mapping, Protocol, TypeAlias, TypeVar
 import fcntl
+import traceback
 
 try:  # TODO: refactor when python >= 3.11
     from typing import Self
@@ -36,6 +37,7 @@ from ansible_plugin.errors import (
     PluginRuntimeError,
     PluginTargetDetectionError,
     PluginValidationError,
+    compose_validation_error_details_message,
 )
 
 
@@ -132,9 +134,13 @@ class CoreObjectTargetDescription(ObjectWithType):
                 raise PluginTargetDetectionError(f"Unsupported type: {self.type}")
 
         if error_fields := [field for field in forbidden if getattr(self, field) is not None]:
-            raise ValidationError(f"{', '.join(error_fields)} option(s) is not allowed for {self.type} type")
+            message = f"{', '.join(error_fields)} option(s) is not allowed for {self.type} type"
+            raise ValueError(message)
 
         return self
+
+    def __str__(self) -> str:
+        return ", ".join(f"{key}='value'" for key, value in self.model_dump(exclude_none=True))
 
 
 class BaseTypedArguments(CoreObjectTargetDescription):
@@ -215,7 +221,7 @@ def _from_target_description(
             if context.service_id:
                 return CoreObjectDescriptor(id=context.service_id, type=ADCMCoreType.SERVICE)
 
-            message = f"Can't identify service based on {target_description=}"
+            message = f"Can't identify service based on arguments: {target_description}"
             raise PluginRuntimeError(message=message)
 
         case "component":
@@ -244,7 +250,7 @@ def _from_target_description(
             if context.component_id:
                 return CoreObjectDescriptor(id=context.component_id, type=ADCMCoreType.COMPONENT)
 
-            message = f"Can't identify component based on {target_description=}"
+            message = f"Can't identify component based on arguments: {target_description}"
             raise PluginRuntimeError(message=message)
 
         case "provider":
@@ -434,7 +440,13 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
         except ADCMPluginError as err:
             return CallResult(value={}, changed=False, error=err)
         except Exception as err:  # noqa: BLE001
-            message = f"Unhandled exception occurred during {self.__class__.__name__} call: {err}"
+            message = "\n".join(
+                (
+                    f"Unhandled exception {err.__class__.__name__} occurred during {self.__class__.__name__} call.",
+                    f"Message : {err}",
+                    f"\n{traceback.format_exc()}",
+                )
+            )
             return CallResult(value={}, changed=False, error=PluginRuntimeError(message=message))
 
         return result
@@ -443,7 +455,8 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
         try:
             arguments = self._config.arguments.represent_as(**self._raw_arguments)
         except ValidationError as err:
-            message = f"Arguments doesn't match expected schema:\n{err}"
+            field_errors = compose_validation_error_details_message(err)
+            message = f"Arguments doesn't match expected schema:\n{field_errors}"
             raise PluginValidationError(message=message) from err
 
         for validator in self._config.arguments.validators:
@@ -454,7 +467,8 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
         try:
             ansible_vars = AnsibleRuntimeVars(**self._raw_vars)
         except ValidationError as err:
-            message = f"Ansible variables doesn't match expected schema:\n{err}"
+            field_errors = compose_validation_error_details_message(err)
+            message = f"Ansible variables doesn't match expected schema:\n{field_errors}"
             raise PluginValidationError(message=message) from err
 
         return arguments, ansible_vars
