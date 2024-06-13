@@ -16,7 +16,7 @@ from cm.converters import orm_object_to_core_type
 from cm.models import Host, Prototype, ServiceComponent
 from cm.services.job.run.repo import JobRepoImpl
 
-from ansible_plugin.errors import PluginContextError, PluginRuntimeError
+from ansible_plugin.errors import PluginContextError, PluginRuntimeError, PluginValidationError
 from ansible_plugin.executors.add_host import ADCMAddHostPluginExecutor
 from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
@@ -115,7 +115,8 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         with patch(f"{EXECUTOR_MODULE}.add_host") as add_host_mock:
             result = executor.execute()
 
-        self.assertIsNotNone(result.error)
+        self.assertIsInstance(result.error, PluginValidationError)
+        self.assertIn("test - Extra inputs are not permitted", result.error.message)
         add_host_mock.assert_not_called()
 
     def test_duplicate_fqdn_fail(self) -> None:
