@@ -68,7 +68,7 @@ class GetParentObjectMixin:
                 parent_object = GroupConfig.objects.get(
                     pk=self.kwargs["group_config_pk"],
                     object_id=parent_object.pk,
-                    object_type=ContentType.objects.get_for_model(model=parent_object),
+                    object_type=ContentType.objects.get_for_model(model=parent_object.__class__),
                 )
 
         return parent_object

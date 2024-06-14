@@ -78,7 +78,7 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
                 name="simple", description="", owner=CoreObjectDescriptor(id=self.cluster.id, type=ADCMCoreType.CLUSTER)
             )
         )
-        self.action_group_service.set_hosts(group_id=group_id, hosts=(self.host_1.id, self.host_2.id))
+        self.action_group_service.add_hosts_to_group(group_id=group_id, hosts=(self.host_1.id, self.host_2.id))
         self.action_group = ActionHostGroup.objects.get(id=group_id)
 
     def test_run_action_success(self) -> None:
@@ -117,7 +117,7 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
                 name="simple", description="", owner=CoreObjectDescriptor(id=self.service.id, type=ADCMCoreType.SERVICE)
             )
         )
-        self.action_group_service.set_hosts(group_id=group_id, hosts=(self.host_1.id, self.host_2.id))
+        self.action_group_service.add_hosts_to_group(group_id=group_id, hosts=(self.host_1.id, self.host_2.id))
 
         action = Action.objects.get(prototype=self.service.prototype, name="dummy")
         action_group = ActionHostGroup.objects.get(id=group_id)
@@ -141,7 +141,7 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
                 owner=CoreObjectDescriptor(id=self.component.id, type=ADCMCoreType.COMPONENT),
             )
         )
-        self.action_group_service.set_hosts(group_id=group_id, hosts=(self.host_1.id, self.host_2.id))
+        self.action_group_service.add_hosts_to_group(group_id=group_id, hosts=(self.host_1.id, self.host_2.id))
 
         action = Action.objects.get(prototype=self.service.prototype, name="dummy")
         action_group = ActionHostGroup.objects.get(id=group_id)

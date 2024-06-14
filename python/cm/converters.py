@@ -12,12 +12,13 @@
 
 from typing import TypeAlias
 
-from core.types import ADCMCoreType, ExtraActionTargetType
+from core.types import ADCMCoreType, ADCMHostGroupType, ExtraActionTargetType
 from django.db.models import Model
 
-from cm.models import ADCM, ActionHostGroup, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from cm.models import ADCM, ActionHostGroup, Cluster, ClusterObject, GroupConfig, Host, HostProvider, ServiceComponent
 
 CoreObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+GroupObject: TypeAlias = GroupConfig | ActionHostGroup
 
 
 def core_type_to_model(core_type: ADCMCoreType) -> type[CoreObject | ADCM]:
@@ -36,6 +37,16 @@ def core_type_to_model(core_type: ADCMCoreType) -> type[CoreObject | ADCM]:
             return ADCM
         case _:
             raise ValueError(f"Can't convert {core_type} to ORM model")
+
+
+def host_group_type_to_model(host_group_type: ADCMHostGroupType) -> type[GroupObject]:
+    if host_group_type == ADCMHostGroupType.CONFIG:
+        return GroupConfig
+
+    if host_group_type == ADCMHostGroupType.ACTION:
+        return ActionHostGroup
+
+    raise ValueError(f"Can't convert {host_group_type} to ORM model")
 
 
 def core_type_to_db_record_type(core_type: ADCMCoreType) -> str:

@@ -16,14 +16,7 @@ from rest_framework.serializers import ModelSerializer
 
 from api_v2.action.serializers import ActionNameSerializer
 
-OBJECT_ORDER = {
-    "adcm": 0,
-    "cluster": 1,
-    "service": 2,
-    "component": 3,
-    "provider": 4,
-    "host": 5,
-}
+OBJECT_ORDER = {"adcm": 0, "cluster": 1, "service": 2, "component": 3, "provider": 4, "host": 5, "action_host_group": 6}
 
 
 class JobListSerializer(ModelSerializer):

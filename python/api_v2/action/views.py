@@ -15,11 +15,12 @@ from itertools import compress
 from adcm.mixins import GetParentObjectMixin
 from audit.utils import audit
 from cm.errors import AdcmEx
-from cm.models import ADCM, Action, ConcernType, Host, HostComponent, PrototypeConfig
+from cm.models import ADCM, Action, ActionHostGroup, ConcernType, Host, HostComponent, PrototypeConfig
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.stack import check_hostcomponents_objects_exist
 from django.conf import settings
-from django.db.models import Q
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q, QuerySet
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from jinja_config import get_jinja_config
@@ -119,6 +120,12 @@ _schema_common_filters = (
 class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, CamelCaseGenericViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ActionFilter
+    general_queryset = (
+        Action.objects.select_related("prototype")
+        .exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET)
+        .filter(upgrade__isnull=True)
+        .order_by("pk")
+    )
 
     def get_queryset(self, *args, **kwargs):  # noqa: ARG002
         if self.parent_object is None or self.parent_object.concerns.filter(type=ConcernType.LOCK).exists():
@@ -135,16 +142,9 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
                 self.prototype_objects[hc_item.service.prototype] = hc_item.service
                 self.prototype_objects[hc_item.component.prototype] = hc_item.component
 
-        actions = (
-            Action.objects.all()
-            .select_related("prototype")
-            .exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET)
-            .filter(upgrade__isnull=True)
-            .filter(
-                Q(prototype=self.parent_object.prototype, host_action=False)
-                | Q(prototype__in=self.prototype_objects.keys(), host_action=True)
-            )
-            .order_by("pk")
+        actions = self.general_queryset.filter(
+            Q(prototype=self.parent_object.prototype, host_action=False)
+            | Q(prototype__in=self.prototype_objects.keys(), host_action=True)
         )
 
         self.prototype_objects[self.parent_object.prototype] = self.parent_object
@@ -308,3 +308,26 @@ class AdcmActionViewSet(ActionViewSet):
     def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         self.parent_object = self.get_parent_object()
         return self._list_actions_available_to_user(request)
+
+
+class ActionHostGroupActionViewSet(ActionViewSet):
+    def get_parent_object(self) -> ActionHostGroup | None:
+        if "action_host_group_pk" not in self.kwargs:
+            return None
+
+        parent = super().get_parent_object()
+
+        return (
+            ActionHostGroup.objects.prefetch_related("object__prototype")
+            .filter(
+                pk=self.kwargs["action_host_group_pk"],
+                object_id=parent.pk,
+                object_type=ContentType.objects.get_for_model(model=parent.__class__),
+            )
+            .first()
+        )
+
+    def get_queryset(self, *_, **__) -> QuerySet:
+        group_owner = self.parent_object.object
+        self.prototype_objects = {group_owner.prototype: group_owner}
+        return self.general_queryset.filter(prototype=group_owner.prototype, allow_for_action_host_group=True)

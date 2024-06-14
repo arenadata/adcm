@@ -1,0 +1,43 @@
+- type: cluster
+  name: with_action_host_group
+  version: 2
+
+  actions: &actions
+    regular: &job
+      type: job
+      script: ./stuff.yaml
+      script_type: ansible
+      masking:
+
+    on_host:
+      <<: *job
+      host_action: true
+
+    allowed_in_group_1: &allowed
+      <<: *job
+      allow_for_action_host_group: true
+
+- type: service
+  name: example
+  version: 3
+
+  actions:
+    <<: *actions
+
+    allowed_from_service: *allowed
+
+  components:
+    example:
+      actions:
+        <<: *actions
+
+        allowed_from_component: *allowed
+
+- type: service
+  name: second
+  version: 4
+
+  components:
+    c1: {}
+    c2: {}
+
