@@ -50,4 +50,8 @@ class Migration(migrations.Migration):
                 "abstract": False,
             },
         ),
+        migrations.AlterUniqueTogether(
+            name="actionhostgroup",
+            unique_together={("object_id", "object_type", "name")},
+        ),
     ]

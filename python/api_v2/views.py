@@ -10,11 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Collection
+from functools import wraps
+from typing import Callable, Collection
 
+from cm.converters import core_type_to_model, host_group_type_to_model
 from cm.models import Cluster, ClusterObject, Host, ServiceComponent
 from cm.services.status.client import retrieve_status_map
 from cm.status_api import get_raw_status
+from core.types import ADCMCoreType, ADCMHostGroupType, CoreObjectDescriptor, HostGroupDescriptor
+from django.contrib.contenttypes.models import ContentType
 from djangorestframework_camel_case.parser import (
     CamelCaseFormParser,
     CamelCaseJSONParser,
@@ -24,6 +28,7 @@ from djangorestframework_camel_case.render import (
     CamelCaseBrowsableAPIRenderer,
     CamelCaseJSONRenderer,
 )
+from rest_framework.exceptions import NotFound
 from rest_framework.mixins import (
     CreateModelMixin,
     DestroyModelMixin,
@@ -123,3 +128,127 @@ class ObjectWithStatusViewMixin(GenericViewSet):
             raise RuntimeError(message)
 
         return {**context, "status": get_raw_status(url=url)}
+
+
+# Parent extractor helpers
+
+
+class UndetectableParentError(RuntimeError):
+    ...
+
+
+class UndetectableHostGroupError(RuntimeError):
+    ...
+
+
+class NonExistingError(NotFound):
+    ...
+
+
+class NonExistingParentError(NonExistingError):
+    ...
+
+
+class NonExistingHostGroupError(NonExistingError):
+    ...
+
+
+def extract_core_object_from_lookup_kwargs(**kwargs) -> CoreObjectDescriptor:
+    lookup_keys = set(kwargs.keys())
+    extra_filter: dict = {}
+
+    if lookup_keys.issuperset({"component_pk", "service_pk", "cluster_pk"}):
+        parent = CoreObjectDescriptor(id=int(kwargs["component_pk"]), type=ADCMCoreType.COMPONENT)
+        extra_filter = {"service_id": kwargs["service_pk"], "cluster_id": kwargs["cluster_pk"]}
+
+    elif lookup_keys.issuperset({"service_pk", "cluster_pk"}):
+        parent = CoreObjectDescriptor(id=int(kwargs["service_pk"]), type=ADCMCoreType.SERVICE)
+        extra_filter = {"cluster_id": kwargs["cluster_pk"]}
+
+    elif lookup_keys.issuperset({"hostprovider_pk"}):
+        parent = CoreObjectDescriptor(id=int(kwargs["hostprovider_pk"]), type=ADCMCoreType.HOSTPROVIDER)
+
+    elif lookup_keys.issuperset({"host_pk"}):
+        parent = CoreObjectDescriptor(id=int(kwargs["host_pk"]), type=ADCMCoreType.HOST)
+        if "cluster_pk" in lookup_keys:
+            extra_filter = {"cluster_id": kwargs["cluster_pk"]}
+
+    elif lookup_keys.issuperset({"cluster_pk"}):
+        parent = CoreObjectDescriptor(id=int(kwargs["cluster_pk"]), type=ADCMCoreType.CLUSTER)
+
+    else:
+        message = "Failed to detect core parent based on given arguments"
+        raise UndetectableParentError(message)
+
+    if not core_type_to_model(parent.type).objects.filter(id=parent.id, **extra_filter).exists():
+        raise NonExistingParentError()
+
+    return parent
+
+
+def extract_host_group_from_lookup_kwargs_and_parent(parent: CoreObjectDescriptor, **kwargs) -> HostGroupDescriptor:
+    if "group_config_pk" in kwargs:
+        host_group = HostGroupDescriptor(id=int(kwargs["group_config_pk"]), type=ADCMHostGroupType.CONFIG)
+    elif "action_host_group_pk" in kwargs:
+        host_group = HostGroupDescriptor(id=int(kwargs["action_host_group_pk"]), type=ADCMHostGroupType.ACTION)
+    else:
+        message = "Failed to detect core parent based on given arguments"
+        raise UndetectableHostGroupError(message)
+
+    object_type = ContentType.objects.get_for_model(core_type_to_model(core_type=parent.type))
+    if (
+        not host_group_type_to_model(host_group_type=host_group.type)
+        .objects.filter(id=host_group.id, object_id=parent.id, object_type=object_type)
+        .exists()
+    ):
+        raise NonExistingHostGroupError()
+
+    return host_group
+
+
+def with_parent_object(func: Callable) -> Callable:
+    """
+    Decorator to extract "parent" object from kwargs (request lookup kwargs):
+      - parent is presented as instance of `CoreObjectDescriptor`
+      - if object is extracted and presented in DB, it is placed to a "parent" argument of wrapped func
+      - otherwise, an exception will be raised that descends from DRF's `NotFound`
+
+    If you'll need to put extracted parent not in "parent" kwarg,
+    make this function accepting arguments and let user specify where to put it.
+
+    If you'll need to not raise exception or raise another one,
+    make this function accepting callable in arguments that'll decide what to do,
+    then call in after catching the `NotFound` descendant exception.
+    """
+
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        parent = extract_core_object_from_lookup_kwargs(**kwargs)
+
+        return func(*args, parent=parent, **kwargs)
+
+    return wrapped
+
+
+def with_group_object(func: Callable) -> Callable:
+    """
+    Same as `with_parent_object`, but detects Action/Config Host Group and puts it to "host_group" argument.
+    Parent detection and existence will be checked too.
+    It'll be ensured that group is part of parent
+
+    Should be used like:
+
+    class SomeViewSet:
+        @with_group_object
+        def post(self, request, *args, parent: CoreObjectDescriptor, host_group: HostGroupDescriptor, **kwargs):
+            ...
+    """
+
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        parent = extract_core_object_from_lookup_kwargs(**kwargs)
+        host_group = extract_host_group_from_lookup_kwargs_and_parent(parent=parent, **kwargs)
+
+        return func(*args, parent=parent, host_group=host_group, **kwargs)
+
+    return wrapped

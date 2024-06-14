@@ -752,13 +752,16 @@ def auto_delete_config_with_servicecomponent(sender, instance, **kwargs):  # noq
         instance.config.delete()
 
 
-class ActionHostGroup(ADCMModel):
+class ActionHostGroup(models.Model):
     object_id = models.PositiveIntegerField(null=False)
     object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=False)
     object = GenericForeignKey("object_type", "object_id")
     name = models.CharField(max_length=150)
     description = models.CharField(max_length=255)
     hosts = models.ManyToManyField(Host)
+
+    class Meta:
+        unique_together = ["object_id", "object_type", "name"]
 
 
 class GroupConfig(ADCMModel):
@@ -1117,7 +1120,10 @@ class Action(AbstractAction):
 
         return state_allowed and multi_state_allowed
 
-    def get_start_impossible_reason(self, obj: ADCMEntity) -> str | None:
+    def get_start_impossible_reason(self, obj: ADCMEntity | ActionHostGroup) -> str | None:
+        if isinstance(obj, ActionHostGroup):
+            obj = obj.object
+
         if obj.prototype.type == "adcm":
             obj: ADCM
 

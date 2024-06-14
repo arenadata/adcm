@@ -244,6 +244,8 @@ ERRORS = {
     "CONFIG_OPTION_ERROR": ("error in config option type", HTTP_409_CONFLICT, ERR),
     "DATABASE_IS_LOCKED": ("SQLite not for production", HTTP_500_INTERNAL_SERVER_ERROR, ERR),
     "UNPROCESSABLE_ENTITY": ("Can't process data", HTTP_422_UNPROCESSABLE_ENTITY, ERR),
+    "CREATE_CONFLICT": ("Can't create object", HTTP_409_CONFLICT, ERR),
+    "HOST_GROUP_CONFLICT": ("Can't change hosts in group", HTTP_409_CONFLICT, ERR),
 }
 
 

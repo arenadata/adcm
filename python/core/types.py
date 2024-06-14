@@ -53,6 +53,11 @@ class ADCMCoreType(Enum):
     HOST = "host"
 
 
+class ADCMHostGroupType(Enum):
+    CONFIG = "config-group"
+    ACTION = "action-group"
+
+
 class ExtraActionTargetType(Enum):
     ACTION_HOST_GROUP = "action-host-group"
 
@@ -78,8 +83,16 @@ class GeneralEntityDescriptor:
 
 
 @dataclass(slots=True, frozen=True)
+class HostGroupDescriptor(GeneralEntityDescriptor):
+    type: ADCMHostGroupType
+
+
+@dataclass(slots=True, frozen=True)
 class ActionTargetDescriptor(GeneralEntityDescriptor):
     type: ADCMCoreType | ExtraActionTargetType
+
+    def __str__(self) -> str:
+        return f"{self.type.value} #{self.id}"
 
 
 # inheritance from `ActionTargetDescriptor` is for convenience purposes,
