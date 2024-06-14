@@ -1670,6 +1670,7 @@ CM_MODEL_MAP: dict[str, type[_CMObjects]] = {
     "prototypes": Prototype,
     "bundle": Bundle,
     "bundles": Bundle,
+    "action-host-groups": ActionHostGroup,
 }
 
 

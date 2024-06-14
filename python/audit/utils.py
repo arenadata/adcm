@@ -39,6 +39,7 @@ from api_v2.views import CamelCaseModelViewSet
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
+    ActionHostGroup,
     Cluster,
     ClusterBind,
     ClusterObject,
@@ -439,6 +440,10 @@ def _all_child_objects_exist(path: list[str]) -> bool:
     match path:
         case ["configs", pk]:
             return _cm_object_exists(path_type="configs", pk=pk)
+        case ["action-host-groups", group_pk, "hosts", host_pk, *_]:
+            return ActionHostGroup.hosts.through.objects.filter(actionhostgroup_id=group_pk, host_id=host_pk).exists()
+        case ["action-host-groups", group_pk, *_]:
+            return ActionHostGroup.objects.filter(pk=group_pk).exists()
         case ["services" | "components" | "hosts" | "config-groups" | "actions" | "upgrades", pk, *rest]:
             if not _cm_object_exists(path_type=path[0], pk=pk):
                 return False
@@ -454,6 +459,7 @@ def _all_objects_in_path_exist(path: list[str]) -> bool:
                 model = get_rbac_model_by_type(rbac_type)
                 return model.objects.filter(pk=pk).exists()
             return False
+
         case ["clusters" | "hostproviders" | "hosts" | "bundles" | "prototypes", pk, *rest]:
             if not _cm_object_exists(path_type=path[0], pk=pk):
                 return False

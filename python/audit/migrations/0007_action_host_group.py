@@ -38,7 +38,7 @@ class Migration(migrations.Migration):
                     ("group", "group"),
                     ("role", "role"),
                     ("policy", "policy"),
-                    ("actionhostgroup", "actionhostgroup"),
+                    ("action-host-group", "action-host-group"),
                 ],
                 max_length=2000,
             ),
