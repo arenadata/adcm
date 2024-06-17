@@ -15,12 +15,11 @@ from itertools import compress
 from adcm.mixins import GetParentObjectMixin
 from audit.utils import audit
 from cm.errors import AdcmEx
-from cm.models import ADCM, Action, ActionHostGroup, ConcernType, Host, HostComponent, PrototypeConfig
+from cm.models import ADCM, Action, ADCMEntity, ConcernType, Host, HostComponent, PrototypeConfig
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.stack import check_hostcomponents_objects_exist
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q, QuerySet
+from django.db.models import Q
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from jinja_config import get_jinja_config
@@ -44,9 +43,9 @@ from api_v2.action.serializers import (
     ActionRunSerializer,
 )
 from api_v2.action.utils import (
-    check_run_perms,
     filter_actions_by_user_perm,
     get_action_configuration,
+    has_run_perms,
     insert_service_ids,
     unique_hc_entries,
 )
@@ -162,8 +161,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
 
         return ActionListSerializer
 
-    def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        self.parent_object = self.get_parent_object()
+    def check_permissions_for_list(self, request: Request) -> None:
         if (
             not self.parent_object
             or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
@@ -173,31 +171,29 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
         ):
             raise NotFound()
 
+    def check_permissions_for_run(self, request: Request, action: Action) -> None:
+        if (
+            not self.parent_object
+            or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
+            and not request.user.has_perm(
+                perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}", obj=self.parent_object
+            )
+            or not has_run_perms(user=request.user, action=action, obj=self.parent_object)
+        ):
+            raise NotFound()
+
+    def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+        self.parent_object = self.get_parent_object()
+
+        self.check_permissions_for_list(request=request)
+
         return self._list_actions_available_to_user(request)
-
-    def _list_actions_available_to_user(self, request: Request) -> Response:
-        actions = self.filter_queryset(self.get_queryset())
-        allowed_actions_mask = [act.allowed(self.prototype_objects[act.prototype]) for act in actions]
-        actions = list(compress(actions, allowed_actions_mask))
-        actions = filter_actions_by_user_perm(user=request.user, obj=self.parent_object, actions=actions)
-
-        serializer = self.get_serializer_class()(instance=actions, many=True, context={"obj": self.parent_object})
-
-        return Response(data=serializer.data)
 
     def retrieve(self, request, *args, **kwargs):  # noqa: ARG002
         self.parent_object = self.get_parent_object()
         action_ = self.get_object()
 
-        if (
-            not self.parent_object
-            or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
-            and not request.user.has_perm(
-                perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}", obj=self.parent_object
-            )
-            or not check_run_perms(user=request.user, action=action_, obj=self.parent_object)
-        ):
-            raise NotFound()
+        self.check_permissions_for_run(request=request, action=action_)
 
         config_schema, config, adcm_meta = get_action_configuration(action_=action_, object_=self.parent_object)
 
@@ -219,15 +215,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
         self.parent_object = self.get_parent_object()
         target_action = self.get_object()
 
-        if (
-            not self.parent_object
-            or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
-            and not request.user.has_perm(
-                perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}", obj=self.parent_object
-            )
-            or not check_run_perms(user=request.user, action=target_action, obj=self.parent_object)
-        ):
-            raise NotFound()
+        self.check_permissions_for_run(request=request, action=target_action)
 
         if reason := target_action.get_start_impossible_reason(self.parent_object):
             raise AdcmEx("ACTION_ERROR", msg=reason)
@@ -273,6 +261,19 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
 
         return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)
 
+    def _list_actions_available_to_user(self, request: Request) -> Response:
+        actions = self.filter_queryset(self.get_queryset())
+        allowed_actions_mask = [act.allowed(self.prototype_objects[act.prototype]) for act in actions]
+        actions = list(compress(actions, allowed_actions_mask))
+        actions = filter_actions_by_user_perm(user=request.user, obj=self._get_actions_owner(), actions=actions)
+
+        serializer = self.get_serializer_class()(instance=actions, many=True, context={"obj": self.parent_object})
+
+        return Response(data=serializer.data)
+
+    def _get_actions_owner(self) -> ADCMEntity:
+        return self.parent_object
+
 
 @extend_schema_view(
     run=extend_schema(
@@ -308,26 +309,3 @@ class AdcmActionViewSet(ActionViewSet):
     def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         self.parent_object = self.get_parent_object()
         return self._list_actions_available_to_user(request)
-
-
-class ActionHostGroupActionViewSet(ActionViewSet):
-    def get_parent_object(self) -> ActionHostGroup | None:
-        if "action_host_group_pk" not in self.kwargs:
-            return None
-
-        parent = super().get_parent_object()
-
-        return (
-            ActionHostGroup.objects.prefetch_related("object__prototype")
-            .filter(
-                pk=self.kwargs["action_host_group_pk"],
-                object_id=parent.pk,
-                object_type=ContentType.objects.get_for_model(model=parent.__class__),
-            )
-            .first()
-        )
-
-    def get_queryset(self, *_, **__) -> QuerySet:
-        group_owner = self.parent_object.object
-        self.prototype_objects = {group_owner.prototype: group_owner}
-        return self.general_queryset.filter(prototype=group_owner.prototype, allow_for_action_host_group=True)

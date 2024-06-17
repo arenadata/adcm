@@ -15,8 +15,12 @@ import itertools
 
 from rest_framework_nested.routers import NestedSimpleRouter, SimpleRouter
 
-from api_v2.action.views import ActionHostGroupActionViewSet, ActionViewSet
-from api_v2.action_host_group.views import ActionHostGroupViewSet, HostActionHostGroupViewSet
+from api_v2.action.views import ActionViewSet
+from api_v2.action_host_group.views import (
+    ActionHostGroupActionViewSet,
+    ActionHostGroupViewSet,
+    HostActionHostGroupViewSet,
+)
 from api_v2.cluster.views import ClusterViewSet
 from api_v2.component.views import ComponentViewSet, HostComponentViewSet
 from api_v2.config.views import ConfigLogViewSet
