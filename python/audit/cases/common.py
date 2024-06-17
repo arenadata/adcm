@@ -13,12 +13,14 @@
 from cm.models import (
     ADCM,
     Action,
+    ActionHostGroup,
     ADCMEntity,
     ClusterObject,
     JobLog,
     ServiceComponent,
     TaskLog,
     Upgrade,
+    get_cm_model_by_type,
 )
 from rest_framework.response import Response
 
@@ -108,7 +110,7 @@ def _job_case(job_pk: str, version=1) -> tuple[AuditOperation, AuditObject | Non
     return audit_operation, audit_object
 
 
-def get_obj_name(obj: ClusterObject | ServiceComponent | ADCMEntity, obj_type: str) -> str:
+def get_obj_name(obj: ClusterObject | ServiceComponent | ADCMEntity | ActionHostGroup, obj_type: str) -> str:
     if obj_type == "service":
         obj_name = obj.display_name
         cluster = obj.cluster
@@ -122,6 +124,13 @@ def get_obj_name(obj: ClusterObject | ServiceComponent | ADCMEntity, obj_type: s
             cluster = service.cluster
             if cluster:
                 obj_name = f"{cluster.name}/{obj_name}"
+    elif obj_type == AuditObjectType.ACTION_HOST_GROUP:
+        obj_name = obj.name
+
+        parent = obj.object
+        parent_name = get_obj_name(parent, obj_type=MODEL_TO_AUDIT_OBJECT_TYPE_MAP[parent.__class__])
+        if parent_name:
+            obj_name = f"{parent_name}/{obj_name}"
     else:
         obj_name = obj.name
 
@@ -219,21 +228,12 @@ def action_case(path: list[str], api_version: int) -> tuple[AuditOperation, Audi
     audit_object = None
 
     match path:
-        case (
-            [obj_type, obj_pk, "action" | "actions", action_pk, "run"]
-            | [_, _, obj_type, obj_pk, "action" | "actions", action_pk, "run"]
-            | [_, _, _, _, obj_type, obj_pk, "action" | "actions", action_pk, "run"]
-        ):
+        case [*_, obj_type, obj_pk, "action" | "actions", action_pk, "run"]:
+            action_display_name = Action.objects.values_list("display_name", flat=True).filter(pk=action_pk).first()
             audit_operation = AuditOperation(
-                name="{action_display_name} action launched",
+                name=f"{action_display_name or ''} action launched".strip(),
                 operation_type=AuditLogOperationType.UPDATE,
             )
-
-            action = Action.objects.filter(pk=action_pk).first()
-            if action:
-                audit_operation.name = audit_operation.name.format(action_display_name=action.display_name)
-            elif api_version != 1:
-                audit_operation.name = "action launched"
 
             obj = PATH_STR_TO_OBJ_CLASS_MAP[obj_type].objects.filter(pk=obj_pk).first()
             if obj:
@@ -311,3 +311,30 @@ def task_job_case(path: list[str], version=1) -> tuple[AuditOperation, AuditObje
             audit_operation, audit_object = _job_case(job_pk=job_pk, version=version)
 
     return audit_operation, audit_object
+
+
+def get_audit_cm_object_from_path_info(object_type_from_path: str, object_pk_from_path: str) -> AuditObject | None:
+    try:
+        model = get_cm_model_by_type(object_type=object_type_from_path)
+    except KeyError:
+        return None
+
+    try:
+        object_ = model.objects.filter(pk=int(object_pk_from_path)).first()
+    except ValueError:
+        return None
+
+    if not object_:
+        return None
+
+    if object_type_from_path.startswith("hostprovider"):
+        single_form_of_type = "provider"
+    else:
+        # to convert clusters -> cluster, etc.
+        single_form_of_type = object_type_from_path.rstrip("s")
+
+    return get_or_create_audit_obj(
+        object_id=object_.pk,
+        object_name=get_obj_name(obj=object_, obj_type=single_form_of_type),
+        object_type=single_form_of_type,
+    )

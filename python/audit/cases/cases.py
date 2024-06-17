@@ -15,6 +15,7 @@ from django.views import View
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
+from audit.cases.action_host_groups import action_host_group_case
 from audit.cases.adcm import adcm_case
 from audit.cases.bundle import bundle_case
 from audit.cases.cluster import cluster_case
@@ -43,6 +44,8 @@ def get_audit_operation_and_object(
         audit_operation, audit_object = action_case(path=path, api_version=api_version)
     elif "upgrade" in path or "upgrades" in path:
         audit_operation, audit_object = upgrade_case(path=path)
+    elif "action-host-groups" in path:
+        audit_operation, audit_object = action_host_group_case(path=path, response=response, deleted_obj=deleted_obj)
     elif "stack" in path:
         audit_operation, audit_object = stack_case(
             path=path,

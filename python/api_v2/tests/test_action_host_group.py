@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from contextlib import contextmanager, nullcontext
+from functools import partial
 from itertools import chain
 from operator import itemgetter
 
@@ -82,7 +83,7 @@ class TestActionHostGroup(CommonActionHostGroupTest):
 
             response = self.client.v2[target, ACTION_HOST_GROUPS].post(data=data)
 
-            with self.subTest(f"[{type_.name}] CREATED SUCCESS"):
+            with self.subTest(f"[{type_.name}] CREATE SUCCESS"):
                 self.assertEqual(response.status_code, HTTP_201_CREATED)
                 self.assertEqual(ActionHostGroup.objects.count(), group_counter)
                 created_group = ActionHostGroup.objects.filter(
@@ -91,9 +92,13 @@ class TestActionHostGroup(CommonActionHostGroupTest):
                 self.assertIsNotNone(created_group)
                 self.assertEqual(response.json(), {"id": created_group.id, **data, "hosts": []})
 
-            # todo implement
-            # with self.subTest(f"[{type_.name}] AUDITED SUCCESS"):
-            #     self.assertEqual(response.status_code, HTTP_201_CREATED)
+            with self.subTest(f"[{type_.name}] CREATE AUDITED"):
+                self.check_last_audit_record(
+                    operation_name=f"{data['name']} action host group created",
+                    operation_type="create",
+                    operation_result="success",
+                    **self.prepare_audit_object_arguments(expected_object=target),
+                )
 
     def test_create_multiple_groups(self) -> None:
         with self.subTest("[COMPONENT] Same Object + Different Names SUCCESS"):
@@ -156,7 +161,9 @@ class TestActionHostGroup(CommonActionHostGroupTest):
             (self.service, service_group_1, 1),
             (self.component, component_group, 0),
         ):
-            with self.subTest(orm_object_to_core_type(target).name):
+            type_name = orm_object_to_core_type(target).name
+
+            with self.subTest(f"[{type_name}] DELETE SUCCESS"):
                 response = self.client.v2[group_to_delete].delete()
 
                 self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
@@ -165,7 +172,13 @@ class TestActionHostGroup(CommonActionHostGroupTest):
                     groups_left_amount,
                 )
 
-            # todo add audit
+            with self.subTest(f"[{type_name}] DELETE AUDITED"):
+                self.check_last_audit_record(
+                    operation_name=f"{group_to_delete.name} action host group deleted",
+                    operation_type="delete",
+                    operation_result="success",
+                    **self.prepare_audit_object_arguments(expected_object=target),
+                )
 
     def test_retrieve_success(self) -> None:
         name = "aWeSOME Group NAmE"
@@ -340,15 +353,27 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
                 self.assertEqual(len(hosts_in_group), 1)
                 self.assertEqual(hosts_in_group[0].id, host_1.id)
 
-            # todo add audit check for all success/fail cases
-            # with self.subTest(f"Add Audit {type_.name} SUCCESS"):
-            #     ...
+            with self.subTest(f"[{type_.name}] Add Host Audit {type_.name} SUCCESS"):
+                self.check_last_audit_record(
+                    operation_name=f"Host {host_1.fqdn} added to action host group {group.name}",
+                    operation_type="update",
+                    operation_result="success",
+                    **self.prepare_audit_object_arguments(expected_object=group),
+                )
 
             with self.subTest(f"[{type_.name}] Add Host Duplicate FAIL"):
                 response = self.client.v2[group, "hosts"].post(data={"hostId": host_1.id})
                 self.assertEqual(response.status_code, HTTP_409_CONFLICT)
                 self.assertEqual(len(self.action_host_group_service.retrieve(group.id).hosts), 1)
                 self.assertIn("hosts are already in action group", response.json()["desc"])
+
+            with self.subTest(f"[{type_.name}] Add Host Duplicate Audit FAIL"):
+                self.check_last_audit_record(
+                    operation_name=f"Host added to action host group {group.name}",
+                    operation_type="update",
+                    operation_result="fail",
+                    **self.prepare_audit_object_arguments(expected_object=group),
+                )
 
         with self.subTest("[SERVICE] Add Second Host SUCCESS"):
             group = self.group_map[self.service]
@@ -373,11 +398,20 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
                 self.assertEqual(len(self.action_host_group_service.retrieve(group.id).hosts), expected_host_count)
 
         with self.subTest("[SERVICE] Add Non Existing Host FAIL"):
+            group = self.group_map[self.service]
             response = self.client.v2[self.group_map[self.service], "hosts"].post(
                 data={"hostId": self.get_non_existent_pk(Host)}
             )
 
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+
+        with self.subTest("[SERVICE] Add Non Existing Host Audit FAIL"):
+            self.check_last_audit_record(
+                operation_name=f"Host added to action host group {group.name}",
+                operation_type="update",
+                operation_result="fail",
+                **self.prepare_audit_object_arguments(expected_object=group),
+            )
 
     def test_remove_host_from_group(self) -> None:
         host_1, host_2, *_ = self.hosts
@@ -397,11 +431,27 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
                 self.assertEqual(len(hosts_in_group), 1)
                 self.assertEqual(hosts_in_group[0].id, host_2.id)
 
+            with self.subTest(f"[{type_.name}] Remove Host Audit SUCCESS"):
+                self.check_last_audit_record(
+                    operation_name=f"Host {host_1.fqdn} removed from action host group {group.name}",
+                    operation_type="update",
+                    operation_result="success",
+                    **self.prepare_audit_object_arguments(expected_object=group),
+                )
+
             with self.subTest(f"[{type_.name}] Remove Removed Host FAIL"):
                 response = endpoint.delete()
 
                 self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
                 self.assertEqual(len(self.action_host_group_service.retrieve(group.id).hosts), 1)
+
+            with self.subTest(f"[{type_.name}] Remove Removed Host Audit FAIL"):
+                self.check_last_audit_record(
+                    operation_name=f"Host {host_1.fqdn} removed from action host group {group.name}",
+                    operation_type="update",
+                    operation_result="fail",
+                    **self.prepare_audit_object_arguments(expected_object=group),
+                )
 
             with self.subTest(f"[{type_.name}] Remove Last Host SUCCESS"):
                 response = self.client.v2[group, "hosts", host_2].delete()
@@ -409,8 +459,6 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
                 self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
                 hosts_in_group = self.action_host_group_service.retrieve(group.id).hosts
                 self.assertEqual(len(hosts_in_group), 0)
-
-            # todo add audit
 
     def test_same_hosts_in_group_of_one_object_success(self) -> None:
         host_1, host_2, *_ = self.hosts
@@ -502,7 +550,6 @@ class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
         )
         self.set_hostcomponent(cluster=self.cluster, entries=[(host_1, self.component), (host_2, self.component)])
 
-        # todo add audit cases
         for target, action_name in (
             (self.cluster, "allowed_in_group_1"),
             (self.service, "allowed_from_service"),
@@ -528,11 +575,27 @@ class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
                     self.assertIsNotNone(run_task.target_task)
                     self.assertEqual(run_task.target_task.task_object, action_run_target)
 
+                with self.subTest(f"[{message_name}] Run Audit SUCCESS"):
+                    self.check_last_audit_record(
+                        operation_name=f"{action.display_name} action launched",
+                        operation_type="update",
+                        operation_result="success",
+                        **self.prepare_audit_object_arguments(expected_object=action_run_target),
+                    )
+
                 with self.subTest(f"[{message_name}] Running Task Add Hosts FAIL"):
                     response = self.client.v2[group, "hosts"].post(data={"hostId": host_2.id})
 
                     self.assertEqual(response.status_code, HTTP_409_CONFLICT)
                     self.assertIn(f"Can't add hosts to {expected_lock_error_message}", response.json()["desc"])
+
+                with self.subTest(f"[{message_name}] Running Task Add Hosts Audit FAIL"):
+                    self.check_last_audit_record(
+                        operation_name=f"Host added to action host group {group.name}",
+                        operation_type="update",
+                        operation_result="fail",
+                        **self.prepare_audit_object_arguments(expected_object=group),
+                    )
 
                 with self.subTest(f"[{message_name}] Running Task Remove Hosts FAIL"):
                     response = self.client.v2[group, "hosts", host_1].delete()
@@ -540,11 +603,27 @@ class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
                     self.assertEqual(response.status_code, HTTP_409_CONFLICT)
                     self.assertIn(f"Can't remove hosts from {expected_lock_error_message}", response.json()["desc"])
 
+                with self.subTest(f"[{message_name}] Running Task Remove Hosts Audit FAIL"):
+                    self.check_last_audit_record(
+                        operation_name=f"Host {host_1.fqdn} removed from action host group {group.name}",
+                        operation_type="update",
+                        operation_result="fail",
+                        **self.prepare_audit_object_arguments(expected_object=group),
+                    )
+
                 with self.subTest(f"[{message_name}] Running Task Delete Group FAIL"):
                     response = self.client.v2[group].delete()
 
                     self.assertEqual(response.status_code, HTTP_409_CONFLICT)
                     self.assertIn(f"Can't delete {expected_lock_error_message}", response.json()["desc"])
+
+                with self.subTest(f"[{message_name}] Running Task Delete Group Audit FAIL"):
+                    self.check_last_audit_record(
+                        operation_name=f"{group.name} action host group deleted",
+                        operation_type="delete",
+                        operation_result="fail",
+                        **self.prepare_audit_object_arguments(expected_object=target),
+                    )
 
                 with self.subTest(f"[{message_name}] Running Task Create New Group SUCCESS"):
                     response = self.client.v2[target, ACTION_HOST_GROUPS].post(
@@ -552,6 +631,17 @@ class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
                     )
 
                     self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+                with self.subTest(f"[{message_name}] Finish Task Audit SUCCESS"):
+                    run_task.run()
+
+                    self.check_last_audit_record(
+                        operation_name=f"{action.display_name} action completed",
+                        operation_type="update",
+                        operation_result="success",
+                        user__username=None,
+                        **self.prepare_audit_object_arguments(expected_object=action_run_target),
+                    )
 
 
 class TestActionHostGroupRBAC(CommonActionHostGroupTest):
@@ -845,3 +935,55 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
             self.assertEqual(
                 sorted(entry["name"] for entry in response.json()), ["allowed_from_component", "allowed_in_group_1"]
             )
+
+    def test_audit_with_rbac(self) -> None:
+        expect_denied = partial(
+            self.check_last_audit_record, operation_result="denied", user__username=self.user.username
+        )
+
+        grant_view_role = self.grant_permissions(to=self.user, on=self.cluster, role_name="View action host groups")
+
+        for subtest_name, context, expected_code in (
+            ("View Only Permissions - Denied", grant_view_role, HTTP_403_FORBIDDEN),
+            ("No Permissions - Denied", nullcontext(), HTTP_404_NOT_FOUND),
+        ):
+            with context, self.subTest(subtest_name):
+                response = self.user_client.v2[self.cluster, ACTION_HOST_GROUPS].post()
+                self.assertEqual(response.status_code, expected_code)
+
+                expect_denied(
+                    operation_name="action host group created",
+                    operation_type="create",
+                    **self.prepare_audit_object_arguments(expected_object=self.cluster),
+                )
+
+                group = self.group_map[self.service]
+                response = self.user_client.v2[group, "hosts"].post()
+                self.assertEqual(response.status_code, expected_code)
+
+                expect_denied(
+                    operation_name=f"Host added to action host group {group.name}",
+                    operation_type="update",
+                    **self.prepare_audit_object_arguments(expected_object=group),
+                )
+
+                group = self.group_map[self.component]
+                response = self.user_client.v2[group, "hosts", self.host_2].delete()
+                self.assertEqual(response.status_code, expected_code)
+
+                expect_denied(
+                    operation_name=f"Host {self.host_2.fqdn} removed from action host group {group.name}",
+                    operation_type="update",
+                    **self.prepare_audit_object_arguments(expected_object=group),
+                )
+
+                action = Action.objects.get(prototype=self.service.prototype, name="allowed_in_group_1")
+                group = self.group_map[self.service]
+                response = self.user_client.v2[group, "actions", action, "run"].post()
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+                expect_denied(
+                    operation_name=f"{action.display_name} action launched",
+                    operation_type="update",
+                    **self.prepare_audit_object_arguments(expected_object=group),
+                )

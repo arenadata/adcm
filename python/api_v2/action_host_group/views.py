@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from contextlib import contextmanager
 from typing import NamedTuple
 
 from adcm.permissions import (
@@ -168,6 +169,7 @@ class ActionHostGroupViewSet(CamelCaseGenericViewSet):
 
         return Response(data=self.get_serializer(instance=instance).data)
 
+    @audit
     @with_parent_object
     def destroy(self, request: Request, parent: CoreObjectDescriptor, pk: str, **__) -> Response:
         check_has_group_permissions(user=request.user, parent=parent, dto=REQUIRE_EDIT_NOT_FOUND)
@@ -214,13 +216,23 @@ class HostActionHostGroupViewSet(CamelCaseGenericViewSet):
     serializer_class = AddHostSerializer
     action_host_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
 
-    def handle_exception(self, exc: Exception) -> None:
-        if isinstance(exc, HostError):
-            exc = AdcmEx(code="HOST_GROUP_CONFLICT", msg=exc.message)
-        elif isinstance(exc, GroupIsLockedError):
-            exc = AdcmEx(code="TASK_ERROR", msg=exc.message)
+    @contextmanager
+    def convert_exception(self) -> None:
+        """
+        Customization of `handle_exception` leads to "problems" with audit:
+        either audit should catch all exception itself
+        or "correct" exceptions should be raised inside of function wrapped by audit decorator.
 
-        return super().handle_exception(exc)
+        The latter is the solution for now to avoid more customization for audit
+        without rethinking its place and usage.
+        """
+
+        try:
+            yield
+        except HostError as err:
+            raise AdcmEx(code="HOST_GROUP_CONFLICT", msg=err.message) from None
+        except GroupIsLockedError as err:
+            raise AdcmEx(code="TASK_ERROR", msg=err.message) from None
 
     @audit
     @with_group_object
@@ -234,7 +246,7 @@ class HostActionHostGroupViewSet(CamelCaseGenericViewSet):
 
         host_id = serializer.validated_data["host_id"]
 
-        with atomic():
+        with self.convert_exception(), atomic():
             self.action_host_group_service.add_hosts_to_group(group_id=host_group.id, hosts=[host_id])
 
         return Response(
@@ -252,7 +264,7 @@ class HostActionHostGroupViewSet(CamelCaseGenericViewSet):
         if not ActionHostGroup.hosts.through.objects.filter(actionhostgroup_id=host_group.id, host_id=pk).exists():
             raise NotFound()
 
-        with atomic():
+        with self.convert_exception(), atomic():
             self.action_host_group_service.remove_hosts_from_group(group_id=host_group.id, hosts=[int(pk)])
 
         return Response(status=HTTP_204_NO_CONTENT)
