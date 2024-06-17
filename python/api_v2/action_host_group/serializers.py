@@ -14,6 +14,7 @@ from operator import itemgetter
 
 from adcm.serializers import EmptySerializer
 from cm.models import ActionHostGroup
+from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import CharField, IntegerField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
@@ -38,6 +39,7 @@ class ActionHostGroupSerializer(ModelSerializer):
     description = CharField(max_length=255)
     hosts = SerializerMethodField()
 
+    @extend_schema_field(field=ShortHostSerializer(many=UnicodeTranslateError))
     def get_hosts(self, group: ActionHostGroup) -> list:
         # NOTE:
         #   Here we return "unpaginated" list of hosts, so if there will be lots of them, there may be problems with:
