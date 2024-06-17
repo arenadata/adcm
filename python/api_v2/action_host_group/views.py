@@ -10,10 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import NamedTuple
+
+from adcm.permissions import (
+    EDIT_ACTION_HOST_GROUPS,
+    VIEW_ACTION_HOST_GROUPS,
+    VIEW_CLUSTER_PERM,
+    VIEW_COMPONENT_PERM,
+    VIEW_SERVICE_PERM,
+)
 from audit.utils import audit
 from cm.converters import core_type_to_model
 from cm.errors import AdcmEx
-from cm.models import ActionHostGroup, Cluster, Host
+from cm.models import Action, ActionHostGroup, ADCMEntity, Cluster, ClusterObject, Host, ServiceComponent
 from cm.services.action_host_group import (
     ActionHostGroupRepo,
     ActionHostGroupService,
@@ -24,15 +33,19 @@ from cm.services.action_host_group import (
 )
 from core.types import ADCMCoreType, CoreObjectDescriptor, HostGroupDescriptor
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import F, QuerySet
+from django.db.models import F, Model, QuerySet
 from django.db.transaction import atomic
+from guardian.shortcuts import get_objects_for_user
+from rbac.models import User
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
+from api_v2.action.utils import has_run_perms
+from api_v2.action.views import ActionViewSet
 from api_v2.action_host_group.serializers import (
     ActionHostGroupCreateResultSerializer,
     ActionHostGroupCreateSerializer,
@@ -41,6 +54,60 @@ from api_v2.action_host_group.serializers import (
     ShortHostSerializer,
 )
 from api_v2.views import CamelCaseGenericViewSet, with_group_object, with_parent_object
+
+_PARENT_PERMISSION_MAP: dict[ADCMCoreType, tuple[str, type[Model]]] = {
+    ADCMCoreType.CLUSTER: (VIEW_CLUSTER_PERM, Cluster),
+    ADCMCoreType.SERVICE: (VIEW_SERVICE_PERM, ClusterObject),
+    ADCMCoreType.COMPONENT: (VIEW_COMPONENT_PERM, ServiceComponent),
+}
+
+
+class PermissionCheckDTO(NamedTuple):
+    require_edit: bool
+    no_group_view_err: type[Exception] = NotFound
+
+
+VIEW_ONLY_PERMISSION_DENIED = PermissionCheckDTO(require_edit=False, no_group_view_err=PermissionDenied)
+VIEW_ONLY_NOT_FOUND = PermissionCheckDTO(require_edit=False, no_group_view_err=NotFound)
+REQUIRE_EDIT_NOT_FOUND = PermissionCheckDTO(require_edit=True, no_group_view_err=NotFound)
+REQUIRE_EDIT_PERMISSION_DENIED = PermissionCheckDTO(require_edit=True, no_group_view_err=PermissionDenied)
+
+
+def check_has_group_permissions_for_object(
+    user: User, parent_object: Cluster | ClusterObject | ServiceComponent, dto: PermissionCheckDTO
+) -> None:
+    """
+    If user hasn't got enough permissions on group, an error will be raised.
+
+    Doesn't check permissions on parent.
+    """
+
+    model_name = parent_object.__class__.__name__.lower()
+    view_perm_name = f"{VIEW_ACTION_HOST_GROUPS}_{model_name}"
+
+    if not (user.has_perm(view_perm_name, obj=parent_object) or user.has_perm(f"cm.{view_perm_name}")):
+        raise dto.no_group_view_err()
+
+    if not dto.require_edit:
+        return
+
+    if not user.has_perm(f"{EDIT_ACTION_HOST_GROUPS}_{model_name}", obj=parent_object):
+        raise PermissionDenied()
+
+
+def check_has_group_permissions(user: User, parent: CoreObjectDescriptor, dto: PermissionCheckDTO) -> None:
+    """
+    Same as `check_has_group_permissions_for_object`, but with checking view permissions on parent
+    """
+
+    view_perm, model_class = _PARENT_PERMISSION_MAP[parent.type]
+
+    try:
+        parent_object = get_objects_for_user(user=user, perms=view_perm, klass=model_class).get(pk=parent.id)
+    except model_class.DoesNotExist:
+        raise NotFound() from None
+
+    check_has_group_permissions_for_object(user=user, parent_object=parent_object, dto=dto)
 
 
 class ActionHostGroupViewSet(CamelCaseGenericViewSet):
@@ -59,6 +126,8 @@ class ActionHostGroupViewSet(CamelCaseGenericViewSet):
     @audit
     @with_parent_object
     def create(self, request: Request, *_, parent: CoreObjectDescriptor, **__) -> Response:
+        check_has_group_permissions(user=request.user, parent=parent, dto=REQUIRE_EDIT_PERMISSION_DENIED)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -80,14 +149,18 @@ class ActionHostGroupViewSet(CamelCaseGenericViewSet):
         )
 
     @with_parent_object
-    def list(self, *_, parent: CoreObjectDescriptor, **__) -> Response:
+    def list(self, request: Request, parent: CoreObjectDescriptor, **__) -> Response:
+        check_has_group_permissions(user=request.user, parent=parent, dto=VIEW_ONLY_PERMISSION_DENIED)
+
         serializer = self.get_serializer(
             instance=self.paginate_queryset(self.filter_by_parent(qs=self.get_queryset(), parent=parent)), many=True
         )
         return self.get_paginated_response(serializer.data)
 
     @with_parent_object
-    def retrieve(self, *_, parent: CoreObjectDescriptor, pk: str, **__) -> Response:
+    def retrieve(self, request: Request, parent: CoreObjectDescriptor, pk: str, **__) -> Response:
+        check_has_group_permissions(user=request.user, parent=parent, dto=VIEW_ONLY_NOT_FOUND)
+
         try:
             instance = self.filter_by_parent(qs=self.get_queryset(), parent=parent).get(id=int(pk))
         except ActionHostGroup.DoesNotExist:
@@ -96,7 +169,9 @@ class ActionHostGroupViewSet(CamelCaseGenericViewSet):
         return Response(data=self.get_serializer(instance=instance).data)
 
     @with_parent_object
-    def destroy(self, *_, parent: CoreObjectDescriptor, pk: str, **__) -> Response:
+    def destroy(self, request: Request, parent: CoreObjectDescriptor, pk: str, **__) -> Response:
+        check_has_group_permissions(user=request.user, parent=parent, dto=REQUIRE_EDIT_NOT_FOUND)
+
         if not self.filter_by_parent(qs=ActionHostGroup.objects.filter(id=pk), parent=parent).exists():
             raise NotFound()
 
@@ -109,9 +184,11 @@ class ActionHostGroupViewSet(CamelCaseGenericViewSet):
 
     @action(methods=["get"], detail=True, url_path="host-candidates", url_name="host-candidates", pagination_class=None)
     @with_parent_object
-    def host_candidate(self, *_, parent: CoreObjectDescriptor, pk: str, **__):
+    def host_candidate(self, request: Request, parent: CoreObjectDescriptor, pk: str, **__):
         if not self.filter_by_parent(qs=ActionHostGroup.objects.filter(id=pk), parent=parent).exists():
             raise NotFound()
+
+        check_has_group_permissions(user=request.user, parent=parent, dto=VIEW_ONLY_NOT_FOUND)
 
         hosts = self.action_host_group_service.get_host_candidates(group_id=int(pk))
         return Response(data=list(Host.objects.values("id", name=F("fqdn")).filter(id__in=hosts).order_by("fqdn")))
@@ -147,7 +224,11 @@ class HostActionHostGroupViewSet(CamelCaseGenericViewSet):
 
     @audit
     @with_group_object
-    def create(self, request: Request, *_, host_group: HostGroupDescriptor, **__) -> Response:
+    def create(
+        self, request: Request, *_, parent: CoreObjectDescriptor, host_group: HostGroupDescriptor, **__
+    ) -> Response:
+        check_has_group_permissions(user=request.user, parent=parent, dto=REQUIRE_EDIT_NOT_FOUND)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -163,7 +244,11 @@ class HostActionHostGroupViewSet(CamelCaseGenericViewSet):
 
     @audit
     @with_group_object
-    def destroy(self, *_, host_group: HostGroupDescriptor, pk: str, **__) -> Response:
+    def destroy(
+        self, request: Request, parent: CoreObjectDescriptor, host_group: HostGroupDescriptor, pk: str, **__
+    ) -> Response:
+        check_has_group_permissions(user=request.user, parent=parent, dto=REQUIRE_EDIT_NOT_FOUND)
+
         if not ActionHostGroup.hosts.through.objects.filter(actionhostgroup_id=host_group.id, host_id=pk).exists():
             raise NotFound()
 
@@ -171,3 +256,49 @@ class HostActionHostGroupViewSet(CamelCaseGenericViewSet):
             self.action_host_group_service.remove_hosts_from_group(group_id=host_group.id, hosts=[int(pk)])
 
         return Response(status=HTTP_204_NO_CONTENT)
+
+
+class ActionHostGroupActionViewSet(ActionViewSet):
+    def get_parent_object(self) -> ActionHostGroup | None:
+        if "action_host_group_pk" not in self.kwargs:
+            return None
+
+        parent = super().get_parent_object()
+
+        return (
+            ActionHostGroup.objects.prefetch_related("object__prototype")
+            .filter(
+                pk=self.kwargs["action_host_group_pk"],
+                object_id=parent.pk,
+                object_type=ContentType.objects.get_for_model(model=parent.__class__),
+            )
+            .first()
+        )
+
+    def get_queryset(self, *_, **__) -> QuerySet:
+        group_owner = self.parent_object.object
+        self.prototype_objects = {group_owner.prototype: group_owner}
+        return self.general_queryset.filter(prototype=group_owner.prototype, allow_for_action_host_group=True)
+
+    def check_permissions_for_list(self, request: Request) -> None:
+        if not (self.parent_object and self.parent_object.object):
+            raise NotFound()
+
+        group_owner = self.parent_object.object
+        model_name = group_owner.__class__.__name__.lower()
+        if not (
+            request.user.has_perm(perm=f"cm.view_{model_name}")
+            or request.user.has_perm(perm=f"cm.view_{model_name}", obj=group_owner)
+        ):
+            raise NotFound()
+
+        check_has_group_permissions_for_object(user=request.user, parent_object=group_owner, dto=VIEW_ONLY_NOT_FOUND)
+
+    def check_permissions_for_run(self, request: Request, action: Action) -> None:
+        self.check_permissions_for_list(request=request)
+
+        if not has_run_perms(user=request.user, action=action, obj=self.parent_object.object):
+            raise NotFound()
+
+    def _get_actions_owner(self) -> ADCMEntity:
+        return self.parent_object.object
