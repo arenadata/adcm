@@ -36,6 +36,7 @@ from core.types import ADCMCoreType, CoreObjectDescriptor, HostGroupDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Model, QuerySet
 from django.db.transaction import atomic
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from guardian.shortcuts import get_objects_for_user
 from rbac.models import User
 from rest_framework.decorators import action
@@ -43,8 +44,15 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
-from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
+from api_v2.action.serializers import ActionListSerializer, ActionRetrieveSerializer
 from api_v2.action.utils import has_run_perms
 from api_v2.action.views import ActionViewSet
 from api_v2.action_host_group.serializers import (
@@ -54,6 +62,8 @@ from api_v2.action_host_group.serializers import (
     AddHostSerializer,
     ShortHostSerializer,
 )
+from api_v2.api_schema import DOCS_CLIENT_INPUT_ERROR_RESPONSES, DOCS_DEFAULT_ERROR_RESPONSES, ErrorSerializer
+from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import CamelCaseGenericViewSet, with_group_object, with_parent_object
 
 _PARENT_PERMISSION_MAP: dict[ADCMCoreType, tuple[str, type[Model]]] = {
@@ -111,9 +121,46 @@ def check_has_group_permissions(user: User, parent: CoreObjectDescriptor, dto: P
     check_has_group_permissions_for_object(user=user, parent_object=parent_object, dto=dto)
 
 
+@extend_schema_view(
+    create=extend_schema(
+        operation_id="postObjectActionHostGroup",
+        summary="POST object's Action Host Group",
+        description="Create a new object's action host group.",
+        responses={
+            HTTP_201_CREATED: ActionHostGroupSerializer,
+            **DOCS_DEFAULT_ERROR_RESPONSES,
+            **DOCS_CLIENT_INPUT_ERROR_RESPONSES,
+        },
+    ),
+    list=extend_schema(
+        operation_id="getObjectActionHostGroups",
+        summary="GET object's Action Host Groups",
+        description="Return list of object's action host groups.",
+        responses={HTTP_200_OK: ActionHostGroupSerializer(many=True), **DOCS_DEFAULT_ERROR_RESPONSES},
+    ),
+    retrieve=extend_schema(
+        operation_id="getObjectActionHostGroup",
+        summary="GET object's Action Host Group",
+        description="Return information about specific object's action host group.",
+        responses={HTTP_200_OK: ActionHostGroupSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    destroy=extend_schema(
+        operation_id="deleteObjectActionHostGroup",
+        summary="DELETE object's Action Host Group",
+        description="Delete specific object's action host group.",
+        responses={HTTP_204_NO_CONTENT: None, HTTP_404_NOT_FOUND: ErrorSerializer, HTTP_409_CONFLICT: ErrorSerializer},
+    ),
+    host_candidate=extend_schema(
+        operation_id="getObjectActionHostGroupCandidates",
+        summary="GET object's Action Host Group's host candidates",
+        description="Return list of object's hosts that can be added to action host group.",
+        responses={HTTP_200_OK: ShortHostSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+)
 class ActionHostGroupViewSet(CamelCaseGenericViewSet):
     queryset = ActionHostGroup.objects.prefetch_related("hosts").order_by("id")
     action_host_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
+    filter_backends = []
 
     def get_serializer_class(self) -> type[Serializer]:
         if self.action == "create":
@@ -212,6 +259,24 @@ class ActionHostGroupViewSet(CamelCaseGenericViewSet):
         )
 
 
+@extend_schema_view(
+    create=extend_schema(
+        operation_id="postObjectActionHostGroupHosts",
+        summary="POST object's Action Host Group hosts",
+        description="Add hosts to object's action host group.",
+        responses={
+            HTTP_201_CREATED: ShortHostSerializer,
+            **DOCS_DEFAULT_ERROR_RESPONSES,
+            **DOCS_CLIENT_INPUT_ERROR_RESPONSES,
+        },
+    ),
+    destroy=extend_schema(
+        operation_id="deleteObjectActionHostGroupHosts",
+        summary="DELETE object's Action Host Group hosts",
+        description="Delete specific host from object's action host group.",
+        responses={HTTP_204_NO_CONTENT: None, HTTP_404_NOT_FOUND: ErrorSerializer, HTTP_409_CONFLICT: ErrorSerializer},
+    ),
+)
 class HostActionHostGroupViewSet(CamelCaseGenericViewSet):
     serializer_class = AddHostSerializer
     action_host_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
@@ -270,6 +335,30 @@ class HostActionHostGroupViewSet(CamelCaseGenericViewSet):
         return Response(status=HTTP_204_NO_CONTENT)
 
 
+@extend_schema_view(
+    run=extend_schema(
+        operation_id="postActionHostGroupAction",
+        summary="POST action host group's action",
+        description="Run action host group's action.",
+        responses={
+            HTTP_200_OK: TaskListSerializer,
+            **DOCS_DEFAULT_ERROR_RESPONSES,
+            **DOCS_CLIENT_INPUT_ERROR_RESPONSES,
+        },
+    ),
+    list=extend_schema(
+        operation_id="getActionHostGroupActions",
+        summary="GET action host group's actions",
+        description="Get a list of action host group's actions.",
+        responses={HTTP_200_OK: ActionListSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    retrieve=extend_schema(
+        operation_id="getActionHostGroupAction",
+        summary="GET action host group's action",
+        description="Get information about a specific action host group's action.",
+        responses={HTTP_200_OK: ActionRetrieveSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+)
 class ActionHostGroupActionViewSet(ActionViewSet):
     def get_parent_object(self) -> ActionHostGroup | None:
         if "action_host_group_pk" not in self.kwargs:

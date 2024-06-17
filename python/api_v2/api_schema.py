@@ -13,12 +13,17 @@
 from adcm.serializers import EmptySerializer
 from drf_spectacular.utils import OpenApiParameter
 from rest_framework.fields import CharField
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
 
 class ErrorSerializer(EmptySerializer):
     code = CharField()
     level = CharField()
     desc = CharField()
+
+
+DOCS_DEFAULT_ERROR_RESPONSES = {HTTP_403_FORBIDDEN: ErrorSerializer, HTTP_404_NOT_FOUND: ErrorSerializer}
+DOCS_CLIENT_INPUT_ERROR_RESPONSES = {HTTP_400_BAD_REQUEST: ErrorSerializer, HTTP_409_CONFLICT: ErrorSerializer}
 
 
 class DefaultParams:
