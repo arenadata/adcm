@@ -1,7 +1,7 @@
 import type { ConfigurationData, SchemaDefinition } from '@models/adcm';
 import type { JSONObject, JSONPrimitive, JSONValue } from '@models/json';
 import type { ConfigurationNodePath } from './ConfigurationEditor.types';
-import { generateFromSchema } from '@utils/jsonSchemaUtils';
+import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 import { isObject } from '@utils/objectUtils';
 
 export const editField = (configuration: ConfigurationData, path: ConfigurationNodePath, value: JSONValue) => {
