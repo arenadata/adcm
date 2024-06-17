@@ -220,4 +220,73 @@ describe('generateFromSchema', () => {
     const result = generateFromSchema(schema);
     expect(result).toStrictEqual(true);
   });
+
+  test('validate unsafe_pattern', () => {
+    const schema: Schema = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['cluster_config'],
+      properties: {
+        cluster_config: {
+          type: 'object',
+          required: ['cluster_name', 'cluster_description'],
+          properties: {
+            cluster_name: {
+              title: 'cluster_name',
+              type: 'string',
+              readOnly: false,
+              pattern: '[a-',
+            },
+            cluster_description: {
+              title: 'cluster_name',
+              type: 'string',
+              readOnly: false,
+              pattern: '[a-*',
+            },
+          },
+        },
+      },
+    };
+
+    const object = {
+      cluster_config: {
+        cluster_name: '1',
+        cluster_description: 'aaaaaaa',
+      },
+    };
+
+    const errors3 = validate(schema, object);
+    expect(errors3).not.toBe(null);
+  });
+
+  test('validate pattern', () => {
+    const schema: Schema = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['cluster_config'],
+      properties: {
+        cluster_config: {
+          type: 'object',
+          required: ['cluster_name'],
+          properties: {
+            cluster_name: {
+              title: 'cluster_name',
+              type: 'string',
+              readOnly: false,
+              pattern: '[a-z]',
+            },
+          },
+        },
+      },
+    };
+
+    const object = {
+      cluster_config: {
+        cluster_name: '1',
+      },
+    };
+
+    const errors3 = validate(schema, object);
+    expect(errors3).not.toBe(null);
+  });
 });

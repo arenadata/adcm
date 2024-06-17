@@ -13,7 +13,7 @@ import {
 import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 import { ConfigurationTreeFilter } from './ConfigurationEditor.types';
 import { Checkbox, Input, Switch } from '@uikit';
-import { generateFromSchema } from '@utils/jsonSchemaUtils';
+import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 
 type Story = StoryObj<typeof ConfigurationEditor>;
 export default {
