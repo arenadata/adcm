@@ -72,7 +72,7 @@ class TestUpgrade(BaseAPITestCase):
             name="upgrade_via_action_complex", bundle=provider_bundle_upgrade
         )
 
-        self.create_user()
+        self.user = self.create_user()
         self.unauthorized_client = self.client_class()
         self.unauthorized_client.login(username="test_user_username", password="test_user_password")
 
@@ -514,6 +514,26 @@ class TestUpgrade(BaseAPITestCase):
         self.assertEqual(
             schema["properties"]["grouped"]["properties"]["pick_host"]["enum"], ["first_host", "second_host", None]
         )
+
+    def test_list_cluster_upgrades_success(self):
+        response = self.client.v2[self.cluster_1, "upgrades"].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()), 6)
+
+    def test_list_upgrades_permission_success(self):
+        permission_cases = (
+            (self.cluster_1, self.cluster_1, "Upgrade cluster bundle", 6),
+            (self.cluster_1, [], "ADCM User", 6),
+            (self.provider, [], "ADCM User", 3),
+            (self.provider, self.provider, "Upgrade provider bundle", 3),
+        )
+
+        for api_object, role_object, role, upgrades_count in permission_cases:
+            with self.subTest(msg=f"list upgrades on {role_object} with role {role}"):
+                with self.grant_permissions(to=self.user, on=role_object, role_name=role):
+                    response = self.unauthorized_client.v2[api_object, "upgrades"].get()
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(len(response.json()), upgrades_count)
 
 
 class TestAdcmUpgrade(APITestCase):

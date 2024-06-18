@@ -65,6 +65,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
                 "change_maintenance_mode_host",
                 "change_maintenance_mode_servicecomponent",
                 "change_objectconfig",
+                "change_ansible_config_of_cluster",
                 "delete_bundle",
                 "delete_clusterobject",
                 "delete_groupconfig",
@@ -91,6 +92,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
                 "view_objectconfig",
                 "view_servicecomponent",
                 "view_upgrade_of_cluster",
+                "view_ansible_config_of_cluster",
             },
         )
 
@@ -428,6 +430,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
                 "change_maintenance_mode_host",
                 "change_maintenance_mode_servicecomponent",
                 "change_objectconfig",
+                "change_ansible_config_of_cluster",
                 "delete_bundle",
                 "delete_clusterobject",
                 "delete_groupconfig",
@@ -454,6 +457,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
                 "view_objectconfig",
                 "view_servicecomponent",
                 "view_upgrade_of_cluster",
+                "view_ansible_config_of_cluster",
             },
         )
 
@@ -493,6 +497,7 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
                 "change_maintenance_mode_host",
                 "change_maintenance_mode_servicecomponent",
                 "change_objectconfig",
+                "change_ansible_config_of_cluster",
                 "delete_bundle",
                 "delete_clusterobject",
                 "delete_groupconfig",
@@ -522,5 +527,6 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
                 "view_servicecomponent",
                 "view_upgrade_of_cluster",
                 "view_upgrade_of_hostprovider",
+                "view_ansible_config_of_cluster",
             },
         )

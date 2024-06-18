@@ -209,7 +209,7 @@ class AnsibleConfigUpdateSerializer(EmptySerializer):
 
         defaults = value["defaults"]
 
-        if set(defaults) != {"forks"}:
+        if set(defaults or ()) != {"forks"}:
             raise ValidationError("Only `defaults.forks` parameter can be modified")
 
         if not isinstance(defaults["forks"], int) or defaults["forks"] < 1:
