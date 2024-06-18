@@ -285,10 +285,10 @@ if not DEBUG:
                 "formatter": "adcm",
                 "stream": "ext://sys.stderr",
             },
-            "ldap_stdout_handler": {
-                "class": "logging.StreamHandler",
-                "formatter": "ldap",
-                "stream": "ext://sys.stdout",
+            "ldap_file_handler": {
+                "class": "logging.FileHandler",
+                "formatter": "adcm",
+                "filename": LOG_DIR / "ldap.log",
             },
         },
         "loggers": {
@@ -321,10 +321,7 @@ if not DEBUG:
                 "handlers": ["stream_stdout_handler", "stream_stderr_handler"],
                 "level": LOG_LEVEL,
             },
-            "django_auth_ldap": {
-                "handlers": ["ldap_stdout_handler"],
-                "level": LOG_LEVEL,
-            },
+            "django_auth_ldap": {"handlers": ["ldap_file_handler"], "level": LOG_LEVEL, "propagate": True},
         },
     }
 
