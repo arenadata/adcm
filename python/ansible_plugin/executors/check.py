@@ -42,8 +42,8 @@ class CheckArguments(BaseStrictModel):
     fail_msg: str | None = None
     success_msg: str | None = None
     group_title: str | None = None
-    group_success_msg: str | None = None
-    group_fail_msg: str | None = None
+    group_success_msg: str = ""
+    group_fail_msg: str = ""
 
     @model_validator(mode="after")
     def check_msg_is_specified_if_no_fail_success_msg(self) -> Self:
@@ -60,24 +60,6 @@ class CheckArguments(BaseStrictModel):
 
         if self.success_msg is None or self.fail_msg is None:
             message = "Both success_msg and fail_msg should be specified when msg is absent"
-            raise ValueError(message)
-
-        return self
-
-    @model_validator(mode="after")
-    def check_group_msg_if_group_is_specified_if_no_msg(self) -> Self:
-        if self.msg:
-            return self
-
-        if (
-            self.group_title is not None
-            and self.group_success_msg is None
-            and self.group_title is not None
-            and self.group_fail_msg is None
-        ):
-            message = (
-                "either 'group_fail_msg' or 'group_success_msg' or msg must be specified if 'group_title' is specified"
-            )
             raise ValueError(message)
 
         return self
