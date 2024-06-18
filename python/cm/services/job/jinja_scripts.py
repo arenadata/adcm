@@ -18,17 +18,14 @@ from core.types import HostID, HostName, ServiceName, TaskID
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
-    Cluster,
-    ClusterObject,
     Host,
     MaintenanceMode,
     ObjectType,
     Prototype,
-    ServiceComponent,
     TaskLog,
 )
 from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
-from cm.services.cluster import retrieve_clusters_topology
+from cm.services.cluster import retrieve_related_cluster_topology
 from cm.services.job.inventory import (
     ClusterNode,
     ServiceNode,
@@ -61,13 +58,7 @@ class JinjaScriptsEnvironment(TypedDict):
 def get_env(task: TaskLog, delta: dict | None = None) -> JinjaScriptsEnvironment:
     target_object = task.task_object
 
-    if isinstance(target_object, Cluster):
-        cluster_topology = next(retrieve_clusters_topology([target_object.pk]))
-    elif isinstance(target_object, (ClusterObject, ServiceComponent, Host)):
-        cluster_topology = next(retrieve_clusters_topology([target_object.cluster_id]))
-    else:
-        message = f"Can't detect cluster variables for {target_object}"
-        raise RuntimeError(message)  # noqa: TRY004
+    cluster_topology = retrieve_related_cluster_topology(orm_object=target_object)
 
     cluster_vars = get_cluster_vars(topology=cluster_topology)
 

@@ -13,7 +13,7 @@
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_action_variant, get_prototype_config
 from cm.models import Action, PrototypeConfig, SubAction
-from jinja_config import get_jinja_config
+from cm.services.config.jinja import get_jinja_config
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
     BooleanField,
@@ -155,7 +155,9 @@ class StackActionDetailSerializer(StackActionSerializer):
             if not self.context.get("objects"):
                 return {}
 
-            action_config, attr = get_jinja_config(action=action, obj=self.context["objects"][action.prototype_type])
+            action_config, attr = get_jinja_config(
+                action=action, cluster_relative_object=self.context["objects"][action.prototype_type]
+            )
         else:
             action_config = PrototypeConfig.objects.filter(prototype=action.prototype, action=action).order_by("id")
             _, _, _, attr = get_prototype_config(prototype=action.prototype, action=action)
@@ -179,7 +181,9 @@ class ActionDetailSerializer(StackActionDetailSerializer):
 class ActionUISerializer(ActionDetailSerializer):
     def get_config(self, action: Action) -> dict:
         if action.config_jinja:
-            action_config, attr = get_jinja_config(action=action, obj=self.context["objects"][action.prototype_type])
+            action_config, attr = get_jinja_config(
+                action=action, cluster_relative_object=self.context["objects"][action.prototype_type]
+            )
         else:
             action_config = PrototypeConfig.objects.filter(prototype=action.prototype, action=action).order_by("id")
             _, _, _, attr = get_prototype_config(prototype=action.prototype, action=action)

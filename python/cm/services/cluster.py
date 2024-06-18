@@ -111,6 +111,18 @@ def retrieve_clusters_topology(cluster_ids: Iterable[ClusterID]) -> Generator[Cl
     return build_clusters_topology(cluster_ids=cluster_ids, db=ClusterDB)
 
 
+def retrieve_related_cluster_topology(orm_object: Cluster | ClusterObject | ServiceComponent | Host) -> ClusterTopology:
+    if isinstance(orm_object, Cluster):
+        cluster_id = orm_object.id
+    elif isinstance(orm_object, (ClusterObject, ServiceComponent, Host)) and orm_object.cluster_id:
+        cluster_id = orm_object.cluster_id
+    else:
+        message = f"Can't detect cluster variables for {orm_object}"
+        raise RuntimeError(message)
+
+    return next(retrieve_clusters_topology([cluster_id]))
+
+
 def retrieve_clusters_objects_maintenance_mode(cluster_ids: Iterable[ClusterID]) -> MaintenanceModeOfObjects:
     return MaintenanceModeOfObjects(
         hosts={
