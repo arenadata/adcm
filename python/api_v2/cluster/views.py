@@ -448,6 +448,7 @@ class ClusterViewSet(
             HTTP_409_CONFLICT: ErrorSerializer,
         },
     )
+    @audit
     @action(methods=["get", "post"], detail=True, pagination_class=None, filter_backends=[], url_path="ansible-config")
     def ansible_config(self, request: Request, *args, **kwargs):  # noqa: ARG002
         cluster = self.get_object()
@@ -456,13 +457,17 @@ class ClusterViewSet(
         )
 
         if request.method.lower() == "get":
-            # TODO: uncomment/refactor after ADCM-5642
-            # check_custom_perm(user=request.user, action_type="view_ansible_config_of", model="cluster", obj=cluster)
+            check_custom_perm(
+                user=request.user,
+                action_type="view_ansible_config_of",
+                model="cluster",
+                obj=cluster,
+                second_perm="view_ansible_config_of_cluster",
+            )
 
             return Response(status=HTTP_200_OK, data=AnsibleConfigRetrieveSerializer(instance=ansible_config).data)
 
-        # TODO: uncomment/refactor after ADCM-5642
-        # check_custom_perm(user=request.user, action_type="change_ansible_config_of", model="cluster", obj=cluster)
+        check_custom_perm(user=request.user, action_type="change_ansible_config_of", model="cluster", obj=cluster)
         serializer = AnsibleConfigUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 

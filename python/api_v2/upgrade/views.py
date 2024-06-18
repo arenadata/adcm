@@ -73,6 +73,7 @@ class UpgradeViewSet(
             action_type="view_upgrade_of",
             model=parent_object.__class__.__name__.lower(),
             obj=parent_object,
+            second_perm=f"view_upgrade_of_{parent_object.__class__.__name__.lower()}",
         )
 
         if self.action == "run":
@@ -96,13 +97,17 @@ class UpgradeViewSet(
 
         if isinstance(parent, Cluster):
             cluster = get_object_for_user(user=user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=parent.pk)
-            if not user.has_perm(perm=VIEW_CLUSTER_UPGRADE_PERM, obj=cluster):
+            if not user.has_perm(perm=VIEW_CLUSTER_UPGRADE_PERM, obj=cluster) and not user.has_perm(
+                perm=VIEW_CLUSTER_UPGRADE_PERM
+            ):
                 raise PermissionDenied(f"You can't view upgrades of {cluster}")
             return cluster
 
         if isinstance(parent, HostProvider):
             hostprovider = get_object_for_user(user=user, perms=VIEW_PROVIDER_PERM, klass=HostProvider, id=parent.pk)
-            if not user.has_perm(perm=VIEW_PROVIDER_UPGRADE_PERM, obj=hostprovider):
+            if not user.has_perm(perm=VIEW_PROVIDER_UPGRADE_PERM, obj=hostprovider) and not user.has_perm(
+                perm=VIEW_PROVIDER_UPGRADE_PERM
+            ):
                 raise PermissionDenied(f"You can't view upgrades of {hostprovider}")
             return hostprovider
 

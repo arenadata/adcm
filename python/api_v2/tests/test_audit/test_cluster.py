@@ -13,6 +13,7 @@
 from audit.models import AuditObject
 from cm.models import (
     Action,
+    AnsibleConfig,
     Cluster,
     ClusterObject,
     Host,
@@ -21,6 +22,7 @@ from cm.models import (
     ServiceComponent,
     Upgrade,
 )
+from django.contrib.contenttypes.models import ContentType
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -1245,3 +1247,153 @@ class TestClusterAudit(BaseAPITestCase):
             expect_object_changes_=True,
             object_changes=expected_object_changes,
         )
+
+    def test_update_ansible_config_success(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
+            response = self.client.v2[self.cluster_1, "ansible-config"].get()
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertDictEqual({"config": {"defaults": {"forks": 5}}, "adcm_meta": {}}, response.data)
+
+            response = self.client.v2[self.cluster_1, "ansible-config"].post(
+                data={"config": {"defaults": {"forks": 13}}}
+            )
+
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            ansible_config = AnsibleConfig.objects.get(
+                object_id=self.cluster_1.pk,
+                object_type=ContentType.objects.get_for_model(model=self.cluster_1),
+            )
+            self.assertDictEqual(ansible_config.value, {"defaults": {"forks": "13"}})
+
+            expected_object_changes = {
+                "current": {"defaults": {"forks": "13"}},
+                "previous": {},
+            }
+
+            self.check_last_audit_record(
+                operation_name="Ansible configuration updated",
+                operation_type="update",
+                operation_result="success",
+                user__username="test_user_username",
+                expect_object_changes_=expected_object_changes,
+            )
+
+    def test_update_ansible_config_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[], role_name="ADCM User"):
+            response = self.client.v2[self.cluster_1, "ansible-config"].get()
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertDictEqual({"config": {"defaults": {"forks": 5}}, "adcm_meta": {}}, response.data)
+
+            response = self.client.v2[self.cluster_1, "ansible-config"].post(
+                data={"config": {"defaults": {"forks": 13}}}
+            )
+
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+            self.check_last_audit_record(
+                operation_name="Ansible configuration updated",
+                operation_type="update",
+                operation_result="denied",
+                user__username="test_user_username",
+            )
+
+    def test_update_ansible_config_parent_denied(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.v2[self.cluster_1, "ansible-config"].post(data={"config": {"defaults": {"forks": 13}}})
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_record(
+            operation_name="Ansible configuration updated",
+            operation_type="update",
+            operation_result="denied",
+            user__username="test_user_username",
+        )
+
+    def test_update_ansible_config_denied_view_only_success(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View object ansible config"):
+            response = self.client.v2[self.cluster_1, "ansible-config"].get()
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertDictEqual({"config": {"defaults": {"forks": 5}}, "adcm_meta": {}}, response.data)
+
+            response = self.client.v2[self.cluster_1, "ansible-config"].post(
+                data={"config": {"defaults": {"forks": 13}}}
+            )
+
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+            self.check_last_audit_record(
+                operation_name="Ansible configuration updated",
+                operation_type="update",
+                operation_result="denied",
+                user__username="test_user_username",
+            )
+
+    def test_update_ansible_config_clustaer_administrator_success(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
+            response = self.client.v2[self.cluster_1, "ansible-config"].post(
+                data={"config": {"defaults": {"forks": 13}}}
+            )
+
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            ansible_config = AnsibleConfig.objects.get(
+                object_id=self.cluster_1.pk,
+                object_type=ContentType.objects.get_for_model(model=self.cluster_1),
+            )
+            self.assertDictEqual(ansible_config.value, {"defaults": {"forks": "13"}})
+
+            expected_object_changes = {
+                "current": {"defaults": {"forks": "13"}},
+                "previous": {},
+            }
+
+            self.check_last_audit_record(
+                operation_name="Ansible configuration updated",
+                operation_type="update",
+                operation_result="success",
+                user__username="test_user_username",
+                expect_object_changes_=expected_object_changes,
+            )
+
+    def test_update_ansible_config_not_found_fail(self):
+        response = (self.client.v2 / "clusters" / 1000 / "ansible-config").post(
+            data={"config": {"defaults": {"forks": 13}}}
+        )
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_record(
+            operation_name="Ansible configuration updated",
+            operation_type="update",
+            operation_result="fail",
+        )
+
+    def test_update_ansible_config_wrong_request_fail(self):
+        wrong_requests = (
+            {"config": {"defaults": {"forks": -1}}},
+            {"config": {"defaults": {"forks": 0}}},
+            {"config": 1},
+            {"config": {"defaults": None}},
+            {},
+            {"config": {"defaults": {"forks": "wrong format"}}},
+        )
+        for request_data in wrong_requests:
+            with self.subTest(f"incorrect request: {request_data}"):
+                response = self.client.v2[self.cluster_1, "ansible-config"].post(data=request_data)
+
+                self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+
+                self.check_last_audit_record(
+                    operation_name="Ansible configuration updated",
+                    operation_type="update",
+                    operation_result="fail",
+                )
