@@ -50,7 +50,9 @@ class RemoveHostFromClusterArguments(BaseStrictModel):
 class ADCMRemoveHostFromClusterPluginExecutor(ADCMAnsiblePluginExecutor[RemoveHostFromClusterArguments, None]):
     _config = PluginExecutorConfig(
         arguments=ArgumentsConfig(represent_as=RemoveHostFromClusterArguments),
-        context=ContextConfig(allow_only=frozenset((ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE))),
+        context=ContextConfig(
+            allow_only=frozenset((ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT))
+        ),
     )
 
     def __call__(
