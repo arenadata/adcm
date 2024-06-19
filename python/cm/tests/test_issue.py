@@ -317,12 +317,12 @@ class TestImport(BaseTestCase):
 
 
 class TestConcernsRedistribution(BaseTestCase):
-    MOCK_ISSUE_CHECK_MAP_ALL_FALSE = {
+    MOCK_ISSUE_CHECK_MAP_FOR_HOST_TO_CLUSTER_MAPPING = {
         ConcernCause.CONFIG: lambda x: False,
         ConcernCause.IMPORT: lambda x: False,
-        ConcernCause.SERVICE: lambda x: False,
+        ConcernCause.SERVICE: lambda x: True,
         ConcernCause.HOSTCOMPONENT: lambda x: False,
-        ConcernCause.REQUIREMENT: lambda x: False,
+        ConcernCause.REQUIREMENT: lambda x: True,
     }
 
     def setUp(self) -> None:
@@ -358,7 +358,7 @@ class TestConcernsRedistribution(BaseTestCase):
             {self.hostprovider.content_type, self.host.content_type},
         )
 
-        with patch("cm.issue._issue_check_map", self.MOCK_ISSUE_CHECK_MAP_ALL_FALSE):
+        with patch("cm.issue._issue_check_map", self.MOCK_ISSUE_CHECK_MAP_FOR_HOST_TO_CLUSTER_MAPPING):
             perform_host_to_cluster_map(self.cluster.id, [self.host.id], status_service=notify)
 
         self.host.refresh_from_db()

@@ -16,6 +16,7 @@ from cm.models import (
     ObjectType,
     Prototype,
     PrototypeImport,
+    ServiceComponent,
 )
 from cm.services.concern.messages import ConcernMessage
 from cm.tests.mocks.task_runner import RunTaskMock
@@ -210,6 +211,12 @@ class TestConcernsLogic(BaseAPITestCase):
         bundle_dir = self.test_bundles_dir / "cluster_with_service_requirements"
         self.service_requirements_bundle = self.add_bundle(source_dir=bundle_dir)
 
+        bundle_dir = self.test_bundles_dir / "hc_mapping_constraints"
+        self.hc_mapping_constraints_bundle = self.add_bundle(source_dir=bundle_dir)
+
+        bundle_dir = self.test_bundles_dir / "provider_no_config"
+        self.provider_no_config_bundle = self.add_bundle(source_dir=bundle_dir)
+
     def test_import_concern_resolved_after_saving_import(self):
         import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
         export_cluster = self.cluster_1
@@ -249,3 +256,92 @@ class TestConcernsLogic(BaseAPITestCase):
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertEqual(response.json()["concerns"][0]["owner"]["id"], service.pk)
         self.assertEqual(response.json()["concerns"][0]["owner"]["type"], "service")
+
+    def test_adcm_5677_hc_issue_on_link_host_to_cluster_with_plus_constraint(self):
+        cluster = self.add_cluster(bundle=self.hc_mapping_constraints_bundle, name="hc_mapping_constraints_cluster")
+        service = self.add_services_to_cluster(
+            service_names=["service_with_plus_component_constraint"], cluster=cluster
+        ).get()
+        component = ServiceComponent.objects.get(prototype__name="plus", service=service, cluster=cluster)
+
+        expected_concern_part = {
+            "type": "issue",
+            "reason": {
+                "message": "${source} has an issue with host-component mapping",
+                "placeholder": {
+                    "source": {
+                        "type": "cluster_mapping",
+                        "name": "hc_mapping_constraints_cluster",
+                        "params": {"clusterId": cluster.pk},
+                    }
+                },
+            },
+            "isBlocking": True,
+            "cause": "host-component",
+            "owner": {"id": cluster.pk, "type": "cluster"},
+        }
+
+        # initial hc concern (from component's constraint)
+        response: Response = self.client.v2[cluster].get()
+        self.assertEqual(len(response.json()["concerns"]), 1)
+        actual_concern = response.json()["concerns"][0]
+        del actual_concern["id"]
+        self.assertDictEqual(actual_concern, expected_concern_part)
+
+        # add host to cluster and map it to `plus` component. Should be no concerns
+        provider = self.add_provider(bundle=self.provider_no_config_bundle, name="provider_no_config")
+        host_1 = self.add_host(provider=provider, fqdn="host_1", cluster=cluster)
+        self.set_hostcomponent(cluster=cluster, entries=((host_1, component),))
+
+        response: Response = self.client.v2[cluster].get()
+        self.assertEqual(len(response.json()["concerns"]), 0)
+
+        response: Response = self.client.v2[host_1].get()
+        self.assertEqual(len(response.json()["concerns"]), 0)
+
+        # add second host to cluster. Concerns should be on cluster and mapped host (host_1)
+        host_2 = self.add_host(provider=provider, fqdn="host_2", cluster=cluster)
+
+        response: Response = self.client.v2[cluster].get()
+        self.assertEqual(len(response.json()["concerns"]), 1)
+        actual_concern = response.json()["concerns"][0]
+        del actual_concern["id"]
+        self.assertDictEqual(actual_concern, expected_concern_part)
+
+        response: Response = self.client.v2[host_1].get()
+        self.assertEqual(len(response.json()["concerns"]), 1)
+        actual_concern = response.json()["concerns"][0]
+        del actual_concern["id"]
+        self.assertDictEqual(actual_concern, expected_concern_part)
+
+        # not mapped host has no concerns
+        response: Response = self.client.v2[host_2].get()
+        self.assertEqual(len(response.json()["concerns"]), 0)
+
+        # unlink host_2 from cluster, 0 concerns on cluster and host_1
+        response: Response = self.client.v2[cluster, "hosts", str(host_2.pk)].delete()
+
+        response: Response = self.client.v2[cluster].get()
+        self.assertEqual(len(response.json()["concerns"]), 0)
+
+        response: Response = self.client.v2[host_1].get()
+        self.assertEqual(len(response.json()["concerns"]), 0)
+
+        # link host_2 to cluster. Concerns should appear again
+        response: Response = self.client.v2[cluster, "hosts"].post(data={"hostId": host_2.pk})
+
+        response: Response = self.client.v2[cluster].get()
+        self.assertEqual(len(response.json()["concerns"]), 1)
+        actual_concern = response.json()["concerns"][0]
+        del actual_concern["id"]
+        self.assertDictEqual(actual_concern, expected_concern_part)
+
+        response: Response = self.client.v2[host_1].get()
+        self.assertEqual(len(response.json()["concerns"]), 1)
+        actual_concern = response.json()["concerns"][0]
+        del actual_concern["id"]
+        self.assertDictEqual(actual_concern, expected_concern_part)
+
+        # not mapped host has no concerns
+        response: Response = self.client.v2[host_2].get()
+        self.assertEqual(len(response.json()["concerns"]), 0)
