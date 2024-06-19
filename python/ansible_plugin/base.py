@@ -12,7 +12,8 @@
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Any, Collection, Generic, Literal, Mapping, Protocol, TypeAlias, TypeVar
+from functools import wraps
+from typing import Any, Callable, Collection, Generic, Literal, Mapping, ParamSpec, Protocol, TypeAlias, TypeVar
 import fcntl
 import traceback
 
@@ -39,6 +40,9 @@ from ansible_plugin.errors import (
     PluginValidationError,
     compose_validation_error_details_message,
 )
+
+P = ParamSpec("P")
+T = TypeVar("T")
 
 
 class BaseStrictModel(BaseModel):
@@ -140,7 +144,7 @@ class CoreObjectTargetDescription(ObjectWithType):
         return self
 
     def __str__(self) -> str:
-        return ", ".join(f"{key}='value'" for key, value in self.model_dump(exclude_none=True))
+        return ", ".join(f"{key}='{value}'" for key, value in self.model_dump(exclude_none=True).items())
 
 
 class BaseTypedArguments(CoreObjectTargetDescription):
@@ -194,6 +198,27 @@ def from_context(
     return (context_owner,)
 
 
+def raise_not_found_as_target_detection_error(func: Callable[P, T]) -> Callable[P, T]:
+    @wraps(func)
+    def wrapped(target_description: CoreObjectTargetDescription, context: VarsContextSection) -> CoreObjectDescriptor:
+        try:
+            return func(target_description=target_description, context=context)
+        except ObjectDoesNotExist:
+            parameters = ", ".join(
+                f"{key}={value}"
+                for key, value in target_description.model_dump(exclude_unset=True, exclude_none=True).items()
+            )
+            message = (
+                "Target detection has failed due to absence of object in ADCM DB.\n"
+                f"Parameters used for object search: {parameters}.\n"
+                'Ensure objects requested with "*_name" parameters exist.'
+            )
+            raise PluginTargetDetectionError(message=message) from None
+
+    return wrapped
+
+
+@raise_not_found_as_target_detection_error
 def _from_target_description(
     target_description: CoreObjectTargetDescription, context: VarsContextSection
 ) -> CoreObjectDescriptor:
