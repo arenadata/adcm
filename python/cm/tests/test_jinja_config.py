@@ -13,9 +13,9 @@
 from pathlib import Path
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin, TaskTestMixin
-from jinja_config import get_jinja_config
 
 from cm.models import Action
+from cm.services.config.jinja import get_jinja_config
 
 
 class TestJinjaConfigBugs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
@@ -47,7 +47,7 @@ class TestJinjaConfigBugs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
 
         config_prototypes = {
             proto.name: {"limits": proto.limits, "default": str(proto.default)}
-            for proto in get_jinja_config(obj=cluster, action=action)[0]
+            for proto in get_jinja_config(cluster_relative_object=cluster, action=action)[0]
         }
 
         self.assertDictEqual(

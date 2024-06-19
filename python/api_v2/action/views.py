@@ -16,13 +16,13 @@ from adcm.mixins import GetParentObjectMixin
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import ADCM, Action, ConcernType, Host, HostComponent, PrototypeConfig
+from cm.services.config.jinja import get_jinja_config
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.stack import check_hostcomponents_objects_exist
 from django.conf import settings
 from django.db.models import Q
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
-from jinja_config import get_jinja_config
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -244,7 +244,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
             adcm_meta = configuration["adcm_meta"]
 
         if target_action.config_jinja:
-            prototype_configs, _ = get_jinja_config(action=target_action, obj=self.parent_object)
+            prototype_configs, _ = get_jinja_config(action=target_action, cluster_relative_object=self.parent_object)
             prototype_configs = [
                 prototype_config for prototype_config in prototype_configs if prototype_config.type == "json"
             ]
