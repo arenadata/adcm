@@ -14,8 +14,7 @@ import json
 import hashlib
 
 from adcm.permissions import check_custom_perm
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.api import add_host_to_cluster
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase, BusinessLogicMixin
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
@@ -23,7 +22,6 @@ from cm.models import (
     Bundle,
     Cluster,
     ClusterObject,
-    Host,
     HostProvider,
     ProductCategory,
     Prototype,
@@ -557,7 +555,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         self.assertEqual(sa_role_count, 6, "Roles missing from base roles")
 
 
-class TestMMRoles(RBACBaseTestCase):
+class TestMMRoles(RBACBaseTestCase, BusinessLogicMixin):
     def setUp(self) -> None:
         super().setUp()
 
@@ -568,8 +566,7 @@ class TestMMRoles(RBACBaseTestCase):
             name="test_provider",
             prototype=self.provider_prototype,
         )
-        self.host = Host.objects.create(fqdn="testhost", prototype=self.host_prototype)
-        add_host_to_cluster(self.cluster, self.host)
+        self.host = self.add_host(provider=self.provider, fqdn="testhost", cluster=self.cluster)
         self.service = ClusterObject.objects.create(cluster=self.cluster, prototype=self.sp_1)
         self.component = ServiceComponent.objects.create(
             cluster=self.cluster,

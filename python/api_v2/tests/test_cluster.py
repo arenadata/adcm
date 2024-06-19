@@ -18,7 +18,6 @@ from cm.models import (
     ADCMEntityStatus,
     Cluster,
     ClusterObject,
-    Host,
     Prototype,
     ServiceComponent,
 )
@@ -496,16 +495,8 @@ class TestClusterMM(BaseAPITestCase):
             cluster=self.cluster_2,
             service=self.service_2,
         )
-        self.host_1 = Host.objects.create(
-            fqdn="test-host",
-            prototype=Prototype.objects.create(bundle=self.bundle_1, type="host"),
-        )
-        self.host_2 = Host.objects.create(
-            fqdn="test-host-2",
-            prototype=Prototype.objects.create(bundle=self.bundle_2, type="host"),
-        )
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster_2, host=self.host_2)
+        self.host_1 = self.add_host(provider=self.provider, fqdn="test-host", cluster=self.cluster_1)
+        self.host_2 = self.add_host(provider=self.provider, fqdn="test-host-2", cluster=self.cluster_2)
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = User.objects.create_user(**self.test_user_credentials)
