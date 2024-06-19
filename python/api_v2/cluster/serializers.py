@@ -12,6 +12,7 @@
 
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
+from cm.errors import AdcmEx
 from cm.models import (
     AnsibleConfig,
     Cluster,
@@ -26,12 +27,8 @@ from cm.validators import ClusterUniqueValidator, StartMidEndValidator
 from django.conf import settings
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import CharField, DictField, IntegerField
-from rest_framework.serializers import (
-    BooleanField,
-    ModelSerializer,
-    SerializerMethodField,
-    ValidationError,
-)
+from rest_framework.serializers import BooleanField, ModelSerializer, SerializerMethodField
+from rest_framework.status import HTTP_409_CONFLICT
 
 from api_v2.cluster.utils import get_depend_on
 from api_v2.concern.serializers import ConcernSerializer
@@ -204,16 +201,30 @@ class AnsibleConfigUpdateSerializer(EmptySerializer):
 
     @staticmethod
     def validate_config(value: dict) -> dict:
+        # required to raise here AdcmEx directly,
+        # because subclassing ValidationError with status_code override is no help
+        # because Serializer handler will raise vanila ValidationError anyway
+
         if set(value) != {"defaults"}:
-            raise ValidationError("Only `defaults` section can be modified")
+            raise AdcmEx(
+                code="CONFIG_KEY_ERROR", msg="Only `defaults` section can be modified", http_code=HTTP_409_CONFLICT
+            )
 
         defaults = value["defaults"]
 
         if set(defaults or ()) != {"forks"}:
-            raise ValidationError("Only `defaults.forks` parameter can be modified")
+            raise AdcmEx(
+                code="CONFIG_KEY_ERROR",
+                msg="Only `defaults.forks` parameter can be modified",
+                http_code=HTTP_409_CONFLICT,
+            )
 
         if not isinstance(defaults["forks"], int) or defaults["forks"] < 1:
-            raise ValidationError("`defaults.forks` parameter must be an integer greater than 0")
+            raise AdcmEx(
+                code="CONFIG_VALUE_ERROR",
+                msg="`defaults.forks` parameter must be an integer greater than 0",
+                http_code=HTTP_409_CONFLICT,
+            )
 
         defaults["forks"] = str(defaults["forks"])
         value["defaults"] = defaults

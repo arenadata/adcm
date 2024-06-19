@@ -443,7 +443,7 @@ class TestCluster(BaseAPITestCase):
             with self.subTest(value=value):
                 response = self.client.v2[self.cluster_1, "ansible-config"].post(data={"config": value})
 
-                self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+                self.assertEqual(response.status_code, HTTP_409_CONFLICT)
                 ansible_config.refresh_from_db()
                 self.assertDictEqual(ansible_config.value, {"defaults": {"forks": "5"}})
 

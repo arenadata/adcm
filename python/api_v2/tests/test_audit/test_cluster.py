@@ -1379,18 +1379,18 @@ class TestClusterAudit(BaseAPITestCase):
 
     def test_update_ansible_config_wrong_request_fail(self):
         wrong_requests = (
-            {"config": {"defaults": {"forks": -1}}},
-            {"config": {"defaults": {"forks": 0}}},
-            {"config": 1},
-            {"config": {"defaults": None}},
-            {},
-            {"config": {"defaults": {"forks": "wrong format"}}},
+            ({"config": {"defaults": {"forks": -1}}}, HTTP_409_CONFLICT),
+            ({"config": {"defaults": {"forks": 0}}}, HTTP_409_CONFLICT),
+            ({"config": 1}, HTTP_400_BAD_REQUEST),
+            ({"config": {"defaults": None}}, HTTP_409_CONFLICT),
+            ({}, HTTP_400_BAD_REQUEST),
+            ({"config": {"defaults": {"forks": "wrong format"}}}, HTTP_409_CONFLICT),
         )
-        for request_data in wrong_requests:
+        for request_data, expected_code in wrong_requests:
             with self.subTest(f"incorrect request: {request_data}"):
                 response = self.client.v2[self.cluster_1, "ansible-config"].post(data=request_data)
 
-                self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+                self.assertEqual(response.status_code, expected_code)
 
                 self.check_last_audit_record(
                     operation_name="Ansible configuration updated",
