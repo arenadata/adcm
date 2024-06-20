@@ -1,13 +1,16 @@
 import { Statusable, Table, TableCell, TableRow, Tooltip } from '@uikit';
 import { AdcmClusterOverviewStatusHost, AdcmClusterStatus } from '@models/adcm';
 import s from './ClusterOverviewHosts.module.scss';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 
 interface clusterOverviewHostsTableProps {
   hosts: AdcmClusterOverviewStatusHost[];
 }
 
 const ClusterOverviewHostsTable = ({ hosts }: clusterOverviewHostsTableProps) => {
+  const { clusterId: clusterIdFromUrl } = useParams();
+  const clusterId = Number(clusterIdFromUrl);
+
   return (
     <Table variant="secondary">
       {hosts.map((host) => {
@@ -18,7 +21,9 @@ const ClusterOverviewHostsTable = ({ hosts }: clusterOverviewHostsTableProps) =>
             <TableCell>
               <Tooltip label={host.name} placement="top-start">
                 <Statusable className={s.clusterOverviewHosts__title} status={hostStatus} size="medium">
-                  <Link to={`/hosts/${host.id}`}>{host.name}</Link>
+                  <Link to={`/clusters/${clusterId}/hosts/${host.id}`} className="text-link">
+                    {host.name}
+                  </Link>
                 </Statusable>
               </Tooltip>
             </TableCell>
