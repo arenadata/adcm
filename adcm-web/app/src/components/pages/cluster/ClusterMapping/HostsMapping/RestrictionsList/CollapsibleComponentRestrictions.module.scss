@@ -1,0 +1,28 @@
+.collapsibleComponentRestrictions {
+  &:not(:last-child) {
+    margin-bottom: 16px;
+  }
+
+  &__header {
+    background-color: rgba(242, 97, 97, 0.15);
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    color: var(--color-light-red);
+    font-weight: 500;
+    font-size: 15px;
+  }
+
+  &__icon {
+    cursor: pointer;
+    &:not(:global(.is-open)) {
+      transform: rotate(-90deg);
+    }
+  }
+
+  &__list {
+    margin-top: 8px;
+  }
+}

@@ -37,6 +37,7 @@ RUN_DIR = DATA_DIR / "run"
 FILE_DIR = STACK_DIR / "data" / "file"
 LOG_DIR = DATA_DIR / "log"
 VAR_DIR = DATA_DIR / "var"
+TMP_DIR = DATA_DIR / "tmp"
 LOG_FILE = LOG_DIR / "adcm.log"
 SECRETS_FILE = VAR_DIR / "secrets.json"
 ADCM_TOKEN_FILE = VAR_DIR / "adcm_token"
@@ -284,10 +285,10 @@ if not DEBUG:
                 "formatter": "adcm",
                 "stream": "ext://sys.stderr",
             },
-            "ldap_stdout_handler": {
-                "class": "logging.StreamHandler",
-                "formatter": "ldap",
-                "stream": "ext://sys.stdout",
+            "ldap_file_handler": {
+                "class": "logging.FileHandler",
+                "formatter": "adcm",
+                "filename": LOG_DIR / "ldap.log",
             },
         },
         "loggers": {
@@ -320,10 +321,7 @@ if not DEBUG:
                 "handlers": ["stream_stdout_handler", "stream_stderr_handler"],
                 "level": LOG_LEVEL,
             },
-            "django_auth_ldap": {
-                "handlers": ["ldap_stdout_handler"],
-                "level": LOG_LEVEL,
-            },
+            "django_auth_ldap": {"handlers": ["ldap_file_handler"], "level": LOG_LEVEL, "propagate": True},
         },
     }
 
@@ -356,7 +354,6 @@ STACK_COMPLEX_FIELD_TYPES = {"json", "structure", "list", "map", "secretmap"}
 STACK_FILE_FIELD_TYPES = {"file", "secretfile"}
 STACK_NUMERIC_FIELD_TYPES = {"integer", "float"}
 SECURE_PARAM_TYPES = {"password", "secrettext"}
-TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "read_only", "writable", "subs", "source"}
 
 EMPTY_REQUEST_STATUS_CODE = 32
 VALUE_ERROR_STATUS_CODE = 8

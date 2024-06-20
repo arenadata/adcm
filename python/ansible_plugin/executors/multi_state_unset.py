@@ -11,36 +11,41 @@
 # limitations under the License.
 
 from contextlib import suppress
-from typing import Collection
+from typing import Collection, TypedDict
 
 from cm.status_api import send_object_update_event
 from core.types import CoreObjectDescriptor
-from pydantic import BaseModel
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
     ArgumentsConfig,
+    BaseTypedArguments,
     CallResult,
     PluginExecutorConfig,
     RuntimeEnvironment,
-    SingleStateReturnValue,
     TargetConfig,
     from_arguments_root,
     retrieve_orm_object,
 )
 from ansible_plugin.errors import PluginRuntimeError
-from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner, validate_type_is_present
+from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner
 
 
-class MultiStateUnsetArguments(BaseModel):
+class MultiStateUnsetArguments(BaseTypedArguments):
     state: str
     missing_ok: bool = False
 
 
-class ADCMMultiStateUnsetPluginExecutor(ADCMAnsiblePluginExecutor[MultiStateUnsetArguments, SingleStateReturnValue]):
+class MultiStateUnsetReturnValue(TypedDict):
+    state: str
+
+
+class ADCMMultiStateUnsetPluginExecutor(
+    ADCMAnsiblePluginExecutor[MultiStateUnsetArguments, MultiStateUnsetReturnValue]
+):
     _config = PluginExecutorConfig(
         arguments=ArgumentsConfig(represent_as=MultiStateUnsetArguments),
-        target=TargetConfig(detectors=(from_arguments_root,), validators=(validate_type_is_present,)),
+        target=TargetConfig(detectors=(from_arguments_root,)),
     )
 
     def __call__(
@@ -48,7 +53,7 @@ class ADCMMultiStateUnsetPluginExecutor(ADCMAnsiblePluginExecutor[MultiStateUnse
         targets: Collection[CoreObjectDescriptor],
         arguments: MultiStateUnsetArguments,
         runtime: RuntimeEnvironment,
-    ) -> CallResult[SingleStateReturnValue]:
+    ) -> CallResult[MultiStateUnsetReturnValue]:
         target, *_ = targets
 
         if error := validate_target_allowed_for_context_owner(context_owner=runtime.context_owner, target=target):
@@ -66,4 +71,4 @@ class ADCMMultiStateUnsetPluginExecutor(ADCMAnsiblePluginExecutor[MultiStateUnse
         with suppress(Exception):
             send_object_update_event(object_=target_object, changes={"state": arguments.state})
 
-        return CallResult(value=SingleStateReturnValue(state=arguments.state), changed=True, error=None)
+        return CallResult(value=MultiStateUnsetReturnValue(state=arguments.state), changed=True, error=None)

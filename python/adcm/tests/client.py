@@ -68,17 +68,19 @@ class APINode:
 
         return self._resolved_path
 
-    def get(self, *, query: dict | None = None) -> Response:
-        return self._client.get(path=self.path, data=query)
+    def get(self, *, query: dict | None = None, headers: dict | None = None) -> Response:
+        return self._client.get(path=self.path, data=query, **(headers or {}))
 
-    def post(self, *, data: dict | list[dict] | None = None, format_: str | None = None) -> Response:
-        return self._client.post(path=self.path, data=data, format=format_)
+    def post(
+        self, *, data: dict | list[dict] | None = None, headers: dict | None = None, format_: str | None = None
+    ) -> Response:
+        return self._client.post(path=self.path, data=data, format=format_, **(headers or {}))
 
-    def patch(self, *, data: dict) -> Response:
-        return self._client.patch(path=self.path, data=data)
+    def patch(self, *, data: dict, headers: dict | None = None) -> Response:
+        return self._client.patch(path=self.path, data=data, **(headers or {}))
 
-    def delete(self) -> Response:
-        return self._client.delete(path=self.path)
+    def delete(self, headers: dict | None = None) -> Response:
+        return self._client.delete(path=self.path, **(headers or {}))
 
 
 class AsyncAPINode(APINode):
@@ -107,6 +109,9 @@ class V2RootNode(RootNode):
         User: "rbac/users",
         Role: "rbac/roles",
         Group: "rbac/groups",
+        "profile": "profile",
+        "adcm": "adcm",
+        "schema": "schema",
     }
 
     def __getitem__(self, item: PathObject | tuple[PathObject, str | int | WithID, ...]) -> APINode:
@@ -116,10 +121,16 @@ class V2RootNode(RootNode):
         else:
             path_object, tail = item, ()
 
-        root_endpoint = self._CLASS_ROOT_EP_MAP.get(path_object.__class__)
+        if isinstance(path_object, str):
+            root_endpoint = self._CLASS_ROOT_EP_MAP.get(path_object)
+            object_id_path = ()
+        else:
+            root_endpoint = self._CLASS_ROOT_EP_MAP.get(path_object.__class__)
+            object_id_path = (str(path_object.id),)
+
         if root_endpoint:
             return self._node_class(
-                *self._path, root_endpoint, str(path_object.id), *tail, client=self._client, node_class=self._node_class
+                *self._path, root_endpoint, *object_id_path, *tail, client=self._client, node_class=self._node_class
             )
 
         if isinstance(path_object, ClusterObject):
@@ -172,6 +183,7 @@ class ADCMTestClient(APIClient):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.versions = APINode("versions", client=self, node_class=APINode)
         self.v2 = V2RootNode("api", "v2", client=self, node_class=APINode)
 
 
@@ -179,4 +191,5 @@ class ADCMAsyncTestClient(AsyncClient):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.versions = APINode("versions", client=self, node_class=APINode)
         self.v2 = V2RootNode("api", "v2", client=self, node_class=AsyncAPINode)

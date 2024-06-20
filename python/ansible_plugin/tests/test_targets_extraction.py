@@ -18,12 +18,18 @@ from cm.models import ClusterObject, ServiceComponent
 from cm.services.job.run.repo import JobRepoImpl
 from core.job.types import Task
 from core.types import ADCMCoreType, CoreObjectDescriptor
-from pydantic import BaseModel
 
-from ansible_plugin.base import ArgumentsConfig, PluginExecutorConfig, TargetConfig, from_objects
+from ansible_plugin.base import (
+    ArgumentsConfig,
+    BaseArgumentsWithTypedObjects,
+    PluginExecutorConfig,
+    TargetConfig,
+    from_objects,
+)
+from ansible_plugin.errors import PluginTargetDetectionError
 
 
-class EmptyArguments(BaseModel):
+class EmptyArguments(BaseArgumentsWithTypedObjects):
     ...
 
 
@@ -197,7 +203,7 @@ class TestObjectsTargetsExtraction(BaseTestCase, BusinessLogicMixin, ADCMAnsible
         parent_cluster = self.cluster_1
         component = ServiceComponent.objects.filter(cluster=parent_cluster).first()
 
-        self.add_host_to_cluster(cluster_pk=parent_cluster.pk, host_pk=host.pk)
+        self.add_host_to_cluster(cluster=parent_cluster, host=host)
         self.set_hostcomponent(cluster=parent_cluster, entries=[(host, component)])
 
         self.check_target_detection(
@@ -210,6 +216,23 @@ class TestObjectsTargetsExtraction(BaseTestCase, BusinessLogicMixin, ADCMAnsible
                 CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST),
             ],
         )
+
+    def test_adcm_5685_non_existent_target_detection(self):
+        arguments = {"objects": [{"type": "component", "component_name": "component_not_exist"}]}
+
+        parent_cluster = self.cluster_2
+        context_service = ClusterObject.objects.get(prototype__name="service_2", cluster=parent_cluster)
+
+        task = self.prepare_task(owner=context_service, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=self.targets_from_objects_executor, call_arguments=arguments, call_context=job
+        )
+
+        result = executor.execute()
+        self.assertIsInstance(result.error, PluginTargetDetectionError)
+        self.assertIn('Ensure objects requested with "*_name" parameters exist.', result.error.message)
 
     def check_target_detection(
         self, task: Task, arguments: dict | str, expected_targets: list[CoreObjectDescriptor]

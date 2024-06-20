@@ -1,13 +1,17 @@
 /* eslint-disable spellcheck/spell-checker */
+import { safePattern } from './patternKeyword';
 import Ajv2020, { Schema } from 'ajv/dist/2020';
 
 const ajv = new Ajv2020({
   strictSchema: true,
   allErrors: true,
   verbose: true,
+  unicodeRegExp: false,
 });
 
 ajv.addVocabulary(['adcmMeta']);
+ajv.removeKeyword('pattern');
+ajv.addKeyword(safePattern);
 
 const ajvWithDefaults = new Ajv2020({
   strictSchema: false,

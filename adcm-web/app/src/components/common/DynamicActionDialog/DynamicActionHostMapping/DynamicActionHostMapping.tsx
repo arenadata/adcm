@@ -1,12 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { Button, ButtonGroup, SearchInput, SpinnerPanel, ToolbarPanel } from '@uikit';
 import { DynamicActionCommonOptions } from '@commonComponents/DynamicActionDialog/DynamicAction.types';
 import s from '@commonComponents/DynamicActionDialog/DynamicActionDialog.module.scss';
 import { useClusterMapping } from '@pages/cluster/ClusterMapping/useClusterMapping';
 import ComponentContainer from '@pages/cluster/ClusterMapping/ComponentsMapping/ComponentContainer/ComponentContainer';
-import { AdcmMappingComponent, AdcmMappingComponentService } from '@models/adcm';
 import { getMappings } from '@store/adcm/clusters/clustersDynamicActionsSlice';
+import { getComponentMapActions, getDisabledMappings } from './DynamicActionHostMapping.utils';
 import { Link } from 'react-router-dom';
 import { LoadState } from '@models/loadState';
 
@@ -41,8 +41,8 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
     servicesMapping,
     mappingFilter,
     handleMappingFilterChange,
-    mappingValidation,
-    handleMap,
+    mappingErrors,
+    handleMapHostsToComponent,
     handleUnmap,
     handleReset,
   } = useClusterMapping(mapping, hosts, components, notAddedServicesDictionary, true);
@@ -53,15 +53,12 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
     onSubmit({ hostComponentMap: localMapping });
   };
 
-  const getMapRules = (service: AdcmMappingComponentService, component: AdcmMappingComponent) => {
-    return actionDetails.hostComponentMapRules.filter(
-      (rule) => rule.service === service.name && rule.component === component.name,
-    );
-  };
-
   const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     handleMappingFilterChange({ hostName: event.target.value });
   };
+
+  const hasErrors = Object.keys(mappingErrors).length > 0;
+  const disabledMappings = useMemo(() => getDisabledMappings(mapping), [mapping]);
 
   return (
     <div>
@@ -72,11 +69,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
           <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isServicesMappingEmpty || !mappingValidation.isAllMappingValid}
-            hasError={false}
-          >
+          <Button onClick={handleSubmit} disabled={isServicesMappingEmpty || hasErrors} hasError={false}>
             {submitLabel}
           </Button>
         </ButtonGroup>
@@ -96,8 +89,8 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
           )}
           {servicesMapping.flatMap(({ service, componentsMapping }) =>
             componentsMapping.map((componentMapping) => {
-              const actions = getMapRules(service, componentMapping.component).map((rule) => rule.action);
-              const allowActions = [...new Set(actions)];
+              const allowActions = getComponentMapActions(actionDetails, service, componentMapping.component);
+              const componentMappingErrors = mappingErrors[componentMapping.component.id];
 
               return (
                 <ComponentContainer
@@ -105,13 +98,11 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
                   componentMapping={componentMapping}
                   filter={mappingFilter}
                   allHosts={hosts}
-                  notAddedServicesDictionary={notAddedServicesDictionary}
-                  componentMappingValidation={mappingValidation.byComponents[componentMapping.component.id]}
-                  onMap={handleMap}
+                  disabledHosts={disabledMappings[componentMapping.component.id]}
+                  mappingErrors={componentMappingErrors}
+                  onMap={handleMapHostsToComponent}
                   onUnmap={handleUnmap}
                   allowActions={allowActions}
-                  denyAddHostReason="Add host do not allow in config of action"
-                  denyRemoveHostReason="Remove host do not allow in config of action"
                 />
               );
             }),

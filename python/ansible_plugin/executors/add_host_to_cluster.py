@@ -16,12 +16,13 @@ from cm.models import Host
 from cm.services.cluster import perform_host_to_cluster_map
 from cm.services.status import notify
 from core.types import ADCMCoreType, CoreObjectDescriptor
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
 from typing_extensions import Self
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
     ArgumentsConfig,
+    BaseStrictModel,
     CallResult,
     ContextConfig,
     PluginExecutorConfig,
@@ -31,7 +32,7 @@ from ansible_plugin.base import (
 from ansible_plugin.errors import PluginRuntimeError, PluginValidationError
 
 
-class AddHostToClusterArguments(BaseModel):
+class AddHostToClusterArguments(BaseStrictModel):
     fqdn: str | None = None
     host_id: int | None = None
 

@@ -77,6 +77,7 @@ export const clusterConfigurationSchema: ConfigurationSchema = {
                 type: 'string',
                 default: 'default cluster name',
                 readOnly: false,
+                pattern: '[a-',
                 adcmMeta: {
                   isAdvanced: false,
                   isInvisible: false,

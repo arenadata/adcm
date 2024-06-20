@@ -10,11 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict
-from copy import deepcopy
 from typing import Any, Collection, TypeAlias, TypedDict
 
-from cm.adcm_config.ansible import ansible_decrypt
 from cm.api import set_object_config_with_plugin
 from cm.converters import core_type_to_model
 from cm.models import ConfigLog
@@ -23,12 +20,14 @@ from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 from cm.status_api import send_config_creation_event
 from core.types import CoreObjectDescriptor
 from django.db.transaction import atomic
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
 from typing_extensions import Self
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
     ArgumentsConfig,
+    BaseStrictModel,
+    BaseTypedArguments,
     CallResult,
     PluginExecutorConfig,
     RuntimeEnvironment,
@@ -36,7 +35,7 @@ from ansible_plugin.base import (
     from_arguments_root,
 )
 from ansible_plugin.errors import PluginIncorrectCallError, PluginTargetDetectionError
-from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner, validate_type_is_present
+from ansible_plugin.executors._validators import validate_target_allowed_for_context_owner
 from ansible_plugin.utils import cast_to_type
 
 # don't want to typehint due to serialization problems and serialization priority
@@ -45,7 +44,7 @@ ParamValue: TypeAlias = Any
 OriginalValues: TypeAlias = ConfigAttrPair
 
 
-class ParameterToChange(BaseModel):
+class ParameterToChange(BaseStrictModel):
     key: str
     value: ParamValue = None
     active: bool | None = None
@@ -67,7 +66,7 @@ class ParameterToChange(BaseModel):
         return self
 
 
-class ChangeConfigArguments(ParameterToChange):
+class ChangeConfigArguments(ParameterToChange, BaseTypedArguments):
     # new API to change multiple parameters
     parameters: list[ParameterToChange] | None = None
 
@@ -99,7 +98,7 @@ class ChangeConfigReturn(TypedDict):
 class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeConfigArguments, ChangeConfigReturn]):
     _config = PluginExecutorConfig(
         arguments=ArgumentsConfig(represent_as=ChangeConfigArguments),
-        target=TargetConfig(detectors=(from_arguments_root,), validators=(validate_type_is_present,)),
+        target=TargetConfig(detectors=(from_arguments_root,)),
     )
 
     @atomic()
@@ -135,11 +134,9 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeConfigArguments, 
         configuration = ConfigAttrPair(**ConfigLog.objects.values("config", "attr").get(id=db_object.config.current))
         spec = next(iter(retrieve_flat_spec_for_objects(prototypes=(db_object.prototype_id,)).values()))
 
-        original_values = _fill_config_and_attr(target=configuration, changes=changes, spec=spec)
+        changed = _fill_config_and_attr(target=configuration, changes=changes, spec=spec)
 
-        if _does_contain(base_dict=configuration.config, part=original_values.config) and _does_contain(
-            base_dict=configuration.attr, part=original_values.attr
-        ):
+        if not changed:
             return CallResult(value=return_value, changed=False, error=None)
 
         set_object_config_with_plugin(obj=db_object, config=configuration.config, attr=configuration.attr)
@@ -163,14 +160,14 @@ class ADCMConfigPluginExecutor(ADCMAnsiblePluginExecutor[ChangeConfigArguments, 
         return ChangeConfigReturn(value=config_params)
 
 
-def _fill_config_and_attr(target: ConfigAttrPair, changes: ConfigAttrPair, spec: FlatSpec) -> OriginalValues:
+def _fill_config_and_attr(target: ConfigAttrPair, changes: ConfigAttrPair, spec: FlatSpec) -> bool:
     """
     Fill `target` with values from `changes` in-place
 
     :param target: Values for complex structures are nested (e.g. ["groupkey"]["valingorupkey"])
     :param changes: Keys must have the same format as flatspec (e.g. ["groupkey/subgroupkey"])
     :param spec: Flat specification for the changing config
-    :returns: Original values (from `target`) of keys that was changed for further checks
+    :returns: Changed flag that's true if either param in config/attr has changed
     """
 
     keys_to_change = set(changes.config.keys()) | set(changes.attr.keys())
@@ -178,8 +175,7 @@ def _fill_config_and_attr(target: ConfigAttrPair, changes: ConfigAttrPair, spec:
         message = f"Some keys aren't presented in specification: {', '.join(sorted(missing_keys))}"
         raise PluginIncorrectCallError(message=message)
 
-    original_fields = defaultdict(dict)
-    original_attrs = {}
+    changed = False
 
     for key, value in changes.config.items():
         param_spec = spec[key]
@@ -189,11 +185,17 @@ def _fill_config_and_attr(target: ConfigAttrPair, changes: ConfigAttrPair, spec:
         subkey = subs[0] if subs else None
 
         if subkey:
-            original_fields[key][subkey] = target.config[key][subkey]
+            if target.config[key][subkey] == cast_value:
+                continue
+
             target.config[key][subkey] = cast_value
+            changed = True
         else:
-            original_fields[key] = target.config[key]
+            if target.config[key] == cast_value:
+                continue
+
             target.config[key] = cast_value
+            changed = True
 
     # here we consider key full key
     for key, value in changes.attr.items():
@@ -205,30 +207,11 @@ def _fill_config_and_attr(target: ConfigAttrPair, changes: ConfigAttrPair, spec:
             raise PluginIncorrectCallError(message=message)
 
         attr_key = key.rstrip("/")
-        original_attrs[attr_key] = deepcopy(target.attr[attr_key])
+        # we want to directly compare "active"'s since it's the only thing we may change via plugin
+        if target.attr[attr_key].get("active") == value["active"]:
+            continue
+
         target.attr[attr_key] |= value
+        changed = True
 
-    return OriginalValues(config=original_fields, attr=original_attrs)
-
-
-def _does_contain(base_dict: dict, part: dict) -> bool:
-    """
-    Check fields in `part` have the same value in `base_dict`
-    """
-
-    for key, val2 in part.items():
-        if key not in base_dict:
-            return False
-
-        val1 = base_dict[key]
-
-        if isinstance(val1, dict) and isinstance(val2, dict):
-            if not _does_contain(val1, val2):
-                return False
-        else:
-            val1 = ansible_decrypt(val1)
-            val2 = ansible_decrypt(val2)
-            if val1 != val2:
-                return False
-
-    return True
+    return changed

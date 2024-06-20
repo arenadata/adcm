@@ -7,31 +7,56 @@ import {
   ComponentId,
   ServiceId,
   ServicePrototypeId,
+  AdcmComponentDependency,
 } from '@models/adcm';
 
-export type ValidationError = { isValid: false; errors: string[] };
-export type ValidationSuccess = { isValid: true };
-export type ValidationResult = ValidationError | ValidationSuccess;
+export type RequiredError = {
+  type: 'required';
+  params: {
+    service: string;
+    components: string[];
+  };
+};
+
+export type NotAddedError = {
+  type: 'not-added';
+  params: {
+    service: AdcmComponentDependency;
+  };
+};
+
+export type ConstraintError = {
+  type: 'constraint';
+  message: string;
+};
+
+export type ComponentMappingErrors = {
+  constraintsError?: ConstraintError;
+  dependenciesErrors?: ComponentDependenciesMappingErrors;
+};
+
+export type ComponentDependenciesMappingErrors = {
+  notAddedErrors?: NotAddedError[];
+  requiredErrors?: RequiredError[];
+};
+
+export type ComponentDependencyMappingErrors = {
+  notAddedError?: NotAddedError;
+  requiredError?: RequiredError;
+};
 
 export type HostsDictionary = Record<HostId, AdcmHostShortView>;
 export type ComponentHostsDictionary = Record<ComponentId, AdcmHostShortView[]>;
 export type ComponentsDictionary = Record<ComponentId, AdcmMappingComponent>;
 export type ServicesDictionary = Record<ServiceId, AdcmServicePrototype>;
 
+export type DisabledComponentsMappings = Record<ComponentId, Set<HostId>>;
+
+export type ComponentsMappingErrors = Record<ComponentId, ComponentMappingErrors>;
+
 export type HostMapping = {
   host: AdcmHostShortView;
   components: AdcmMappingComponent[];
-};
-
-export type MappingValidation = {
-  isAllMappingValid: boolean;
-  byComponents: Record<ComponentId, ComponentMappingValidation>;
-};
-
-export type ComponentMappingValidation = {
-  constraintsValidationResult: ValidationResult;
-  requireValidationResults: ValidationResult;
-  isValid: boolean;
 };
 
 export type MappingFilter = {
@@ -50,18 +75,25 @@ export type ComponentMapping = {
   hosts: AdcmHostShortView[];
 };
 
-export type ComponentValidateResult = {
-  constraintsValidationResult: ValidationResult;
-  requireValidationResults: ValidationResult;
-};
+type ValidationSuccess = { isValid: true };
+type ValidationFailed<T> = { isValid: false; errors: T };
+type ValidationResultCacheItem<T> = ValidationSuccess | ValidationFailed<T>;
+export type ComponentMappingValidationResultCacheItem = ValidationResultCacheItem<ComponentMappingErrors>;
+export type ComponentDependencyValidationResultCacheItem = ValidationResultCacheItem<ComponentDependencyMappingErrors>;
 
-export type ValidateCache = {
-  componentsCache: Map<ComponentId, ComponentValidateResult>;
-  servicesCache: Map<ServicePrototypeId, boolean>;
+export type ValidationCache = {
+  components: Map<ComponentId, ComponentMappingValidationResultCacheItem>;
+  dependencies: Map<ServicePrototypeId, ComponentDependencyValidationResultCacheItem>;
 };
 
 export type ValidateRelatedData = {
   servicesMappingDictionary: Record<ServicePrototypeId, ServiceMapping>;
   notAddedServicesDictionary: ServicesDictionary;
   allHostsCount: number;
+};
+
+export type ComponentAvailabilityErrors = {
+  componentNotAvailableError?: string;
+  addingHostsNotAllowedError?: string;
+  removingHostsNotAllowedError?: string;
 };

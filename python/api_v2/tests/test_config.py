@@ -188,6 +188,14 @@ class TestClusterConfig(BaseAPITestCase):
             response = self.client.v2[self.cluster_1, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
+    def test_adcm_4778_cluster_variant_bug(self):
+        # problem is with absent service
+        bundle = self.add_bundle(self.test_bundles_dir / "bugs" / "ADCM-4778")
+        cluster = self.add_cluster(bundle, "cooler")
+
+        response = self.client.v2[cluster, CONFIG_SCHEMA].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
     def test_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
@@ -252,8 +260,6 @@ class TestClusterConfig(BaseAPITestCase):
 
 
 class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
-    """ADCM-4328"""
-
     def setUp(self) -> None:
         super().setUp()
 
@@ -261,7 +267,7 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
             service_names=["service_4_save_config_without_required_field"], cluster=self.cluster_1
         ).get()
 
-    def test_save_empty_config_success(self):
+    def test_adcm_4328_save_empty_config_success(self):
         response = self.client.v2[self.service, CONFIGS].post(data={"config": {}, "adcmMeta": {}})
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -270,7 +276,7 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
 
         self.assertDictEqual(current_config, {})
 
-    def test_save_config_without_not_required_map_in_group_success(self):
+    def test_adcm_4328_save_config_without_not_required_map_in_group_success(self):
         response = self.client.v2[self.service, CONFIGS].post(
             data={
                 "config": {
@@ -283,7 +289,7 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    def test_default_raw_config_success(self):
+    def test_adcm_4328_default_raw_config_success(self):
         default_config_without_secrets = ConfigLog.objects.get(
             obj_ref=self.service.config, id=self.service.config.current
         ).config

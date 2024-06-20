@@ -1,5 +1,5 @@
 import React from 'react';
-import { AdcmDependOnService, AdcmPrototypeShortView } from '@models/adcm';
+import { AdcmComponentDependency, AdcmPrototypeShortView } from '@models/adcm';
 import { useStore } from '@hooks';
 import MarkedList from '@uikit/MarkedList/MarkedList';
 import s from './ShowServices.module.scss';
@@ -7,8 +7,8 @@ import WarningMessage from '@uikit/WarningMessage/WarningMessage';
 
 const getComponentKey = (item: AdcmPrototypeShortView) => item.id;
 const renderComponentItem = (item: AdcmPrototypeShortView) => <div>{item.displayName}</div>;
-const getServiceKey = (item: AdcmDependOnService['servicePrototype']) => item.id;
-const renderServiceItem = (item: AdcmDependOnService['servicePrototype']) => (
+const getServiceKey = (item: AdcmComponentDependency) => item.id;
+const renderServiceItem = (item: AdcmComponentDependency) => (
   <>
     <div>{item.displayName}</div>
     <MarkedList list={item.componentPrototypes} renderItem={renderComponentItem} getItemKey={getComponentKey} />
@@ -16,8 +16,8 @@ const renderServiceItem = (item: AdcmDependOnService['servicePrototype']) => (
 );
 
 interface ShowServicesProps {
-  dependsServices: AdcmDependOnService['servicePrototype'][];
-  unacceptedSelectedServices: AdcmDependOnService['servicePrototype'][];
+  dependsServices: AdcmComponentDependency[];
+  unacceptedSelectedServices: AdcmComponentDependency[];
 }
 const ShowServices: React.FC<ShowServicesProps> = ({ dependsServices, unacceptedSelectedServices }) => {
   const srcComponent = useStore(({ adcm }) => adcm.clusterMapping.requiredServicesDialog.component);

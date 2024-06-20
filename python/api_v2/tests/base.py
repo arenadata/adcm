@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from http.cookies import SimpleCookie
+from importlib import import_module
 from pathlib import Path
 from shutil import rmtree
 from typing import Any, TypeAlias
@@ -28,6 +30,7 @@ from cm.models import (
     ServiceComponent,
 )
 from django.conf import settings
+from django.http import HttpRequest
 from init_db import init
 from rbac.models import Group, Policy, Role, User
 from rbac.upgrade.role import init_roles
@@ -158,3 +161,29 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
             "audit_object__object_type": type_,
             "audit_object__is_deleted": is_deleted,
         }
+
+    @property
+    def session(self):
+        """Return the current session variables."""
+        engine = import_module(settings.SESSION_ENGINE)
+        cookie = self.cookies.get(settings.SESSION_COOKIE_NAME)
+        if cookie:
+            return engine.SessionStore(cookie.value)
+        session = engine.SessionStore()
+        session.save()
+        self.cookies[settings.SESSION_COOKIE_NAME] = session.session_key
+        return session
+
+    def logout(self):
+        """Log out the user by removing the cookies and session object."""
+        from django.contrib.auth import get_user, logout
+
+        request = HttpRequest()
+        if self.session:
+            request.session = self.session
+            request.user = get_user(request)
+        else:
+            engine = import_module(settings.SESSION_ENGINE)
+            request.session = engine.SessionStore()
+        logout(request)
+        self.cookies = SimpleCookie()

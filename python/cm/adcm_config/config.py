@@ -21,7 +21,6 @@ import json
 from ansible.errors import AnsibleError
 from django.conf import settings
 from django.db.models import QuerySet
-from jinja_config import get_jinja_config
 
 from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.adcm_config.checks import check_attr, check_config_type
@@ -51,6 +50,7 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
+from cm.services.config.jinja import get_jinja_config
 from cm.utils import deep_merge, dict_to_obj, obj_to_dict
 from cm.variant import get_variant, process_variant
 
@@ -88,7 +88,7 @@ def get_prototype_config(
     flist = ("default", "required", "type", "limits")
 
     if action is not None and obj is not None and action.config_jinja:
-        proto_conf, _ = get_jinja_config(action=action, obj=obj)
+        proto_conf, _ = get_jinja_config(action=action, cluster_relative_object=obj)
         proto_conf_group = [config for config in proto_conf if config.type == "group"]
     else:
         proto_conf = PrototypeConfig.objects.filter(prototype=prototype, action=action).order_by("id")

@@ -1,5 +1,5 @@
 import { AdcmMaintenanceMode } from './maintenanceMode';
-import { AdcmDependOnService } from './service';
+import { AdcmDependOnService, AdcmServicePrototype } from './service';
 import { AdcmPrototypeShortView } from './prototype';
 import { AdcmEntityState } from './common';
 
@@ -16,19 +16,6 @@ export interface AdcmHostShortView {
   name: string;
   isMaintenanceModeAvailable: boolean;
   maintenanceMode: AdcmMaintenanceMode;
-}
-
-interface AdcmComponentDependencyLicense {
-  status: string;
-  text: string;
-}
-
-export interface AdcmComponentDependency {
-  id: number;
-  name: string;
-  displayName: string;
-  componentPrototypes?: AdcmComponentDependency[];
-  license: AdcmComponentDependencyLicense;
 }
 
 export type AdcmComponentConstraint = number | string;
@@ -62,3 +49,5 @@ export interface CreateMappingPayload {
   hostId: number;
   componentId: number;
 }
+
+export type NotAddedServicesDictionary = Record<ServiceId, AdcmServicePrototype>;

@@ -93,3 +93,31 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         log = LogStorage.objects.filter(job_id=job.id, type="custom", format=format_, name=name).get()
         self.assertEqual(log.body, path)
         permissions_mock.assert_called_once()
+
+    def test_forbidden_arg_fail(self):
+        name = "cool name"
+        format_ = "txt"
+        content = "bestcontent ever !!!"
+
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=self.EXECUTOR_CLASS,
+            call_arguments=f"""
+                name: {name}
+                format: {format_}
+                somearg: somevalue
+                content: "{content}"
+            """,
+            call_context=job,
+        )
+
+        with patch(f"{EXECUTOR_MODULE}.assign_view_logstorage_permissions_by_job") as permissions_mock:
+            result = executor.execute()
+
+        self.assertIsNotNone(result.error)
+        self.assertFalse(
+            LogStorage.objects.filter(job_id=job.id, type="custom", format=format_, name=name, body=content).exists()
+        )
+        permissions_mock.assert_not_called()

@@ -419,7 +419,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             expected_data=expected_data,
         )
 
-    def test_bug_adcm_5367(self) -> None:
+    def test_adcm_5367_bug(self) -> None:
         another_1 = self.add_services_to_cluster(
             service_names=["another_service_two_components"], cluster=self.cluster_1
         ).first()

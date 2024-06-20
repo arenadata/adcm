@@ -1,13 +1,12 @@
 import React from 'react';
 import { Dialog } from '@uikit';
 import { useRequiredServicesDialog } from './useRequiredServicesDialog';
-import ShowServices from '@pages/cluster/ClusterMapping/ComponentsMapping/RequiredServicesDialog/ShowServices/ShowServices';
+import ShowServices from './ShowServices/ShowServices';
+import ServicesLicensesStep from './ServicesLicensesStep/ServicesLicensesStep';
 import { RequiredServicesStepKey } from './RequiredServicesDialog.types';
-import ServicesLicensesStep from '@pages/cluster/ClusterMapping/ComponentsMapping/RequiredServicesDialog/ServicesLicensesStep/ServicesLicensesStep';
 
 const RequiredServicesDialog: React.FC = () => {
   const {
-    //
     isOpen,
     onClose,
     onSubmit,

@@ -12,7 +12,6 @@
 
 
 from cm.models import ADCM, Action
-from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -23,6 +22,8 @@ from rest_framework.status import (
 )
 
 from api_v2.tests.base import BaseAPITestCase
+
+CONFIGS = "configs"
 
 
 class TestADCMAudit(BaseAPITestCase):
@@ -83,7 +84,7 @@ class TestADCMAudit(BaseAPITestCase):
         Action.objects.filter(name="test_ldap_connection")
 
     def test_adcm_config_change_success(self):
-        response = self.client.post(path=reverse(viewname="v2:adcm-config-list"), data=self.data)
+        response = self.client.v2["adcm", CONFIGS].post(data=self.data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.check_last_audit_record(
             operation_name="ADCM configuration updated",
@@ -98,7 +99,7 @@ class TestADCMAudit(BaseAPITestCase):
         )
 
     def test_adcm_config_change_fail(self):
-        response = self.client.post(path=reverse(viewname="v2:adcm-config-list"), data={})
+        response = self.client.v2["adcm", CONFIGS].post(data={})
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.check_last_audit_record(
             operation_name="ADCM configuration updated",
@@ -109,8 +110,7 @@ class TestADCMAudit(BaseAPITestCase):
 
     def test_adcm_config_change_access_denied(self):
         self.client.login(**self.test_user_credentials)
-
-        response = self.client.post(path=reverse(viewname="v2:adcm-config-list"), data=self.data)
+        response = self.client.v2["adcm", CONFIGS].post(data=self.data)
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -121,9 +121,8 @@ class TestADCMAudit(BaseAPITestCase):
         )
 
     def test_adcm_profile_password_change_success(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:profile"), data={"newPassword": "newtestpassword", "currentPassword": "admin"}
-        )
+        response = self.client.v2["profile"].patch(data={"newPassword": "newtestpassword", "currentPassword": "admin"})
+
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_last_audit_record(
             operation_name="Profile updated",
@@ -136,8 +135,7 @@ class TestADCMAudit(BaseAPITestCase):
 
     def test_adcm_put_user_can_change_own_profile_success(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.patch(
-            path=reverse(viewname="v2:profile"),
+        response = self.client.v2["profile"].patch(
             data={"newPassword": "newtestpassword", "currentPassword": "test_user_password"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -152,8 +150,7 @@ class TestADCMAudit(BaseAPITestCase):
 
     def test_adcm_patch_user_can_change_own_profile_success(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.patch(
-            path=reverse(viewname="v2:profile"),
+        response = self.client.v2["profile"].patch(
             data={"newPassword": "newtestpassword", "currentPassword": "test_user_password"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -167,9 +164,11 @@ class TestADCMAudit(BaseAPITestCase):
         )
 
     def test_adcm_run_action_fail(self):
-        adcm_action_pk = Action.objects.filter(name="test_ldap_connection").first().pk
+        adcm_action = Action.objects.filter(name="test_ldap_connection").first()
 
-        response = self.client.post(path=reverse(viewname="v2:adcm-action-run", kwargs={"pk": adcm_action_pk}))
+        response = self.client.v2["adcm", "actions", adcm_action, "run"].post(
+            data={},
+        )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.check_last_audit_record(
@@ -181,10 +180,12 @@ class TestADCMAudit(BaseAPITestCase):
         )
 
     def test_adcm_run_action_denied(self):
-        adcm_action_pk = Action.objects.filter(name="test_ldap_connection").first().pk
+        adcm_action = Action.objects.filter(name="test_ldap_connection").first()
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(path=reverse(viewname="v2:adcm-action-run", kwargs={"pk": adcm_action_pk}))
+        response = self.client.v2["adcm", "actions", adcm_action, "run"].post(
+            data={},
+        )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_last_audit_record(

@@ -933,6 +933,7 @@ def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
         host.save()
         add_concern_to_object(object_=host, concern=CTX.lock)
         update_hierarchy_issues(host)
+        update_hierarchy_issues(cluster)
         re_apply_object_policy(cluster)
 
     reset_hc_map()

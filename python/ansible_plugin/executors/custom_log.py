@@ -17,12 +17,13 @@ from typing import Callable, Collection
 from cm.models import LogStorage
 from core.types import CoreObjectDescriptor
 from django.db.transaction import atomic
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
 from typing_extensions import Self
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
     ArgumentsConfig,
+    BaseStrictModel,
     CallResult,
     PluginExecutorConfig,
     RuntimeEnvironment,
@@ -30,7 +31,7 @@ from ansible_plugin.base import (
 from ansible_plugin.utils import assign_view_logstorage_permissions_by_job
 
 
-class CustomLogArguments(BaseModel):
+class CustomLogArguments(BaseStrictModel):
     name: str
     format: str
     path: Path | None = None

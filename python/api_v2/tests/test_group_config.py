@@ -78,16 +78,7 @@ class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):
         self.component_2 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
         )
-        self.add_hostcomponent_map(
-            cluster=self.cluster_1,
-            hc_map=[
-                {
-                    "host_id": self.host_for_service.pk,
-                    "service_id": self.service_1.pk,
-                    "component_id": self.component_1.pk,
-                }
-            ],
-        )
+        self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_for_service, self.component_1)])
 
 
 class TestGroupConfigNaming(BaseServiceGroupConfigTestCase):
@@ -229,9 +220,7 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):
         self.assertEqual(self.host, Host.objects.get(id=self.host.pk))
         self.assertNotIn(self.host, self.cluster_1_group_config.hosts.all())
 
-    def test_config_description_inheritance(self):
-        """ADCM-5199"""
-
+    def test_adcm_5199_config_description_inheritance(self):
         config_data = {
             "config": {
                 "activatable_group": {"integer": 500},
@@ -534,9 +523,7 @@ class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):
         self.assertEqual(len(response.json()), 1)
         self.assertEqual(response.json()[0]["name"], self.host_for_service.name)
 
-    def test_config_description_inheritance(self):
-        """ADCM-5199"""
-
+    def test_adcm_5199_config_description_inheritance(self):
         config_data = {
             "config": {
                 "group": {"password": "new_password"},
@@ -630,16 +617,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_for_component"
         )
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_for_component)
-        self.add_hostcomponent_map(
-            cluster=self.cluster_1,
-            hc_map=[
-                {
-                    "host_id": self.host_for_component.pk,
-                    "service_id": self.service_1.pk,
-                    "component_id": self.component_1.pk,
-                }
-            ],
-        )
+        self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_for_component, self.component_1)])
 
     def test_list_success(self):
         response = self.client.v2[self.component_1, CONFIG_GROUPS].get()
@@ -779,9 +757,7 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):
         self.assertIn(self.host, self.service_1_group_config.hosts.all())
         self.assertNotIn(self.host, self.component_1_group_config.hosts.all())
 
-    def test_config_description_inheritance(self):
-        """ADCM-5199"""
-
+    def test_adcm_5199_config_description_inheritance(self):
         config_data = {
             "config": {
                 "group": {"file": "new_content"},
@@ -971,9 +947,7 @@ class TestHostProviderGroupConfig(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.assertNotIn(self.host, self.group_config.hosts.all())
 
-    def test_config_description_inheritance(self):
-        """ADCM-5199"""
-
+    def test_adcm_5199_config_description_inheritance(self):
         config_data = {
             "config": {
                 "group": {"map": {"integer_key": "99", "string_key": "new_string"}},

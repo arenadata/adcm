@@ -337,16 +337,7 @@ class TestServicePermissions(BaseAPITestCase):
             bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter_2", cluster=self.cluster_1
         )
         component = ServiceComponent.objects.filter(cluster_id=self.cluster_1.pk, service_id=self.service.pk).last()
-        self.add_hostcomponent_map(
-            cluster=self.cluster_1,
-            hc_map=[
-                {
-                    "host_id": self.host_with_component.pk,
-                    "service_id": self.service.pk,
-                    "component_id": component.pk,
-                }
-            ],
-        )
+        self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_with_component, component)])
 
     def test_adcm_5278_cluster_hosts_restriction_by_service_administrator_ownership_success(self):
         response_list = self.client.v2[self.cluster_1, "hosts"].get()

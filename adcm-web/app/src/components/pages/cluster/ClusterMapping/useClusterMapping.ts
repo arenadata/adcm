@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AdcmMappingComponent, AdcmHostShortView, AdcmMapping } from '@models/adcm';
+import { AdcmMappingComponent, AdcmHostShortView, AdcmMapping, NotAddedServicesDictionary } from '@models/adcm';
 import { arrayToHash } from '@utils/arrayUtils';
 import {
   getComponentsMapping,
   getHostsMapping,
   getServicesMapping,
   mapHostsToComponent,
+  mapComponentsToHost,
   validate,
 } from './ClusterMapping.utils';
-import {
+import type {
   MappingFilter,
   HostMapping,
   ComponentMapping,
@@ -16,7 +17,7 @@ import {
   HostsDictionary,
   ComponentsDictionary,
 } from './ClusterMapping.types';
-import { NotAddedServicesDictionary } from '@store/adcm/cluster/mapping/mappingSlice';
+import { SortDirection } from '@models/table';
 
 export const useClusterMapping = (
   mapping: AdcmMapping[],
@@ -37,6 +38,8 @@ export const useClusterMapping = (
     isHideEmpty: false,
   });
 
+  const [mappingSortDirection, setMappingSortDirection] = useState<SortDirection>('asc');
+
   useEffect(() => {
     if (isLoaded) {
       setLocalMapping(mapping);
@@ -48,22 +51,30 @@ export const useClusterMapping = (
     [components, hostsDictionary, isLoaded, localMapping],
   );
 
-  const hostsMapping: HostMapping[] = useMemo(
-    () => (isLoaded ? getHostsMapping(localMapping, hosts, componentsDictionary) : []),
-    [hosts, componentsDictionary, isLoaded, localMapping],
-  );
+  const hostsMapping: HostMapping[] = useMemo(() => {
+    const result = isLoaded ? getHostsMapping(localMapping, hosts, componentsDictionary) : [];
+    result.sort((a, b) => a.host.name.localeCompare(b.host.name));
+    if (mappingSortDirection === 'desc') {
+      result.reverse();
+    }
+    return result;
+  }, [hosts, componentsDictionary, isLoaded, localMapping, mappingSortDirection]);
 
-  const servicesMapping: ServiceMapping[] = useMemo(
-    () => (isLoaded ? getServicesMapping(componentsMapping) : []),
-    [isLoaded, componentsMapping],
-  );
+  const servicesMapping: ServiceMapping[] = useMemo(() => {
+    const result = isLoaded ? getServicesMapping(componentsMapping) : [];
+    result.sort((a, b) => a.service.name.localeCompare(b.service.name));
+    if (mappingSortDirection === 'desc') {
+      result.reverse();
+    }
+    return result;
+  }, [isLoaded, componentsMapping, mappingSortDirection]);
 
   const servicesMappingDictionary = useMemo(
     () => arrayToHash(servicesMapping, (sm) => sm.service.prototype.id),
     [servicesMapping],
   );
 
-  const mappingValidation = useMemo(() => {
+  const mappingErrors = useMemo(() => {
     return validate(componentsMapping, {
       servicesMappingDictionary,
       notAddedServicesDictionary,
@@ -71,13 +82,22 @@ export const useClusterMapping = (
     });
   }, [componentsMapping, servicesMappingDictionary, notAddedServicesDictionary, hosts.length]);
 
-  const handleMap = useCallback(
+  const handleMapHostsToComponent = useCallback(
     (hosts: AdcmHostShortView[], component: AdcmMappingComponent) => {
-      const newLocalMapping = mapHostsToComponent(servicesMapping, hosts, component);
+      const newLocalMapping = mapHostsToComponent(localMapping, hosts, component);
       setLocalMapping(newLocalMapping);
       setIsMappingChanged(true);
     },
-    [servicesMapping],
+    [localMapping],
+  );
+
+  const handleMapComponentsToHost = useCallback(
+    (components: AdcmMappingComponent[], host: AdcmHostShortView) => {
+      const newLocalMapping = mapComponentsToHost(localMapping, components, host);
+      setLocalMapping(newLocalMapping);
+      setIsMappingChanged(true);
+    },
+    [localMapping],
   );
 
   const handleUnmap = useCallback(
@@ -108,10 +128,13 @@ export const useClusterMapping = (
     isMappingChanged,
     mappingFilter,
     handleMappingFilterChange,
+    mappingSortDirection,
+    handleMappingSortDirectionChange: setMappingSortDirection,
     components,
     servicesMapping,
-    mappingValidation,
-    handleMap,
+    mappingErrors,
+    handleMapHostsToComponent,
+    handleMapComponentsToHost,
     handleUnmap,
     handleReset,
   };

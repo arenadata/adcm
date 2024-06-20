@@ -21,4 +21,16 @@
   &__searchInput {
     flex: 1;
   }
+
+  &__sortIconWrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__sortIcon {
+    &_desc {
+      transform: rotate(180deg);
+    }
+  }
 }

@@ -15,7 +15,7 @@ from operator import itemgetter
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import Callable, Iterable, TypedDict
+from typing import Callable, Iterable
 import random
 import string
 import tarfile
@@ -77,12 +77,6 @@ class TestUserCreateDTO(UserCreateDTO):
     password: str = ""
 
 
-class HostComponentMapDictType(TypedDict):
-    host_id: int
-    service_id: int
-    component_id: int
-
-
 class ParallelReadyTestCase:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -104,6 +98,7 @@ class ParallelReadyTestCase:
             "FILE_DIR": stack / "data" / "file",
             "LOG_DIR": data / "log",
             "VAR_DIR": data / "var",
+            "TMP_DIR": data / "tmp",
         }
 
         for directory in temporary_directories.values():
@@ -421,15 +416,6 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
 
         return host
 
-    def add_host_to_cluster(self, cluster_pk: int, host_pk: int) -> None:
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:host", kwargs={"cluster_id": cluster_pk}),
-            data={"host_id": host_pk},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
     @staticmethod
     def get_hostcomponent_data(service_pk: int, host_pk: int) -> list[dict[str, int]]:
         hostcomponent_data = []
@@ -491,10 +477,6 @@ class BusinessLogicMixin(BundleLogicMixin):
             type=ObjectType.SERVICE, name__in=service_names, bundle=cluster.prototype.bundle
         )
         return bulk_add_services_to_cluster(cluster=cluster, prototypes=service_prototypes)
-
-    @staticmethod
-    def add_hostcomponent_map(cluster: Cluster, hc_map: list[HostComponentMapDictType]) -> list[HostComponent]:
-        return add_hc(cluster=cluster, hc_in=hc_map)
 
     @staticmethod
     def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, ServiceComponent]]) -> list[HostComponent]:

@@ -2,7 +2,7 @@ import React from 'react';
 import { ConfigurationEditor } from '@uikit';
 import { AdcmConfiguration, ConfigurationData, ConfigurationAttributes } from '@models/adcm';
 import { useConfigurationFormContext } from '../ConfigurationFormContext/ConfigurationFormContext.context';
-import { generateFromSchema } from '@utils/jsonSchemaUtils';
+import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 
 interface ConfigurationMainProps {
   configuration: AdcmConfiguration | null;

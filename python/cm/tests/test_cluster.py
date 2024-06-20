@@ -12,7 +12,7 @@
 
 import string
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase, BusinessLogicMixin
 from core.cluster.types import ClusterTopology, ComponentTopology, ServiceTopology
 from core.types import ShortObjectInfo
 from django.urls import reverse
@@ -23,7 +23,7 @@ from cm.services.cluster import retrieve_clusters_topology
 from cm.tests.utils import gen_component, gen_host, gen_service, generate_hierarchy
 
 
-class TestCluster(BaseTestCase):
+class TestCluster(BaseTestCase, BusinessLogicMixin):
     def setUp(self) -> None:
         super().setUp()
 
@@ -161,7 +161,7 @@ class TestCluster(BaseTestCase):
         component_11 = hierarchy["component"]
         host_1 = hierarchy["host"]
         host_2 = gen_host(provider=hierarchy["provider"])
-        self.add_host_to_cluster(cluster_pk=cluster.pk, host_pk=host_2.pk)
+        self.add_host_to_cluster(cluster=cluster, host=host_2)
         gen_host(provider=hierarchy["provider"])
         service_2 = gen_service(cluster=cluster)
         component_21 = gen_component(service=service_2)

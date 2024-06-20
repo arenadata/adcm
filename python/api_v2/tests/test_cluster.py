@@ -10,18 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable
 from unittest.mock import patch
 
-from cm.api import add_hc
+from adcm.tests.base import BusinessLogicMixin
 from cm.models import (
     Action,
     ADCMEntityStatus,
     AnsibleConfig,
     Cluster,
     ClusterObject,
-    Host,
-    HostComponent,
     Prototype,
     ServiceComponent,
 )
@@ -186,7 +183,7 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(cluster.description, "")
 
-    def test_create_adcm_5371_start_digits_success(self):
+    def test_adcm_5371_create_start_digits_success(self):
         response = (self.client.v2 / "clusters").post(
             data={"prototype_id": self.cluster_1.prototype.pk, "name": "1new_test_cluster"}
         )
@@ -195,21 +192,21 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(cluster.description, "")
 
-    def test_create_adcm_5371_dot_fail(self):
+    def test_adcm_5371_create_dot_fail(self):
         response = (self.client.v2 / "clusters").post(
             data={"prototype_id": self.cluster_1.prototype.pk, "name": "new_test_cluster."}
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-    def test_create_adcm_5371_space_prohibited_end_start_fail(self):
+    def test_adcm_5371_create_space_prohibited_end_start_fail(self):
         response = (self.client.v2 / "clusters").post(
             data={"prototype_id": self.cluster_1.prototype.pk, "name": " new_test_cluster "}
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-    def test_create_adcm_5371_min_name_2_chars_success(self):
+    def test_adcm_5371_create_min_name_2_chars_success(self):
         response = (self.client.v2 / "clusters").post(data={"prototype_id": self.cluster_1.prototype.pk, "name": "a"})
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -219,7 +216,7 @@ class TestCluster(BaseAPITestCase):
         self.assertIsNotNone(Cluster.objects.filter(name="aa").first())
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    def test_create_adcm_5371_max_name_150_chars_success(self):
+    def test_adcm_5371_create_max_name_150_chars_success(self):
         response = (self.client.v2 / "clusters").post(
             data={"prototype_id": self.cluster_1.prototype.pk, "name": "a" * 151}
         )
@@ -603,16 +600,8 @@ class TestClusterMM(BaseAPITestCase):
             cluster=self.cluster_2,
             service=self.service_2,
         )
-        self.host_1 = Host.objects.create(
-            fqdn="test-host",
-            prototype=Prototype.objects.create(bundle=self.bundle_1, type="host"),
-        )
-        self.host_2 = Host.objects.create(
-            fqdn="test-host-2",
-            prototype=Prototype.objects.create(bundle=self.bundle_2, type="host"),
-        )
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster_2, host=self.host_2)
+        self.host_1 = self.add_host(provider=self.provider, fqdn="test-host", cluster=self.cluster_1)
+        self.host_2 = self.add_host(provider=self.provider, fqdn="test-host-2", cluster=self.cluster_2)
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = User.objects.create_user(**self.test_user_credentials)
@@ -713,17 +702,7 @@ class TestClusterMM(BaseAPITestCase):
                 self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
 
-class TestClusterStatuses(BaseAPITestCase):
-    @staticmethod
-    def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, ServiceComponent]]) -> list[HostComponent]:
-        return add_hc(
-            cluster=cluster,
-            hc_in=[
-                {"host_id": host.pk, "component_id": component.pk, "service_id": component.service_id}
-                for host, component in entries
-            ],
-        )
-
+class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 

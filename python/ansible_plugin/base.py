@@ -12,8 +12,15 @@
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Any, Collection, Generic, Literal, Mapping, Protocol, TypeAlias, TypedDict, TypeVar
+from functools import wraps
+from typing import Any, Callable, Collection, Generic, Literal, Mapping, ParamSpec, Protocol, TypeAlias, TypeVar
 import fcntl
+import traceback
+
+try:  # TODO: refactor when python >= 3.11
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 from ansible.errors import AnsibleActionFail
 from ansible.module_utils._text import to_native
@@ -23,7 +30,7 @@ from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceCompone
 from core.types import ADCMCoreType, CoreObjectDescriptor, ObjectID
 from django.conf import settings
 from django.db.models import ObjectDoesNotExist
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from ansible_plugin.errors import (
     ADCMPluginError,
@@ -31,7 +38,16 @@ from ansible_plugin.errors import (
     PluginRuntimeError,
     PluginTargetDetectionError,
     PluginValidationError,
+    compose_validation_error_details_message,
 )
+
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+class BaseStrictModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
 
 # Input
 
@@ -90,19 +106,8 @@ class RuntimeEnvironment(BaseModel):
 # Target
 
 
-class TargetDetector(Protocol):
-    def __call__(
-        self, context_owner: CoreObjectDescriptor, context: VarsContextSection, raw_arguments: dict
-    ) -> tuple[CoreObjectDescriptor, ...]:
-        ...
-
-
-class CoreObjectTargetDescription(BaseModel):
+class ObjectWithType(BaseStrictModel):
     type: TargetTypeLiteral
-
-    service_name: str | None = None
-    component_name: str | None = None
-    host_id: int | str | None = None
 
     @field_validator("type", mode="before")
     @classmethod
@@ -111,41 +116,109 @@ class CoreObjectTargetDescription(BaseModel):
         return str(v)
 
 
+class CoreObjectTargetDescription(ObjectWithType):
+    service_name: str | None = None
+    component_name: str | None = None
+    host_id: int | str | None = None
+
+    @model_validator(mode="after")
+    def validate_args_allowed_for_type(self) -> Self:
+        match self.type:
+            case "cluster":
+                forbidden = ("service_name", "component_name", "host_id")
+            case "service":
+                forbidden = ("component_name", "host_id")
+            case "component":
+                forbidden = ("host_id",)
+            case "provider":
+                forbidden = ("service_name", "component_name", "host_id")
+            case "host":
+                forbidden = ("service_name", "component_name")
+            case _:
+                raise PluginTargetDetectionError(f"Unsupported type: {self.type}")
+
+        if error_fields := [field for field in forbidden if getattr(self, field) is not None]:
+            message = f"{', '.join(error_fields)} option(s) is not allowed for {self.type} type"
+            raise ValueError(message)
+
+        return self
+
+    def __str__(self) -> str:
+        return ", ".join(f"{key}='{value}'" for key, value in self.model_dump(exclude_none=True).items())
+
+
+class BaseTypedArguments(CoreObjectTargetDescription):
+    pass
+
+
+class BaseArgumentsWithTypedObjects(BaseStrictModel):
+    objects: list[CoreObjectTargetDescription] = Field(default_factory=list)
+
+
+class TargetDetector(Protocol):
+    def __call__(
+        self,
+        context_owner: CoreObjectDescriptor,
+        context: VarsContextSection,
+        parsed_arguments: Any,
+    ) -> tuple[CoreObjectDescriptor, ...]:
+        ...
+
+
 def from_objects(
     context_owner: CoreObjectDescriptor,  # noqa: ARG001
     context: VarsContextSection,
-    raw_arguments: dict,
+    parsed_arguments: Any,
 ) -> tuple[CoreObjectDescriptor, ...]:
-    if not isinstance(objects := raw_arguments.get("objects"), list):
+    if not isinstance(parsed_arguments, BaseArgumentsWithTypedObjects):
         return ()
 
     return tuple(
         _from_target_description(target_description=target_description, context=context)
-        for target_description in (CoreObjectTargetDescription(**entry) for entry in objects)
+        for target_description in parsed_arguments.objects
     )
 
 
 def from_arguments_root(
     context_owner: CoreObjectDescriptor,  # noqa: ARG001
     context: VarsContextSection,
-    raw_arguments: dict,
+    parsed_arguments: Any,
 ) -> tuple[CoreObjectDescriptor, ...]:
-    try:
-        target = CoreObjectTargetDescription(**raw_arguments)
-    except ValidationError:
+    if not isinstance(parsed_arguments, BaseTypedArguments):
         return ()
 
-    return (_from_target_description(target_description=target, context=context),)
+    return (_from_target_description(target_description=parsed_arguments, context=context),)
 
 
 def from_context(
     context_owner: CoreObjectDescriptor,
     context: VarsContextSection,  # noqa: ARG001
-    raw_arguments: dict,  # noqa: ARG001
+    parsed_arguments: Any,  # noqa: ARG001
 ) -> tuple[CoreObjectDescriptor, ...]:
     return (context_owner,)
 
 
+def raise_not_found_as_target_detection_error(func: Callable[P, T]) -> Callable[P, T]:
+    @wraps(func)
+    def wrapped(target_description: CoreObjectTargetDescription, context: VarsContextSection) -> CoreObjectDescriptor:
+        try:
+            return func(target_description=target_description, context=context)
+        except ObjectDoesNotExist:
+            parameters = ", ".join(
+                f"{key}={value}"
+                for key, value in target_description.model_dump(exclude_unset=True, exclude_none=True).items()
+            )
+            message = (
+                "Target detection has failed due to absence of object in ADCM DB.\n"
+                f"Parameters used for object search: {parameters}.\n"
+                'Ensure objects requested with "*_name" parameters exist.'
+            )
+            raise PluginTargetDetectionError(message=message) from None
+
+    return wrapped
+
+
+@raise_not_found_as_target_detection_error
 def _from_target_description(
     target_description: CoreObjectTargetDescription, context: VarsContextSection
 ) -> CoreObjectDescriptor:
@@ -173,7 +246,7 @@ def _from_target_description(
             if context.service_id:
                 return CoreObjectDescriptor(id=context.service_id, type=ADCMCoreType.SERVICE)
 
-            message = f"Can't identify service based on {target_description=}"
+            message = f"Can't identify service based on arguments: {target_description}"
             raise PluginRuntimeError(message=message)
 
         case "component":
@@ -202,7 +275,7 @@ def _from_target_description(
             if context.component_id:
                 return CoreObjectDescriptor(id=context.component_id, type=ADCMCoreType.COMPONENT)
 
-            message = f"Can't identify component based on {target_description=}"
+            message = f"Can't identify component based on arguments: {target_description}"
             raise PluginRuntimeError(message=message)
 
         case "provider":
@@ -246,14 +319,6 @@ class NoArguments(BaseModel):
     """
     Use it when plugin doesn't use any arguments
     """
-
-
-class SingleStateArgument(BaseModel):
-    state: str
-
-
-class SingleStateReturnValue(TypedDict):
-    state: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -389,7 +454,9 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
             )
             self._validate_context(context_owner=owner_from_context, context=call_context)
             self._validate_targets(context_owner=owner_from_context, context=call_context)
-            targets = self._detect_targets(context_owner=owner_from_context, context=call_context)
+            targets = self._detect_targets(
+                context_owner=owner_from_context, context=call_context, parsed_arguments=call_arguments
+            )
             result = self(
                 targets=targets,
                 arguments=call_arguments,
@@ -398,7 +465,13 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
         except ADCMPluginError as err:
             return CallResult(value={}, changed=False, error=err)
         except Exception as err:  # noqa: BLE001
-            message = f"Unhandled exception occurred during {self.__class__.__name__} call: {err}"
+            message = "\n".join(
+                (
+                    f"Unhandled exception {err.__class__.__name__} occurred during {self.__class__.__name__} call.",
+                    f"Message : {err}",
+                    f"\n{traceback.format_exc()}",
+                )
+            )
             return CallResult(value={}, changed=False, error=PluginRuntimeError(message=message))
 
         return result
@@ -407,7 +480,8 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
         try:
             arguments = self._config.arguments.represent_as(**self._raw_arguments)
         except ValidationError as err:
-            message = f"Arguments doesn't match expected schema:\n{err}"
+            field_errors = compose_validation_error_details_message(err)
+            message = f"Arguments doesn't match expected schema:\n{field_errors}"
             raise PluginValidationError(message=message) from err
 
         for validator in self._config.arguments.validators:
@@ -418,7 +492,8 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
         try:
             ansible_vars = AnsibleRuntimeVars(**self._raw_vars)
         except ValidationError as err:
-            message = f"Ansible variables doesn't match expected schema:\n{err}"
+            field_errors = compose_validation_error_details_message(err)
+            message = f"Ansible variables doesn't match expected schema:\n{field_errors}"
             raise PluginValidationError(message=message) from err
 
         return arguments, ansible_vars
@@ -446,7 +521,10 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
                 raise error
 
     def _detect_targets(
-        self, context_owner: CoreObjectDescriptor, context: VarsContextSection
+        self,
+        context_owner: CoreObjectDescriptor,
+        context: VarsContextSection,
+        parsed_arguments: BaseTypedArguments | BaseArgumentsWithTypedObjects,
     ) -> tuple[CoreObjectDescriptor, ...]:
         if not self._config.target.detectors:
             # Note that only in this case it's ok to return empty targets.
@@ -454,7 +532,7 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
             return ()
 
         for detector in self._config.target.detectors:
-            result = detector(context_owner=context_owner, context=context, raw_arguments=self._raw_arguments)
+            result = detector(context_owner=context_owner, context=context, parsed_arguments=parsed_arguments)
             if result:
                 return result
 
