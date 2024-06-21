@@ -513,6 +513,32 @@ class TestClusterHost(BaseAPITestCase):
             [host["id"] for host in response.json()["results"]],
         )
 
+    def test_adcm_5687_filtering_by_component_id(self):
+        service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        component_1 = service.servicecomponent_set.get(prototype__name="component_1")
+        component_2 = service.servicecomponent_set.get(prototype__name="component_2")
+
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
+        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
+
+        self.set_hostcomponent(
+            cluster=self.cluster_1,
+            entries=((self.host, component_1), (self.host_2, component_2)),
+        )
+
+        for query, expected_ids in (
+            ({"componentId": component_1.pk}, {self.host.pk}),
+            ({"componentId": component_2.pk}, {self.host_2.pk}),
+            (None, {self.host.pk, self.host_2.pk, self.control_host_same_cluster.pk}),
+            ({"componentId": self.get_non_existent_pk(model=ServiceComponent)}, set()),
+        ):
+            with self.subTest(query=query, expected_ids=expected_ids):
+                response = self.client.v2[self.cluster_1, "hosts"].get(query=query)
+                self.assertEqual(response.status_code, HTTP_200_OK)
+
+                host_ids = {host["id"] for host in response.json()["results"]}
+                self.assertSetEqual(host_ids, expected_ids)
+
 
 class TestHostActions(BaseAPITestCase):
     def setUp(self) -> None:

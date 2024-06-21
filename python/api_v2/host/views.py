@@ -277,6 +277,7 @@ class HostViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMi
         summary="GET cluster hosts",
         parameters=[
             OpenApiParameter(name="name", description="Case insensitive and partial filter by host name."),
+            OpenApiParameter(name="componentId", description="Id of component."),
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
             OpenApiParameter(
