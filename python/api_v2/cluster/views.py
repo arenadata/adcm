@@ -21,7 +21,6 @@ from adcm.permissions import (
 from audit.utils import audit
 from cm.api import add_cluster, delete_cluster
 from cm.errors import AdcmEx
-from cm.issue import update_hierarchy_issues
 from cm.models import (
     AnsibleConfig,
     Cluster,
@@ -227,7 +226,6 @@ class ClusterViewSet(
         instance.name = valid_data.get("name", instance.name)
         instance.description = valid_data.get("description", instance.description)
         instance.save(update_fields=["name", "description"])
-        update_hierarchy_issues(obj=instance)
 
         return Response(
             status=HTTP_200_OK, data=ClusterSerializer(instance, context=self.get_serializer_context()).data
