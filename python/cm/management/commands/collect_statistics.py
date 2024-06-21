@@ -107,7 +107,7 @@ class Command(BaseCommand):
                 "version": settings.ADCM_VERSION,
                 "is_internal": is_internal(),
             },
-            "format_version": "0.2",
+            "format_version": 0.2,
         }
         logger.debug(msg="Statistics collector: RBAC data preparation")
         rbac_entries_data: dict = RBACCollector(date_format=DATE_TIME_FORMAT)().model_dump()
@@ -128,7 +128,7 @@ class Command(BaseCommand):
                 storage.add(
                     JSONFile(
                         filename=f"{timezone.now().strftime(DATE_FORMAT)}_statistics.json",
-                        data={**statistics_data, **rbac_entries_data, **bundle_data.model_dump()},
+                        data={**statistics_data, "data": {**rbac_entries_data, **bundle_data.model_dump()}},
                     )
                 )
                 logger.debug(msg="Statistics collector: archive preparation")
@@ -153,7 +153,7 @@ class Command(BaseCommand):
                 storage.add(
                     JSONFile(
                         filename=f"{timezone.now().strftime(DATE_FORMAT)}_statistics.json",
-                        data={**statistics_data, **rbac_entries_data, **bundle_data.model_dump()},
+                        data={**statistics_data, "data": {**rbac_entries_data, **bundle_data.model_dump()}},
                     )
                 )
                 logger.debug(msg="Statistics collector: archive preparation")
