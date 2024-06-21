@@ -30,7 +30,7 @@ class AddHostSerializer(EmptySerializer):
 
 class ActionHostGroupCreateSerializer(EmptySerializer):
     name = CharField(max_length=150)
-    description = CharField(max_length=255, allow_blank=True)
+    description = CharField(max_length=255, allow_blank=True, default="")
 
 
 class ActionHostGroupSerializer(ModelSerializer):
@@ -39,7 +39,7 @@ class ActionHostGroupSerializer(ModelSerializer):
     description = CharField(max_length=255)
     hosts = SerializerMethodField()
 
-    @extend_schema_field(field=ShortHostSerializer(many=UnicodeTranslateError))
+    @extend_schema_field(field=ShortHostSerializer(many=True))
     def get_hosts(self, group: ActionHostGroup) -> list:
         # NOTE:
         #   Here we return "unpaginated" list of hosts, so if there will be lots of them, there may be problems with:

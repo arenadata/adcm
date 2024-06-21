@@ -83,7 +83,7 @@ class TestActionHostGroup(CommonActionHostGroupTest):
 
             response = self.client.v2[target, ACTION_HOST_GROUPS].post(data=data)
 
-            with self.subTest(f"[{type_.name}] CREATE SUCCESS"):
+            with self.subTest(f"[{type_.name}] CREATED"):
                 self.assertEqual(response.status_code, HTTP_201_CREATED)
                 self.assertEqual(ActionHostGroup.objects.count(), group_counter)
                 created_group = ActionHostGroup.objects.filter(
@@ -92,13 +92,22 @@ class TestActionHostGroup(CommonActionHostGroupTest):
                 self.assertIsNotNone(created_group)
                 self.assertEqual(response.json(), {"id": created_group.id, **data, "hosts": []})
 
-            with self.subTest(f"[{type_.name}] CREATE AUDITED"):
+            with self.subTest(f"[{type_.name}] AUDITED"):
                 self.check_last_audit_record(
                     operation_name=f"{data['name']} action host group created",
                     operation_type="create",
                     operation_result="success",
                     **self.prepare_audit_object_arguments(expected_object=target),
                 )
+
+        with self.subTest("[SERVICE] Without Description"):
+            another_name = "whoah"
+            response = self.client.v2[self.service, ACTION_HOST_GROUPS].post(data={"name": another_name})
+
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+            data = response.json()
+            self.assertEqual(data["name"], another_name)
+            self.assertEqual(data["description"], "")
 
     def test_create_multiple_groups(self) -> None:
         with self.subTest("[COMPONENT] Same Object + Different Names SUCCESS"):
