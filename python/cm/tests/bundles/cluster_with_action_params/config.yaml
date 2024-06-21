@@ -5,7 +5,7 @@
   version: &version '1.0'
   edition: community
   config_group_customization: true
-  actions:
+  actions: &actions
     action_full: &action
       type: job
       allow_to_terminate: true
@@ -84,3 +84,12 @@
       required: false
       default: string
 
+- type: service
+  name: same_actioned_service
+  version: 2
+
+  actions: *actions
+
+  components:
+    same_actions:
+      actions: *actions

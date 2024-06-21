@@ -48,6 +48,7 @@ from cm.logger import logger
 from cm.models import (
     ADCM,
     ADCMEntity,
+    AnsibleConfig,
     Cluster,
     ClusterBind,
     ClusterObject,
@@ -75,6 +76,11 @@ from cm.status_api import (
     send_host_component_map_update_event,
 )
 from cm.utils import obj_ref
+
+# There's no good place to place it for now.
+# Since it's more about API than `cm.services.job`, it'll live here.
+# But don't stick to it.
+DEFAULT_FORKS_AMOUNT: str = "5"
 
 
 def check_license(prototype: Prototype) -> None:
@@ -110,14 +116,23 @@ def add_cluster(prototype: Prototype, name: str, description: str = "") -> Clust
         raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {prototype.type}")
 
     check_license(prototype)
+
     with atomic():
         cluster = Cluster.objects.create(prototype=prototype, name=name, description=description)
         obj_conf = init_object_config(prototype, cluster)
         cluster.config = obj_conf
         cluster.save()
+
+        AnsibleConfig.objects.create(
+            value={"defaults": {"forks": DEFAULT_FORKS_AMOUNT}},
+            object_id=cluster.id,
+            object_type=ContentType.objects.get_for_model(Cluster),
+        )
+
         update_hierarchy_issues(cluster)
 
     reset_hc_map()
+
     logger.info("cluster #%s %s is added", cluster.pk, cluster.name)
 
     return cluster

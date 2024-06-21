@@ -83,6 +83,16 @@ def cluster_case(
     audit_object = None
 
     match path:
+        case ["clusters", obj_pk, "ansible-config"]:
+            audit_operation = AuditOperation(
+                name="Ansible configuration updated",
+                operation_type=AuditLogOperationType.UPDATE,
+            )
+            cluster_name = Cluster.objects.values_list("name", flat=True).first()
+            audit_object = get_or_create_audit_obj(
+                object_id=obj_pk, object_type=AuditObjectType.CLUSTER, object_name=cluster_name
+            )
+
         case ["cluster"] | ["clusters"]:
             audit_operation, audit_object = response_case(
                 obj_type=AuditObjectType.CLUSTER,

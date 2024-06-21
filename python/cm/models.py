@@ -240,6 +240,16 @@ class Prototype(ADCMModel):
         unique_together = (("bundle", "type", "parent", "name", "version"),)
 
 
+class AnsibleConfig(ADCMModel):
+    value = models.JSONField(default=dict, null=False)
+    object_id = models.PositiveIntegerField(null=False)
+    object_type = models.ForeignKey(ContentType, null=False, on_delete=models.CASCADE)
+    object = GenericForeignKey("object_type", "object_id")
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["object_id", "object_type"], name="unique_ansibleconfig")]
+
+
 class ObjectConfig(ADCMModel):
     current = models.PositiveIntegerField()
     previous = models.PositiveIntegerField()
