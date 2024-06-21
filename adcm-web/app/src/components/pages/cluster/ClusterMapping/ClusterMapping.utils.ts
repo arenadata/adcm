@@ -388,9 +388,10 @@ export const checkComponentMappingAvailability = (
     component.service.state === AdcmEntitySystemState.Created && component.maintenanceMode === AdcmMaintenanceMode.Off;
 
   const result: ComponentAvailabilityErrors = {
-    componentNotAvailableError: !isAvailable
-      ? 'Service of this component must have "Created" state. Maintenance mode on the components must be Off'
-      : undefined,
+    componentNotAvailableError:
+      !isAvailable && !allowActions
+        ? 'Service of this component must have "Created" state. Maintenance mode on the components must be Off'
+        : undefined,
   };
 
   if (allowActions) {
