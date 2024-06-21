@@ -17,6 +17,8 @@ from typing import Any, Callable, Collection, Generic, Literal, Mapping, ParamSp
 import fcntl
 import traceback
 
+from cm.errors import AdcmEx
+
 try:  # TODO: refactor when python >= 3.11
     from typing import Self
 except ImportError:
@@ -464,6 +466,16 @@ class ADCMAnsiblePluginExecutor(Generic[CallArguments, ReturnValue]):
             )
         except ADCMPluginError as err:
             return CallResult(value={}, changed=False, error=err)
+        except AdcmEx as err:
+            message = "\n".join(
+                (
+                    f"ADCM operation exception occurred during {self.__class__.__name__} call",
+                    f"Code: {err.code}",
+                    f"Message: {err.msg}",
+                    f"Traceback:\n{traceback.format_exc()}",
+                )
+            )
+            return CallResult(value={}, changed=False, error=PluginRuntimeError(message=message))
         except Exception as err:  # noqa: BLE001
             message = "\n".join(
                 (
