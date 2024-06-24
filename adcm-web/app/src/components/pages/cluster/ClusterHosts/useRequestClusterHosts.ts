@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom';
 import { defaultDebounceDelay } from '@constants';
 import { useDebounce, useDispatch, useRequestTimer, useStore } from '@hooks';
 import { cleanupClusterHosts, getClusterHosts, refreshClusterHosts } from '@store/adcm/cluster/hosts/hostsSlice';
-import { cleanupList, loadHostProviders } from '@store/adcm/cluster/hosts/hostsTableSlice';
+import { cleanupList, loadHostComponents, loadHostProviders } from '@store/adcm/cluster/hosts/hostsTableSlice';
 import { useEffect } from 'react';
 import { loadClusterHostsDynamicActions } from '@store/adcm/cluster/hosts/hostsDynamicActionsSlice';
 import { usePersistClusterHostsTableSettings } from './usePersistClusterHostsTableSettings';
@@ -20,12 +20,13 @@ export const useRequestClusterHosts = () => {
 
   useEffect(() => {
     dispatch(loadHostProviders());
+    dispatch(loadHostComponents({ clusterId }));
 
     return () => {
       dispatch(cleanupList());
       dispatch(cleanupClusterHosts());
     };
-  }, [dispatch]);
+  }, [dispatch, clusterId]);
 
   useEffect(() => {
     if (hosts.length) {
