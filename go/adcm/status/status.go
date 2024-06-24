@@ -92,6 +92,7 @@ type statusChangeParamsPayload struct {
 	HostId      int `json:"hostId,omitempty"`
 	ActionId    int `json:"actionId,omitempty"`
 	JobId       int `json:"jobId,omitempty"`
+	TaskId      int `json:"taskId,omitempty"`
 	PrototypeId int `json:"prototypeId,omitempty"`
 }
 
