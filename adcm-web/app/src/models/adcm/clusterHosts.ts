@@ -1,5 +1,5 @@
-import { AdcmHost } from './host';
-import { AdcmMappingComponent } from './clusterMapping';
+import type { AdcmHost } from './host';
+import type { AdcmMappingComponent } from './clusterMapping';
 
 export interface AdcmClusterHost extends AdcmHost {
   components: AdcmMappingComponent[];
@@ -7,7 +7,8 @@ export interface AdcmClusterHost extends AdcmHost {
 
 export interface AdcmClusterHostsFilter {
   name?: string;
-  hostprovider?: string;
+  hostproviderName?: string;
+  componentId?: string;
 }
 
 export interface AddClusterHostsPayload {
