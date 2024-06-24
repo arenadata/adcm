@@ -43,7 +43,7 @@ def adjust_paths(apps, schema_editor):
 
     objects_to_update = []
     for entry in PrototypeConfig.objects.select_related("prototype").filter(
-        type__in=("text", "secrettext"), default__startswith="./"
+        type__in=("file", "secretfile"), default__startswith="./"
     ):
         entry.default = Path(entry.prototype.path) / entry.default
         objects_to_update.append(entry)
