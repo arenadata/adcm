@@ -523,11 +523,14 @@ class ClusterViewSet(
                             "minimum": 1,
                         },
                     },
+                    "required": [
+                        "forks",
+                    ],
                 },
             },
             "additionalProperties": False,
             "required": [
-                "defaults.forks",
+                "defaults",
             ],
         }
 
