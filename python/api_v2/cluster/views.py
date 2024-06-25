@@ -18,7 +18,8 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from audit.utils import audit
+from audit.alt.api import audit_create, audit_delete, audit_update
+from audit.alt.hooks import extract_current_from_response, extract_previous_from_object, only_on_success
 from cm.api import add_cluster, delete_cluster
 from cm.errors import AdcmEx
 from cm.models import (
@@ -73,6 +74,7 @@ from api_v2.cluster.utils import retrieve_mapping_data, save_mapping
 from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.host.serializers import HostMappingSerializer
+from api_v2.utils.audit import cluster_from_lookup, cluster_from_response, update_cluster_name
 from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
 
 
@@ -181,7 +183,7 @@ class ClusterViewSet(
         description="Creates of a new ADCM cluster.",
         responses={201: ClusterSerializer, 400: ErrorSerializer, 403: ErrorSerializer, 409: ErrorSerializer},
     )
-    @audit
+    @audit_create(name="Cluster created", object_=cluster_from_response)
     def create(self, request, *args, **kwargs):  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -210,7 +212,14 @@ class ClusterViewSet(
             409: ErrorSerializer,
         },
     )
-    @audit
+    @(
+        audit_update(name="Cluster updated", object_=cluster_from_lookup)
+        .attach_hooks(on_collect=only_on_success(update_cluster_name))
+        .track_changes(
+            before=extract_previous_from_object(Cluster, "name", "description"),
+            after=extract_current_from_response("name", "description"),
+        )
+    )
     def partial_update(self, request, *args, **kwargs):  # noqa: ARG002
         instance = self.get_object()
         serializer = self.get_serializer(data=request.data)
@@ -235,13 +244,9 @@ class ClusterViewSet(
         operation_id="deleteCluster",
         summary="DELETE cluster",
         description="Delete a specific ADCM cluster.",
-        responses={
-            204: None,
-            403: ErrorSerializer,
-            404: ErrorSerializer,
-        },
+        responses={204: None, 403: ErrorSerializer, 404: ErrorSerializer},
     )
-    @audit
+    @audit_delete(name="Cluster deleted", object_=cluster_from_lookup, removed_on_success=True)
     def destroy(self, request, *args, **kwargs):  # noqa: ARG002
         cluster = self.get_object()
         delete_cluster(cluster=cluster)
@@ -341,7 +346,7 @@ class ClusterViewSet(
             409: ErrorSerializer,
         },
     )
-    @audit
+    @audit_update(name="Host-Component map updated", object_=cluster_from_lookup)
     @action(
         methods=["get", "post"],
         detail=True,
@@ -446,7 +451,7 @@ class ClusterViewSet(
             HTTP_409_CONFLICT: ErrorSerializer,
         },
     )
-    @audit
+    @audit_update(name="Ansible configuration updated", object_=cluster_from_lookup)
     @action(methods=["get", "post"], detail=True, pagination_class=None, filter_backends=[], url_path="ansible-config")
     def ansible_config(self, request: Request, *args, **kwargs):  # noqa: ARG002
         cluster = self.get_object()

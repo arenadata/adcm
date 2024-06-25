@@ -117,16 +117,21 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         if model is AuditLog:
             kwargs.setdefault("user__username", "admin")
 
-        # Object changes are {} for most cases,
-        # we always want to check it, but providing it each time is redundant.
-        # But sometimes structure is too complex for sqlite/ORM to handle,
-        # so we have to check changes separately.
-        if (model is AuditLog) and expect_object_changes_:
-            kwargs.setdefault("object_changes", {})
+        object_changes = kwargs.pop("object_changes", {})
 
         expected_record = model.objects.filter(**kwargs).order_by("pk").last()
         self.assertIsNotNone(expected_record, "Can't find audit record")
         self.assertEqual(last_audit_record.pk, expected_record.pk, "Expected audit record is not last")
+
+        # Object changes are {} for most cases,
+        # we always want to check it, but providing it each time is redundant.
+        # But sometimes structure is too complex for sqlite/ORM to handle,
+        # so we have to check changes separately.
+        #
+        # Check is on equality after retrieve for more clear message
+        # and to avoid object changes filtering
+        if (model is AuditLog) and expect_object_changes_:
+            self.assertDictEqual(expected_record.object_changes, object_changes)
 
         return last_audit_record
 
