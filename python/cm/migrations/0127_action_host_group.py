@@ -19,7 +19,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
     dependencies = [
         ("contenttypes", "0002_remove_content_type_name"),
-        ("cm", "0125_simplify_defaults"),
+        ("cm", "0126_add_ansible_config"),
     ]
 
     operations = [

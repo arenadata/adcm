@@ -17,7 +17,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("audit", "0006_add_address"),
+        ("audit", "0007_add_agent"),
     ]
 
     operations = [
