@@ -305,6 +305,11 @@ class TestActionHostGroup(CommonActionHostGroupTest):
                 self.assertEqual(response.status_code, HTTP_200_OK)
                 self.assertListEqual(response.json(), expected)
 
+    def test_adcm_5689_string_pk_500(self) -> None:
+        response = self.client.v2[self.cluster, ACTION_HOST_GROUPS, "s"].get()
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
 
 class TestHostsInActionHostGroup(CommonActionHostGroupTest):
     def setUp(self) -> None:

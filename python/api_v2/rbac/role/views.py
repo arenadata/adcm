@@ -39,7 +39,7 @@ from rest_framework.status import (
 from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.rbac.role.filters import RoleFilter
 from api_v2.rbac.role.serializers import RoleCreateSerializer, RoleSerializer, RoleUpdateSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
 @extend_schema_view(
@@ -144,7 +144,7 @@ class RoleViewSet(
     RetrieveModelMixin,
     DestroyModelMixin,
     CreateModelMixin,
-    CamelCaseGenericViewSet,
+    ADCMGenericViewSet,
 ):
     queryset = (
         Role.objects.prefetch_related(

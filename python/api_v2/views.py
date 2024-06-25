@@ -30,11 +30,8 @@ from djangorestframework_camel_case.render import (
 )
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import (
-    CreateModelMixin,
-    DestroyModelMixin,
     ListModelMixin,
     RetrieveModelMixin,
-    UpdateModelMixin,
 )
 from rest_framework.permissions import AllowAny
 from rest_framework.routers import APIRootView
@@ -68,22 +65,18 @@ class CamelCaseBrowsableAPIRendererWithoutForms(CamelCaseBrowsableAPIRenderer):
         return ctx
 
 
-class CamelCaseGenericViewSet(GenericViewSet):
+class ADCMGenericViewSet(GenericViewSet):
     parser_classes = [CamelCaseJSONParser, CamelCaseMultiPartParser, CamelCaseFormParser]
     renderer_classes = [CamelCaseJSONRenderer, CamelCaseBrowsableAPIRendererWithoutForms]
 
+    lookup_value_regex = r"\d+"
 
-class CamelCaseModelViewSet(
-    CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, ListModelMixin, CamelCaseGenericViewSet
-):
+
+class ADCMReadOnlyModelViewSet(RetrieveModelMixin, ListModelMixin, ADCMGenericViewSet):
     pass
 
 
-class CamelCaseReadOnlyModelViewSet(RetrieveModelMixin, ListModelMixin, CamelCaseGenericViewSet):
-    pass
-
-
-class ObjectWithStatusViewMixin(GenericViewSet):
+class ObjectWithStatusViewMixin:
     retrieve_status_map_actions: Collection[str] = ("list",)
     retrieve_single_status_actions: Collection[str] = ("retrieve", "update", "partial_update")
 

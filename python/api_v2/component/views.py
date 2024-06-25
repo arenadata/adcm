@@ -50,8 +50,8 @@ from api_v2.component.serializers import (
 )
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.views import (
-    CamelCaseGenericViewSet,
-    CamelCaseReadOnlyModelViewSet,
+    ADCMGenericViewSet,
+    ADCMReadOnlyModelViewSet,
     ObjectWithStatusViewMixin,
 )
 
@@ -123,9 +123,7 @@ from api_v2.views import (
         },
     ),
 )
-class ComponentViewSet(
-    PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMixin, CamelCaseReadOnlyModelViewSet
-):
+class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMixin, ADCMReadOnlyModelViewSet):
     queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("pk")
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_COMPONENT_PERM]
@@ -189,7 +187,7 @@ class ComponentViewSet(
         operation_id="getHostComponents", summary="GET host components", description="Get a list of host components."
     )
 )
-class HostComponentViewSet(PermissionListMixin, ListModelMixin, CamelCaseGenericViewSet, ObjectWithStatusViewMixin):
+class HostComponentViewSet(PermissionListMixin, ListModelMixin, ObjectWithStatusViewMixin, ADCMGenericViewSet):
     queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("prototype__name")
     serializer_class = HostComponentSerializer
     permission_classes = [DjangoModelPermissionsAudit]

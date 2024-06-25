@@ -28,7 +28,7 @@ from api_v2.prototype.serializers import (
     PrototypeVersionsSerializer,
 )
 from api_v2.prototype.utils import accept_license
-from api_v2.views import CamelCaseReadOnlyModelViewSet
+from api_v2.views import ADCMReadOnlyModelViewSet
 
 
 @extend_schema_view(
@@ -39,7 +39,7 @@ from api_v2.views import CamelCaseReadOnlyModelViewSet
         responses={200: PrototypeSerializer, 404: ErrorSerializer},
     ),
 )
-class PrototypeViewSet(CamelCaseReadOnlyModelViewSet):
+class PrototypeViewSet(ADCMReadOnlyModelViewSet):
     queryset = Prototype.objects.exclude(type="adcm").select_related("bundle").order_by("name")
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_CLUSTER_PERM]

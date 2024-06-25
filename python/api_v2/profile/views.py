@@ -15,24 +15,16 @@ from cm.errors import AdcmEx
 from cm.services.adcm import retrieve_password_requirements
 from core.rbac.operations import update_user_password
 from django.conf import settings
-from djangorestframework_camel_case.parser import (
-    CamelCaseFormParser,
-    CamelCaseJSONParser,
-    CamelCaseMultiPartParser,
-)
-from djangorestframework_camel_case.render import (
-    CamelCaseBrowsableAPIRenderer,
-    CamelCaseJSONRenderer,
-)
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rbac.models import User
 from rbac.services.user import UserDB
-from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED
 
 from api_v2.api_schema import ErrorSerializer
 from api_v2.profile.serializers import ProfileSerializer, ProfileUpdateSerializer
+from api_v2.views import ADCMGenericViewSet
 
 
 @extend_schema_view(
@@ -55,10 +47,8 @@ from api_v2.profile.serializers import ProfileSerializer, ProfileUpdateSerialize
         },
     ),
 )
-class ProfileView(RetrieveUpdateAPIView):
+class ProfileView(RetrieveModelMixin, ADCMGenericViewSet):
     queryset = User.objects.exclude(username__in=settings.ADCM_HIDDEN_USERS)
-    renderer_classes = [CamelCaseJSONRenderer, CamelCaseBrowsableAPIRenderer]
-    parser_classes = [CamelCaseJSONParser, CamelCaseMultiPartParser, CamelCaseFormParser]
 
     def get_object(self) -> User:
         return User.objects.get(user_ptr=self.request.user)

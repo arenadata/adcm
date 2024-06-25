@@ -52,7 +52,7 @@ from api_v2.action.utils import (
 from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.task.serializers import TaskListSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
 
 _schema_common_filters = (
     OpenApiParameter(
@@ -116,7 +116,7 @@ _schema_common_filters = (
         responses={HTTP_200_OK: ActionRetrieveSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
 )
-class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, CamelCaseGenericViewSet):
+class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, ADCMGenericViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ActionFilter
     general_queryset = (

@@ -64,7 +64,7 @@ from api_v2.action_host_group.serializers import (
 )
 from api_v2.api_schema import DOCS_CLIENT_INPUT_ERROR_RESPONSES, DOCS_DEFAULT_ERROR_RESPONSES, ErrorSerializer
 from api_v2.task.serializers import TaskListSerializer
-from api_v2.views import CamelCaseGenericViewSet, with_group_object, with_parent_object
+from api_v2.views import ADCMGenericViewSet, with_group_object, with_parent_object
 
 _PARENT_PERMISSION_MAP: dict[ADCMCoreType, tuple[str, type[Model]]] = {
     ADCMCoreType.CLUSTER: (VIEW_CLUSTER_PERM, Cluster),
@@ -157,7 +157,7 @@ def check_has_group_permissions(user: User, parent: CoreObjectDescriptor, dto: P
         responses={HTTP_200_OK: ShortHostSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
 )
-class ActionHostGroupViewSet(CamelCaseGenericViewSet):
+class ActionHostGroupViewSet(ADCMGenericViewSet):
     queryset = ActionHostGroup.objects.prefetch_related("hosts").order_by("id")
     action_host_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
     filter_backends = []
@@ -277,7 +277,7 @@ class ActionHostGroupViewSet(CamelCaseGenericViewSet):
         responses={HTTP_204_NO_CONTENT: None, HTTP_404_NOT_FOUND: ErrorSerializer, HTTP_409_CONFLICT: ErrorSerializer},
     ),
 )
-class HostActionHostGroupViewSet(CamelCaseGenericViewSet):
+class HostActionHostGroupViewSet(ADCMGenericViewSet):
     serializer_class = AddHostSerializer
     action_host_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
 

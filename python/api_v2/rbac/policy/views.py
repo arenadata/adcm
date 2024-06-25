@@ -12,14 +12,14 @@
 
 from adcm.permissions import VIEW_POLICY_PERMISSION, CustomModelPermissionsByMethod
 from audit.utils import audit
-from cm.errors import AdcmEx, raise_adcm_ex
+from cm.errors import AdcmEx
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rbac.models import Policy
 from rbac.services.policy import policy_create, policy_update
 from rest_framework.exceptions import NotFound
-from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, ListModelMixin, RetrieveModelMixin
+from rest_framework.mixins import DestroyModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
@@ -34,7 +34,7 @@ from rest_framework.status import (
 from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.rbac.policy.filters import PolicyFilter
 from api_v2.rbac.policy.serializers import PolicyCreateSerializer, PolicySerializer, PolicyUpdateSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
 @extend_schema_view(
@@ -99,14 +99,7 @@ from api_v2.views import CamelCaseGenericViewSet
         },
     ),
 )
-class PolicyViewSet(
-    PermissionListMixin,
-    ListModelMixin,
-    RetrieveModelMixin,
-    DestroyModelMixin,
-    CreateModelMixin,
-    CamelCaseGenericViewSet,
-):
+class PolicyViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, DestroyModelMixin, ADCMGenericViewSet):
     queryset = Policy.objects.select_related("role").prefetch_related("group", "object").order_by("name")
     filter_backends = (DjangoFilterBackend,)
     filterset_class = PolicyFilter
@@ -116,7 +109,6 @@ class PolicyViewSet(
         "delete": [(VIEW_POLICY_PERMISSION, NotFound)],
     }
     permission_required = [VIEW_POLICY_PERMISSION]
-    http_method_names = ["get", "post", "patch", "delete"]
 
     def get_serializer_class(self) -> type[PolicySerializer | PolicyCreateSerializer | PolicyUpdateSerializer]:
         if self.action == "create":
@@ -141,7 +133,7 @@ class PolicyViewSet(
         if policy.built_in:
             raise AdcmEx(code="POLICY_CREATE_ERROR")
 
-        serializer = self.get_serializer(policy, data=request.data, partial=kwargs.pop("partial", False))
+        serializer = self.get_serializer(policy, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         policy = policy_update(policy, **serializer.validated_data)
         return Response(data=PolicySerializer(policy).data)
@@ -150,6 +142,6 @@ class PolicyViewSet(
     def destroy(self, request, *args, **kwargs):
         policy = self.get_object()
         if policy.built_in:
-            return raise_adcm_ex(code="POLICY_DELETE_ERROR")
+            raise AdcmEx(code="POLICY_DELETE_ERROR")
 
         return super().destroy(request, *args, **kwargs)
