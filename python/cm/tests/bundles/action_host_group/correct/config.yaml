@@ -1,0 +1,35 @@
+- type: cluster
+  version: 1
+  name: "cl"
+
+  actions:
+    allow_true_ha_false:
+      masking:
+      allow_for_action_host_group: true
+      host_action: false
+      type: job
+      script: ./some.yaml
+      script_type: ansible
+
+- type: service
+  version: 4
+  name: "se"
+
+  actions:
+    allow_false_ha_true:
+      masking:
+      allow_for_action_host_group: false
+      host_action: true
+      type: job
+      script: ./some.yaml
+      script_type: ansible
+
+  components:
+    co:
+      actions:
+        allow_true_ha_absent:
+          masking:
+          allow_for_action_host_group: true
+          type: job
+          script: ./some.yaml
+          script_type: ansible

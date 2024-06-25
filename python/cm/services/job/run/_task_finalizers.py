@@ -12,15 +12,25 @@
 
 from logging import Logger
 from operator import itemgetter
+from typing import Protocol
 
 from core.job.types import Task
-from core.types import CoreObjectDescriptor
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 
 from cm.api import save_hc
 from cm.converters import core_type_to_model
 from cm.issue import unlock_affected_objects, update_hierarchy_issues
-from cm.models import ClusterObject, Host, JobLog, MaintenanceMode, ServiceComponent, TaskLog, get_object_cluster
+from cm.models import (
+    ActionHostGroup,
+    ClusterObject,
+    Host,
+    JobLog,
+    MaintenanceMode,
+    ServiceComponent,
+    TaskLog,
+    get_object_cluster,
+)
 from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, build_concern_reason
 from cm.status_api import send_object_update_event
 
@@ -29,12 +39,21 @@ from cm.status_api import send_object_update_event
 #  which is in no way correct approach
 
 
+class WithIDAndCoreType(Protocol):
+    id: int
+    type: ADCMCoreType
+
+
 def set_job_lock(job_id: int) -> None:
     job = JobLog.objects.select_related("task").get(pk=job_id)
-    if job.task.lock and job.task.task_object:
+    object_ = job.task.task_object
+    if isinstance(object_, ActionHostGroup):
+        object_ = object_.object
+
+    if job.task.lock and object_:
         job.task.lock.reason = build_concern_reason(
             ConcernMessage.LOCKED_BY_JOB.template,
-            placeholder_objects=PlaceholderObjectsDTO(job=job, target=job.task.task_object),
+            placeholder_objects=PlaceholderObjectsDTO(job=job, target=object_),
         )
         job.task.lock.save(update_fields=["reason"])
 
@@ -79,7 +98,7 @@ def update_issues(object_: CoreObjectDescriptor):
     update_hierarchy_issues(obj=core_type_to_model(core_type=object_.type).objects.get(id=object_.id))
 
 
-def update_object_maintenance_mode(action_name: str, object_: CoreObjectDescriptor):
+def update_object_maintenance_mode(action_name: str, object_: WithIDAndCoreType):
     """
     If maintenance mode wasn't changed during action execution, set "opposite" (to action's name) MM
     """

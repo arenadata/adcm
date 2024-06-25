@@ -762,6 +762,18 @@ def auto_delete_config_with_servicecomponent(sender, instance, **kwargs):  # noq
         instance.config.delete()
 
 
+class ActionHostGroup(models.Model):
+    object_id = models.PositiveIntegerField(null=False)
+    object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=False)
+    object = GenericForeignKey("object_type", "object_id")
+    name = models.CharField(max_length=150)
+    description = models.CharField(max_length=255)
+    hosts = models.ManyToManyField(Host)
+
+    class Meta:
+        unique_together = ["object_id", "object_type", "name"]
+
+
 class GroupConfig(ADCMModel):
     object_id = models.PositiveIntegerField()
     object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
@@ -1030,6 +1042,7 @@ class AbstractAction(ADCMModel):
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
     host_action = models.BooleanField(default=False)
+    allow_for_action_host_group = models.BooleanField(default=False)
     allow_in_maintenance_mode = models.BooleanField(default=False)
 
     config_jinja = models.CharField(max_length=1000, blank=True, null=True)
@@ -1111,15 +1124,16 @@ class Action(AbstractAction):
         if (
             self.multi_state_available == "any"
             or isinstance(self.multi_state_available, list)
-            and obj.has_multi_state_intersection(
-                self.multi_state_available,
-            )
+            and obj.has_multi_state_intersection(self.multi_state_available)
         ):
             multi_state_allowed = True
 
         return state_allowed and multi_state_allowed
 
-    def get_start_impossible_reason(self, obj: ADCMEntity) -> str | None:
+    def get_start_impossible_reason(self, obj: ADCMEntity | ActionHostGroup) -> str | None:
+        if isinstance(obj, ActionHostGroup):
+            obj = obj.object
+
         if obj.prototype.type == "adcm":
             obj: ADCM
 
@@ -1666,6 +1680,7 @@ CM_MODEL_MAP: dict[str, type[_CMObjects]] = {
     "prototypes": Prototype,
     "bundle": Bundle,
     "bundles": Bundle,
+    "action-host-groups": ActionHostGroup,
 }
 
 

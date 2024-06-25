@@ -37,7 +37,7 @@ from api_v2.log_storage.utils import (
 from api_v2.task.filters import TaskFilter
 from api_v2.task.permissions import TaskPermissions
 from api_v2.task.serializers import TaskListSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
 @extend_schema_view(
@@ -98,7 +98,7 @@ from api_v2.views import CamelCaseGenericViewSet
         },
     ),
 )
-class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, CamelCaseGenericViewSet):
+class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
     queryset = TaskLog.objects.select_related("action").order_by("-pk")
     serializer_class = TaskListSerializer
     filterset_class = TaskFilter

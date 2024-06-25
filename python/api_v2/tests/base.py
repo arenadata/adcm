@@ -18,9 +18,10 @@ from typing import Any, TypeAlias
 
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
 from adcm.tests.client import ADCMTestClient
-from audit.models import AuditLog, AuditSession
+from audit.models import AuditLog, AuditObjectType, AuditSession
 from cm.models import (
     ADCM,
+    ActionHostGroup,
     Bundle,
     Cluster,
     ClusterObject,
@@ -37,7 +38,17 @@ from rbac.upgrade.role import init_roles
 from rest_framework.test import APITestCase
 
 AuditTarget: TypeAlias = (
-    Bundle | Cluster | ClusterObject | ServiceComponent | HostProvider | Host | User | Group | Role | Policy
+    Bundle
+    | Cluster
+    | ClusterObject
+    | ServiceComponent
+    | ActionHostGroup
+    | HostProvider
+    | Host
+    | User
+    | Group
+    | Role
+    | Policy
 )
 
 
@@ -124,8 +135,8 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         """Mostly for debug purposes"""
         return AuditLog.objects.order_by("pk").last()
 
-    @staticmethod
     def prepare_audit_object_arguments(
+        self,
         expected_object: AuditTarget | None,
         *,
         is_deleted: bool = False,
@@ -133,7 +144,13 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         if expected_object is None:
             return {"audit_object__isnull": True}
 
-        if isinstance(expected_object, ServiceComponent):
+        if isinstance(expected_object, ActionHostGroup):
+            owner_name = self.prepare_audit_object_arguments(expected_object=expected_object.object)[
+                "audit_object__object_name"
+            ]
+            name = f"{owner_name}/{expected_object.name}"
+            type_ = AuditObjectType.ACTION_HOST_GROUP
+        elif isinstance(expected_object, ServiceComponent):
             name = (
                 f"{expected_object.cluster.name}/{expected_object.service.display_name}/{expected_object.display_name}"
             )

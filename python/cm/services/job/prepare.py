@@ -13,13 +13,13 @@
 from core.job.dto import TaskPayloadDTO
 from core.job.task import compose_task
 from core.job.types import Task
-from core.types import ActionID, CoreObjectDescriptor
+from core.types import ActionID, ActionTargetDescriptor, CoreObjectDescriptor
 
 from cm.services.job.run.repo import ActionRepoImpl, JobRepoImpl
 
 
 def prepare_task_for_action(
-    target: CoreObjectDescriptor,
+    target: ActionTargetDescriptor,
     owner: CoreObjectDescriptor,
     action: ActionID,
     payload: TaskPayloadDTO,

@@ -50,7 +50,7 @@ def filter_actions_by_user_perm(user: User, obj: ADCMEntity, actions: Iterable[A
     return compress(data=actions, selectors=mask)
 
 
-def check_run_perms(user: User, action: Action, obj: ADCMEntity) -> bool:
+def has_run_perms(user: User, action: Action, obj: ADCMEntity) -> bool:
     return user.has_perm(perm=f"{RUN_ACTION_PERM_PREFIX}{get_str_hash(value=action.name)}", obj=obj)
 
 

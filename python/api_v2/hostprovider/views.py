@@ -19,6 +19,7 @@ from django.db.utils import IntegrityError
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
@@ -30,7 +31,7 @@ from api_v2.hostprovider.serializers import (
     HostProviderCreateSerializer,
     HostProviderSerializer,
 )
-from api_v2.views import CamelCaseReadOnlyModelViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
 @extend_schema_view(
@@ -108,7 +109,9 @@ from api_v2.views import CamelCaseReadOnlyModelViewSet
         },
     ),
 )
-class HostProviderViewSet(PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet):
+class HostProviderViewSet(
+    PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin, ListModelMixin, ADCMGenericViewSet
+):
     queryset = HostProvider.objects.select_related("prototype").order_by("name")
     serializer_class = HostProviderSerializer
     permission_classes = [HostProviderPermissions]

@@ -15,6 +15,7 @@ from itertools import chain
 from typing import Protocol
 
 from cm.models import (
+    ActionHostGroup,
     Bundle,
     Cluster,
     ClusterObject,
@@ -162,6 +163,9 @@ class V2RootNode(RootNode):
         if isinstance(path_object, GroupConfig):
             # generally it's move clean and obvious when multiple `/` is used, but in here it looks like an overkill
             return self[path_object.object] / "/".join(("config-groups", str(path_object.id), *tail))
+
+        if isinstance(path_object, ActionHostGroup):
+            return self[path_object.object] / "/".join(("action-host-groups", str(path_object.id), *tail))
 
         if isinstance(path_object, LogStorage):
             return self._node_class(

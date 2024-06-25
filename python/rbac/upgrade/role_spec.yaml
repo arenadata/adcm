@@ -1433,8 +1433,9 @@ roles:
       - Get service
       - Get component
       - Get task and jobs
-      - View any object host-components
+      - View any object action host groups
       - View any object configuration
+      - View any object host-components
       - View any object import
       - View any object ansible config
       - View any object upgrade
@@ -1449,15 +1450,19 @@ roles:
     module_name: rbac.roles
     class_name: ParentRole
     child:
+      - Edit action host groups of component
+      - Edit action host groups of service
       - Edit component config
       - Edit config
       - Edit service config
       - Get component object
       - Get host object
       - Get service object
-      - Manage service imports
-      - Manage service Maintenance mode
       - Manage component Maintenance mode
+      - Manage service Maintenance mode
+      - Manage service imports
+      - View action host groups of component
+      - View action host groups of service
       - View component config
       - View host config
       - View host-components hidden
@@ -1494,6 +1499,9 @@ roles:
       - Add service hidden
       - Create service
       - Delete host
+      - Edit action host groups of cluster
+      - Edit action host groups of component
+      - Edit action host groups of service
       - Edit cluster
       - Edit cluster config
       - Edit component config
@@ -1518,6 +1526,9 @@ roles:
       - Remove service
       - Unmap hosts hidden
       - Upgrade cluster bundle
+      - View action host groups of cluster
+      - View action host groups of component
+      - View action host groups of service
       - View cluster config
       - View component config
       - View host config
@@ -1717,3 +1728,110 @@ roles:
       - Get cluster object
       - View object ansible config
       - Edit cluster ansible config
+
+# Action Host Groups
+
+  - &view_action_host_group_hidden
+    module_name: rbac.roles
+    name: View action host groups of cluster
+    type: hidden
+    class_name: ObjectRole
+    parametrized_by:
+      - cluster
+    apps:
+      - label: cm
+        models:
+          - name: cluster
+            codenames: &ahg_view_hostnames
+              - view
+              - view_action_host_group
+
+  - <<: *view_action_host_group_hidden
+    name: View action host groups of service
+    parametrized_by:
+      - service
+    apps:
+      - label: cm
+        models:
+          - name: clusterobject
+            codenames: *ahg_view_hostnames
+
+  - <<: *view_action_host_group_hidden
+    name: View action host groups of component
+    parametrized_by:
+      - component
+    apps:
+      - label: cm
+        models:
+          - name: servicecomponent
+            codenames: *ahg_view_hostnames
+
+  - name: View any object action host groups
+    type: hidden
+    any_category: false
+    module_name: rbac.roles
+    class_name: ModelRole
+    apps:
+      - label: cm
+        models:
+          - name: cluster
+            codenames: *ahg_view_hostnames
+          - name: clusterobject
+            codenames: *ahg_view_hostnames
+          - name: servicecomponent
+            codenames: *ahg_view_hostnames
+
+  - &edit_action_host_group_hidden
+    <<: *view_action_host_group_hidden
+    module_name: rbac.roles
+    name: Edit action host groups of cluster
+    parametrized_by:
+      - cluster
+    apps:
+      - label: cm
+        models:
+          - name: cluster
+            codenames: &ahg_edit_hostnames
+              - view
+              - view_action_host_group
+              - edit_action_host_group
+
+  - <<: *edit_action_host_group_hidden
+    name: Edit action host groups of service
+    parametrized_by:
+      - service
+    apps:
+      - label: cm
+        models:
+          - name: clusterobject
+            codenames: *ahg_edit_hostnames
+
+  - <<: *edit_action_host_group_hidden
+    name: Edit action host groups of component
+    parametrized_by:
+      - component
+    apps:
+      - label: cm
+        models:
+          - name: servicecomponent
+            codenames: *ahg_edit_hostnames
+
+  - &action_host_group_business
+    name: View action host groups
+    type: business
+    parametrized_by:
+      - cluster
+      - service
+    module_name: rbac.roles
+    class_name: ParentRole
+    child:
+      - View action host groups of cluster
+      - View action host groups of service
+      - View action host groups of component
+
+  - <<: *action_host_group_business
+    name: Manage action host groups
+    child:
+      - Edit action host groups of cluster
+      - Edit action host groups of service
+      - Edit action host groups of component

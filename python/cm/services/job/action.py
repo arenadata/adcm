@@ -15,7 +15,7 @@ from functools import partial
 from typing import TypeAlias
 
 from core.job.dto import TaskPayloadDTO
-from core.types import ADCMCoreType, CoreObjectDescriptor
+from core.types import ActionTargetDescriptor, CoreObjectDescriptor
 from django.conf import settings
 from django.db.transaction import atomic, on_commit
 from rbac.roles import re_apply_policy_for_jobs
@@ -24,12 +24,12 @@ from rest_framework.status import HTTP_409_CONFLICT
 from cm.adcm_config.checks import check_attr
 from cm.adcm_config.config import check_config_spec, get_prototype_config, process_config_spec, process_file_type
 from cm.api import get_hc, save_hc
-from cm.converters import model_name_to_core_type
+from cm.converters import model_name_to_core_type, orm_object_to_action_target_type, orm_object_to_core_type
 from cm.errors import AdcmEx
 from cm.models import (
     ADCM,
     Action,
-    ADCMEntity,
+    ActionHostGroup,
     Cluster,
     ClusterObject,
     ConcernType,
@@ -40,7 +40,6 @@ from cm.models import (
     JobStatus,
     ServiceComponent,
     TaskLog,
-    get_object_cluster,
 )
 from cm.services.config.spec import convert_to_flat_spec_from_proto_flat_spec
 from cm.services.job.checks import check_constraints_for_upgrade, check_hostcomponentmap
@@ -51,6 +50,7 @@ from cm.status_api import send_task_status_update_event
 from cm.variant import process_variant
 
 ObjectWithAction: TypeAlias = ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+ActionTarget: TypeAlias = ObjectWithAction | ActionHostGroup
 
 
 @dataclass
@@ -61,128 +61,141 @@ class ActionRunPayload:
     verbose: bool = False
 
 
-def run_action(
-    action: Action,
-    obj: ObjectWithAction,
-    payload: ActionRunPayload,
-) -> TaskLog:
-    cluster: Cluster | None = get_object_cluster(obj=obj)
+def run_action(action: Action, obj: ActionTarget, payload: ActionRunPayload) -> TaskLog:
+    action_objects = _ActionLaunchObjects(target=obj, action=action)
 
-    action_target = _get_host_object(action=action, cluster=cluster) if action.host_action else obj
+    _check_no_target_conflict(target=action_objects.target, action=action)
+    _check_no_blocking_concerns(lock_owner=action_objects.object_to_lock, action_name=action.name)
+    _check_action_is_available_for_object(owner=action_objects.owner, action=action)
 
-    object_locks = action_target.concerns.filter(type=ConcernType.LOCK)
-
-    if action.name == settings.ADCM_DELETE_SERVICE_ACTION_NAME:
-        object_locks = object_locks.exclude(owner_id=obj.id, owner_type=obj.content_type)
-
-    if object_locks.exists():
-        raise AdcmEx(code="LOCK_ERROR", msg=f"object {action_target} is locked")
-
-    if (
-        action.name not in settings.ADCM_SERVICE_ACTION_NAMES_SET
-        and action_target.concerns.filter(type=ConcernType.ISSUE).exists()
-    ):
-        raise AdcmEx(code="ISSUE_INTEGRITY_ERROR", msg=f"object {action_target} has issues")
-
-    if not action.allowed(obj=action_target):
-        raise AdcmEx(code="TASK_ERROR", msg="action is disabled")
-
-    spec, flat_spec = _check_action_config(action=action, obj=obj, conf=payload.conf, attr=payload.attr)
-
-    is_upgrade_action = hasattr(action, "upgrade")
-
-    if is_upgrade_action and not action.hostcomponentmap:
-        check_constraints_for_upgrade(
-            cluster=cluster, upgrade=action.upgrade, host_comp_list=_get_actual_hc(cluster=cluster)
-        )
-
-    host_map, post_upgrade_hc, delta = check_hostcomponentmap(
-        cluster=cluster, action=action, new_hc=payload.hostcomponent
+    spec, flat_spec = _process_run_config(
+        action=action, owner=action_objects.owner, conf=payload.conf, attr=payload.attr
     )
-    if action.hostcomponentmap and not (delta.get("add") or delta.get("remove")):
-        # means empty delta, shouldn't be like that
-        raise AdcmEx(
-            code="WRONG_ACTION_HC",
-            msg="Host-component is expected to be changed for this action",
-            http_code=HTTP_409_CONFLICT,
-        )
+    host_map, post_upgrade_hc, delta, is_upgrade_action = _process_hostcomponent(
+        cluster=action_objects.cluster, action=action, new_hostcomponent=payload.hostcomponent
+    )
 
     with atomic():
-        target = CoreObjectDescriptor(id=obj.pk, type=model_name_to_core_type(obj.__class__.__name__.lower()))
-        owner = target
-        if target.type == ADCMCoreType.HOST and action.host_action:
-            match action.prototype_type:
-                case "cluster":
-                    owner = CoreObjectDescriptor(id=cluster.pk, type=ADCMCoreType.CLUSTER)
-                case "service":
-                    owner = CoreObjectDescriptor(
-                        id=ClusterObject.objects.values_list("id", flat=True)
-                        .filter(cluster=cluster, prototype_id=action.prototype_id)
-                        .get(),
-                        type=ADCMCoreType.SERVICE,
-                    )
-                case "component":
-                    owner = CoreObjectDescriptor(
-                        id=ServiceComponent.objects.values_list("id", flat=True)
-                        .filter(cluster=cluster, prototype_id=action.prototype_id)
-                        .get(),
-                        type=ADCMCoreType.COMPONENT,
-                    )
-
         task = prepare_task_for_action(
-            target=target,
-            owner=owner,
+            target=ActionTargetDescriptor(
+                id=action_objects.target.id, type=orm_object_to_action_target_type(action_objects.target)
+            ),
+            owner=CoreObjectDescriptor(id=action_objects.owner.id, type=orm_object_to_core_type(action_objects.owner)),
             action=action.pk,
             payload=TaskPayloadDTO(
                 conf=payload.conf,
                 attr=payload.attr,
                 verbose=payload.verbose,
-                hostcomponent=get_hc(cluster=cluster),
+                hostcomponent=get_hc(cluster=action_objects.cluster),
                 post_upgrade_hostcomponent=post_upgrade_hc,
             ),
             delta=delta,
         )
+
+        on_commit(func=partial(send_task_status_update_event, task_id=task.id, status=JobStatus.CREATED.value))
+
         task_ = TaskLog.objects.get(id=task.id)
-        if host_map or (is_upgrade_action and host_map is not None):
-            save_hc(cluster=cluster, host_comp_list=host_map)
+        _finish_task_preparation(
+            task=task_,
+            owner=action_objects.owner,
+            cluster=action_objects.cluster,
+            host_map=host_map,
+            is_upgrade_action=is_upgrade_action,
+            payload=payload,
+            spec=spec,
+            flat_spec=flat_spec,
+        )
 
-        if payload.conf:
-            new_conf = update_configuration_for_inventory_inplace(
-                configuration=payload.conf,
-                attributes=payload.attr,
-                specification=convert_to_flat_spec_from_proto_flat_spec(prototypes_flat_spec=flat_spec),
-                config_owner=CoreObjectDescriptor(
-                    id=obj.pk, type=model_name_to_core_type(model_name=obj._meta.model_name)
-                ),
-            )
-            process_file_type(obj=task_, spec=spec, conf=payload.conf)
-            task_.config = new_conf
-            task_.save()
-
-        on_commit(func=partial(send_task_status_update_event, task_id=task_.pk, status=JobStatus.CREATED.value))
-
-    re_apply_policy_for_jobs(action_object=obj, task=task_)
+    re_apply_policy_for_jobs(action_object=action_objects.owner, task=task_)
 
     run_task(task_)
 
     return task_
 
 
-def _get_host_object(action: Action, cluster: Cluster | None) -> ADCMEntity | None:
-    obj = None
-    if action.prototype.type == "service":
-        obj = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype)
-    elif action.prototype.type == "component":
-        obj = ServiceComponent.obj.get(cluster=cluster, prototype=action.prototype)
-    elif action.prototype.type == "cluster":
-        obj = cluster
+class _ActionLaunchObjects:
+    """
+    Utility container to process differences in action's target/owner in one place
+    """
 
-    return obj
+    __slots__ = ("target", "owner", "cluster", "object_to_lock")
+
+    target: ActionTarget
+    """Object on which action will be launched: may be owner OR host with this object OR action host group"""
+
+    owner: ObjectWithAction
+    """Object that "owns" action: action is described in """
+
+    object_to_lock: ObjectWithAction
+    """Object owner of locks/issues and which will be locked on action launch"""
+
+    cluster: Cluster | None
+    """Related cluster, is None for own HostProvider/Host actions"""
+
+    def __init__(self, target: ActionTarget, action: Action) -> None:
+        self.target = target
+        self.object_to_lock = self.target
+
+        if isinstance(target, (Cluster, ClusterObject, ServiceComponent)):
+            self.owner = target
+            self.cluster = target if isinstance(target, Cluster) else target.cluster
+        elif action.host_action and isinstance(target, Host):
+            self.cluster = target.cluster
+            match action.prototype.type:
+                case "component":
+                    self.owner = ServiceComponent.objects.get(cluster=self.cluster, prototype=action.prototype)
+                case "service":
+                    self.owner = ClusterObject.objects.get(cluster=self.cluster, prototype=action.prototype)
+                case "cluster":
+                    self.owner = self.cluster
+                case _:
+                    message = f"Can't handle {action.prototype.type} type for owner of host action detection"
+                    raise NotImplementedError(message)
+        elif isinstance(target, ActionHostGroup):
+            # action group support only objects in Cluster hierarchy,
+            # so we can safely assume that there is related cluster
+            self.owner = target.object
+            self.cluster = self.owner if isinstance(self.owner, Cluster) else self.owner.cluster
+            self.object_to_lock = self.owner
+        else:
+            self.owner = target
+            self.cluster = None  # it's safe to assume cluster is None for host own action
 
 
-def _check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict) -> tuple[dict, dict]:
+def _check_no_target_conflict(target: ActionTarget, action: Action) -> None:
+    if action.host_action and not isinstance(target, Host):
+        message = "Running host action without targeting host is prohibited"
+        raise AdcmEx(code="TASK_ERROR", msg=message)
+
+    if isinstance(target, ActionHostGroup) and not action.allow_for_action_host_group:
+        message = f"Action {action.display_name} isn't allowed to be launched on action host group"
+        raise AdcmEx(code="TASK_ERROR", msg=message)
+
+
+def _check_no_blocking_concerns(lock_owner: ObjectWithAction, action_name: str) -> None:
+    object_locks = lock_owner.concerns.filter(type=ConcernType.LOCK)
+
+    if action_name == settings.ADCM_DELETE_SERVICE_ACTION_NAME:
+        object_locks = object_locks.exclude(owner_id=lock_owner.id, owner_type=lock_owner.content_type)
+
+    if object_locks.exists():
+        raise AdcmEx(code="LOCK_ERROR", msg=f"object {lock_owner} is locked")
+
+    if (
+        action_name not in settings.ADCM_SERVICE_ACTION_NAMES_SET
+        and lock_owner.concerns.filter(type=ConcernType.ISSUE).exists()
+    ):
+        raise AdcmEx(code="ISSUE_INTEGRITY_ERROR", msg=f"object {lock_owner} has issues")
+
+
+def _check_action_is_available_for_object(owner: ObjectWithAction, action: Action) -> None:
+    if not action.allowed(obj=owner):
+        raise AdcmEx(code="TASK_ERROR", msg="action is disabled")
+
+
+def _process_run_config(action: Action, owner: ObjectWithAction, conf: dict, attr: dict) -> tuple[dict, dict]:
     proto = action.prototype
-    spec, flat_spec, _, _ = get_prototype_config(prototype=proto, action=action, obj=obj)
+    spec, flat_spec, _, _ = get_prototype_config(prototype=proto, action=action, obj=owner)
     if not spec:
         if conf:
             raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Absent config in action prototype")
@@ -195,19 +208,72 @@ def _check_action_config(action: Action, obj: ADCMEntity, conf: dict, attr: dict
     check_attr(proto, action, attr, flat_spec)
 
     object_config = {}
-    if obj.config is not None:
-        object_config = ConfigLog.objects.get(id=obj.config.current).config
+    if owner.config is not None:
+        object_config = ConfigLog.objects.get(id=owner.config.current).config
 
-    process_variant(obj=obj, spec=spec, conf=object_config)
+    process_variant(obj=owner, spec=spec, conf=object_config)
     check_config_spec(proto=proto, obj=action, spec=spec, flat_spec=flat_spec, conf=conf, attr=attr)
 
-    process_config_spec(obj=obj, spec=spec, new_config=conf)
+    process_config_spec(obj=owner, spec=spec, new_config=conf)
 
     return spec, flat_spec
 
 
-def _get_actual_hc(cluster: Cluster):
-    new_hc = []
-    for hostcomponent in HostComponent.objects.filter(cluster=cluster):
-        new_hc.append((hostcomponent.service, hostcomponent.host, hostcomponent.component))
-    return new_hc
+def _process_hostcomponent(
+    cluster: Cluster | None, action: Action, new_hostcomponent: list[dict]
+) -> tuple[list[tuple[ClusterObject, Host, ServiceComponent]] | None, list, dict[str, dict], bool]:
+    is_upgrade_action = hasattr(action, "upgrade")
+
+    if not cluster:
+        if not new_hostcomponent:
+            return None, [], {}, is_upgrade_action
+
+        # Don't think it's even required check on action preparation,
+        # should be handled one level above
+        raise AdcmEx(code="TASK_ERROR", msg="Only cluster objects can have action with hostcomponentmap")
+
+    if is_upgrade_action and not action.hostcomponentmap:
+        new_hc = [
+            (entry.service, entry.host, entry.component)
+            for entry in HostComponent.objects.select_related("service", "component", "host").filter(cluster=cluster)
+        ]
+
+        check_constraints_for_upgrade(cluster=cluster, upgrade=action.upgrade, host_comp_list=new_hc)
+
+    host_map, post_upgrade_hc, delta = check_hostcomponentmap(cluster=cluster, action=action, new_hc=new_hostcomponent)
+    if action.hostcomponentmap and not (delta.get("add") or delta.get("remove")):
+        # means empty delta, shouldn't be like that
+        raise AdcmEx(
+            code="WRONG_ACTION_HC",
+            msg="Host-component is expected to be changed for this action",
+            http_code=HTTP_409_CONFLICT,
+        )
+
+    return host_map, post_upgrade_hc, delta, is_upgrade_action
+
+
+def _finish_task_preparation(
+    task: TaskLog,
+    owner: ObjectWithAction,
+    cluster: Cluster | None,
+    host_map: list | None,
+    is_upgrade_action: bool,
+    payload: ActionRunPayload,
+    spec: dict,
+    flat_spec: dict,
+):
+    if host_map or (is_upgrade_action and host_map is not None):
+        save_hc(cluster=cluster, host_comp_list=host_map)
+
+    if payload.conf:
+        new_conf = update_configuration_for_inventory_inplace(
+            configuration=payload.conf,
+            attributes=payload.attr,
+            specification=convert_to_flat_spec_from_proto_flat_spec(prototypes_flat_spec=flat_spec),
+            config_owner=CoreObjectDescriptor(
+                id=owner.pk, type=model_name_to_core_type(model_name=owner._meta.model_name)
+            ),
+        )
+        process_file_type(obj=task, spec=spec, conf=payload.conf)
+        task.config = new_conf
+        task.save(update_fields=["config"])

@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict
 from core.types import (
     ActionID,
     ADCMCoreType,
-    NamedCoreObject,
+    NamedActionObject,
     NamedCoreObjectWithPrototype,
     ObjectID,
     PrototypeDescriptor,
@@ -110,7 +110,7 @@ class Task(BaseModel):
 
     # Target is an object on which action should be performed
     # it's the same as owner for all cases except `host_action: true`
-    target: NamedCoreObject | None
+    target: NamedActionObject | None
 
     selector: dict
 

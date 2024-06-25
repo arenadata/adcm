@@ -38,10 +38,10 @@ from api_v2.rbac.user.serializers import UserBlockStatusChangedSerializer
 from api_v2.service.serializers import (
     ServiceAuditSerializer as ServiceAuditSerializerV2,
 )
-from api_v2.views import CamelCaseModelViewSet
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
+    ActionHostGroup,
     AnsibleConfig,
     Cluster,
     ClusterBind,
@@ -55,7 +55,7 @@ from cm.models import (
     get_model_by_type,
 )
 from core.job.types import ExecutionStatus
-from core.types import ADCMCoreType, NamedCoreObject
+from core.types import ADCMCoreType, NamedActionObject
 from django.contrib.auth.models import User as DjangoUser
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import Model, ObjectDoesNotExist
@@ -279,11 +279,7 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
     serializer_class = None
     pk = None
 
-    if (
-        isinstance(view, (GenericViewSet, CamelCaseModelViewSet))
-        and view.action in {"update", "partial_update"}
-        and view.kwargs.get("pk")
-    ):
+    if isinstance(view, GenericViewSet) and view.action in {"update", "partial_update"} and view.kwargs.get("pk"):
         pk = view.kwargs["pk"]
         if view.__class__.__name__ == "GroupViewSet":
             serializer_class = GroupAuditSerializer
@@ -449,6 +445,10 @@ def _all_child_objects_exist(path: list[str]) -> bool:
     match path:
         case ["configs", pk]:
             return _cm_object_exists(path_type="configs", pk=pk)
+        case ["action-host-groups", group_pk, "hosts", host_pk, *_]:
+            return ActionHostGroup.hosts.through.objects.filter(actionhostgroup_id=group_pk, host_id=host_pk).exists()
+        case ["action-host-groups", group_pk, *_]:
+            return ActionHostGroup.objects.filter(pk=group_pk).exists()
         case ["services" | "components" | "hosts" | "config-groups" | "actions" | "upgrades", pk, *rest]:
             if not _cm_object_exists(path_type=path[0], pk=pk):
                 return False
@@ -464,6 +464,7 @@ def _all_objects_in_path_exist(path: list[str]) -> bool:
                 model = get_rbac_model_by_type(rbac_type)
                 return model.objects.filter(pk=pk).exists()
             return False
+
         case ["clusters" | "hostproviders" | "hosts" | "bundles" | "prototypes", pk, *rest]:
             if not _cm_object_exists(path_type=path[0], pk=pk):
                 return False
@@ -638,17 +639,19 @@ def get_client_agent(request: WSGIRequest) -> str:
     return request.META.get("HTTP_USER_AGENT", "")[:255]
 
 
-def audit_job_finish(owner: NamedCoreObject, display_name: str, is_upgrade: bool, job_result: ExecutionStatus) -> None:
+def audit_job_finish(
+    target: NamedActionObject, display_name: str, is_upgrade: bool, job_result: ExecutionStatus
+) -> None:
     operation_name = f"{display_name} {'upgrade' if is_upgrade else 'action'} completed"
 
-    if owner.type == ADCMCoreType.HOSTPROVIDER:
+    if target.type == ADCMCoreType.HOSTPROVIDER:
         obj_type = AuditObjectType.PROVIDER
     else:
-        obj_type = AuditObjectType(owner.type.value)
+        obj_type = AuditObjectType(target.type.value)
 
     audit_object = get_or_create_audit_obj(
-        object_id=str(owner.id),
-        object_name=owner.name,
+        object_id=str(target.id),
+        object_name=target.name,
         object_type=obj_type,
     )
     operation_result = (

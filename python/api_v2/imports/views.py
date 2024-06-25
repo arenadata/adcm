@@ -43,10 +43,10 @@ from rest_framework.status import (
 from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.imports.serializers import ImportPostSerializer, ImportSerializer
 from api_v2.imports.utils import cook_data_for_multibind, get_imports
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
-class ImportViewSet(ListModelMixin, CreateModelMixin, CamelCaseGenericViewSet):
+class ImportViewSet(ListModelMixin, CreateModelMixin, ADCMGenericViewSet):
     queryset = PrototypeImport.objects.all()
     permission_classes = [IsAuthenticated]
     ordering = ["id"]

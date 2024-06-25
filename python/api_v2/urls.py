@@ -37,7 +37,7 @@ urlpatterns = [
     path("adcm/", include("api_v2.adcm.urls")),
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
-    path("profile/", ProfileView.as_view(), name="profile"),
+    path("profile/", ProfileView.as_view({"get": "retrieve", "patch": "partial_update"}), name="profile"),
     path("token/", TokenView.as_view(), name="token"),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path("schema/swagger-ui/", SpectacularSwaggerSplitView.as_view(url_name="schema"), name="swagger-ui"),

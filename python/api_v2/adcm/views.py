@@ -26,7 +26,7 @@ from api_v2.api_schema import ErrorSerializer
 from api_v2.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
 from api_v2.config.utils import get_config_schema
 from api_v2.config.views import ConfigLogViewSet
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
 @extend_schema_view(
@@ -37,7 +37,7 @@ from api_v2.views import CamelCaseGenericViewSet
         responses={200: AdcmSerializer},
     ),
 )
-class ADCMViewSet(RetrieveModelMixin, CamelCaseGenericViewSet):
+class ADCMViewSet(RetrieveModelMixin, ADCMGenericViewSet):
     queryset = ADCM.objects.prefetch_related("concerns").all()
     serializer_class = AdcmSerializer
 

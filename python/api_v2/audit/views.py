@@ -19,7 +19,7 @@ from rest_framework.permissions import DjangoObjectPermissions
 from api_v2.api_schema import ErrorSerializer
 from api_v2.audit.filters import AuditLogFilterSet, AuditSessionFilterSet
 from api_v2.audit.serializers import AuditLogSerializer, AuditSessionSerializer
-from api_v2.views import CamelCaseReadOnlyModelViewSet
+from api_v2.views import ADCMReadOnlyModelViewSet
 
 
 @extend_schema_view(
@@ -35,7 +35,7 @@ from api_v2.views import CamelCaseReadOnlyModelViewSet
         responses={200: AuditSessionSerializer, 404: ErrorSerializer},
     ),
 )
-class AuditSessionViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
+class AuditSessionViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):
     queryset = AuditSession.objects.select_related("user").order_by("-login_time")
     serializer_class = AuditSessionSerializer
     permission_classes = [DjangoObjectPermissions]
@@ -57,7 +57,7 @@ class AuditSessionViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
         responses={200: AuditLogSerializer, 404: ErrorSerializer},
     ),
 )
-class AuditLogViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet):
+class AuditLogViewSet(PermissionListMixin, ADCMReadOnlyModelViewSet):
     queryset = AuditLog.objects.select_related("audit_object", "user").order_by("-operation_time")
     serializer_class = AuditLogSerializer
     permission_classes = [DjangoObjectPermissions]

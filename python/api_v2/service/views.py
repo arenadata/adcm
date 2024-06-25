@@ -61,7 +61,7 @@ from api_v2.service.utils import (
     bulk_add_services_to_cluster,
     validate_service_prototypes,
 )
-from api_v2.views import CamelCaseGenericViewSet, ObjectWithStatusViewMixin
+from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
 
 
 @extend_schema_view(
@@ -182,8 +182,8 @@ class ServiceViewSet(
     DestroyModelMixin,
     ListModelMixin,
     RetrieveModelMixin,
-    CamelCaseGenericViewSet,
     ObjectWithStatusViewMixin,
+    ADCMGenericViewSet,
 ):
     queryset = ClusterObject.objects.select_related("cluster").order_by("pk")
     filterset_class = ServiceFilter

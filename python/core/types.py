@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
 from enum import Enum
 from typing import NamedTuple, TypeAlias
 
@@ -52,6 +53,15 @@ class ADCMCoreType(Enum):
     HOST = "host"
 
 
+class ADCMHostGroupType(Enum):
+    CONFIG = "config-group"
+    ACTION = "action-group"
+
+
+class ExtraActionTargetType(Enum):
+    ACTION_HOST_GROUP = "action-host-group"
+
+
 class ShortObjectInfo(NamedTuple):
     id: ObjectID
     name: str
@@ -66,19 +76,34 @@ class PrototypeDescriptor(NamedTuple):
     type: ADCMCoreType
 
 
-class GeneralEntityDescriptor(NamedTuple):
+@dataclass(slots=True, frozen=True)
+class GeneralEntityDescriptor:
     id: ObjectID
     type: str
 
 
-class CoreObjectDescriptor(NamedTuple):
-    id: ObjectID
+@dataclass(slots=True, frozen=True)
+class HostGroupDescriptor(GeneralEntityDescriptor):
+    type: ADCMHostGroupType
+
+
+@dataclass(slots=True, frozen=True)
+class ActionTargetDescriptor(GeneralEntityDescriptor):
+    type: ADCMCoreType | ExtraActionTargetType
+
+    def __str__(self) -> str:
+        return f"{self.type.value} #{self.id}"
+
+
+# inheritance from `ActionTargetDescriptor` is for convenience purposes,
+# because `CoreObjectDescriptor` is just a bit stricter than `ActionTargetDescriptor`
+@dataclass(slots=True, frozen=True)
+class CoreObjectDescriptor(ActionTargetDescriptor):
     type: ADCMCoreType
 
 
-class NamedCoreObject(NamedTuple):
-    id: ObjectID
-    type: ADCMCoreType
+@dataclass(slots=True, frozen=True)
+class NamedActionObject(ActionTargetDescriptor):
     name: str
 
 

@@ -36,22 +36,29 @@ from core.job.types import (
 )
 from core.types import (
     ActionID,
+    ActionTargetDescriptor,
     ADCMCoreType,
-    ADCMDescriptor,
     CoreObjectDescriptor,
     HostID,
-    NamedCoreObject,
+    NamedActionObject,
     NamedCoreObjectWithPrototype,
     PrototypeDescriptor,
 )
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F, QuerySet, Value
 
-from cm.converters import core_type_to_model, db_record_type_to_core_type
+from cm.converters import (
+    core_type_to_model,
+    db_record_type_to_core_type,
+    model_name_to_core_type,
+    orm_object_to_action_target_type,
+)
 from cm.models import (
     ADCM,
     Action,
+    ActionHostGroup,
     Cluster,
     ClusterObject,
     Host,
@@ -89,9 +96,7 @@ class JobRepoImpl:
     def get_task(cls, id: int) -> Task:  # noqa: A002
         try:
             task_record: TaskLog = (
-                TaskLog.objects.select_related("action__prototype")
-                .prefetch_related("task_object__prototype__bundle")
-                .get(id=id)
+                TaskLog.objects.select_related("action__prototype").prefetch_related("task_object").get(id=id)
             )
         except ObjectDoesNotExist:
             message = f"Can't find task identified by {id}"
@@ -104,8 +109,8 @@ class JobRepoImpl:
         action_prototype = task_record.action.prototype
         target_ = bundle = None
         if target := task_record.task_object:
-            target_ = NamedCoreObject(
-                id=target.pk, type=db_record_type_to_core_type(db_record_type=target.prototype.type), name=target.name
+            target_ = NamedActionObject(
+                id=target.pk, type=orm_object_to_action_target_type(object_=target), name=target.name
             )
             if action_prototype.type == "adcm":
                 bundle = BundleInfo(root=settings.BASE_DIR / "conf" / "adcm", config_dir=Path())
@@ -160,7 +165,7 @@ class JobRepoImpl:
 
     @classmethod
     def create_task(
-        cls, target: CoreObjectDescriptor, owner: CoreObjectDescriptor, action: ActionInfo, payload: TaskPayloadDTO
+        cls, target: ActionTargetDescriptor, owner: CoreObjectDescriptor, action: ActionInfo, payload: TaskPayloadDTO
     ) -> Task:
         if action.owner_prototype.type == ADCMCoreType.ADCM:
             if target.type != ADCMCoreType.ADCM:
@@ -169,12 +174,24 @@ class JobRepoImpl:
 
             selector = {"adcm": {"id": target.id, "name": "adcm"}}
             object_type = ADCM.class_content_type
-        elif target.type == ADCMDescriptor:
+        elif target.type == ADCMCoreType.ADCM:
             message = f"ADCM actions can be launched only on ADCM: {target=} ; {action.owner_prototype=}"
             raise TypeError(message)
-        else:
-            selector = cls._get_selector_for_core_object(target=target, owner=action.owner_prototype)
+
+        elif isinstance(target.type, ADCMCoreType):
+            selector = cls._get_selector_for_core_object(
+                target=CoreObjectDescriptor(id=target.id, type=target.type), owner=action.owner_prototype
+            )
             object_type = core_type_to_model(core_type=target.type).class_content_type
+        else:
+            group = ActionHostGroup.objects.select_related("object_type").get(id=target.id)
+            group_owner = CoreObjectDescriptor(
+                id=group.object_id, type=model_name_to_core_type(group.object_type.model)
+            )
+            selector = {"action_host_group": {"id": group.id, "name": group.name}} | cls._get_selector_for_core_object(
+                target=group_owner, owner=action.owner_prototype
+            )
+            object_type = ContentType.objects.get_for_model(ActionHostGroup)
 
         task = TaskLog.objects.create(
             action_id=action.id,

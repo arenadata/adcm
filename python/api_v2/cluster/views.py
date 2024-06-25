@@ -73,7 +73,7 @@ from api_v2.cluster.utils import retrieve_mapping_data, save_mapping
 from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.host.serializers import HostMappingSerializer
-from api_v2.views import CamelCaseGenericViewSet, ObjectWithStatusViewMixin
+from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
 
 
 @extend_schema_view(
@@ -141,8 +141,8 @@ class ClusterViewSet(
     ConfigSchemaMixin,
     ListModelMixin,
     RetrieveModelMixin,
-    CamelCaseGenericViewSet,
     ObjectWithStatusViewMixin,
+    ADCMGenericViewSet,
 ):
     queryset = (
         Cluster.objects.prefetch_related("prototype", "concerns")

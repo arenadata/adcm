@@ -753,6 +753,7 @@ common_action:
     allow_to_terminate: boolean
     partial_execution: boolean
     host_action: boolean
+    allow_for_action_host_group: boolean
     log_files: list_of_string
     states: action_states_dict
     masking: action_masking_or_none

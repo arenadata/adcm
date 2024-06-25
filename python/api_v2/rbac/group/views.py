@@ -20,6 +20,7 @@ from rbac.services.group import create as create_group
 from rbac.services.group import update as update_group
 from rbac.utils import Empty
 from rest_framework.exceptions import NotFound
+from rest_framework.mixins import DestroyModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -39,7 +40,7 @@ from api_v2.rbac.group.serializers import (
     GroupSerializer,
     GroupUpdateSerializer,
 )
-from api_v2.views import CamelCaseModelViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
 @extend_schema_view(
@@ -105,7 +106,7 @@ from api_v2.views import CamelCaseModelViewSet
         },
     ),
 )
-class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):
+class GroupViewSet(PermissionListMixin, RetrieveModelMixin, ListModelMixin, DestroyModelMixin, ADCMGenericViewSet):
     queryset = Group.objects.order_by("display_name").prefetch_related("user_set")
     filterset_class = GroupFilter
     permission_classes = (CustomModelPermissionsByMethod,)
@@ -139,7 +140,7 @@ class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):
         return Response(data=GroupSerializer(instance=group).data, status=HTTP_201_CREATED)
 
     @audit
-    def update(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+    def partial_update(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -152,7 +153,7 @@ class GroupViewSet(PermissionListMixin, CamelCaseModelViewSet):
             name_to_display=validated_data.get("display_name", Empty),
             description=validated_data.get("description", Empty),
             user_set=users,
-            partial=kwargs.get("partial", False),
+            partial=True,
         )
 
         return Response(data=GroupSerializer(instance=group).data, status=HTTP_200_OK)

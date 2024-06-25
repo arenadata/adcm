@@ -29,7 +29,7 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 from api_v2.api_schema import ErrorSerializer
 from api_v2.bundle.filters import BundleFilter
 from api_v2.bundle.serializers import BundleSerializer, UploadBundleSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
 @extend_schema_view(
@@ -43,7 +43,7 @@ from api_v2.views import CamelCaseGenericViewSet
         responses={200: BundleSerializer, 404: ErrorSerializer},
     ),
 )
-class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, CreateModelMixin, CamelCaseGenericViewSet):
+class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, CreateModelMixin, ADCMGenericViewSet):
     queryset = (
         Bundle.objects.exclude(name="ADCM")
         .annotate(

@@ -40,6 +40,7 @@ from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -70,11 +71,7 @@ from api_v2.host.serializers import (
     HostUpdateSerializer,
 )
 from api_v2.host.utils import create_host, maintenance_mode, process_config_issues_policies_hc
-from api_v2.views import (
-    CamelCaseModelViewSet,
-    CamelCaseReadOnlyModelViewSet,
-    ObjectWithStatusViewMixin,
-)
+from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
 
 
 @extend_schema_view(
@@ -182,7 +179,14 @@ from api_v2.views import (
         },
     ),
 )
-class HostViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMixin, CamelCaseModelViewSet):
+class HostViewSet(
+    PermissionListMixin,
+    ConfigSchemaMixin,
+    ObjectWithStatusViewMixin,
+    RetrieveModelMixin,
+    ListModelMixin,
+    ADCMGenericViewSet,
+):
     queryset = (
         Host.objects.select_related("provider", "cluster", "cluster__prototype", "prototype")
         .prefetch_related("concerns", "hostcomponent_set__component__prototype")
@@ -192,7 +196,6 @@ class HostViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMi
     permission_classes = [HostsPermissions]
     filterset_class = HostFilter
     filter_backends = (DjangoFilterBackend,)
-    http_method_names = ["get", "post", "delete", "patch"]
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -383,7 +386,9 @@ class HostViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMi
         },
     ),
 )
-class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet, ObjectWithStatusViewMixin):
+class HostClusterViewSet(
+    PermissionListMixin, RetrieveModelMixin, ListModelMixin, ObjectWithStatusViewMixin, ADCMGenericViewSet
+):
     permission_required = [VIEW_HOST_PERM]
     permission_classes = [HostsClusterPermissions]
     # have to define it here for `ObjectWithStatusViewMixin` to be able to determine model related to view
@@ -528,7 +533,9 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet, Obj
         responses={HTTP_204_NO_CONTENT: None, HTTP_403_FORBIDDEN: ErrorSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
 )
-class HostGroupConfigViewSet(PermissionListMixin, GetParentObjectMixin, CamelCaseReadOnlyModelViewSet):
+class HostGroupConfigViewSet(
+    PermissionListMixin, GetParentObjectMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet
+):
     queryset = (
         Host.objects.select_related("provider", "cluster")
         .prefetch_related("concerns", "hostcomponent_set")

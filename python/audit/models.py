@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 from cm.models import (
     ADCM,
+    ActionHostGroup,
     Bundle,
     Cluster,
     ClusterObject,
@@ -51,6 +52,7 @@ class AuditObjectType(TextChoices):
     GROUP = "group", "group"
     ROLE = "role", "role"
     POLICY = "policy", "policy"
+    ACTION_HOST_GROUP = "action-host-group", "action-host-group"
 
 
 class AuditLogOperationType(TextChoices):
@@ -126,6 +128,7 @@ MODEL_TO_AUDIT_OBJECT_TYPE_MAP = {
     Role: AuditObjectType.ROLE,
     Policy: AuditObjectType.POLICY,
     Prototype: AuditObjectType.PROTOTYPE,
+    ActionHostGroup: AuditObjectType.ACTION_HOST_GROUP,
 }
 
 AUDIT_OBJECT_TYPE_TO_MODEL_MAP = {v: k for k, v in MODEL_TO_AUDIT_OBJECT_TYPE_MAP.items()}
@@ -142,4 +145,5 @@ PATH_STR_TO_OBJ_CLASS_MAP = {
     "hosts": Host,
     "cluster": Cluster,
     "clusters": Cluster,
+    "action-host-groups": ActionHostGroup,
 }

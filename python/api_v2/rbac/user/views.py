@@ -61,7 +61,7 @@ from api_v2.rbac.user.serializers import (
     UserSerializer,
     UserUpdateSerializer,
 )
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
 @extend_schema_view(
@@ -152,7 +152,7 @@ class UserViewSet(
     RetrieveModelMixin,
     DestroyModelMixin,
     CreateModelMixin,
-    CamelCaseGenericViewSet,
+    ADCMGenericViewSet,
 ):
     queryset = (
         # Filtering by `group__isnull` to filter out possible `auth_group` that hasn't got `rbac_group` linked.

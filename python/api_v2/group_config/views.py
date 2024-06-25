@@ -32,7 +32,7 @@ from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.group_config.permissions import GroupConfigPermissions
 from api_v2.group_config.serializers import GroupConfigSerializer
 from api_v2.host.serializers import HostGroupConfigSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
 @extend_schema_view(
@@ -79,7 +79,7 @@ class GroupConfigViewSet(
     ConfigSchemaMixin,
     RetrieveModelMixin,
     ListModelMixin,
-    CamelCaseGenericViewSet,
+    ADCMGenericViewSet,
 ):
     queryset = GroupConfig.objects.order_by("name")
     serializer_class = GroupConfigSerializer
