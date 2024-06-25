@@ -21,13 +21,12 @@ from api_v2.action_host_group.views import (
     ActionHostGroupViewSet,
     HostActionHostGroupViewSet,
 )
-from api_v2.cluster.views import ClusterViewSet
+from api_v2.cluster.views import ClusterImportViewSet, ClusterViewSet, HostClusterViewSet
 from api_v2.component.views import ComponentViewSet, HostComponentViewSet
 from api_v2.config.views import ConfigLogViewSet
 from api_v2.group_config.views import GroupConfigViewSet
-from api_v2.host.views import HostClusterViewSet, HostGroupConfigViewSet
-from api_v2.imports.views import ClusterImportViewSet, ServiceImportViewSet
-from api_v2.service.views import ServiceViewSet
+from api_v2.host.views import HostGroupConfigViewSet
+from api_v2.service.views import ServiceImportViewSet, ServiceViewSet
 from api_v2.upgrade.views import UpgradeViewSet
 
 CLUSTER_PREFIX = ""

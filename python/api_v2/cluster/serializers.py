@@ -248,3 +248,21 @@ class AnsibleConfigRetrieveSerializer(ModelSerializer):
         data["config"]["defaults"]["forks"] = int(data["config"]["defaults"]["forks"])
 
         return data
+
+
+class RelatedHostComponentsStatusSerializer(WithStatusSerializer):
+    id = IntegerField(source="component.id")
+    name = CharField(source="component.name")
+    display_name = CharField(source="component.display_name")
+
+    class Meta:
+        model = HostComponent
+        fields = ["id", "name", "display_name", "status"]
+
+
+class ClusterHostStatusSerializer(EmptySerializer):
+    host_components = RelatedHostComponentsStatusSerializer(many=True, source="hostcomponent_set")
+
+    class Meta:
+        model = Host
+        fields = ["host_components"]

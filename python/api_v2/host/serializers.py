@@ -12,7 +12,7 @@
 
 from adcm import settings
 from adcm.serializers import EmptySerializer
-from cm.models import Cluster, Host, HostComponent, HostProvider, MaintenanceMode, ServiceComponent
+from cm.models import Cluster, Host, HostProvider, MaintenanceMode, ServiceComponent
 from cm.validators import HostUniqueValidator, StartMidEndValidator
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import (
@@ -175,24 +175,6 @@ class HostGroupConfigSerializer(ModelSerializer):
         model = Host
         fields = ["id", "name"]
         extra_kwargs = {"name": {"read_only": True}}
-
-
-class RelatedHostComponentsStatusSerializer(WithStatusSerializer):
-    id = IntegerField(source="component.id")
-    name = CharField(source="component.name")
-    display_name = CharField(source="component.display_name")
-
-    class Meta:
-        model = HostComponent
-        fields = ["id", "name", "display_name", "status"]
-
-
-class ClusterHostStatusSerializer(EmptySerializer):
-    host_components = RelatedHostComponentsStatusSerializer(many=True, source="hostcomponent_set")
-
-    class Meta:
-        model = Host
-        fields = ["host_components"]
 
 
 class HostAuditSerializer(ModelSerializer):

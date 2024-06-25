@@ -11,13 +11,7 @@
 # limitations under the License.
 
 from cm.models import Host
-from django_filters.rest_framework import (
-    BooleanFilter,
-    CharFilter,
-    FilterSet,
-    NumberFilter,
-    OrderingFilter,
-)
+from django_filters.rest_framework import BooleanFilter, CharFilter, FilterSet, NumberFilter, OrderingFilter
 
 
 class HostFilter(FilterSet):
@@ -38,7 +32,7 @@ class HostFilter(FilterSet):
         return queryset.filter(cluster__isnull=not value)
 
 
-class HostClusterFilter(FilterSet):
+class HostMemberFilter(FilterSet):
     name = CharFilter(label="Host name", field_name="fqdn", lookup_expr="icontains")
     hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name")
     component_id = NumberFilter(label="Component id", field_name="hostcomponent__component_id")
