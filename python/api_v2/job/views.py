@@ -32,7 +32,7 @@ from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.job.permissions import JobPermissions
 from api_v2.job.serializers import JobRetrieveSerializer
 from api_v2.task.serializers import JobListSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
 @extend_schema_view(
@@ -71,7 +71,7 @@ from api_v2.views import CamelCaseGenericViewSet
         },
     ),
 )
-class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, CamelCaseGenericViewSet):
+class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
     queryset = JobLog.objects.select_related("task__action").order_by("pk")
     filter_backends = []
     permission_classes = [JobPermissions]

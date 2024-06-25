@@ -40,7 +40,7 @@ from api_v2.config.utils import (
     represent_json_type_as_string,
     represent_string_as_json_type,
 )
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
 @extend_schema_view(
@@ -74,7 +74,7 @@ class ConfigLogViewSet(
     CreateModelMixin,
     RetrieveModelMixin,
     GetParentObjectMixin,
-    CamelCaseGenericViewSet,
+    ADCMGenericViewSet,
 ):
     queryset = ConfigLog.objects.select_related(
         "obj_ref__cluster__prototype",

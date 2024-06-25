@@ -29,7 +29,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_
 from api_v2.api_schema import ErrorSerializer
 from api_v2.log_storage.permissions import LogStoragePermissions
 from api_v2.log_storage.serializers import LogStorageSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
 @extend_schema_view(
@@ -75,7 +75,7 @@ from api_v2.views import CamelCaseGenericViewSet
         },
     ),
 )
-class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, CamelCaseGenericViewSet):
+class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
     queryset = LogStorage.objects.select_related("job")
     serializer_class = LogStorageSerializer
     filter_backends = []

@@ -35,7 +35,6 @@ from api_v2.rbac.user.serializers import UserBlockStatusChangedSerializer
 from api_v2.service.serializers import (
     ServiceAuditSerializer as ServiceAuditSerializerV2,
 )
-from api_v2.views import CamelCaseModelViewSet
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
@@ -276,11 +275,7 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
     serializer_class = None
     pk = None
 
-    if (
-        isinstance(view, (GenericViewSet, CamelCaseModelViewSet))
-        and view.action in {"update", "partial_update"}
-        and view.kwargs.get("pk")
-    ):
+    if isinstance(view, GenericViewSet) and view.action in {"update", "partial_update"} and view.kwargs.get("pk"):
         pk = view.kwargs["pk"]
         if view.__class__.__name__ == "GroupViewSet":
             serializer_class = GroupAuditSerializer
