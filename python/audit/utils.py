@@ -520,6 +520,7 @@ def audit(func):
                 return res
 
             # Correctly finished request (when will be `bool(res) is False`?)
+            # - when has_permission is decorated and it returns False
             status_code = res.status_code if res else HTTP_403_FORBIDDEN
         except (AdcmEx, ValidationError, Http404, NotFound) as exc:
             error = exc

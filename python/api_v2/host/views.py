@@ -22,6 +22,8 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
+from audit.alt.api import audit_update
+from audit.alt.hooks import adjust_denied_on_404_result, extract_current_from_response, extract_previous_from_object
 from audit.utils import audit
 from cm.api import delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
@@ -71,6 +73,13 @@ from api_v2.host.serializers import (
     HostUpdateSerializer,
 )
 from api_v2.host.utils import create_host, maintenance_mode, process_config_issues_policies_hc
+from api_v2.utils.audit import (
+    host_from_lookup,
+    nested_host_does_exist,
+    parent_cluster_from_lookup,
+    set_add_hosts_name,
+    set_removed_host_name,
+)
 from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
 
 
@@ -427,7 +436,7 @@ class HostClusterViewSet(
 
         return by_cluster_qs
 
-    @audit
+    @audit_update(name="Hosts added", object_=parent_cluster_from_lookup).attach_hooks(pre_call=set_add_hosts_name)
     def create(self, request, *_, **kwargs):
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["cluster_pk"]
@@ -473,7 +482,11 @@ class HostClusterViewSet(
             data=HostSerializer(instance=qs_for_added_hosts.first(), context=context).data,
         )
 
-    @audit
+    @(
+        audit_update(name="Host removed", object_=parent_cluster_from_lookup).attach_hooks(
+            pre_call=set_removed_host_name, on_collect=adjust_denied_on_404_result(objects_exist=nested_host_does_exist)
+        )
+    )
     def destroy(self, request, *args, **kwargs):  # noqa: ARG002
         host = self.get_object()
         cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_pk"])
@@ -481,7 +494,10 @@ class HostClusterViewSet(
         remove_host_from_cluster(host=host)
         return Response(status=HTTP_204_NO_CONTENT)
 
-    @audit
+    @audit_update(name="Host updated", object_=host_from_lookup).track_changes(
+        before=extract_previous_from_object(Host, "maintenance_mode"),
+        after=extract_current_from_response("maintenance_mode"),
+    )
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         return maintenance_mode(request=request, host=self.get_object())

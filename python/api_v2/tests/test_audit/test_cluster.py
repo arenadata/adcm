@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from audit.models import AuditObject
 from cm.models import (
     Action,
     AnsibleConfig,
@@ -203,16 +202,6 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_delete_success(self):
-        # audit object should exist before successful DELETE request
-        # to have `is_deleted` updated
-        # for now we've agreed that's ok tradeoff
-        AuditObject.objects.get_or_create(
-            object_id=self.cluster_1.pk,
-            object_name=self.cluster_1.name,
-            object_type="cluster",
-            is_deleted=False,
-        )
-
         response = self.client.delete(
             path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
         )

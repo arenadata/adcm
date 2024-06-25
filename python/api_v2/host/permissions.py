@@ -63,7 +63,6 @@ class HostsClusterPermissions(DjangoObjectPermissions):
         "DELETE": ["%(app_label)s.delete_%(model_name)s"],
     }
 
-    @audit
     def has_permission(self, request, view) -> bool:
         if view.action in ["create", "destroy"]:
             return True
