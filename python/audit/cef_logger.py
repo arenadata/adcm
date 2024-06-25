@@ -28,7 +28,16 @@ class CEFLogConstants:
     device_product: str = "Arenadata Cluster Manager"
     adcm_version: str = settings.ADCM_VERSION
     operation_name_session: str = "User logged"
-    extension_keys: tuple[str, ...] = ("actor", "act", "operation", "resource", "result", "timestamp", "address")
+    extension_keys: tuple[str, ...] = (
+        "actor",
+        "act",
+        "operation",
+        "resource",
+        "result",
+        "timestamp",
+        "address",
+        "agent",
+    )
 
 
 def cef_logger(
@@ -49,6 +58,7 @@ def cef_logger(
         extension["result"] = audit_instance.login_result
         extension["timestamp"] = str(audit_instance.login_time)
         extension["address"] = audit_instance.address
+        extension["agent"] = audit_instance.agent
 
     elif isinstance(audit_instance, AuditLog):
         operation_name = audit_instance.operation_name
@@ -63,6 +73,7 @@ def cef_logger(
             severity = 3
         extension["timestamp"] = str(audit_instance.operation_time)
         extension["address"] = audit_instance.address
+        extension["agent"] = audit_instance.agent
 
     else:
         raise NotImplementedError

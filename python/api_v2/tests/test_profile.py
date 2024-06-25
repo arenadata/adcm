@@ -16,7 +16,7 @@ from api_v2.tests.base import BaseAPITestCase
 
 
 class TestProfile(BaseAPITestCase):
-    def test_unauthenticated_access_adcm_4946_fail(self):
+    def test_adcm_4946_unauthenticated_access_fail(self):
         self.client.logout()
 
         path = self.client.v2["profile"].path

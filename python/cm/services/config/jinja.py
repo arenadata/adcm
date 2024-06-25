@@ -11,10 +11,13 @@
 # limitations under the License.
 
 from pathlib import Path
+from typing import Any
+
+from django.conf import settings
+from yaml import safe_load
 
 from cm.models import (
     Action,
-    ADCMEntity,
     Cluster,
     ClusterObject,
     Host,
@@ -22,29 +25,88 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
-from cm.services.cluster import retrieve_clusters_topology
+from cm.services.cluster import retrieve_related_cluster_topology
 from cm.services.config.patterns import Pattern
 from cm.services.job.inventory import get_cluster_vars
 from cm.services.job.jinja_scripts import get_action_info
 from cm.services.template import TemplateBuilder
-from django.conf import settings
-from yaml import safe_load
+
+_TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "read_only", "writable", "subs", "source"}
 
 
-def _get_attr(config: dict) -> dict:
+def get_jinja_config(
+    action: Action, cluster_relative_object: Cluster | ClusterObject | ServiceComponent | Host
+) -> tuple[list[PrototypeConfig], dict[str, Any]]:
+    resolver = BundlePathResolver(bundle_hash=action.prototype.bundle.hash)
+    jinja_conf_file = resolver.resolve(action.config_jinja)
+
+    template_builder = TemplateBuilder(
+        template_path=jinja_conf_file,
+        context={
+            **get_cluster_vars(topology=retrieve_related_cluster_topology(orm_object=cluster_relative_object)).dict(
+                by_alias=True, exclude_defaults=True
+            ),
+            "action": get_action_info(action=action),
+        },
+    )
+
+    configs = []
     attr = {}
+    for config in template_builder.data:
+        for normalized_config in _normalize_config(
+            config=config, dir_with_config=jinja_conf_file.parent.relative_to(resolver.bundle_root), resolver=resolver
+        ):
+            configs.append(PrototypeConfig(prototype=action.prototype, action=action, **normalized_config))
 
-    if all(
-        (
-            "activatable" in config["limits"],
-            "active" in config["limits"],
-            config["type"] == "group",
-            config.get("name"),
-        ),
-    ):
-        attr[config["name"]] = config["limits"]
+            if (
+                normalized_config["type"] == "group"
+                and "activatable" in normalized_config["limits"]
+                and "active" in normalized_config["limits"]
+                and normalized_config.get("name")
+            ):
+                attr[normalized_config["name"]] = normalized_config["limits"]
 
-    return attr
+    return configs, attr
+
+
+def _normalize_config(
+    config: dict, dir_with_config: Path, resolver: BundlePathResolver, name: str = "", subname: str = ""
+) -> list[dict]:
+    """`dir_with_config` should be relative to bundle root"""
+    config_list = [config]
+
+    name = name or config["name"]
+    config["name"] = name
+    if subname:
+        config["subname"] = subname
+
+    if config.get("display_name") is None:
+        config["display_name"] = subname or name
+
+    config["limits"] = _get_limits(config=config, dir_with_config=dir_with_config, resolver=resolver)
+
+    if config["type"] in settings.STACK_FILE_FIELD_TYPES and config.get("default"):
+        config["default"] = detect_relative_path_to_bundle_root(
+            source_file_dir=dir_with_config, raw_path=config["default"]
+        )
+
+    if "subs" in config:
+        for subconf in config["subs"]:
+            config_list.extend(
+                _normalize_config(
+                    config=subconf,
+                    dir_with_config=dir_with_config,
+                    resolver=resolver,
+                    name=name,
+                    subname=subconf["name"],
+                ),
+            )
+
+    for field in _TEMPLATE_CONFIG_DELETE_FIELDS:
+        if field in config:
+            del config[field]
+
+    return config_list
 
 
 def _get_limits(config: dict, dir_with_config: Path, resolver: BundlePathResolver) -> dict:
@@ -113,74 +175,3 @@ def _get_limits(config: dict, dir_with_config: Path, resolver: BundlePathResolve
             limits[label] = config[label]
 
     return limits
-
-
-def _normalize_config(
-    config: dict, dir_with_config: Path, resolver: BundlePathResolver, name: str = "", subname: str = ""
-) -> list[dict]:
-    """`dir_with_config` should be relative to bundle root"""
-    config_list = [config]
-
-    name = name or config["name"]
-    config["name"] = name
-    if subname:
-        config["subname"] = subname
-
-    if config.get("display_name") is None:
-        config["display_name"] = subname or name
-
-    config["limits"] = _get_limits(config=config, dir_with_config=dir_with_config, resolver=resolver)
-
-    if config["type"] in settings.STACK_FILE_FIELD_TYPES and config.get("default"):
-        config["default"] = detect_relative_path_to_bundle_root(
-            source_file_dir=dir_with_config, raw_path=config["default"]
-        )
-
-    if "subs" in config:
-        for subconf in config["subs"]:
-            config_list.extend(
-                _normalize_config(
-                    config=subconf,
-                    dir_with_config=dir_with_config,
-                    resolver=resolver,
-                    name=name,
-                    subname=subconf["name"],
-                ),
-            )
-
-    for field in settings.TEMPLATE_CONFIG_DELETE_FIELDS:
-        if field in config:
-            del config[field]
-
-    return config_list
-
-
-def get_jinja_config(action: Action, obj: ADCMEntity) -> tuple[list[PrototypeConfig], dict]:
-    if isinstance(obj, Cluster):
-        cluster_topology = next(retrieve_clusters_topology([obj.pk]))
-    elif isinstance(obj, (ClusterObject, ServiceComponent, Host)) and obj.cluster_id:
-        cluster_topology = next(retrieve_clusters_topology([obj.cluster_id]))
-    else:
-        message = f"Can't detect cluster variables for {obj}"
-        raise RuntimeError(message)
-
-    resolver = BundlePathResolver(bundle_hash=action.prototype.bundle.hash)
-    jinja_conf_file = resolver.resolve(action.config_jinja)
-    template_builder = TemplateBuilder(
-        template_path=jinja_conf_file,
-        context={
-            **get_cluster_vars(topology=cluster_topology).dict(by_alias=True, exclude_defaults=True),
-            "action": get_action_info(action=action),
-        },
-    )
-
-    configs = []
-    attr = {}
-    for config in template_builder.data:
-        for normalized_config in _normalize_config(
-            config=config, dir_with_config=jinja_conf_file.parent.relative_to(resolver.bundle_root), resolver=resolver
-        ):
-            configs.append(PrototypeConfig(prototype=action.prototype, action=action, **normalized_config))
-            attr.update(**_get_attr(config=normalized_config))
-
-    return configs, attr

@@ -26,6 +26,7 @@ from ansible_plugin.base import (
     TargetConfig,
     from_objects,
 )
+from ansible_plugin.errors import PluginTargetDetectionError
 
 
 class EmptyArguments(BaseArgumentsWithTypedObjects):
@@ -215,6 +216,23 @@ class TestObjectsTargetsExtraction(BaseTestCase, BusinessLogicMixin, ADCMAnsible
                 CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST),
             ],
         )
+
+    def test_adcm_5685_non_existent_target_detection(self):
+        arguments = {"objects": [{"type": "component", "component_name": "component_not_exist"}]}
+
+        parent_cluster = self.cluster_2
+        context_service = ClusterObject.objects.get(prototype__name="service_2", cluster=parent_cluster)
+
+        task = self.prepare_task(owner=context_service, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=self.targets_from_objects_executor, call_arguments=arguments, call_context=job
+        )
+
+        result = executor.execute()
+        self.assertIsInstance(result.error, PluginTargetDetectionError)
+        self.assertIn('Ensure objects requested with "*_name" parameters exist.', result.error.message)
 
     def check_target_detection(
         self, task: Task, arguments: dict | str, expected_targets: list[CoreObjectDescriptor]

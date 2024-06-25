@@ -33,6 +33,7 @@ from core.cluster.errors import (
     HostBelongsToAnotherClusterError,
     HostDoesNotExistError,
 )
+from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -69,7 +70,7 @@ from api_v2.host.serializers import (
     HostSerializer,
     HostUpdateSerializer,
 )
-from api_v2.host.utils import add_new_host_and_map_it, maintenance_mode
+from api_v2.host.utils import create_host, maintenance_mode, process_config_issues_policies_hc
 from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
 
 
@@ -217,15 +218,18 @@ class HostViewSet(
             klass=HostProvider,
             id=serializer.validated_data["hostprovider_id"],
         )
+
         request_cluster = None
         if serializer.validated_data.get("cluster_id"):
             request_cluster = get_object_for_user(
                 user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=serializer.validated_data["cluster_id"]
             )
 
-        host = add_new_host_and_map_it(
-            provider=request_hostprovider, fqdn=serializer.validated_data["fqdn"], cluster=request_cluster
-        )
+        with atomic():
+            host = create_host(
+                provider=request_hostprovider, fqdn=serializer.validated_data["fqdn"], cluster=request_cluster
+            )
+            process_config_issues_policies_hc(host=host)
 
         return Response(
             data=HostSerializer(instance=host, context=self.get_serializer_context()).data, status=HTTP_201_CREATED
@@ -276,6 +280,7 @@ class HostViewSet(
         summary="GET cluster hosts",
         parameters=[
             OpenApiParameter(name="name", description="Case insensitive and partial filter by host name."),
+            OpenApiParameter(name="componentId", description="Id of component."),
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
             OpenApiParameter(

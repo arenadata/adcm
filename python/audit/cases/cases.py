@@ -58,6 +58,7 @@ def get_audit_operation_and_object(
         or "component" in path
         or ("host" in path and "config" in path)
         or ("service" in path and ("import" in path or "config" in path))
+        or "ansible-config" in path
     ):
         audit_operation, audit_object = cluster_case(
             path=path, view=view, response=response, deleted_obj=deleted_obj, api_version=api_version

@@ -52,7 +52,7 @@ const ServiceComponentsTable = () => {
               </Link>
             </StatusableCell>
             <TableCell>
-              <Link className="text-link" to={`/clusters/${component.cluster.id}/hosts`}>
+              <Link className="text-link" to={`/clusters/${component.cluster.id}/hosts?componentId=${component.id}`}>
                 {component.hosts.length} {component.hosts.length === 1 ? 'host' : 'hosts'}
               </Link>
             </TableCell>

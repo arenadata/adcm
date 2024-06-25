@@ -1,5 +1,5 @@
 import { useDispatch, usePersistSettings, useStore } from '@hooks';
-import { AdcmHostProvider, AdcmHostsFilter } from '@models/adcm';
+import type { AdcmHostProvider, AdcmHostsFilter } from '@models/adcm';
 import { findBy } from '@utils/arrayUtils';
 import {
   setFilter,
@@ -8,6 +8,7 @@ import {
   setSortParams,
 } from '@store/adcm/cluster/hosts/hostsTableSlice';
 import { mergePaginationParams } from '@hooks/usePersistSettings';
+import { useGetFilterFromUrl } from '@pages/cluster/ClusterHosts/useGetFilterFromUrl.ts';
 
 const mergeFilters = (
   filterFromStorage: AdcmHostsFilter,
@@ -28,6 +29,8 @@ const mergeFilters = (
 
 export const usePersistClusterHostsTableSettings = () => {
   const dispatch = useDispatch();
+
+  const urlProps = useGetFilterFromUrl();
 
   const filter = useStore(({ adcm }) => adcm.clusterHostsTable.filter);
   const sortParams = useStore(({ adcm }) => adcm.clusterHostsTable.sortParams);
@@ -50,6 +53,11 @@ export const usePersistClusterHostsTableSettings = () => {
       },
       isReadyToLoad: isAllDataLoaded,
       onSettingsLoaded: (settings) => {
+        if (urlProps.isLoaded && urlProps.dataFromUrl) {
+          dispatch(setFilter(urlProps.dataFromUrl.filter));
+          return;
+        }
+
         const mergedFilter = mergeFilters(settings.filter, filter, hostProviders);
         dispatch(setFilter(mergedFilter));
         dispatch(setSortParams(settings.sortParams));
@@ -57,6 +65,6 @@ export const usePersistClusterHostsTableSettings = () => {
         dispatch(setPaginationParams(mergePaginationParams(settings.perPage, paginationParams)));
       },
     },
-    [filter, sortParams, requestFrequency, perPage],
+    [filter, sortParams, requestFrequency, perPage, urlProps.dataFromUrl, urlProps.isLoaded],
   );
 };

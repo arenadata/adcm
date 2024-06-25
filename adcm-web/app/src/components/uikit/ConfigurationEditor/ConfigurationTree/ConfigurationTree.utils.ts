@@ -18,7 +18,7 @@ import {
   ConfigurationArray,
   ConfigurationNodeView,
 } from '../ConfigurationEditor.types';
-import { validate as validateJsonSchema } from '@utils/jsonSchemaUtils';
+import { validate as validateJsonSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 import {
   primitiveFieldTypes,
   rootNodeKey,

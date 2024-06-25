@@ -339,6 +339,19 @@ roles:
             codenames:
               - view
 
+  - name: View any object ansible config
+    description: The ability to view ansible config page of all objects except ADCM settings
+    type: hidden
+    module_name: rbac.roles
+    class_name: ModelRole
+    any_category: false
+    apps:
+      - label: cm
+        models:
+          - name: cluster
+            codenames:
+              - view_ansible_config_of
+
   - name: Edit config
     description: The ability to change and add configuration
     type: hidden
@@ -598,6 +611,24 @@ roles:
           - name: clusterobject
             codenames:
               - view
+
+  - name: View any object upgrade
+    description: The ability to view all upgrades
+    type: hidden
+    module_name: rbac.roles
+    class_name: ModelRole
+    any_category: false
+    apps:
+      - label: cm
+        models:
+          - name: cluster
+            codenames:
+              - view
+              - view_upgrade_of
+          - name: hostprovider
+            codenames:
+              - view
+              - view_upgrade_of
 
   - name: Manage cluster imports
     description: The ability to change cluster imports
@@ -1406,6 +1437,8 @@ roles:
       - View any object configuration
       - View any object host-components
       - View any object import
+      - View any object ansible config
+      - View any object upgrade
 
   - name: Service Administrator
     type: role
@@ -1476,6 +1509,7 @@ roles:
       - Edit host config
       - Edit host-components hidden
       - Edit service config
+      - Edit object ansible config
       - Get cluster object
       - Get component object
       - Get host
@@ -1635,6 +1669,65 @@ roles:
     child:
       - View audit logins
       - View audit operations
+
+  - name: Edit cluster ansible config
+    description: The ability to change and add new ansible configuration
+    type: hidden
+    module_name: rbac.roles
+    class_name: ObjectRole
+    parametrized_by:
+      - cluster
+    apps:
+      - label: cm
+        models:
+          - name: cluster
+            codenames:
+              - change_ansible_config_of
+
+  - name: View cluster ansible config
+    description: The ability to view the cluster ansible configuration
+    type: hidden
+    parametrized_by:
+      - cluster
+    module_name: rbac.roles
+    class_name: ObjectRole
+    apps:
+      - label: cm
+        models:
+          - name: cluster
+            codenames:
+              - view_ansible_config_of
+
+  - name: View object ansible config
+    description: The ability to view object ansible configuration
+    type: business
+    parametrized_by:
+      - cluster
+    module_name: rbac.roles
+    class_name: ParentRole
+    any_category: true
+    init_params:
+      app_name: cm
+      model: Cluster
+    child:
+      - Get cluster object
+      - View cluster ansible config
+
+  - name: Edit object ansible config
+    description: The ability to change and add new cluster ansible configuration
+    type: business
+    parametrized_by:
+      - cluster
+    module_name: rbac.roles
+    class_name: ParentRole
+    any_category: true
+    init_params:
+      app_name: cm
+      model: Cluster
+    child:
+      - Get cluster object
+      - View object ansible config
+      - Edit cluster ansible config
 
 # Action Host Groups
 

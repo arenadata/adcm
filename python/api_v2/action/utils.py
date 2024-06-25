@@ -29,8 +29,8 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver
+from cm.services.config.jinja import get_jinja_config
 from django.conf import settings
-from jinja_config import get_jinja_config
 from rbac.models import User
 
 from api_v2.config.utils import convert_attr_to_adcm_meta, get_config_schema
@@ -81,7 +81,7 @@ def get_action_configuration(
     action_: Action, object_: Cluster | ClusterObject | ServiceComponent | HostProvider | Host
 ) -> tuple[dict | None, dict | None, dict | None]:
     if action_.config_jinja:
-        prototype_configs, _ = get_jinja_config(action=action_, obj=object_)
+        prototype_configs, _ = get_jinja_config(action=action_, cluster_relative_object=object_)
     else:
         prototype_configs = PrototypeConfig.objects.filter(prototype=action_.prototype, action=action_).order_by("id")
 

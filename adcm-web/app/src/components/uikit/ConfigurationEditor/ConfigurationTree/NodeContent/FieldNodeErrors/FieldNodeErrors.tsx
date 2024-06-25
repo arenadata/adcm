@@ -15,7 +15,7 @@ const FieldNodeErrors = ({ fieldErrors }: FieldNodeErrorsProps) => {
           return null;
         }
 
-        return <span>{error}</span>;
+        return <span key={keyword}>{error}</span>;
       })}
 
       {hasOneOfKeywordError && (

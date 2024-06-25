@@ -21,8 +21,8 @@ from adcm.permissions import (
 from audit.utils import audit
 from cm.api import add_cluster, delete_cluster
 from cm.errors import AdcmEx
-from cm.issue import update_hierarchy_issues
 from cm.models import (
+    AnsibleConfig,
     Cluster,
     ClusterObject,
     ConcernType,
@@ -32,6 +32,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django.contrib.contenttypes.models import ContentType
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
@@ -43,7 +44,9 @@ from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
 
@@ -55,6 +58,8 @@ from api_v2.cluster.filters import (
 )
 from api_v2.cluster.permissions import ClusterPermissions
 from api_v2.cluster.serializers import (
+    AnsibleConfigRetrieveSerializer,
+    AnsibleConfigUpdateSerializer,
     ClusterCreateSerializer,
     ClusterSerializer,
     ClusterUpdateSerializer,
@@ -221,7 +226,6 @@ class ClusterViewSet(
         instance.name = valid_data.get("name", instance.name)
         instance.description = valid_data.get("description", instance.description)
         instance.save(update_fields=["name", "description"])
-        update_hierarchy_issues(obj=instance)
 
         return Response(
             status=HTTP_200_OK, data=ClusterSerializer(instance, context=self.get_serializer_context()).data
@@ -416,3 +420,115 @@ class ClusterViewSet(
         )
 
         return Response(status=HTTP_200_OK, data=serializer.data)
+
+    @extend_schema(
+        methods=["get"],
+        operation_id="getClusterAnsibleConfigs",
+        summary="GET cluster ansible configuration",
+        description="Get information about cluster ansible config.",
+        responses={
+            HTTP_200_OK: AnsibleConfigRetrieveSerializer,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+        },
+    )
+    @extend_schema(
+        methods=["post"],
+        operation_id="postClusterAnsibleConfigs",
+        summary="POST cluster ansible config",
+        description="Create ansible configuration.",
+        request=AnsibleConfigUpdateSerializer,
+        responses={
+            HTTP_201_CREATED: AnsibleConfigRetrieveSerializer,
+            HTTP_400_BAD_REQUEST: ErrorSerializer,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
+        },
+    )
+    @audit
+    @action(methods=["get", "post"], detail=True, pagination_class=None, filter_backends=[], url_path="ansible-config")
+    def ansible_config(self, request: Request, *args, **kwargs):  # noqa: ARG002
+        cluster = self.get_object()
+        ansible_config = AnsibleConfig.objects.get(
+            object_id=cluster.pk, object_type=ContentType.objects.get_for_model(model=cluster)
+        )
+
+        if request.method.lower() == "get":
+            check_custom_perm(
+                user=request.user,
+                action_type="view_ansible_config_of",
+                model="cluster",
+                obj=cluster,
+                second_perm="view_ansible_config_of_cluster",
+            )
+
+            return Response(status=HTTP_200_OK, data=AnsibleConfigRetrieveSerializer(instance=ansible_config).data)
+
+        check_custom_perm(user=request.user, action_type="change_ansible_config_of", model="cluster", obj=cluster)
+        serializer = AnsibleConfigUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        ansible_config.value = serializer.validated_data["config"]
+        ansible_config.save(update_fields=["value"])
+
+        return Response(status=HTTP_201_CREATED, data=AnsibleConfigRetrieveSerializer(instance=ansible_config).data)
+
+    @extend_schema(
+        methods=["get"],
+        operation_id="getClusterAnsibleConfigs",
+        summary="GET cluster ansible configuration",
+        description="Get information about cluster ansible config.",
+        responses={
+            HTTP_200_OK: dict,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+        },
+    )
+    @action(methods=["get"], detail=True, pagination_class=None, filter_backends=[], url_path="ansible-config-schema")
+    def ansible_config_schema(self, request: Request, *args, **kwargs):  # noqa: ARG002
+        adcm_meta_part = {
+            "isAdvanced": False,
+            "isInvisible": False,
+            "activation": None,
+            "synchronization": None,
+            "NoneValue": None,
+            "isSecret": False,
+            "stringExtra": None,
+            "enumExtra": None,
+        }
+        schema = {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Ansible configuration",
+            "description": "",
+            "readOnly": False,
+            "adcmMeta": adcm_meta_part,
+            "type": "object",
+            "properties": {
+                "defaults": {
+                    "title": "defaults",
+                    "type": "object",
+                    "description": "",
+                    "default": {},
+                    "readOnly": False,
+                    "adcmMeta": adcm_meta_part,
+                    "additionalProperties": False,
+                    "properties": {
+                        "forks": {
+                            "title": "forks",
+                            "type": "integer",
+                            "description": "",
+                            "default": 5,
+                            "readOnly": False,
+                            "adcmMeta": adcm_meta_part,
+                            "minimum": 1,
+                        },
+                    },
+                },
+            },
+            "additionalProperties": False,
+            "required": [
+                "defaults.forks",
+            ],
+        }
+
+        return Response(status=HTTP_200_OK, data=schema)

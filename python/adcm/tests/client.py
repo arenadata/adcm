@@ -69,17 +69,19 @@ class APINode:
 
         return self._resolved_path
 
-    def get(self, *, query: dict | None = None) -> Response:
-        return self._client.get(path=self.path, data=query)
+    def get(self, *, query: dict | None = None, headers: dict | None = None) -> Response:
+        return self._client.get(path=self.path, data=query, **(headers or {}))
 
-    def post(self, *, data: dict | list[dict] | None = None, format_: str | None = None) -> Response:
-        return self._client.post(path=self.path, data=data, format=format_)
+    def post(
+        self, *, data: dict | list[dict] | None = None, headers: dict | None = None, format_: str | None = None
+    ) -> Response:
+        return self._client.post(path=self.path, data=data, format=format_, **(headers or {}))
 
-    def patch(self, *, data: dict) -> Response:
-        return self._client.patch(path=self.path, data=data)
+    def patch(self, *, data: dict, headers: dict | None = None) -> Response:
+        return self._client.patch(path=self.path, data=data, **(headers or {}))
 
-    def delete(self) -> Response:
-        return self._client.delete(path=self.path)
+    def delete(self, headers: dict | None = None) -> Response:
+        return self._client.delete(path=self.path, **(headers or {}))
 
 
 class AsyncAPINode(APINode):

@@ -157,9 +157,7 @@ class TestTask(BaseAPITestCase):
         response = (self.client.v2 / "tasks").get()
         self.assertNotIn(self.adcm_task.pk, [task["id"] for task in response.json()["results"]])
 
-    def test_visibility_after_object_deletion(self):
-        """ADCM-4142"""
-
+    def test_adcm_4142_visibility_after_object_deletion(self):
         cluster_admin_credentials = self.test_user_credentials
         cluster_admin = self.test_user
         service_admin_credentials = {"username": "service_admin_username", "password": "service_admin_passwo"}

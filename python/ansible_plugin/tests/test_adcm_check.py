@@ -49,6 +49,25 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
         self.assertIsNone(None)
         self.assertTrue(result.changed)
 
+    def test_adcm_check_forbidden_arg_fail(self) -> None:
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=ADCMCheckPluginExecutor,
+            call_arguments="""
+                title: title
+                result: true
+                msg: test_message
+                extraarg: somevalue
+            """,
+            call_context=job,
+        )
+        result = executor.execute()
+
+        self.assertIsNotNone(result.error)
+        self.assertFalse(result.changed)
+
     def test_adcm_check_no_title_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
@@ -307,6 +326,32 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
             call_context=job,
         )
         executor.execute()
+        result = executor.execute()
+
+        self.assertIsInstance(result.error, PluginValidationError)
+        self.assertIn("Arguments doesn't match expected schema", result.error.message)
+        self.assertDictEqual(result.value, {})
+        self.assertFalse(result.changed)
+
+        self.assertEqual(GroupCheckLog.objects.all().count(), 0)
+        self.assertEqual(CheckLog.objects.all().count(), 0)
+        self.assertEqual(LogStorage.objects.all().count(), 2)
+
+    def test_adcm_check_group_msg_cant_be_null_fail(self) -> None:
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=ADCMCheckPluginExecutor,
+            call_arguments="""
+                title: title
+                result: true
+                msg: test_message
+                group_title: group
+                group_success_msg: null
+            """,
+            call_context=job,
+        )
         result = executor.execute()
 
         self.assertIsInstance(result.error, PluginValidationError)

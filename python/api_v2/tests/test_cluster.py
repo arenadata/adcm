@@ -16,15 +16,16 @@ from adcm.tests.base import BusinessLogicMixin
 from cm.models import (
     Action,
     ADCMEntityStatus,
+    AnsibleConfig,
     Cluster,
     ClusterObject,
-    Host,
     Prototype,
     ServiceComponent,
 )
 from cm.services.status.client import FullStatusMap
 from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.utils import gen_component, gen_host, gen_service, generate_hierarchy
+from django.contrib.contenttypes.models import ContentType
 from guardian.models import GroupObjectPermission
 from rbac.models import User
 from rest_framework.status import (
@@ -32,6 +33,7 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
@@ -45,6 +47,9 @@ class TestCluster(BaseAPITestCase):
         super().setUp()
 
         self.cluster_action = Action.objects.get(prototype=self.cluster_1.prototype, name="action")
+
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
         with patch("cm.services.status.client.api_request") as patched_request:
@@ -178,7 +183,7 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(cluster.description, "")
 
-    def test_create_adcm_5371_start_digits_success(self):
+    def test_adcm_5371_create_start_digits_success(self):
         response = (self.client.v2 / "clusters").post(
             data={"prototype_id": self.cluster_1.prototype.pk, "name": "1new_test_cluster"}
         )
@@ -187,21 +192,21 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(cluster.description, "")
 
-    def test_create_adcm_5371_dot_fail(self):
+    def test_adcm_5371_create_dot_fail(self):
         response = (self.client.v2 / "clusters").post(
             data={"prototype_id": self.cluster_1.prototype.pk, "name": "new_test_cluster."}
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-    def test_create_adcm_5371_space_prohibited_end_start_fail(self):
+    def test_adcm_5371_create_space_prohibited_end_start_fail(self):
         response = (self.client.v2 / "clusters").post(
             data={"prototype_id": self.cluster_1.prototype.pk, "name": " new_test_cluster "}
         )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-    def test_create_adcm_5371_min_name_2_chars_success(self):
+    def test_adcm_5371_create_min_name_2_chars_success(self):
         response = (self.client.v2 / "clusters").post(data={"prototype_id": self.cluster_1.prototype.pk, "name": "a"})
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -211,7 +216,7 @@ class TestCluster(BaseAPITestCase):
         self.assertIsNotNone(Cluster.objects.filter(name="aa").first())
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    def test_create_adcm_5371_max_name_150_chars_success(self):
+    def test_adcm_5371_create_max_name_150_chars_success(self):
         response = (self.client.v2 / "clusters").post(
             data={"prototype_id": self.cluster_1.prototype.pk, "name": "a" * 151}
         )
@@ -339,6 +344,105 @@ class TestCluster(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(response.json()[0]["name"], service_prototype.name)
         self.assertEqual(ClusterObject.objects.get(cluster_id=self.cluster_1.pk).name, "service_1")
+
+    def test_retrieve_ansible_config_success(self):
+        expected_response = {"adcmMeta": {}, "config": {"defaults": {"forks": 5}}}
+
+        response = self.client.v2[self.cluster_1, "ansible-config"].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json(), expected_response)
+
+    def test_retrieve_ansible_config_as_cluster_administrator_success(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.cluster_1], role_name="Cluster Administrator"):
+            expected_response = {"adcmMeta": {}, "config": {"defaults": {"forks": 5}}}
+
+            response = self.client.v2[self.cluster_1, "ansible-config"].get()
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(response.json(), expected_response)
+
+    def test_retrieve_ansible_config_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[self.cluster_1], role_name="View cluster configurations"):
+            response = self.client.v2[self.cluster_1, "ansible-config"].get()
+
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+    def test_retrieve_ansible_config_parent_not_found_denied(self):
+        self.client.login(**self.test_user_credentials)
+        response = self.client.v2[self.cluster_1, "ansible-config"].get()
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_retrieve_ansible_config_schema_success(self):
+        response = self.client.v2[self.cluster_1, "ansible-config-schema"].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual("Ansible configuration", response.json()["title"])
+
+    def test_retrieve_ansible_config_fail(self):
+        response = (self.client.v2 / "clusters" / str(self.get_non_existent_pk(model=Cluster)) / "ansible-config").get()
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_update_ansible_config_success(self):
+        response = self.client.v2[self.cluster_1, "ansible-config"].post(data={"config": {"defaults": {"forks": 13}}})
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        ansible_config = AnsibleConfig.objects.get(
+            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get_for_model(model=self.cluster_1),
+        )
+        self.assertDictEqual(ansible_config.value, {"defaults": {"forks": "13"}})
+
+    def test_update_ansible_config_as_cluster_administrator_success(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
+            response = self.client.v2[self.cluster_1, "ansible-config"].post(
+                data={"config": {"defaults": {"forks": 13}}}
+            )
+
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+            ansible_config = AnsibleConfig.objects.get(
+                object_id=self.cluster_1.pk,
+                object_type=ContentType.objects.get_for_model(model=self.cluster_1),
+            )
+            self.assertDictEqual(ansible_config.value, {"defaults": {"forks": "13"}})
+
+    def test_update_ansible_config_denied(self):
+        self.client.login(**self.test_user_credentials)
+        with self.grant_permissions(to=self.test_user, on=[], role_name="ADCM User"):
+            response = self.client.v2[self.cluster_1, "ansible-config"].post(
+                data={"config": {"defaults": {"forks": 13}}}
+            )
+
+            self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+    def test_update_ansible_config_fail(self):
+        ansible_config = AnsibleConfig.objects.get(
+            object_id=self.cluster_1.pk,
+            object_type=ContentType.objects.get_for_model(model=self.cluster_1),
+        )
+
+        for value in (
+            {"defaults": {"forks": 0}},
+            {"defaults": {"forks": "13"}},
+            {"defaults": {"forks": "13.0"}},
+            {"defaults": {"forks": 13, "stdout_callback": "not_yaml"}},
+            {"defaults": {"not_forks": "not_13"}},
+            {"defaults": {}},
+            {"not_defaults": {}},
+        ):
+            with self.subTest(value=value):
+                response = self.client.v2[self.cluster_1, "ansible-config"].post(data={"config": value})
+
+                self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+                ansible_config.refresh_from_db()
+                self.assertDictEqual(ansible_config.value, {"defaults": {"forks": "5"}})
 
 
 class TestClusterActions(BaseAPITestCase):
@@ -496,16 +600,8 @@ class TestClusterMM(BaseAPITestCase):
             cluster=self.cluster_2,
             service=self.service_2,
         )
-        self.host_1 = Host.objects.create(
-            fqdn="test-host",
-            prototype=Prototype.objects.create(bundle=self.bundle_1, type="host"),
-        )
-        self.host_2 = Host.objects.create(
-            fqdn="test-host-2",
-            prototype=Prototype.objects.create(bundle=self.bundle_2, type="host"),
-        )
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster_2, host=self.host_2)
+        self.host_1 = self.add_host(provider=self.provider, fqdn="test-host", cluster=self.cluster_1)
+        self.host_2 = self.add_host(provider=self.provider, fqdn="test-host-2", cluster=self.cluster_2)
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = User.objects.create_user(**self.test_user_credentials)

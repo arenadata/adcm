@@ -15,11 +15,12 @@ from typing import Any, Collection, Literal
 from cm.api import add_hc, get_hc
 from cm.models import Cluster, Host, JobLog, ServiceComponent
 from core.types import ADCMCoreType, CoreObjectDescriptor
-from pydantic import BaseModel, field_validator
+from pydantic import field_validator
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
     ArgumentsConfig,
+    BaseStrictModel,
     CallResult,
     ContextConfig,
     PluginExecutorConfig,
@@ -29,7 +30,7 @@ from ansible_plugin.base import (
 from ansible_plugin.errors import PluginIncorrectCallError, PluginRuntimeError, PluginValidationError
 
 
-class Operation(BaseModel):
+class Operation(BaseStrictModel):
     action: Literal["add", "remove"]
     service: str
     component: str
@@ -42,7 +43,7 @@ class Operation(BaseModel):
         return str(v)
 
 
-class ChangeHostComponentArguments(BaseModel):
+class ChangeHostComponentArguments(BaseStrictModel):
     operations: list[Operation]
 
 

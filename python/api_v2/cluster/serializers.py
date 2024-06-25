@@ -12,7 +12,9 @@
 
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
+from cm.errors import AdcmEx
 from cm.models import (
+    AnsibleConfig,
     Cluster,
     ClusterObject,
     Host,
@@ -24,12 +26,9 @@ from cm.upgrade import get_upgrade
 from cm.validators import ClusterUniqueValidator, StartMidEndValidator
 from django.conf import settings
 from drf_spectacular.utils import extend_schema_field
-from rest_framework.fields import CharField, IntegerField
-from rest_framework.serializers import (
-    BooleanField,
-    ModelSerializer,
-    SerializerMethodField,
-)
+from rest_framework.fields import CharField, DictField, IntegerField
+from rest_framework.serializers import BooleanField, ModelSerializer, SerializerMethodField
+from rest_framework.status import HTTP_409_CONFLICT
 
 from api_v2.cluster.utils import get_depend_on
 from api_v2.concern.serializers import ConcernSerializer
@@ -195,3 +194,57 @@ class ClusterStatusSerializer(WithStatusSerializer):
     class Meta:
         model = Cluster
         fields = ["id", "name", "state", "status"]
+
+
+class AnsibleConfigUpdateSerializer(EmptySerializer):
+    config = DictField(write_only=True)
+
+    @staticmethod
+    def validate_config(value: dict) -> dict:
+        # required to raise here AdcmEx directly,
+        # because subclassing ValidationError with status_code override is no help
+        # because Serializer handler will raise vanila ValidationError anyway
+
+        if set(value) != {"defaults"}:
+            raise AdcmEx(
+                code="CONFIG_KEY_ERROR", msg="Only `defaults` section can be modified", http_code=HTTP_409_CONFLICT
+            )
+
+        defaults = value["defaults"]
+
+        if set(defaults or ()) != {"forks"}:
+            raise AdcmEx(
+                code="CONFIG_KEY_ERROR",
+                msg="Only `defaults.forks` parameter can be modified",
+                http_code=HTTP_409_CONFLICT,
+            )
+
+        if not isinstance(defaults["forks"], int) or defaults["forks"] < 1:
+            raise AdcmEx(
+                code="CONFIG_VALUE_ERROR",
+                msg="`defaults.forks` parameter must be an integer greater than 0",
+                http_code=HTTP_409_CONFLICT,
+            )
+
+        defaults["forks"] = str(defaults["forks"])
+        value["defaults"] = defaults
+
+        return value
+
+
+class AnsibleConfigRetrieveSerializer(ModelSerializer):
+    config = DictField(source="value", read_only=True)
+    adcm_meta = SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = AnsibleConfig
+        fields = ["config", "adcm_meta"]
+
+    def get_adcm_meta(self, instance: AnsibleConfig) -> dict:  # noqa: ARG002
+        return {}
+
+    def to_representation(self, instance: AnsibleConfig) -> dict:
+        data = super().to_representation(instance=instance)
+        data["config"]["defaults"]["forks"] = int(data["config"]["defaults"]["forks"])
+
+        return data

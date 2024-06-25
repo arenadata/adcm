@@ -173,6 +173,25 @@ class TestRemoveHostFromClusterPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugin
         self.assertIsInstance(result.error, PluginValidationError)
         self.assertIn("either `fqdn` or `host_id` have to be specified", result.error.message)
 
+    def test_remove_host_from_cluster_forbidden_arg_fail(self) -> None:
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=ADCMRemoveHostFromClusterPluginExecutor,
+            call_arguments=f"""
+                host_id: {self.host_1.id}
+                argument: value
+            """,
+            call_context=job,
+        )
+        result = executor.execute()
+
+        self.assertIsNotNone(result.error)
+        self.assertFalse(result.changed)
+        self.host_1.refresh_from_db()
+        self.assertIsNotNone(self.host_1.cluster_id)
+
     def test_remove_host_from_cluster_wrong_arguments_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
@@ -187,7 +206,6 @@ class TestRemoveHostFromClusterPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugin
         result = executor.execute()
 
         self.assertIsInstance(result.error, PluginValidationError)
-        self.assertIn("either `fqdn` or `host_id` have to be specified", result.error.message)
 
     def test_remove_host_from_cluster_no_host_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
@@ -258,7 +276,7 @@ class TestRemoveHostFromClusterPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugin
                 (self.host_2, ServiceComponent.objects.get(service=self.service_1, prototype__name="component_1")),
             ),
         )
-        task = self.prepare_task(owner=self.cluster, name="dummy")
+        task = self.prepare_task(owner=self.component_1, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
@@ -277,7 +295,7 @@ class TestRemoveHostFromClusterPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugin
         self.assertIsNone(self.host_1.cluster_id)
 
     def test_incorrect_context_call_fail(self) -> None:
-        for object_ in (self.host_1, self.component_1, self.provider):
+        for object_ in (self.host_1, self.provider):
             name = object_.__class__.__name__
             with self.subTest(name):
                 task = self.prepare_task(owner=object_, name="dummy")
@@ -293,7 +311,7 @@ class TestRemoveHostFromClusterPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugin
 
                 self.assertIsInstance(result.error, PluginContextError)
                 self.assertIn(
-                    "Plugin should be called only in context of cluster or service, "
+                    "Plugin should be called only in context of cluster or component or service, "
                     f"not {orm_object_to_core_type(object_).value}",
                     result.error.message,
                 )

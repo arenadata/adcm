@@ -104,13 +104,17 @@ def abort_all():
 
 def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.yaml")):
     logger.info("Start initializing ADCM DB...")
+
     if not User.objects.filter(username="admin").exists():
-        User.objects.create_superuser("admin", "admin@example.com", "admin", built_in=True)
+        User.objects.create_superuser("admin", "admin@example.com", "admin", built_in=False)
+
     status_user_username, status_user_password = create_status_user()
     prepare_secrets_json(status_user_username, status_user_password)
+
     if not User.objects.filter(username="system").exists():
         User.objects.create_superuser("system", "", None, built_in=True)
         logger.info("Create system user")
+
     abort_all()
     clear_temp_tables()
     load_adcm(adcm_conf_file)

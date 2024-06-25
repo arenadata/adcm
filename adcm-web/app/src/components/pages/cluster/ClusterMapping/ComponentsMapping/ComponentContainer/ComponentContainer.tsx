@@ -33,11 +33,6 @@ export interface ComponentContainerProps {
   denyRemoveHostReason?: React.ReactNode;
 }
 
-const defaultAllowActions = new Set<AdcmHostComponentMapRuleAction>([
-  AdcmHostComponentMapRuleAction.Add,
-  AdcmHostComponentMapRuleAction.Remove,
-]);
-
 const ComponentContainer = ({
   componentMapping,
   mappingErrors,
@@ -47,12 +42,11 @@ const ComponentContainer = ({
   onUnmap,
   onMap,
   onInstallServices,
-  allowActions = defaultAllowActions,
+  allowActions,
 }: ComponentContainerProps) => {
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const addIconRef = useRef(null);
   const { component, hosts } = componentMapping;
-
   const { componentNotAvailableError, addingHostsNotAllowedError } = checkComponentMappingAvailability(
     component,
     allowActions,

@@ -36,28 +36,28 @@ class TestDirectMigration(MigratorTestCase):
         )
 
         PrototypeConfig.objects.create(
-            prototype=self.prototype_1, name="relative_root", type="text", default="./some.txt"
+            prototype=self.prototype_1, name="relative_root", type="file", default="./some.txt"
         )
-        PrototypeConfig.objects.create(prototype=self.prototype_1, name="full_root", type="text", default="some.txt")
+        PrototypeConfig.objects.create(prototype=self.prototype_1, name="full_root", type="file", default="some.txt")
         PrototypeConfig.objects.create(
             prototype=self.prototype_1, name="control_root", type="string", default="./some.txt"
         )
 
         PrototypeConfig.objects.create(
-            prototype=self.prototype_2, name="relative_inner", type="text", default="./some.txt"
+            prototype=self.prototype_2, name="relative_inner", type="file", default="./some.txt"
         )
         PrototypeConfig.objects.create(
-            prototype=self.prototype_2, name="full_inner", type="secrettext", default="some.txt"
+            prototype=self.prototype_2, name="full_inner", type="secretfile", default="some.txt"
         )
         PrototypeConfig.objects.create(
             prototype=self.prototype_2, name="control_inner", type="string", default="./some.txt"
         )
 
         PrototypeConfig.objects.create(
-            prototype=self.prototype_3, name="relative_more_inner", type="secrettext", default="./some.txt"
+            prototype=self.prototype_3, name="relative_more_inner", type="secretfile", default="./some.txt"
         )
         PrototypeConfig.objects.create(
-            prototype=self.prototype_3, name="full_more_inner", type="text", default="some.txt"
+            prototype=self.prototype_3, name="full_more_inner", type="file", default="some.txt"
         )
         PrototypeConfig.objects.create(
             prototype=self.prototype_3, name="control_more_inner", type="string", default="./some.txt"
@@ -93,7 +93,7 @@ class TestDirectMigration(MigratorTestCase):
             action=self.action_5, name="relative_inner", script="./over/there.yaml", script_type="ansible"
         )
 
-    def test_migration_0118_0119_move_data(self):
+    def test_migration_0119_0120_move_data(self):
         Action = self.new_state.apps.get_model("cm", "Action")
         SubAction = self.new_state.apps.get_model("cm", "SubAction")
         Prototype = self.new_state.apps.get_model("cm", "Prototype")

@@ -24,6 +24,9 @@ from api.rbac.role.serializers import RoleAuditSerializer
 from api.rbac.user.serializers import UserAuditSerializer
 from api.service.serializers import ServiceAuditSerializer
 from api_v2.cluster.serializers import (
+    AnsibleConfigRetrieveSerializer,
+)
+from api_v2.cluster.serializers import (
     ClusterAuditSerializer as ClusterAuditSerializerV2,
 )
 from api_v2.component.serializers import (
@@ -39,6 +42,7 @@ from cm.errors import AdcmEx
 from cm.models import (
     Action,
     ActionHostGroup,
+    AnsibleConfig,
     Cluster,
     ClusterBind,
     ClusterObject,
@@ -300,7 +304,10 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
             serializer_class = UserAuditSerializer
             pk = view.request.user.id
     elif view.request.method == "POST":
-        if view.__class__.__name__ == "ServiceMaintenanceModeView":
+        if isinstance(view, ModelViewSet) and view.action == "ansible_config":
+            serializer_class = AnsibleConfigRetrieveSerializer
+            pk = view.kwargs["pk"]
+        elif view.__class__.__name__ == "ServiceMaintenanceModeView":
             serializer_class = ServiceAuditSerializer
             pk = view.kwargs["service_id"]
         elif view.__class__.__name__ == "HostMaintenanceModeView":
@@ -327,7 +334,10 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
 
     if serializer_class:
         # for cases when get_queryset() raises error
-        model = view.audit_model_hint if hasattr(view, "audit_model_hint") else view.get_queryset().model
+        if isinstance(view, ModelViewSet) and view.action == "ansible_config":
+            model = AnsibleConfig
+        else:
+            model = view.audit_model_hint if hasattr(view, "audit_model_hint") else view.get_queryset().model
 
         try:
             current_obj = model.objects.filter(pk=pk).first()
@@ -573,6 +583,7 @@ def audit(func):
                 user=audit_user,
                 object_changes=object_changes,
                 address=get_client_ip(request=request),
+                agent=get_client_agent(request=request),
             )
             cef_logger(audit_instance=auditlog, signature_id=resolve(request.path).route)
 
@@ -622,6 +633,10 @@ def get_client_ip(request: WSGIRequest) -> str | None:
             break
 
     return host
+
+
+def get_client_agent(request: WSGIRequest) -> str:
+    return request.META.get("HTTP_USER_AGENT", "")[:255]
 
 
 def audit_job_finish(
