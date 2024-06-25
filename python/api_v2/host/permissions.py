@@ -50,21 +50,3 @@ class HostsPermissions(DjangoObjectPermissions):
             return True
 
         return super().has_permission(request=request, view=view)
-
-
-class HostsClusterPermissions(DjangoObjectPermissions):
-    perms_map = {
-        "GET": [],
-        "OPTIONS": [],
-        "HEAD": [],
-        "POST": [],
-        "PUT": ["%(app_label)s.change_%(model_name)s"],
-        "PATCH": ["%(app_label)s.change_%(model_name)s"],
-        "DELETE": ["%(app_label)s.delete_%(model_name)s"],
-    }
-
-    def has_permission(self, request, view) -> bool:
-        if view.action in ["create", "destroy"]:
-            return True
-
-        return super().has_permission(request=request, view=view)

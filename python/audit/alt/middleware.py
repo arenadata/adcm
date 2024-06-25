@@ -53,9 +53,11 @@ class AuditMiddleware:
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):  # noqa: ARG002
-        endpoint_config: AuditedEndpointConfig | None = self.audited_endpoints_registry.find_for_view(
-            http_method=request.method, view_func=view_func
-        )
+        # view_func is not just simple Callable, it's special func prepared by Django's middleware system.
+        # __qualname__ of view_func doesn't specify method (because it's View, not API method itself)
+        method_name = getattr(view_func, "actions", {}).get(request.method.lower(), "")
+        key = f"{getattr(view_func, '__module__', '-')}:{view_func.__qualname__}.{method_name}".rstrip(".")
+        endpoint_config: AuditedEndpointConfig | None = self.audited_endpoints_registry.find(key=key)
         if not endpoint_config:
             return
 

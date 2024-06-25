@@ -19,7 +19,7 @@ from audit.alt.core import AuditedCallArguments, OperationAuditContext, Result
 from audit.alt.hooks import AuditHook
 from audit.alt.object_retrievers import GeneralAuditObjectRetriever
 from audit.models import AuditObject, AuditObjectType
-from cm.models import Cluster, Host
+from cm.models import Cluster, ClusterObject, Host
 from django.db.models import Model
 from rest_framework.response import Response
 
@@ -56,6 +56,19 @@ class CMAuditObjectCreator:
         return self.cm_model.objects.values_list(self.name_field, flat=True).filter(id=id_).first()
 
 
+@dataclass(slots=True)
+class ServiceAuditObjectCreator(CMAuditObjectCreator):
+    cm_model = ClusterObject
+    name_field = "prototype__display_name"
+
+    def get_name(self, id_: str | int) -> str | None:
+        names = ClusterObject.objects.values_list("cluster__name", "prototype__display_name").filter(id=id_).first()
+        if not names:
+            return None
+
+        return "/".join(names)
+
+
 create_audit_cluster_object = CMAuditObjectCreator(cm_model=Cluster)
 create_audit_host_object = CMAuditObjectCreator(cm_model=Host, name_field="fqdn")
 
@@ -65,6 +78,13 @@ _extract_cluster_from = partial(
 cluster_from_response = _extract_cluster_from(extract_id=ExtractID(field="id").from_response)
 cluster_from_lookup = _extract_cluster_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
 parent_cluster_from_lookup = _extract_cluster_from(extract_id=ExtractID(field="cluster_pk").from_lookup_kwargs)
+
+_extract_service_from = partial(
+    GeneralAuditObjectRetriever,
+    audit_object_type=AuditObjectType.SERVICE,
+    create_new=ServiceAuditObjectCreator(cm_model=ClusterObject),
+)
+parent_service_from_lookup = _extract_service_from(extract_id=ExtractID(field="service_pk").from_lookup_kwargs)
 
 host_from_lookup = GeneralAuditObjectRetriever(
     audit_object_type=AuditObjectType.HOST,

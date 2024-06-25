@@ -13,7 +13,7 @@
 from abc import ABC
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Callable, Iterable, ParamSpec
+from typing import Callable, Iterable, ParamSpec, TypeVar
 
 from rest_framework.response import Response
 from typing_extensions import Self
@@ -31,6 +31,7 @@ from audit.alt.hooks import (
 from audit.alt.object_retrievers import ignore_object_search
 from audit.models import AuditLogOperationType
 
+T = TypeVar("T")
 P = ParamSpec("P")
 
 AUDITED_HTTP_METHODS = frozenset(("POST", "DELETE", "PUT", "PATCH"))
@@ -51,9 +52,8 @@ class AuditedEndpointConfig:
 class AuditEndpointsRegistry:
     """
     Registry of view functions that should be audited.
-    Used to match caller func and audit configuration in runtime (usually middleware).
 
-    Key extraction is bound to usages, so it may have to be adjusted/extended in the future.
+    Key format: {module_name}:{class_name}.{func_name}
     """
 
     __slots__ = ("_endpoints",)
@@ -61,15 +61,10 @@ class AuditEndpointsRegistry:
     def __init__(self):
         self._endpoints: dict[str, AuditedEndpointConfig] = {}
 
-    def register(self, func: Callable, config: AuditedEndpointConfig) -> None:
-        key = f"{getattr(func, '__module__', '-')}:{func.__qualname__}"
+    def register(self, key: str, config: AuditedEndpointConfig) -> None:
         self._endpoints[key] = config
 
-    def find_for_view(self, http_method: str, view_func: Any) -> AuditedEndpointConfig | None:
-        # view_func is not just simple Callable, it's special func prepared by Django's middleware system.
-        # __qualname__ of view_func doesn't specify method (because it's View, not API method itself)
-        method_name = getattr(view_func, "actions", {}).get(http_method.lower(), "")
-        key = f"{getattr(view_func, '__module__', '-')}:{view_func.__qualname__}.{method_name}".rstrip(".")
+    def find(self, key: str) -> AuditedEndpointConfig | None:
         return self._endpoints.get(key)
 
 
@@ -78,11 +73,13 @@ def get_endpoints_registry() -> AuditEndpointsRegistry:
     return AuditEndpointsRegistry()
 
 
-class GenericAPIAuditDecorator:
+class GenericAPIAuditRegistrator:
     """
     Decorator to wrap ViewSet's functions that should be audited.
     Adds function to registry and returns function without changes.
     Additional hooks may be configured after instantiation.
+
+    Can be used directly via `register`
     """
 
     def __init__(self, name: str, type_: AuditLogOperationType, object_: RetrieveAuditObjectFunc):
@@ -95,19 +92,23 @@ class GenericAPIAuditDecorator:
         self._registry = get_endpoints_registry()
 
     def __call__(self, func: Callable[P, Response]) -> Callable[P, Response]:
-        endpoint_config = AuditedEndpointConfig(
+        self.register(with_key=f"{getattr(func, '__module__', '-')}:{func.__qualname__}")
+
+        return func
+
+    def register(self, with_key: str) -> None:
+        self._registry.register(key=with_key, config=self._construct_audit_config())
+
+    def _construct_audit_config(self) -> AuditedEndpointConfig:
+        return AuditedEndpointConfig(
             operation_type=self.operation_type,
             operation_name=self.operation_name,
             retrieve_object_func=self.retrieve_object_func,
             hooks=Hooks(pre_call=tuple(self.extra_pre_call_hooks), on_collect=tuple(self.extra_on_collect_hooks)),
         )
 
-        self._registry.register(func=func, config=endpoint_config)
 
-        return func
-
-
-class TypedAuditDecorator(GenericAPIAuditDecorator, ABC):
+class TypedAuditDecorator(GenericAPIAuditRegistrator, ABC):
     OPERATION_TYPE: AuditLogOperationType
 
     def __init__(self, name: str, object_: RetrieveAuditObjectFunc):
@@ -159,3 +160,19 @@ class audit_delete(TypedAuditDecorator):  # noqa: N801
 
         self.extra_pre_call_hooks.extend(pre_hooks)
         self.extra_on_collect_hooks.extend(collect_hooks)
+
+
+class audit_view:  # noqa: N801
+    def __init__(self, **audited_methods: GenericAPIAuditRegistrator):
+        self.view_methods_audit_registers = audited_methods
+
+    def __call__(self, cls: T) -> T:
+        for method_name, registrar in self.view_methods_audit_registers.items():
+            if not hasattr(cls, method_name):
+                message = f"Failed to audit method {method_name} of {cls}: method not found"
+                raise AttributeError(message)
+
+            key = f"{cls.__module__}:{cls.__name__}.{method_name}"
+            registrar.register(with_key=key)
+
+        return cls
