@@ -11,13 +11,12 @@
 # limitations under the License.
 
 from adcm.mixins import GetParentObjectMixin, ParentObject
-from adcm.permissions import VIEW_GROUP_CONFIG_PERM, check_config_perm
-from audit.utils import audit
+from adcm.permissions import VIEW_GROUP_CONFIG_PERM, VIEW_HOST_PERM, check_config_perm
 from cm.errors import AdcmEx
-from cm.models import GroupConfig
+from cm.models import GroupConfig, Host
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from django_filters.rest_framework import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rbac.models import re_apply_object_policy
 from rest_framework.decorators import action
@@ -25,54 +24,20 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+)
 
-from api_v2.api_schema import ErrorSerializer
 from api_v2.config.utils import ConfigSchemaMixin
-from api_v2.group_config.permissions import GroupConfigPermissions
-from api_v2.group_config.serializers import GroupConfigSerializer
-from api_v2.host.serializers import HostGroupConfigSerializer
+from api_v2.generic.group_config.permissions import GroupConfigHostsPermissions, GroupConfigPermissions
+from api_v2.generic.group_config.serializers import GroupConfigSerializer, HostGroupConfigSerializer
+from api_v2.host.filters import HostMemberFilter
+from api_v2.host.serializers import HostAddSerializer
 from api_v2.views import ADCMGenericViewSet
 
 
-@extend_schema_view(
-    list=extend_schema(
-        operation_id="getObjectConfigGroups",
-        summary="GET object's config groups",
-        description="Get information about object's config-groups",
-        responses={HTTP_200_OK: GroupConfigSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
-    ),
-    retrieve=extend_schema(
-        operation_id="getObjectConfigGroup",
-        summary="GET object's config group",
-        description="Get information about object's config-group",
-        responses={HTTP_200_OK: GroupConfigSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
-    ),
-    create=extend_schema(
-        operation_id="postObjectConfigGroups",
-        summary="POST object's config-groups",
-        description="Create new object's config-group.",
-        responses={HTTP_200_OK: GroupConfigSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
-    ),
-    partial_update=extend_schema(
-        operation_id="patchObjectConfigGroup",
-        summary="PATCH object's config-group",
-        description="Change object's config-group's name and description.",
-        responses={HTTP_200_OK: GroupConfigSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
-    ),
-    destroy=extend_schema(
-        operation_id="deleteObjectConfigGroup",
-        summary="DELETE object's config-group",
-        description="Delete specific object's config-group.",
-        responses={HTTP_204_NO_CONTENT: None, HTTP_404_NOT_FOUND: ErrorSerializer},
-    ),
-    host_candidates=extend_schema(
-        operation_id="getObjectConfigGroupHostCandidates",
-        summary="GET object's config-group host candidates",
-        description="Get a list of hosts available for adding to object's config group.",
-        responses={HTTP_200_OK: HostGroupConfigSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
-    ),
-)
 class GroupConfigViewSet(
     PermissionListMixin,
     GetParentObjectMixin,
@@ -91,7 +56,7 @@ class GroupConfigViewSet(
         parent_object = self.get_parent_object()
 
         if parent_object is None:
-            raise NotFound
+            return GroupConfig.objects.none()
 
         return (
             super()
@@ -99,8 +64,7 @@ class GroupConfigViewSet(
             .filter(object_id=parent_object.pk, object_type=ContentType.objects.get_for_model(model=parent_object))
         )
 
-    @audit
-    def create(self, request: Request, *args, **kwargs):  # noqa: ARG002
+    def create(self, request: Request, *_, **__):
         parent_object = self.get_parent_object()
 
         self._check_parent_permissions(parent_object=parent_object)
@@ -135,7 +99,6 @@ class GroupConfigViewSet(
 
         return Response(data=serializer.data, status=HTTP_200_OK)
 
-    @audit
     def destroy(self, request: Request, *args, **kwargs):  # noqa: ARG002
         parent_object = self.get_parent_object()
         instance = get_object_or_404(
@@ -151,8 +114,7 @@ class GroupConfigViewSet(
         instance.delete()
         return Response(status=HTTP_204_NO_CONTENT)
 
-    @audit
-    def partial_update(self, request: Request, *args, **kwargs):  # noqa: ARG002
+    def partial_update(self, request: Request, *_, **__):
         parent_object = self.get_parent_object()
         instance = get_object_or_404(
             self.filter_queryset(self.get_queryset()), **{self.lookup_field: self.kwargs[self.lookup_field]}
@@ -170,11 +132,11 @@ class GroupConfigViewSet(
 
         return Response(serializer.data)
 
-    def retrieve(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
+    def retrieve(self, request, *args, **kwargs) -> Response:
         self._check_parent_permissions()
         return super().retrieve(request, *args, **kwargs)
 
-    def list(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
+    def list(self, request, *args, **kwargs) -> Response:
         self._check_parent_permissions()
         return super().list(request, *args, **kwargs)
 
@@ -183,16 +145,83 @@ class GroupConfigViewSet(
         parent_view_perm = f"cm.view_{parent_obj.__class__.__name__.lower()}"
 
         if parent_obj is None:
-            raise NotFound
+            raise NotFound()
 
         if not (
             self.request.user.has_perm(parent_view_perm, parent_obj) or self.request.user.has_perm(parent_view_perm)
         ):
-            raise NotFound
+            raise NotFound()
 
         parent_config_view_perm = "cm.view_objectconfig"
         if not (
             self.request.user.has_perm(parent_config_view_perm, parent_obj.config)
             or self.request.user.has_perm(parent_config_view_perm)
         ):
-            raise PermissionDenied
+            raise PermissionDenied()
+
+
+class HostGroupConfigViewSet(
+    PermissionListMixin, GetParentObjectMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet
+):
+    queryset = (
+        Host.objects.select_related("provider", "cluster")
+        .prefetch_related("concerns", "hostcomponent_set")
+        .order_by("fqdn")
+    )
+    permission_classes = [GroupConfigHostsPermissions]
+    permission_required = [VIEW_HOST_PERM]
+    filterset_class = HostMemberFilter
+    filter_backends = (DjangoFilterBackend,)
+    pagination_class = None
+
+    def get_serializer_class(self) -> type[HostGroupConfigSerializer | HostAddSerializer]:
+        if self.action == "create":
+            return HostAddSerializer
+
+        return HostGroupConfigSerializer
+
+    def get_queryset(self, *args, **kwargs):  # noqa: ARG002
+        return self.queryset.filter(group_config__id=self.kwargs["group_config_pk"])
+
+    def get_group_for_change(self) -> GroupConfig:
+        config_group = super().get_parent_object()
+        if config_group is None or not isinstance(config_group, GroupConfig):
+            raise NotFound
+
+        parent_view_perm = f"cm.view_{config_group.object.__class__.__name__.lower()}"
+        if not (
+            self.request.user.has_perm(perm=parent_view_perm, obj=config_group.object)
+            or self.request.user.has_perm(perm=parent_view_perm)
+        ):
+            raise NotFound
+
+        check_config_perm(
+            user=self.request.user,
+            action_type="change",
+            model=config_group.object.content_type.model,
+            obj=config_group.object,
+        )
+
+        return config_group
+
+    def create(self, request, *_, **__):
+        group_config = self.get_group_for_change()
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        host_id = serializer.validated_data["host_id"]
+        group_config.check_host_candidate(host_ids=[host_id])
+        host = Host.objects.get(pk=host_id)
+        group_config.hosts.add(host)
+
+        return Response(status=HTTP_201_CREATED, data=HostGroupConfigSerializer(instance=host).data)
+
+    def destroy(self, request, *_, **kwargs):  # noqa: ARG002
+        group_config = self.get_group_for_change()
+
+        host = group_config.hosts.filter(pk=kwargs["pk"]).first()
+        if not host:
+            raise NotFound
+
+        group_config.hosts.remove(host)
+        return Response(status=HTTP_204_NO_CONTENT)

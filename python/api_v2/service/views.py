@@ -51,6 +51,9 @@ from rest_framework.status import (
 
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.generic.group_config.api_schema import document_group_config_viewset, document_host_group_config_viewset
+from api_v2.generic.group_config.audit import audit_group_config_viewset, audit_host_group_config_viewset
+from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
 from api_v2.generic.imports.serializers import ImportPostSerializer, ImportSerializer
 from api_v2.generic.imports.views import ImportViewSet
 from api_v2.service.filters import ServiceFilter
@@ -264,3 +267,15 @@ class ServiceImportViewSet(ImportViewSet):
 
     def detect_cluster_service_bind_arguments(self, obj: Cluster | ClusterObject) -> tuple[Cluster, ClusterObject]:
         return obj.cluster, obj
+
+
+@document_group_config_viewset(object_type="service")
+@audit_group_config_viewset(retrieve_owner=parent_service_from_lookup)
+class ServiceGroupConfigViewSet(GroupConfigViewSet):
+    ...
+
+
+@document_host_group_config_viewset(object_type="service")
+@audit_host_group_config_viewset(retrieve_owner=parent_service_from_lookup)
+class ServiceHostGroupConfigViewSet(HostGroupConfigViewSet):
+    ...

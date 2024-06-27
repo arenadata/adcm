@@ -10,17 +10,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Iterable
+import itertools
+
 from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
 from api_v2.action.views import ActionViewSet
 from api_v2.config.views import ConfigLogViewSet
-from api_v2.group_config.views import GroupConfigViewSet
-from api_v2.host.views import HostGroupConfigViewSet
-from api_v2.hostprovider.views import HostProviderViewSet
+from api_v2.generic.group_config.urls_helpers import add_group_config_routers
+from api_v2.hostprovider.views import (
+    HostProviderGroupConfigViewSet,
+    HostProviderHostGroupConfigViewSet,
+    HostProviderViewSet,
+)
 from api_v2.upgrade.views import UpgradeViewSet
 
 CONFIG_GROUPS_PREFIX = "config-groups"
+
+
+def extract_urls_from_routers(routers: Iterable[NestedSimpleRouter]) -> tuple[str, ...]:
+    return tuple(itertools.chain.from_iterable(router.urls for router in routers))
+
 
 router = SimpleRouter()
 router.register("", HostProviderViewSet)
@@ -34,21 +45,13 @@ config_router.register(prefix="configs", viewset=ConfigLogViewSet, basename="pro
 upgrade_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
 upgrade_router.register(prefix="upgrades", viewset=UpgradeViewSet)
 
-group_config_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
-group_config_router.register(
-    prefix=CONFIG_GROUPS_PREFIX, viewset=GroupConfigViewSet, basename="hostprovider-group-config"
-)
 
-group_config_hosts_router = NestedSimpleRouter(group_config_router, CONFIG_GROUPS_PREFIX, lookup="group_config")
-group_config_hosts_router.register(
-    prefix=r"hosts", viewset=HostGroupConfigViewSet, basename="hostprovider-group-config-hosts"
-)
-
-group_config_config_router = NestedSimpleRouter(
-    parent_router=group_config_router, parent_prefix=CONFIG_GROUPS_PREFIX, lookup="group_config"
-)
-group_config_config_router.register(
-    prefix="configs", viewset=ConfigLogViewSet, basename="hostprovider-group-config-config"
+group_config_routers = add_group_config_routers(
+    group_config_viewset=HostProviderGroupConfigViewSet,
+    host_group_config_viewset=HostProviderHostGroupConfigViewSet,
+    parent_router=router,
+    parent_prefix="",
+    lookup="hostprovider",
 )
 
 urlpatterns = [
@@ -56,7 +59,5 @@ urlpatterns = [
     *action_router.urls,
     *config_router.urls,
     *upgrade_router.urls,
-    *group_config_router.urls,
-    *group_config_hosts_router.urls,
-    *group_config_config_router.urls,
+    *extract_urls_from_routers(group_config_routers),
 ]

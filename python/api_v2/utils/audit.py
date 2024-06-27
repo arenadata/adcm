@@ -19,7 +19,7 @@ from audit.alt.core import AuditedCallArguments, OperationAuditContext, Result
 from audit.alt.hooks import AuditHook
 from audit.alt.object_retrievers import GeneralAuditObjectRetriever
 from audit.models import AuditObject, AuditObjectType
-from cm.models import Cluster, ClusterObject, Host
+from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 from django.db.models import Model
 from rest_framework.response import Response
 
@@ -69,6 +69,25 @@ class ServiceAuditObjectCreator(CMAuditObjectCreator):
         return "/".join(names)
 
 
+@dataclass(slots=True)
+class ComponentAuditObjectCreator(CMAuditObjectCreator):
+    cm_model = ServiceComponent
+    name_field = "prototype__display_name"
+
+    def get_name(self, id_: str | int) -> str | None:
+        names = (
+            ServiceComponent.objects.values_list(
+                "cluster__name", "service__prototype__display_name", "prototype__display_name"
+            )
+            .filter(id=id_)
+            .first()
+        )
+        if not names:
+            return None
+
+        return "/".join(names)
+
+
 create_audit_cluster_object = CMAuditObjectCreator(cm_model=Cluster)
 create_audit_host_object = CMAuditObjectCreator(cm_model=Host, name_field="fqdn")
 
@@ -85,6 +104,22 @@ _extract_service_from = partial(
     create_new=ServiceAuditObjectCreator(cm_model=ClusterObject),
 )
 parent_service_from_lookup = _extract_service_from(extract_id=ExtractID(field="service_pk").from_lookup_kwargs)
+
+_extract_component_from = partial(
+    GeneralAuditObjectRetriever,
+    audit_object_type=AuditObjectType.COMPONENT,
+    create_new=ComponentAuditObjectCreator(cm_model=ServiceComponent),
+)
+parent_component_from_lookup = _extract_component_from(extract_id=ExtractID(field="component_pk").from_lookup_kwargs)
+
+_extract_hostprovider_from = partial(
+    GeneralAuditObjectRetriever,
+    audit_object_type=AuditObjectType.PROVIDER,
+    create_new=CMAuditObjectCreator(cm_model=HostProvider),
+)
+parent_hostprovider_from_lookup = _extract_hostprovider_from(
+    extract_id=ExtractID(field="hostprovider_pk").from_lookup_kwargs
+)
 
 host_from_lookup = GeneralAuditObjectRetriever(
     audit_object_type=AuditObjectType.HOST,

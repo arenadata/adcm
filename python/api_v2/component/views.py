@@ -49,6 +49,10 @@ from api_v2.component.serializers import (
     HostComponentSerializer,
 )
 from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.generic.group_config.api_schema import document_group_config_viewset, document_host_group_config_viewset
+from api_v2.generic.group_config.audit import audit_group_config_viewset, audit_host_group_config_viewset
+from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
+from api_v2.utils.audit import parent_component_from_lookup
 from api_v2.views import (
     ADCMGenericViewSet,
     ADCMReadOnlyModelViewSet,
@@ -205,3 +209,15 @@ class HostComponentViewSet(PermissionListMixin, ListModelMixin, ObjectWithStatus
             .get_queryset(*args, **kwargs)
             .filter(cluster=cluster, id__in=host.hostcomponent_set.all().values_list("component_id", flat=True))
         )
+
+
+@document_group_config_viewset(object_type="component")
+@audit_group_config_viewset(retrieve_owner=parent_component_from_lookup)
+class ComponentGroupConfigViewSet(GroupConfigViewSet):
+    ...
+
+
+@document_host_group_config_viewset(object_type="component")
+@audit_host_group_config_viewset(retrieve_owner=parent_component_from_lookup)
+class ComponentHostGroupConfigViewSet(HostGroupConfigViewSet):
+    ...
