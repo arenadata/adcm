@@ -25,12 +25,16 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from api_v2.api_schema import ErrorSerializer
 from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.generic.group_config.api_schema import document_group_config_viewset, document_host_group_config_viewset
+from api_v2.generic.group_config.audit import audit_group_config_viewset, audit_host_group_config_viewset
+from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
 from api_v2.hostprovider.filters import HostProviderFilter
 from api_v2.hostprovider.permissions import HostProviderPermissions
 from api_v2.hostprovider.serializers import (
     HostProviderCreateSerializer,
     HostProviderSerializer,
 )
+from api_v2.utils.audit import parent_hostprovider_from_lookup
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -147,3 +151,15 @@ class HostProviderViewSet(
         host_provider = self.get_object()
         delete_host_provider(host_provider)
         return Response(status=HTTP_204_NO_CONTENT)
+
+
+@document_group_config_viewset(object_type="hostprovider")
+@audit_group_config_viewset(retrieve_owner=parent_hostprovider_from_lookup)
+class HostProviderGroupConfigViewSet(GroupConfigViewSet):
+    ...
+
+
+@document_host_group_config_viewset(object_type="hostprovider")
+@audit_host_group_config_viewset(retrieve_owner=parent_hostprovider_from_lookup)
+class HostProviderHostGroupConfigViewSet(HostGroupConfigViewSet):
+    ...

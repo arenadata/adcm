@@ -1801,6 +1801,20 @@ class TestGroupConfigAudit(BaseAPITestCase):
             user__username="admin",
         )
 
+    def test_service_remove_host_group_found_host_not_found_fail(self):
+        self.service_1_group_config.hosts.add(self.host_for_service)
+
+        response = self.client.v2[self.service_1, "config-groups", 1000, "hosts", self.host_for_service].delete()
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+        self.check_last_audit_record(
+            operation_name=f"{self.host_for_service.fqdn} host removed from configuration group",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.service_1),
+            user__username="admin",
+        )
+
     def test_cluster_remove_host_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         self.cluster_1_group_config.hosts.add(self.host_for_service)

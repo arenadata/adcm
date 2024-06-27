@@ -86,6 +86,9 @@ from api_v2.cluster.serializers import (
 from api_v2.cluster.utils import retrieve_mapping_data, save_mapping
 from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.generic.group_config.api_schema import document_group_config_viewset, document_host_group_config_viewset
+from api_v2.generic.group_config.audit import audit_group_config_viewset, audit_host_group_config_viewset
+from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
 from api_v2.generic.imports.serializers import ImportPostSerializer, ImportSerializer
 from api_v2.generic.imports.views import ImportViewSet
 from api_v2.host.filters import HostMemberFilter
@@ -725,3 +728,15 @@ class ClusterImportViewSet(ImportViewSet):
 
     def detect_cluster_service_bind_arguments(self, obj: Cluster) -> tuple[Cluster, None]:
         return obj, None
+
+
+@document_group_config_viewset(object_type="cluster")
+@audit_group_config_viewset(retrieve_owner=parent_cluster_from_lookup)
+class ClusterGroupConfigViewSet(GroupConfigViewSet):
+    ...
+
+
+@document_host_group_config_viewset(object_type="cluster")
+@audit_host_group_config_viewset(retrieve_owner=parent_cluster_from_lookup)
+class ClusterHostGroupConfigViewSet(HostGroupConfigViewSet):
+    ...

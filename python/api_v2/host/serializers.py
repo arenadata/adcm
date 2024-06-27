@@ -20,7 +20,6 @@ from rest_framework.serializers import (
     ChoiceField,
     IntegerField,
     ModelSerializer,
-    PrimaryKeyRelatedField,
     SerializerMethodField,
 )
 
@@ -166,15 +165,6 @@ class HostShortSerializer(ModelSerializer):
     class Meta:
         model = Host
         fields = ["id", "name"]
-
-
-class HostGroupConfigSerializer(ModelSerializer):
-    id = PrimaryKeyRelatedField(queryset=Host.objects.all())
-
-    class Meta:
-        model = Host
-        fields = ["id", "name"]
-        extra_kwargs = {"name": {"read_only": True}}
 
 
 class HostAuditSerializer(ModelSerializer):
