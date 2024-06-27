@@ -27,11 +27,16 @@ def activate_statistics_collection(apps, schema_editor):
     adcm_configlog = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
     attr = adcm_configlog.attr
 
-    if not attr["statistics_collection"]["active"]:
-        attr["statistics_collection"]["active"] = True
+    try:
+        if not attr["statistics_collection"]["active"]:
+            attr["statistics_collection"]["active"] = True
 
-        adcm_configlog.attr = attr
-        adcm_configlog.save(update_fields=["attr"])
+            adcm_configlog.attr = attr
+            adcm_configlog.save(update_fields=["attr"])
+    except KeyError:
+        # this may be upgrade from very old ADCM that doesn't have this section,
+        # and it'll appear only after migrations
+        ...
 
 
 class Migration(migrations.Migration):
