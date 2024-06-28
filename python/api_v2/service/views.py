@@ -51,6 +51,19 @@ from rest_framework.status import (
 
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.generic.action.api_schema import document_action_viewset
+from api_v2.generic.action.audit import audit_action_viewset
+from api_v2.generic.action.views import ActionViewSet
+from api_v2.generic.action_host_group.api_schema import (
+    document_action_host_group_actions_viewset,
+    document_action_host_group_hosts_viewset,
+    document_action_host_group_viewset,
+)
+from api_v2.generic.action_host_group.views import (
+    ActionHostGroupActionsViewSet,
+    ActionHostGroupHostsViewSet,
+    ActionHostGroupViewSet,
+)
 from api_v2.generic.group_config.api_schema import document_group_config_viewset, document_host_group_config_viewset
 from api_v2.generic.group_config.audit import audit_group_config_viewset, audit_host_group_config_viewset
 from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
@@ -278,4 +291,25 @@ class ServiceGroupConfigViewSet(GroupConfigViewSet):
 @document_host_group_config_viewset(object_type="service")
 @audit_host_group_config_viewset(retrieve_owner=parent_service_from_lookup)
 class ServiceHostGroupConfigViewSet(HostGroupConfigViewSet):
+    ...
+
+
+@document_action_viewset(object_type="service")
+@audit_action_viewset(retrieve_owner=parent_service_from_lookup)
+class ServiceActionViewSet(ActionViewSet):
+    ...
+
+
+@document_action_host_group_viewset(object_type="service")
+class ServiceActionHostGroupViewSet(ActionHostGroupViewSet):
+    ...
+
+
+@document_action_host_group_hosts_viewset(object_type="service")
+class ServiceActionHostGroupHostsViewSet(ActionHostGroupHostsViewSet):
+    ...
+
+
+@document_action_host_group_actions_viewset(object_type="service")
+class ServiceActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
     ...

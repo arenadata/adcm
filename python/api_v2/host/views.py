@@ -43,6 +43,9 @@ from rest_framework.status import (
 
 from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.generic.action.api_schema import document_action_viewset
+from api_v2.generic.action.audit import audit_action_viewset
+from api_v2.generic.action.views import ActionViewSet
 from api_v2.host.filters import HostFilter
 from api_v2.host.permissions import (
     HostsPermissions,
@@ -54,6 +57,7 @@ from api_v2.host.serializers import (
     HostUpdateSerializer,
 )
 from api_v2.host.utils import create_host, maintenance_mode, process_config_issues_policies_hc
+from api_v2.utils.audit import parent_host_from_lookup
 from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
 
 
@@ -254,3 +258,9 @@ class HostViewSet(
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         return maintenance_mode(request=request, host=self.get_object())
+
+
+@document_action_viewset(object_type="host")
+@audit_action_viewset(retrieve_owner=parent_host_from_lookup)
+class HostActionViewSet(ActionViewSet):
+    ...

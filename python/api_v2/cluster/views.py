@@ -86,6 +86,19 @@ from api_v2.cluster.serializers import (
 from api_v2.cluster.utils import retrieve_mapping_data, save_mapping
 from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.generic.action.api_schema import document_action_viewset
+from api_v2.generic.action.audit import audit_action_viewset
+from api_v2.generic.action.views import ActionViewSet
+from api_v2.generic.action_host_group.api_schema import (
+    document_action_host_group_actions_viewset,
+    document_action_host_group_hosts_viewset,
+    document_action_host_group_viewset,
+)
+from api_v2.generic.action_host_group.views import (
+    ActionHostGroupActionsViewSet,
+    ActionHostGroupHostsViewSet,
+    ActionHostGroupViewSet,
+)
 from api_v2.generic.group_config.api_schema import document_group_config_viewset, document_host_group_config_viewset
 from api_v2.generic.group_config.audit import audit_group_config_viewset, audit_host_group_config_viewset
 from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
@@ -105,6 +118,7 @@ from api_v2.utils.audit import (
     host_from_lookup,
     nested_host_does_exist,
     parent_cluster_from_lookup,
+    parent_host_from_lookup,
     set_add_hosts_name,
     set_removed_host_name,
     update_cluster_name,
@@ -739,4 +753,31 @@ class ClusterGroupConfigViewSet(GroupConfigViewSet):
 @document_host_group_config_viewset(object_type="cluster")
 @audit_host_group_config_viewset(retrieve_owner=parent_cluster_from_lookup)
 class ClusterHostGroupConfigViewSet(HostGroupConfigViewSet):
+    ...
+
+
+@document_action_viewset(object_type="cluster")
+@audit_action_viewset(retrieve_owner=parent_cluster_from_lookup)
+class ClusterActionViewSet(ActionViewSet):
+    ...
+
+
+@document_action_viewset(object_type="hostInCluster")
+@audit_action_viewset(retrieve_owner=parent_host_from_lookup)
+class ClusterHostActionViewSet(ActionViewSet):
+    ...
+
+
+@document_action_host_group_viewset(object_type="cluster")
+class ClusterActionHostGroupViewSet(ActionHostGroupViewSet):
+    ...
+
+
+@document_action_host_group_hosts_viewset(object_type="cluster")
+class ClusterActionHostGroupHostsViewSet(ActionHostGroupHostsViewSet):
+    ...
+
+
+@document_action_host_group_actions_viewset(object_type="cluster")
+class ClusterActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
     ...

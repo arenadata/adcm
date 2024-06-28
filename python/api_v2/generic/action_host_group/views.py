@@ -20,6 +20,8 @@ from adcm.permissions import (
     VIEW_COMPONENT_PERM,
     VIEW_SERVICE_PERM,
 )
+from audit.alt.api import audit_update, audit_view
+from audit.alt.hooks import adjust_denied_on_404_result
 from audit.utils import audit
 from cm.converters import core_type_to_model
 from cm.errors import AdcmEx
@@ -36,7 +38,6 @@ from core.types import ADCMCoreType, CoreObjectDescriptor, HostGroupDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Model, QuerySet
 from django.db.transaction import atomic
-from drf_spectacular.utils import extend_schema, extend_schema_view
 from guardian.shortcuts import get_objects_for_user
 from rbac.models import User
 from rest_framework.decorators import action
@@ -45,25 +46,27 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.status import (
-    HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
-    HTTP_404_NOT_FOUND,
-    HTTP_409_CONFLICT,
 )
 
-from api_v2.action.serializers import ActionListSerializer, ActionRetrieveSerializer
-from api_v2.action.utils import has_run_perms
-from api_v2.action.views import ActionViewSet
-from api_v2.action_host_group.serializers import (
+from api_v2.generic.action.audit import audit_action_viewset
+from api_v2.generic.action.utils import has_run_perms
+from api_v2.generic.action.views import ActionViewSet
+from api_v2.generic.action_host_group.audit import (
+    host_and_action_host_group_exist,
+    nested_action_host_group_exists,
+    parent_action_host_group_from_lookup,
+    set_group_and_host_names,
+    set_group_and_host_names_from_response,
+)
+from api_v2.generic.action_host_group.serializers import (
     ActionHostGroupCreateResultSerializer,
     ActionHostGroupCreateSerializer,
     ActionHostGroupSerializer,
     AddHostSerializer,
     ShortHostSerializer,
 )
-from api_v2.api_schema import DOCS_CLIENT_INPUT_ERROR_RESPONSES, DOCS_DEFAULT_ERROR_RESPONSES, ErrorSerializer
-from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import ADCMGenericViewSet, with_group_object, with_parent_object
 
 _PARENT_PERMISSION_MAP: dict[ADCMCoreType, tuple[str, type[Model]]] = {
@@ -121,42 +124,6 @@ def check_has_group_permissions(user: User, parent: CoreObjectDescriptor, dto: P
     check_has_group_permissions_for_object(user=user, parent_object=parent_object, dto=dto)
 
 
-@extend_schema_view(
-    create=extend_schema(
-        operation_id="postObjectActionHostGroup",
-        summary="POST object's Action Host Group",
-        description="Create a new object's action host group.",
-        responses={
-            HTTP_201_CREATED: ActionHostGroupSerializer,
-            **DOCS_DEFAULT_ERROR_RESPONSES,
-            **DOCS_CLIENT_INPUT_ERROR_RESPONSES,
-        },
-    ),
-    list=extend_schema(
-        operation_id="getObjectActionHostGroups",
-        summary="GET object's Action Host Groups",
-        description="Return list of object's action host groups.",
-        responses={HTTP_200_OK: ActionHostGroupSerializer(many=True), **DOCS_DEFAULT_ERROR_RESPONSES},
-    ),
-    retrieve=extend_schema(
-        operation_id="getObjectActionHostGroup",
-        summary="GET object's Action Host Group",
-        description="Return information about specific object's action host group.",
-        responses={HTTP_200_OK: ActionHostGroupSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
-    ),
-    destroy=extend_schema(
-        operation_id="deleteObjectActionHostGroup",
-        summary="DELETE object's Action Host Group",
-        description="Delete specific object's action host group.",
-        responses={HTTP_204_NO_CONTENT: None, HTTP_404_NOT_FOUND: ErrorSerializer, HTTP_409_CONFLICT: ErrorSerializer},
-    ),
-    host_candidate=extend_schema(
-        operation_id="getObjectActionHostGroupCandidates",
-        summary="GET object's Action Host Group's host candidates",
-        description="Return list of object's hosts that can be added to action host group.",
-        responses={HTTP_200_OK: ShortHostSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
-    ),
-)
 class ActionHostGroupViewSet(ADCMGenericViewSet):
     queryset = ActionHostGroup.objects.prefetch_related("hosts").order_by("id")
     action_host_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
@@ -259,27 +226,33 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
         )
 
 
-@extend_schema_view(
-    create=extend_schema(
-        operation_id="postObjectActionHostGroupHosts",
-        summary="POST object's Action Host Group hosts",
-        description="Add hosts to object's action host group.",
-        responses={
-            HTTP_201_CREATED: ShortHostSerializer,
-            **DOCS_DEFAULT_ERROR_RESPONSES,
-            **DOCS_CLIENT_INPUT_ERROR_RESPONSES,
-        },
-    ),
-    destroy=extend_schema(
-        operation_id="deleteObjectActionHostGroupHosts",
-        summary="DELETE object's Action Host Group hosts",
-        description="Delete specific host from object's action host group.",
-        responses={HTTP_204_NO_CONTENT: None, HTTP_404_NOT_FOUND: ErrorSerializer, HTTP_409_CONFLICT: ErrorSerializer},
-    ),
-)
-class HostActionHostGroupViewSet(ADCMGenericViewSet):
+class ActionHostGroupHostsViewSet(ADCMGenericViewSet):
     serializer_class = AddHostSerializer
     action_host_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
+
+    def __init_subclass__(cls, **__):
+        audit_view(
+            create=(
+                audit_update(
+                    name="Host {host_name} added to action host group {group_name}",
+                    object_=parent_action_host_group_from_lookup,
+                ).attach_hooks(
+                    pre_call=set_group_and_host_names_from_response,
+                    on_collect=adjust_denied_on_404_result(objects_exist=nested_action_host_group_exists),
+                )
+            ),
+            destroy=(
+                audit_update(
+                    name="Host {host_name} removed from action host group {group_name}",
+                    object_=parent_action_host_group_from_lookup,
+                ).attach_hooks(
+                    on_collect=[
+                        set_group_and_host_names,
+                        adjust_denied_on_404_result(objects_exist=host_and_action_host_group_exist),
+                    ]
+                )
+            ),
+        )(cls)
 
     @contextmanager
     def convert_exception(self) -> None:
@@ -299,7 +272,6 @@ class HostActionHostGroupViewSet(ADCMGenericViewSet):
         except GroupIsLockedError as err:
             raise AdcmEx(code="TASK_ERROR", msg=err.message) from None
 
-    @audit
     @with_group_object
     def create(
         self, request: Request, *_, parent: CoreObjectDescriptor, host_group: HostGroupDescriptor, **__
@@ -319,7 +291,6 @@ class HostActionHostGroupViewSet(ADCMGenericViewSet):
             status=HTTP_201_CREATED,
         )
 
-    @audit
     @with_group_object
     def destroy(
         self, request: Request, parent: CoreObjectDescriptor, host_group: HostGroupDescriptor, pk: str, **__
@@ -335,31 +306,10 @@ class HostActionHostGroupViewSet(ADCMGenericViewSet):
         return Response(status=HTTP_204_NO_CONTENT)
 
 
-@extend_schema_view(
-    run=extend_schema(
-        operation_id="postActionHostGroupAction",
-        summary="POST action host group's action",
-        description="Run action host group's action.",
-        responses={
-            HTTP_200_OK: TaskListSerializer,
-            **DOCS_DEFAULT_ERROR_RESPONSES,
-            **DOCS_CLIENT_INPUT_ERROR_RESPONSES,
-        },
-    ),
-    list=extend_schema(
-        operation_id="getActionHostGroupActions",
-        summary="GET action host group's actions",
-        description="Get a list of action host group's actions.",
-        responses={HTTP_200_OK: ActionListSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
-    ),
-    retrieve=extend_schema(
-        operation_id="getActionHostGroupAction",
-        summary="GET action host group's action",
-        description="Get information about a specific action host group's action.",
-        responses={HTTP_200_OK: ActionRetrieveSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
-    ),
-)
-class ActionHostGroupActionViewSet(ActionViewSet):
+class ActionHostGroupActionsViewSet(ActionViewSet):
+    def __init_subclass__(cls, **__):
+        audit_action_viewset(retrieve_owner=parent_action_host_group_from_lookup)(cls)
+
     def get_parent_object(self) -> ActionHostGroup | None:
         if "action_host_group_pk" not in self.kwargs:
             return None
