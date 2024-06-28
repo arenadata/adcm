@@ -28,13 +28,11 @@ def audit_group_config_viewset(retrieve_owner: RetrieveAuditObjectFunc):
             on_collect=set_group_name_from_response
         ),
         destroy=audit_delete(name="{group_name} configuration group deleted", object_=retrieve_owner).attach_hooks(
-            pre_call=set_group_name, on_collect=adjust_denied_on_404_result(objects_exist=group_config_does_not_exist)
+            pre_call=set_group_name, on_collect=adjust_denied_on_404_result(objects_exist=group_config_exists)
         ),
         partial_update=audit_update(
             name="{group_name} configuration group updated", object_=retrieve_owner
-        ).attach_hooks(
-            on_collect=(set_group_name, adjust_denied_on_404_result(objects_exist=group_config_does_not_exist))
-        ),
+        ).attach_hooks(on_collect=(set_group_name, adjust_denied_on_404_result(objects_exist=group_config_exists))),
     )
 
 
@@ -44,14 +42,14 @@ def audit_host_group_config_viewset(retrieve_owner: RetrieveAuditObjectFunc):
             name="{host_name} host added to {group_name} configuration group", object_=retrieve_owner
         ).attach_hooks(
             pre_call=set_group_and_host_names_from_response,
-            on_collect=adjust_denied_on_404_result(objects_exist=nested_group_config_does_not_exist),
+            on_collect=adjust_denied_on_404_result(objects_exist=nested_group_config_exists),
         ),
         destroy=audit_update(
             name="{host_name} host removed from {group_name} configuration group", object_=retrieve_owner
         ).attach_hooks(
             on_collect=[
                 set_group_and_host_names,
-                adjust_denied_on_404_result(objects_exist=host_or_group_does_not_exist),
+                adjust_denied_on_404_result(objects_exist=host_in_group_exists),
             ]
         ),
     )
@@ -60,16 +58,19 @@ def audit_host_group_config_viewset(retrieve_owner: RetrieveAuditObjectFunc):
 # hooks
 
 
-def group_config_does_not_exist(hook: AuditHook) -> bool:
+def group_config_exists(hook: AuditHook) -> bool:
     return object_does_exist(hook=hook, model=GroupConfig)
 
 
-def nested_group_config_does_not_exist(hook: AuditHook) -> bool:
+def nested_group_config_exists(hook: AuditHook) -> bool:
     return object_does_exist(hook=hook, model=GroupConfig, id_field="group_config_pk")
 
 
-def host_or_group_does_not_exist(hook: AuditHook) -> bool:
-    return nested_group_config_does_not_exist(hook=hook) and object_does_exist(hook=hook, model=Host)
+def host_in_group_exists(hook: AuditHook) -> bool:
+    m2m = GroupConfig.hosts.through
+    return m2m.objects.filter(
+        host_id=hook.call_arguments.get("pk"), groupconfig_id=hook.call_arguments.get("group_config_pk")
+    ).exists()
 
 
 def set_group_name_from_response(

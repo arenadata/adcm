@@ -26,6 +26,10 @@ from api_v2.api_schema import ErrorSerializer
 from api_v2.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
 from api_v2.config.utils import get_config_schema
 from api_v2.config.views import ConfigLogViewSet
+from api_v2.generic.action.api_schema import document_action_viewset
+from api_v2.generic.action.audit import audit_action_viewset
+from api_v2.generic.action.views import ActionViewSet
+from api_v2.utils.audit import adcm_audit_object
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -108,3 +112,15 @@ class ADCMConfigView(ConfigLogViewSet):
 
     def _check_parent_permissions(self, parent_object: ParentObject = None):
         pass
+
+
+@document_action_viewset(object_type="ADCM", operation_id_variant="ADCM")
+@audit_action_viewset(retrieve_owner=adcm_audit_object)
+class ADCMActionViewSet(ActionViewSet):
+    def get_parent_object(self):
+        return ADCM.objects.first()
+
+    def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+        self.parent_object = self.get_parent_object()
+
+        return self._list_actions_available_to_user(request)

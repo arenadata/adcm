@@ -19,7 +19,7 @@ from audit.alt.core import AuditedCallArguments, OperationAuditContext, Result
 from audit.alt.hooks import AuditHook
 from audit.alt.object_retrievers import GeneralAuditObjectRetriever
 from audit.models import AuditObject, AuditObjectType
-from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from cm.models import ADCM, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 from django.db.models import Model
 from rest_framework.response import Response
 
@@ -121,11 +121,29 @@ parent_hostprovider_from_lookup = _extract_hostprovider_from(
     extract_id=ExtractID(field="hostprovider_pk").from_lookup_kwargs
 )
 
-host_from_lookup = GeneralAuditObjectRetriever(
-    audit_object_type=AuditObjectType.HOST,
-    extract_id=ExtractID(field="pk").from_lookup_kwargs,
-    create_new=create_audit_host_object,
+_extract_host_from = partial(
+    GeneralAuditObjectRetriever, audit_object_type=AuditObjectType.HOST, create_new=create_audit_host_object
 )
+host_from_lookup = _extract_host_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
+parent_host_from_lookup = _extract_host_from(extract_id=ExtractID(field="host_pk").from_lookup_kwargs)
+
+
+def adcm_audit_object(
+    context: "OperationAuditContext",  # noqa: ARG001
+    call_arguments: AuditedCallArguments,  # noqa: ARG001
+    result: Result | None,  # noqa: ARG001
+    exception: Exception | None,  # noqa: ARG001
+) -> AuditObject:
+    adcm = AuditObject.objects.filter(object_type=AuditObjectType.ADCM, is_deleted=False).first()
+    if adcm:
+        return adcm
+
+    return AuditObject.objects.create(
+        object_id=ADCM.objects.values_list("id", flat=True).first(),
+        object_name="ADCM",
+        object_type=AuditObjectType.ADCM,
+        is_deleted=False,
+    )
 
 
 # hooks

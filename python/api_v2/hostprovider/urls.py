@@ -16,10 +16,10 @@ import itertools
 from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
-from api_v2.action.views import ActionViewSet
 from api_v2.config.views import ConfigLogViewSet
 from api_v2.generic.group_config.urls_helpers import add_group_config_routers
 from api_v2.hostprovider.views import (
+    HostProviderActionViewSet,
     HostProviderGroupConfigViewSet,
     HostProviderHostGroupConfigViewSet,
     HostProviderViewSet,
@@ -37,7 +37,7 @@ router = SimpleRouter()
 router.register("", HostProviderViewSet)
 
 action_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
-action_router.register(prefix="actions", viewset=ActionViewSet, basename="provider-action")
+action_router.register(prefix="actions", viewset=HostProviderActionViewSet, basename="provider-action")
 
 config_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
 config_router.register(prefix="configs", viewset=ConfigLogViewSet, basename="provider-config")
