@@ -55,6 +55,14 @@ def audit_host_group_config_viewset(retrieve_owner: RetrieveAuditObjectFunc):
     )
 
 
+def audit_config_group_config_viewset(retrieve_owner: RetrieveAuditObjectFunc):
+    return audit_view(
+        create=audit_update(name="{group_name} configuration group updated", object_=retrieve_owner).attach_hooks(
+            on_collect=(set_nested_group_name, adjust_denied_on_404_result(objects_exist=nested_group_config_exists))
+        )
+    )
+
+
 # hooks
 
 
@@ -93,6 +101,19 @@ def set_group_name(
     exception: Exception | None,  # noqa: ARG001
 ):
     group_name = GroupConfig.objects.values_list("name", flat=True).filter(id=call_arguments.get("pk")).first()
+
+    context.name = context.name.format(group_name=group_name or "").strip()
+
+
+def set_nested_group_name(
+    context: OperationAuditContext,
+    call_arguments: AuditedCallArguments,
+    result: Result | None,  # noqa: ARG001
+    exception: Exception | None,  # noqa: ARG001
+):
+    group_name = (
+        GroupConfig.objects.values_list("name", flat=True).filter(id=call_arguments.get("group_config_pk")).first()
+    )
 
     context.name = context.name.format(group_name=group_name or "").strip()
 

@@ -48,7 +48,6 @@ from api_v2.component.serializers import (
     ComponentStatusSerializer,
     HostComponentSerializer,
 )
-from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
@@ -62,8 +61,16 @@ from api_v2.generic.action_host_group.views import (
     ActionHostGroupHostsViewSet,
     ActionHostGroupViewSet,
 )
+from api_v2.generic.config.api_schema import document_config_viewset
+from api_v2.generic.config.audit import audit_config_viewset
+from api_v2.generic.config.utils import ConfigSchemaMixin
+from api_v2.generic.config.views import ConfigLogViewSet
 from api_v2.generic.group_config.api_schema import document_group_config_viewset, document_host_group_config_viewset
-from api_v2.generic.group_config.audit import audit_group_config_viewset, audit_host_group_config_viewset
+from api_v2.generic.group_config.audit import (
+    audit_config_group_config_viewset,
+    audit_group_config_viewset,
+    audit_host_group_config_viewset,
+)
 from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
 from api_v2.utils.audit import parent_component_from_lookup
 from api_v2.views import (
@@ -236,6 +243,12 @@ class ComponentHostGroupConfigViewSet(HostGroupConfigViewSet):
     ...
 
 
+@document_config_viewset(object_type="component config group", operation_id_variant="ComponentConfigGroup")
+@audit_config_group_config_viewset(retrieve_owner=parent_component_from_lookup)
+class ComponentConfigHostGroupViewSet(ConfigLogViewSet):
+    ...
+
+
 @document_action_viewset(object_type="component")
 @audit_action_viewset(retrieve_owner=parent_component_from_lookup)
 class ComponentActionViewSet(ActionViewSet):
@@ -254,4 +267,10 @@ class ComponentActionHostGroupHostsViewSet(ActionHostGroupHostsViewSet):
 
 @document_action_host_group_actions_viewset(object_type="component")
 class ComponentActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
+    ...
+
+
+@document_config_viewset(object_type="component")
+@audit_config_viewset(type_in_name="Component", retrieve_owner=parent_component_from_lookup)
+class ComponentConfigViewSet(ConfigLogViewSet):
     ...

@@ -30,7 +30,6 @@ from rest_framework.status import (
     HTTP_200_OK,
 )
 
-from api_v2.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.generic.action.filters import ActionFilter
 from api_v2.generic.action.serializers import (
     ActionListSerializer,
@@ -44,6 +43,7 @@ from api_v2.generic.action.utils import (
     insert_service_ids,
     unique_hc_entries,
 )
+from api_v2.generic.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.views import ADCMGenericViewSet
 

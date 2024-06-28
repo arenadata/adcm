@@ -12,14 +12,13 @@
 
 from rest_framework_nested.routers import NestedSimpleRouter, SimpleRouter
 
-from api_v2.config.views import ConfigLogViewSet
-from api_v2.host.views import HostActionViewSet, HostViewSet
+from api_v2.host.views import HostActionViewSet, HostConfigViewSet, HostViewSet
 
 host_router = SimpleRouter()
 host_router.register(prefix="", viewset=HostViewSet)
 
 host_config_router = NestedSimpleRouter(parent_router=host_router, parent_prefix="", lookup="host")
-host_config_router.register(prefix="configs", viewset=ConfigLogViewSet, basename="host-config")
+host_config_router.register(prefix="configs", viewset=HostConfigViewSet, basename="host-config")
 
 host_action_router = NestedSimpleRouter(parent_router=host_router, parent_prefix="", lookup="host")
 host_action_router.register(prefix="actions", viewset=HostActionViewSet, basename="host-action")
