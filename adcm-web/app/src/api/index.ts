@@ -33,3 +33,4 @@ export { AdcmClusterServiceConfigGroupConfigsApi } from './adcm/clusterServiceGr
 export { AdcmProfileApi } from './adcm/profile';
 export { AdcmClusterOverviewApi } from './adcm/clusterOverview';
 export { AdcmSettingsApi } from './adcm/settings';
+export { AdcmClusterAnsibleSettingsApi } from './adcm/clusterAnsibleSettings';

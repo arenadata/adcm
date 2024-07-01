@@ -8,7 +8,7 @@ import {
   setSortParams,
 } from '@store/adcm/cluster/hosts/hostsTableSlice';
 import { mergePaginationParams } from '@hooks/usePersistSettings';
-import { useGetFilterFromUrl } from '@pages/cluster/ClusterHosts/useGetFilterFromUrl.ts';
+import { useGetFilterFromUrl } from '@pages/cluster/ClusterHosts/useGetFilterFromUrl';
 
 const mergeFilters = (
   filterFromStorage: AdcmHostsFilter,

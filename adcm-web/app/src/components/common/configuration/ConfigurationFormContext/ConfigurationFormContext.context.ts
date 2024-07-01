@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { ConfigurationTreeFilter } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
+import type { ConfigurationTreeFilter } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
 
 export type ConfigurationFormContextOptions = {
   filter: ConfigurationTreeFilter;

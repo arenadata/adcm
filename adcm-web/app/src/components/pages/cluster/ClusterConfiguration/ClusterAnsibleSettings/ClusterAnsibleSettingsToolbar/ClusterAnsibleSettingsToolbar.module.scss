@@ -1,0 +1,14 @@
+.configurationToolbar {
+  display: flex;
+  gap: 10px 20px;
+  margin: 32px 0;
+
+  &__search {
+    width: 33%;
+    min-width: 200px;
+  }
+
+  &__buttons {
+    margin-left: auto;
+  }
+}
