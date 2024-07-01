@@ -27,6 +27,7 @@ from cm.services.job.run._task_finalizers import (
     update_issues,
     update_object_maintenance_mode,
 )
+from cm.services.job.run.audit import audit_task_finish
 
 NO_PROCESS_PID = 0
 
@@ -231,18 +232,11 @@ class JobSequenceRunner(TaskRunner):
         return last_job_result == ExecutionStatus.ABORTED
 
     def _finish(self, task: Task, last_job: Job | None):
-        from audit.utils import audit_job_finish
-
         task_result = self._runtime.status
 
         remove_task_lock(task_id=task.id)
 
-        audit_job_finish(
-            target=task.target,
-            display_name=task.action.display_name,
-            is_upgrade=task.action.is_upgrade,
-            job_result=task_result,
-        )
+        audit_task_finish(task=task, task_result=task_result)
 
         finished_task = self._repo.get_task(id=task.id)
         if finished_task.owner:

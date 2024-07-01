@@ -18,8 +18,8 @@ import os
 import shutil
 import logging
 
-from audit.models import AuditLogOperationResult
-from audit.utils import make_audit_log
+from audit.alt.background import audit_background_operation
+from audit.models import AuditLogOperationType
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -152,9 +152,15 @@ class Command(BaseCommand):
     def __run_configlog_rotation(self):
         try:
             configlog_days_delta = self.config["config"]["config_rotation_in_db"]
-            if configlog_days_delta <= 0:
-                return
+        except KeyError as e:
+            self.__log("Error in ConfigLog rotation", "warning")
+            self.__log(e, "exception")
+            return
 
+        if configlog_days_delta <= 0:
+            return
+
+        try:
             threshold_date = timezone.now() - timedelta(days=configlog_days_delta)
             self.__log(f"ConfigLog rotation started. Threshold date: {threshold_date}", "info")
 
@@ -174,22 +180,20 @@ class Command(BaseCommand):
             target_objectconfig_ids = {
                 cl.obj_ref.id for cl in target_configlogs if not self.__has_related_records(cl.obj_ref)
             }
+
             if target_configlog_ids or target_objectconfig_ids:
-                make_audit_log("config", AuditLogOperationResult.SUCCESS, "launched")
+                with audit_background_operation(
+                    name='"Objects configurations cleanup on schedule" job', type_=AuditLogOperationType.DELETE
+                ), transaction.atomic():
+                    ConfigLog.objects.filter(id__in=target_configlog_ids).delete()
+                    ObjectConfig.objects.filter(id__in=target_objectconfig_ids).delete()
 
-            with transaction.atomic():
-                ConfigLog.objects.filter(id__in=target_configlog_ids).delete()
-                ObjectConfig.objects.filter(id__in=target_objectconfig_ids).delete()
-                if target_configlog_ids or target_objectconfig_ids:
-                    make_audit_log("config", AuditLogOperationResult.SUCCESS, "completed")
-
-            self.__log(
-                f"Deleted {len(target_configlog_ids)} ConfigLogs and " f"{len(target_objectconfig_ids)} ObjectConfigs",
-                "info",
-            )
-
+                self.__log(
+                    f"Deleted {len(target_configlog_ids)} ConfigLogs and "
+                    f"{len(target_objectconfig_ids)} ObjectConfigs",
+                    "info",
+                )
         except Exception as e:  # noqa: BLE001
-            make_audit_log("config", AuditLogOperationResult.FAIL, "completed")
             self.__log("Error in ConfigLog rotation", "warning")
             self.__log(e, "exception")
 
@@ -216,16 +220,24 @@ class Command(BaseCommand):
         try:
             days_delta_db = self.config["config"]["log_rotation_in_db"]
             days_delta_fs = self.config["config"]["log_rotation_on_fs"]
-            if days_delta_db <= 0 and days_delta_fs <= 0:
-                return
+        except KeyError as e:
+            self.__log("Error in JobLog rotation", "warning")
+            self.__log(e, "exception")
+            return
 
+        if days_delta_db <= 0 and days_delta_fs <= 0:
+            return
+
+        try:
             threshold_date_db = timezone.now() - timedelta(days=days_delta_db)
             threshold_date_fs = timezone.now() - timedelta(days=days_delta_fs)
             self.__log(
                 f"JobLog rotation started. Threshold dates: " f"db - {threshold_date_db}, fs - {threshold_date_fs}",
                 "info",
             )
+
             is_deleted = False
+
             if days_delta_db > 0:
                 target_tasklogs = TaskLog.objects.filter(
                     finish_date__lte=threshold_date_db,
@@ -233,6 +245,7 @@ class Command(BaseCommand):
                 )
                 if target_tasklogs:
                     is_deleted = True
+
                     with transaction.atomic():
                         target_tasklogs.delete()
 
@@ -240,26 +253,36 @@ class Command(BaseCommand):
                         JobLog.objects.filter(task__isnull=True).delete()
 
                 self.__log("db JobLog rotated", "info")
+
             if days_delta_fs > 0:
                 for name in os.listdir(settings.RUN_DIR):
                     if not name.startswith("."):  # a line of code is used for development
                         path = settings.RUN_DIR / name
                         try:
-                            m_time = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.get_current_timezone())  # noqa: PTH204
+                            m_time = datetime.fromtimestamp(
+                                os.path.getmtime(path),  # noqa: PTH204
+                                tz=timezone.get_current_timezone(),
+                            )
                             if timezone.now() - m_time > timedelta(days=days_delta_fs):
                                 is_deleted = True
+
                                 if os.path.isdir(path):  # noqa: PTH112
                                     shutil.rmtree(path)
                                 else:
                                     os.remove(path)  # noqa: PTH107
                         except FileNotFoundError:
                             pass
-                if is_deleted:
-                    make_audit_log("task", AuditLogOperationResult.SUCCESS, "launched")
-                    make_audit_log("task", AuditLogOperationResult.SUCCESS, "completed")
+
                 self.__log("fs JobLog rotated", "info")
+
+            if is_deleted:
+                audit = audit_background_operation(
+                    name='"Task log cleanup on schedule" job', type_=AuditLogOperationType.DELETE
+                )
+                audit.context.save_on_start()
+                audit.context.save_on_finish()
+
         except Exception as e:  # noqa: BLE001
-            make_audit_log("task", AuditLogOperationResult.FAIL, "completed")
             self.__log("Error in JobLog rotation", "warning")
             self.__log(e, "exception")
 
