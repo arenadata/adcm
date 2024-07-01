@@ -16,10 +16,11 @@ import itertools
 from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
-from api_v2.config.views import ConfigLogViewSet
 from api_v2.generic.group_config.urls_helpers import add_group_config_routers
 from api_v2.hostprovider.views import (
     HostProviderActionViewSet,
+    HostProviderConfigHostGroupViewSet,
+    HostProviderConfigViewSet,
     HostProviderGroupConfigViewSet,
     HostProviderHostGroupConfigViewSet,
     HostProviderViewSet,
@@ -40,7 +41,7 @@ action_router = NestedSimpleRouter(parent_router=router, parent_prefix="", looku
 action_router.register(prefix="actions", viewset=HostProviderActionViewSet, basename="provider-action")
 
 config_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
-config_router.register(prefix="configs", viewset=ConfigLogViewSet, basename="provider-config")
+config_router.register(prefix="configs", viewset=HostProviderConfigViewSet, basename="provider-config")
 
 upgrade_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
 upgrade_router.register(prefix="upgrades", viewset=UpgradeViewSet)
@@ -49,6 +50,7 @@ upgrade_router.register(prefix="upgrades", viewset=UpgradeViewSet)
 group_config_routers = add_group_config_routers(
     group_config_viewset=HostProviderGroupConfigViewSet,
     host_group_config_viewset=HostProviderHostGroupConfigViewSet,
+    config_group_config_viewset=HostProviderConfigHostGroupViewSet,
     parent_router=router,
     parent_prefix="",
     lookup="hostprovider",

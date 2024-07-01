@@ -30,7 +30,7 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
 )
 
-from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.generic.config.utils import ConfigSchemaMixin
 from api_v2.generic.group_config.permissions import GroupConfigHostsPermissions, GroupConfigPermissions
 from api_v2.generic.group_config.serializers import GroupConfigSerializer, HostGroupConfigSerializer
 from api_v2.host.filters import HostMemberFilter

@@ -38,7 +38,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.config.utils import convert_adcm_meta_to_attr
+from api_v2.generic.config.utils import convert_adcm_meta_to_attr
 from api_v2.tests.base import BaseAPITestCase
 
 
