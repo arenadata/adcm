@@ -15,12 +15,13 @@ from dataclasses import dataclass
 from functools import partial
 import json
 
-from audit.alt.core import AuditedCallArguments, OperationAuditContext, Result
+from audit.alt.core import AuditedCallArguments, IDBasedAuditObjectCreator, OperationAuditContext, Result
 from audit.alt.hooks import AuditHook
 from audit.alt.object_retrievers import GeneralAuditObjectRetriever
 from audit.models import AuditObject, AuditObjectType
 from cm.models import ADCM, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 from django.db.models import Model
+from rbac.models import User
 from rest_framework.response import Response
 
 # object retrievers
@@ -41,24 +42,8 @@ class ExtractID:
 
 
 @dataclass(slots=True)
-class CMAuditObjectCreator:
-    cm_model: type[Model]
-    name_field: str = "name"
-
-    def __call__(self, id_: str | int, audit_object_type: AuditObjectType) -> AuditObject | None:
-        name = self.get_name(id_=id_)
-        if not name:
-            return None
-
-        return AuditObject.objects.create(object_id=id_, object_type=audit_object_type, object_name=name)
-
-    def get_name(self, id_: str | int) -> str | None:
-        return self.cm_model.objects.values_list(self.name_field, flat=True).filter(id=id_).first()
-
-
-@dataclass(slots=True)
-class ServiceAuditObjectCreator(CMAuditObjectCreator):
-    cm_model = ClusterObject
+class ServiceAuditObjectCreator(IDBasedAuditObjectCreator):
+    model = ClusterObject
     name_field = "prototype__display_name"
 
     def get_name(self, id_: str | int) -> str | None:
@@ -70,8 +55,8 @@ class ServiceAuditObjectCreator(CMAuditObjectCreator):
 
 
 @dataclass(slots=True)
-class ComponentAuditObjectCreator(CMAuditObjectCreator):
-    cm_model = ServiceComponent
+class ComponentAuditObjectCreator(IDBasedAuditObjectCreator):
+    model = ServiceComponent
     name_field = "prototype__display_name"
 
     def get_name(self, id_: str | int) -> str | None:
@@ -88,8 +73,10 @@ class ComponentAuditObjectCreator(CMAuditObjectCreator):
         return "/".join(names)
 
 
-create_audit_cluster_object = CMAuditObjectCreator(cm_model=Cluster)
-create_audit_host_object = CMAuditObjectCreator(cm_model=Host, name_field="fqdn")
+create_audit_cluster_object = IDBasedAuditObjectCreator(model=Cluster)
+create_audit_host_object = IDBasedAuditObjectCreator(model=Host, name_field="fqdn")
+create_audit_user_object = IDBasedAuditObjectCreator(model=User, name_field="username")
+
 
 _extract_cluster_from = partial(
     GeneralAuditObjectRetriever, audit_object_type=AuditObjectType.CLUSTER, create_new=create_audit_cluster_object
@@ -101,21 +88,21 @@ parent_cluster_from_lookup = _extract_cluster_from(extract_id=ExtractID(field="c
 _extract_service_from = partial(
     GeneralAuditObjectRetriever,
     audit_object_type=AuditObjectType.SERVICE,
-    create_new=ServiceAuditObjectCreator(cm_model=ClusterObject),
+    create_new=ServiceAuditObjectCreator(model=ClusterObject),
 )
 parent_service_from_lookup = _extract_service_from(extract_id=ExtractID(field="service_pk").from_lookup_kwargs)
 
 _extract_component_from = partial(
     GeneralAuditObjectRetriever,
     audit_object_type=AuditObjectType.COMPONENT,
-    create_new=ComponentAuditObjectCreator(cm_model=ServiceComponent),
+    create_new=ComponentAuditObjectCreator(model=ServiceComponent),
 )
 parent_component_from_lookup = _extract_component_from(extract_id=ExtractID(field="component_pk").from_lookup_kwargs)
 
 _extract_hostprovider_from = partial(
     GeneralAuditObjectRetriever,
     audit_object_type=AuditObjectType.PROVIDER,
-    create_new=CMAuditObjectCreator(cm_model=HostProvider),
+    create_new=IDBasedAuditObjectCreator(model=HostProvider),
 )
 parent_hostprovider_from_lookup = _extract_hostprovider_from(
     extract_id=ExtractID(field="hostprovider_pk").from_lookup_kwargs
@@ -126,6 +113,12 @@ _extract_host_from = partial(
 )
 host_from_lookup = _extract_host_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
 parent_host_from_lookup = _extract_host_from(extract_id=ExtractID(field="host_pk").from_lookup_kwargs)
+
+_extract_user_from = partial(
+    GeneralAuditObjectRetriever, audit_object_type=AuditObjectType.USER, create_new=create_audit_user_object
+)
+user_from_response = _extract_user_from(extract_id=ExtractID(field="id").from_response)
+user_from_lookup = _extract_user_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
 
 
 def adcm_audit_object(
@@ -170,6 +163,30 @@ def update_cluster_name(
     instance.save(update_fields=["object_name"])
 
 
+def update_user_name(
+    context: OperationAuditContext,
+    call_arguments: AuditedCallArguments,
+    result: Response | None,
+    exception: Exception | None,
+) -> None:
+    _ = call_arguments, result, exception
+
+    if not context.object:
+        return
+
+    instance = context.object
+
+    new_name = User.objects.values_list("username", flat=True).filter(id=instance.object_id).first()
+    if not new_name:
+        return
+
+    if instance.object_name == new_name:
+        return
+
+    instance.object_name = new_name
+    instance.save(update_fields=["object_name"])
+
+
 # hook helpers / special functions
 
 
@@ -184,6 +201,13 @@ def object_does_exist(hook: AuditHook, model: type[Model], id_field: str = "pk")
 
 def nested_host_does_exist(hook: AuditHook) -> bool:
     return object_does_exist(hook=hook, model=Host)
+
+
+def retrieve_user_password_groups(id_: int) -> dict:
+    if (user := User.objects.filter(pk=id_).first()) is None:
+        return {}
+
+    return {"password": user.password, "group": list(user.groups.values_list("name", flat=True).order_by("name"))}
 
 
 # name changers
@@ -220,3 +244,11 @@ class set_removed_host_name(AuditHook):  # noqa: N801
 
         fqdn = Host.objects.values_list("fqdn", flat=True).filter(id=host_id).first() or ""
         self.context.name = f"{fqdn} host removed".strip()
+
+
+class set_username_for_block_actions(AuditHook):  # noqa: N801
+    def __call__(self):
+        user_id = self.call_arguments.get("pk")
+        username = User.objects.values_list("username", flat=True).filter(id=user_id).first() or ""
+
+        self.context.name = self.context.name.format(username=username).strip()

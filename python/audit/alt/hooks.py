@@ -12,7 +12,7 @@
 
 from collections import deque
 from functools import wraps
-from typing import Callable
+from typing import Callable, Literal, Protocol
 
 from django.contrib.auth.models import User as DjangoUser
 from django.core.handlers.wsgi import WSGIRequest
@@ -23,6 +23,11 @@ from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED, H
 from audit.alt.core import AuditedCallArguments, AuditHookFunc, OperationAuditContext, Result, RetrieveAuditObjectFunc
 from audit.models import AuditLogOperationResult, AuditUser
 from audit.utils import get_client_agent, get_client_ip
+
+
+class HookObjectLookupFunc(Protocol):
+    def __call__(self, id_: int) -> dict:
+        ...
 
 
 class AuditHook:
@@ -106,6 +111,18 @@ def retriever_as_hook(func: RetrieveAuditObjectFunc) -> AuditHookFunc:
 # basic hooks and hook builders
 
 
+SECRET_FIELDS = ("password",)
+SECRET_VALUE = "******"
+
+
+def _hide_secrets(data: dict) -> dict:
+    for field in data:
+        if field in SECRET_FIELDS:
+            data[field] = SECRET_VALUE
+
+    return data
+
+
 class cleanup_changes(AuditHook):
     """
     Clean up object changes stored in meta.
@@ -141,7 +158,7 @@ class cleanup_changes(AuditHook):
             current.pop(key)
 
         if current and previous:
-            self.context.meta.changes |= {"previous": previous, "current": current}
+            self.context.meta.changes |= {"previous": _hide_secrets(previous), "current": _hide_secrets(current)}
 
 
 class detect_request_user(AuditHook):
@@ -215,20 +232,46 @@ def extract_previous_from_object(
             if not id_:
                 return
 
-            self.context.meta.changes["previous"] = (
-                model.objects.values(*fields, **named_fields).filter(id=id_).first() or {}
-            )
+            model_data = model.objects.values(*fields, **named_fields).filter(id=id_).first() or {}
+            self.context.meta.changes["previous"] = model_data
 
     return HookImpl
 
 
-def extract_current_from_response(*fields: str) -> AuditHookFunc:
+def extract_current_from_response(*fields: str, **named_fields: str) -> AuditHookFunc:
     class HookImpl(AuditHook):
         def __call__(self):
             if not isinstance(self.result, Response):
                 return
 
+            fields_ = (*tuple(zip(fields, fields)), *named_fields.items())
+
             data = self.result.data
-            self.context.meta.changes["current"] = {field: data[field] for field in fields if field in data}
+            response_data = {audit_field: data[data_field] for audit_field, data_field in fields_ if data_field in data}
+
+            self.context.meta.changes["current"] = response_data
+
+    return HookImpl
+
+
+def extract_from_object(
+    func: HookObjectLookupFunc, section: Literal["current", "previous"], id_arg: str = "pk", id_field: str = "id"
+):
+    """
+    Hook for cases when field is absent in response,
+    or it is easier to get and format data with custom func than using orm lookups.
+    Updates (or creates) self.context.meta.changes's `section` with `func` return value
+    """
+
+    class HookImpl(AuditHook):
+        def __call__(self):
+            id_ = self.call_arguments.get(id_arg) if section == "previous" else self.result.data.get(id_field)
+            if id_ is None:
+                return
+
+            if section not in self.context.meta.changes:
+                self.context.meta.changes[section] = {}
+
+            self.context.meta.changes[section] |= func(id_=id_)
 
     return HookImpl

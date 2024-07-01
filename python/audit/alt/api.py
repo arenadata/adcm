@@ -136,11 +136,16 @@ class audit_create(TypedAuditDecorator):  # noqa: N801
 class audit_update(TypedAuditDecorator):  # noqa: N801
     OPERATION_TYPE = AuditLogOperationType.UPDATE
 
-    def track_changes(self, before: AuditHookFunc, after: AuditHookFunc) -> Self:
+    def track_changes(
+        self, before: AuditHookFunc | Iterable[AuditHookFunc], after: AuditHookFunc | Iterable[AuditHookFunc]
+    ) -> Self:
         """Shouldn't be called more than 1 time, isn't adopted for that"""
 
-        self.extra_pre_call_hooks.append(before)
-        self.extra_on_collect_hooks.append(only_on_success(after))
+        self.extra_pre_call_hooks.extend(before if not callable(before) else (before,))
+        self.extra_on_collect_hooks.extend(
+            (only_on_success(hook) for hook in after) if not callable(after) else (only_on_success(after),)
+        )
+
         self.extra_on_collect_hooks.append(cleanup_changes)
 
         return self

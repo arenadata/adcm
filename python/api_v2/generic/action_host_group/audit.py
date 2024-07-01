@@ -14,19 +14,19 @@ from contextlib import suppress
 from functools import partial
 import json
 
-from audit.alt.core import AuditedCallArguments, OperationAuditContext, Result
+from audit.alt.core import AuditedCallArguments, IDBasedAuditObjectCreator, OperationAuditContext, Result
 from audit.alt.hooks import AuditHook
 from audit.alt.object_retrievers import GeneralAuditObjectRetriever
 from audit.models import AuditObjectType
 from cm.models import ActionHostGroup, Cluster, ClusterObject, Host, ServiceComponent
 
-from api_v2.utils.audit import CMAuditObjectCreator, ExtractID, object_does_exist
+from api_v2.utils.audit import ExtractID, object_does_exist
 
 # hooks
 
 
-class ActionHostGroupAuditObjectCreator(CMAuditObjectCreator):
-    cm_model = ActionHostGroup
+class ActionHostGroupAuditObjectCreator(IDBasedAuditObjectCreator):
+    model = ActionHostGroup
     name_field = "prototype__display_name"
 
     def get_name(self, id_: str | int) -> str | None:
@@ -66,7 +66,7 @@ class ActionHostGroupAuditObjectCreator(CMAuditObjectCreator):
 _extract_action_host_group = partial(
     GeneralAuditObjectRetriever,
     audit_object_type=AuditObjectType.ACTION_HOST_GROUP,
-    create_new=ActionHostGroupAuditObjectCreator(cm_model=ActionHostGroup),
+    create_new=ActionHostGroupAuditObjectCreator(model=ActionHostGroup),
 )
 action_host_group_from_lookup = _extract_action_host_group(extract_id=ExtractID(field="pk").from_lookup_kwargs)
 parent_action_host_group_from_lookup = _extract_action_host_group(
