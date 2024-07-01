@@ -14,6 +14,7 @@ import {
 } from './entityConfiguration.types';
 import { RequestState } from '@models/loadState';
 import { processErrorResponse } from '@utils/responseUtils';
+import type { Batch } from '@models/adcm';
 
 type AdcmEntityConfigurationState = {
   isConfigurationLoading: boolean;
@@ -41,7 +42,15 @@ const createWithUpdateConfigurations = createAsyncThunk(
   'adcm/entityConfiguration/createWithUpdateConfigurations',
   async (args: CreateEntityConfigurationArgs, thunkAPI) => {
     await thunkAPI.dispatch(createConfiguration(args)).unwrap();
-    await thunkAPI.dispatch(getConfigurationsVersions(args));
+    await thunkAPI.dispatch(getConfigurationsVersions(args as LoadEntityConfigurationVersionsArgs));
+  },
+);
+
+const createWithUpdateAnsibleSettings = createAsyncThunk(
+  'adcm/entityConfiguration/createWithUpdateAnsibleSettings',
+  async (args: CreateEntityConfigurationArgs, thunkAPI) => {
+    await thunkAPI.dispatch(createConfiguration(args)).unwrap();
+    await thunkAPI.dispatch(getConfiguration(args as LoadEntityConfigurationArgs));
   },
 );
 
@@ -78,8 +87,8 @@ const getConfigurationsVersions = createAsyncThunk(
 
     try {
       const requests = ApiRequests[entityType];
-      const versions = await requests.getConfigVersions(args);
-      return versions;
+      const versions = requests.getConfigVersions && (await requests.getConfigVersions(args));
+      return versions as Batch<AdcmConfigShortView>;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -158,5 +167,11 @@ const entityConfigurationSlice = createSlice({
 });
 
 const { cleanup, setIsConfigurationLoading, setIsVersionsLoading } = entityConfigurationSlice.actions;
-export { getConfiguration, getConfigurationsVersions, cleanup, createWithUpdateConfigurations };
+export {
+  getConfiguration,
+  getConfigurationsVersions,
+  cleanup,
+  createWithUpdateConfigurations,
+  createWithUpdateAnsibleSettings,
+};
 export default entityConfigurationSlice.reducer;

@@ -375,6 +375,25 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/clusters/:clusterId/configuration/ansible-settings': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        label: 'Configuration',
+      },
+      {
+        label: 'Ansible settings',
+      },
+    ],
+  },
   '/clusters/:clusterId/configuration/config-groups/:groupId': {
     pageTitle: 'Clusters',
     breadcrumbs: [

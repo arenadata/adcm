@@ -10,7 +10,7 @@ import FieldNodeErrors from './FieldNodeErrors/FieldNodeErrors';
 import type { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from '../ConfigurationTree.types';
 import { isPrimitiveValueSet } from '@models/json';
 import type { FieldErrors } from '@models/adcm';
-import { isWhiteSpaceOnly } from '@utils/validationsUtils.ts';
+import { isWhiteSpaceOnly } from '@utils/validationsUtils';
 
 interface FieldNodeContentProps {
   node: ConfigurationNodeView;
