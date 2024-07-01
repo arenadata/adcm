@@ -24,8 +24,8 @@ from django.core.management.base import BaseCommand
 from django.db.models import Count, Q
 from django.utils import timezone
 
-from audit.models import AuditLog, AuditLogOperationResult, AuditObject, AuditSession
-from audit.utils import make_audit_log
+from audit.alt.background import audit_background_operation
+from audit.models import AuditLog, AuditLogOperationType, AuditObject, AuditSession
 
 logger = logging.getLogger("background_tasks")
 
@@ -59,7 +59,6 @@ class Command(BaseCommand):
         try:
             self.__handle()
         except Exception as e:  # noqa: BLE001
-            make_audit_log("audit", AuditLogOperationResult.FAIL, "completed")
             self.__log(e, "exception")
 
     def __handle(self):
@@ -68,34 +67,31 @@ class Command(BaseCommand):
             self.__log("Disabled")
             return
 
-        threshold_date = timezone.now() - timedelta(days=config["retention_period"])
-        self.__log(f"Started. Threshold date: {threshold_date}")
+        with audit_background_operation(
+            name='"Audit log cleanup/archiving on schedule" job', type_=AuditLogOperationType.DELETE
+        ):
+            threshold_date = timezone.now() - timedelta(days=config["retention_period"])
+            self.__log(f"Started. Threshold date: {threshold_date}")
 
-        # get delete candidates
-        target_operations = AuditLog.objects.filter(operation_time__lt=threshold_date)
-        target_logins = AuditSession.objects.filter(login_time__lt=threshold_date)
-        target_objects = (
-            AuditObject.objects.filter(is_deleted=True)
-            .annotate(not_deleted_auditlogs_count=Count("auditlog", filter=~Q(auditlog__in=target_operations)))
-            .filter(not_deleted_auditlogs_count__lte=0)
-        )
+            # get delete candidates
+            target_operations = AuditLog.objects.filter(operation_time__lt=threshold_date)
+            target_logins = AuditSession.objects.filter(login_time__lt=threshold_date)
+            target_objects = (
+                AuditObject.objects.filter(is_deleted=True)
+                .annotate(not_deleted_auditlogs_count=Count("auditlog", filter=~Q(auditlog__in=target_operations)))
+                .filter(not_deleted_auditlogs_count__lte=0)
+            )
 
-        cleared = False
-        if any(qs.exists() for qs in (target_operations, target_logins, target_objects)):
-            make_audit_log("audit", AuditLogOperationResult.SUCCESS, "launched")
+            if config["data_archiving"]:
+                archive_path = os.path.join(self.archive_base_dir, self.archive_name)
+                self.__log(f"Target audit records will be archived to `{archive_path}`")
+                self.__archive(target_operations, target_logins, target_objects)
+            else:
+                self.__log("Archiving is disabled")
 
-        if config["data_archiving"]:
-            archive_path = os.path.join(self.archive_base_dir, self.archive_name)
-            self.__log(f"Target audit records will be archived to `{archive_path}`")
-            self.__archive(target_operations, target_logins, target_objects)
-        else:
-            self.__log("Archiving is disabled")
-
-        cleared = self.__delete(target_operations, target_logins, target_objects)
+            self.__delete(target_operations, target_logins, target_objects)
 
         self.__log("Finished.")
-        if cleared:
-            make_audit_log("audit", AuditLogOperationResult.SUCCESS, "completed")
 
     def __archive(self, *querysets):
         os.makedirs(self.archive_base_dir, exist_ok=True)
