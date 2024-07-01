@@ -21,7 +21,7 @@ from audit.alt.object_retrievers import GeneralAuditObjectRetriever
 from audit.models import AuditObject, AuditObjectType
 from cm.models import ADCM, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 from django.db.models import Model
-from rbac.models import User
+from rbac.models import Group, User
 from rest_framework.response import Response
 
 # object retrievers
@@ -76,6 +76,7 @@ class ComponentAuditObjectCreator(IDBasedAuditObjectCreator):
 create_audit_cluster_object = IDBasedAuditObjectCreator(model=Cluster)
 create_audit_host_object = IDBasedAuditObjectCreator(model=Host, name_field="fqdn")
 create_audit_user_object = IDBasedAuditObjectCreator(model=User, name_field="username")
+create_audit_group_object = IDBasedAuditObjectCreator(model=Group)
 
 
 _extract_cluster_from = partial(
@@ -119,6 +120,12 @@ _extract_user_from = partial(
 )
 user_from_response = _extract_user_from(extract_id=ExtractID(field="id").from_response)
 user_from_lookup = _extract_user_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
+
+_extract_group_from = partial(
+    GeneralAuditObjectRetriever, audit_object_type=AuditObjectType.GROUP, create_new=create_audit_group_object
+)
+group_from_response = _extract_group_from(extract_id=ExtractID(field="id").from_response)
+group_from_lookup = _extract_group_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
 
 
 def adcm_audit_object(
@@ -177,10 +184,28 @@ def update_user_name(
     instance = context.object
 
     new_name = User.objects.values_list("username", flat=True).filter(id=instance.object_id).first()
-    if not new_name:
+    if not new_name or instance.object_name == new_name:
         return
 
-    if instance.object_name == new_name:
+    instance.object_name = new_name
+    instance.save(update_fields=["object_name"])
+
+
+def update_group_name(
+    context: OperationAuditContext,
+    call_arguments: AuditedCallArguments,
+    result: Response | None,
+    exception: Exception | None,
+) -> None:
+    _ = call_arguments, result, exception
+
+    if not context.object:
+        return
+
+    instance = context.object
+
+    new_name = Group.objects.values_list("name", flat=True).filter(id=instance.object_id).first()
+    if not new_name or instance.object_name == new_name:
         return
 
     instance.object_name = new_name
@@ -208,6 +233,16 @@ def retrieve_user_password_groups(id_: int) -> dict:
         return {}
 
     return {"password": user.password, "group": list(user.groups.values_list("name", flat=True).order_by("name"))}
+
+
+def retrieve_group_name_users(id_: int) -> dict:
+    if (group := Group.objects.prefetch_related("user_set").filter(pk=id_).first()) is None:
+        return {}
+
+    return {
+        "name": group.display_name,
+        "user": sorted(user.username for user in group.user_set.all()),
+    }
 
 
 # name changers
