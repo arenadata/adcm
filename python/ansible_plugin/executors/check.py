@@ -55,7 +55,7 @@ class CheckArguments(BaseStrictModel):
 
     @model_validator(mode="after")
     def check_success_msg_and_fail_msg_are_specified_if_no_msg(self) -> Self:
-        if self.msg:
+        if self.msg is not None:
             return self
 
         if self.success_msg is None or self.fail_msg is None:
