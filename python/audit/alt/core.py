@@ -13,10 +13,18 @@
 from collections import UserDict
 from dataclasses import dataclass, field
 
+from django.db.models import Model
 from typing_extensions import Protocol, Self, TypeVar
 
 from audit.cef_logger import cef_logger as write_cef_log
-from audit.models import AuditLog, AuditLogOperationResult, AuditLogOperationType, AuditObject, AuditUser
+from audit.models import (
+    AuditLog,
+    AuditLogOperationResult,
+    AuditLogOperationType,
+    AuditObject,
+    AuditObjectType,
+    AuditUser,
+)
 
 Result = TypeVar("Result")
 
@@ -198,3 +206,19 @@ class OperationAuditContext:
             agent=self.meta.agent,
         )
         write_cef_log(audit_instance=record, signature_id=self._signature.id)
+
+
+@dataclass(slots=True)
+class IDBasedAuditObjectCreator:
+    model: type[Model]
+    name_field: str = "name"
+
+    def __call__(self, id_: str | int, audit_object_type: AuditObjectType) -> AuditObject | None:
+        name = self.get_name(id_=id_)
+        if not name:
+            return None
+
+        return AuditObject.objects.create(object_id=id_, object_type=audit_object_type, object_name=name)
+
+    def get_name(self, id_: str | int) -> str | None:
+        return self.model.objects.values_list(self.name_field, flat=True).filter(id=id_).first()
