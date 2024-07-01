@@ -19,7 +19,7 @@ from audit.alt.core import AuditedCallArguments, IDBasedAuditObjectCreator, Oper
 from audit.alt.hooks import AuditHook
 from audit.alt.object_retrievers import GeneralAuditObjectRetriever
 from audit.models import AuditObject, AuditObjectType
-from cm.models import ADCM, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from cm.models import ADCM, Bundle, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 from django.db.models import Model
 from rbac.models import Group, User
 from rest_framework.response import Response
@@ -287,3 +287,10 @@ class set_username_for_block_actions(AuditHook):  # noqa: N801
         username = User.objects.values_list("username", flat=True).filter(id=user_id).first() or ""
 
         self.context.name = self.context.name.format(username=username).strip()
+
+
+bundle_from_lookup = GeneralAuditObjectRetriever(
+    audit_object_type=AuditObjectType.BUNDLE,
+    create_new=IDBasedAuditObjectCreator(model=Bundle),
+    extract_id=ExtractID(field="pk").from_lookup_kwargs,
+)
