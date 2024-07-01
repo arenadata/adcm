@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from adcm.permissions import VIEW_PROVIDER_PERM
-from audit.utils import audit
+from audit.alt.api import audit_create, audit_delete
 from cm.api import add_host_provider, delete_host_provider
 from cm.errors import AdcmEx
 from cm.models import HostProvider, ObjectType, Prototype
@@ -44,7 +44,7 @@ from api_v2.hostprovider.serializers import (
     HostProviderCreateSerializer,
     HostProviderSerializer,
 )
-from api_v2.utils.audit import parent_hostprovider_from_lookup
+from api_v2.utils.audit import hostprovider_from_lookup, hostprovider_from_response, parent_hostprovider_from_lookup
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -139,7 +139,7 @@ class HostProviderViewSet(
 
         return self.serializer_class
 
-    @audit
+    @audit_create(name="Provider created", object_=hostprovider_from_response)
     def create(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
@@ -156,7 +156,7 @@ class HostProviderViewSet(
 
         return Response(data=HostProviderSerializer(host_provider).data, status=HTTP_201_CREATED)
 
-    @audit
+    @audit_delete(name="Provider deleted", object_=hostprovider_from_lookup, removed_on_success=True)
     def destroy(self, request, *args, **kwargs):  # noqa: ARG002
         host_provider = self.get_object()
         delete_host_provider(host_provider)
