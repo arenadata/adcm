@@ -237,7 +237,12 @@ def prepare_ansible_inventory(task: Task) -> dict[str, Any]:
             old=get_old_hc(saved_hostcomponent=task.hostcomponent.saved),
         )
 
-    return get_inventory_data(target=task.target, is_host_action=task.action.is_host_action, delta=delta)
+    return get_inventory_data(
+        target=task.target,
+        is_host_action=task.action.is_host_action,
+        delta=delta,
+        related_objects=task.owner.related_objects,
+    )
 
 
 def prepare_ansible_job_config(task: Task, job: Job, configuration: ExternalSettings) -> dict[str, Any]:
