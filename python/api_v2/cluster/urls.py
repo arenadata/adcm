@@ -26,6 +26,7 @@ from api_v2.cluster.views import (
     ClusterHostActionViewSet,
     ClusterHostGroupConfigViewSet,
     ClusterImportViewSet,
+    ClusterUpgradeViewSet,
     ClusterViewSet,
     HostClusterViewSet,
 )
@@ -55,7 +56,6 @@ from api_v2.service.views import (
     ServiceImportViewSet,
     ServiceViewSet,
 )
-from api_v2.upgrade.views import UpgradeViewSet
 
 CLUSTER_PREFIX = ""
 ACTION_PREFIX = "actions"
@@ -174,7 +174,7 @@ host_component_router.register(prefix=COMPONENT_PREFIX, viewset=HostComponentVie
 
 # other
 upgrade_router = NestedSimpleRouter(parent_router=cluster_router, parent_prefix=CLUSTER_PREFIX, lookup="cluster")
-upgrade_router.register(prefix="upgrades", viewset=UpgradeViewSet)
+upgrade_router.register(prefix="upgrades", viewset=ClusterUpgradeViewSet)
 
 
 urlpatterns = [

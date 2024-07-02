@@ -38,6 +38,9 @@ from api_v2.generic.group_config.audit import (
     audit_host_group_config_viewset,
 )
 from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
+from api_v2.generic.upgrade.api_schema import document_upgrade_viewset
+from api_v2.generic.upgrade.audit import audit_upgrade_viewset
+from api_v2.generic.upgrade.views import UpgradeViewSet
 from api_v2.hostprovider.filters import HostProviderFilter
 from api_v2.hostprovider.permissions import HostProviderPermissions
 from api_v2.hostprovider.serializers import (
@@ -190,4 +193,10 @@ class HostProviderActionViewSet(ActionViewSet):
 @document_config_viewset(object_type="hostprovider")
 @audit_config_viewset(type_in_name="Provider", retrieve_owner=parent_hostprovider_from_lookup)
 class HostProviderConfigViewSet(ConfigLogViewSet):
+    ...
+
+
+@document_upgrade_viewset(object_type="hostprovider")
+@audit_upgrade_viewset(retrieve_owner=parent_hostprovider_from_lookup)
+class HostProviderUpgradeViewSet(UpgradeViewSet):
     ...
