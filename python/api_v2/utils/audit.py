@@ -20,8 +20,9 @@ from audit.alt.hooks import AuditHook
 from audit.alt.object_retrievers import GeneralAuditObjectRetriever
 from audit.models import AuditObject, AuditObjectType
 from cm.models import ADCM, Bundle, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from cm.utils import get_obj_type
 from django.db.models import Model
-from rbac.models import Group, User
+from rbac.models import Group, Policy, User
 from rest_framework.response import Response
 
 # object retrievers
@@ -77,7 +78,14 @@ create_audit_cluster_object = IDBasedAuditObjectCreator(model=Cluster)
 create_audit_host_object = IDBasedAuditObjectCreator(model=Host, name_field="fqdn")
 create_audit_user_object = IDBasedAuditObjectCreator(model=User, name_field="username")
 create_audit_group_object = IDBasedAuditObjectCreator(model=Group)
+create_audit_policy_object = IDBasedAuditObjectCreator(model=Policy)
 
+
+bundle_from_lookup = GeneralAuditObjectRetriever(
+    audit_object_type=AuditObjectType.BUNDLE,
+    create_new=IDBasedAuditObjectCreator(model=Bundle),
+    extract_id=ExtractID(field="pk").from_lookup_kwargs,
+)
 
 _extract_cluster_from = partial(
     GeneralAuditObjectRetriever, audit_object_type=AuditObjectType.CLUSTER, create_new=create_audit_cluster_object
@@ -128,6 +136,12 @@ _extract_group_from = partial(
 )
 group_from_response = _extract_group_from(extract_id=ExtractID(field="id").from_response)
 group_from_lookup = _extract_group_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
+
+_extract_policy_from = partial(
+    GeneralAuditObjectRetriever, audit_object_type=AuditObjectType.POLICY, create_new=create_audit_policy_object
+)
+policy_from_response = _extract_policy_from(extract_id=ExtractID(field="id").from_response)
+policy_from_lookup = _extract_policy_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
 
 
 def adcm_audit_object(
@@ -214,6 +228,27 @@ def update_group_name(
     instance.save(update_fields=["object_name"])
 
 
+def update_policy_name(
+    context: OperationAuditContext,
+    call_arguments: AuditedCallArguments,
+    result: Response | None,
+    exception: Exception | None,
+) -> None:
+    _ = call_arguments, result, exception
+
+    if not context.object:
+        return
+
+    instance = context.object
+
+    new_name = Policy.objects.values_list("name", flat=True).filter(id=instance.object_id).first()
+    if not new_name or instance.object_name == new_name:
+        return
+
+    instance.object_name = new_name
+    instance.save(update_fields=["object_name"])
+
+
 # hook helpers / special functions
 
 
@@ -244,6 +279,20 @@ def retrieve_group_name_users(id_: int) -> dict:
     return {
         "name": group.display_name,
         "user": sorted(user.username for user in group.user_set.all()),
+    }
+
+
+def retrieve_policy_role_object_group(id_: int) -> dict:
+    if (policy := Policy.objects.prefetch_related("group", "object").filter(pk=id_).first()) is None:
+        return {}
+
+    return {
+        "role": policy.role.display_name if policy.role else "",
+        "object": [
+            {"id": obj.object.pk, "name": obj.object.name, "type": get_obj_type(obj.content_type.name)}
+            for obj in policy.object.all()
+        ],
+        "group": sorted(group.name for group in policy.group.all()),
     }
 
 
@@ -289,10 +338,3 @@ class set_username_for_block_actions(AuditHook):  # noqa: N801
         username = User.objects.values_list("username", flat=True).filter(id=user_id).first() or ""
 
         self.context.name = self.context.name.format(username=username).strip()
-
-
-bundle_from_lookup = GeneralAuditObjectRetriever(
-    audit_object_type=AuditObjectType.BUNDLE,
-    create_new=IDBasedAuditObjectCreator(model=Bundle),
-    extract_id=ExtractID(field="pk").from_lookup_kwargs,
-)
