@@ -123,6 +123,7 @@ _extract_host_from = partial(
     GeneralAuditObjectRetriever, audit_object_type=AuditObjectType.HOST, create_new=create_audit_host_object
 )
 host_from_lookup = _extract_host_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
+host_from_response = _extract_host_from(extract_id=ExtractID(field="id").from_response)
 parent_host_from_lookup = _extract_host_from(extract_id=ExtractID(field="host_pk").from_lookup_kwargs)
 
 _extract_user_from = partial(
@@ -338,3 +339,25 @@ class set_username_for_block_actions(AuditHook):  # noqa: N801
         username = User.objects.values_list("username", flat=True).filter(id=user_id).first() or ""
 
         self.context.name = self.context.name.format(username=username).strip()
+
+
+def update_host_name(
+    context: OperationAuditContext,
+    call_arguments: AuditedCallArguments,
+    result: Response | None,
+    exception: Exception | None,
+) -> None:
+    _ = call_arguments, result, exception
+
+    if not context.object:
+        return
+
+    instance = context.object
+
+    new_name = Host.objects.values_list("fqdn", flat=True).filter(id=instance.object_id).first()
+
+    if not new_name:
+        return
+
+    instance.object_name = new_name
+    instance.save(update_fields=["object_name"])
