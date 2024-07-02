@@ -19,7 +19,8 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from audit.utils import audit
+from audit.alt.api import audit_create, audit_delete, audit_update
+from audit.alt.hooks import extract_current_from_response, extract_previous_from_object, only_on_success
 from cm.api import delete_host
 from cm.errors import AdcmEx
 from cm.models import Cluster, ConcernType, Host, HostProvider
@@ -60,7 +61,7 @@ from api_v2.host.serializers import (
     HostUpdateSerializer,
 )
 from api_v2.host.utils import create_host, maintenance_mode, process_config_issues_policies_hc
-from api_v2.utils.audit import parent_host_from_lookup
+from api_v2.utils.audit import host_from_lookup, host_from_response, parent_host_from_lookup, update_host_name
 from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
 
 
@@ -197,7 +198,7 @@ class HostViewSet(
 
         return HostSerializer
 
-    @audit
+    @audit_create(name="Host created", object_=host_from_response)
     def create(self, request, *args, **kwargs):  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -225,14 +226,21 @@ class HostViewSet(
             data=HostSerializer(instance=host, context=self.get_serializer_context()).data, status=HTTP_201_CREATED
         )
 
-    @audit
+    @audit_delete(name="Host deleted", object_=host_from_lookup, removed_on_success=True)
     def destroy(self, request, *args, **kwargs):  # noqa: ARG002
         host = self.get_object()
         check_custom_perm(request.user, "remove", "host", host)
         delete_host(host=host)
         return Response(status=HTTP_204_NO_CONTENT)
 
-    @audit
+    @(
+        audit_update(name="Host updated", object_=host_from_lookup)
+        .attach_hooks(on_collect=only_on_success(update_host_name))
+        .track_changes(
+            before=extract_previous_from_object(Host, "fqdn", "description"),
+            after=extract_current_from_response("fqdn", "description", fqdn="name"),
+        )
+    )
     def partial_update(self, request, *args, **kwargs):  # noqa: ARG002
         instance = self.get_object()
         check_custom_perm(request.user, "change", "host", instance)
@@ -257,7 +265,10 @@ class HostViewSet(
             status=HTTP_200_OK, data=HostSerializer(instance=instance, context=self.get_serializer_context()).data
         )
 
-    @audit
+    @audit_update(name="Host updated", object_=host_from_lookup).track_changes(
+        before=extract_previous_from_object(Host, "maintenance_mode"),
+        after=extract_current_from_response("maintenance_mode"),
+    )
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         return maintenance_mode(request=request, host=self.get_object())
