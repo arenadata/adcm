@@ -108,6 +108,8 @@ _extract_hostprovider_from = partial(
 parent_hostprovider_from_lookup = _extract_hostprovider_from(
     extract_id=ExtractID(field="hostprovider_pk").from_lookup_kwargs
 )
+hostprovider_from_lookup = _extract_hostprovider_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
+hostprovider_from_response = _extract_hostprovider_from(extract_id=ExtractID(field="id").from_response)
 
 _extract_host_from = partial(
     GeneralAuditObjectRetriever, audit_object_type=AuditObjectType.HOST, create_new=create_audit_host_object
