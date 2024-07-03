@@ -21,8 +21,8 @@ from audit.alt.object_retrievers import GeneralAuditObjectRetriever
 from audit.models import AuditObject, AuditObjectType
 from cm.models import ADCM, Bundle, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 from cm.utils import get_obj_type
-from django.db.models import Model
-from rbac.models import Group, Policy, User
+from django.db.models import Model, Prefetch
+from rbac.models import Group, Policy, Role, User
 from rest_framework.response import Response
 
 # object retrievers
@@ -79,6 +79,7 @@ create_audit_host_object = IDBasedAuditObjectCreator(model=Host, name_field="fqd
 create_audit_user_object = IDBasedAuditObjectCreator(model=User, name_field="username")
 create_audit_group_object = IDBasedAuditObjectCreator(model=Group)
 create_audit_policy_object = IDBasedAuditObjectCreator(model=Policy)
+create_audit_role_object = IDBasedAuditObjectCreator(model=Role)
 
 
 bundle_from_lookup = GeneralAuditObjectRetriever(
@@ -143,6 +144,12 @@ _extract_policy_from = partial(
 )
 policy_from_response = _extract_policy_from(extract_id=ExtractID(field="id").from_response)
 policy_from_lookup = _extract_policy_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
+
+_extract_role_from = partial(
+    GeneralAuditObjectRetriever, audit_object_type=AuditObjectType.ROLE, create_new=create_audit_role_object
+)
+role_from_response = _extract_role_from(extract_id=ExtractID(field="id").from_response)
+role_from_lookup = _extract_role_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
 
 
 def adcm_audit_object(
@@ -250,6 +257,27 @@ def update_policy_name(
     instance.save(update_fields=["object_name"])
 
 
+def update_role_name(
+    context: OperationAuditContext,
+    call_arguments: AuditedCallArguments,
+    result: Response | None,
+    exception: Exception | None,
+) -> None:
+    _ = call_arguments, result, exception
+
+    if not context.object:
+        return
+
+    instance = context.object
+
+    new_name = Role.objects.values_list("name", flat=True).filter(id=instance.object_id).first()
+    if not new_name or instance.object_name == new_name:
+        return
+
+    instance.object_name = new_name
+    instance.save(update_fields=["object_name"])
+
+
 # hook helpers / special functions
 
 
@@ -295,6 +323,14 @@ def retrieve_policy_role_object_group(id_: int) -> dict:
         ],
         "group": sorted(group.name for group in policy.group.all()),
     }
+
+
+def retrieve_role_children(id_: int) -> dict:
+    prefetch_child_roles = Prefetch("child", queryset=Role.objects.only("display_name"))
+    if (role := Role.objects.prefetch_related(prefetch_child_roles).filter(pk=id_).only("id").first()) is None:
+        return {}
+
+    return {"child": sorted(child_role.display_name for child_role in role.child.all())}
 
 
 # name changers
