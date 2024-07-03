@@ -111,6 +111,9 @@ from api_v2.generic.group_config.audit import (
 from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
 from api_v2.generic.imports.serializers import ImportPostSerializer, ImportSerializer
 from api_v2.generic.imports.views import ImportViewSet
+from api_v2.generic.upgrade.api_schema import document_upgrade_viewset
+from api_v2.generic.upgrade.audit import audit_upgrade_viewset
+from api_v2.generic.upgrade.views import UpgradeViewSet
 from api_v2.host.filters import HostMemberFilter
 from api_v2.host.serializers import (
     HostAddSerializer,
@@ -799,4 +802,10 @@ class ClusterActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
 @document_config_viewset(object_type="cluster")
 @audit_config_viewset(type_in_name="Cluster", retrieve_owner=parent_cluster_from_lookup)
 class ClusterConfigViewSet(ConfigLogViewSet):
+    ...
+
+
+@document_upgrade_viewset(object_type="cluster")
+@audit_upgrade_viewset(retrieve_owner=parent_cluster_from_lookup)
+class ClusterUpgradeViewSet(UpgradeViewSet):
     ...

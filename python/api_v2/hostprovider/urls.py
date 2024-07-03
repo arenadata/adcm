@@ -23,9 +23,9 @@ from api_v2.hostprovider.views import (
     HostProviderConfigViewSet,
     HostProviderGroupConfigViewSet,
     HostProviderHostGroupConfigViewSet,
+    HostProviderUpgradeViewSet,
     HostProviderViewSet,
 )
-from api_v2.upgrade.views import UpgradeViewSet
 
 CONFIG_GROUPS_PREFIX = "config-groups"
 
@@ -44,7 +44,7 @@ config_router = NestedSimpleRouter(parent_router=router, parent_prefix="", looku
 config_router.register(prefix="configs", viewset=HostProviderConfigViewSet, basename="provider-config")
 
 upgrade_router = NestedSimpleRouter(parent_router=router, parent_prefix="", lookup="hostprovider")
-upgrade_router.register(prefix="upgrades", viewset=UpgradeViewSet)
+upgrade_router.register(prefix="upgrades", viewset=HostProviderUpgradeViewSet)
 
 
 group_config_routers = add_group_config_routers(
