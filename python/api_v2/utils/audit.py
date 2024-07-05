@@ -13,15 +13,18 @@
 from contextlib import suppress
 from dataclasses import dataclass
 from functools import partial
+from typing import Any
 import json
 
 from audit.alt.core import AuditedCallArguments, IDBasedAuditObjectCreator, OperationAuditContext, Result
 from audit.alt.hooks import AuditHook
 from audit.alt.object_retrievers import GeneralAuditObjectRetriever
 from audit.models import AuditObject, AuditObjectType
-from cm.models import ADCM, Bundle, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from cm.models import ADCM, Bundle, Cluster, ClusterObject, Host, HostProvider, Prototype, ServiceComponent
 from cm.utils import get_obj_type
+from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import Model, Prefetch
+from django.http.request import RawPostDataException
 from rbac.models import Group, Policy, Role, User
 from rest_framework.response import Response
 
@@ -101,6 +104,7 @@ _extract_service_from = partial(
     create_new=ServiceAuditObjectCreator(model=ClusterObject),
 )
 parent_service_from_lookup = _extract_service_from(extract_id=ExtractID(field="service_pk").from_lookup_kwargs)
+service_from_lookup = _extract_service_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
 
 _extract_component_from = partial(
     GeneralAuditObjectRetriever,
@@ -108,6 +112,7 @@ _extract_component_from = partial(
     create_new=ComponentAuditObjectCreator(model=ServiceComponent),
 )
 parent_component_from_lookup = _extract_component_from(extract_id=ExtractID(field="component_pk").from_lookup_kwargs)
+component_from_lookup = _extract_component_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
 
 _extract_hostprovider_from = partial(
     GeneralAuditObjectRetriever,
@@ -281,6 +286,18 @@ def update_role_name(
 # hook helpers / special functions
 
 
+def _retrieve_request_body(request: WSGIRequest) -> Any | None:
+    if not request:
+        return None
+
+    # request's body can be read only once
+    body = None
+    with suppress(AttributeError, json.JSONDecodeError, RawPostDataException):
+        body = json.loads(request.body)
+
+    return body
+
+
 def object_does_exist(hook: AuditHook, model: type[Model], id_field: str = "pk") -> bool:
     id_ = hook.call_arguments.get(id_field)
     if not id_:
@@ -292,6 +309,10 @@ def object_does_exist(hook: AuditHook, model: type[Model], id_field: str = "pk")
 
 def nested_host_does_exist(hook: AuditHook) -> bool:
     return object_does_exist(hook=hook, model=Host)
+
+
+def service_does_exist(hook: AuditHook) -> bool:
+    return object_does_exist(hook=hook, model=ClusterObject)
 
 
 def retrieve_user_password_groups(id_: int) -> dict:
@@ -339,13 +360,7 @@ def retrieve_role_children(id_: int) -> dict:
 class set_add_hosts_name(AuditHook):  # noqa: N801
     def __call__(self):
         request = self.call_arguments.get("request", "")
-
-        data = None
-        # if body was already read without assigning to `request._data`,
-        # those exceptions won't be enough to silence,
-        # but if such a problem will occur, it should be addressed more thoughtfully than just suppress
-        with suppress(AttributeError, json.JSONDecodeError):
-            data = json.loads(request.body)
+        data = _retrieve_request_body(request=request)
 
         host_fqdn = ""
         if isinstance(data, list):
@@ -397,3 +412,49 @@ def update_host_name(
 
     instance.object_name = new_name
     instance.save(update_fields=["object_name"])
+
+
+class set_service_names_from_request(AuditHook):  # noqa: N801
+    def __call__(self):
+        ids = self._get_ids_from_request(request=self.call_arguments.get("request"))
+        service_display_names = (
+            Prototype.objects.filter(pk__in=ids).order_by("display_name").values_list("display_name", flat=True)
+        )
+
+        service_display_names = ", ".join(service_display_names)
+
+        self.context.name = self.context.name.format(service_names=f"[{service_display_names}]").strip()
+
+    @staticmethod
+    def _get_ids_from_request(request: WSGIRequest) -> tuple:
+        if request is None:
+            return ()
+
+        if (data := _retrieve_request_body(request=request)) is None:
+            return ()
+
+        ids = ()
+        if isinstance(data, list):
+            ids = (entry.get("prototypeId", entry.get("prototype_id")) for entry in data if isinstance(entry, dict))
+        elif isinstance(data, dict) and (prototype_id := data.get("prototypeId", data.get("prototype_id"))) is not None:
+            ids = (prototype_id,)
+
+        return ids
+
+
+def set_service_name_from_object(
+    context: OperationAuditContext,
+    call_arguments: AuditedCallArguments,
+    result: Response | None,  # noqa: ARG001
+    exception: Exception | None,  # noqa: ARG001
+) -> None:
+    service_name = (
+        ClusterObject.objects.filter(pk=call_arguments.get("pk"))
+        .select_related("prototype__display_name")
+        .only("prototype__display_name")
+        .values_list("prototype__display_name", flat=True)
+        .first()
+        or ""
+    )
+
+    context.name = context.name.format(service_name=service_name).strip()

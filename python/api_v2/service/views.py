@@ -21,12 +21,17 @@ from adcm.permissions import (
     get_object_for_user,
 )
 from audit.alt.api import audit_update, audit_view
-from audit.utils import audit
+from audit.alt.hooks import (
+    adjust_denied_on_404_result,
+    extract_current_from_response,
+    extract_previous_from_object,
+)
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.service import delete_service_from_api
 from cm.services.status.notify import update_mm_objects
+from django.db.models import F
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -88,7 +93,14 @@ from api_v2.service.utils import (
     bulk_add_services_to_cluster,
     validate_service_prototypes,
 )
-from api_v2.utils.audit import parent_service_from_lookup
+from api_v2.utils.audit import (
+    parent_cluster_from_lookup,
+    parent_service_from_lookup,
+    service_does_exist,
+    service_from_lookup,
+    set_service_name_from_object,
+    set_service_names_from_request,
+)
 from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
 
 
@@ -192,7 +204,9 @@ class ServiceViewSet(
 
         return ServiceRetrieveSerializer
 
-    @audit
+    @audit_update(name="{service_names} service(s) added", object_=parent_cluster_from_lookup).attach_hooks(
+        pre_call=set_service_names_from_request
+    )
     def create(self, request: Request, *args, **kwargs):  # noqa: ARG002
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, pk=kwargs["cluster_pk"]
@@ -223,12 +237,17 @@ class ServiceViewSet(
             data=ServiceRetrieveSerializer(instance=added_services[0], context=context).data,
         )
 
-    @audit
+    @audit_update(name="{service_name} service removed", object_=parent_cluster_from_lookup).attach_hooks(
+        pre_call=set_service_name_from_object, on_collect=adjust_denied_on_404_result(service_does_exist)
+    )
     def destroy(self, request: Request, *args, **kwargs):  # noqa: ARG002
         instance = self.get_object()
         return delete_service_from_api(service=instance)
 
-    @audit
+    @audit_update(name="Service updated", object_=service_from_lookup).track_changes(
+        before=extract_previous_from_object(model=ClusterObject, maintenance_mode=F("_maintenance_mode")),
+        after=extract_current_from_response("maintenance_mode"),
+    )
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002

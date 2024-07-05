@@ -21,15 +21,18 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from audit.utils import audit
+from audit.alt.api import audit_update
+from audit.alt.hooks import extract_current_from_response, extract_previous_from_object
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, ServiceComponent
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import update_mm_objects
+from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
+from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -72,7 +75,7 @@ from api_v2.generic.group_config.audit import (
     audit_host_group_config_viewset,
 )
 from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
-from api_v2.utils.audit import parent_component_from_lookup
+from api_v2.utils.audit import component_from_lookup, parent_component_from_lookup
 from api_v2.views import (
     ADCMGenericViewSet,
     ADCMReadOnlyModelViewSet,
@@ -149,7 +152,7 @@ from api_v2.views import (
 )
 class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMixin, ADCMReadOnlyModelViewSet):
     queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("pk")
-    permission_classes = [DjangoModelPermissionsAudit]
+    permission_classes = [DjangoModelPermissions]
     permission_required = [VIEW_COMPONENT_PERM]
     filterset_class = ComponentFilter
     retrieve_status_map_actions = ("statuses", "list")
@@ -173,7 +176,10 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
 
         return ComponentSerializer
 
-    @audit
+    @audit_update(name="Component updated", object_=component_from_lookup).track_changes(
+        before=extract_previous_from_object(model=ServiceComponent, maintenance_mode=F("_maintenance_mode")),
+        after=extract_current_from_response("maintenance_mode"),
+    )
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
