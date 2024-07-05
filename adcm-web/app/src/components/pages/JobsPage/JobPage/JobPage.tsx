@@ -5,8 +5,8 @@ import JobsSubPageStopHeader from './JobPageHeader/JobPageHeader';
 import { useEffect } from 'react';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import JobPageChildJobsTable from './JobPageChildJobsTable/JobPageChildJobsTable';
-import JobPageLog from './JobPageLog/JobPageLog';
 import JobPageStopJobDialog from './Dialogs/JobPageStopJobDialog';
+import SingleJob from '@pages/JobsPage/JobPage/SingleJob';
 
 const JobPage: React.FC = () => {
   const { task, dispatch } = useRequestJobPage();
@@ -24,7 +24,7 @@ const JobPage: React.FC = () => {
       <TableContainer variant="easy">
         <JobPageTable />
       </TableContainer>
-      {task.childJobs?.length === 1 && <JobPageLog id={task.childJobs[0].id} />}
+      {task.childJobs?.length === 1 && <SingleJob task={task} />}
       {task.childJobs && task.childJobs.length > 1 && (
         <TableContainer variant="easy">
           <JobPageChildJobsTable />
