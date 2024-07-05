@@ -1,13 +1,16 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { AdcmHostProvider } from '@models/adcm/hostProvider';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmHostProvidersApi, AdcmHostsApi } from '@api';
+import { AdcmHostProvidersApi, AdcmHostsApi, RequestError } from '@api';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { showError } from '@store/notificationsSlice';
+import { RequestState } from '@models/loadState';
+import { processErrorResponse } from '@utils/responseUtils';
 
 interface AdcmHostProviderState {
   hostProvider: AdcmHostProvider | null;
   hostsCount: number;
+  accessCheckStatus: RequestState;
 }
 
 const getHostsCount = createAsyncThunk(
@@ -38,6 +41,7 @@ const getHostProvider = createAsyncThunk('adcm/hostProvider/getHostProvider', as
 const createInitialState = (): AdcmHostProviderState => ({
   hostProvider: null,
   hostsCount: 0,
+  accessCheckStatus: RequestState.NotRequested,
 });
 
 const hostProviderSlice = createSlice({
@@ -50,9 +54,11 @@ const hostProviderSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(getHostProvider.fulfilled, (state, action) => {
+      state.accessCheckStatus = RequestState.Completed;
       state.hostProvider = action.payload;
     });
-    builder.addCase(getHostProvider.rejected, (state) => {
+    builder.addCase(getHostProvider.rejected, (state, action) => {
+      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.hostProvider = null;
     });
     builder.addCase(getHostsCount.fulfilled, (state, action) => {

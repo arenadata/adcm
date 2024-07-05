@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from cm.errors import AdcmEx
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User as AuthUser
@@ -21,12 +22,14 @@ from djangorestframework_camel_case.render import (
     CamelCaseBrowsableAPIRenderer,
     CamelCaseJSONRenderer,
 )
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED
 
+from api_v2.api_schema import ErrorSerializer
 from api_v2.login.serializers import LoginSerializer
 
 
@@ -50,6 +53,17 @@ class BaseLoginView(GenericAPIView):
         return user
 
 
+@extend_schema_view(
+    perform_login=extend_schema(
+        operation_id="postLogin",
+        description="Perform authorization in ADCM.",
+        summary="POST login",
+        responses={
+            HTTP_200_OK: LoginSerializer,
+            HTTP_401_UNAUTHORIZED: ErrorSerializer,
+        },
+    ),
+)
 class LoginView(BaseLoginView):
     def post(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         self.perform_login(request=request)

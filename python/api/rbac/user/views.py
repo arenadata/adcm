@@ -13,9 +13,11 @@
 from adcm.permissions import DjangoModelPermissionsAudit
 from audit.utils import audit
 from cm.errors import raise_adcm_ex
+from django_filters.rest_framework import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rbac.models import User
 from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.schemas.coreapi import AutoSchema
@@ -30,6 +32,7 @@ class UserViewSet(PermissionListMixin, ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = (DjangoModelPermissionsAudit,)
     permission_required = ["rbac.view_user"]
+    filter_backends = (DjangoFilterBackend, OrderingFilter, SearchFilter)
     filterset_fields = (
         "id",
         "username",

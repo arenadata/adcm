@@ -5,14 +5,21 @@ export interface ClusterImportToolbarProps extends React.PropsWithChildren {
   onClick: () => void;
   hasError: boolean;
   isDisabled: boolean;
+  isImportPresent: boolean;
 }
 
-const ClusterImportToolbar = ({ onClick, hasError, isDisabled, children }: ClusterImportToolbarProps) => {
+const ClusterImportToolbar = ({
+  onClick,
+  hasError,
+  isDisabled,
+  children,
+  isImportPresent,
+}: ClusterImportToolbarProps) => {
   return (
     <div className={s.clusterImportToolbar}>
       <div>{children}</div>
       <Button disabled={isDisabled} onClick={onClick} hasError={hasError}>
-        Import
+        {isImportPresent ? 'Save' : 'Import'}
       </Button>
     </div>
   );

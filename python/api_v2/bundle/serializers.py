@@ -9,10 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from adcm.serializers import EmptySerializer
-from cm.models import Bundle, HostProvider, ObjectType, Prototype
+from cm.models import LICENSE_STATE, Bundle, HostProvider, ObjectType, Prototype
+from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import (
     CharField,
+    ChoiceField,
     DateTimeField,
     FileField,
     IntegerField,
@@ -24,20 +27,21 @@ from api_v2.prototype.utils import get_license_text
 
 
 class BundleRelatedSerializer(ModelSerializer):
+    edition = CharField()
+
     class Meta:
         model = Bundle
         fields = ["id", "edition"]
 
 
 class MainPrototypeLicenseSerializer(EmptySerializer):
-    status = CharField(source="main_prototype_license")
-    text = SerializerMethodField()
+    status = ChoiceField(choices=LICENSE_STATE, source="main_prototype_license")
+    text = SerializerMethodField(allow_null=True)
 
     @staticmethod
     def get_text(bundle: Bundle):
         return get_license_text(
             license_path=bundle.main_prototype_license_path,  # This is the magic of annotations, see queryset
-            path=bundle.main_prototype_path,
             bundle_hash=bundle.hash,
         )
 
@@ -47,16 +51,18 @@ class MainPrototypeSerializer(EmptySerializer):
     name = CharField(source="main_prototype_name")
     display_name = CharField()
     description = CharField(source="main_prototype_description")
-    type = CharField()
+    type = ChoiceField(choices=(ObjectType.CLUSTER.value, ObjectType.PROVIDER.value))
     license = SerializerMethodField()
     version = CharField()
 
     @staticmethod
+    @extend_schema_field(field=MainPrototypeLicenseSerializer)
     def get_license(bundle: Bundle) -> dict:
         return MainPrototypeLicenseSerializer(instance=bundle).data
 
 
-class BundleListSerializer(ModelSerializer):
+class BundleSerializer(ModelSerializer):
+    edition = CharField()
     upload_time = DateTimeField(read_only=True, source="date")
     display_name = CharField(read_only=True)
     main_prototype = SerializerMethodField()
@@ -71,11 +77,11 @@ class BundleListSerializer(ModelSerializer):
             "edition",
             "main_prototype",
             "upload_time",
-            "category",
             "signature_status",
         )
 
     @staticmethod
+    @extend_schema_field(field=MainPrototypeSerializer)
     def get_main_prototype(bundle: Bundle) -> dict:
         return MainPrototypeSerializer(instance=bundle).data
 
@@ -97,7 +103,6 @@ class UpgradeServicePrototypeSerializer(ModelSerializer):
             "status": prototype.license,
             "text": get_license_text(
                 license_path=prototype.license_path,
-                path=prototype.path,
                 bundle_hash=prototype.bundle.hash,
             ),
         }

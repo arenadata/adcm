@@ -8,6 +8,8 @@ import { LabeledField, Pagination, Select } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { useEffect } from 'react';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
+import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
+import s from './ClusterImportsService.module.scss';
 
 const ClusterImportsService = () => {
   const {
@@ -25,6 +27,8 @@ const ClusterImportsService = () => {
     serviceId,
     handleServiceChange,
     totalCount,
+    initialImports,
+    accessCheckStatus,
   } = useClusterImportsService();
 
   const dispatch = useDispatch();
@@ -37,7 +41,7 @@ const ClusterImportsService = () => {
         setBreadcrumbs([
           { href: '/clusters', label: 'Clusters' },
           { href: `/clusters/${cluster.id}`, label: cluster.name },
-          { label: 'Import' },
+          { href: `/clusters/${cluster.id}/import`, label: 'Import' },
           { label: 'Services' },
         ]),
       );
@@ -45,8 +49,13 @@ const ClusterImportsService = () => {
   }, [cluster, dispatch]);
 
   return (
-    <>
-      <ClusterImportToolbar isDisabled={!isValid} onClick={onImportHandler} hasError={hasSaveError}>
+    <div className={s.clusterImportToolbarWrapper}>
+      <ClusterImportToolbar
+        isDisabled={!isValid}
+        onClick={onImportHandler}
+        hasError={hasSaveError}
+        isImportPresent={initialImports.services.size > 0 || initialImports.clusters.size > 0}
+      >
         <LabeledField label="Import to" direction="row">
           <Select
             maxHeight={200}
@@ -58,13 +67,14 @@ const ClusterImportsService = () => {
           />
         </LabeledField>
       </ClusterImportToolbar>
-      <div>
+      <PermissionsChecker requestState={accessCheckStatus}>
         {isLoading && <ClusterImportLoading />}
         {!isLoading &&
           (clusterImports.length > 0 ? (
             clusterImports.map((item) => (
               <ClusterImportCard
                 key={item.cluster.id}
+                dataTest={`serviceTab_cluster-${item.cluster.id}`}
                 clusterImport={item}
                 selectedSingleBind={selectedSingleBind}
                 selectedImports={selectedImports}
@@ -74,9 +84,9 @@ const ClusterImportsService = () => {
           ) : (
             <ClusterImportEmptyCard />
           ))}
-      </div>
-      <Pagination totalItems={totalCount} pageData={paginationParams} onChangeData={paginationHandler} />
-    </>
+        <Pagination totalItems={totalCount} pageData={paginationParams} onChangeData={paginationHandler} />
+      </PermissionsChecker>
+    </div>
   );
 };
 

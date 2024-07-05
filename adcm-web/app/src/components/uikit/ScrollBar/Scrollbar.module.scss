@@ -1,0 +1,101 @@
+body {
+  --default-scroll-height: 6px;
+  --default-scroll-width: 6px;
+}
+
+.defaultTrack {
+  display: flex;
+  position: relative;
+  z-index: 1;
+
+  &_horizontal {
+    align-items: center;
+    height: var(--default-scroll-height);
+    width: 100%;
+
+    .defaultThumb::after {
+      width: 100%;
+      transform: translateY(calc(var(--thumb-capture-radius) / 2 * -1 - 0px));
+    }
+  }
+
+  &_vertical {
+    justify-content: center;
+    width: var(--default-scroll-width);
+    height: 100%;
+
+    .defaultThumb::after {
+      height: 100%;
+      transform: translateX(calc(var(--thumb-capture-radius) / 2 * -1 - 0px));
+    }
+  }
+}
+
+.defaultThumb {
+  background: rgba(127, 130, 133, 0.2);
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  position: relative;
+
+  &::after {
+    position: absolute;
+    display: block;
+    content: '';
+    height: calc(var(--thumb-capture-radius) * 2);
+    width: calc(var(--thumb-capture-radius) * 2);
+  }
+}
+
+.scrollBarWrapper {
+  position: absolute;
+  &_top {
+    top: 0;
+    left: 0;
+    height: var(--default-scroll-height);
+    width: 100%;
+  }
+
+  &_bottom {
+    bottom: 0;
+    left: 0;
+    height: var(--default-scroll-height);
+    width: 100%;
+  }
+
+  &_left {
+    top: 0;
+    left: 0;
+    width: var(--default-scroll-width);
+    height: 100%;
+  }
+
+  &_right {
+    top: 0;
+    right: 0;
+    width: var(--default-scroll-width);
+    height: 100%;
+  }
+}
+
+.scrollerContainer {
+  overflow: auto;
+  height: inherit;
+  width: 100%;
+
+  .scrollBarWrapper {
+    &_right,
+    &_left {
+      top: var(--default-scroll-height);
+      height: calc(100% - calc(var(--default-scroll-height) * 2));
+      z-index: 2;
+    }
+
+    &_top,
+    &_bottom {
+      left: var(--default-scroll-height);
+      width: calc(100% - calc(var(--default-scroll-width) * 2));
+      z-index: 2;
+    }
+  }
+}

@@ -9,6 +9,7 @@ const ClusterHostsTableFilters = () => {
 
   const filter = useStore(({ adcm }) => adcm.clusterHostsTable.filter);
   const hostProviders = useStore(({ adcm }) => adcm.clusterHostsTable.relatedData.hostProviders);
+  const hostComponents = useStore(({ adcm }) => adcm.clusterHostsTable.relatedData.hostComponents);
 
   const hostProviderOptions = useMemo(() => {
     return hostProviders.map(({ name }) => ({
@@ -16,6 +17,13 @@ const ClusterHostsTableFilters = () => {
       label: name,
     }));
   }, [hostProviders]);
+
+  const hostComponentOptions = useMemo(() => {
+    return hostComponents.map(({ id, displayName }) => ({
+      value: id.toString(),
+      label: displayName,
+    }));
+  }, [hostComponents]);
 
   const handleResetClick = () => {
     dispatch(resetFilter());
@@ -27,7 +35,11 @@ const ClusterHostsTableFilters = () => {
   };
 
   const handleHostProviderChange = (value: string | null) => {
-    dispatch(setFilter({ hostprovider: value ?? undefined }));
+    dispatch(setFilter({ hostproviderName: value ?? undefined }));
+  };
+
+  const handleHostComponentChange = (value: string | null) => {
+    dispatch(setFilter({ componentId: value ?? undefined }));
   };
 
   return (
@@ -42,9 +54,20 @@ const ClusterHostsTableFilters = () => {
         <Select
           maxHeight={200}
           placeholder="All"
-          value={filter.hostprovider ?? null}
+          value={filter.hostproviderName ?? null}
           onChange={handleHostProviderChange}
           options={hostProviderOptions}
+          noneLabel="All"
+        />
+      </LabeledField>
+      <LabeledField label="Component" direction="row">
+        <Select
+          isSearchable={true}
+          maxHeight={200}
+          placeholder="Choose component"
+          value={filter.componentId ?? null}
+          onChange={handleHostComponentChange}
+          options={hostComponentOptions}
           noneLabel="All"
         />
       </LabeledField>

@@ -10,25 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action, JobLog, JobStatus, SubAction, TaskLog
+from cm.models import JobLog, JobStatus, TaskLog
 from rest_framework.fields import CharField, DateTimeField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
 from api_v2.action.serializers import ActionNameSerializer
 
-OBJECT_ORDER = {
-    "adcm": 0,
-    "cluster": 1,
-    "service": 2,
-    "component": 3,
-    "provider": 4,
-    "host": 5,
-}
+OBJECT_ORDER = {"adcm": 0, "cluster": 1, "service": 2, "component": 3, "provider": 4, "host": 5, "action_host_group": 6}
 
 
 class JobListSerializer(ModelSerializer):
-    name = SerializerMethodField()
-    display_name = SerializerMethodField()
     is_terminatable = SerializerMethodField()
     start_time = DateTimeField(source="start_date")
     end_time = DateTimeField(source="finish_date")
@@ -46,31 +37,9 @@ class JobListSerializer(ModelSerializer):
             "is_terminatable",
         )
 
-    @classmethod
-    def get_display_name(cls, obj: JobLog) -> str | None:
-        job_action = cls._get_job_action_obj(obj)
-        return job_action.display_name if job_action else None
-
-    @classmethod
-    def get_name(cls, obj: JobLog) -> str | None:
-        job_action = cls._get_job_action_obj(obj)
-        return job_action.name if job_action else None
-
-    @staticmethod
-    def _get_job_action_obj(obj: JobLog) -> Action | SubAction | None:
-        if obj.sub_action:
-            return obj.sub_action
-        elif obj.action:
-            return obj.action
-        else:
-            return None
-
     @staticmethod
     def get_is_terminatable(obj: JobLog):
-        if obj.sub_action is None:
-            return False
-
-        return obj.sub_action.allowed_to_terminate
+        return obj.allow_to_terminate
 
 
 class TaskSerializer(ModelSerializer):

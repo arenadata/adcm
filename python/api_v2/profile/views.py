@@ -9,32 +9,46 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.services.adcm import retrieve_password_requirements
 from core.rbac.operations import update_user_password
 from django.conf import settings
-from djangorestframework_camel_case.parser import (
-    CamelCaseFormParser,
-    CamelCaseJSONParser,
-    CamelCaseMultiPartParser,
-)
-from djangorestframework_camel_case.render import (
-    CamelCaseBrowsableAPIRenderer,
-    CamelCaseJSONRenderer,
-)
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rbac.models import User
 from rbac.services.user import UserDB
-from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED
 
+from api_v2.api_schema import ErrorSerializer
 from api_v2.profile.serializers import ProfileSerializer, ProfileUpdateSerializer
+from api_v2.views import ADCMGenericViewSet
 
 
-class ProfileView(RetrieveUpdateAPIView):
+@extend_schema_view(
+    retrieve=extend_schema(
+        operation_id="getCurrentUserInfo",
+        description="Get current user information.",
+        summary="GET current user information",
+        responses={
+            HTTP_200_OK: ProfileSerializer,
+            HTTP_401_UNAUTHORIZED: ErrorSerializer,
+        },
+    ),
+    partial_update=extend_schema(
+        operation_id="patchCurrentUserInfo",
+        description="Change current user password.",
+        summary="PATCH current user information",
+        responses={
+            HTTP_200_OK: ProfileUpdateSerializer,
+            HTTP_401_UNAUTHORIZED: ErrorSerializer,
+        },
+    ),
+)
+class ProfileView(RetrieveModelMixin, ADCMGenericViewSet):
     queryset = User.objects.exclude(username__in=settings.ADCM_HIDDEN_USERS)
-    renderer_classes = [CamelCaseJSONRenderer, CamelCaseBrowsableAPIRenderer]
-    parser_classes = [CamelCaseJSONParser, CamelCaseMultiPartParser, CamelCaseFormParser]
 
     def get_object(self) -> User:
         return User.objects.get(user_ptr=self.request.user)
@@ -46,7 +60,7 @@ class ProfileView(RetrieveUpdateAPIView):
         return ProfileSerializer
 
     @audit
-    def update(self, request, *_, **__):
+    def partial_update(self, request, *_, **__):
         user = self.get_object()
 
         serializer = self.get_serializer(data=request.data, partial=True)

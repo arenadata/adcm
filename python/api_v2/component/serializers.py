@@ -12,6 +12,7 @@
 
 from cm.adcm_config.config import get_main_info
 from cm.models import Host, HostComponent, MaintenanceMode, ServiceComponent
+from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import (
     CharField,
     ChoiceField,
@@ -26,7 +27,7 @@ from api_v2.cluster.utils import get_depend_on
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.host.serializers import HostShortSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
-from api_v2.serializers import WithStatusSerializer
+from api_v2.serializers import DependOnSerializer, WithStatusSerializer
 from api_v2.service.serializers import ServiceNameSerializer, ServiceRelatedSerializer
 
 
@@ -35,6 +36,7 @@ class ComponentMappingSerializer(ModelSerializer):
     depend_on = SerializerMethodField()
     constraints = ListField(source="constraint")
     prototype = PrototypeRelatedSerializer(read_only=True)
+    maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value))
 
     class Meta:
         model = ServiceComponent
@@ -51,6 +53,7 @@ class ComponentMappingSerializer(ModelSerializer):
         ]
 
     @staticmethod
+    @extend_schema_field(field=DependOnSerializer(many=True))
     def get_depend_on(instance: ServiceComponent) -> list[dict] | None:
         if instance.prototype.requires:
             return get_depend_on(prototype=instance.prototype)
@@ -85,6 +88,7 @@ class ComponentSerializer(WithStatusSerializer):
             "main_info",
         ]
 
+    @extend_schema_field(field=HostShortSerializer(many=True))
     def get_hosts(self, instance: ServiceComponent) -> HostShortSerializer:
         host_pks = set()
         for host_component in HostComponent.objects.filter(component=instance).select_related("host"):

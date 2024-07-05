@@ -14,6 +14,7 @@ from adcm import settings
 from adcm.serializers import EmptySerializer
 from cm.models import Cluster, Host, HostComponent, HostProvider, MaintenanceMode, ServiceComponent
 from cm.validators import HostUniqueValidator, StartMidEndValidator
+from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import (
     CharField,
     ChoiceField,
@@ -48,7 +49,7 @@ class HCComponentNameSerializer(ModelSerializer):
 
 class HostSerializer(WithStatusSerializer):
     hostprovider = HostProviderSerializer(source="provider")
-    prototype = PrototypeRelatedSerializer(read_only=True)
+    prototype = PrototypeRelatedSerializer()
     concerns = ConcernSerializer(many=True)
     name = CharField(
         max_length=253,
@@ -87,6 +88,7 @@ class HostSerializer(WithStatusSerializer):
         ]
 
     @staticmethod
+    @extend_schema_field(field=HCComponentNameSerializer)
     def get_components(instance: Host) -> list[dict]:
         return HCComponentNameSerializer(
             instance=[hc.component for hc in instance.hostcomponent_set.all()], many=True
@@ -143,6 +145,8 @@ class HostAddSerializer(EmptySerializer):
 
 
 class HostMappingSerializer(ModelSerializer):
+    maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value))
+
     class Meta:
         model = Host
         fields = ["id", "name", "is_maintenance_mode_available", "maintenance_mode"]

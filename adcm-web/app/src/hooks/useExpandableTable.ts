@@ -6,12 +6,33 @@ export const useExpandableTable = <T>() => {
   const toggleRow = useCallback(
     (key: T) => {
       setExpandableRows((prev) => {
-        if (prev.has(key)) {
-          prev.delete(key);
+        const prepState = new Set<T>([...prev]);
+
+        if (prepState.has(key)) {
+          prepState.delete(key);
         } else {
-          prev.add(key);
+          prepState.add(key);
         }
-        return new Set([...prev]);
+        return prepState;
+      });
+    },
+    [setExpandableRows],
+  );
+
+  const changeExpandedRowsState = useCallback(
+    (rows: { key: T; isExpand: boolean }[]) => {
+      setExpandableRows((prev) => {
+        const prepState = new Set<T>([...prev]);
+
+        rows.forEach((row) => {
+          if (prepState.has(row.key) && !row.isExpand) {
+            prepState.delete(row.key);
+          } else if (row.isExpand) {
+            prepState.add(row.key);
+          }
+        });
+
+        return prepState;
       });
     },
     [setExpandableRows],
@@ -20,5 +41,7 @@ export const useExpandableTable = <T>() => {
   return {
     expandableRows,
     toggleRow,
+    changeExpandedRowsState,
+    setExpandableRows,
   };
 };

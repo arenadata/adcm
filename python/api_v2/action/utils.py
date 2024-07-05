@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from collections import defaultdict
 from hashlib import sha256
 from itertools import compress
@@ -27,8 +28,9 @@ from cm.models import (
     PrototypeConfig,
     ServiceComponent,
 )
+from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver
+from cm.services.config.jinja import get_jinja_config
 from django.conf import settings
-from jinja_config import get_jinja_config
 from rbac.models import User
 
 from api_v2.config.utils import convert_attr_to_adcm_meta, get_config_schema
@@ -48,8 +50,17 @@ def filter_actions_by_user_perm(user: User, obj: ADCMEntity, actions: Iterable[A
     return compress(data=actions, selectors=mask)
 
 
-def check_run_perms(user: User, action: Action, obj: ADCMEntity) -> bool:
+def has_run_perms(user: User, action: Action, obj: ADCMEntity) -> bool:
     return user.has_perm(perm=f"{RUN_ACTION_PERM_PREFIX}{get_str_hash(value=action.name)}", obj=obj)
+
+
+def unique_hc_entries(
+    hc_create_data: list[dict[Literal["host_id", "component_id"], int]],
+) -> list[dict[Literal["host_id", "component_id"], int]]:
+    return [
+        {"host_id": host_id, "component_id": component_id}
+        for host_id, component_id in {(entry["host_id"], entry["component_id"]) for entry in hc_create_data}
+    ]
 
 
 def insert_service_ids(
@@ -70,7 +81,7 @@ def get_action_configuration(
     action_: Action, object_: Cluster | ClusterObject | ServiceComponent | HostProvider | Host
 ) -> tuple[dict | None, dict | None, dict | None]:
     if action_.config_jinja:
-        prototype_configs, _ = get_jinja_config(action=action_, obj=object_)
+        prototype_configs, _ = get_jinja_config(action=action_, cluster_relative_object=object_)
     else:
         prototype_configs = PrototypeConfig.objects.filter(prototype=action_.prototype, action=action_).order_by("id")
 
@@ -79,6 +90,11 @@ def get_action_configuration(
 
     config = defaultdict(dict)
     attr = {}
+
+    if action_.prototype.type == "adcm":
+        path_resolver = ADCMBundlePathResolver()
+    else:
+        path_resolver = BundlePathResolver(bundle_hash=action_.prototype.bundle.hash)
 
     for prototype_config in prototype_configs:
         name = prototype_config.name
@@ -90,7 +106,7 @@ def get_action_configuration(
 
             continue
 
-        value = get_default(conf=prototype_config, prototype=action_.prototype)
+        value = get_default(conf=prototype_config, path_resolver=path_resolver)
 
         if prototype_config.type == "json":
             value = json.dumps(value) if value is not None else None

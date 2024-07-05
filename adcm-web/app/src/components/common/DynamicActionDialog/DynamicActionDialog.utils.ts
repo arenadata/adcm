@@ -1,7 +1,7 @@
 import { DynamicActionType } from '@commonComponents/DynamicActionDialog/DynamicAction.types';
 import { AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import { AdcmConfiguration, ConfigurationData } from '@models/adcm';
-import { generateFromSchema } from '@utils/jsonSchemaUtils';
+import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 
 export const getDynamicActionTypes = (actionDetails: AdcmDynamicActionDetails): DynamicActionType[] => {
   const res = [] as DynamicActionType[];

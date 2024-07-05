@@ -9,15 +9,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from contextlib import suppress
 
-from adcm.utils import get_obj_type
-from cm.models import GroupConfig, Host, ObjectConfig, get_cm_model_by_type
+from cm.models import GroupConfig, Host, ObjectConfig
+from cm.utils import get_obj_type
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from audit.cases.common import get_obj_name, get_or_create_audit_obj
+from audit.cases.common import get_audit_cm_object_from_path_info, get_obj_name, get_or_create_audit_obj
 from audit.models import (
     MODEL_TO_AUDIT_OBJECT_TYPE_MAP,
     PATH_STR_TO_OBJ_CLASS_MAP,
@@ -102,7 +103,7 @@ def config_case(
                 audit_object = None
 
         case [*_, owner_type, owner_pk, "config-groups"]:
-            audit_object = get_audit_object_from_path_info(
+            audit_object = get_audit_cm_object_from_path_info(
                 object_type_from_path=owner_type, object_pk_from_path=owner_pk
             )
             audit_operation = AuditOperation(
@@ -115,7 +116,7 @@ def config_case(
                 audit_operation.name = f"{name} configuration group created"
 
         case [*_, owner_type, owner_pk, "config-groups", group_config_pk]:
-            audit_object = get_audit_object_from_path_info(
+            audit_object = get_audit_cm_object_from_path_info(
                 object_type_from_path=owner_type, object_pk_from_path=owner_pk
             )
             if deleted_obj:
@@ -228,7 +229,7 @@ def config_case(
                 name=f"host added to {name_suffix}",
                 operation_type=AuditLogOperationType.UPDATE,
             )
-            audit_object = get_audit_object_from_path_info(
+            audit_object = get_audit_cm_object_from_path_info(
                 object_type_from_path=owner_type, object_pk_from_path=owner_pk
             )
 
@@ -244,7 +245,7 @@ def config_case(
                 name=f"host removed from {name_suffix}",
                 operation_type=AuditLogOperationType.UPDATE,
             )
-            audit_object = get_audit_object_from_path_info(
+            audit_object = get_audit_cm_object_from_path_info(
                 object_type_from_path=owner_type, object_pk_from_path=owner_pk
             )
 
@@ -285,29 +286,3 @@ def config_case(
                 )
 
     return audit_operation, audit_object, operation_name
-
-
-def get_audit_object_from_path_info(object_type_from_path: str, object_pk_from_path: str) -> AuditObject | None:
-    try:
-        model = get_cm_model_by_type(object_type=object_type_from_path)
-    except KeyError:
-        return None
-
-    try:
-        object_ = model.objects.filter(pk=int(object_pk_from_path)).first()
-    except ValueError:
-        return None
-
-    if not object_:
-        return None
-
-    if object_type_from_path.startswith("hostprovider"):
-        single_form_of_type = "provider"
-    else:
-        # to convert clusters -> cluster, etc.
-        single_form_of_type = object_type_from_path.rstrip("s")
-    return get_or_create_audit_obj(
-        object_id=object_.pk,
-        object_name=get_obj_name(obj=object_, obj_type=single_form_of_type),
-        object_type=single_form_of_type,
-    )

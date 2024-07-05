@@ -5,7 +5,8 @@ import { AdcmClusterImport, AdcmClusterImportPostPayload, AdcmError } from '@mod
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { showError, showSuccess } from '@store/notificationsSlice';
-import { LoadState } from '@models/loadState';
+import { LoadState, RequestState } from '@models/loadState';
+import { processErrorResponse } from '@utils/responseUtils';
 
 type GetClusterImportsArg = {
   clusterId: number;
@@ -16,12 +17,13 @@ export interface AdcmSaveClusterImportsArgs {
   clusterImportsList: AdcmClusterImportPostPayload[];
 }
 
-type AdcmClusterImportsState = {
+interface AdcmClusterImportsState {
   clusterImports: AdcmClusterImport[];
   hasSaveError: boolean;
   loadState: LoadState;
   totalCount: number;
-};
+  accessCheckStatus: RequestState;
+}
 
 const loadClusterServiceImports = createAsyncThunk(
   'adcm/cluster/imports/service/loadClusterImports',
@@ -66,7 +68,7 @@ const saveClusterServiceImports = createAsyncThunk(
     try {
       await AdcmClusterServiceImportsApi.postClusterServiceImport(clusterId, serviceId, clusterImportsList);
       thunkAPI.dispatch(loadClusterServiceImports({ clusterId }));
-      thunkAPI.dispatch(showSuccess({ message: 'Import has been completed' }));
+      thunkAPI.dispatch(showSuccess({ message: 'Imported objects have been updated' }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: (error as RequestError<AdcmError>).response?.data.desc ?? '' }));
       return thunkAPI.rejectWithValue(error);
@@ -97,6 +99,7 @@ const createInitialState = (): AdcmClusterImportsState => ({
   hasSaveError: false,
   loadState: LoadState.Loaded,
   totalCount: 0,
+  accessCheckStatus: RequestState.NotRequested,
 });
 
 const clusterImportsServiceSlice = createSlice({
@@ -112,11 +115,16 @@ const clusterImportsServiceSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(loadClusterServiceImports.fulfilled, (state, action) => {
+      state.accessCheckStatus = RequestState.Completed;
       if (!action.payload) return;
       state.clusterImports = action.payload.results;
       state.totalCount = action.payload.count;
     });
-    builder.addCase(loadClusterServiceImports.rejected, (state) => {
+    builder.addCase(loadClusterServiceImports.pending, (state) => {
+      state.accessCheckStatus = RequestState.Pending;
+    });
+    builder.addCase(loadClusterServiceImports.rejected, (state, action) => {
+      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.clusterImports = [];
     });
     builder.addCase(saveClusterServiceImports.pending, (state) => {

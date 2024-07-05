@@ -12,7 +12,9 @@
 
 from typing import Callable, TypeVar
 
+from adcm.serializers import EmptySerializer
 from cm.models import (
+    LICENSE_STATE,
     ADCMEntityStatus,
     ADCMModel,
     Cluster,
@@ -28,7 +30,7 @@ from cm.services.status.convert import (
     convert_to_host_component_status,
     convert_to_service_status,
 )
-from rest_framework.fields import SerializerMethodField
+from rest_framework.fields import CharField, ChoiceField, IntegerField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
 T = TypeVar("T")
@@ -79,3 +81,27 @@ class WithStatusSerializer(ModelSerializer):
             )
 
         return convert_to_entity_status(raw_status=status)
+
+
+class LicenseSerializer(EmptySerializer):
+    status = ChoiceField(choices=LICENSE_STATE)
+    text = SerializerMethodField(allow_null=True)
+
+
+class DependsComponentPrototypeSerializer(EmptySerializer):
+    id = IntegerField()
+    name = CharField()
+    display_name = CharField()
+    version = CharField()
+
+
+class DependsServicePrototypeSerializer(EmptySerializer):
+    id = IntegerField()
+    name = CharField()
+    display_name = CharField()
+    license = LicenseSerializer()
+    component_prototypes = DependsComponentPrototypeSerializer(many=True)
+
+
+class DependOnSerializer(EmptySerializer):
+    service_prototype = DependsServicePrototypeSerializer()

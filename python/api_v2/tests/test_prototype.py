@@ -9,10 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from operator import itemgetter
 
 from cm.models import Bundle, ObjectType, ProductCategory, Prototype
-from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_400_BAD_REQUEST,
@@ -38,39 +38,31 @@ class TestPrototype(BaseAPITestCase):
         self.prototype_ids = list(Prototype.objects.exclude(name="ADCM").values_list("pk", flat=True))
 
     def test_list_success(self):
-        response = self.client.get(path=reverse(viewname="v2:prototype-list"))
+        response = (self.client.v2 / "prototypes").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], len(self.prototype_ids))
 
     def test_versions_cluster_success(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:prototype-versions"), data={"type": ObjectType.CLUSTER.value}
-        )
+        response = (self.client.v2 / "prototypes" / "versions").get(query={"type": ObjectType.CLUSTER.value})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 1)
         self.assertEqual(len(response.json()[0]["versions"]), 2)
 
     def test_retrieve_success(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:prototype-detail", kwargs={"pk": self.cluster_1_prototype.pk})
-        )
+        response = self.client.v2[self.cluster_1_prototype].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], self.cluster_1_prototype.pk)
 
     def test_retrieve_not_found_fail(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:prototype-detail", kwargs={"pk": max(self.prototype_ids) + 1})
-        )
+        response = (self.client.v2 / "prototypes" / str(self.get_non_existent_pk(model=Prototype))).get()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_accept_license_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:prototype-accept-license", kwargs={"pk": self.cluster_1_prototype.pk})
-        )
+        response = self.client.v2[self.cluster_1_prototype, "license", "accept"].post(data=None)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.cluster_1_prototype.refresh_from_db(fields=["license"])
@@ -78,16 +70,12 @@ class TestPrototype(BaseAPITestCase):
 
     def test_accept_non_existing_license_fail(self):
         prototype_without_license = Prototype.objects.exclude(name="ADCM").filter(license="absent").first()
-        response = self.client.post(
-            path=reverse(viewname="v2:prototype-accept-license", kwargs={"pk": prototype_without_license.pk})
-        )
+        response = self.client.v2[prototype_without_license, "license", "accept"].post(data=None)
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     def test_filter_by_bundle_id_and_type_cluster(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:prototype-list"), data={"bundleId": self.bundle_1.id, "type": "cluster"}
-        )
+        response = (self.client.v2 / "prototypes").get(query={"bundleId": self.bundle_1.id, "type": "cluster"})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["count"], 1)
@@ -165,9 +153,7 @@ class TestPrototypeVersion(BaseAPITestCase):
                 )
 
     def test_absent_cluster_candidate_bug_4851(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:prototype-versions"), data={"type": ObjectType.CLUSTER.value}
-        )
+        response = (self.client.v2 / "prototypes" / "versions").get(query={"type": ObjectType.CLUSTER.value})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertListEqual(
@@ -176,9 +162,7 @@ class TestPrototypeVersion(BaseAPITestCase):
         )
 
     def test_absent_hostprovider_candidate_bug_4851(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:prototype-versions"), data={"type": ObjectType.PROVIDER.value}
-        )
+        response = (self.client.v2 / "prototypes" / "versions").get(query={"type": ObjectType.PROVIDER.value})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertListEqual(
@@ -189,9 +173,7 @@ class TestPrototypeVersion(BaseAPITestCase):
     def test_child_filters_disallowed_failed(self):
         for disallowed_type in (ObjectType.ADCM, ObjectType.SERVICE, ObjectType.COMPONENT, ObjectType.HOST):
             with self.subTest(msg=disallowed_type.value):
-                response = self.client.get(
-                    path=reverse(viewname="v2:prototype-versions"), data={"type": disallowed_type.value}
-                )
+                response = (self.client.v2 / "prototypes" / "versions").get(query={"type": disallowed_type.value})
 
                 self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
                 self.assertIn(f"{disallowed_type.value} is not one of the available choices", response.json()["desc"])
@@ -204,7 +186,7 @@ class TestPrototypeVersion(BaseAPITestCase):
         )
         Prototype.objects.create(bundle=bundle, type="provider", name=name, display_name=name, version="3")
 
-        response = self.client.get(path=reverse(viewname="v2:prototype-versions"))
+        response = (self.client.v2 / "prototypes" / "versions").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertListEqual(

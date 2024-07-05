@@ -1,23 +1,27 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmConfiguration, AdcmConfigShortView } from '@models/adcm/configuration';
+import { AdcmConfigShortView, AdcmConfiguration } from '@models/adcm/configuration';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { ApiRequests } from './entityConfiguration.constants';
 import {
-  LoadEntityConfigurationVersionsArgs,
-  LoadEntityConfigurationArgs,
   CreateEntityConfigurationArgs,
+  LoadEntityConfigurationArgs,
+  LoadEntityConfigurationVersionsArgs,
 } from './entityConfiguration.types';
+import { RequestState } from '@models/loadState';
+import { processErrorResponse } from '@utils/responseUtils';
+import type { Batch } from '@models/adcm';
 
 type AdcmEntityConfigurationState = {
   isConfigurationLoading: boolean;
   loadedConfiguration: AdcmConfiguration | null;
   configVersions: AdcmConfigShortView[];
   isVersionsLoading: boolean;
+  accessCheckStatus: RequestState;
 };
 
 const createConfiguration = createAsyncThunk(
@@ -38,7 +42,15 @@ const createWithUpdateConfigurations = createAsyncThunk(
   'adcm/entityConfiguration/createWithUpdateConfigurations',
   async (args: CreateEntityConfigurationArgs, thunkAPI) => {
     await thunkAPI.dispatch(createConfiguration(args)).unwrap();
-    await thunkAPI.dispatch(getConfigurationsVersions(args));
+    await thunkAPI.dispatch(getConfigurationsVersions(args as LoadEntityConfigurationVersionsArgs));
+  },
+);
+
+const createWithUpdateAnsibleSettings = createAsyncThunk(
+  'adcm/entityConfiguration/createWithUpdateAnsibleSettings',
+  async (args: CreateEntityConfigurationArgs, thunkAPI) => {
+    await thunkAPI.dispatch(createConfiguration(args)).unwrap();
+    await thunkAPI.dispatch(getConfiguration(args as LoadEntityConfigurationArgs));
   },
 );
 
@@ -75,8 +87,8 @@ const getConfigurationsVersions = createAsyncThunk(
 
     try {
       const requests = ApiRequests[entityType];
-      const versions = await requests.getConfigVersions(args);
-      return versions;
+      const versions = requests.getConfigVersions && (await requests.getConfigVersions(args));
+      return versions as Batch<AdcmConfigShortView>;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -97,6 +109,7 @@ const createInitialState = (): AdcmEntityConfigurationState => ({
   isConfigurationLoading: false,
   loadedConfiguration: null,
   configVersions: [],
+  accessCheckStatus: RequestState.NotRequested,
 });
 
 const entityConfigurationSlice = createSlice({
@@ -130,19 +143,35 @@ const entityConfigurationSlice = createSlice({
       };
 
       state.isConfigurationLoading = false;
+      state.accessCheckStatus = RequestState.Completed;
     });
-    builder.addCase(getConfiguration.rejected, (state) => {
+    builder.addCase(getConfiguration.pending, (state) => {
+      state.accessCheckStatus = RequestState.Pending;
+    });
+    builder.addCase(getConfiguration.rejected, (state, action) => {
+      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.loadedConfiguration = null;
     });
     builder.addCase(getConfigurationsVersions.fulfilled, (state, action) => {
       state.configVersions = action.payload.results;
+      state.accessCheckStatus = RequestState.Completed;
     });
-    builder.addCase(getConfigurationsVersions.rejected, (state) => {
+    builder.addCase(getConfigurationsVersions.pending, (state) => {
+      state.accessCheckStatus = RequestState.Pending;
+    });
+    builder.addCase(getConfigurationsVersions.rejected, (state, action) => {
+      state.accessCheckStatus = processErrorResponse(action?.payload as RequestError);
       state.configVersions = [];
     });
   },
 });
 
 const { cleanup, setIsConfigurationLoading, setIsVersionsLoading } = entityConfigurationSlice.actions;
-export { getConfiguration, getConfigurationsVersions, cleanup, createWithUpdateConfigurations };
+export {
+  getConfiguration,
+  getConfigurationsVersions,
+  cleanup,
+  createWithUpdateConfigurations,
+  createWithUpdateAnsibleSettings,
+};
 export default entityConfigurationSlice.reducer;

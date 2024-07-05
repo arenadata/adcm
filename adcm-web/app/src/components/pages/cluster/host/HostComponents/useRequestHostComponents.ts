@@ -19,6 +19,7 @@ export const useRequestHostComponents = () => {
   // TODO: it's very very ugly, rework in first queue
   const host = useStore(({ adcm }) => adcm.clusterHost.clusterHost ?? adcm.host.host);
   const components = useStore(({ adcm }) => adcm.hostComponents.hostComponents);
+  const accessCheckStatus = useStore(({ adcm }) => adcm.clusterHost.accessCheckStatus);
 
   const filter = useStore((s) => s.adcm.hostComponentsTable.filter);
   const sortParams = useStore((s) => s.adcm.hostComponentsTable.sortParams);
@@ -62,4 +63,8 @@ export const useRequestHostComponents = () => {
       dispatch(cleanupClusterHostComponentsDynamicActions());
     };
   });
+
+  return {
+    accessCheckStatus,
+  };
 };

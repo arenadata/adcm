@@ -1,0 +1,40 @@
+:global {
+  body.theme-dark {
+    --expandable-switch-color: var(--color-xgray-lighter);
+    --expandable-switch-border-color: var(--color-xdark);
+    --expandable-switch-bg-color: var(--color-new-light);
+    --expandable-switch-shadow: 0px 20px 20px 0px rgba(2, 1, 17, 0.20);
+  }
+  body.theme-light {
+    --expandable-switch-color: var(--color-xgray-new-darker);
+    --expandable-switch-border-color: var(--color-stroke-light);
+    --expandable-switch-bg-color: var(--color-xgray-alt);
+    --expandable-switch-shadow: 0px 20px 20px 0px rgba(199, 196, 226, 0.20);
+  }
+}
+
+
+.expandableSwitch {
+  display: flex;
+  width: fit-content;
+  border-radius: 12px;
+  border: 1px solid var(--expandable-switch-border-color);
+  background: var(--expandable-switch-bg-color);
+  box-shadow: var(--expandable-switch-shadow);
+  padding: 8px;
+  gap: 10px;
+  color: var(--expandable-switch-color);
+  height: 20px;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: hidden;
+  z-index: 1;
+
+  &:hover > &__label {
+    display: initial;
+  }
+
+  &__label {
+    display: none;
+  }
+}

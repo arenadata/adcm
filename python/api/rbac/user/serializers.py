@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from adcm.serializers import EmptySerializer
+from cm.errors import AdcmEx
 from django.conf import settings
 from rbac.models import Group, User
+from rbac.utils import Empty
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.fields import (
     BooleanField,
@@ -29,6 +30,7 @@ from rest_framework.serializers import (
     Serializer,
     SerializerMethodField,
 )
+from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_409_CONFLICT
 
 from api.rbac.utils import create_user, update_user
 
@@ -77,7 +79,7 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
         default="",
     )
     is_superuser = BooleanField(default=False)
-    password = CharField(trim_whitespace=False, write_only=True)
+    password = CharField(trim_whitespace=False, write_only=True, required=False)
     current_password = CharField(trim_whitespace=False, required=False)
     url = HyperlinkedIdentityField(view_name="v1:rbac:user-detail")
     profile = JSONField(required=False, default="")
@@ -93,6 +95,28 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
     def update(self, instance, validated_data):
         context_user = self.context["request"].user
 
+        if context_user.is_superuser and context_user.pk == instance.pk and validated_data.get("is_superuser") is False:
+            raise AdcmEx(
+                code="USER_UPDATE_ERROR",
+                http_code=HTTP_409_CONFLICT,
+                msg="You can't withdraw ADCM Administrator's rights from yourself.",
+            )
+
+        new_password = validated_data.get("password", Empty)
+        if not context_user.is_superuser:
+            if new_password is not Empty:
+                raise AdcmEx(
+                    code="USER_UPDATE_ERROR", http_code=HTTP_403_FORBIDDEN, msg="You can't change user's password."
+                )
+
+            is_superuser = validated_data.get("is_superuser", Empty)
+            if is_superuser is not Empty and instance.is_superuser != is_superuser:
+                raise AdcmEx(
+                    code="USER_UPDATE_ERROR",
+                    http_code=HTTP_403_FORBIDDEN,
+                    msg=f"You can't {'grant' if is_superuser else 'withdraw'} ADCM Administrator's rights.",
+                )
+
         return update_user(
             user=instance,
             context_user=context_user,
@@ -102,6 +126,15 @@ class UserSerializer(FlexFieldsSerializerMixin, Serializer):
         )
 
     def create(self, validated_data):
+        context_user = self.context["request"].user
+
+        if not context_user.is_superuser and validated_data["is_superuser"]:
+            raise AdcmEx(
+                code="USER_CREATE_ERROR",
+                http_code=HTTP_403_FORBIDDEN,
+                msg="You can't create user with ADCM Administrator's rights.",
+            )
+
         return create_user(**validated_data)
 
 

@@ -1,5 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmCluster, AdcmHostShortView, AdcmMapping, AdcmMappingComponent } from '@models/adcm';
+import {
+  AdcmCluster,
+  AdcmHostShortView,
+  AdcmMapping,
+  AdcmMappingComponent,
+  NotAddedServicesDictionary,
+} from '@models/adcm';
 import { createAsyncThunk } from '@store/redux';
 import { AdcmClusterMappingApi, AdcmClustersApi, RequestError } from '@api';
 import { fulfilledFilter } from '@utils/promiseUtils';
@@ -10,7 +16,6 @@ import { ActionStatuses } from '@constants';
 import { LoadState } from '@models/loadState';
 import { AdcmClusterServicesApi } from '@api/adcm/clusterServices';
 import { arrayToHash } from '@utils/arrayUtils';
-import { NotAddedServicesDictionary } from '../cluster/mapping/mappingSlice';
 
 type GetClusterMappingArg = {
   clusterId: number;

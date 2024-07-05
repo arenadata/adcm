@@ -97,10 +97,13 @@ class _StatusServerService(Protocol):
 def perform_host_to_cluster_map(
     cluster_id: int, hosts: Collection[int], status_service: _StatusServerService
 ) -> Collection[int]:
+    from cm.issue import update_hierarchy_issues  # avoiding circular imports
+
     with atomic():
         add_hosts_to_cluster(cluster_id=cluster_id, hosts=hosts, db=ClusterDB)
-
-        re_apply_object_policy(Cluster.objects.get(id=cluster_id))
+        cluster = Cluster.objects.get(id=cluster_id)
+        update_hierarchy_issues(obj=cluster)
+        re_apply_object_policy(apply_object=cluster)
 
     status_service.reset_hc_map()
 
@@ -109,6 +112,18 @@ def perform_host_to_cluster_map(
 
 def retrieve_clusters_topology(cluster_ids: Iterable[ClusterID]) -> Generator[ClusterTopology, None, None]:
     return build_clusters_topology(cluster_ids=cluster_ids, db=ClusterDB)
+
+
+def retrieve_related_cluster_topology(orm_object: Cluster | ClusterObject | ServiceComponent | Host) -> ClusterTopology:
+    if isinstance(orm_object, Cluster):
+        cluster_id = orm_object.id
+    elif isinstance(orm_object, (ClusterObject, ServiceComponent, Host)) and orm_object.cluster_id:
+        cluster_id = orm_object.cluster_id
+    else:
+        message = f"Can't detect cluster variables for {orm_object}"
+        raise RuntimeError(message)
+
+    return next(retrieve_clusters_topology([cluster_id]))
 
 
 def retrieve_clusters_objects_maintenance_mode(cluster_ids: Iterable[ClusterID]) -> MaintenanceModeOfObjects:

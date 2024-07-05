@@ -10,9 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase, BusinessLogicMixin
 from cm.models import (
+    Cluster,
     ClusterObject,
+    Host,
     ObjectConfig,
     ObjectType,
     Prototype,
@@ -25,7 +27,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rbac.models import Group
 
 
-class PolicyWithServiceAdminRoleTestCase(BaseTestCase):
+class PolicyWithServiceAdminRoleTestCase(BaseTestCase, BusinessLogicMixin):
     def setUp(self) -> None:
         super().setUp()
 
@@ -41,7 +43,9 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase):
         self.cluster_pk = self.get_cluster_pk()
         self.host_pk = self.get_host_pk()
         self.service = self.get_service()
-        self.add_host_to_cluster(cluster_pk=self.cluster_pk, host_pk=self.host_pk)
+        self.add_host_to_cluster(
+            cluster=Cluster.objects.get(id=self.cluster_pk), host=Host.objects.get(id=self.host_pk)
+        )
 
         self.create_policy(role_name="Service Administrator", obj=self.service, group_pk=self.new_user_group.pk)
         self.another_user_log_in(username=new_user.username, password=self.new_user_password)

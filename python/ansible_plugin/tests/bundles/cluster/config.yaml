@@ -1,0 +1,38 @@
+- type: cluster
+  name: simple_cluster
+  version: 3
+
+  actions: &actions
+    dummy: &action
+      type: job
+      script_type: ansible
+      script: ./playbook.yaml
+      masking:
+
+    on_host:
+      <<: *action
+      host_action: true
+
+    with_hc:
+      <<: *action
+      hc_acl:
+        - action: add
+          service: service_1
+          component: component_1
+
+- &service
+  type: service
+  name: service_1
+  version: 2
+
+  actions: *actions
+
+  components:
+    component_1:
+      actions: *actions
+
+    component_2:
+      actions: *actions
+
+- <<: *service
+  name: service_2

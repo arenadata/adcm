@@ -1,15 +1,31 @@
-import {
-  AdcmConcernType,
-  AdcmConcerns,
-  AdcmConcernPlaceholder,
-  AdcmConcernCause,
-  AdcmConcernClusterPlaceholder,
-} from '@models/adcm/concern';
+import { AdcmConcerns, AdcmConcernServicePlaceholder, AdcmConcernType } from '@models/adcm/concern';
+import { generatePath } from 'react-router-dom';
 
 export interface ConcernObjectPathsData {
   path?: string;
   text: string;
 }
+
+const concernTypeUrlDict: Record<string, string> = {
+  [AdcmConcernType.AdcmConfig]: '',
+  [AdcmConcernType.ClusterConfig]: '/clusters/:clusterId/primary-configuration/',
+  [AdcmConcernType.ClusterImport]: '/clusters/:clusterId/import/',
+  [AdcmConcernType.ServiceConfig]: '/clusters/:clusterId/services/:serviceId/primary-configuration/',
+  [AdcmConcernType.ComponentConfig]:
+    '/clusters/:clusterId/services/:serviceId/components/:componentId/primary-configuration/',
+  [AdcmConcernType.HostConfig]: '/hosts/:hostId/primary-configuration/',
+  [AdcmConcernType.ProviderConfig]: '/hostproviders/:providerId/primary-configuration/',
+  [AdcmConcernType.HostComponent]: '/clusters/:clusterId/mapping/',
+  [AdcmConcernType.ClusterServices]: '/clusters/:clusterId/services/', // the same route for the Requirement concern type
+  [AdcmConcernType.Job]: '/jobs/:taskId/',
+  [AdcmConcernType.Prototype]: '',
+  [AdcmConcernType.Adcm]: '',
+  [AdcmConcernType.Cluster]: '/clusters/:clusterId/',
+  [AdcmConcernType.Service]: '/clusters/:clusterId/services/:serviceId/',
+  [AdcmConcernType.Component]: '/clusters/:clusterId/services/:serviceId/components/:componentId/',
+  [AdcmConcernType.Host]: '/hosts/:hostId/',
+  [AdcmConcernType.Provider]: '/hostproviders/:providerId/',
+};
 
 export const getConcernLinkObjectPathsDataArray = (
   concerns: AdcmConcerns[] | undefined,
@@ -23,11 +39,15 @@ export const getConcernLinkObjectPathsDataArray = (
 
     const separatedMessage = concern.reason.message.split(keyRegexp);
 
-    Object.entries(concern.reason.placeholder).forEach(([key, placeHolderItem]) => {
-      const path = getConcernPath(concern, placeHolderItem);
+    Object.entries(concern.reason.placeholder).forEach(([key, placeholderItem]) => {
+      const generatedPath = generatePath(concernTypeUrlDict[placeholderItem.type], placeholderItem.params);
+      const path =
+        placeholderItem.type === AdcmConcernType.ClusterImport
+          ? `${generatedPath}/services/?serviceId=${(placeholderItem as AdcmConcernServicePlaceholder).params.serviceId}`
+          : generatedPath;
       linksDataMap.set(key, {
         path,
-        text: placeHolderItem.name,
+        text: placeholderItem.name,
       });
     });
     const initialLinksData: ConcernObjectPathsData[] = [];
@@ -42,57 +62,6 @@ export const getConcernLinkObjectPathsDataArray = (
       return [...concernLinksData, { text }];
     }, initialLinksData);
   });
-};
-
-export const getConcernObjectPath = (placeHolderProps: AdcmConcernPlaceholder): string => {
-  switch (placeHolderProps.type) {
-    case AdcmConcernType.Cluster:
-      return `/clusters/${placeHolderProps.params.clusterId}`;
-    case AdcmConcernType.Service:
-      return `/clusters/${placeHolderProps.params.clusterId}/services/${placeHolderProps.params.serviceId}`;
-    case AdcmConcernType.Component:
-      return `/clusters/${placeHolderProps.params.clusterId}/services/${placeHolderProps.params.serviceId}/components/${placeHolderProps.params.componentId}`;
-    case AdcmConcernType.Host:
-      return `/hosts/${placeHolderProps.params.hostId}`;
-    case AdcmConcernType.Provider:
-      return `/hostproviders/${placeHolderProps.params.providerId}`;
-    case AdcmConcernType.Job:
-      return `/jobs/${placeHolderProps.params.jobId}`;
-    case AdcmConcernType.Prototype:
-    case AdcmConcernType.Adcm:
-    default:
-      return '';
-  }
-};
-
-const getConcernPath = (concern: AdcmConcerns, placeHolderProps: AdcmConcernPlaceholder): string => {
-  if (placeHolderProps.type === AdcmConcernType.Prototype || placeHolderProps.type === AdcmConcernType.Adcm) {
-    return '';
-  }
-
-  const clusterPath = `/clusters/${(placeHolderProps as AdcmConcernClusterPlaceholder).params.clusterId}`;
-
-  switch (concern.cause) {
-    case AdcmConcernCause.Config:
-      return placeHolderProps.type === 'cluster'
-        ? `${clusterPath}/configuration`
-        : `${getConcernObjectPath(placeHolderProps)}/primary-configuration`;
-    case AdcmConcernCause.HostComponent:
-      return `${clusterPath}/mapping`;
-    case AdcmConcernCause.Import:
-      return `${clusterPath}/import/${
-        placeHolderProps.type === 'service'
-          ? `services/?serviceId=${placeHolderProps.params.serviceId}`
-          : placeHolderProps.type
-      }`;
-    case AdcmConcernCause.Service:
-    case AdcmConcernCause.Requirement:
-      return `${clusterPath}/services`;
-    case AdcmConcernCause.Job:
-      return `${getConcernObjectPath(placeHolderProps)}`;
-    default:
-      return '';
-  }
 };
 
 export const isBlockingConcernPresent = (concerns: AdcmConcerns[]) => {

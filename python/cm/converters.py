@@ -10,14 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.types import ADCMCoreType
+from typing import TypeAlias
 
-from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from core.types import ADCMCoreType, ADCMHostGroupType, ExtraActionTargetType
+from django.db.models import Model
+
+from cm.models import ADCM, ActionHostGroup, Cluster, ClusterObject, GroupConfig, Host, HostProvider, ServiceComponent
+
+CoreObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+GroupObject: TypeAlias = GroupConfig | ActionHostGroup
 
 
-def core_type_to_model(
-    core_type: ADCMCoreType,
-) -> type[Cluster | ClusterObject | ServiceComponent | HostProvider | Host]:
+def core_type_to_model(core_type: ADCMCoreType) -> type[CoreObject | ADCM]:
     match core_type:
         case ADCMCoreType.CLUSTER:
             return Cluster
@@ -29,8 +33,20 @@ def core_type_to_model(
             return HostProvider
         case ADCMCoreType.HOST:
             return Host
+        case ADCMCoreType.ADCM:
+            return ADCM
         case _:
             raise ValueError(f"Can't convert {core_type} to ORM model")
+
+
+def host_group_type_to_model(host_group_type: ADCMHostGroupType) -> type[GroupObject]:
+    if host_group_type == ADCMHostGroupType.CONFIG:
+        return GroupConfig
+
+    if host_group_type == ADCMHostGroupType.ACTION:
+        return ActionHostGroup
+
+    raise ValueError(f"Can't convert {host_group_type} to ORM model")
 
 
 def core_type_to_db_record_type(core_type: ADCMCoreType) -> str:
@@ -45,6 +61,8 @@ def core_type_to_db_record_type(core_type: ADCMCoreType) -> str:
             return "provider"
         case ADCMCoreType.HOST:
             return "host"
+        case ADCMCoreType.ADCM:
+            return "adcm"
         case _:
             raise ValueError(f"Can't convert {core_type} to type name in DB")
 
@@ -60,13 +78,33 @@ def db_record_type_to_core_type(db_record_type: str) -> ADCMCoreType:
 
 
 def model_name_to_core_type(model_name: str) -> ADCMCoreType:
+    name_ = model_name.lower()
     try:
-        return ADCMCoreType(model_name)
+        return ADCMCoreType(name_)
     except ValueError:
-        if model_name == "clusterobject":
+        if name_ == "clusterobject":
             return ADCMCoreType.SERVICE
 
-        if model_name == "servicecomponent":
+        if name_ == "servicecomponent":
             return ADCMCoreType.COMPONENT
 
         raise
+
+
+def model_to_core_type(model: type[Model]) -> ADCMCoreType:
+    return model_name_to_core_type(model_name=model.__name__)
+
+
+def orm_object_to_core_type(object_: CoreObject) -> ADCMCoreType:
+    return model_to_core_type(model=object_.__class__)
+
+
+def model_to_action_target_type(model: type[Model]) -> ADCMCoreType | ExtraActionTargetType:
+    if model == ActionHostGroup:
+        return ExtraActionTargetType.ACTION_HOST_GROUP
+
+    return model_to_core_type(model=model)
+
+
+def orm_object_to_action_target_type(object_: CoreObject | ActionHostGroup) -> ADCMCoreType | ExtraActionTargetType:
+    return model_to_action_target_type(model=object_.__class__)

@@ -15,23 +15,27 @@ from operator import itemgetter
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import TypedDict
+from typing import Callable, Iterable
 import random
 import string
 import tarfile
 
+from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from api_v2.prototype.utils import accept_license
 from api_v2.service.utils import bulk_add_services_to_cluster
-from cm.api import add_cluster, add_hc, add_host, add_host_provider, add_host_to_cluster
+from cm.api import add_cluster, add_hc, add_host, add_host_provider, add_host_to_cluster, update_obj_config
 from cm.bundle import prepare_bundle, process_file
+from cm.converters import orm_object_to_core_type
 from cm.models import (
     ADCM,
+    Action,
     ADCMEntity,
     ADCMModel,
     Bundle,
     Cluster,
     ClusterObject,
     ConfigLog,
+    GroupConfig,
     Host,
     HostComponent,
     HostProvider,
@@ -39,9 +43,15 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.job.prepare import prepare_task_for_action
+from cm.utils import deep_merge
+from core.job.dto import TaskPayloadDTO
+from core.job.types import Task
 from core.rbac.dto import UserCreateDTO
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.db.models import QuerySet
+from django.db.transaction import atomic
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from init_db import init
@@ -67,12 +77,6 @@ class TestUserCreateDTO(UserCreateDTO):
     password: str = ""
 
 
-class HostComponentMapDictType(TypedDict):
-    host_id: int
-    service_id: int
-    component_id: int
-
-
 class ParallelReadyTestCase:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -94,6 +98,7 @@ class ParallelReadyTestCase:
             "FILE_DIR": stack / "data" / "file",
             "LOG_DIR": data / "log",
             "VAR_DIR": data / "var",
+            "TMP_DIR": data / "tmp",
         }
 
         for directory in temporary_directories.values():
@@ -102,31 +107,24 @@ class ParallelReadyTestCase:
         return temporary_directories
 
 
-class BaseTestCase(TestCase, ParallelReadyTestCase):
-    def setUp(self) -> None:
-        self.test_user_username = "test_user"
-        self.test_user_password = "test_user_password"
+class BundleLogicMixin:
+    @staticmethod
+    def prepare_bundle_file(source_dir: Path) -> str:
+        bundle_file = f"{source_dir.name}.tar"
+        with tarfile.open(settings.DOWNLOAD_DIR / bundle_file, "w") as tar:
+            for file in source_dir.iterdir():
+                tar.add(name=file, arcname=file.name)
 
-        self.test_user = User.objects.create_user(
-            username=self.test_user_username,
-            password=self.test_user_password,
-            is_superuser=True,
-        )
-        self.test_user_group = Group.objects.create(name="simple_test_group")
-        self.test_user_group.user_set.add(self.test_user)
+        return bundle_file
 
-        self.no_rights_user_username = "no_rights_user"
-        self.no_rights_user_password = "no_rights_user_password"
-        self.no_rights_user = User.objects.create_user(
-            username="no_rights_user",
-            password="no_rights_user_password",
-        )
-        self.no_rights_user_group = Group.objects.create(name="no_right_group")
-        self.no_rights_user_group.user_set.add(self.no_rights_user)
+    @atomic()
+    def add_bundle(self, source_dir: Path) -> Bundle:
+        bundle_file = self.prepare_bundle_file(source_dir=source_dir)
+        bundle_hash, path = process_file(bundle_file=bundle_file)
+        return prepare_bundle(bundle_file=bundle_file, bundle_hash=bundle_hash, path=path)
 
-        self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
-        self.login()
 
+class TestCaseWithCommonSetUpTearDown(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -155,6 +153,32 @@ class BaseTestCase(TestCase, ParallelReadyTestCase):
             else:
                 if item.name != ".gitkeep":
                     item.unlink()
+
+
+class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, BundleLogicMixin):
+    def setUp(self) -> None:
+        self.test_user_username = "test_user"
+        self.test_user_password = "test_user_password"
+
+        self.test_user = User.objects.create_user(
+            username=self.test_user_username,
+            password=self.test_user_password,
+            is_superuser=True,
+        )
+        self.test_user_group = Group.objects.create(name="simple_test_group")
+        self.test_user_group.user_set.add(self.test_user)
+
+        self.no_rights_user_username = "no_rights_user"
+        self.no_rights_user_password = "no_rights_user_password"
+        self.no_rights_user = User.objects.create_user(
+            username="no_rights_user",
+            password="no_rights_user_password",
+        )
+        self.no_rights_user_group = Group.objects.create(name="no_right_group")
+        self.no_rights_user_group.user_set.add(self.no_rights_user)
+
+        self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
+        self.login()
 
     def login(self):
         response: Response = self.client.post(
@@ -392,15 +416,6 @@ class BaseTestCase(TestCase, ParallelReadyTestCase):
 
         return host
 
-    def add_host_to_cluster(self, cluster_pk: int, host_pk: int) -> None:
-        response: Response = self.client.post(
-            path=reverse(viewname="v1:host", kwargs={"cluster_id": cluster_pk}),
-            data={"host_id": host_pk},
-            content_type=APPLICATION_JSON,
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
     @staticmethod
     def get_hostcomponent_data(service_pk: int, host_pk: int) -> list[dict[str, int]]:
         hostcomponent_data = []
@@ -423,21 +438,7 @@ class BaseTestCase(TestCase, ParallelReadyTestCase):
         return "".join(random.sample(f"{string.ascii_letters}{string.digits}", length))
 
 
-class BusinessLogicMixin:
-    @staticmethod
-    def prepare_bundle_file(source_dir: Path) -> str:
-        bundle_file = f"{source_dir.name}.tar"
-        with tarfile.open(settings.DOWNLOAD_DIR / bundle_file, "w") as tar:
-            for file in source_dir.iterdir():
-                tar.add(name=file, arcname=file.name)
-
-        return bundle_file
-
-    def add_bundle(self, source_dir: Path) -> Bundle:
-        bundle_file = self.prepare_bundle_file(source_dir=source_dir)
-        bundle_hash, path = process_file(bundle_file=bundle_file)
-        return prepare_bundle(bundle_file=bundle_file, bundle_hash=bundle_hash, path=path)
-
+class BusinessLogicMixin(BundleLogicMixin):
     @staticmethod
     def add_cluster(bundle: Bundle, name: str, description: str = "") -> Cluster:
         prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.CLUSTER).first()
@@ -452,9 +453,14 @@ class BusinessLogicMixin:
         return add_host_provider(prototype=prototype, name=name, description=description)
 
     def add_host(
-        self, bundle: Bundle, provider: HostProvider, fqdn: str, description: str = "", cluster: Cluster | None = None
+        self,
+        provider: HostProvider,
+        fqdn: str,
+        description: str = "",
+        cluster: Cluster | None = None,
+        bundle: Bundle | None = None,
     ) -> Host:
-        prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.HOST).first()
+        prototype = Prototype.objects.filter(bundle=bundle or provider.prototype.bundle, type=ObjectType.HOST).first()
         host = add_host(prototype=prototype, provider=provider, fqdn=fqdn, description=description)
         if cluster is not None:
             self.add_host_to_cluster(cluster=cluster, host=host)
@@ -473,8 +479,14 @@ class BusinessLogicMixin:
         return bulk_add_services_to_cluster(cluster=cluster, prototypes=service_prototypes)
 
     @staticmethod
-    def add_hostcomponent_map(cluster: Cluster, hc_map: list[HostComponentMapDictType]) -> list[HostComponent]:
-        return add_hc(cluster=cluster, hc_in=hc_map)
+    def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, ServiceComponent]]) -> list[HostComponent]:
+        return add_hc(
+            cluster=cluster,
+            hc_in=[
+                {"host_id": host.pk, "component_id": component.pk, "service_id": component.service_id}
+                for host, component in entries
+            ],
+        )
 
     @staticmethod
     def get_non_existent_pk(model: type[ADCMEntity | ADCMModel | User | Role | Group | Policy]):
@@ -524,3 +536,43 @@ class BusinessLogicMixin:
         if delete_role:
             custom_role.delete()
         group.delete()
+
+    @staticmethod
+    def change_configuration(
+        target: ADCMModel | GroupConfig,
+        config_diff: dict,
+        meta_diff: dict | None = None,
+        preprocess_config: Callable[[dict], dict] = lambda x: x,
+    ) -> ConfigLog:
+        meta = meta_diff or {}
+
+        target.refresh_from_db()
+        current_config = ConfigLog.objects.get(id=target.config.current)
+
+        updated = update_obj_config(
+            obj_conf=target.config,
+            config=deep_merge(origin=preprocess_config(current_config.config), renovator=config_diff),
+            attr=convert_adcm_meta_to_attr(
+                deep_merge(origin=convert_attr_to_adcm_meta(current_config.attr), renovator=meta)
+            ),
+            description="",
+        )
+        target.refresh_from_db()
+
+        return updated
+
+
+class TaskTestMixin:
+    def prepare_task(
+        self,
+        owner: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
+        payload: TaskPayloadDTO | None = None,
+        host: Host | None = None,
+        **action_search_kwargs,
+    ) -> Task:
+        owner_descriptor = CoreObjectDescriptor(id=owner.id, type=orm_object_to_core_type(owner))
+        action = Action.objects.get(prototype_id=owner.prototype_id, **action_search_kwargs)
+        target = owner_descriptor if not host else CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST)
+        return prepare_task_for_action(
+            target=target, owner=owner_descriptor, action=action.id, payload=payload or TaskPayloadDTO()
+        )

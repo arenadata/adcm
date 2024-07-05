@@ -1,4 +1,4 @@
-import React, { ReactNode, useMemo, useState } from 'react';
+import React, { ReactNode, RefObject, useMemo, useRef, useState } from 'react';
 import { refractor } from 'refractor';
 import { getLines, getParsedCode } from '@uikit/CodeHighlighterV2/CodeHighlighterHelperV2';
 import './CodeHighlighterTemeV2.scss';
@@ -6,6 +6,8 @@ import s from './CodeHighlighterV2.module.scss';
 import cn from 'classnames';
 import CopyButton from '@uikit/CodeHighlighter/CopyButton/CopyButton';
 import IconButton from '@uikit/IconButton/IconButton';
+import Scroller from '@uikit/ScrollBar/Scroller';
+
 export interface CodeHighlighterV2Props {
   code: string;
   lang: string;
@@ -14,6 +16,7 @@ export interface CodeHighlighterV2Props {
   className?: string;
   dataTestPrefix?: string;
   codeOverlay?: ReactNode;
+  contentRef?: RefObject<HTMLDivElement>;
 }
 
 const CodeHighlighterV2 = ({
@@ -24,9 +27,12 @@ const CodeHighlighterV2 = ({
   className,
   dataTestPrefix = '',
   codeOverlay,
+  contentRef,
 }: CodeHighlighterV2Props) => {
   const [isSecretVisible, setIsSecretVisible] = useState(!isSecret);
   const prepCode = useMemo(() => (isSecretVisible ? code : code.replace(/./g, '*')), [code, isSecretVisible]);
+  const localContentRef = useRef<HTMLDivElement>(null);
+  const internalContentRef = contentRef ? contentRef : localContentRef;
 
   const { parsedCode, lines, patchWidth } = useMemo(() => {
     const lines = getLines(prepCode);
@@ -40,8 +46,8 @@ const CodeHighlighterV2 = ({
   }, [prepCode, lang]);
 
   const wrapperStyles = {
-    maxHeight: '100%',
-    '--code-highlite-lines-width': `${patchWidth}px`,
+    animation: 'none',
+    '--code-highlight-lines-width': `${patchWidth}px`,
   };
 
   const toggleShowSecret = () => {
@@ -50,7 +56,6 @@ const CodeHighlighterV2 = ({
 
   return (
     <div className={cn(className, s.codeHighlighter)} style={wrapperStyles}>
-      <div className={cn(s.codeHighlighterLines, s.patch)} style={{ width: `${patchWidth}px` }}></div>
       {!isNotCopy && <CopyButton code={code} className={s.codeHighlighter__copyBtn} />}
       {isSecret && (
         <IconButton
@@ -61,19 +66,21 @@ const CodeHighlighterV2 = ({
           onClick={toggleShowSecret}
         />
       )}
-      <div className={cn('scroll', s.codeHighlighterWrapper)} data-test={`${dataTestPrefix}_code-highlite`}>
-        <div className={s.codeHighlighterLinesWrapper}>
-          <div className={cn(s.codeHighlighterLines, s.codeHighlighterFontParams)}>
-            {lines.map((lineNum) => (
-              <div key={lineNum}>{lineNum}</div>
-            ))}
+      <Scroller forwardRef={internalContentRef}>
+        <div className={s.codeHighlighterWrapper} data-test={`${dataTestPrefix}_code-highlight`}>
+          <div className={s.codeHighlighterLinesWrapper}>
+            <div className={cn(s.codeHighlighterLines, s.codeHighlighterFontParams)}>
+              {lines.map((lineNum) => (
+                <div key={lineNum}>{lineNum}</div>
+              ))}
+            </div>
+          </div>
+          <div className={s.codeHighlighterCodeWrapper}>
+            <pre className={cn('language-', s.codeHighlighterCode, s.codeHighlighterFontParams)}>{parsedCode}</pre>
+            {codeOverlay && <div className={s.codeHighlighterCodeOverlay}>{codeOverlay}</div>}
           </div>
         </div>
-        <div className={s.codeHighlighterCodeWrapper}>
-          <pre className={cn('language-', s.codeHighlighterCode, s.codeHighlighterFontParams)}>{parsedCode}</pre>
-          {codeOverlay && <div className={s.codeHighlighterCodeOverlay}>{codeOverlay}</div>}
-        </div>
-      </div>
+      </Scroller>
     </div>
   );
 };

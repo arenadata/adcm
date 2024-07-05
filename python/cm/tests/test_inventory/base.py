@@ -9,25 +9,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from functools import reduce
 from pathlib import Path
-from typing import Any, Callable, Iterable, Literal, Mapping, TypeAlias
+from typing import Any, Iterable, Literal, Mapping, TypeAlias
 import json
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
-from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
 
 from cm.adcm_config.ansible import ansible_decrypt
-from cm.api import add_hc, update_obj_config
+from cm.converters import model_name_to_core_type
 from cm.models import (
     Action,
     ADCMEntity,
     ADCMModel,
-    Cluster,
     ClusterObject,
-    ConfigLog,
     GroupConfig,
     Host,
     HostComponent,
@@ -36,7 +35,6 @@ from cm.models import (
 )
 from cm.services.job.inventory import get_inventory_data
 from cm.services.job.types import HcAclAction
-from cm.utils import deep_merge
 
 TemplatesData: TypeAlias = Mapping[tuple[str, ...], tuple[Path, Mapping[str, Any]]]
 MappingEntry: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], int]
@@ -83,40 +81,6 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
         for group_name, host_names in expected.items():
             self.assertSetEqual(set(data[group_name]["hosts"].keys()), set(host_names))
 
-    @staticmethod
-    def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, ServiceComponent]]) -> list[HostComponent]:
-        return add_hc(
-            cluster=cluster,
-            hc_in=[
-                {"host_id": host.pk, "component_id": component.pk, "service_id": component.service_id}
-                for host, component in entries
-            ],
-        )
-
-    @staticmethod
-    def change_configuration(
-        target: ADCMModel | GroupConfig,
-        config_diff: dict,
-        meta_diff: dict | None = None,
-        preprocess_config: Callable[[dict], dict] = lambda x: x,
-    ) -> ConfigLog:
-        meta = meta_diff or {}
-
-        target.refresh_from_db()
-        current_config = ConfigLog.objects.get(id=target.config.current)
-
-        updated = update_obj_config(
-            obj_conf=target.config,
-            config=deep_merge(origin=preprocess_config(current_config.config), renovator=config_diff),
-            attr=convert_adcm_meta_to_attr(
-                deep_merge(origin=convert_attr_to_adcm_meta(current_config.attr), renovator=meta)
-            ),
-            description="",
-        )
-        target.refresh_from_db()
-
-        return updated
-
     def check_data_by_template(self, data: Mapping[str, dict], templates_data: TemplatesData) -> None:
         for key_chain, template_data in templates_data.items():
             template_path, kwargs = template_data
@@ -134,7 +98,10 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
     def assert_inventory(
         self, obj: ADCMEntity, action: Action, expected_topology: dict, expected_data: dict, delta: Delta | None = None
     ) -> None:
-        actual_inventory = decrypt_secrets(source=get_inventory_data(obj=obj, action=action, delta=delta))
+        target = CoreObjectDescriptor(id=obj.id, type=model_name_to_core_type(obj.__class__.__name__))
+        actual_inventory = decrypt_secrets(
+            source=get_inventory_data(target=target, is_host_action=action.host_action, delta=delta)
+        )
 
         self.check_hosts_topology(data=actual_inventory["all"]["children"], expected=expected_topology)
         self.check_data_by_template(data=actual_inventory, templates_data=expected_data)
@@ -151,9 +118,9 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
 
     @staticmethod
     def get_mapping_delta_for_hc_acl(cluster, new_mapping: list[MappingEntry]) -> Delta:
-        existing_mapping_ids = {
-            (hc.host.pk, hc.component.pk, hc.service.pk) for hc in HostComponent.objects.filter(cluster=cluster)
-        }
+        existing_mapping_ids = set(
+            HostComponent.objects.values_list("host_id", "component_id", "service_id").filter(cluster=cluster)
+        )
         new_mapping_ids = {(hc["host_id"], hc["component_id"], hc["service_id"]) for hc in new_mapping}
 
         added = {}

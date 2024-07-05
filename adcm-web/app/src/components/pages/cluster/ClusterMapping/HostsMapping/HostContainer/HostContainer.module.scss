@@ -25,6 +25,10 @@
   &__components {
     margin-top: 8px;
   }
+
+  &_disabled {
+    border-color: var(--component-container-disabled-color);
+  }
 }
 
 .hostContainerHeader {

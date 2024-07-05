@@ -1,0 +1,12 @@
+---
+- name: sleep
+  hosts: all
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Sleep
+      pause:
+        seconds: "1"
+    - debug:
+        msg: "{{ hostvars }}"

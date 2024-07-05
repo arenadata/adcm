@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from json.decoder import JSONDecodeError
 import json
 
@@ -23,7 +24,7 @@ from rbac.models import User as RBACUser
 
 from audit.cef_logger import cef_logger
 from audit.models import AuditSession, AuditSessionLoginResult, AuditUser
-from audit.utils import get_client_ip
+from audit.utils import get_client_agent, get_client_ip
 
 
 class LoginMiddleware:
@@ -34,6 +35,7 @@ class LoginMiddleware:
     def _audit(
         request_path: str,
         request_host: str | None,
+        request_agent: str | None,
         user: User | AnonymousUser | None = None,
         username: str = None,
     ) -> tuple[User | None, AuditSessionLoginResult]:
@@ -58,7 +60,7 @@ class LoginMiddleware:
             audit_user = AuditUser.objects.filter(username=user.username).order_by("-pk").first()
 
         audit_session = AuditSession.objects.create(
-            user=audit_user, login_result=result, login_details=details, address=request_host
+            user=audit_user, login_result=result, login_details=details, address=request_host, agent=request_agent
         )
         cef_logger(audit_instance=audit_session, signature_id=resolve(request_path).route)
 
@@ -164,6 +166,7 @@ class LoginMiddleware:
         user, result = self._audit(
             request_path=request.path,
             request_host=get_client_ip(request=request),
+            request_agent=get_client_agent(request=request),
             user=request.user,
             username=username,
         )

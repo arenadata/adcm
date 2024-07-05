@@ -25,9 +25,15 @@ import {
   validateInactiveGroupSchema,
   emptyFilter,
 } from './ConfigurationTree.utils.test.constants';
-import { buildConfigurationNodes, buildConfigurationTree, validate } from './ConfigurationTree.utils';
-import { ConfigurationArray, ConfigurationField, ConfigurationObject } from '../ConfigurationEditor.types';
+import {
+  buildConfigurationNodes,
+  buildConfigurationTree,
+  validate,
+  fillParentPathParts,
+} from './ConfigurationTree.utils';
+import type { ConfigurationArray, ConfigurationField, ConfigurationObject } from '../ConfigurationEditor.types';
 import { rootNodeKey } from './ConfigurationTree.constants';
+import type { ConfigurationErrors, FieldErrors } from '@models/adcm';
 
 describe('structure node tests', () => {
   test('structure', () => {
@@ -338,9 +344,9 @@ describe('validate', () => {
       },
     };
 
-    const { isValid, errorsPaths } = validate(clusterConfigurationSchema, configuration, attributes);
+    const { isValid, configurationErrors } = validate(clusterConfigurationSchema, configuration, attributes);
     expect(isValid).toBe(false);
-    expect(Object.keys(errorsPaths).length).not.toBe(0);
+    expect(Object.keys(configurationErrors).length).not.toBe(0);
   });
 
   test('Do not validate inactive groups', () => {
@@ -359,9 +365,33 @@ describe('validate', () => {
       },
     };
 
-    const { isValid, errorsPaths } = validate(validateInactiveGroupSchema, configuration, attributes);
+    const { isValid, configurationErrors } = validate(validateInactiveGroupSchema, configuration, attributes);
     expect(isValid).toBe(false);
-    expect(errorsPaths).toStrictEqual({ '/': true, '/structure_2': true, '/structure_2/someField1': 'must be string' });
+    expect(Object.keys(configurationErrors).length === 2);
+    expect(configurationErrors['/']).toBe(true);
+    expect(configurationErrors['/structure_2']).toBe(true);
+    expect(configurationErrors['/structure_2/someField1']).not.toBe(true);
+    expect(typeof configurationErrors['/structure_2/someField1']).toBe('object');
+
+    const fieldErrors = configurationErrors['/structure_2/someField1'];
+    expect((fieldErrors as FieldErrors).messages).not.toStrictEqual({ required: 'must be string' });
+  });
+
+  test('fillParentPathParts', () => {
+    const errors: ConfigurationErrors = {
+      '/config/cluster/clusterName': true,
+    };
+
+    fillParentPathParts(errors);
+
+    const expected: ConfigurationErrors = {
+      '/': true,
+      '/config': true,
+      '/config/cluster': true,
+      '/config/cluster/clusterName': true,
+    };
+
+    expect(errors).toStrictEqual(expected);
   });
 });
 
@@ -386,6 +416,54 @@ describe('filter', () => {
     const clusterNameNode = clusterNode.children?.[0]!;
     expect(clusterNameNode.key).toBe('/cluster_config/cluster/cluster_name');
     expect(clusterNameNode.children).toBe(undefined);
+  });
+
+  test('find in parent', () => {
+    const configuration = {
+      structure: {
+        someField1: 'value1',
+        someField2: 'value2',
+      },
+    };
+    const tree = buildConfigurationNodes(structureSchema, configuration, {});
+    // eslint-disable-next-line spellcheck/spell-checker
+    const filteredTree = buildConfigurationTree(tree, { title: 'truct', showAdvanced: false, showInvisible: false });
+    const structureNode = filteredTree.children?.[0]!;
+
+    expect(structureNode.children?.length).toBe(2);
+    expect(structureNode.children?.[0].data.title).toBe('someField1');
+    expect(structureNode.children?.[1].data.title).toBe('someField2');
+  });
+
+  test('not find in parent', () => {
+    const configuration = {
+      structure: {
+        someField1: 'value1',
+        someField2: 'value2',
+      },
+    };
+    const tree = buildConfigurationNodes(structureSchema, configuration, {});
+    // eslint-disable-next-line spellcheck/spell-checker
+    const filteredTree = buildConfigurationTree(tree, { title: 'blabla', showAdvanced: false, showInvisible: false });
+    const structureNode = filteredTree.children?.[0]!;
+
+    expect(structureNode).toBe(undefined);
+  });
+
+  test('find in children', () => {
+    const configuration = {
+      structure: {
+        someField1: 'value1',
+        someField2: 'value2',
+      },
+    };
+    const tree = buildConfigurationNodes(structureSchema, configuration, {});
+    // eslint-disable-next-line spellcheck/spell-checker
+    const filteredTree = buildConfigurationTree(tree, { title: 'ld1', showAdvanced: false, showInvisible: false });
+    const structureNode = filteredTree.children?.[0]!;
+
+    expect(structureNode.children?.length).toBe(1);
+    expect(structureNode.children?.[0].data.title).toBe('someField1');
   });
 });
 

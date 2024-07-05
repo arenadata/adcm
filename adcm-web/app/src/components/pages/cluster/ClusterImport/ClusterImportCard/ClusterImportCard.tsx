@@ -19,6 +19,7 @@ export interface ClusterImportCardProps {
   clusterImport: AdcmClusterImport;
   selectedSingleBind: ClusterImportsSetGroup;
   selectedImports: SelectedImportsGroup;
+  dataTest: string;
   onCheckHandler: (selectedImport: SelectedImportHandlerData[]) => void;
 }
 
@@ -35,7 +36,11 @@ export const ClusterImportLoading = () => {
 };
 
 export const ClusterImportEmptyCard = () => {
-  return <div className={cn(s.clusterImportItem, s.clusterImportItem_empty)}>No data</div>;
+  return (
+    <div className={cn(s.clusterImportItem, s.clusterImportItem_empty)} data-test="no-imports">
+      No data
+    </div>
+  );
 };
 
 const ClusterImportCard = ({
@@ -43,6 +48,7 @@ const ClusterImportCard = ({
   onCheckHandler,
   selectedSingleBind,
   selectedImports,
+  dataTest,
 }: ClusterImportCardProps) => {
   // Some services can be "isMultiBind = false", and already selected in another cluster, such services we count here as selected
   const isAllServicesSelected = clusterImport.importServices?.every(
@@ -108,7 +114,7 @@ const ClusterImportCard = ({
 
   return (
     <>
-      <div className={clusterImportItemClasses}>
+      <div className={clusterImportItemClasses} data-test={dataTest}>
         <div className={s.clusterImportItem__block}>
           <Statusable
             status={clusterImport.cluster.status === 'up' ? 'running' : 'unknown'}

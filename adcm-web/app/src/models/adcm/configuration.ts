@@ -51,7 +51,7 @@ export type FieldAttributes = {
   isSynchronized?: boolean;
 };
 
-export type ConfigurationAttributes = Record<string, FieldAttributes>; // key - path, value: attributes
+export type ConfigurationAttributes = Record<FieldPath, FieldAttributes>; // key - path, value: attributes
 
 export interface AdcmConfigShortView {
   id: number;
@@ -74,3 +74,15 @@ export interface AdcmConfiguration {
 export interface AdcmFullConfigurationInfo extends AdcmConfigShortView {
   configuration: AdcmConfiguration;
 }
+
+export type FieldPath = string;
+export type ErrorKeyword = string;
+export type ErrorMessage = string;
+export type FieldErrors = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: any;
+  schema: SchemaDefinition;
+  messages: Record<ErrorKeyword, ErrorMessage>;
+};
+
+export type ConfigurationErrors = Record<FieldPath, true | FieldErrors>;

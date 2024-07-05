@@ -21,18 +21,26 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from adcm.utils import get_maintenance_mode_response
 from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, ServiceComponent
+from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import update_mm_objects
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.component.filters import ComponentFilter
 from api_v2.component.serializers import (
     ComponentMaintenanceModeSerializer,
@@ -42,15 +50,80 @@ from api_v2.component.serializers import (
 )
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.views import (
-    CamelCaseGenericViewSet,
-    CamelCaseReadOnlyModelViewSet,
+    ADCMGenericViewSet,
+    ADCMReadOnlyModelViewSet,
     ObjectWithStatusViewMixin,
 )
 
 
-class ComponentViewSet(
-    PermissionListMixin, ConfigSchemaMixin, CamelCaseReadOnlyModelViewSet, ObjectWithStatusViewMixin
-):
+@extend_schema_view(
+    statuses=extend_schema(
+        operation_id="getHostComponentStatusesOfComponent",
+        summary="GET host-component statuses of component on hoosts",
+        description="Get information about component on hosts statuses.",
+        responses={HTTP_200_OK: ComponentStatusSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+        parameters=[
+            OpenApiParameter(
+                name="status",
+                required=True,
+                location=OpenApiParameter.QUERY,
+                description="Case insensitive and partial filter by status.",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="clusterId",
+                required=True,
+                location=OpenApiParameter.PATH,
+                description="Cluster id.",
+                type=int,
+            ),
+            OpenApiParameter(
+                name="serviceId",
+                required=True,
+                location=OpenApiParameter.PATH,
+                description="Service id.",
+                type=int,
+            ),
+            OpenApiParameter(
+                name="componentId",
+                required=True,
+                location=OpenApiParameter.PATH,
+                description="Component id.",
+                type=int,
+            ),
+        ],
+    ),
+    retrieve=extend_schema(
+        operation_id="getServiceComponent",
+        description="Get information about a specific service component.",
+        summary="GET service components",
+        responses={HTTP_200_OK: ComponentSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    list=extend_schema(
+        operation_id="getServiceComponents",
+        description="Get a list of all components of a particular service with information on them.",
+        summary="GET service components",
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            DefaultParams.ordering_by("Name", "Display Name"),
+        ],
+        responses={HTTP_200_OK: ComponentSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    maintenance_mode=extend_schema(
+        operation_id="postComponentMaintenanceMode",
+        description="Turn on/off maintenance mode on the component.",
+        summary="POST component maintenance-mode",
+        responses={
+            HTTP_200_OK: ComponentMaintenanceModeSerializer,
+            **{
+                err_code: ErrorSerializer
+                for err_code in (HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+            },
+        },
+    ),
+)
+class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMixin, ADCMReadOnlyModelViewSet):
     queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("pk")
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_COMPONENT_PERM]
@@ -109,7 +182,12 @@ class ComponentViewSet(
         return Response(data=ComponentStatusSerializer(instance=component, context=self.get_serializer_context()).data)
 
 
-class HostComponentViewSet(PermissionListMixin, ListModelMixin, CamelCaseGenericViewSet, ObjectWithStatusViewMixin):
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getHostComponents", summary="GET host components", description="Get a list of host components."
+    )
+)
+class HostComponentViewSet(PermissionListMixin, ListModelMixin, ObjectWithStatusViewMixin, ADCMGenericViewSet):
     queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("prototype__name")
     serializer_class = HostComponentSerializer
     permission_classes = [DjangoModelPermissionsAudit]

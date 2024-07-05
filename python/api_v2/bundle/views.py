@@ -9,12 +9,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from adcm.permissions import DjangoModelPermissionsAudit
 from audit.utils import audit
 from cm.bundle import delete_bundle, load_bundle, upload_file
 from cm.models import Bundle, ObjectType
 from django.db.models import F
 from django_filters.rest_framework.backends import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.mixins import (
     CreateModelMixin,
     DestroyModelMixin,
@@ -24,12 +26,24 @@ from rest_framework.mixins import (
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
+from api_v2.api_schema import ErrorSerializer
 from api_v2.bundle.filters import BundleFilter
-from api_v2.bundle.serializers import BundleListSerializer, UploadBundleSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.bundle.serializers import BundleSerializer, UploadBundleSerializer
+from api_v2.views import ADCMGenericViewSet
 
 
-class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, CreateModelMixin, CamelCaseGenericViewSet):
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getBundles",
+        description="Get a list of ADCM bundles with information on them.",
+    ),
+    retrieve=extend_schema(
+        operation_id="getBundle",
+        description="Get detail information about a specific bundle.",
+        responses={200: BundleSerializer, 404: ErrorSerializer},
+    ),
+)
+class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, CreateModelMixin, ADCMGenericViewSet):
     queryset = (
         Bundle.objects.exclude(name="ADCM")
         .annotate(
@@ -53,8 +67,19 @@ class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, Creat
         if self.action == "create":
             return UploadBundleSerializer
 
-        return BundleListSerializer
+        return BundleSerializer
 
+    @extend_schema(
+        operation_id="postBundles",
+        description="Upload new bundle.",
+        request={"multipart/form-data": UploadBundleSerializer},
+        responses={
+            201: BundleSerializer,
+            400: ErrorSerializer,
+            403: ErrorSerializer,
+            409: ErrorSerializer,
+        },
+    )
     @audit
     def create(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
@@ -63,9 +88,14 @@ class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, Creat
         bundle = load_bundle(bundle_file=str(file_path))
 
         return Response(
-            status=HTTP_201_CREATED, data=BundleListSerializer(instance=self.get_queryset().get(id=bundle.pk)).data
+            status=HTTP_201_CREATED, data=BundleSerializer(instance=self.get_queryset().get(id=bundle.pk)).data
         )
 
+    @extend_schema(
+        operation_id="deleteBundle",
+        description="Delete a specific ADCM bundle.",
+        responses={204: None, 403: ErrorSerializer, 404: ErrorSerializer, 409: ErrorSerializer},
+    )
     @audit
     def destroy(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         bundle = self.get_object()

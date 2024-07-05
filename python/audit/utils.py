@@ -12,6 +12,7 @@
 
 from contextlib import suppress
 from functools import wraps
+from typing import Callable
 import re
 
 from api.cluster.serializers import ClusterAuditSerializer
@@ -23,6 +24,9 @@ from api.rbac.role.serializers import RoleAuditSerializer
 from api.rbac.user.serializers import UserAuditSerializer
 from api.service.serializers import ServiceAuditSerializer
 from api_v2.cluster.serializers import (
+    AnsibleConfigRetrieveSerializer,
+)
+from api_v2.cluster.serializers import (
     ClusterAuditSerializer as ClusterAuditSerializerV2,
 )
 from api_v2.component.serializers import (
@@ -30,13 +34,15 @@ from api_v2.component.serializers import (
 )
 from api_v2.host.serializers import HostAuditSerializer as HostAuditSerializerV2
 from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
+from api_v2.rbac.user.serializers import UserBlockStatusChangedSerializer
 from api_v2.service.serializers import (
     ServiceAuditSerializer as ServiceAuditSerializerV2,
 )
-from api_v2.views import CamelCaseModelViewSet
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
+    ActionHostGroup,
+    AnsibleConfig,
     Cluster,
     ClusterBind,
     ClusterObject,
@@ -48,6 +54,8 @@ from cm.models import (
     get_cm_model_by_type,
     get_model_by_type,
 )
+from core.job.types import ExecutionStatus
+from core.types import ADCMCoreType, NamedActionObject
 from django.contrib.auth.models import User as DjangoUser
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import Model, ObjectDoesNotExist
@@ -62,15 +70,17 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     is_success,
 )
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from audit.cases.cases import get_audit_operation_and_object
+from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
     AuditObject,
+    AuditObjectType,
     AuditOperation,
     AuditUser,
 )
@@ -269,11 +279,7 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
     serializer_class = None
     pk = None
 
-    if (
-        isinstance(view, (ModelViewSet, CamelCaseModelViewSet))
-        and view.action in {"update", "partial_update"}
-        and view.kwargs.get("pk")
-    ):
+    if isinstance(view, GenericViewSet) and view.action in {"update", "partial_update"} and view.kwargs.get("pk"):
         pk = view.kwargs["pk"]
         if view.__class__.__name__ == "GroupViewSet":
             serializer_class = GroupAuditSerializer
@@ -298,7 +304,10 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
             serializer_class = UserAuditSerializer
             pk = view.request.user.id
     elif view.request.method == "POST":
-        if view.__class__.__name__ == "ServiceMaintenanceModeView":
+        if isinstance(view, ModelViewSet) and view.action == "ansible_config":
+            serializer_class = AnsibleConfigRetrieveSerializer
+            pk = view.kwargs["pk"]
+        elif view.__class__.__name__ == "ServiceMaintenanceModeView":
             serializer_class = ServiceAuditSerializer
             pk = view.kwargs["service_id"]
         elif view.__class__.__name__ == "HostMaintenanceModeView":
@@ -319,10 +328,16 @@ def _get_obj_changes_data(view: GenericAPIView | ModelViewSet) -> tuple[dict | N
         elif view.__class__.__name__ == "ComponentViewSet" and view.action == "maintenance_mode":
             serializer_class = ComponentAuditSerializerV2
             pk = view.kwargs["pk"]
+        elif view.__class__.__name__ == "UserViewSet" and view.action in ("block", "unblock"):
+            serializer_class = UserBlockStatusChangedSerializer
+            pk = view.kwargs["pk"]
 
     if serializer_class:
         # for cases when get_queryset() raises error
-        model = view.audit_model_hint if hasattr(view, "audit_model_hint") else view.get_queryset().model
+        if isinstance(view, ModelViewSet) and view.action == "ansible_config":
+            model = AnsibleConfig
+        else:
+            model = view.audit_model_hint if hasattr(view, "audit_model_hint") else view.get_queryset().model
 
         try:
             current_obj = model.objects.filter(pk=pk).first()
@@ -430,6 +445,10 @@ def _all_child_objects_exist(path: list[str]) -> bool:
     match path:
         case ["configs", pk]:
             return _cm_object_exists(path_type="configs", pk=pk)
+        case ["action-host-groups", group_pk, "hosts", host_pk, *_]:
+            return ActionHostGroup.hosts.through.objects.filter(actionhostgroup_id=group_pk, host_id=host_pk).exists()
+        case ["action-host-groups", group_pk, *_]:
+            return ActionHostGroup.objects.filter(pk=group_pk).exists()
         case ["services" | "components" | "hosts" | "config-groups" | "actions" | "upgrades", pk, *rest]:
             if not _cm_object_exists(path_type=path[0], pk=pk):
                 return False
@@ -445,6 +464,7 @@ def _all_objects_in_path_exist(path: list[str]) -> bool:
                 model = get_rbac_model_by_type(rbac_type)
                 return model.objects.filter(pk=pk).exists()
             return False
+
         case ["clusters" | "hostproviders" | "hosts" | "bundles" | "prototypes", pk, *rest]:
             if not _cm_object_exists(path_type=path[0], pk=pk):
                 return False
@@ -563,6 +583,7 @@ def audit(func):
                 user=audit_user,
                 object_changes=object_changes,
                 address=get_client_ip(request=request),
+                agent=get_client_agent(request=request),
             )
             cef_logger(audit_instance=auditlog, signature_id=resolve(request.path).route)
 
@@ -612,3 +633,69 @@ def get_client_ip(request: WSGIRequest) -> str | None:
             break
 
     return host
+
+
+def get_client_agent(request: WSGIRequest) -> str:
+    return request.META.get("HTTP_USER_AGENT", "")[:255]
+
+
+def audit_job_finish(
+    target: NamedActionObject, display_name: str, is_upgrade: bool, job_result: ExecutionStatus
+) -> None:
+    operation_name = f"{display_name} {'upgrade' if is_upgrade else 'action'} completed"
+
+    if target.type == ADCMCoreType.HOSTPROVIDER:
+        obj_type = AuditObjectType.PROVIDER
+    else:
+        obj_type = AuditObjectType(target.type.value)
+
+    audit_object = get_or_create_audit_obj(
+        object_id=str(target.id),
+        object_name=target.name,
+        object_type=obj_type,
+    )
+    operation_result = (
+        AuditLogOperationResult.SUCCESS if job_result == ExecutionStatus.SUCCESS else AuditLogOperationResult.FAIL
+    )
+
+    audit_log = AuditLog.objects.create(
+        audit_object=audit_object,
+        operation_name=operation_name,
+        operation_type=AuditLogOperationType.UPDATE,
+        operation_result=operation_result,
+        object_changes={},
+    )
+
+    cef_logger(audit_instance=audit_log, signature_id="Action completion")
+
+
+def audit_background_task(start_operation_status: str, end_operation_status: str) -> Callable:
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapped(*args, **kwargs):
+            make_audit_log(
+                operation_type="statistics",
+                result=AuditLogOperationResult.SUCCESS,
+                operation_status=start_operation_status,
+            )
+            try:
+                result = func(*args, **kwargs)
+            except Exception as error:
+                make_audit_log(
+                    operation_type="statistics",
+                    result=AuditLogOperationResult.FAIL,
+                    operation_status=end_operation_status,
+                )
+                raise error
+
+            make_audit_log(
+                operation_type="statistics",
+                result=AuditLogOperationResult.SUCCESS,
+                operation_status=end_operation_status,
+            )
+
+            return result
+
+        return wrapped
+
+    return decorator

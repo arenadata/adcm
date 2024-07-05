@@ -1,26 +1,34 @@
 import {
-  AdcmComponentConstraint,
-  AdcmHostShortView,
-  AdcmMappingComponent,
-  AdcmMapping,
-  AdcmMappingComponentService,
-  AdcmDependOnService,
-  ComponentId,
-  HostId,
-  ServiceId,
+  type AdcmComponentConstraint,
+  type AdcmHostShortView,
+  type AdcmMappingComponent,
+  type AdcmMapping,
+  type AdcmMappingComponentService,
+  type ComponentId,
+  type HostId,
+  type ServiceId,
+  type AdcmComponentDependency,
+  AdcmHostComponentMapRuleAction,
+  AdcmEntitySystemState,
+  AdcmMaintenanceMode,
 } from '@models/adcm';
-import {
+import type {
   HostMapping,
   ServiceMapping,
   ComponentMapping,
-  ValidationResult,
-  ComponentMappingValidation,
+  ComponentsMappingErrors,
   HostsDictionary,
-  MappingValidation,
-  ValidateCache,
-  ComponentValidateResult,
+  ValidationCache,
   ValidateRelatedData,
-  ValidationSuccess,
+  RequiredError,
+  ConstraintError,
+  NotAddedError,
+  ComponentDependenciesMappingErrors,
+  ComponentMappingValidationResultCacheItem,
+  ComponentDependencyValidationResultCacheItem,
+  ComponentMappingErrors,
+  ComponentDependencyMappingErrors,
+  ComponentAvailabilityErrors,
 } from './ClusterMapping.types';
 
 export const getComponentsMapping = (
@@ -53,7 +61,7 @@ export const getHostsMapping = (
   hosts: AdcmHostShortView[],
   componentsDictionary: Record<ComponentId, AdcmMappingComponent>,
 ): HostMapping[] => {
-  const hostComponentsDictionary: Record<HostId, AdcmMappingComponent[]> = {}; // key - component Id
+  const hostComponentsDictionary: Record<HostId, AdcmMappingComponent[]> = {};
 
   for (const m of mapping) {
     hostComponentsDictionary[m.hostId] = hostComponentsDictionary[m.hostId] ?? [];
@@ -71,8 +79,8 @@ export const getHostsMapping = (
 };
 
 export const getServicesMapping = (componentMapping: ComponentMapping[]): ServiceMapping[] => {
-  const servicesDictionary: Record<ServiceId, AdcmMappingComponentService> = {}; // key - serviceId
-  const serviceComponentsDictionary: Record<ServiceId, ComponentMapping[]> = {}; // // key - service Id
+  const servicesDictionary: Record<ServiceId, AdcmMappingComponentService> = {};
+  const serviceComponentsDictionary: Record<ServiceId, ComponentMapping[]> = {};
 
   // group components by service id
   for (const cm of componentMapping) {
@@ -93,51 +101,13 @@ export const getServicesMapping = (componentMapping: ComponentMapping[]): Servic
   return result;
 };
 
-export const validate = (componentMapping: ComponentMapping[], relatedData: ValidateRelatedData): MappingValidation => {
-  const byComponents: Record<ComponentId, ComponentMappingValidation> = {};
-  let isAllMappingValid = true;
-  const validateCache: ValidateCache = {
-    componentsCache: new Map(),
-    servicesCache: new Map(),
-  };
-
-  for (const cm of componentMapping) {
-    const { constraintsValidationResult, requireValidationResults } = validateComponent(cm, relatedData, validateCache);
-
-    const isValid = constraintsValidationResult.isValid && requireValidationResults.isValid;
-
-    isAllMappingValid = isAllMappingValid && isValid;
-
-    byComponents[cm.component.id] = {
-      constraintsValidationResult,
-      requireValidationResults,
-      isValid,
-    };
-  }
-
-  return {
-    isAllMappingValid,
-    byComponents,
-  };
-};
-
 export const mapHostsToComponent = (
-  servicesMapping: ServiceMapping[],
+  currentMapping: AdcmMapping[],
   hosts: AdcmHostShortView[],
   component: AdcmMappingComponent,
 ) => {
-  const result: AdcmMapping[] = [];
-
   // copy unchanged mappings
-  for (const service of servicesMapping) {
-    for (const mapping of service.componentsMapping) {
-      if (component.id !== mapping.component.id) {
-        for (const host of mapping.hosts) {
-          result.push({ hostId: host.id, componentId: mapping.component.id });
-        }
-      }
-    }
-  }
+  const result: AdcmMapping[] = currentMapping.filter((mapping) => mapping.componentId !== component.id);
 
   // add changed mappings
   for (const host of hosts) {
@@ -147,52 +117,132 @@ export const mapHostsToComponent = (
   return result;
 };
 
+export const mapComponentsToHost = (
+  currentMapping: AdcmMapping[],
+  components: AdcmMappingComponent[],
+  host: AdcmHostShortView,
+) => {
+  // copy unchanged mappings
+  const result: AdcmMapping[] = currentMapping.filter((mapping) => mapping.hostId !== host.id);
+
+  // add changed mappings
+  for (const component of components) {
+    result.push({ hostId: host.id, componentId: component.id });
+  }
+
+  return result;
+};
+
+export const validate = (
+  componentMapping: ComponentMapping[],
+  relatedData: ValidateRelatedData,
+): ComponentsMappingErrors => {
+  const result: ComponentsMappingErrors = {};
+
+  const validationCache: ValidationCache = {
+    components: new Map(),
+    dependencies: new Map(),
+  };
+
+  for (const cm of componentMapping) {
+    const componentMappingErrors = validateComponent(cm, relatedData, validationCache);
+
+    if (componentMappingErrors) {
+      result[cm.component.id] = componentMappingErrors;
+    }
+  }
+
+  return result;
+};
+
+const validateComponent = (
+  componentMapping: ComponentMapping,
+  relatedData: ValidateRelatedData,
+  validationCache: ValidationCache,
+): ComponentMappingErrors | undefined => {
+  const { components: cache } = validationCache;
+
+  const resultFromCache = cache.get(componentMapping.component.id);
+  if (resultFromCache) {
+    return resultFromCache.isValid ? undefined : resultFromCache.errors;
+  }
+
+  const constraintsError = validateConstraints(
+    componentMapping.component.constraints,
+    relatedData.allHostsCount,
+    componentMapping.hosts.length,
+  );
+
+  const dependenciesErrors = isMandatoryComponent(componentMapping)
+    ? validateDependencies(componentMapping.component, relatedData, validationCache)
+    : undefined;
+
+  let result = undefined;
+
+  if (constraintsError || dependenciesErrors) {
+    result = {
+      constraintsError,
+      dependenciesErrors,
+    };
+  }
+
+  const cacheItem: ComponentMappingValidationResultCacheItem =
+    result === undefined ? { isValid: true } : { isValid: false, errors: result };
+
+  cache.set(componentMapping.component.id, cacheItem);
+
+  return result;
+};
+
 export const validateConstraints = (
   constraints: AdcmComponentConstraint[],
   hostsCount: number,
   componentHostsCount: number,
-): ValidationResult => {
+): ConstraintError | undefined => {
   const [c1, c2] = constraints;
   if (constraints.length == 2 && typeof c1 === 'number' && typeof c2 === 'number') {
     return c1 <= componentHostsCount && componentHostsCount <= c2
-      ? { isValid: true }
-      : { isValid: false, errors: [`From ${c1} to ${c2} components should be installed.`] };
+      ? undefined
+      : { type: 'constraint', message: `From ${c1} to ${c2} components should be mapped.` };
   }
 
   if (constraints.length == 2 && typeof c1 === 'number' && typeof c2 === 'string') {
     switch (c2) {
       case 'odd':
         return ((c1 === 0 && componentHostsCount === 0) || componentHostsCount % 2) && componentHostsCount >= c1
-          ? { isValid: true }
-          : { isValid: false, errors: [`${c1} or more components should be installed. Total amount should be odd.`] };
+          ? undefined
+          : {
+              type: 'constraint',
+              message: `${c1} or more components should be mapped. Total amount should be odd.`,
+            };
       case '+':
       default:
         return componentHostsCount >= c1
-          ? { isValid: true }
-          : { isValid: false, errors: [`${c1} or more components should be installed.`] };
+          ? undefined
+          : { type: 'constraint', message: `${c1} or more components should be mapped.` };
     }
   }
 
   if (constraints.length == 1 && typeof c1 === 'number') {
     return componentHostsCount === c1
-      ? { isValid: true }
-      : { isValid: false, errors: [`Exactly ${c1} component should be installed.`] };
+      ? undefined
+      : { type: 'constraint', message: `Exactly ${c1} component should be mapped.` };
   }
 
   if (constraints.length == 1 && typeof c1 === 'string') {
     switch (c1) {
       case '+':
         return componentHostsCount === hostsCount
-          ? { isValid: true }
-          : { isValid: false, errors: ['Component should be installed on all hosts of cluster.'] };
+          ? undefined
+          : { type: 'constraint', message: 'Component should be mapped on all hosts of cluster.' };
       case 'odd':
         return componentHostsCount % 2
-          ? { isValid: true }
-          : { isValid: false, errors: ['1 or more components should be installed. Total amount should be odd.'] };
+          ? undefined
+          : { type: 'constraint', message: '1 or more components should be mapped. Total amount should be odd.' };
     }
   }
 
-  return { isValid: false, errors: ['Unknown constraints.'] };
+  return { type: 'constraint', message: 'Unknown constraints.' };
 };
 
 export const getConstraintsLimit = (constraints: AdcmComponentConstraint[]) => {
@@ -201,122 +251,126 @@ export const getConstraintsLimit = (constraints: AdcmComponentConstraint[]) => {
   return limit;
 };
 
-export const validateDependOn = (
+export const validateDependencies = (
   component: AdcmMappingComponent,
   relatedData: ValidateRelatedData,
-  validateCache: ValidateCache,
-): ValidationResult => {
-  // component have not dependencies
+  validationCache: ValidationCache,
+): ComponentDependenciesMappingErrors | undefined => {
   if (!component.dependOn || component.dependOn.length === 0) {
-    return { isValid: true };
+    return undefined;
   }
 
-  const errors = [];
-  for (const { servicePrototype: dependService } of component.dependOn) {
-    // component depend on not added service
-    if (!validateServiceRequire(dependService, relatedData, validateCache)) {
-      let error = `Requires mapping of service "${dependService.displayName}"`;
+  const notAddedErrors: NotAddedError[] = [];
+  const requiredErrors: RequiredError[] = [];
 
-      // when component depend on special components of service
-      if (dependService.componentPrototypes.length > 0) {
-        const componentsNames = dependService.componentPrototypes.map(({ displayName }) => displayName);
-        error += ` (components: ${componentsNames.join(', ')})`;
+  for (const { servicePrototype: dependService } of component.dependOn) {
+    const dependencyErrors = validateDependency(dependService, relatedData, validationCache);
+    if (dependencyErrors) {
+      if (dependencyErrors.notAddedError) {
+        notAddedErrors.push(dependencyErrors.notAddedError);
       }
-      errors.push(error);
+
+      if (dependencyErrors.requiredError) {
+        requiredErrors.push(dependencyErrors.requiredError);
+      }
     }
   }
 
-  if (errors.length > 0) {
-    return {
-      isValid: false,
-      errors,
+  if (requiredErrors.length === 0 && notAddedErrors.length === 0) {
+    return undefined;
+  }
+
+  return {
+    notAddedErrors: notAddedErrors.length ? notAddedErrors : undefined,
+    requiredErrors: requiredErrors.length ? requiredErrors : undefined,
+  };
+};
+
+export const validateDependency = (
+  componentDependency: AdcmComponentDependency,
+  relatedData: ValidateRelatedData,
+  validationCache: ValidationCache,
+): ComponentDependencyMappingErrors | undefined => {
+  const { dependencies: cache } = validationCache;
+
+  const resultFromCache = cache.get(componentDependency.id);
+  if (resultFromCache) {
+    if (resultFromCache.isValid) {
+      return undefined;
+    } else {
+      return resultFromCache.errors;
+    }
+  }
+
+  const notAddedError = validateNotAddedDependency(componentDependency, relatedData);
+  const requiredError = validateRequireDependency(componentDependency, relatedData, validationCache);
+
+  const result = notAddedError || requiredError ? { notAddedError, requiredError } : undefined;
+
+  const cacheItem: ComponentDependencyValidationResultCacheItem = result
+    ? { isValid: false, errors: result }
+    : { isValid: true };
+
+  cache.set(componentDependency.id, cacheItem);
+
+  return result;
+};
+
+const validateNotAddedDependency = (
+  servicePrototype: AdcmComponentDependency,
+  relatedData: ValidateRelatedData,
+): NotAddedError | undefined => {
+  let result: NotAddedError | undefined = undefined;
+
+  // component depend on not added service
+  if (relatedData.notAddedServicesDictionary[servicePrototype.id]) {
+    result = {
+      type: 'not-added',
+      params: {
+        service: servicePrototype,
+      },
     };
   }
 
-  return { isValid: true };
+  return result;
 };
 
-const validateServiceRequire = (
-  servicePrototype: AdcmDependOnService['servicePrototype'],
+const validateRequireDependency = (
+  servicePrototype: AdcmComponentDependency,
   relatedData: ValidateRelatedData,
-  validateCache: ValidateCache,
-) => {
-  const { servicesCache } = validateCache;
-  if (servicesCache.has(servicePrototype.id)) {
-    return servicesCache.get(servicePrototype.id);
-  }
-
-  const { notAddedServicesDictionary, servicesMappingDictionary } = relatedData;
-
-  // component depend on not added service
-  if (notAddedServicesDictionary[servicePrototype.id]) {
-    servicesCache.set(servicePrototype.id, false);
-    return false;
-  }
-
-  const dependServiceMapping = servicesMappingDictionary[servicePrototype.id];
+  validationCache: ValidationCache,
+): RequiredError | undefined => {
+  const dependServiceMapping = relatedData.servicesMappingDictionary[servicePrototype.id];
   // component depend on added service (but this service have no child components)
   if (!dependServiceMapping || dependServiceMapping.componentsMapping.length === 0) {
-    servicesCache.set(servicePrototype.id, true);
-    return true;
+    return undefined;
   }
 
-  const componentPrototypesIds = servicePrototype.componentPrototypes.map(({ id }) => id);
+  const componentPrototypesIds = new Set(servicePrototype.componentPrototypes.map(({ id }) => id));
 
   const requiredComponents = dependServiceMapping.componentsMapping.filter(({ component }) =>
-    componentPrototypesIds.includes(component.prototype.id),
+    componentPrototypesIds.has(component.prototype.id),
   );
 
   for (const requiredComponentItem of requiredComponents) {
-    const { constraintsValidationResult, requireValidationResults } = validateComponent(
-      requiredComponentItem,
-      relatedData,
-      validateCache,
-    );
-    const isValidChildComponent = constraintsValidationResult.isValid && requireValidationResults.isValid;
+    const componentMappingErrors = validateComponent(requiredComponentItem, relatedData, validationCache);
 
-    const isMappedChildComponent = requiredComponentItem.hosts.length > 0;
+    const isRequiredComponentsMapped = requiredComponentItem.hosts.length > 0;
 
-    if (!isValidChildComponent || !isMappedChildComponent) {
-      servicesCache.set(servicePrototype.id, false);
-      return false;
+    if (componentMappingErrors || !isRequiredComponentsMapped) {
+      const error: RequiredError = {
+        type: 'required',
+        params: {
+          service: servicePrototype.displayName,
+          components: servicePrototype.componentPrototypes.map(({ displayName }) => displayName),
+        },
+      };
+
+      return error;
     }
   }
 
-  servicesCache.set(servicePrototype.id, true);
-  return true;
-};
-
-const validateComponent = (
-  componentMapping: ComponentMapping,
-  relatedData: ValidateRelatedData,
-  validateCache: ValidateCache,
-) => {
-  const { componentsCache } = validateCache;
-  if (componentsCache.has(componentMapping.component.id)) {
-    return componentsCache.get(componentMapping.component.id) as ComponentValidateResult;
-  }
-
-  const constraintsValidationResult = validateConstraints(
-    componentMapping.component.constraints,
-    relatedData.allHostsCount,
-    componentMapping.hosts.length,
-  );
-
-  // if component can be not mapping (constraint = [0,...]) and user not mapped some hosts to this component
-  // then we can ignore validateDependOn for this component
-  const requireValidationResults = isMandatoryComponent(componentMapping)
-    ? validateDependOn(componentMapping.component, relatedData, validateCache)
-    : ({ isValid: true } as ValidationSuccess);
-
-  const result = {
-    constraintsValidationResult,
-    requireValidationResults,
-  };
-
-  componentsCache.set(componentMapping.component.id, result);
-
-  return result;
+  return undefined;
 };
 
 const isMandatoryComponent = (componentMapping: ComponentMapping) => {
@@ -326,11 +380,46 @@ const isMandatoryComponent = (componentMapping: ComponentMapping) => {
   return !(component.constraints[0] === 0 && hosts.length === 0);
 };
 
-export const isComponentDependOnNotAddedServices = (
+export const checkComponentMappingAvailability = (
   component: AdcmMappingComponent,
-  notAddedServicesDictionary: ValidateRelatedData['notAddedServicesDictionary'],
-) => {
-  if (!component.dependOn?.length) return false;
+  allowActions?: Set<AdcmHostComponentMapRuleAction>,
+): ComponentAvailabilityErrors => {
+  const isAvailable =
+    component.service.state === AdcmEntitySystemState.Created && component.maintenanceMode === AdcmMaintenanceMode.Off;
 
-  return component.dependOn.some(({ servicePrototype }) => !!notAddedServicesDictionary[servicePrototype.id]);
+  const result: ComponentAvailabilityErrors = {
+    componentNotAvailableError:
+      !isAvailable && !allowActions
+        ? 'Service of this component must have "Created" state. Maintenance mode on the components must be Off'
+        : undefined,
+  };
+
+  if (allowActions) {
+    result.componentNotAvailableError =
+      allowActions.size === 0 ? 'Mapping is not allowed in action configuration' : result.componentNotAvailableError;
+    result.addingHostsNotAllowedError = !allowActions.has(AdcmHostComponentMapRuleAction.Add)
+      ? 'Adding hosts is not allowed in the action configuration'
+      : undefined;
+    result.removingHostsNotAllowedError = !allowActions.has(AdcmHostComponentMapRuleAction.Remove)
+      ? 'Removing hosts is not allowed in the action configuration'
+      : undefined;
+  }
+
+  return result;
+};
+
+export const checkHostMappingAvailability = (
+  host: AdcmHostShortView,
+  allowActions?: Set<AdcmHostComponentMapRuleAction>,
+  disabledHosts?: Set<HostId>,
+): string | undefined => {
+  const isAvailable = host.maintenanceMode === AdcmMaintenanceMode.Off;
+  let result = !isAvailable ? 'Maintenance mode on the host must be Off' : undefined;
+
+  if (allowActions && disabledHosts) {
+    const isDisabled = !allowActions.has(AdcmHostComponentMapRuleAction.Remove) && disabledHosts.has(host.id);
+    result = isDisabled ? 'Removing host is not allowed in the action configuration' : result;
+  }
+
+  return result;
 };

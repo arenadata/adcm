@@ -1,9 +1,9 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import CollapseNode from '@uikit/CollapseTree2/CollapseNode';
 import FieldNodeContent from './NodeContent/FieldNodeContent';
 import AddItemNodeContent from './NodeContent/AddItemNodeContent';
 import NodeWithChildrenContent from './NodeContent/NodeWithChildrenContent';
-import {
+import type {
   ConfigurationNode,
   ConfigurationNodeView,
   ConfigurationArray,
@@ -12,11 +12,11 @@ import {
   ConfigurationObject,
 } from '../ConfigurationEditor.types';
 import { buildConfigurationNodes, buildConfigurationTree, validate } from './ConfigurationTree.utils';
-import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
-import { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from './ConfigurationTree.types';
+import type { ConfigurationAttributes, ConfigurationData, ConfigurationSchema, FieldErrors } from '@models/adcm';
+import type { ChangeConfigurationNodeHandler, ChangeFieldAttributesHandler } from './ConfigurationTree.types';
 import s from './ConfigurationTree.module.scss';
 import cn from 'classnames';
-import { rootNodeKey } from './ConfigurationTree.constants';
+import { rootNodeKey, toggleAllNodesEventName } from './ConfigurationTree.constants';
 
 export interface ConfigurationTreeProps {
   schema: ConfigurationSchema;
@@ -61,18 +61,26 @@ const ConfigurationTree = memo(
     onFieldAttributesChange,
     onChangeIsValid,
   }: ConfigurationTreeProps) => {
+    const ref = useRef<HTMLDivElement>(null);
     const configNode: ConfigurationNode = buildConfigurationNodes(schema, configuration, attributes);
     const [selectedNode, setSelectedNode] = useState<ConfigurationNodeView | null>(null);
 
     const viewConfigTree = buildConfigurationTree(configNode, filter);
 
-    const { isValid, errorsPaths } = validate(schema, configuration, attributes);
+    const { isValid, configurationErrors } = validate(schema, configuration, attributes);
     // todo: remove commented for debugging process
-    // !isValid && console.error(errorsPaths);
+    // !isValid && console.error(configurationErrors);
 
     useEffect(() => {
       onChangeIsValid?.(isValid);
     }, [isValid, onChangeIsValid]);
+
+    useEffect(() => {
+      if (ref.current) {
+        const eventData = { detail: areExpandedAll };
+        ref.current.dispatchEvent(new CustomEvent(toggleAllNodesEventName, eventData));
+      }
+    }, [areExpandedAll]);
 
     const handleClick = (node: ConfigurationNodeView, ref: React.RefObject<HTMLElement>) => {
       setSelectedNode(node);
@@ -80,7 +88,7 @@ const ConfigurationTree = memo(
     };
 
     const handleGetNodeClassName = (node: ConfigurationNodeView) => {
-      const hasError = errorsPaths[node.key] !== undefined;
+      const hasError = configurationErrors[node.key] !== undefined;
       const isSelected = node.key === selectedNode?.key;
       return getNodeClassName(node, hasError, isSelected);
     };
@@ -90,13 +98,14 @@ const ConfigurationTree = memo(
       isExpanded: boolean,
       onExpand: (isOpen: boolean) => void,
     ) => {
-      const error = typeof errorsPaths[node.key] === 'string' ? (errorsPaths[node.key] as string) : undefined;
+      const errors =
+        typeof configurationErrors[node.key] === 'object' ? (configurationErrors[node.key] as FieldErrors) : undefined;
       switch (node.data.type) {
         case 'field': {
           return (
             <FieldNodeContent
               node={node}
-              error={error}
+              errors={errors}
               onClick={handleClick}
               onClear={onClear}
               onDelete={onDelete}
@@ -118,7 +127,7 @@ const ConfigurationTree = memo(
             <NodeWithChildrenContent
               node={node}
               isExpanded={isExpanded}
-              error={error}
+              errors={errors}
               onClear={onClear}
               onDelete={onDelete}
               onExpand={onExpand}
@@ -130,13 +139,15 @@ const ConfigurationTree = memo(
     };
 
     return (
-      <CollapseNode
-        node={viewConfigTree}
-        isInitiallyExpanded={viewConfigTree.key === rootNodeKey}
-        areExpandedAll={areExpandedAll}
-        getNodeClassName={handleGetNodeClassName}
-        renderNodeContent={handleRenderNodeContent}
-      />
+      <div ref={ref}>
+        <CollapseNode
+          node={viewConfigTree}
+          treeRef={ref}
+          isInitiallyExpanded={viewConfigTree.key === rootNodeKey}
+          getNodeClassName={handleGetNodeClassName}
+          renderNodeContent={handleRenderNodeContent}
+        />
+      </div>
     );
   },
 );

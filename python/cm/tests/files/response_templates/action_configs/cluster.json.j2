@@ -16,9 +16,6 @@
         "client_id": null,
         "secret": null
       },
-      "ansible_settings": {
-        "forks": 5
-      },
       "logrotate": null,
       "audit_data_retention": {
         "log_rotation_on_fs": 365,
@@ -52,7 +49,7 @@
     "action": "with_config",
     "job_name": "with_config",
     "command": "with_config",
-    "script": "./playbook.yaml",
+    "script": "playbook.yaml",
     "verbose": false,
     "playbook": "{{ stackdir }}/data/bundle/{{ cluster_bundle.hash }}/playbook.yaml",
     "cluster_id": 1,

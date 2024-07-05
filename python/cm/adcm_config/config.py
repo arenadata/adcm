@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from collections import OrderedDict
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 import re
@@ -20,7 +21,6 @@ import json
 from ansible.errors import AnsibleError
 from django.conf import settings
 from django.db.models import QuerySet
-from jinja_config import get_jinja_config
 
 from cm.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.adcm_config.checks import check_attr, check_config_type
@@ -45,50 +45,24 @@ from cm.models import (
     GroupConfig,
     HostProvider,
     ObjectConfig,
-    ObjectType,
     Prototype,
     PrototypeConfig,
     ServiceComponent,
-    StagePrototype,
 )
+from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
+from cm.services.config.jinja import get_jinja_config
 from cm.utils import deep_merge, dict_to_obj, obj_to_dict
 from cm.variant import get_variant, process_variant
 
 
-def get_path_file_from_bundle(file_name: str, bundle_hash: str, path: str, is_adcm: bool = False) -> Path:
-    if is_adcm:
-        return settings.BASE_DIR / "conf/adcm" / file_name
-
-    if file_name.startswith("./"):
-        return Path(settings.BUNDLE_DIR, bundle_hash, path, file_name)
-
-    return Path(settings.BUNDLE_DIR, bundle_hash, file_name)
-
-
-def read_bundle_file(proto: Prototype | StagePrototype, fname: str, bundle_hash: str, ref=None) -> str | None:
-    if not ref:
-        ref = proto_ref(proto)
-
-    file_descriptor = None
-
-    path = get_path_file_from_bundle(
-        file_name=fname, bundle_hash=bundle_hash, path=proto.path, is_adcm=proto.type == ObjectType.ADCM
-    )
-
+@contextmanager
+def reraise_file_errors_as_adcm_ex(filepath: Path | str, reference: str):
     try:
-        file_descriptor = open(path, encoding=settings.ENCODING_UTF_8)  # noqa: SIM115
-    except FileNotFoundError:
-        raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'{bundle_hash} "{path}" is not found ({ref})')
-    except PermissionError:
-        raise_adcm_ex(code="CONFIG_TYPE_ERROR", msg=f'{bundle_hash} "{path}" can not be open ({ref})')
-
-    if file_descriptor:
-        body = file_descriptor.read()
-        file_descriptor.close()
-
-        return body
-
-    return None
+        yield
+    except FileNotFoundError as err:
+        raise AdcmEx(code="CONFIG_TYPE_ERROR", msg=f'"{filepath}" is not found ({reference})') from err
+    except PermissionError as err:
+        raise AdcmEx(code="CONFIG_TYPE_ERROR", msg=f'"{filepath}" can not be open ({reference})') from err
 
 
 def init_object_config(proto: Prototype, obj: Any) -> ObjectConfig | None:
@@ -114,7 +88,7 @@ def get_prototype_config(
     flist = ("default", "required", "type", "limits")
 
     if action is not None and obj is not None and action.config_jinja:
-        proto_conf, _ = get_jinja_config(action=action, obj=obj)
+        proto_conf, _ = get_jinja_config(action=action, cluster_relative_object=obj)
         proto_conf_group = [config for config in proto_conf if config.type == "group"]
     else:
         proto_conf = PrototypeConfig.objects.filter(prototype=prototype, action=action).order_by("id")
@@ -128,15 +102,19 @@ def get_prototype_config(
         if "activatable" in conf.limits:
             attr[conf.name] = {"active": conf.limits["active"]}
 
+    path_resolver = (
+        ADCMBundlePathResolver() if prototype.type == "adcm" else BundlePathResolver(bundle_hash=prototype.bundle.hash)
+    )
+
     for conf in proto_conf:
         flat_spec[f"{conf.name}/{conf.subname}"] = conf
         if conf.subname == "":
             if conf.type != "group":
                 spec[conf.name] = obj_to_dict(conf, flist)
-                config[conf.name] = get_default(conf, prototype)
+                config[conf.name] = get_default(conf, path_resolver=path_resolver)
         else:
             spec[conf.name][conf.subname] = obj_to_dict(conf, flist)
-            config[conf.name][conf.subname] = get_default(conf, prototype)
+            config[conf.name][conf.subname] = get_default(conf, path_resolver=path_resolver)
 
     return spec, flat_spec, config, attr
 
@@ -168,13 +146,24 @@ def switch_config(
     new_unflat_spec, new_spec, _, _ = get_prototype_config(prototype=new_prototype)
     old_conf = to_flat_dict(config=config_log.config, spec=old_spec)
 
+    old_path_resolver = (
+        ADCMBundlePathResolver()
+        if old_prototype.type == "adcm"
+        else BundlePathResolver(bundle_hash=old_prototype.bundle.hash)
+    )
+    new_path_resolver = (
+        ADCMBundlePathResolver()
+        if old_prototype.type == "adcm"
+        else BundlePathResolver(bundle_hash=new_prototype.bundle.hash)
+    )
+
     def is_new_default(_key):
         if not new_spec[_key].default:
             return False
 
         if old_spec[_key].default:
             if _key in old_conf:
-                return bool(get_default(conf=old_spec[_key], prototype=old_prototype) == old_conf[_key])
+                return bool(get_default(conf=old_spec[_key], path_resolver=old_path_resolver) == old_conf[_key])
             else:
                 return True
 
@@ -207,11 +196,11 @@ def switch_config(
 
         if key in old_spec:
             if is_new_default(key):
-                new_conf[key] = get_default(conf=new_spec[key], prototype=new_prototype)
+                new_conf[key] = get_default(conf=new_spec[key], path_resolver=new_path_resolver)
             else:
-                new_conf[key] = old_conf.get(key, get_default(conf=new_spec[key], prototype=new_prototype))
+                new_conf[key] = old_conf.get(key, get_default(conf=new_spec[key], path_resolver=new_path_resolver))
         else:
-            new_conf[key] = get_default(conf=new_spec[key], prototype=new_prototype)
+            new_conf[key] = get_default(conf=new_spec[key], path_resolver=new_path_resolver)
 
     # go from flat config to 2-level dictionary
     unflat_conf = {}
@@ -295,6 +284,7 @@ def merge_config_of_group_with_primary_config(
     group: GroupConfig,
     primary_config: ConfigLog,
     current_config_of_group: ConfigLog,
+    description: str,
 ) -> ConfigLog:
     spec = group.get_config_spec()
     current_group_keys = current_config_of_group.attr["group_keys"]
@@ -319,9 +309,7 @@ def merge_config_of_group_with_primary_config(
     )
     attr["custom_group_keys"] = custom_group_keys
 
-    return ConfigLog.objects.create(
-        obj_ref=group.config, config=config, attr=attr, description=current_config_of_group.description
-    )
+    return ConfigLog.objects.create(obj_ref=group.config, config=config, attr=attr, description=description)
 
 
 def update_group_configs_by_primary_object(
@@ -331,7 +319,10 @@ def update_group_configs_by_primary_object(
         current_group_config = ConfigLog.objects.get(id=config_group.config.current)
 
         config_log = merge_config_of_group_with_primary_config(
-            group=config_group, primary_config=config, current_config_of_group=current_group_config
+            group=config_group,
+            primary_config=config,
+            current_config_of_group=current_group_config,
+            description=config.description,
         )
 
         config_log.save()
@@ -347,7 +338,10 @@ def update_group_config(group_config: GroupConfig, config: ConfigLog) -> ConfigL
     primary_config = ConfigLog.objects.get(id=group_config.object.config.current)
 
     return merge_config_of_group_with_primary_config(
-        group=group_config, primary_config=primary_config, current_config_of_group=config
+        group=group_config,
+        primary_config=primary_config,
+        current_config_of_group=config,
+        description=config.description,
     )
 
 
@@ -490,6 +484,10 @@ def ui_config(obj, config_log):
     custom_group_keys = obj_attr.get("custom_group_keys", {})
     slist = ("name", "subname", "type", "description", "display_name", "required")
 
+    path_resolver = (
+        ADCMBundlePathResolver() if isinstance(obj, ADCM) else BundlePathResolver(bundle_hash=obj.prototype.bundle.hash)
+    )
+
     for key in spec:
         item = obj_to_dict(spec[key], slist)
         limits = spec[key].limits
@@ -504,11 +502,11 @@ def ui_config(obj, config_log):
         if item["type"] == "variant":
             item["limits"]["source"]["value"] = get_variant(obj, obj_conf, limits)
 
-        item["default"] = get_default(spec[key], obj.prototype)
+        item["default"] = get_default(spec[key], path_resolver=path_resolver)
         if key in flat_conf:
             item["value"] = flat_conf[key]
         else:
-            item["value"] = get_default(spec[key], obj.prototype)
+            item["value"] = get_default(spec[key], path_resolver=path_resolver)
 
         if group_keys:
             if spec[key].type == "group":
@@ -798,10 +796,7 @@ def get_option_value(value: str, limits: dict) -> str | int | float:
     return raise_adcm_ex("CONFIG_OPTION_ERROR")
 
 
-def get_default(
-    conf: PrototypeConfig,
-    prototype: Prototype | None = None,
-) -> Any:
+def get_default(conf: PrototypeConfig, path_resolver: PathResolver | None = None) -> Any:
     value = conf.default
     if conf.default == "":
         value = None
@@ -819,22 +814,16 @@ def get_default(
         value = conf.default if isinstance(conf.default, bool) else bool(conf.default.lower() in {"true", "yes"})
     elif conf.type == "option":
         value = get_option_value(value=value, limits=conf.limits)
-    elif conf.type == "file" and prototype and conf.default:
-        value = read_bundle_file(
-            proto=prototype,
-            fname=conf.default,
-            bundle_hash=prototype.bundle.hash,
-            ref=f'config key "{conf.name}/{conf.subname}" default file',
-        )
-    elif conf.type == "secretfile" and prototype and conf.default:
-        value = ansible_encrypt_and_format(
-            msg=read_bundle_file(
-                proto=prototype,
-                fname=conf.default,
-                bundle_hash=prototype.bundle.hash,
-                ref=f'config key "{conf.name}/{conf.subname}" default file',
-            ),
-        )
+    elif conf.type == "file" and path_resolver and conf.default:
+        with reraise_file_errors_as_adcm_ex(
+            filepath=conf.default, reference=f'config key "{conf.name}/{conf.subname}" default file'
+        ):
+            value = path_resolver.resolve(conf.default).read_text(encoding="utf-8")
+    elif conf.type == "secretfile" and path_resolver and conf.default:
+        with reraise_file_errors_as_adcm_ex(
+            filepath=conf.default, reference=f'config key "{conf.name}/{conf.subname}" default file'
+        ):
+            value = ansible_encrypt_and_format(msg=path_resolver.resolve(conf.default).read_text(encoding="utf-8"))
 
     if conf.type == "secretmap" and conf.default:
         new_value = {}
@@ -863,4 +852,8 @@ def get_main_info(obj: ADCMEntity | None) -> str | None:
     if not main_info:
         return None
 
-    return get_default(main_info, obj.prototype)
+    path_resolver = (
+        ADCMBundlePathResolver() if isinstance(obj, ADCM) else BundlePathResolver(bundle_hash=obj.prototype.bundle.hash)
+    )
+
+    return get_default(main_info, path_resolver=path_resolver)

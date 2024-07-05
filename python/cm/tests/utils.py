@@ -165,7 +165,7 @@ def gen_host_component(component: ServiceComponent, host: Host) -> HostComponent
     )
 
 
-def gen_concern_item(concern_type, name: str | None = None, reason=None, blocking=True, owner=None) -> ConcernItem:
+def gen_concern_item(concern_type, owner, name: str = "", reason="", blocking=True) -> ConcernItem:
     """Generate ConcernItem object"""
     reason = reason or {"message": "Test", "placeholder": {}}
     return ConcernItem.objects.create(type=concern_type, name=name, reason=reason, blocking=blocking, owner=owner)
@@ -177,18 +177,13 @@ def gen_action(name: str | None = None, bundle=None, prototype=None) -> Action:
         bundle = bundle or gen_bundle()
         prototype = gen_prototype(bundle, "service")
     return Action.objects.create(
-        name=name or gen_name("action_"),
-        display_name=f"Test {prototype.type} action",
-        prototype=prototype,
-        type="task",
-        script="",
-        script_type="ansible",
+        name=name or gen_name("action_"), display_name=f"Test {prototype.type} action", prototype=prototype, type="task"
     )
 
 
 def gen_task_log(obj: ADCMEntity, action: Action = None) -> TaskLog:
     return TaskLog.objects.create(
-        action=action or gen_action(),
+        action=action or gen_action(prototype=obj.prototype),
         object_id=obj.pk,
         status="CREATED",
         task_object=obj,
@@ -200,7 +195,6 @@ def gen_task_log(obj: ADCMEntity, action: Action = None) -> TaskLog:
 def gen_job_log(task: TaskLog) -> JobLog:
     return JobLog.objects.create(
         task=task,
-        action=task.action,
         status="CREATED",
         start_date=timezone.now(),
         finish_date=timezone.now(),

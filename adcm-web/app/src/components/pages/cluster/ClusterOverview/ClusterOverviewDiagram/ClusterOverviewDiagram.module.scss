@@ -12,4 +12,8 @@
   &_down {
     color: var(--color-yellow-light);
   }
+
+  &_empty {
+    --circle-diagram-empty-color: var(--color-xgreen);
+  }
 }

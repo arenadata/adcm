@@ -13,6 +13,7 @@
 from cm.errors import raise_adcm_ex
 from cm.models import (
     Action,
+    ActionHostGroup,
     ADCMEntity,
     ClusterObject,
     ConfigLog,
@@ -226,6 +227,11 @@ def apply_jobs(task: TaskLog, policy: Policy) -> None:
 def re_apply_policy_for_jobs(action_object: ADCMEntity, task: TaskLog) -> None:
     obj_type_map = get_objects_for_policy(obj=action_object)
     object_model = action_object.__class__.__name__.lower()
+
+    target = task.task_object
+    if isinstance(target, ActionHostGroup):
+        target = target.object
+
     task_role, _ = Role.objects.get_or_create(
         name=f"View role for task {task.id}",
         display_name=f"View role for task {task.id}",
@@ -236,7 +242,7 @@ def re_apply_policy_for_jobs(action_object: ADCMEntity, task: TaskLog) -> None:
         init_params={
             "task_id": task.id,
         },
-        parametrized_by_type=[task.task_object.prototype.type],
+        parametrized_by_type=[target.prototype.type],
     )
 
     for obj, content_type in obj_type_map.items():

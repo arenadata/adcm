@@ -1,27 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useDispatch, useStore } from '@hooks';
+import { useDispatch, useStore, usePrevious } from '@hooks';
+import { Switch } from '@uikit';
 import ClusterMappingToolbar from './ClusterMappingToolbar/ClusterMappingToolbar';
 import ComponentsMapping from './ComponentsMapping/ComponentsMapping';
 import HostsMapping from './HostsMapping/HostsMapping';
+import RequiredServicesDialog from './RequiredServicesDialog/RequiredServicesDialog';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import {
   getMappings,
   cleanupMappings,
   getNotAddedServices,
   saveMapping,
+  openRequiredServicesDialog,
 } from '@store/adcm/cluster/mapping/mappingSlice';
 import { useClusterMapping } from './useClusterMapping';
 import s from './ClusterMapping.module.scss';
+import { AdcmMappingComponent } from '@models/adcm';
+import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const ClusterMapping: React.FC = () => {
   const dispatch = useDispatch();
+
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
+  const { mapping, hosts, components, loading, saving } = useStore(({ adcm }) => adcm.clusterMapping);
+  const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
+  const accessCheckStatus = useStore(({ adcm }) => adcm.clusterMapping.accessCheckStatus);
 
   const { clusterId: clusterIdFromUrl } = useParams();
   const clusterId = Number(clusterIdFromUrl);
 
   const [isHostsPreviewMode, setIsHostsPreviewMode] = useState<boolean>(false);
+  const [hasSaveError, setHasSaveError] = useState(false);
 
   useEffect(() => {
     if (!Number.isNaN(clusterId)) {
@@ -41,64 +51,102 @@ const ClusterMapping: React.FC = () => {
           { href: '/clusters', label: 'Clusters' },
           { href: `/clusters/${cluster.id}`, label: cluster.name },
           { label: 'Mapping' },
+          { label: isHostsPreviewMode ? 'Hosts view' : 'Components view' },
         ]),
       );
     }
-  }, [cluster, dispatch]);
-
-  const { mapping, hosts, components, loading, saving } = useStore(({ adcm }) => adcm.clusterMapping);
-  const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
+  }, [cluster, isHostsPreviewMode, dispatch]);
 
   const {
     localMapping,
     mappingFilter,
+    mappingSortDirection,
     servicesMapping,
     hostsMapping,
-    mappingValidation,
+    mappingErrors,
     isMappingChanged,
-    handleMap,
+    handleMapHostsToComponent,
+    handleMapComponentsToHost,
     handleUnmap,
     handleMappingFilterChange,
+    handleMappingSortDirectionChange,
     handleReset,
   } = useClusterMapping(mapping, hosts, components, notAddedServicesDictionary, loading.state === 'completed');
 
-  const handleSave = () => {
-    dispatch(saveMapping({ clusterId, mapping: localMapping }));
+  const prevLocalMapping = usePrevious(localMapping);
+
+  useEffect(() => {
+    if (hasSaveError && localMapping !== prevLocalMapping) {
+      setHasSaveError(false);
+    }
+  }, [prevLocalMapping, localMapping, hasSaveError]);
+
+  const handleSave = async () => {
+    try {
+      await dispatch(saveMapping({ clusterId, mapping: localMapping })).unwrap();
+    } catch {
+      setHasSaveError(true);
+    }
   };
 
+  const handleInstallServices = (component: AdcmMappingComponent) => {
+    dispatch(openRequiredServicesDialog(component));
+  };
+
+  const handleHostsPreviewModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setIsHostsPreviewMode(event.target.checked);
+  };
+
+  const isValid = Object.keys(mappingErrors).length === 0;
+
   return (
-    <div className={s.clusterMapping}>
-      <ClusterMappingToolbar
-        filter={mappingFilter}
-        isHostsPreviewMode={isHostsPreviewMode}
-        hasSaveError={saving.hasError}
-        isValid={mappingValidation.isAllMappingValid}
-        savingState={saving.state}
-        isMappingChanged={isMappingChanged}
-        onFilterChange={handleMappingFilterChange}
-        onHostsPreviewModeChange={setIsHostsPreviewMode}
-        onReset={handleReset}
-        onSave={handleSave}
-      />
-      {isHostsPreviewMode ? (
-        <HostsMapping
-          //
-          hostsMapping={hostsMapping}
-          mappingFilter={mappingFilter}
-          mappingValidation={mappingValidation}
+    <PermissionsChecker requestState={accessCheckStatus}>
+      <div className={s.clusterMapping}>
+        <ClusterMappingToolbar
+          filter={mappingFilter}
+          sortDirection={mappingSortDirection}
+          hasSaveError={hasSaveError}
+          isValid={isValid}
+          savingState={saving.state}
+          isMappingChanged={isMappingChanged}
+          onFilterChange={handleMappingFilterChange}
+          onSortDirectionChange={handleMappingSortDirectionChange}
+          onReset={handleReset}
+          onSave={handleSave}
         />
-      ) : (
-        <ComponentsMapping
-          hosts={hosts}
-          servicesMapping={servicesMapping}
-          mappingValidation={mappingValidation}
-          mappingFilter={mappingFilter}
-          notAddedServicesDictionary={notAddedServicesDictionary}
-          onMap={handleMap}
-          onUnmap={handleUnmap}
+        <Switch
+          className={s.hostsModeSwitch}
+          size="small"
+          isToggled={isHostsPreviewMode}
+          onChange={handleHostsPreviewModeChange}
+          label="Hosts mode"
         />
-      )}
-    </div>
+        {isHostsPreviewMode ? (
+          <HostsMapping
+            //
+            components={components}
+            hostsMapping={hostsMapping}
+            mappingFilter={mappingFilter}
+            mappingErrors={mappingErrors}
+            onMap={handleMapComponentsToHost}
+            onUnmap={handleUnmap}
+            onInstallServices={handleInstallServices}
+          />
+        ) : (
+          <ComponentsMapping
+            hosts={hosts}
+            servicesMapping={servicesMapping}
+            mappingErrors={mappingErrors}
+            mappingFilter={mappingFilter}
+            onMap={handleMapHostsToComponent}
+            onUnmap={handleUnmap}
+            onInstallServices={handleInstallServices}
+          />
+        )}
+
+        <RequiredServicesDialog />
+      </div>
+    </PermissionsChecker>
   );
 };
 

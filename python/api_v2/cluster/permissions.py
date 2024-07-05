@@ -28,7 +28,7 @@ class ClusterPermissions(DjangoObjectPermissions):
     @audit
     def has_permission(self, request, view) -> bool:
         if (
-            view.action in ["destroy", "update", "partial_update"]
+            view.action in ["destroy", "update", "partial_update", "ansible_config"]
             or view.action == "mapping"
             and request.method == "POST"
         ):
@@ -39,6 +39,8 @@ class ClusterPermissions(DjangoObjectPermissions):
     def has_object_permission(self, request, view, obj) -> bool:
         if view.action == "mapping" and request.method == "POST":
             self.perms_map["POST"] = []
+        elif view.action == "ansible_config" and request.method == "POST":
+            self.perms_map["POST"] = ["%(app_label)s.change_%(model_name)s"]
         else:
             self.perms_map["POST"] = ["%(app_label)s.add_%(model_name)s"]
 

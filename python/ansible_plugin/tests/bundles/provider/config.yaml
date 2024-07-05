@@ -1,0 +1,32 @@
+- type: provider
+  name: simple_provider
+  version: 3
+
+  actions: &actions
+    dummy:
+      type: job
+      script_type: ansible
+      script: ./playbook.yaml
+      masking:
+
+  config: &config
+    - name: ip
+      type: string
+      default: "127.0.0.1"
+    - name: inside
+      type: group
+      subs:
+        - name: simple_secret
+          type: password
+          required: false
+        - name: complex_secret
+          type: secrettext
+          required: false
+
+- type: host
+  name: host
+  version: 2
+
+  actions: *actions
+
+  config: *config

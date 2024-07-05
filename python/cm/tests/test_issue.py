@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from operator import attrgetter
 from typing import Iterable
 from unittest.mock import patch
@@ -19,7 +20,8 @@ from cm.api import add_cluster, add_service_to_cluster
 from cm.hierarchy import Tree
 from cm.issue import (
     add_concern_to_object,
-    create_issue,
+    add_issue_on_linked_objects,
+    create_lock,
     do_check_import,
     recheck_issues,
     remove_issue,
@@ -29,15 +31,14 @@ from cm.models import (
     ADCMEntity,
     Bundle,
     ClusterBind,
+    ClusterObject,
     ConcernCause,
-    ConcernItem,
-    ConcernType,
     Prototype,
     PrototypeImport,
 )
 from cm.services.cluster import perform_host_to_cluster_map
 from cm.services.status import notify
-from cm.tests.utils import gen_service, generate_hierarchy
+from cm.tests.utils import gen_job_log, gen_service, gen_task_log, generate_hierarchy
 
 mock_issue_check_map = {
     ConcernCause.CONFIG: lambda x: False,
@@ -62,7 +63,7 @@ class CreateIssueTest(BaseTestCase):
         """Test if new issue is propagated to all affected objects"""
 
         issue_type = ConcernCause.CONFIG
-        create_issue(self.cluster, issue_type)
+        add_issue_on_linked_objects(self.cluster, issue_type)
         own_issue = self.cluster.get_own_issue(issue_type)
 
         self.assertIsNotNone(own_issue)
@@ -77,8 +78,8 @@ class CreateIssueTest(BaseTestCase):
         """Test if issue could not be added more than once"""
 
         issue_type = ConcernCause.CONFIG
-        create_issue(self.cluster, issue_type)
-        create_issue(self.cluster, issue_type)  # create twice
+        add_issue_on_linked_objects(self.cluster, issue_type)
+        add_issue_on_linked_objects(self.cluster, issue_type)  # create twice
         for node in self.tree.get_directly_affected(self.tree.built_from):
             concerns = list(node.value.concerns.all())
 
@@ -89,8 +90,8 @@ class CreateIssueTest(BaseTestCase):
 
         issue_type_1 = ConcernCause.CONFIG
         issue_type_2 = ConcernCause.IMPORT
-        create_issue(self.cluster, issue_type_1)
-        create_issue(self.cluster, issue_type_2)
+        add_issue_on_linked_objects(self.cluster, issue_type_1)
+        add_issue_on_linked_objects(self.cluster, issue_type_2)
         own_issue_1 = self.cluster.get_own_issue(issue_type_1)
 
         self.assertIsNotNone(own_issue_1)
@@ -111,8 +112,11 @@ class CreateIssueTest(BaseTestCase):
         """Test if new object in hierarchy inherits existing issues"""
 
         issue_type = ConcernCause.CONFIG
-        create_issue(self.cluster, issue_type)
+        add_issue_on_linked_objects(self.cluster, issue_type)
         cluster_issue = self.cluster.get_own_issue(issue_type)
+        ClusterObject.objects.filter(cluster=self.cluster).delete()
+        Prototype.objects.filter(bundle=self.cluster.prototype.bundle, type="service").update(required=True)
+
         new_service = gen_service(self.cluster, self.cluster.prototype.bundle)
 
         self.assertListEqual(list(new_service.concerns.all()), [])
@@ -151,7 +155,7 @@ class RemoveIssueTest(BaseTestCase):
 
     def test_single_issue(self):
         issue_type = ConcernCause.CONFIG
-        create_issue(self.cluster, issue_type)
+        add_issue_on_linked_objects(self.cluster, issue_type)
 
         remove_issue(self.cluster, issue_type)
 
@@ -165,8 +169,8 @@ class RemoveIssueTest(BaseTestCase):
     def test_few_issues(self):
         issue_type_1 = ConcernCause.CONFIG
         issue_type_2 = ConcernCause.IMPORT
-        create_issue(self.cluster, issue_type_1)
-        create_issue(self.cluster, issue_type_2)
+        add_issue_on_linked_objects(self.cluster, issue_type_1)
+        add_issue_on_linked_objects(self.cluster, issue_type_2)
 
         remove_issue(self.cluster, issue_type_1)
         own_issue_1 = self.cluster.get_own_issue(issue_type_1)
@@ -313,12 +317,12 @@ class TestImport(BaseTestCase):
 
 
 class TestConcernsRedistribution(BaseTestCase):
-    MOCK_ISSUE_CHECK_MAP_ALL_FALSE = {
+    MOCK_ISSUE_CHECK_MAP_FOR_HOST_TO_CLUSTER_MAPPING = {
         ConcernCause.CONFIG: lambda x: False,
         ConcernCause.IMPORT: lambda x: False,
-        ConcernCause.SERVICE: lambda x: False,
+        ConcernCause.SERVICE: lambda x: True,
         ConcernCause.HOSTCOMPONENT: lambda x: False,
-        ConcernCause.REQUIREMENT: lambda x: False,
+        ConcernCause.REQUIREMENT: lambda x: True,
     }
 
     def setUp(self) -> None:
@@ -332,7 +336,7 @@ class TestConcernsRedistribution(BaseTestCase):
         self.host = self.hierarchy["host"]
 
         for object_ in self.hierarchy.values():
-            create_issue(object_, ConcernCause.CONFIG)
+            add_issue_on_linked_objects(object_, ConcernCause.CONFIG)
             tree = Tree(object_)
             self.add_lock(
                 owner=object_, affected_objects=map(attrgetter("value"), tree.get_all_affected(node=tree.built_from))
@@ -340,14 +344,9 @@ class TestConcernsRedistribution(BaseTestCase):
 
     def add_lock(self, owner: ADCMEntity, affected_objects: Iterable[ADCMEntity]):
         """Check out lock_affected_objects"""
-        lock = ConcernItem.objects.create(
-            type=ConcernType.LOCK.value,
-            name=None,
-            reason=f"Lock from {owner.__class__.__name__} {owner.id}",
-            blocking=True,
-            owner=owner,
-            cause=ConcernCause.JOB.value,
-        )
+
+        lock = create_lock(owner=owner, job=gen_job_log(gen_task_log(obj=owner)))
+
         for obj in affected_objects:
             add_concern_to_object(object_=obj, concern=lock)
 
@@ -359,7 +358,7 @@ class TestConcernsRedistribution(BaseTestCase):
             {self.hostprovider.content_type, self.host.content_type},
         )
 
-        with patch("cm.issue._issue_check_map", self.MOCK_ISSUE_CHECK_MAP_ALL_FALSE):
+        with patch("cm.issue._issue_check_map", self.MOCK_ISSUE_CHECK_MAP_FOR_HOST_TO_CLUSTER_MAPPING):
             perform_host_to_cluster_map(self.cluster.id, [self.host.id], status_service=notify)
 
         self.host.refresh_from_db()

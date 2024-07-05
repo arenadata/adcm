@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch, useStore } from '@hooks';
-import { Button, ExpandableRowComponent, IconButton, Table, TableCell, TableBigTextCell } from '@uikit';
+import { Button, ExpandableRowComponent, IconButton, Table, TableCell, EllipsedTextTableCell } from '@uikit';
 import { columns } from './AccessManagerPoliciesTable.constants';
 import { orElseGet } from '@utils/checkUtils';
 import { openDeleteDialog, openPoliciesEditDialog } from '@store/adcm/policies/policiesActionsSlice';
@@ -57,8 +57,14 @@ const AccessManagerPoliciesTable: React.FC = () => {
             <TableCell>{policy.name}</TableCell>
             <TableCell>{orElseGet(policy.description)}</TableCell>
             <TableCell>{orElseGet(policy.role?.displayName)}</TableCell>
-            <TableBigTextCell isMultilineText value={policy.groups.map((group) => group.displayName).join(', ')} />
-            <TableBigTextCell isMultilineText value={policy.objects.map((object) => object.displayName).join(', ')} />
+            <EllipsedTextTableCell
+              minWidth="300px"
+              value={policy.groups.map((group) => group.displayName).join(', ')}
+            />
+            <EllipsedTextTableCell
+              minWidth="300px"
+              value={policy.objects.map((object) => object.displayName).join(', ')}
+            />
             <TableCell>
               <Button
                 className={expandableRows[policy.id] ? 'is-active' : ''}

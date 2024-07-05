@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from operator import attrgetter
 from typing import Any, Iterable
 
@@ -154,14 +155,12 @@ def perform_user_update_as_superuser(
     )
 
 
-def perform_regular_user_update(user_id: UserID, update_data: UserUpdateDTO, new_password: str | None) -> UserID:
+def perform_regular_user_update(user_id: UserID, update_data: UserUpdateDTO) -> UserID:
     # users can't change `is_superuser` flag if is not superuser themselves,
     # so we need to nullify it here
     update_data.is_superuser = None
 
-    return _perform_user_update(
-        user_id=user_id, update_data=update_data, new_password=new_password, new_user_groups=None
-    )
+    return _perform_user_update(user_id=user_id, update_data=update_data, new_password=None, new_user_groups=None)
 
 
 def perform_users_block(users: Iterable[UserID]) -> Iterable[UserID]:

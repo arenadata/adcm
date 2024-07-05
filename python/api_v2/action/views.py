@@ -15,19 +15,26 @@ from itertools import compress
 from adcm.mixins import GetParentObjectMixin
 from audit.utils import audit
 from cm.errors import AdcmEx
-from cm.job import ActionRunPayload, run_action
-from cm.models import ADCM, Action, ConcernType, Host, HostComponent, PrototypeConfig
+from cm.models import ADCM, Action, ADCMEntity, ConcernType, Host, HostComponent, PrototypeConfig
+from cm.services.config.jinja import get_jinja_config
+from cm.services.job.action import ActionRunPayload, run_action
 from cm.stack import check_hostcomponents_objects_exist
 from django.conf import settings
 from django.db.models import Q
 from django_filters.rest_framework.backends import DjangoFilterBackend
-from jinja_config import get_jinja_config
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
 from api_v2.action.filters import ActionFilter
 from api_v2.action.serializers import (
@@ -36,19 +43,88 @@ from api_v2.action.serializers import (
     ActionRunSerializer,
 )
 from api_v2.action.utils import (
-    check_run_perms,
     filter_actions_by_user_perm,
     get_action_configuration,
+    has_run_perms,
     insert_service_ids,
+    unique_hc_entries,
 )
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.task.serializers import TaskListSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
+
+_schema_common_filters = (
+    OpenApiParameter(
+        name="name",
+        required=False,
+        location=OpenApiParameter.QUERY,
+        description="System name of an action",
+        type=str,
+    ),
+    OpenApiParameter(
+        name="displayName",
+        required=False,
+        location=OpenApiParameter.QUERY,
+        description="Visible name of an action",
+        type=str,
+    ),
+)
 
 
-class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, CamelCaseGenericViewSet):
+@extend_schema_view(
+    run=extend_schema(
+        operation_id="postObjectAction",
+        summary="POST object's action",
+        description="Run object's action.",
+        responses={
+            HTTP_200_OK: TaskListSerializer,
+            HTTP_400_BAD_REQUEST: ErrorSerializer,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
+        },
+    ),
+    list=extend_schema(
+        operation_id="getObjectActions",
+        summary="GET object's actions",
+        description="Get a list of object's actions.",
+        parameters=[
+            DefaultParams.ordering_by("id"),
+            OpenApiParameter(
+                name="isHostOwnAction",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Filter for host's own actions / actions from another objects",
+                type=bool,
+            ),
+            OpenApiParameter(
+                name="prototypeId",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Identifier of action's owner",
+                type=int,
+            ),
+            *_schema_common_filters,
+        ],
+        responses={HTTP_200_OK: ActionListSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    retrieve=extend_schema(
+        operation_id="getObjectAction",
+        summary="GET object's action",
+        description="Get information about a specific object's action.",
+        responses={HTTP_200_OK: ActionRetrieveSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+)
+class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, ADCMGenericViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ActionFilter
+    general_queryset = (
+        Action.objects.select_related("prototype")
+        .exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET)
+        .filter(upgrade__isnull=True)
+        .order_by("pk")
+    )
 
     def get_queryset(self, *args, **kwargs):  # noqa: ARG002
         if self.parent_object is None or self.parent_object.concerns.filter(type=ConcernType.LOCK).exists():
@@ -65,16 +141,9 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
                 self.prototype_objects[hc_item.service.prototype] = hc_item.service
                 self.prototype_objects[hc_item.component.prototype] = hc_item.component
 
-        actions = (
-            Action.objects.all()
-            .select_related("prototype")
-            .exclude(name__in=settings.ADCM_SERVICE_ACTION_NAMES_SET)
-            .filter(upgrade__isnull=True)
-            .filter(
-                Q(prototype=self.parent_object.prototype, host_action=False)
-                | Q(prototype__in=self.prototype_objects.keys(), host_action=True)
-            )
-            .order_by("pk")
+        actions = self.general_queryset.filter(
+            Q(prototype=self.parent_object.prototype, host_action=False)
+            | Q(prototype__in=self.prototype_objects.keys(), host_action=True)
         )
 
         self.prototype_objects[self.parent_object.prototype] = self.parent_object
@@ -83,7 +152,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
 
     def get_serializer_class(
         self,
-    ) -> type[ActionRetrieveSerializer] | type[ActionListSerializer] | type[ActionRunSerializer]:
+    ) -> type[ActionRetrieveSerializer | ActionListSerializer | ActionRunSerializer]:
         if self.action == "retrieve":
             return ActionRetrieveSerializer
 
@@ -92,8 +161,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
 
         return ActionListSerializer
 
-    def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        self.parent_object = self.get_parent_object()
+    def check_permissions_for_list(self, request: Request) -> None:
         if (
             not self.parent_object
             or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
@@ -103,28 +171,29 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
         ):
             raise NotFound()
 
-        actions = self.filter_queryset(self.get_queryset())
-        allowed_actions_mask = [act.allowed(self.prototype_objects[act.prototype]) for act in actions]
-        actions = list(compress(actions, allowed_actions_mask))
-        actions = filter_actions_by_user_perm(user=request.user, obj=self.parent_object, actions=actions)
+    def check_permissions_for_run(self, request: Request, action: Action) -> None:
+        if (
+            not self.parent_object
+            or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
+            and not request.user.has_perm(
+                perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}", obj=self.parent_object
+            )
+            or not has_run_perms(user=request.user, action=action, obj=self.parent_object)
+        ):
+            raise NotFound()
 
-        serializer = self.get_serializer_class()(instance=actions, many=True, context={"obj": self.parent_object})
+    def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+        self.parent_object = self.get_parent_object()
 
-        return Response(data=serializer.data)
+        self.check_permissions_for_list(request=request)
+
+        return self._list_actions_available_to_user(request)
 
     def retrieve(self, request, *args, **kwargs):  # noqa: ARG002
         self.parent_object = self.get_parent_object()
         action_ = self.get_object()
 
-        if (
-            not self.parent_object
-            or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
-            and not request.user.has_perm(
-                perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}", obj=self.parent_object
-            )
-            or not check_run_perms(user=request.user, action=action_, obj=self.parent_object)
-        ):
-            raise NotFound()
+        self.check_permissions_for_run(request=request, action=action_)
 
         config_schema, config, adcm_meta = get_action_configuration(action_=action_, object_=self.parent_object)
 
@@ -146,15 +215,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
         self.parent_object = self.get_parent_object()
         target_action = self.get_object()
 
-        if (
-            not self.parent_object
-            or not request.user.has_perm(perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}")
-            and not request.user.has_perm(
-                perm=f"cm.view_{self.parent_object.__class__.__name__.lower()}", obj=self.parent_object
-            )
-            or not check_run_perms(user=request.user, action=target_action, obj=self.parent_object)
-        ):
-            raise NotFound()
+        self.check_permissions_for_run(request=request, action=target_action)
 
         if reason := target_action.get_start_impossible_reason(self.parent_object):
             raise AdcmEx("ACTION_ERROR", msg=reason)
@@ -171,7 +232,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
             adcm_meta = configuration["adcm_meta"]
 
         if target_action.config_jinja:
-            prototype_configs, _ = get_jinja_config(action=target_action, obj=self.parent_object)
+            prototype_configs, _ = get_jinja_config(action=target_action, cluster_relative_object=self.parent_object)
             prototype_configs = [
                 prototype_config for prototype_config in prototype_configs if prototype_config.type == "json"
             ]
@@ -191,15 +252,60 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, Ca
             payload=ActionRunPayload(
                 conf=config,
                 attr=attr,
-                hostcomponent=insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),
+                hostcomponent=insert_service_ids(
+                    hc_create_data=unique_hc_entries(serializer.validated_data["host_component_map"])
+                ),
                 verbose=serializer.validated_data["is_verbose"],
             ),
-            hosts=[],
         )
 
         return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)
 
+    def _list_actions_available_to_user(self, request: Request) -> Response:
+        actions = self.filter_queryset(self.get_queryset())
+        allowed_actions_mask = [act.allowed(self.prototype_objects[act.prototype]) for act in actions]
+        actions = list(compress(actions, allowed_actions_mask))
+        actions = filter_actions_by_user_perm(user=request.user, obj=self._get_actions_owner(), actions=actions)
 
+        serializer = self.get_serializer_class()(instance=actions, many=True, context={"obj": self.parent_object})
+
+        return Response(data=serializer.data)
+
+    def _get_actions_owner(self) -> ADCMEntity:
+        return self.parent_object
+
+
+@extend_schema_view(
+    run=extend_schema(
+        operation_id="postADCMAction",
+        summary="POST ADCM action",
+        description="Run ADCM action.",
+        responses={
+            HTTP_200_OK: TaskListSerializer,
+            HTTP_400_BAD_REQUEST: ErrorSerializer,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
+        },
+    ),
+    list=extend_schema(
+        operation_id="getADCMActions",
+        summary="GET ADCM actions",
+        description="Get a list of ADCM actions.",
+        parameters=[DefaultParams.ordering_by("id"), *_schema_common_filters],
+        responses={HTTP_200_OK: ActionListSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    retrieve=extend_schema(
+        operation_id="getADCMAction",
+        summary="GET ADCM action",
+        description="Get information about a specific ADCM action.",
+        responses={HTTP_200_OK: ActionRetrieveSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+)
 class AdcmActionViewSet(ActionViewSet):
     def get_parent_object(self):
         return ADCM.objects.first()
+
+    def list(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+        self.parent_object = self.get_parent_object()
+        return self._list_actions_available_to_user(request)

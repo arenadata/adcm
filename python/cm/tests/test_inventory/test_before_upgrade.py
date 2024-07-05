@@ -9,9 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from pathlib import Path
 
 from api_v2.service.utils import bulk_add_services_to_cluster
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 
 from cm.models import Action, ClusterObject, ObjectType, Prototype, ServiceComponent, Upgrade
@@ -417,7 +419,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             expected_data=expected_data,
         )
 
-    def test_bug_adcm_5367(self) -> None:
+    def test_adcm_5367_bug(self) -> None:
         another_1 = self.add_services_to_cluster(
             service_names=["another_service_two_components"], cluster=self.cluster_1
         ).first()
@@ -462,7 +464,10 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         problem_component.refresh_from_db()
         action = Action.objects.get(name="action_on_component_1", prototype=problem_component.prototype)
 
-        inventory = get_inventory_data(obj=problem_component, action=action)
+        inventory = get_inventory_data(
+            target=CoreObjectDescriptor(id=problem_component.id, type=ADCMCoreType.COMPONENT),
+            is_host_action=action.host_action,
+        )
         services = inventory["all"]["vars"]["services"]
 
         component_prefix = f"{settings.FILE_DIR}/component.{problem_component.id}"

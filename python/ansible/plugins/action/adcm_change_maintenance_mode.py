@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 DOCUMENTATION = """
 ---
 module: adcm_change_maintenance_mode
@@ -44,70 +45,13 @@ EXAMPLES = r"""
 
 import sys
 
-from ansible.errors import AnsibleActionFail
-from ansible.plugins.action import ActionBase
-
 sys.path.append("/adcm/python")
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from cm.ansible_plugin import get_object_id_from_context
-from cm.issue import update_hierarchy_issues
-from cm.models import ClusterObject, Host, ServiceComponent
-from cm.services.status.notify import reset_objects_in_mm
-from cm.status_api import send_object_update_event
+from ansible_plugin.base import ADCMAnsiblePlugin
+from ansible_plugin.executors.change_maintenance_mode import ADCMChangeMMExecutor
 
 
-class ActionModule(ActionBase):
-    TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(["type", "value"])
-
-    def run(self, tmp=None, task_vars=None):
-        super().run(tmp, task_vars)
-
-        type_class_map = {
-            "host": Host,
-            "service": ClusterObject,
-            "component": ServiceComponent,
-        }
-        type_choices = set(type_class_map.keys())
-
-        if not self._task.args.get("type"):
-            raise AnsibleActionFail('"type" option is required')
-
-        if self._task.args.get("value") is None:
-            raise AnsibleActionFail('"value" option is required')
-
-        if self._task.args["type"] not in type_choices:
-            raise AnsibleActionFail(f'"type" should be one of {type_choices}')
-
-        if not isinstance(self._task.args["value"], bool):
-            raise AnsibleActionFail('"value" should be boolean')
-
-        obj_type = self._task.args["type"]
-        context_type = obj_type
-        if obj_type == "host":
-            context_type = "cluster"
-
-        obj_value = "on" if self._task.args["value"] else "off"
-        obj_pk = get_object_id_from_context(
-            task_vars=task_vars,
-            id_type=f"{obj_type}_id",
-            context_types=(context_type,),
-            err_msg=f'You can change "{obj_type}" maintenance mode only in {context_type} context',
-        )
-
-        obj = type_class_map[obj_type].objects.filter(pk=obj_pk).first()
-        if not obj:
-            raise AnsibleActionFail(f'Object of type "{obj_type}" with PK "{obj_pk}" does not exist')
-
-        if obj.maintenance_mode != "changing":
-            raise AnsibleActionFail('Only "changing" state of object maintenance mode can be changed')
-
-        obj.maintenance_mode = obj_value
-        obj.save()
-        send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
-        update_hierarchy_issues(obj.cluster)
-        reset_objects_in_mm()
-
-        return {"failed": False, "changed": True}
+class ActionModule(ADCMAnsiblePlugin):
+    executor_class = ADCMChangeMMExecutor

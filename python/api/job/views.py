@@ -16,13 +16,22 @@ import re
 import tarfile
 
 from adcm.permissions import check_custom_perm, get_object_for_user
-from adcm.utils import str_remove_non_alnum
 from audit.utils import audit
-from cm.job import restart_task
-from cm.models import ActionType, JobLog, LogStorage, TaskLog
+from cm.errors import AdcmEx
+from cm.models import ActionType, JobLog, JobStatus, LogStorage, TaskLog
+from cm.services.job.run import restart_task, run_task
+from cm.utils import str_remove_non_alnum
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
+from django_filters.rest_framework import (
+    CharFilter,
+    DateTimeFilter,
+    DjangoFilterBackend,
+    FilterSet,
+    NumberFilter,
+    OrderingFilter,
+)
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -105,11 +114,9 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
     with tarfile.open(fileobj=file_handler, mode="w:gz") as tar_file:
         for job in jobs:
             if task_dir_name_suffix is None:
-                dir_name_suffix = ""
-                if job.sub_action:
-                    dir_name_suffix = str_remove_non_alnum(value=job.sub_action.display_name) or str_remove_non_alnum(
-                        value=job.sub_action.name,
-                    )
+                dir_name_suffix = str_remove_non_alnum(value=job.display_name or "") or str_remove_non_alnum(
+                    value=job.name
+                )
             else:
                 dir_name_suffix = task_dir_name_suffix
 
@@ -126,17 +133,34 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                     tarinfo = tarfile.TarInfo(
                         f'{f"{job.pk}-{dir_name_suffix}".strip("-")}' f"/{log_storage.name}-{log_storage.type}.txt",
                     )
-                    body = io.BytesIO(bytes(log_storage.body, settings.ENCODING_UTF_8))
+                    # using `or ""` here to avoid passing None to `bytes`
+                    body = io.BytesIO(bytes(log_storage.body or "", settings.ENCODING_UTF_8))
                     tarinfo.size = body.getbuffer().nbytes
                     tar_file.addfile(tarinfo=tarinfo, fileobj=body)
 
     return file_handler
 
 
+class JobFilter(FilterSet):
+    action_id = NumberFilter(field_name="action_id", method="filter_by_action_id")
+    task_id = NumberFilter(field_name="task_id")
+    pid = NumberFilter(field_name="pid")
+    status = CharFilter(field_name="status")
+    start_date = DateTimeFilter(field_name="start_date")
+    finish_date = DateTimeFilter(field_name="finish_date")
+    ordering = OrderingFilter(
+        fields={"status": "status", "start_date": "start_date", "finish_date": "finish_date"}, label="ordering"
+    )
+
+    def filter_by_action_id(self, queryset, name, value):  # noqa: ARG002
+        return queryset.filter(task__action_id=value)
+
+
 class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, GenericUIViewSet):
-    queryset = JobLog.objects.select_related("task", "action").all()
+    queryset = JobLog.objects.select_related("task__action").all()
     serializer_class = JobSerializer
-    filterset_fields = ("action_id", "task_id", "pid", "status", "start_date", "finish_date")
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = JobFilter
     ordering_fields = ("status", "start_date", "finish_date")
     ordering = ["-id"]
     permission_required = ["cm.view_joblog"]
@@ -197,7 +221,16 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Gener
     def restart(self, request: Request, task_pk: int) -> Response:
         task = get_object_for_user(request.user, VIEW_TASKLOG_PERMISSION, TaskLog, id=task_pk)
         check_custom_perm(request.user, "change", TaskLog, task)
-        restart_task(task)
+
+        if task.status in (JobStatus.CREATED, JobStatus.RUNNING):
+            raise AdcmEx(code="TASK_ERROR", msg=f"task #{task.pk} is running")
+
+        if task.status == JobStatus.SUCCESS:
+            run_task(task)
+        elif task.status in (JobStatus.FAILED, JobStatus.ABORTED):
+            restart_task(task)
+        else:
+            raise AdcmEx(code="TASK_ERROR", msg=f"task #{task.pk} has unexpected status: {task.status}")
 
         return Response(status=HTTP_200_OK)
 

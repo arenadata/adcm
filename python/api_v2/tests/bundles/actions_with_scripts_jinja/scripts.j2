@@ -1,0 +1,12 @@
+{%- if (groups['service.component.add'] | length) > 0 %}
+- name: script1
+  script_type: ansible
+  script: some/script.yaml
+  params:
+    ansible_tags: repo_add, install, configure, configure_main_info, start, bootstrap
+{%- endif %}
+- name: script2
+  script_type: ansible
+  script: some/script.yaml
+  params:
+    ansible_tags: configure

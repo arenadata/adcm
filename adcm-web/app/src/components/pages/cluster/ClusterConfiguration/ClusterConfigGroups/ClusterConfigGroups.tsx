@@ -15,6 +15,7 @@ import {
 import { useParams } from 'react-router-dom';
 import { AdcmConfigGroup } from '@models/adcm';
 import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
+import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 
 const ClusterConfigGroups: React.FC = () => {
   const dispatch = useDispatch();
@@ -25,6 +26,7 @@ const ClusterConfigGroups: React.FC = () => {
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
 
   const { clusterConfigGroups, isLoading } = useStore((s) => s.adcm.clusterConfigGroups);
+  const accessCheckStatus = useStore((s) => s.adcm.clusterConfigGroups.accessCheckStatus);
   const sortParams = useStore((s) => s.adcm.clusterConfigGroupsTable.sortParams);
   useRequestClusterConfigGroups();
 
@@ -57,21 +59,23 @@ const ClusterConfigGroups: React.FC = () => {
   }, [cluster, dispatch]);
 
   return (
-    <div>
-      <ConfigGroupsHeader onCreate={handleCreateConfigGroup} />
-      <ConfigGroupsTable
-        configGroups={clusterConfigGroups}
-        isLoading={isLoading}
-        sortParams={sortParams}
-        onSorting={handleSorting}
-        onMapping={handleMappingConfigGroup}
-        editUrlPattern={`/clusters/${clusterId}/configuration/config-groups/:configGroupId`}
-        onDelete={handleDeleteConfigGroup}
-      />
-      <ClusterConfigGroupTableFooter />
+    <PermissionsChecker requestState={accessCheckStatus}>
+      <div>
+        <ConfigGroupsHeader onCreate={handleCreateConfigGroup} />
+        <ConfigGroupsTable
+          configGroups={clusterConfigGroups}
+          isLoading={isLoading}
+          sortParams={sortParams}
+          onSorting={handleSorting}
+          onMapping={handleMappingConfigGroup}
+          editUrlPattern={`/clusters/${clusterId}/configuration/config-groups/:configGroupId`}
+          onDelete={handleDeleteConfigGroup}
+        />
+        <ClusterConfigGroupTableFooter />
 
-      <ClusterConfigGroupDialogs />
-    </div>
+        <ClusterConfigGroupDialogs />
+      </div>
+    </PermissionsChecker>
   );
 };
 

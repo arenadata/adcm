@@ -1,0 +1,33 @@
+
+---
+- name: Change MM of host
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: debug_info
+      debug:
+        msg: "Host turn ON"
+      tags:
+        - turn_on
+
+    - name: change mm
+      adcm_change_maintenance_mode:
+        type: host
+        value: True
+      tags:
+        - turn_on
+
+    - name: debug_info
+      debug:
+        msg: "Host turn OFF"
+      tags:
+        - turn_off
+
+    - name: change mm
+      adcm_change_maintenance_mode:
+        type: host
+        value: False
+      tags:
+        - turn_off

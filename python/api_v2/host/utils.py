@@ -11,15 +11,18 @@
 # limitations under the License.
 
 from adcm.permissions import check_custom_perm
-from adcm.utils import get_maintenance_mode_response
 from cm.adcm_config.config import init_object_config
 from cm.api import check_license
 from cm.api_context import CTX
-from cm.issue import add_concern_to_object, update_hierarchy_issues
+from cm.issue import (
+    _prototype_issue_map,
+    add_concern_to_object,
+    recheck_issues,
+)
 from cm.logger import logger
-from cm.models import Cluster, Host, HostProvider, Prototype
+from cm.models import Cluster, Host, HostProvider, ObjectType, Prototype
+from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import reset_hc_map
-from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -28,30 +31,44 @@ from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
 
 
-def add_new_host_and_map_it(provider: HostProvider, fqdn: str, cluster: Cluster | None = None) -> Host:
-    host_proto = Prototype.objects.get(type="host", bundle=provider.prototype.bundle)
-    check_license(prototype=host_proto)
-    with atomic():
-        host = Host.objects.create(prototype=host_proto, provider=provider, fqdn=fqdn)
-        obj_conf = init_object_config(proto=host_proto, obj=host)
-        host.config = obj_conf
-        if cluster:
-            host.cluster = cluster
+def create_host(provider: HostProvider, fqdn: str, cluster: Cluster | None) -> Host:
+    host_prototype = Prototype.objects.get(type=ObjectType.HOST, bundle=provider.prototype.bundle)
+    check_license(prototype=host_prototype)
 
-        host.save()
-        add_concern_to_object(object_=host, concern=CTX.lock)
+    return Host.objects.create(prototype=host_prototype, provider=provider, fqdn=fqdn, cluster=cluster)
 
-        update_hierarchy_issues(obj=host.provider)
-        re_apply_object_policy(apply_object=provider)
-        if cluster:
-            re_apply_object_policy(apply_object=cluster)
+
+def _recheck_new_host_issues(host: Host):
+    """
+    Copy-pasted parts of update_hierarchy_issues() from cm.issue for the sake of number of queries optimization
+    Works only on newly created hosts (without mapping to components)
+    """
+
+    recheck_issues(obj=host)  # only host itself is directly affected
+
+    # propagate issues from provider only to this host
+    for issue_cause in _prototype_issue_map.get(ObjectType.PROVIDER, []):
+        add_concern_to_object(object_=host, concern=host.provider.get_own_issue(cause=issue_cause))
+
+
+def process_config_issues_policies_hc(host: Host) -> None:
+    obj_conf = init_object_config(proto=host.prototype, obj=host)
+    host.config = obj_conf
+    host.save(update_fields=["config"])
+
+    add_concern_to_object(object_=host, concern=CTX.lock)
+    _recheck_new_host_issues(host=host)
+    re_apply_object_policy(apply_object=host.provider)
+
+    if cluster := host.cluster:
+        re_apply_object_policy(apply_object=cluster)
 
     reset_hc_map()
-    logger.info("host #%s %s is added", host.pk, host.fqdn)
+
     if cluster:
         logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
-
-    return host
+    else:
+        logger.info("host #%s %s is added", host.pk, host.fqdn)
 
 
 def maintenance_mode(request: Request, host: Host) -> Response:

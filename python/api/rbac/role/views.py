@@ -15,12 +15,14 @@ from audit.utils import audit
 from cm.models import ProductCategory
 from django.db.models import Prefetch, Q
 from django_filters import rest_framework as filters
+from django_filters.rest_framework import DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
 from rbac.models import Role, RoleTypes
 from rbac.services.role import role_create, role_update
 from rest_flex_fields import is_expanded
 from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
 from rest_framework.schemas.coreapi import AutoSchema
 from rest_framework.status import (
@@ -60,6 +62,7 @@ class RoleViewSet(PermissionListMixin, ModelViewSet):
     serializer_class = RoleSerializer
     permission_classes = (DjangoModelPermissionsAudit,)
     permission_required = ["rbac.view_role"]
+    filter_backends = (DjangoFilterBackend, OrderingFilter, SearchFilter)
     filterset_class = RoleFilter
     ordering_fields = ("id", "name", "display_name", "built_in", "type")
     search_fields = ("name", "display_name")

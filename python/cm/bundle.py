@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from collections.abc import Iterable
 from pathlib import Path
 import os
@@ -23,6 +24,7 @@ from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.db.transaction import atomic
 from gnupg import GPG, ImportResult
+from graphlib import CycleError, TopologicalSorter
 from rbac.models import Role
 from rbac.upgrade.role import prepare_action_roles
 
@@ -54,6 +56,7 @@ from cm.models import (
     SubAction,
     Upgrade,
 )
+from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
 from cm.stack import get_config_files, read_definition, save_definition
 
 STAGE = (
@@ -71,12 +74,14 @@ def prepare_bundle(
 ) -> Bundle:
     try:
         check_stage()
-        prototypes, upgrades = process_bundle(path=path, bundle_hash=bundle_hash)
+        prototypes, upgrades = process_bundle(path_resolver=BundlePathResolver(bundle_hash))
         bundle_prototype = get_stage_bundle(bundle_file=bundle_file)
         check_services_requires()
+        check_absence_of_cyclic_dependencies()
         re_check_actions()
         re_check_components()
         re_check_config()
+        propagate_flag_autogeneration(bundle_prototype)
 
         bundle = copy_stage(
             bundle_hash=bundle_hash, bundle_proto=bundle_prototype, verification_status=verification_status
@@ -95,6 +100,75 @@ def prepare_bundle(
     except Exception as error:
         shutil.rmtree(path, ignore_errors=True)
         raise error
+
+
+def propagate_flag_autogeneration(bundle_main_prototype: StagePrototype):
+    # note that more complex `flag_autogeneration` structure will require
+    # much more complex work here
+
+    if bundle_main_prototype.flag_autogeneration == {}:
+        bundle_main_prototype.flag_autogeneration = {"enable_outdated_config": False}
+        bundle_main_prototype.save(update_fields=["flag_autogeneration"])
+
+    parent_value = bundle_main_prototype.flag_autogeneration["enable_outdated_config"]
+
+    if bundle_main_prototype.type == ObjectType.PROVIDER:
+        StagePrototype.objects.filter(type=ObjectType.HOST, flag_autogeneration={}).update(
+            flag_autogeneration={"enable_outdated_config": parent_value}
+        )
+        return
+
+    StagePrototype.objects.filter(type=ObjectType.SERVICE, flag_autogeneration={}).update(
+        flag_autogeneration={"enable_outdated_config": parent_value}
+    )
+
+    service_component_map = defaultdict(set)
+    for component_proto_id, service_proto_id in StagePrototype.objects.values_list("id", "parent_id").filter(
+        type=ObjectType.COMPONENT, flag_autogeneration={}
+    ):
+        service_component_map[service_proto_id].add(component_proto_id)
+
+    for service_proto_id, components_proto_ids in service_component_map.items():
+        StagePrototype.objects.filter(id__in=components_proto_ids).update(
+            flag_autogeneration={
+                "enable_outdated_config": StagePrototype.objects.values_list("flag_autogeneration", flat=True).get(
+                    id=service_proto_id
+                )["enable_outdated_config"]
+            }
+        )
+
+
+def check_absence_of_cyclic_dependencies():
+    requires = TopologicalSorter()
+
+    for component_name, requires_list, service_name in (
+        StagePrototype.objects.values_list("name", "requires", "parent__name")
+        .filter(type=ObjectType.COMPONENT)
+        .exclude(requires=[])
+    ):
+        dependencies = []
+        for entry in (item for item in requires_list if "component" in item):
+            dependency_service = entry.get("service", service_name)
+            dependencies.append(f"{dependency_service}.{entry['component']}")
+            dependencies.append(dependency_service)
+
+        requires.add(f"{service_name}.{component_name}", *dependencies)
+
+    for service_name, requires_list in (
+        StagePrototype.objects.values_list("name", "requires").exclude(requires=[]).filter(type=ObjectType.SERVICE)
+    ):
+        dependencies = []
+        for entry in (item for item in requires_list if "component" in item):
+            dependency_service = entry.get("service", service_name)
+            dependencies.append(f"{dependency_service}.{entry['component']}")
+            dependencies.append(dependency_service)
+
+        requires.add(service_name, *dependencies)
+
+    try:
+        requires.prepare()
+    except CycleError as err:
+        raise AdcmEx(code="REQUIRES_ERROR", msg=f"requires should not be cyclic: {err.args[1]}") from err
 
 
 def load_bundle(bundle_file: str) -> Bundle:
@@ -162,15 +236,15 @@ def get_verification_status(bundle_archive: Path | None, signature_file: Path | 
         return SignatureStatus.INVALID
 
     with open(signature_file, mode="rb") as sign_stream:
-        if bool(gpg.verify_file(fileobj_or_path=sign_stream, data_filename=bundle_archive)):
+        if bool(gpg.verify_file(fileobj_or_path=sign_stream, data_filename=str(bundle_archive))):
             return SignatureStatus.VALID
         else:
             return SignatureStatus.INVALID
 
 
 def upload_file(file) -> Path:
-    file_path = Path(settings.DOWNLOAD_DIR, file.name)
-    with open(file_path, "wb+") as f:
+    file_path = settings.DOWNLOAD_DIR / file.name
+    with file_path.open(mode="wb+") as f:
         for chunk in file.chunks():
             f.write(chunk)
 
@@ -180,7 +254,7 @@ def upload_file(file) -> Path:
 def update_bundle(bundle):
     try:
         check_stage()
-        process_bundle(settings.BUNDLE_DIR / bundle.hash, bundle.hash)
+        process_bundle(path_resolver=BundlePathResolver(bundle_hash=bundle.hash))
         get_stage_bundle(bundle.name)
         second_pass()
         update_bundle_from_stage(bundle)
@@ -279,7 +353,7 @@ def get_hash(bundle_file: str) -> str:
     return sha1.hexdigest()
 
 
-def load_adcm(adcm_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.yaml")):
+def load_adcm(adcm_file: Path = settings.BASE_DIR / "conf" / "adcm" / "config.yaml"):
     check_stage()
     conf = read_definition(conf_file=adcm_file)
 
@@ -289,7 +363,11 @@ def load_adcm(adcm_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.
 
     with atomic():
         prototypes, _ = save_definition(
-            path=Path(), fname=adcm_file, conf=conf, obj_list={}, bundle_hash="adcm", adcm_=True
+            path_resolver=ADCMBundlePathResolver(),
+            source_file_subdir=Path(),
+            config_yaml_file=adcm_file,
+            config=conf,
+            obj_list={},
         )
         process_adcm()
         StagePrototype.objects.filter(id__in=[prototype.id for prototype in prototypes]).delete()
@@ -403,11 +481,12 @@ def check_adcm_min_version(adcm_min_version: str) -> None:
         )
 
 
-def process_bundle(path: Path, bundle_hash: str) -> tuple[list[StagePrototype], list[StageUpgrade]]:
+def process_bundle(path_resolver: PathResolver) -> tuple[list[StagePrototype], list[StageUpgrade]]:
     all_prototypes = []
     all_upgrades = []
     obj_list = {}
-    for conf_path, conf_file in get_config_files(path=path):
+
+    for conf_path, conf_file in get_config_files(path=path_resolver.bundle_root):
         conf = read_definition(conf_file=conf_file)
         if not conf:
             continue
@@ -416,7 +495,14 @@ def process_bundle(path: Path, bundle_hash: str) -> tuple[list[StagePrototype], 
             if "adcm_min_version" in item:
                 check_adcm_min_version(adcm_min_version=item["adcm_min_version"])
 
-        prototypes, upgrades = save_definition(conf_path, conf_file, conf, obj_list, bundle_hash)
+        prototypes, upgrades = save_definition(
+            path_resolver=path_resolver,
+            source_file_subdir=conf_path,
+            config_yaml_file=conf_file,
+            config=conf,
+            obj_list=obj_list,
+        )
+
         all_prototypes.extend(prototypes)
         all_upgrades.extend(upgrades)
 
@@ -673,7 +759,7 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 "venv",
                 "config_group_customization",
                 "allow_maintenance_mode",
-                "allow_flags",
+                "flag_autogeneration",
             ),
         )
         if proto.license_path:
@@ -738,8 +824,6 @@ def copy_stage_actions(stage_actions, prototype):
         (
             "name",
             "type",
-            "script",
-            "script_type",
             "state_available",
             "state_unavailable",
             "state_on_success",
@@ -750,8 +834,6 @@ def copy_stage_actions(stage_actions, prototype):
             "multi_state_on_success_unset",
             "multi_state_on_fail_set",
             "multi_state_on_fail_unset",
-            "params",
-            "log_files",
             "hostcomponentmap",
             "display_name",
             "description",
@@ -759,9 +841,11 @@ def copy_stage_actions(stage_actions, prototype):
             "allow_to_terminate",
             "partial_execution",
             "host_action",
+            "allow_for_action_host_group",
             "venv",
             "allow_in_maintenance_mode",
             "config_jinja",
+            "scripts_jinja",
         ),
     )
     Action.objects.bulk_create(actions)
@@ -829,7 +913,7 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
                 "description",
                 "adcm_min_version",
                 "config_group_customization",
-                "allow_flags",
+                "flag_autogeneration",
                 "venv",
             ),
         )
@@ -952,9 +1036,7 @@ def copy_stage(bundle_hash: str, bundle_proto, verification_status: SignatureSta
     return bundle
 
 
-def update_bundle_from_stage(
-    bundle,
-):
+def update_bundle_from_stage(bundle):
     for stage_prototype in StagePrototype.objects.order_by("id"):
         try:
             prototype = Prototype.objects.get(
@@ -974,7 +1056,7 @@ def update_bundle_from_stage(
             prototype.venv = stage_prototype.venv
             prototype.config_group_customization = stage_prototype.config_group_customization
             prototype.allow_maintenance_mode = stage_prototype.allow_maintenance_mode
-            prototype.allow_flags = stage_prototype.allow_flags
+            prototype.flag_autogeneration = stage_prototype.flag_autogeneration
         except Prototype.DoesNotExist:
             prototype = copy_obj(
                 stage_prototype,
@@ -996,7 +1078,7 @@ def update_bundle_from_stage(
                     "venv",
                     "config_group_customization",
                     "allow_maintenance_mode",
-                    "allow_flags",
+                    "flag_autogeneration",
                 ),
             )
             prototype.bundle = bundle
@@ -1029,6 +1111,7 @@ def update_bundle_from_stage(
                         "allow_to_terminate",
                         "partial_execution",
                         "host_action",
+                        "allow_for_action_host_group",
                         "venv",
                         "allow_in_maintenance_mode",
                     ),
@@ -1059,6 +1142,7 @@ def update_bundle_from_stage(
                         "allow_to_terminate",
                         "partial_execution",
                         "host_action",
+                        "allow_for_action_host_group",
                         "venv",
                         "allow_in_maintenance_mode",
                     ),

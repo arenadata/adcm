@@ -1,37 +1,38 @@
 import React from 'react';
-import { Button, ButtonGroup, Panel, SearchInput, Switch } from '@uikit';
-import { MappingFilter } from '../ClusterMapping.types';
+import { Button, ButtonGroup, Panel, SearchInput, Switch, IconButton } from '@uikit';
+import type { MappingFilter } from '../ClusterMapping.types';
 import { ActionState } from '@models/loadState';
+import { SortDirection } from '@models/table';
 import s from './ClusterMappingToolbar.module.scss';
+import cn from 'classnames';
 
 export interface ClusterMappingToolbarProps {
-  isHostsPreviewMode: boolean;
   filter: MappingFilter;
+  sortDirection: SortDirection;
   savingState: ActionState;
   hasSaveError: boolean;
   isValid: boolean;
   isMappingChanged: boolean;
-  onHostsPreviewModeChange: (isHostsPreviewMode: boolean) => void;
   onFilterChange: (filter: Partial<MappingFilter>) => void;
+  onSortDirectionChange: (sortDirection: SortDirection) => void;
   onReset: () => void;
   onSave: () => void;
 }
 
 const ClusterMappingToolbar = ({
-  isHostsPreviewMode,
   filter,
+  sortDirection,
   savingState,
   hasSaveError,
   isValid,
   isMappingChanged,
-  onHostsPreviewModeChange,
   onFilterChange,
+  onSortDirectionChange,
   onReset,
   onSave,
 }: ClusterMappingToolbarProps) => {
   const handleFilterHostsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onFilterChange({
-      componentDisplayName: '',
       hostName: event.target.value,
     });
   };
@@ -39,7 +40,6 @@ const ClusterMappingToolbar = ({
   const handleFilterComponentsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onFilterChange({
       componentDisplayName: event.target.value,
-      hostName: '',
     });
   };
 
@@ -47,44 +47,41 @@ const ClusterMappingToolbar = ({
     onFilterChange({ isHideEmpty: event.target.checked });
   };
 
-  const handleHostsPreviewModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onHostsPreviewModeChange(event.target.checked);
+  const handleOrderChange = () => {
+    onSortDirectionChange(sortDirection === 'desc' ? 'asc' : 'desc');
   };
 
   const isSavingInProgress = savingState === 'in-progress';
   const isButtonsDisabledByState = isSavingInProgress || !isMappingChanged;
+  const sortIconClassName = cn(s.clusterMappingToolbar__sortIcon, {
+    [s.clusterMappingToolbar__sortIcon_desc]: sortDirection === 'desc',
+  });
 
   return (
     <Panel className={s.clusterMappingToolbar} data-test="configuration-toolbar">
       <div className={s.clusterMappingToolbar__inputAndSwitches}>
-        {isHostsPreviewMode ? (
-          <SearchInput
-            placeholder="Search components"
-            value={filter.componentDisplayName}
-            onChange={handleFilterComponentsChange}
-            className={s.clusterMappingToolbar__searchInput}
-          />
-        ) : (
-          <SearchInput
-            placeholder="Search hosts"
-            value={filter.hostName}
-            onChange={handleFilterHostsChange}
-            className={s.clusterMappingToolbar__searchInput}
-          />
-        )}
-
+        <SearchInput
+          placeholder="Search hosts"
+          value={filter.hostName}
+          onChange={handleFilterHostsChange}
+          className={s.clusterMappingToolbar__searchInput}
+        />
+        <SearchInput
+          placeholder="Search components"
+          value={filter.componentDisplayName}
+          onChange={handleFilterComponentsChange}
+          className={s.clusterMappingToolbar__searchInput}
+        />
+        <div className={s.clusterMappingToolbar__sortIconWrapper}>
+          {/* eslint-disable-next-line prettier/prettier*/}
+          <IconButton icon="arrow" size="medium" className={sortIconClassName} onClick={handleOrderChange} /> A - Z order
+        </div>
         <Switch
           //
           size="small"
           isToggled={filter.isHideEmpty}
           onChange={handleHideEmptyChange}
           label="Hide empty"
-        />
-        <Switch
-          size="small"
-          isToggled={isHostsPreviewMode}
-          onChange={handleHostsPreviewModeChange}
-          label="Hosts preview mode"
         />
       </div>
       <ButtonGroup>

@@ -22,6 +22,7 @@ export const useRbacUserCreateDialog = () => {
   const isCreating = useStore((s) => s.adcm.usersActions.createDialog.isCreating);
   const groups = useStore((s) => s.adcm.usersActions.relatedData.groups);
   const authSettings = useStore((s) => s.auth.profile.authSettings);
+  const isCurrentUserSuperUser = useStore((s) => s.auth.profile.isSuperUser);
 
   const { formData, handleChangeFormData, setFormData, errors, setErrors, isValid } =
     useForm<RbacUserFormData>(initialFormData);
@@ -62,15 +63,19 @@ export const useRbacUserCreateDialog = () => {
   };
 
   const handleCreate = () => {
+    const userData = {
+      username: formData.username,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      groups: formData.groups,
+      password: formData.password,
+    };
+
     dispatch(
       createUser({
-        username: formData.username,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        groups: formData.groups,
-        password: formData.password,
-        isSuperUser: formData.isSuperUser,
+        ...userData,
+        ...(isCurrentUserSuperUser && { isSuperUser: formData.isSuperUser }),
       }),
     );
   };
@@ -84,5 +89,6 @@ export const useRbacUserCreateDialog = () => {
     onClose: handleClose,
     onSubmit: handleCreate,
     errors,
+    isCurrentUserSuperUser,
   };
 };

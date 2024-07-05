@@ -10,16 +10,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from pathlib import Path
 from secrets import token_hex
 import json
 import logging
 
+from django.utils import timezone
+
 import adcm.init_django  # noqa: F401, isort:skip
 
 from cm.bundle import load_adcm
-from cm.issue import update_hierarchy_issues
-from cm.job import abort_all
+from cm.issue import unlock_affected_objects, update_hierarchy_issues
 from cm.models import (
     ADCM,
     CheckLog,
@@ -28,6 +30,9 @@ from cm.models import (
     ConcernType,
     GroupCheckLog,
     HostProvider,
+    JobLog,
+    JobStatus,
+    TaskLog,
 )
 from django.conf import settings
 from rbac.models import User
@@ -86,15 +91,30 @@ def recheck_issues():
             update_hierarchy_issues(obj)
 
 
+def abort_all():
+    for task in TaskLog.objects.filter(status=JobStatus.RUNNING):
+        task.status = JobStatus.ABORTED
+        task.finish_date = timezone.now()
+        task.save(update_fields=["status", "finish_date"])
+
+        unlock_affected_objects(task=task)
+
+    JobLog.objects.filter(status=JobStatus.RUNNING).update(status=JobStatus.ABORTED, finish_date=timezone.now())
+
+
 def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.yaml")):
     logger.info("Start initializing ADCM DB...")
+
     if not User.objects.filter(username="admin").exists():
-        User.objects.create_superuser("admin", "admin@example.com", "admin", built_in=True)
+        User.objects.create_superuser("admin", "admin@example.com", "admin", built_in=False)
+
     status_user_username, status_user_password = create_status_user()
     prepare_secrets_json(status_user_username, status_user_password)
+
     if not User.objects.filter(username="system").exists():
         User.objects.create_superuser("system", "", None, built_in=True)
         logger.info("Create system user")
+
     abort_all()
     clear_temp_tables()
     load_adcm(adcm_conf_file)

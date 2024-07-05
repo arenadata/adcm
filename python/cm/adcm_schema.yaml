@@ -34,11 +34,16 @@ common_object: &common_object
     config: config_obj
     actions: actions_dict
     venv: string
-    allow_flags: boolean
+    flag_autogeneration: flag_autogeneration_object
   required_items:
     - type
     - name
     - version
+
+flag_autogeneration_object:
+  match: dict
+  items:
+    enable_outdated_config: boolean
 
 service_object:
   <<: *common_object
@@ -117,7 +122,7 @@ component_dict:
     config: config_obj
     actions: actions_dict
     config_group_customization: boolean
-    allow_flags: boolean
+    flag_autogeneration: flag_autogeneration_object
     venv: string
 
 comp_req_list:
@@ -283,10 +288,10 @@ config_dict_sub:
     boolean: config_dict_sub_boolean
     integer: config_dict_sub_integer
     float: config_dict_sub_float
-    string: config_dict_sub_string
-    password: config_dict_sub_string
-    secrettext: config_dict_sub_string
-    text: config_dict_sub_string
+    string: config_dict_sub_string_with_pattern
+    password: config_dict_sub_string_with_pattern
+    secrettext: config_dict_sub_string_with_pattern
+    text: config_dict_sub_string_with_pattern
     file: config_dict_sub_string
     secretfile: config_dict_sub_string
     list: config_dict_sub_list
@@ -339,6 +344,13 @@ config_dict_sub_string:
   items:
     <<: *config_dict_sub_items
     default: string
+
+config_dict_sub_string_with_pattern:
+  <<: *config_dict_sub_common
+  items:
+    <<: *config_dict_sub_items
+    default: string
+    pattern: string
 
 config_dict_sub_list:
   <<: *config_dict_sub_common
@@ -396,10 +408,10 @@ config_list_object:
     boolean: config_list_boolean
     integer: config_list_integer
     float: config_list_float
-    string: config_list_string
-    password: config_list_string
-    secrettext: config_list_string
-    text: config_list_string
+    string: config_list_string_with_pattern
+    password: config_list_string_with_pattern
+    secrettext: config_list_string_with_pattern
+    text: config_list_string_with_pattern
     file: config_list_string
     secretfile: config_list_string
     list: config_list_list
@@ -443,10 +455,10 @@ config_sub_list_object:
     boolean: config_list_boolean
     integer: config_list_integer
     float: config_list_float
-    string: config_list_string
-    password: config_list_string
-    secrettext: config_list_string
-    text: config_list_string
+    string: config_list_string_with_pattern
+    password: config_list_string_with_pattern
+    secrettext: config_list_string_with_pattern
+    text: config_list_string_with_pattern
     file: config_list_string
     secretfile: config_list_string
     list: config_list_list
@@ -468,6 +480,13 @@ config_list_string:
   items:
     <<: *config_list_items
     default: string
+
+config_list_string_with_pattern:
+  <<: *config_list_common
+  items:
+    <<: *config_list_items
+    default: string
+    pattern: string
 
 config_list_integer:
   <<: *config_list_common
@@ -717,6 +736,12 @@ action_item:
     job: action_job_dict
     task: action_task_dict
 
+action_task_dict:
+  match: one_of
+  variants:
+    - action_task_dict_scripts_plain
+    - action_task_dict_scripts_jinja
+
 common_action:
   match: dict
   items: &common_action_items
@@ -728,19 +753,20 @@ common_action:
     allow_to_terminate: boolean
     partial_execution: boolean
     host_action: boolean
+    allow_for_action_host_group: boolean
     log_files: list_of_string
     states: action_states_dict
     masking: action_masking_or_none
     on_fail: post_action
     on_success: post_action
     hc_acl: action_hc_acl_list
-    config: config_obj
     venv: string
     allow_in_maintenance_mode: boolean
+    config: config_obj
     config_jinja: string
 
 ## Task action
-action_task_dict:
+action_task_dict_scripts_plain:
   match: dict
   items:
     <<: *common_action_items
@@ -748,6 +774,15 @@ action_task_dict:
   required_items:
     - type
     - scripts
+
+action_task_dict_scripts_jinja:
+  match: dict
+  items:
+    <<: *common_action_items
+    scripts_jinja: string
+  required_items:
+    - type
+    - scripts_jinja
 
 task_list:
   match: list

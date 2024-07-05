@@ -13,7 +13,7 @@
 from datetime import timedelta
 from unittest.mock import patch
 
-from cm.models import ADCM, Action, ActionType, JobLog, JobStatus, SubAction, TaskLog
+from cm.models import ADCM, Action, ActionType, JobLog, JobStatus, TaskLog
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from rest_framework.reverse import reverse
@@ -47,13 +47,9 @@ class TestTaskAudit(BaseAPITestCase):
             status=JobStatus.RUNNING,
             start_date=timezone.now() + timedelta(days=1),
             finish_date=timezone.now() + timedelta(days=2),
-            action=self.action,
             task=self.task_for_job,
             pid=9999,
-            sub_action=SubAction.objects.create(
-                action=self.action,
-                allow_to_terminate=True,
-            ),
+            allow_to_terminate=True,
         )
         self.task = TaskLog.objects.create(
             object_id=self.adcm.pk,

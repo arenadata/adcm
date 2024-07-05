@@ -17,13 +17,22 @@ from cm.api import update_obj_config
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, GroupConfig, PrototypeConfig
 from django.contrib.contenttypes.models import ContentType
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
+from api_v2.api_schema import ErrorSerializer
 from api_v2.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
 from api_v2.config.utils import (
     convert_adcm_meta_to_attr,
@@ -31,16 +40,41 @@ from api_v2.config.utils import (
     represent_json_type_as_string,
     represent_string_as_json_type,
 )
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getObjectConfigs",
+        summary="GET object's config versions",
+        description="Get information about object's config versions.",
+        responses={HTTP_200_OK: ConfigLogListSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    retrieve=extend_schema(
+        operation_id="getObjectConfig",
+        summary="GET object's config",
+        description="Get object's configuration information.",
+        responses={HTTP_200_OK: ConfigLogSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    create=extend_schema(
+        operation_id="postObjectConfigs",
+        summary="POST object's configs",
+        description="Create a new version of object's configuration.",
+        responses={
+            HTTP_200_OK: ConfigLogSerializer,
+            HTTP_400_BAD_REQUEST: ErrorSerializer,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
+        },
+    ),
+)
 class ConfigLogViewSet(
     PermissionListMixin,
     ListModelMixin,
     CreateModelMixin,
     RetrieveModelMixin,
     GetParentObjectMixin,
-    CamelCaseGenericViewSet,
+    ADCMGenericViewSet,
 ):
     queryset = ConfigLog.objects.select_related(
         "obj_ref__cluster__prototype",
@@ -54,6 +88,7 @@ class ConfigLogViewSet(
 
     def get_queryset(self, *args, **kwargs):
         parent_object = self.get_parent_object()
+
         if parent_object is None:
             raise NotFound
 
@@ -72,6 +107,7 @@ class ConfigLogViewSet(
     def create(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         parent_object = self.get_parent_object()
 
+        self._check_parent_permissions(parent_object=parent_object)
         self._check_create_permissions(request=request, parent_object=parent_object)
 
         serializer = self.get_serializer(data=request.data, context={"object_": parent_object})
@@ -95,6 +131,7 @@ class ConfigLogViewSet(
 
     def retrieve(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
         parent_object = self.get_parent_object()
+        self._check_parent_permissions(parent_object)
         instance = self.get_object()
         instance.attr = convert_attr_to_adcm_meta(attr=instance.attr)
         instance.config = represent_json_type_as_string(prototype=parent_object.prototype, value=instance.config)
@@ -120,3 +157,26 @@ class ConfigLogViewSet(
             model=ContentType.objects.get_for_model(model=owner_object).model,
             obj=owner_object,
         )
+
+    def list(self, request, *args, **kwargs) -> Response:  # noqa: ARG002
+        self._check_parent_permissions()
+        return super().list(request, *args, **kwargs)
+
+    def _check_parent_permissions(self, parent_object: ParentObject = None):
+        parent_obj = parent_object or self.get_parent_object()
+        parent_view_perm = f"cm.view_{parent_obj.__class__.__name__.lower()}"
+        parent_config_view_perm = "cm.view_objectconfig"
+
+        if parent_obj is None:
+            raise NotFound
+
+        if not (
+            self.request.user.has_perm(parent_view_perm, parent_obj) or self.request.user.has_perm(parent_view_perm)
+        ):
+            raise NotFound
+
+        if not (
+            self.request.user.has_perm(parent_config_view_perm, parent_obj.config)
+            or self.request.user.has_perm(parent_config_view_perm)
+        ):
+            raise PermissionDenied

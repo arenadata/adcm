@@ -1,22 +1,24 @@
-import React from 'react';
 import { TabsBlock } from '@uikit';
 import TabButton from '@uikit/Tabs/TabButton';
 import s from './ClusterOverviewFilter.module.scss';
-import { AdcmClusterStatus } from '@models/adcm';
+import { AdcmHostStatus, AdcmServiceStatus } from '@models/adcm';
 
 interface ClusterOverviewFilter {
-  status: AdcmClusterStatus;
-  onStatusChange: (status: AdcmClusterStatus) => void;
+  status?: AdcmServiceStatus | AdcmHostStatus;
+  onStatusChange: (status?: AdcmServiceStatus | AdcmHostStatus) => void;
   dataTest?: string;
 }
 
 const ClusterOverviewFilter = ({ status, onStatusChange, dataTest }: ClusterOverviewFilter) => {
   return (
     <TabsBlock variant="secondary" className={s.clusterOverviewFilter} dataTest={dataTest}>
-      <TabButton isActive={status === AdcmClusterStatus.Up} onClick={() => onStatusChange(AdcmClusterStatus.Up)}>
+      <TabButton isActive={!status} onClick={() => onStatusChange()}>
+        All
+      </TabButton>
+      <TabButton isActive={status === AdcmServiceStatus.Up} onClick={() => onStatusChange(AdcmServiceStatus.Up)}>
         Up
       </TabButton>
-      <TabButton isActive={status === AdcmClusterStatus.Down} onClick={() => onStatusChange(AdcmClusterStatus.Down)}>
+      <TabButton isActive={status === AdcmServiceStatus.Down} onClick={() => onStatusChange(AdcmServiceStatus.Down)}>
         Down
       </TabButton>
     </TabsBlock>

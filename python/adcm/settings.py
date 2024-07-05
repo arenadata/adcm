@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from json import JSONDecodeError
 from pathlib import Path
 import os
 import sys
@@ -17,8 +18,9 @@ import json
 import string
 import logging
 
-from cm.utils import dict_json_get_or_create, get_adcm_token
 from django.core.management.utils import get_random_secret_key
+
+from adcm.settings_utils import dict_json_get_or_create, get_adcm_token
 
 ENCODING_UTF_8 = "utf-8"
 
@@ -35,6 +37,7 @@ RUN_DIR = DATA_DIR / "run"
 FILE_DIR = STACK_DIR / "data" / "file"
 LOG_DIR = DATA_DIR / "log"
 VAR_DIR = DATA_DIR / "var"
+TMP_DIR = DATA_DIR / "tmp"
 LOG_FILE = LOG_DIR / "adcm.log"
 SECRETS_FILE = VAR_DIR / "secrets.json"
 ADCM_TOKEN_FILE = VAR_DIR / "adcm_token"
@@ -146,16 +149,27 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.OrderingFilter",
-        "rest_framework.filters.SearchFilter",
     ],
     "EXCEPTION_HANDLER": "cm.errors.custom_drf_exception_handler",
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.NamespaceVersioning",
-    "DEFAULT_VERSION": "v1",
+    "DEFAULT_VERSION": "v2",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
     "JSON_UNDERSCOREIZE": {
         "ignore_fields": ("config", "configSchema", "adcmMeta", "properties"),
     },
 }
+
+
+def get_db_options() -> dict:
+    db_options = os.getenv("DB_OPTIONS", "{}")
+    try:
+        parsed = json.loads(db_options)
+    except JSONDecodeError as json_error:
+        raise RuntimeError("Failed to decode DB_OPTIONS as JSON") from json_error
+    if not isinstance(parsed, dict):
+        raise RuntimeError("DB_OPTIONS should be dict")  # noqa: TRY004
+    return parsed
+
 
 DB_PASS = os.getenv("DB_PASS")
 DB_NAME = os.getenv("DB_NAME")
@@ -172,6 +186,7 @@ if all((DB_PASS, DB_NAME, DB_USER, DB_HOST, DB_PORT)):
         "HOST": DB_HOST,
         "PORT": DB_PORT,
         "CONN_MAX_AGE": 60,
+        "OPTIONS": get_db_options(),
     }
 else:
     DB_DEFAULT = {
@@ -270,10 +285,10 @@ if not DEBUG:
                 "formatter": "adcm",
                 "stream": "ext://sys.stderr",
             },
-            "ldap_stdout_handler": {
-                "class": "logging.StreamHandler",
-                "formatter": "ldap",
-                "stream": "ext://sys.stdout",
+            "ldap_file_handler": {
+                "class": "logging.FileHandler",
+                "formatter": "adcm",
+                "filename": LOG_DIR / "ldap.log",
             },
         },
         "loggers": {
@@ -306,10 +321,7 @@ if not DEBUG:
                 "handlers": ["stream_stdout_handler", "stream_stderr_handler"],
                 "level": LOG_LEVEL,
             },
-            "django_auth_ldap": {
-                "handlers": ["ldap_stdout_handler"],
-                "level": LOG_LEVEL,
-            },
+            "django_auth_ldap": {"handlers": ["ldap_file_handler"], "level": LOG_LEVEL, "propagate": True},
         },
     }
 
@@ -339,9 +351,9 @@ ADCM_MM_ACTION_FORBIDDEN_PROPS_SET = {"config", "hc_acl", "ui_options"}
 ADCM_HIDDEN_USERS = {"status", "system"}
 
 STACK_COMPLEX_FIELD_TYPES = {"json", "structure", "list", "map", "secretmap"}
+STACK_FILE_FIELD_TYPES = {"file", "secretfile"}
 STACK_NUMERIC_FIELD_TYPES = {"integer", "float"}
 SECURE_PARAM_TYPES = {"password", "secrettext"}
-TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "read_only", "writable", "subs", "source"}
 
 EMPTY_REQUEST_STATUS_CODE = 32
 VALUE_ERROR_STATUS_CODE = 8
@@ -354,12 +366,18 @@ TASK_TYPE = "task"
 SPECTACULAR_SETTINGS = {
     "TITLE": "ADCM API",
     "DESCRIPTION": "Arenadata Cluster Manager",
-    "VERSION": "2.0.0",
+    "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
     "REDOC_DIST": "SIDECAR",
+    "POSTPROCESSING_HOOKS": [
+        "drf_spectacular.hooks.postprocess_schema_enums",
+        "adcm.api_schema.convert_pks_in_path_to_camel_case_ids",
+        "drf_spectacular.contrib.djangorestframework_camel_case.camelize_serializer_fields",
+        "adcm.api_schema.make_all_fields_required_in_response",
+    ],
 }
 
 USERNAME_MAX_LENGTH = 150

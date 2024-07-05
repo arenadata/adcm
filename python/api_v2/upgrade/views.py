@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from adcm.mixins import GetParentObjectMixin
 from adcm.permissions import (
     VIEW_CLUSTER_PERM,
@@ -33,18 +34,18 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
 from api_v2.action.serializers import ActionRunSerializer
-from api_v2.action.utils import get_action_configuration, insert_service_ids
+from api_v2.action.utils import get_action_configuration, insert_service_ids, unique_hc_entries
 from api_v2.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
 class UpgradeViewSet(
     ListModelMixin,
     GetParentObjectMixin,
     RetrieveModelMixin,
-    CamelCaseGenericViewSet,
+    ADCMGenericViewSet,
 ):
     queryset = (
         Upgrade.objects.select_related("action", "bundle", "action__prototype")
@@ -72,6 +73,7 @@ class UpgradeViewSet(
             action_type="view_upgrade_of",
             model=parent_object.__class__.__name__.lower(),
             obj=parent_object,
+            second_perm=f"view_upgrade_of_{parent_object.__class__.__name__.lower()}",
         )
 
         if self.action == "run":
@@ -95,13 +97,17 @@ class UpgradeViewSet(
 
         if isinstance(parent, Cluster):
             cluster = get_object_for_user(user=user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=parent.pk)
-            if not user.has_perm(perm=VIEW_CLUSTER_UPGRADE_PERM, obj=cluster):
+            if not user.has_perm(perm=VIEW_CLUSTER_UPGRADE_PERM, obj=cluster) and not user.has_perm(
+                perm=VIEW_CLUSTER_UPGRADE_PERM
+            ):
                 raise PermissionDenied(f"You can't view upgrades of {cluster}")
             return cluster
 
         if isinstance(parent, HostProvider):
             hostprovider = get_object_for_user(user=user, perms=VIEW_PROVIDER_PERM, klass=HostProvider, id=parent.pk)
-            if not user.has_perm(perm=VIEW_PROVIDER_UPGRADE_PERM, obj=hostprovider):
+            if not user.has_perm(perm=VIEW_PROVIDER_UPGRADE_PERM, obj=hostprovider) and not user.has_perm(
+                perm=VIEW_PROVIDER_UPGRADE_PERM
+            ):
                 raise PermissionDenied(f"You can't view upgrades of {hostprovider}")
             return hostprovider
 
@@ -176,7 +182,9 @@ class UpgradeViewSet(
             upgrade=upgrade,
             config=config,
             attr=attr,
-            hostcomponent=insert_service_ids(hc_create_data=serializer.validated_data["host_component_map"]),
+            hostcomponent=insert_service_ids(
+                hc_create_data=unique_hc_entries(serializer.validated_data["host_component_map"])
+            ),
             verbose=verbose,
         )
 

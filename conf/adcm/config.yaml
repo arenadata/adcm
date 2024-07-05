@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 3.4
+  version: 3.5
 
   actions:
     run_ldap_sync:
@@ -82,18 +82,6 @@
             no_confirm: true
       ui_options:
         invisible: true
-    - name: "ansible_settings"
-      display_name: "Ansible Settings"
-      type: "group"
-      subs:
-        - name: "forks"
-          display_name: "Forks"
-          description: |
-            This is the default number of parallel processes to spawn when communicating with remote hosts.
-          type: integer
-          default: 5
-          min: 1
-          max: 100
     - name: "logrotate"
       display_name: "Nginx Server Logrotate"
       type: "group"

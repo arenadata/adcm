@@ -24,7 +24,7 @@ export const isEmailValid = (email: string) => {
 };
 
 export const isClusterNameValid = (clusterName: string) => {
-  return /(?=.{2,150}$)^[a-z].*[^\s]$/i.test(clusterName);
+  return /^[a-z0-9][a-z0-9._-\s]{0,148}[a-z0-9]$/i.test(clusterName);
 };
 
 export const isHostNameValid = (hostName: string) => {
@@ -41,4 +41,8 @@ interface Named {
 
 export const isNameUniq = <T extends Named>(name: string, items: T[]): boolean => {
   return !items.some((item) => item.name === name);
+};
+
+export const isWhiteSpaceOnly = (value: string) => {
+  return /^\s+$/.test(value);
 };

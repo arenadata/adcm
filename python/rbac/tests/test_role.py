@@ -14,8 +14,7 @@ import json
 import hashlib
 
 from adcm.permissions import check_custom_perm
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.api import add_host_to_cluster
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase, BusinessLogicMixin
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
@@ -23,7 +22,6 @@ from cm.models import (
     Bundle,
     Cluster,
     ClusterObject,
-    Host,
     HostProvider,
     ProductCategory,
     Prototype,
@@ -185,8 +183,6 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         self.cluster_action = Action.objects.create(
             name="cluster_action",
             type=ActionType.JOB,
-            script="./action.yaml",
-            script_type="ansible",
             state_available="any",
             prototype=self.clp,
             display_name="Cluster Action",
@@ -194,8 +190,6 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         self.service1_action = Action.objects.create(
             name="service_1_action",
             type=ActionType.JOB,
-            script="./action.yaml",
-            script_type="ansible",
             state_available="any",
             prototype=self.sp_1,
             display_name="Service 1 Action",
@@ -203,17 +197,12 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         self.component11_action = Action.objects.create(
             name="component_1_1_action",
             type=ActionType.JOB,
-            script="./action.yaml",
-            script_type="ansible",
             state_available="any",
             prototype=self.cop_11,
             display_name="Component 1 from Service 1 Action",
         )
         self.component21_action = Action.objects.create(
             name="component_2_1_action",
-            type=ActionType.JOB,
-            script="./action.yaml",
-            script_type="ansible",
             state_available="any",
             prototype=self.cop_12,
             display_name="Component 2 from Service 1 Action",
@@ -221,8 +210,6 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         self.service2_action = Action.objects.create(
             name="service_2_action",
             type=ActionType.JOB,
-            script="./action.yaml",
-            script_type="ansible",
             state_available="any",
             prototype=self.sp_2,
             display_name="Service 2 Action",
@@ -230,8 +217,6 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         self.component12_action = Action.objects.create(
             name="component_1_2_action",
             type=ActionType.JOB,
-            script="./action.yaml",
-            script_type="ansible",
             state_available="any",
             prototype=self.cop_21,
             display_name="Component 1 from Service 2 Action",
@@ -239,8 +224,6 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         self.component22_action = Action.objects.create(
             name="component_2_2_action",
             type=ActionType.JOB,
-            script="./action.yaml",
-            script_type="ansible",
             state_available="any",
             prototype=self.cop_22,
             display_name="Component 2 from Service 2 Action",
@@ -572,7 +555,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         self.assertEqual(sa_role_count, 6, "Roles missing from base roles")
 
 
-class TestMMRoles(RBACBaseTestCase):
+class TestMMRoles(RBACBaseTestCase, BusinessLogicMixin):
     def setUp(self) -> None:
         super().setUp()
 
@@ -583,8 +566,7 @@ class TestMMRoles(RBACBaseTestCase):
             name="test_provider",
             prototype=self.provider_prototype,
         )
-        self.host = Host.objects.create(fqdn="testhost", prototype=self.host_prototype)
-        add_host_to_cluster(self.cluster, self.host)
+        self.host = self.add_host(provider=self.provider, fqdn="testhost", cluster=self.cluster)
         self.service = ClusterObject.objects.create(cluster=self.cluster, prototype=self.sp_1)
         self.component = ServiceComponent.objects.create(
             cluster=self.cluster,

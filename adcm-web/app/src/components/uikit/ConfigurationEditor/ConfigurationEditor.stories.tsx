@@ -13,7 +13,7 @@ import {
 import { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 import { ConfigurationTreeFilter } from './ConfigurationEditor.types';
 import { Checkbox, Input, Switch } from '@uikit';
-import { generateFromSchema } from '@utils/jsonSchemaUtils';
+import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 
 type Story = StoryObj<typeof ConfigurationEditor>;
 export default {
@@ -95,7 +95,7 @@ const ConfigurationEditorStoryWithHooks = ({ initialConfigurationData, initialAt
   return (
     <>
       <Switch isToggled={filter.showAdvanced} variant="blue" onChange={handleAdvancedChange} label="Show advanced" />
-      <Switch isToggled={areExpandedAll} onChange={handleChangeExpandedAll} label="Show advanced" />
+      <Switch isToggled={areExpandedAll} onChange={handleChangeExpandedAll} label="expand content" />
       <br />
       Show invisible:
       <Checkbox checked={filter.showInvisible} onChange={handleInvisibleChange} />
@@ -162,6 +162,23 @@ export const ConfigurationEditorReadonlyStory: Story = {
       schema={readOnlySchema}
       initialConfigurationData={readOnlyConfig}
       initialAttributes={null}
+    />
+  ),
+};
+
+const attributes: ConfigurationAttributes = {
+  ['/cluster_config/cluster']: {
+    isActive: true,
+    isSynchronized: false,
+  },
+};
+
+export const ConfigurationEditorAttributesStory: Story = {
+  render: () => (
+    <ConfigurationEditorStoryWithHooks
+      schema={clusterConfigurationSchema}
+      initialConfigurationData={initialClusterConfiguration}
+      initialAttributes={attributes}
     />
   ),
 };

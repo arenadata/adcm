@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from django.conf import settings
 from django.contrib.auth.models import Group as AuthGroup
 from rbac.models import User
@@ -88,7 +89,7 @@ class UserUpdateSerializer(ModelSerializer):
     last_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, required=False)
     email = EmailField(allow_blank=True, required=False)
     is_super_user = BooleanField(source="is_superuser", required=False)
-    groups = ListField(child=IntegerField(), required=False, allow_null=True)
+    groups = ListField(child=IntegerField(), required=False, allow_null=True, write_only=True)
 
     class Meta:
         model = User
@@ -102,8 +103,14 @@ class UserCreateSerializer(UserUpdateSerializer):
     last_name = RegexField(r"^[^\n]*$", max_length=150, allow_blank=True, default="")
     email = EmailField(allow_blank=True, default="")
     is_super_user = BooleanField(source="is_superuser", default=False)
-    groups = ListField(child=IntegerField(), required=False, allow_null=True)
+    groups = ListField(child=IntegerField(), required=False, allow_null=True, write_only=True)
 
     class Meta:
         model = User
         fields = ["username", "password", "first_name", "last_name", "groups", "email", "is_super_user"]
+
+
+class UserBlockStatusChangedSerializer(UserSerializer):
+    class Meta:
+        model = User
+        fields = ["status"]

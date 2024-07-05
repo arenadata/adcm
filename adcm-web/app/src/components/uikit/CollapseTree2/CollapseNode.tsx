@@ -1,23 +1,26 @@
-import React, { ReactNode, useEffect, useState, useMemo } from 'react';
+import React, { ReactNode, useEffect, useState, useMemo, useCallback } from 'react';
 import Collapse from '@uikit/Collapse/Collapse';
 import { Node } from './CollapseNode.types';
 import s from './CollapseNode.module.scss';
 import cn from 'classnames';
 import { ConfigurationNode } from '@uikit/ConfigurationEditor/ConfigurationEditor.types';
-import { rootNodeKey } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.constants';
+import {
+  rootNodeKey,
+  toggleAllNodesEventName,
+} from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.constants';
 
 interface CollapseNodeProps<T> {
   node: Node<T>;
+  treeRef?: React.RefObject<HTMLDivElement>;
   isInitiallyExpanded?: boolean;
-  areExpandedAll?: boolean;
   getNodeClassName: (node: Node<T>) => string;
   renderNodeContent: (node: Node<T>, isExpanded: boolean, onExpand: (isOpen: boolean) => void) => ReactNode;
 }
 
 const CollapseNode = <T,>({
   node,
+  treeRef,
   isInitiallyExpanded = false,
-  areExpandedAll,
   getNodeClassName,
   renderNodeContent,
 }: CollapseNodeProps<T>) => {
@@ -31,11 +34,23 @@ const CollapseNode = <T,>({
     return fieldAttributes?.isActive === false || node.key === rootNodeKey;
   }, [node]);
 
+  const handleToggleAllNodes = useCallback(
+    (e: CustomEvent<boolean>) => {
+      if (!isIgnoreExpandAll) {
+        setIsExpanded(e.detail);
+      }
+    },
+    [isIgnoreExpandAll],
+  );
+
   useEffect(() => {
-    if (!isIgnoreExpandAll && typeof areExpandedAll === 'boolean') {
-      setIsExpanded(areExpandedAll);
-    }
-  }, [areExpandedAll, isIgnoreExpandAll]);
+    const localTreeRef = treeRef?.current;
+    localTreeRef?.addEventListener(toggleAllNodesEventName, handleToggleAllNodes as EventListener);
+
+    return () => {
+      localTreeRef?.removeEventListener(toggleAllNodesEventName, handleToggleAllNodes as EventListener);
+    };
+  }, [treeRef, handleToggleAllNodes]);
 
   const toggleCollapseNode = (isOpen: boolean) => {
     if (hasChildren) {
@@ -54,10 +69,10 @@ const CollapseNode = <T,>({
             {children.map((childNode) => (
               <CollapseNode
                 node={childNode}
+                treeRef={treeRef}
                 key={childNode.key}
                 getNodeClassName={getNodeClassName}
                 renderNodeContent={renderNodeContent}
-                areExpandedAll={areExpandedAll}
               />
             ))}
           </Collapse>

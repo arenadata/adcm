@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
+from cm.errors import AdcmEx
 from cm.models import (
+    AnsibleConfig,
     Cluster,
     ClusterObject,
     Host,
@@ -24,22 +25,20 @@ from cm.models import (
 from cm.upgrade import get_upgrade
 from cm.validators import ClusterUniqueValidator, StartMidEndValidator
 from django.conf import settings
-from rest_framework.fields import CharField, IntegerField
-from rest_framework.serializers import (
-    BooleanField,
-    ModelSerializer,
-    SerializerMethodField,
-)
+from drf_spectacular.utils import extend_schema_field
+from rest_framework.fields import CharField, DictField, IntegerField
+from rest_framework.serializers import BooleanField, ModelSerializer, SerializerMethodField
+from rest_framework.status import HTTP_409_CONFLICT
 
 from api_v2.cluster.utils import get_depend_on
 from api_v2.concern.serializers import ConcernSerializer
-from api_v2.prototype.serializers import PrototypeRelatedSerializer
+from api_v2.prototype.serializers import LicenseSerializer, PrototypeRelatedSerializer
 from api_v2.prototype.utils import get_license_text
-from api_v2.serializers import WithStatusSerializer
+from api_v2.serializers import DependOnSerializer, WithStatusSerializer
 
 
 class ClusterSerializer(WithStatusSerializer):
-    prototype = PrototypeRelatedSerializer(read_only=True)
+    prototype = PrototypeRelatedSerializer()
     concerns = ConcernSerializer(many=True, read_only=True)
     is_upgradable = SerializerMethodField()
     main_info = SerializerMethodField()
@@ -78,6 +77,9 @@ class ClusterRelatedSerializer(ModelSerializer):
 class ClusterCreateSerializer(EmptySerializer):
     prototype_id = IntegerField()
     name = CharField(
+        min_length=2,
+        max_length=150,
+        trim_whitespace=False,
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
             StartMidEndValidator(
@@ -94,7 +96,9 @@ class ClusterCreateSerializer(EmptySerializer):
 
 class ClusterUpdateSerializer(ModelSerializer):
     name = CharField(
-        max_length=80,
+        min_length=2,
+        max_length=150,
+        trim_whitespace=False,
         validators=[
             ClusterUniqueValidator(queryset=Cluster.objects.all()),
             StartMidEndValidator(
@@ -132,6 +136,7 @@ class ServicePrototypeSerializer(ModelSerializer):
         fields = ["id", "name", "display_name", "version", "is_required", "depend_on", "license"]
 
     @staticmethod
+    @extend_schema_field(field=DependOnSerializer(many=True))
     def get_depend_on(prototype: Prototype) -> list[dict] | None:
         if prototype.requires:
             return get_depend_on(prototype=prototype)
@@ -139,15 +144,20 @@ class ServicePrototypeSerializer(ModelSerializer):
         return None
 
     @staticmethod
+    @extend_schema_field(field=LicenseSerializer)
     def get_license(prototype: Prototype) -> dict:
         return {
             "status": prototype.license,
             "text": get_license_text(
                 license_path=prototype.license_path,
-                path=prototype.path,
                 bundle_hash=prototype.bundle.hash,
             ),
         }
+
+
+class SetMappingSerializer(EmptySerializer):
+    host_id = IntegerField()
+    component_id = IntegerField()
 
 
 class MappingSerializer(ModelSerializer):
@@ -178,3 +188,63 @@ class RelatedHostsStatusesSerializer(WithStatusSerializer):
     class Meta:
         model = Host
         fields = ["id", "name", "status"]
+
+
+class ClusterStatusSerializer(WithStatusSerializer):
+    class Meta:
+        model = Cluster
+        fields = ["id", "name", "state", "status"]
+
+
+class AnsibleConfigUpdateSerializer(EmptySerializer):
+    config = DictField(write_only=True)
+
+    @staticmethod
+    def validate_config(value: dict) -> dict:
+        # required to raise here AdcmEx directly,
+        # because subclassing ValidationError with status_code override is no help
+        # because Serializer handler will raise vanila ValidationError anyway
+
+        if set(value) != {"defaults"}:
+            raise AdcmEx(
+                code="CONFIG_KEY_ERROR", msg="Only `defaults` section can be modified", http_code=HTTP_409_CONFLICT
+            )
+
+        defaults = value["defaults"]
+
+        if set(defaults or ()) != {"forks"}:
+            raise AdcmEx(
+                code="CONFIG_KEY_ERROR",
+                msg="Only `defaults.forks` parameter can be modified",
+                http_code=HTTP_409_CONFLICT,
+            )
+
+        if not isinstance(defaults["forks"], int) or defaults["forks"] < 1:
+            raise AdcmEx(
+                code="CONFIG_VALUE_ERROR",
+                msg="`defaults.forks` parameter must be an integer greater than 0",
+                http_code=HTTP_409_CONFLICT,
+            )
+
+        defaults["forks"] = str(defaults["forks"])
+        value["defaults"] = defaults
+
+        return value
+
+
+class AnsibleConfigRetrieveSerializer(ModelSerializer):
+    config = DictField(source="value", read_only=True)
+    adcm_meta = SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = AnsibleConfig
+        fields = ["config", "adcm_meta"]
+
+    def get_adcm_meta(self, instance: AnsibleConfig) -> dict:  # noqa: ARG002
+        return {}
+
+    def to_representation(self, instance: AnsibleConfig) -> dict:
+        data = super().to_representation(instance=instance)
+        data["config"]["defaults"]["forks"] = int(data["config"]["defaults"]["forks"])
+
+        return data

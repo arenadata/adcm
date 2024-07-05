@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { FormField, Input } from '@uikit';
 import ConfigurationEditorDialog from '../ConfigurationEditorDialog/ConfigurationEditorDialog';
-import { ConfigurationNodeView } from '../../ConfigurationEditor.types';
+import { Node } from '@uikit/CollapseTree2/CollapseNode.types';
 import { JSONPrimitive } from '@models/json';
-import StringControl from '../FieldControls/StringControl';
-import SecretControl from '../FieldControls/SecretControl';
+import { ConfigurationField, ConfigurationNodeView } from '../../ConfigurationEditor.types';
+import StringControl from '../FieldControls/StringControls/StringControl';
+import SecretControl from '../FieldControls/StringControls/SecretControl';
 import s from './AddConfigurationFieldDialog.module.scss';
 
 export interface AddConfigurationFieldDialogProps {
@@ -22,21 +23,24 @@ const AddConfigurationFieldDialog = ({
   onOpenChange,
   onAddField,
 }: AddConfigurationFieldDialogProps) => {
+  const fieldNode = node as Node<ConfigurationField>;
+  const adcmMeta = fieldNode.data.fieldSchema.adcmMeta;
+
   const [fieldName, setFieldName] = useState('');
   const [value, setValue] = useState('');
   const [isValueValid, setIsValueValid] = useState(true);
+
+  const handleOpenChange = (isOpen: boolean) => {
+    onOpenChange(isOpen);
+  };
 
   const handleFieldNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFieldName(e.target.value);
   };
 
-  const handleChange = (value: JSONPrimitive, isValid = true) => {
+  const handleValueChange = (value: JSONPrimitive, isValid = true) => {
     setValue(value as string);
     setIsValueValid(isValid);
-  };
-
-  const handleOpenChange = (isOpen: boolean) => {
-    onOpenChange(isOpen);
   };
 
   const handleCancel = () => {
@@ -64,13 +68,13 @@ const AddConfigurationFieldDialog = ({
           <Input className={inputClassName} value={fieldName} onChange={handleFieldNameChange} />
         </FormField>
 
-        {node.data.fieldSchema.adcmMeta.isSecret ? (
+        {adcmMeta.isSecret ? (
           <SecretControl
             fieldName="Enter secret"
             value={value}
             fieldSchema={node.data.fieldSchema}
             isReadonly={false}
-            onChange={handleChange}
+            onChange={handleValueChange}
           />
         ) : (
           <StringControl
@@ -78,7 +82,7 @@ const AddConfigurationFieldDialog = ({
             value={value}
             fieldSchema={node.data.fieldSchema}
             isReadonly={false}
-            onChange={handleChange}
+            onChange={handleValueChange}
           />
         )}
       </div>

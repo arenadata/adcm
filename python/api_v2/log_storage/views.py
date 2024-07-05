@@ -17,19 +17,65 @@ from adcm import settings
 from adcm.permissions import VIEW_LOGSTORAGE_PERMISSION
 from cm.models import JobLog, LogStorage
 from django.http import HttpResponse
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
+from api_v2.api_schema import ErrorSerializer
 from api_v2.log_storage.permissions import LogStoragePermissions
 from api_v2.log_storage.serializers import LogStorageSerializer
-from api_v2.views import CamelCaseGenericViewSet
+from api_v2.views import ADCMGenericViewSet
 
 
-class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, CamelCaseGenericViewSet):
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getLogstorage",
+        description="Contains job's logs storage",
+        summary="GET logs storage",
+        responses={
+            HTTP_200_OK: LogStorageSerializer(many=True),
+            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)},
+        },
+    ),
+    retrieve=extend_schema(
+        operation_id="getJobslog",
+        description="Contains logs by job",
+        summary="GET job's log",
+        responses={
+            HTTP_200_OK: LogStorageSerializer(many=False),
+            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)},
+        },
+    ),
+    download=extend_schema(
+        operation_id="getJobLogDownload",
+        description="Download specific job log.",
+        summary="GET job log download",
+        parameters=[
+            OpenApiParameter(
+                name="jobId",
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="Job id.",
+            ),
+            OpenApiParameter(
+                name="id",
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="Log id.",
+            ),
+        ],
+        responses={
+            HTTP_200_OK: OpenApiResponse(description="OK"),
+            **{err_code: ErrorSerializer for err_code in (HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
+        },
+    ),
+)
+class LogStorageViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
     queryset = LogStorage.objects.select_related("job")
     serializer_class = LogStorageSerializer
     filter_backends = []

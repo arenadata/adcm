@@ -1,0 +1,16 @@
+- type: provider
+  name: another_simple_provider
+  version: 2.3
+
+  actions: &actions
+    dummy:
+      type: job
+      script_type: ansible
+      script: ./playbook.yaml
+      masking:
+
+- type: host
+  name: another_host
+  version: 1.4
+
+  actions: *actions

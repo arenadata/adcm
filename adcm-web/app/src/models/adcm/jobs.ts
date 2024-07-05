@@ -5,6 +5,7 @@ export enum AdcmJobStatus {
   Running = 'running',
   Locked = 'locked',
   Aborted = 'aborted',
+  Broken = 'broken',
 }
 
 export enum AdcmJobObjectType {

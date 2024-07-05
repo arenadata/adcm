@@ -14,7 +14,8 @@ from io import BytesIO
 from operator import itemgetter
 from unittest.mock import patch
 
-from cm.job import create_task
+from cm.api import delete_service
+from cm.converters import model_name_to_core_type
 from cm.models import (
     ADCM,
     Action,
@@ -26,8 +27,11 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.job.prepare import prepare_task_for_action
+from cm.tests.mocks.task_runner import RunTaskMock
+from core.job.dto import TaskPayloadDTO
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse
 from django.utils import timezone
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
@@ -42,40 +46,37 @@ class TestTask(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
         self.adcm = ADCM.objects.first()
-        service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        component_1 = ServiceComponent.objects.filter(service=service_1, prototype__name="component_1").first()
+        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        component_1 = ServiceComponent.objects.filter(service=self.service_1, prototype__name="component_1").first()
         self.cluster_action = Action.objects.filter(name="action", prototype=self.cluster_1.prototype).first()
-        service_1_action = Action.objects.filter(name="action", prototype=service_1.prototype).first()
+        self.service_1_action = Action.objects.filter(name="action", prototype=self.service_1.prototype).first()
         component_1_action = Action.objects.filter(name="action_1_comp_1", prototype=component_1.prototype).first()
-        self.cluster_task = create_task(
-            action=self.cluster_action,
-            obj=self.cluster_1,
-            conf={},
-            attr={},
-            hostcomponent=[],
-            hosts=[],
-            verbose=False,
-            post_upgrade_hc=[],
+        cluster_object = CoreObjectDescriptor(id=self.cluster_1.pk, type=ADCMCoreType.CLUSTER)
+        self.cluster_task = TaskLog.objects.get(
+            id=prepare_task_for_action(
+                target=cluster_object,
+                owner=cluster_object,
+                action=self.cluster_action.pk,
+                payload=TaskPayloadDTO(),
+            ).id
         )
-        self.service_task = create_task(
-            action=service_1_action,
-            obj=service_1,
-            conf={},
-            attr={},
-            hostcomponent=[],
-            hosts=[],
-            verbose=False,
-            post_upgrade_hc=[],
+        service_object = CoreObjectDescriptor(id=self.service_1.pk, type=ADCMCoreType.SERVICE)
+        self.service_task = TaskLog.objects.get(
+            id=prepare_task_for_action(
+                target=service_object,
+                owner=service_object,
+                action=self.service_1_action.pk,
+                payload=TaskPayloadDTO(),
+            ).id
         )
-        self.component_task = create_task(
-            action=component_1_action,
-            obj=component_1,
-            conf={},
-            attr={},
-            hostcomponent=[],
-            hosts=[],
-            verbose=False,
-            post_upgrade_hc=[],
+        component_object = CoreObjectDescriptor(id=component_1.pk, type=ADCMCoreType.COMPONENT)
+        self.component_task = TaskLog.objects.get(
+            id=prepare_task_for_action(
+                target=component_object,
+                owner=component_object,
+                action=component_1_action.pk,
+                payload=TaskPayloadDTO(),
+            ).id
         )
         self.adcm_task = TaskLog.objects.create(
             object_id=self.adcm.pk,
@@ -85,27 +86,27 @@ class TestTask(BaseAPITestCase):
         )
 
     def test_task_list_success(self):
-        response = self.client.get(path=reverse(viewname="v2:tasklog-list"))
+        response = (self.client.v2 / "tasks").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 4)
 
     def test_task_filter_by_job_name(self):
-        response = self.client.get(path=reverse(viewname="v2:tasklog-list"), data={"jobName": "comp"})
+        response = (self.client.v2 / "tasks").get(query={"jobName": "comp"})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["results"][0]["id"], self.component_task.pk)
 
     def test_task_filter_by_object_name(self):
-        response = self.client.get(path=reverse(viewname="v2:tasklog-list"), data={"objectName": "service_1"})
+        response = (self.client.v2 / "tasks").get(query={"objectName": "service_1"})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["results"][0]["id"], self.service_task.pk)
 
     def test_task_filter_by_job_name_multiple_found_success(self):
-        response = self.client.get(path=reverse(viewname="v2:tasklog-list"), data={"jobName": "action"})
+        response = (self.client.v2 / "tasks").get(query={"jobName": "action"})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 3)
@@ -115,9 +116,7 @@ class TestTask(BaseAPITestCase):
         self.assertEqual(tasks[2]["id"], self.cluster_task.pk)
 
     def test_task_filter_by_job_name_and_object_name(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:tasklog-list"), data={"jobName": "action", "objectName": "cluster"}
-        )
+        response = (self.client.v2 / "tasks").get(query={"jobName": "action", "objectName": "cluster"})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -126,43 +125,98 @@ class TestTask(BaseAPITestCase):
     def test_task_retrieve_success(self):
         task_object = {"type": self.cluster_1.content_type.name, "id": self.cluster_1.pk, "name": self.cluster_1.name}
 
-        response = self.client.get(
-            path=reverse(viewname="v2:tasklog-detail", kwargs={"pk": self.cluster_task.pk}),
-        )
+        response = self.client.v2[self.cluster_task].get()
 
         self.assertEqual(response.data["id"], self.cluster_task.pk)
         self.assertEqual(response.data["objects"], [task_object])
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_task_retrieve_not_found_fail(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:tasklog-detail", kwargs={"pk": self.get_non_existent_pk(TaskLog)}),
-        )
+        response = (self.client.v2 / "tasks" / self.get_non_existent_pk(TaskLog)).get()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_task_log_download_success(self):
         with patch("api_v2.task.views.get_task_download_archive_file_handler", return_value=BytesIO(b"content")):
-            response = self.client.get(
-                path=reverse(viewname="v2:tasklog-download", kwargs={"pk": self.cluster_task.pk})
-            )
+            response = self.client.v2[self.cluster_task, "logs", "download"].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_adcm_5158_adcm_task_view_for_not_superuser_fail(self):
         self.client.login(username="admin", password="admin")
-        response = self.client.get(path=reverse(viewname="v2:tasklog-detail", kwargs={"pk": self.adcm_task.pk}))
+        response = self.client.v2[self.adcm_task].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        response = self.client.get(path=reverse(viewname="v2:tasklog-list"))
+        response = (self.client.v2 / "tasks").get()
         self.assertIn(self.adcm_task.pk, [task["id"] for task in response.json()["results"]])
 
         self.client.login(**self.test_user_credentials)
-        response = self.client.get(path=reverse(viewname="v2:tasklog-detail", kwargs={"pk": self.adcm_task.pk}))
+        response = self.client.v2[self.adcm_task].get()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        response = self.client.get(path=reverse(viewname="v2:tasklog-list"))
+        response = (self.client.v2 / "tasks").get()
         self.assertNotIn(self.adcm_task.pk, [task["id"] for task in response.json()["results"]])
+
+    def test_adcm_4142_visibility_after_object_deletion(self):
+        cluster_admin_credentials = self.test_user_credentials
+        cluster_admin = self.test_user
+        service_admin_credentials = {"username": "service_admin_username", "password": "service_admin_passwo"}
+        service_admin = self.create_user(**service_admin_credentials)
+
+        with self.grant_permissions(
+            to=cluster_admin, on=self.cluster_1, role_name="Cluster Administrator"
+        ) as _, self.grant_permissions(to=service_admin, on=self.service_1, role_name="Service Administrator") as _:
+            # run action as service admin (create all permissions we interested in)
+            self.client.login(**service_admin_credentials)
+            with RunTaskMock() as run_task:
+                response = self.client.v2[self.service_1, "actions", self.service_1_action, "run"].post(
+                    data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+                )
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(response.json()["id"], run_task.target_task.id)
+            self.assertEqual(run_task.target_task.status, "created")
+
+            service_task_pk = response.json()["id"]
+            child_job_pk = response.json()["childJobs"][0]["id"]
+
+            task_endpoint = self.client.v2 / "tasks" / service_task_pk
+            log_list_endpoint = self.client.v2 / "jobs" / child_job_pk / "logs"
+
+            # check tasklog visibility for cluster admin
+            self.client.login(**cluster_admin_credentials)
+            cluster_admin_response = task_endpoint.get()
+            self.assertEqual(cluster_admin_response.status_code, HTTP_200_OK)
+
+            cluster_admin_response = log_list_endpoint.get()
+            self.assertSetEqual({log["type"] for log in cluster_admin_response.json()}, {"stdout", "stderr"})
+
+            # check tasklog visibility for service admin
+            self.client.login(**service_admin_credentials)
+            service_admin_response = task_endpoint.get()
+            self.assertEqual(service_admin_response.status_code, HTTP_200_OK)
+
+            service_admin_response = log_list_endpoint.get()
+            self.assertSetEqual({log["type"] for log in service_admin_response.json()}, {"stdout", "stderr"})
+
+            # delete service
+            delete_service(service=self.service_1)
+
+            # check tasklog visibility for cluster admin
+            self.client.login(**cluster_admin_credentials)
+            cluster_admin_response = task_endpoint.get()
+            self.assertEqual(cluster_admin_response.status_code, HTTP_200_OK)
+
+            cluster_admin_response = log_list_endpoint.get()
+            self.assertSetEqual({log["type"] for log in cluster_admin_response.json()}, {"stdout", "stderr"})
+
+            # check tasklog visibility for service admin
+            self.client.login(**service_admin_credentials)
+            service_admin_response = task_endpoint.get()
+            self.assertEqual(service_admin_response.status_code, HTTP_200_OK)
+
+            service_admin_response = log_list_endpoint.get()
+            self.assertSetEqual({log["type"] for log in service_admin_response.json()}, {"stdout", "stderr"})
 
 
 class TestTaskObjects(BaseAPITestCase):
@@ -198,56 +252,56 @@ class TestTaskObjects(BaseAPITestCase):
 
     def test_cluster_task_objects_success(self) -> None:
         task = self.create_task(object_=self.cluster_1, action_name="action")
-        response = self.client.get(path=reverse("v2:tasklog-detail", kwargs={"pk": task.pk}))
+        response = self.client.v2[task].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         objects = sorted(response.json()["objects"], key=itemgetter("type"))
         self.assertEqual(objects, [self.cluster_object])
 
     def test_service_task_objects_success(self) -> None:
         task = self.create_task(object_=self.service_1, action_name="action")
-        response = self.client.get(path=reverse("v2:tasklog-detail", kwargs={"pk": task.pk}))
+        response = self.client.v2[task].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         objects = sorted(response.json()["objects"], key=itemgetter("type"))
         self.assertEqual(objects, [self.cluster_object, self.service_object])
 
     def test_component_task_objects_success(self) -> None:
         task = self.create_task(object_=self.component_1, action_name="action_1_comp_1")
-        response = self.client.get(path=reverse("v2:tasklog-detail", kwargs={"pk": task.pk}))
+        response = self.client.v2[task].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         objects = sorted(response.json()["objects"], key=itemgetter("type"))
         self.assertEqual(objects, [self.cluster_object, self.component_object, self.service_object])
 
     def test_provider_task_objects_success(self) -> None:
         task = self.create_task(object_=self.provider, action_name="provider_action")
-        response = self.client.get(path=reverse("v2:tasklog-detail", kwargs={"pk": task.pk}))
+        response = self.client.v2[task].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         objects = sorted(response.json()["objects"], key=itemgetter("type"))
         self.assertEqual(objects, [self.provider_object])
 
     def test_host_task_objects_success(self) -> None:
         task = self.create_task(object_=self.host, action_name="host_action")
-        response = self.client.get(path=reverse("v2:tasklog-detail", kwargs={"pk": task.pk}))
+        response = self.client.v2[task].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         objects = sorted(response.json()["objects"], key=itemgetter("type"))
         self.assertEqual(objects, [self.host_object, self.provider_object])
 
     def test_host_task_of_cluster_action_objects_success(self) -> None:
         task = self.create_task(object_=self.cluster_1, action_name="cluster_on_host", host=self.host)
-        response = self.client.get(path=reverse("v2:tasklog-detail", kwargs={"pk": task.pk}))
+        response = self.client.v2[task].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         objects = sorted(response.json()["objects"], key=itemgetter("type"))
         self.assertEqual(objects, [self.cluster_object, self.host_object])
 
     def test_host_task_of_service_action_objects_success(self) -> None:
         task = self.create_task(object_=self.service_1, action_name="service_on_host", host=self.host)
-        response = self.client.get(path=reverse("v2:tasklog-detail", kwargs={"pk": task.pk}))
+        response = self.client.v2[task].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         objects = sorted(response.json()["objects"], key=itemgetter("type"))
         self.assertEqual(objects, [self.cluster_object, self.host_object, self.service_object])
 
     def test_host_task_of_component_action_objects_success(self) -> None:
         task = self.create_task(object_=self.component_1, action_name="component_on_host", host=self.host)
-        response = self.client.get(path=reverse("v2:tasklog-detail", kwargs={"pk": task.pk}))
+        response = self.client.v2[task].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         objects = sorted(response.json()["objects"], key=itemgetter("type"))
         self.assertEqual(objects, [self.cluster_object, self.component_object, self.host_object, self.service_object])
@@ -260,14 +314,12 @@ class TestTaskObjects(BaseAPITestCase):
         host: Host | None = None,
     ):
         action = Action.objects.get(name=action_name, prototype=object_.prototype)
-        hosts = [] if not host else [host.pk]
-        return create_task(
-            action=action,
-            obj=host or object_,
-            conf={},
-            attr={},
-            hostcomponent=[],
-            hosts=hosts,
-            verbose=False,
-            post_upgrade_hc=[],
+
+        owner = CoreObjectDescriptor(
+            id=object_.pk, type=model_name_to_core_type(model_name=object_.__class__.__name__.lower())
         )
+        target = CoreObjectDescriptor(id=host.pk, type=ADCMCoreType.HOST) if host else owner
+
+        launch = prepare_task_for_action(target=target, owner=owner, action=action.pk, payload=TaskPayloadDTO())
+
+        return TaskLog.objects.get(id=launch.id)

@@ -3,7 +3,8 @@
   name: cluster_with_allowed_flags
   version: '1.0'
   edition: community
-  allow_flags: true
+  flag_autogeneration:
+    enable_outdated_config: true
   config:
     - name: string
       type: string

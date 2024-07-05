@@ -79,12 +79,7 @@ const CollapseComponentWithHooks = () => {
 
   return (
     <>
-      <CollapseNode
-        node={tree}
-        renderNodeContent={renderNodeContent}
-        getNodeClassName={getNodeClassName}
-        areExpandedAll={false}
-      />
+      <CollapseNode node={tree} renderNodeContent={renderNodeContent} getNodeClassName={getNodeClassName} />
     </>
   );
 };

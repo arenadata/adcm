@@ -9,16 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from adcm.tests.base import BaseTestCase
 
-from cm.issue import add_concern_to_object, remove_concern_from_object
-from cm.models import (
-    ConcernCause,
-    ConcernItem,
-    ConcernType,
-    KnownNames,
-    MessageTemplate,
-)
+from cm.issue import add_concern_to_object, create_issue, remove_concern_from_object
+from cm.models import ConcernCause, ConcernItem, ConcernType
 from cm.tests.utils import gen_concern_item, generate_hierarchy
 
 
@@ -36,14 +31,14 @@ class ADCMEntityConcernTest(BaseTestCase):
                 self.assertFalse(item, "No locks expected")
 
     def test_is_locked__true(self):
-        lock = gen_concern_item(ConcernType.LOCK)
+        lock = gen_concern_item(ConcernType.LOCK, owner=self.hierarchy["cluster"])
         for obj in self.hierarchy.values():
             add_concern_to_object(object_=obj, concern=lock)
 
             self.assertTrue(obj.locked)
 
     def test_is_locked__deleted(self):
-        lock = gen_concern_item(ConcernType.LOCK)
+        lock = gen_concern_item(ConcernType.LOCK, owner=self.hierarchy["cluster"])
         for obj in self.hierarchy.values():
             add_concern_to_object(object_=obj, concern=lock)
 
@@ -59,14 +54,14 @@ class ADCMEntityConcernTest(BaseTestCase):
             self.assertFalse(obj.locked)
 
     def test_add_to_concern__deleted(self):
-        lock = ConcernItem(type=ConcernType.LOCK, name=None, reason="unsaved")
+        lock = ConcernItem(type=ConcernType.LOCK, name="", reason="unsaved")
         for obj in self.hierarchy.values():
             add_concern_to_object(object_=obj, concern=lock)
 
             self.assertFalse(obj.locked)
 
     def test_add_to_concern(self):
-        lock = gen_concern_item(ConcernType.LOCK)
+        lock = gen_concern_item(ConcernType.LOCK, owner=self.hierarchy["cluster"])
         for obj in self.hierarchy.values():
             add_concern_to_object(object_=obj, concern=lock)
 
@@ -79,7 +74,7 @@ class ADCMEntityConcernTest(BaseTestCase):
 
     def test_remove_from_concern__none(self):
         nolock = None
-        lock = gen_concern_item(ConcernType.LOCK)
+        lock = gen_concern_item(ConcernType.LOCK, owner=self.hierarchy["cluster"])
         for obj in self.hierarchy.values():
             add_concern_to_object(object_=obj, concern=lock)
             remove_concern_from_object(object_=obj, concern=nolock)
@@ -87,8 +82,8 @@ class ADCMEntityConcernTest(BaseTestCase):
             self.assertTrue(obj.locked)
 
     def test_remove_from_concern__deleted(self):
-        nolock = ConcernItem(type=ConcernType.LOCK, name=None, reason="unsaved")
-        lock = gen_concern_item(ConcernType.LOCK)
+        nolock = ConcernItem(type=ConcernType.LOCK, name="", reason="unsaved")
+        lock = gen_concern_item(ConcernType.LOCK, owner=self.hierarchy["cluster"])
         for obj in self.hierarchy.values():
             add_concern_to_object(object_=obj, concern=lock)
             remove_concern_from_object(object_=obj, concern=nolock)
@@ -103,25 +98,17 @@ class ADCMEntityConcernTest(BaseTestCase):
     def test_get_own_issue__others(self):
         cluster = self.hierarchy["cluster"]
         service = self.hierarchy["service"]
-        reason = MessageTemplate.get_message_from_template(
-            KnownNames.CONFIG_ISSUE.value,
-            source=cluster,
-        )
-        issue_type = ConcernCause.CONFIG
-        issue = ConcernItem.objects.create(type=ConcernType.ISSUE, reason=reason, owner=cluster, cause=issue_type)
+        issue_cause = ConcernCause.CONFIG
+        issue = create_issue(obj=cluster, issue_cause=issue_cause)
         add_concern_to_object(object_=cluster, concern=issue)
         add_concern_to_object(object_=service, concern=issue)
 
-        self.assertIsNone(service.get_own_issue(issue_type))
+        self.assertIsNone(service.get_own_issue(issue_cause))
 
     def test_get_own_issue__exists(self):
         cluster = self.hierarchy["cluster"]
-        reason = MessageTemplate.get_message_from_template(
-            KnownNames.CONFIG_ISSUE.value,
-            source=cluster,
-        )
-        issue_type = ConcernCause.CONFIG
-        issue = ConcernItem.objects.create(type=ConcernType.ISSUE, reason=reason, owner=cluster, cause=issue_type)
+        issue_cause = ConcernCause.CONFIG
+        issue = create_issue(obj=cluster, issue_cause=issue_cause)
         add_concern_to_object(object_=cluster, concern=issue)
 
-        self.assertIsNotNone(cluster.get_own_issue(issue_type))
+        self.assertIsNotNone(cluster.get_own_issue(issue_cause))

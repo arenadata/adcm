@@ -9,15 +9,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from pathlib import Path
 
-from adcm.tests.base import BaseTestCase
+from configparser import ConfigParser
+from pathlib import Path
+import json
+
+from adcm.tests.base import BaseTestCase, BusinessLogicMixin
+from core.job.runners import ADCMSettings, AnsibleSettings, ExternalSettings, IntegrationsSettings
+from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
 
 from cm.api import add_hc, add_service_to_cluster
 from cm.models import Action, MaintenanceMode, Prototype, ServiceComponent
+from cm.services.job.run._target_factories import prepare_ansible_environment
+from cm.services.job.run.repo import JobRepoImpl
 from cm.tests.utils import (
     gen_action,
     gen_bundle,
@@ -405,3 +412,179 @@ class ActionAllowTest(BaseTestCase):
                 "start_impossible_reason"
             ]
         )
+
+
+class TestActionParams(BaseTestCase, BusinessLogicMixin):
+    def setUp(self) -> None:
+        super().setUp()
+
+        bundle = self.add_bundle(
+            source_dir=self.base_dir / "python" / "cm" / "tests" / "bundles" / "cluster_with_action_params"
+        )
+
+        self.cluster = self.create_cluster(bundle_pk=bundle.pk, name="test_cluster_with_action_params")
+        self.service = self.add_services_to_cluster(["same_actioned_service"], cluster=self.cluster).get()
+        self.component = self.service.servicecomponent_set.get()
+
+        self.action_full = Action.objects.get(prototype=self.cluster.prototype, name="action_full")
+        self.action_jinja_2_native_false = Action.objects.get(
+            prototype=self.cluster.prototype, name="action_jinja2Native_false"
+        )
+        self.action_jinja_2_native_absent = Action.objects.get(
+            prototype=self.cluster.prototype, name="action_jinja2Native_absent"
+        )
+        self.action_ansible_tags_absent = Action.objects.get(
+            prototype=self.component.prototype, name="action_ansibleTags_absent"
+        )
+        self.action_custom_fields_absent = Action.objects.get(
+            prototype=self.service.prototype, name="action_customFields_absent"
+        )
+
+        self.configuration = ExternalSettings(
+            adcm=ADCMSettings(code_root_dir=settings.CODE_DIR, run_dir=settings.RUN_DIR, log_dir=settings.LOG_DIR),
+            ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),
+            integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
+        )
+
+        self.default_expected_ansible_cfg = {
+            "defaults": (
+                ("stdout_callback", "yaml"),
+                ("deprecation_warnings", "False"),
+                ("callback_whitelist", "profile_tasks"),
+                ("forks", "5"),
+            ),
+            "ssh_connection": (("retries", "3"), ("pipelining", "True")),
+        }
+
+    def _generate_and_read_target_files(self, action_pk: int, alternative_path: str = "") -> tuple[ConfigParser, dict]:
+        response = self.client.post(
+            path=alternative_path
+            or reverse(
+                viewname="v2:cluster-action-run",
+                kwargs={
+                    "cluster_pk": self.cluster.pk,
+                    "pk": action_pk,
+                },
+            ),
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        task = JobRepoImpl.get_task(id=response.json()["id"])
+        job, *_ = JobRepoImpl.get_task_jobs(task_id=task.id)
+
+        job_dir: Path = self.directories["RUN_DIR"] / str(job.id)
+        job_dir.mkdir(parents=True)
+        prepare_ansible_environment(task=task, job=job, configuration=self.configuration)
+
+        ansible_cfg_file: Path = job_dir / "ansible.cfg"
+        config_json_file: Path = job_dir / "config.json"
+
+        if not ansible_cfg_file.is_file() or not config_json_file.is_file():
+            raise ValueError("Not all files exist")
+
+        config_parser = ConfigParser()
+        config_parser.read(ansible_cfg_file.absolute())
+
+        return config_parser, json.loads(config_json_file.read_text(encoding="utf-8"))
+
+    def test_params_full(self):
+        expected_job_params = {
+            "ansible_tags": "ansible_tag1, ansible_tag2",
+            "custom_list": [1, "two", 3.0],
+            "custom_map": {"1": "two", "five": 6, "three": 4.0},
+            "custom_str": "custom_str_value",
+            "jinja2_native": True,
+        }
+
+        ansible_cfg_content, config_json_content = self._generate_and_read_target_files(action_pk=self.action_full.pk)
+
+        self.assertListEqual(ansible_cfg_content.sections(), list(self.default_expected_ansible_cfg.keys()))
+        self.assertSetEqual(
+            set(ansible_cfg_content.items("defaults")), set(self.default_expected_ansible_cfg["defaults"])
+        )
+        self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)
+
+    def test_params_jinja_2_native_false(self):
+        expected_job_params = {
+            "ansible_tags": "ansible_tag1, ansible_tag2",
+            "custom_list": [1, "two", 3.0],
+            "custom_map": {"1": "two", "five": 6, "three": 4.0},
+            "custom_str": "custom_str_value",
+            "jinja2_native": False,
+        }
+
+        ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
+            action_pk=self.action_jinja_2_native_false.pk
+        )
+
+        self.assertListEqual(ansible_cfg_content.sections(), list(self.default_expected_ansible_cfg.keys()))
+        self.assertSetEqual(
+            set(ansible_cfg_content.items("defaults")), set(self.default_expected_ansible_cfg["defaults"])
+        )
+        self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)
+
+    def test_params_jinja_2_native_absent(self):
+        expected_job_params = {
+            "ansible_tags": "ansible_tag1, ansible_tag2",
+            "custom_list": [1, "two", 3.0],
+            "custom_map": {"1": "two", "five": 6, "three": 4.0},
+            "custom_str": "custom_str_value",
+        }
+
+        ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
+            action_pk=self.action_jinja_2_native_absent.pk
+        )
+
+        self.assertListEqual(ansible_cfg_content.sections(), list(self.default_expected_ansible_cfg.keys()))
+        self.assertSetEqual(
+            set(ansible_cfg_content.items("defaults")), set(self.default_expected_ansible_cfg["defaults"])
+        )
+        self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)
+
+    def test_params_ansible_tags_absent(self):
+        expected_job_params = {
+            "custom_list": [1, "two", 3.0],
+            "custom_map": {"1": "two", "five": 6, "three": 4.0},
+            "custom_str": "custom_str_value",
+            "jinja2_native": True,
+        }
+
+        ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
+            action_pk=self.action_ansible_tags_absent.pk,
+            alternative_path=reverse(
+                viewname="v2:component-action-run",
+                kwargs={
+                    "cluster_pk": self.cluster.pk,
+                    "service_pk": self.service.pk,
+                    "component_pk": self.component.pk,
+                    "pk": self.action_ansible_tags_absent.pk,
+                },
+            ),
+        )
+
+        self.assertListEqual(ansible_cfg_content.sections(), list(self.default_expected_ansible_cfg.keys()))
+        self.assertSetEqual(
+            set(ansible_cfg_content.items("defaults")), set(self.default_expected_ansible_cfg["defaults"])
+        )
+        self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)
+
+    def test_params_custom_fields_absent(self):
+        expected_job_params = {"ansible_tags": "ansible_tag1, ansible_tag2", "jinja2_native": True}
+
+        ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
+            action_pk=self.action_custom_fields_absent.pk,
+            alternative_path=reverse(
+                viewname="v2:service-action-run",
+                kwargs={
+                    "cluster_pk": self.cluster.pk,
+                    "service_pk": self.service.pk,
+                    "pk": self.action_custom_fields_absent.pk,
+                },
+            ),
+        )
+
+        self.assertListEqual(ansible_cfg_content.sections(), list(self.default_expected_ansible_cfg.keys()))
+        self.assertSetEqual(
+            set(ansible_cfg_content.items("defaults")), set(self.default_expected_ansible_cfg["defaults"])
+        )
+        self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)

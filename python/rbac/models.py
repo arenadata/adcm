@@ -40,7 +40,7 @@ from django.db.models import (
 )
 from django.db.transaction import atomic
 from guardian.models import GroupObjectPermission
-from rest_framework.exceptions import ValidationError
+from guardian.shortcuts import get_perms_for_model
 
 from rbac.utils import get_query_tuple_str
 
@@ -62,14 +62,6 @@ class RoleTypes(TextChoices):
     BUSINESS = "business", "business"
     ROLE = "role", "role"
     HIDDEN = "hidden", "hidden"
-
-
-def validate_object_type(value):
-    if not isinstance(value, list):
-        raise ValidationError("Not a valid list.")
-
-    if not all(v in ObjectType.values for v in value):
-        raise ValidationError("Not a valid object type.")
 
 
 class User(AuthUser):
@@ -117,7 +109,8 @@ class Role(Model):
     type = CharField(max_length=1000, choices=RoleTypes.choices, null=False, default=RoleTypes.ROLE)
     category = ManyToManyField(ProductCategory)
     any_category = BooleanField(default=False)
-    parametrized_by_type = JSONField(default=list, null=False, validators=[validate_object_type])
+    # should be a list of `ObjectType` strings
+    parametrized_by_type = JSONField(default=list, null=False)
     __obj__ = None
 
     class Meta:
@@ -205,7 +198,7 @@ class Policy(Model):
     model_perm = ManyToManyField(PolicyPermission, blank=True)
     group_object_perm = ManyToManyField(GroupObjectPermission, blank=True)
 
-    def remove_permissions(self):
+    def remove_permissions(self, keep_objects: dict | None = None):
         # Placeholder in some places not used because we need to support Postgres and SQLite and I didn't find a way
         # to use placeholder for list of multiple values for SQLite so used string formatting
         group_pks = self.group.values_list("pk", flat=True)
@@ -274,6 +267,17 @@ class Policy(Model):
             )
             groupobj_permission_ids_to_delete = {item[0] for item in cursor.fetchall()}
             if groupobj_permission_ids_to_delete:
+                keep_group_object_permission_ids = set()
+                if keep_objects is not None:
+                    for model, ids in keep_objects.items():
+                        group_object_permission_ids = self.group_object_perm.filter(
+                            object_pk__in=ids,
+                            content_type=ContentType.objects.get_for_model(model),
+                            group_id__in=group_pks,
+                            permission__in=get_perms_for_model(model),
+                        ).values_list("id", flat=True)
+                        keep_group_object_permission_ids |= set(group_object_permission_ids)
+
                 cursor.execute(
                     f"""
                         SELECT groupobjectpermission_id FROM rbac_policy_group_object_perm 
@@ -284,6 +288,7 @@ class Policy(Model):
                 )
 
                 groupobj_permission_ids_to_keep = {item[0] for item in cursor.fetchall()}
+                groupobj_permission_ids_to_keep |= keep_group_object_permission_ids
                 if groupobj_permission_ids_to_keep:
                     groupobj_permission_ids_to_delete = tuple(
                         groupobj_permission_ids_to_delete - groupobj_permission_ids_to_keep
@@ -336,8 +341,8 @@ class Policy(Model):
         self.role.apply(policy=self)
 
     @atomic
-    def apply(self):
-        self.remove_permissions()
+    def apply(self, keep_objects: dict | None = None):
+        self.remove_permissions(keep_objects=keep_objects)
         self.role.apply(policy=self)
 
 
@@ -367,11 +372,11 @@ def get_objects_for_policy(obj: ADCMEntity) -> dict[ADCMEntity, ContentType]:
     return obj_type_map
 
 
-def re_apply_object_policy(apply_object):
+def re_apply_object_policy(apply_object, keep_objects: dict | None = None):
     obj_type_map = get_objects_for_policy(obj=apply_object)
     for obj, content_type in obj_type_map.items():
         for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=content_type):
-            policy.apply()
+            policy.apply(keep_objects=keep_objects)
 
 
 RBAC_MODEL_MAP: dict[str, type[User | Group | Role | Policy]] = {

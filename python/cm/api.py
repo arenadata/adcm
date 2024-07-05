@@ -10,11 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from functools import partial
 from typing import Literal, TypedDict
 import json
 
 from adcm_version import compare_prototype_versions
+from core.types import CoreObjectDescriptor
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
 from django.db.transaction import atomic, on_commit
@@ -24,13 +27,13 @@ from rbac.roles import apply_policy_for_new_config
 from cm.adcm_config.config import (
     init_object_config,
     process_json_config,
-    read_bundle_file,
+    reraise_file_errors_as_adcm_ex,
     save_object_config,
 )
 from cm.adcm_config.utils import proto_ref
 from cm.api_context import CTX
+from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx, raise_adcm_ex
-from cm.flag import update_object_flag
 from cm.issue import (
     add_concern_to_object,
     check_bound_components,
@@ -43,16 +46,20 @@ from cm.issue import (
 )
 from cm.logger import logger
 from cm.models import (
+    ADCM,
     ADCMEntity,
+    AnsibleConfig,
     Cluster,
     ClusterBind,
     ClusterObject,
+    ConcernItem,
     ConcernType,
     ConfigLog,
     GroupConfig,
     Host,
     HostComponent,
     HostProvider,
+    MainObject,
     MaintenanceMode,
     ObjectConfig,
     Prototype,
@@ -61,6 +68,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.concern.flags import BuiltInFlag, raise_flag, update_hierarchy
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import (
     send_config_creation_event,
@@ -68,6 +76,11 @@ from cm.status_api import (
     send_host_component_map_update_event,
 )
 from cm.utils import obj_ref
+
+# There's no good place to place it for now.
+# Since it's more about API than `cm.services.job`, it'll live here.
+# But don't stick to it.
+DEFAULT_FORKS_AMOUNT: str = "5"
 
 
 def check_license(prototype: Prototype) -> None:
@@ -103,14 +116,23 @@ def add_cluster(prototype: Prototype, name: str, description: str = "") -> Clust
         raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {prototype.type}")
 
     check_license(prototype)
+
     with atomic():
         cluster = Cluster.objects.create(prototype=prototype, name=name, description=description)
         obj_conf = init_object_config(prototype, cluster)
         cluster.config = obj_conf
         cluster.save()
+
+        AnsibleConfig.objects.create(
+            value={"defaults": {"forks": DEFAULT_FORKS_AMOUNT}},
+            object_id=cluster.id,
+            object_type=ContentType.objects.get_for_model(Cluster),
+        )
+
         update_hierarchy_issues(cluster)
 
     reset_hc_map()
+
     logger.info("cluster #%s %s is added", cluster.pk, cluster.name)
 
     return cluster
@@ -182,46 +204,6 @@ def delete_host_provider(provider, cancel_tasks=True):
     logger.info("host provider #%s is deleted", provider.pk)
 
 
-def get_cluster_and_host(cluster_pk, fqdn, host_pk):
-    cluster = Cluster.obj.get(pk=cluster_pk)
-    host = None
-    if fqdn:
-        host = Host.obj.get(fqdn=fqdn)
-    elif host_pk:
-        if not isinstance(host_pk, int):
-            raise_adcm_ex("HOST_NOT_FOUND", f'host_id must be integer (got "{host_pk}")')
-
-        host = Host.obj.get(pk=host_pk)
-    else:
-        raise_adcm_ex("HOST_NOT_FOUND", "fqdn or host_id is mandatory args")
-
-    return cluster, host
-
-
-def add_host_to_cluster_by_pk(cluster_pk, fqdn, host_pk):
-    """
-    add host to cluster
-
-    This is intended for use in adcm_add_host_to_cluster ansible plugin only
-    """
-
-    return add_host_to_cluster(*get_cluster_and_host(cluster_pk=cluster_pk, fqdn=fqdn, host_pk=host_pk))
-
-
-def remove_host_from_cluster_by_pk(cluster_pk, fqdn, host_pk):
-    """
-    remove host from cluster
-
-    This is intended for use in adcm_remove_host_from_cluster ansible plugin only
-    """
-
-    cluster, host = get_cluster_and_host(cluster_pk, fqdn, host_pk)
-    if host.cluster != cluster:
-        raise_adcm_ex("HOST_CONFLICT", "you can remove host only from you own cluster")
-
-    remove_host_from_cluster(host)
-
-
 def delete_host(host: Host, cancel_tasks: bool = True) -> None:
     cluster = host.cluster
     if cluster:
@@ -238,67 +220,25 @@ def delete_host(host: Host, cancel_tasks: bool = True) -> None:
     logger.info("host #%s is deleted", host_pk)
 
 
-def delete_host_by_pk(host_pk):
-    """
-    Host deleting
-
-    This is intended for use in adcm_delete_host ansible plugin only
-    """
-
-    host = Host.obj.get(pk=host_pk)
-    delete_host(host, cancel_tasks=False)
-
-
-def _clean_up_related_hc(service: ClusterObject) -> None:
-    """Unconditional removal of HostComponents related to removing ClusterObject"""
-
-    queryset = (
-        HostComponent.objects.filter(cluster=service.cluster)
-        .exclude(service=service)
-        .select_related("host", "component")
-        .order_by("id")
-    )
-    new_hc_list = []
-    for hostcomponent in queryset:
-        new_hc_list.append((hostcomponent.service, hostcomponent.host, hostcomponent.component))
-
-    save_hc(service.cluster, new_hc_list)
-
-
-def delete_service_by_pk(service_pk):
-    """
-    Unconditional removal of service from cluster
-
-    This is intended for use in adcm_delete_service ansible plugin only
-    """
-
-    service = ClusterObject.obj.get(pk=service_pk)
-    with atomic():
-        _clean_up_related_hc(service=service)
-        ClusterBind.objects.filter(source_service=service).delete()
-        delete_service(service=service)
-
-
-def delete_service_by_name(service_name, cluster_pk):
-    """
-    Unconditional removal of service from cluster
-
-    This is intended for use in adcm_delete_service ansible plugin only
-    """
-
-    service = ClusterObject.obj.get(cluster__pk=cluster_pk, prototype__name=service_name)
-    with atomic():
-        _clean_up_related_hc(service=service)
-        ClusterBind.objects.filter(source_service=service).delete()
-        delete_service(service=service)
-
-
 def delete_service(service: ClusterObject) -> None:
     service_pk = service.pk
     service.delete()
+
     update_issue_after_deleting()
     update_hierarchy_issues(service.cluster)
-    re_apply_object_policy(service.cluster)
+
+    keep_objects = defaultdict(set)
+    for task in TaskLog.objects.filter(
+        object_type=ContentType.objects.get_for_model(ClusterObject), object_id=service_pk
+    ).prefetch_related("joblog_set", "joblog_set__logstorage_set"):
+        keep_objects[task.__class__].add(task.pk)
+        for job in task.joblog_set.all():
+            keep_objects[job.__class__].add(job.pk)
+            for log in job.logstorage_set.all():
+                keep_objects[log.__class__].add(log.pk)
+
+    re_apply_object_policy(apply_object=service.cluster, keep_objects=keep_objects)
+
     reset_hc_map()
     on_commit(func=partial(send_delete_service_event, service_id=service_pk))
     logger.info("service #%s is deleted", service_pk)
@@ -413,9 +353,10 @@ def get_license(proto: Prototype) -> str | None:
         return None
 
     if not isinstance(proto, Prototype):
-        raise_adcm_ex("LICENSE_ERROR")
+        raise AdcmEx("LICENSE_ERROR")
 
-    return read_bundle_file(proto=proto, fname=proto.license_path, bundle_hash=proto.bundle.hash, ref="license file")
+    with reraise_file_errors_as_adcm_ex(filepath=proto.license_path, reference="license file"):
+        return (settings.BUNDLE_DIR / proto.bundle.hash / proto.license_path).read_text(encoding="utf-8")
 
 
 def accept_license(proto: Prototype) -> None:
@@ -433,7 +374,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
         message = f"Both `config` and `attr` should be of `dict` type, not {type(config)} and {type(attr)} respectively"
         raise TypeError(message)
 
-    obj: ADCMEntity = obj_conf.object
+    obj: MainObject | ADCM | GroupConfig = obj_conf.object
     if obj is None:
         message = "Can't update configuration that have no linked object"
         raise ValueError(message)
@@ -441,7 +382,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
     group = None
     if isinstance(obj, GroupConfig):
         group = obj
-        obj = group.object
+        obj: MainObject = group.object
         proto = obj.prototype
     else:
         proto = obj.prototype
@@ -458,12 +399,30 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
     with atomic():
         config_log = save_object_config(object_config=obj_conf, config=new_conf, attr=attr, description=description)
         update_hierarchy_issues(obj=obj)
-        update_object_flag(obj=obj)
+        # flag on ADCM can't be raised (only objects of `ADCMCoreType` are supported)
+        if not isinstance(obj, ADCM):
+            raise_outdated_config_flag_if_required(object_=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     send_config_creation_event(object_=obj)
 
     return config_log
+
+
+def raise_outdated_config_flag_if_required(object_: MainObject):
+    if not object_.prototype.flag_autogeneration.get("enable_outdated_config", False):
+        return
+
+    flag = BuiltInFlag.ADCM_OUTDATED_CONFIG.value
+    flag_exists = object_.concerns.filter(name=flag.name, type=ConcernType.FLAG).exists()
+    # raise unconditionally here, because message should be from "default" flag
+    raise_flag(flag=flag, on_objects=[CoreObjectDescriptor(id=object_.id, type=orm_object_to_core_type(object_))])
+    if not flag_exists:
+        update_hierarchy(
+            concern=ConcernItem.objects.get(
+                name=flag.name, type=ConcernType.FLAG, owner_id=object_.id, owner_type=object_.content_type
+            )
+        )
 
 
 def set_object_config_with_plugin(obj: ADCMEntity, config: dict, attr: dict) -> ConfigLog:
@@ -483,17 +442,7 @@ def get_hc(cluster: Cluster | None) -> list[dict] | None:
     if not cluster:
         return None
 
-    hc_map = []
-    for hostcomponent in HostComponent.objects.filter(cluster=cluster):
-        hc_map.append(
-            {
-                "host_id": hostcomponent.host.pk,
-                "service_id": hostcomponent.service.pk,
-                "component_id": hostcomponent.component.pk,
-            },
-        )
-
-    return hc_map
+    return list(HostComponent.objects.values("host_id", "service_id", "component_id").filter(cluster=cluster))
 
 
 def check_sub_key(hc_in):
@@ -611,10 +560,10 @@ def save_hc(
     hc_queryset.delete()
     host_component_list = []
 
-    for proto, host, comp in host_comp_list:
+    for service, host, comp in host_comp_list:
         host_component = HostComponent(
             cluster=cluster,
-            service=proto,
+            service=service,
             host=host,
             component=comp,
         )
@@ -984,6 +933,7 @@ def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
         host.save()
         add_concern_to_object(object_=host, concern=CTX.lock)
         update_hierarchy_issues(host)
+        update_hierarchy_issues(cluster)
         re_apply_object_policy(cluster)
 
     reset_hc_map()

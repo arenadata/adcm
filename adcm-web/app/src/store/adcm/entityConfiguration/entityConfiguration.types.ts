@@ -38,6 +38,11 @@ import {
   GetClusterServiceComponentGroupConfigArgs,
   CreateClusterServiceComponentGroupConfigArgs,
 } from '@api/adcm/serviceComponentGroupConfigConfigs';
+import {
+  CreateClusterAnsibleSettingsArgs,
+  GetClusterAnsibleSettingsArgs,
+  GetClusterAnsibleSettingsSchemaArgs,
+} from '@api/adcm/clusterAnsibleSettings';
 
 export type EntityType =
   | 'settings'
@@ -45,6 +50,7 @@ export type EntityType =
   | 'host-provider-config-group'
   | 'cluster'
   | 'cluster-config-group'
+  | 'cluster-ansible-settings'
   | 'host'
   | 'service'
   | 'service-config-group'
@@ -87,6 +93,13 @@ export interface LoadClusterGroupConfigurationVersionsArgs
     GetClusterGroupConfigsArgs {}
 export interface LoadClusterGroupConfigurationArgs extends LoadConfigurationArgs, GetClusterGroupConfigArgs {}
 export interface SaveClusterGroupConfigurationArgs extends SaveConfigurationArgs, CreateClusterGroupConfigArgs {}
+
+/* Ansible settings */
+export interface LoadClusterAnsibleSettingsArgs extends LoadConfigurationArgs, GetClusterAnsibleSettingsArgs {}
+export interface LoadClusterAnsibleSettingsSchemaArgs
+  extends LoadConfigurationArgs,
+    GetClusterAnsibleSettingsSchemaArgs {}
+export interface SaveClusterAnsibleSettingsArgs extends SaveConfigurationArgs, CreateClusterAnsibleSettingsArgs {}
 
 /* Host */
 export interface LoadHostConfigurationVersionsArgs extends LoadConfigurationVersionsArgs, GetHostConfigsArgs {}
@@ -197,6 +210,10 @@ export type LoadEntityConfigurationArgs =
       args: LoadClusterGroupConfigurationArgs;
     }
   | {
+      entityType: 'cluster-ansible-settings';
+      args: LoadClusterAnsibleSettingsArgs;
+    }
+  | {
       entityType: 'host';
       args: LoadHostConfigurationArgs;
     }
@@ -239,6 +256,10 @@ export type CreateEntityConfigurationArgs =
       args: SaveClusterGroupConfigurationArgs;
     }
   | {
+      entityType: 'cluster-ansible-settings';
+      args: SaveClusterAnsibleSettingsArgs;
+    }
+  | {
       entityType: 'host';
       args: SaveHostConfigurationArgs;
     }
@@ -261,7 +282,7 @@ export type CreateEntityConfigurationArgs =
 
 export type ApiRequestsDictionary = {
   [key in EntityType]: {
-    getConfigVersions: (args: LoadConfigurationVersionsArgs) => Promise<Batch<AdcmConfigShortView>>;
+    getConfigVersions?: (args: LoadConfigurationVersionsArgs) => Promise<Batch<AdcmConfigShortView>>;
     getConfig: (args: LoadConfigurationArgs) => Promise<AdcmConfig>;
     getConfigSchema: (args: LoadConfigurationArgs) => Promise<SchemaDefinition>;
     createConfig: (args: SaveConfigurationArgs) => Promise<AdcmConfig>;

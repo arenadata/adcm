@@ -10,6 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any, Iterable
+
+from cm.models import Action, ADCMEntity, ConcernType, Prototype, PrototypeConfig
 from django.http.request import QueryDict
 from django_filters import rest_framework as drf_filters
 from rest_framework.filters import OrderingFilter
@@ -17,6 +20,18 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.serializers import HyperlinkedIdentityField
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
+
+OBJECT_TYPES_DICT = {
+    "adcm": "adcm",
+    "cluster": "cluster",
+    "service": "clusterobject",
+    "cluster object": "service",
+    "component": "servicecomponent",
+    "service component": "servicecomponent",
+    "provider": "hostprovider",
+    "host provider": "hostprovider",
+    "host": "host",
+}
 
 
 def check_obj(model, req, error=None):  # noqa: ARG001
@@ -138,3 +153,87 @@ class AdcmFilterBackend(drf_filters.DjangoFilterBackend):
             "queryset": queryset,
             "request": request,
         }
+
+
+def process_requires(
+    proto: Prototype, comp_dict: dict, checked_object: list | None = None, adding_service: bool = False
+) -> dict:
+    if checked_object is None:
+        checked_object = []
+    checked_object.append(proto)
+
+    for require in proto.requires:
+        req_service = Prototype.obj.get(type="service", name=require["service"], bundle=proto.bundle)
+
+        if req_service.name not in comp_dict:
+            comp_dict[req_service.name] = {"components": {}, "service": req_service}
+
+        req_comp = None
+        if require.get("component"):
+            req_comp = Prototype.obj.get(
+                type="component",
+                name=require["component"],
+                parent=req_service,
+            )
+            comp_dict[req_service.name]["components"][req_comp.name] = req_comp
+
+        if req_service.requires and req_service not in checked_object:
+            process_requires(
+                proto=req_service, comp_dict=comp_dict, checked_object=checked_object, adding_service=adding_service
+            )
+
+        if req_comp and req_comp.requires and req_comp not in checked_object and not adding_service:
+            process_requires(proto=req_comp, comp_dict=comp_dict, checked_object=checked_object)
+
+    return comp_dict
+
+
+def get_requires(
+    prototype: Prototype,
+    adding_service: bool = False,
+) -> list[dict[str, list[dict[str, Any]] | Any]] | None:
+    if not prototype.requires:
+        return None
+
+    proto_dict = {}
+    proto_dict = process_requires(proto=prototype, comp_dict=proto_dict, adding_service=adding_service)
+
+    out = []
+
+    for service_name, params in proto_dict.items():
+        comp_out = []
+        service = params["service"]
+        for comp_name in params["components"]:
+            comp = params["components"][comp_name]
+            comp_out.append(
+                {
+                    "prototype_id": comp.id,
+                    "name": comp_name,
+                    "display_name": comp.display_name,
+                },
+            )
+
+        out.append(
+            {
+                "prototype_id": service.id,
+                "name": service_name,
+                "display_name": service.display_name,
+                "components": comp_out,
+            },
+        )
+
+    return out
+
+
+def filter_actions(obj: ADCMEntity, actions: Iterable[Action]):
+    """Filter out actions that are not allowed to run on object at that moment"""
+    if obj.concerns.filter(type=ConcernType.LOCK).exists():
+        return []
+
+    allowed = []
+    for action in actions:
+        if action.allowed(obj):
+            allowed.append(action)
+            action.config = PrototypeConfig.objects.filter(prototype=action.prototype, action=action).order_by("id")
+
+    return allowed

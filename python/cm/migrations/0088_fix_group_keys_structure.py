@@ -94,7 +94,7 @@ def fix_group_keys(group_keys, spec):
             else:
                 correct_group_keys[field]["value"] = None
             correct_group_keys[field]["fields"] = {}
-            for key in info["fields"].keys():
+            for key in info["fields"]:
                 correct_group_keys[field]["fields"][key] = group_keys[field][key]
         else:
             correct_group_keys[field] = group_keys[field]

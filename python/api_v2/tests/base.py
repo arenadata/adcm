@@ -9,14 +9,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from http.cookies import SimpleCookie
+from importlib import import_module
 from pathlib import Path
 from shutil import rmtree
 from typing import Any, TypeAlias
 
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase
-from audit.models import AuditLog, AuditSession
+from adcm.tests.client import ADCMTestClient
+from audit.models import AuditLog, AuditObjectType, AuditSession
 from cm.models import (
     ADCM,
+    ActionHostGroup,
     Bundle,
     Cluster,
     ClusterObject,
@@ -26,17 +31,31 @@ from cm.models import (
     ServiceComponent,
 )
 from django.conf import settings
+from django.http import HttpRequest
 from init_db import init
 from rbac.models import Group, Policy, Role, User
 from rbac.upgrade.role import init_roles
 from rest_framework.test import APITestCase
 
 AuditTarget: TypeAlias = (
-    Bundle | Cluster | ClusterObject | ServiceComponent | HostProvider | Host | User | Group | Role | Policy
+    Bundle
+    | Cluster
+    | ClusterObject
+    | ServiceComponent
+    | ActionHostGroup
+    | HostProvider
+    | Host
+    | User
+    | Group
+    | Role
+    | Policy
 )
 
 
 class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
+    client: ADCMTestClient
+    client_class = ADCMTestClient
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -116,8 +135,8 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         """Mostly for debug purposes"""
         return AuditLog.objects.order_by("pk").last()
 
-    @staticmethod
     def prepare_audit_object_arguments(
+        self,
         expected_object: AuditTarget | None,
         *,
         is_deleted: bool = False,
@@ -125,7 +144,13 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         if expected_object is None:
             return {"audit_object__isnull": True}
 
-        if isinstance(expected_object, ServiceComponent):
+        if isinstance(expected_object, ActionHostGroup):
+            owner_name = self.prepare_audit_object_arguments(expected_object=expected_object.object)[
+                "audit_object__object_name"
+            ]
+            name = f"{owner_name}/{expected_object.name}"
+            type_ = AuditObjectType.ACTION_HOST_GROUP
+        elif isinstance(expected_object, ServiceComponent):
             name = (
                 f"{expected_object.cluster.name}/{expected_object.service.display_name}/{expected_object.display_name}"
             )
@@ -153,3 +178,29 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
             "audit_object__object_type": type_,
             "audit_object__is_deleted": is_deleted,
         }
+
+    @property
+    def session(self):
+        """Return the current session variables."""
+        engine = import_module(settings.SESSION_ENGINE)
+        cookie = self.cookies.get(settings.SESSION_COOKIE_NAME)
+        if cookie:
+            return engine.SessionStore(cookie.value)
+        session = engine.SessionStore()
+        session.save()
+        self.cookies[settings.SESSION_COOKIE_NAME] = session.session_key
+        return session
+
+    def logout(self):
+        """Log out the user by removing the cookies and session object."""
+        from django.contrib.auth import get_user, logout
+
+        request = HttpRequest()
+        if self.session:
+            request.session = self.session
+            request.user = get_user(request)
+        else:
+            engine = import_module(settings.SESSION_ENGINE)
+            request.session = engine.SessionStore()
+        logout(request)
+        self.cookies = SimpleCookie()

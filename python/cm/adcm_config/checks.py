@@ -13,11 +13,14 @@
 from typing import Any
 
 from django.conf import settings
+from rest_framework.status import HTTP_409_CONFLICT
 
 from cm.adcm_config.utils import config_is_ro, group_keys_to_flat, proto_ref
 from cm.checker import FormatError, SchemaError, process_rule
-from cm.errors import AdcmEx, raise_adcm_ex
+from cm.errors import AdcmEx
 from cm.models import GroupConfig, Prototype, StagePrototype
+from cm.services.bundle import is_path_correct
+from cm.services.config.patterns import Pattern
 
 
 def check_agreement_group_attr(group_keys: dict, custom_group_keys: dict, spec: dict) -> None:
@@ -25,12 +28,12 @@ def check_agreement_group_attr(group_keys: dict, custom_group_keys: dict, spec: 
     flat_custom_group_keys = group_keys_to_flat(origin=custom_group_keys, spec=spec)
     for key, value in flat_custom_group_keys.items():
         if not value and flat_group_keys[key]:
-            raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"the `{key}` field cannot be included in the group")
+            raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"the `{key}` field cannot be included in the group")
 
 
 def check_group_keys_attr(attr: dict, spec: dict, group_config: GroupConfig) -> None:
     if "group_keys" not in attr:
-        raise_adcm_ex(code="ATTRIBUTE_ERROR", msg='`attr` must contain "group_keys" key')
+        raise AdcmEx(code="ATTRIBUTE_ERROR", msg='`attr` must contain "group_keys" key')
 
     group_keys = attr.get("group_keys")
     _, custom_group_keys = group_config.create_group_keys(config_spec=group_config.get_config_spec())
@@ -52,41 +55,41 @@ def check_attr(
     ref = proto_ref(prototype=proto)
     allowed_key = ("active",)
     if not isinstance(attr, dict):
-        raise_adcm_ex(code="ATTRIBUTE_ERROR", msg="`attr` should be a map")
+        raise AdcmEx(code="ATTRIBUTE_ERROR", msg="`attr` should be a map")
 
     for key in attr:
         if key in ["group_keys", "custom_group_keys"]:
             if not is_group_config:
-                raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"not allowed key `{key}` for object ({ref})")
+                raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"not allowed key `{key}` for object ({ref})")
             continue
 
         if f"{key}/" not in spec:
-            raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"there isn't `{key}` group in the config ({ref})")
+            raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"there isn't `{key}` group in the config ({ref})")
 
         if spec[f"{key}/"].type != "group":
-            raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"config key `{key}` is not a group ({ref})")
+            raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"config key `{key}` is not a group ({ref})")
 
     for value in spec.values():
         key = value.name
         if value.type == "group" and "activatable" in value.limits:
             if key not in attr:
-                raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"there isn't `{key}` group in the `attr`")
+                raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"there isn't `{key}` group in the `attr`")
 
             if not isinstance(attr[key], dict):
-                raise_adcm_ex(
+                raise AdcmEx(
                     code="ATTRIBUTE_ERROR",
                     msg=f"value of attribute `{key}` should be a map ({ref})",
                 )
 
             for attr_key in attr[key]:
                 if attr_key not in allowed_key:
-                    raise_adcm_ex(
+                    raise AdcmEx(
                         code="ATTRIBUTE_ERROR",
                         msg=f"not allowed key `{attr_key}` of attribute `{key}` ({ref})",
                     )
 
                 if not isinstance(attr[key]["active"], bool):
-                    raise_adcm_ex(
+                    raise AdcmEx(
                         code="ATTRIBUTE_ERROR",
                         msg=f"value of key `active` of attribute `{key}` should be boolean ({ref})",
                     )
@@ -96,7 +99,7 @@ def check_attr(
                     and (current_attr[key]["active"] != attr[key]["active"])
                     and config_is_ro(obj=obj, key=key, limits=value.limits)
                 ):
-                    raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=f"config key {key} of {ref} is read only")
+                    raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=f"config key {key} of {ref} is read only")
 
     if is_group_config:
         check_group_keys_attr(attr=attr, spec=spec, group_config=obj)
@@ -106,7 +109,7 @@ def check_structure_for_group_attr(group_keys: dict, spec: dict, key_name: str) 
     flat_group_attr = group_keys_to_flat(origin=group_keys, spec=spec)
     for key, value in flat_group_attr.items():
         if key not in spec:
-            raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"invalid `{key}` field in `{key_name}`")
+            raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"invalid `{key}` field in `{key_name}`")
 
         if spec[key].type == "group":
             if not (
@@ -115,14 +118,14 @@ def check_structure_for_group_attr(group_keys: dict, spec: dict, key_name: str) 
                 or value is None
                 and "activatable" not in spec[key].limits
             ):
-                raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"invalid type `value` field in `{key}`")
+                raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"invalid type `value` field in `{key}`")
         else:
             if not isinstance(value, bool):
-                raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"invalid type `{key}` field in `{key_name}`")
+                raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"invalid type `{key}` field in `{key_name}`")
 
     for key, value in spec.items():
         if value.type != "group" and key not in flat_group_attr:
-            raise_adcm_ex(code="ATTRIBUTE_ERROR", msg=f"there is no `{key}` field in `{key_name}`")
+            raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"there is no `{key}` field in `{key_name}`")
 
 
 def _check_empty_values(key: str, current: dict, new: dict) -> bool:
@@ -137,7 +140,7 @@ def _check_empty_values(key: str, current: dict, new: dict) -> bool:
 
 def _check_str(value: Any, idx: Any, key: str, subkey: str, ref: str, label: str):
     if not isinstance(value, str):
-        raise_adcm_ex(
+        raise AdcmEx(
             code="CONFIG_VALUE_ERROR",
             msg=f'{label} ("{value}") of element "{idx}" of config key "{key}/{subkey}"' f" should be string ({ref})",
         )
@@ -169,53 +172,66 @@ def check_config_type(
             return
 
         if "required" in spec and spec["required"]:
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl1.format("is required"))
-        else:
-            return
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl1.format("is required"))
+
+        return
 
     if (
         isinstance(value, (list, dict))
         and spec["type"] not in settings.STACK_COMPLEX_FIELD_TYPES
         and spec["type"] != "group"
     ):
-        raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl1.format("should be flat"))
+        raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl1.format("should be flat"))
 
     if spec["type"] == "list":
         if not isinstance(value, list):
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl1.format("should be an array"))
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl1.format("should be an array"))
 
         if "required" in spec and spec["required"] and value == []:
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl1.format(should_not_be_empty))
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl1.format(should_not_be_empty))
 
         for i, _value in enumerate(value):
             _check_str(value=_value, idx=i, key=key, subkey=subkey, ref=ref, label=label)
 
     if spec["type"] in {"map", "secretmap"}:
         if not isinstance(value, dict):
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl1.format("should be a map"))
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl1.format("should be a map"))
 
         if "required" in spec and spec["required"] and value == {}:
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl1.format(should_not_be_empty))
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl1.format(should_not_be_empty))
 
         for value_key, value_value in value.items():
             _check_str(value=value_value, idx=value_key, key=key, subkey=subkey, ref=ref, label=label)
 
     if spec["type"] in ("string", "password", "text", "secrettext"):
         if not isinstance(value, str):
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl2.format("should be string"))
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl2.format("should be string"))
 
         if "required" in spec and spec["required"] and value == "":
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl1.format(should_not_be_empty))
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl1.format(should_not_be_empty))
+
+        if (
+            (saved_pattern := spec["limits"].get("pattern"))
+            and not value.startswith(settings.ANSIBLE_VAULT_HEADER)
+            and not Pattern(saved_pattern).matches(value)
+        ):
+            message = f"The value of {key}/{subkey} config parameter does not match pattern: {saved_pattern}"
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=message, http_code=HTTP_409_CONFLICT)
 
     if spec["type"] in {"file", "secretfile"}:
         if not isinstance(value, str):
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl2.format("should be string"))
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl2.format("should be string"))
 
         if value == "":
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl1.format(should_not_be_empty))
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl1.format(should_not_be_empty))
 
-        if default and len(value) > 2048:
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl1.format("is too long"))
+        if default:
+            if len(value) > 2048:
+                raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl1.format("is too long"))
+
+            if not is_path_correct(value):
+                # todo looks like it's only applicable to bundle parsing, not for any other stage
+                raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl1.format("has unsupported path format"))
 
     if spec["type"] == "structure":
         schema = spec["limits"]["yspec"]
@@ -223,35 +239,35 @@ def check_config_type(
             process_rule(data=value, rules=schema, name="root")
         except FormatError as e:
             msg = tmpl1.format(f"yspec error: {str(e)} at block {e.data}")
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=msg)
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=msg) from e
         except SchemaError as e:
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=f"yspec error: {str(e)}")
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=f"yspec error: {str(e)}") from e
 
     if spec["type"] == "boolean" and not isinstance(value, bool):
-        raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl2.format("should be boolean"))
+        raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl2.format("should be boolean"))
 
     if spec["type"] == "integer" and not isinstance(value, int):
-        raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl2.format("should be integer"))
+        raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl2.format("should be integer"))
 
     if spec["type"] == "float" and not isinstance(value, (int, float)):
-        raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl2.format("should be float"))
+        raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl2.format("should be float"))
 
     if spec["type"] == "integer" or spec["type"] == "float":
         limits = spec["limits"]
         if "min" in limits and value < limits["min"]:
             msg = f'should be more than {limits["min"]}'
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))
 
         if "max" in limits and value > limits["max"]:
             msg = f'should be less than {limits["max"]}'
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))
 
     if spec["type"] == "option":
         option = spec["limits"]["option"]
 
         if value not in option.values():
             msg = f'not in option list: "{option.values()}"'
-            raise_adcm_ex(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))
 
     if spec["type"] == "variant":
         source = spec["limits"]["source"]

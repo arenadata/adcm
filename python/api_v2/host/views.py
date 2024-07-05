@@ -25,7 +25,7 @@ from adcm.permissions import (
 from audit.utils import audit
 from cm.api import delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
-from cm.models import Cluster, GroupConfig, Host, HostProvider
+from cm.models import Cluster, ConcernType, GroupConfig, Host, HostProvider
 from cm.services.cluster import perform_host_to_cluster_map
 from cm.services.status import notify
 from core.cluster.errors import (
@@ -33,20 +33,27 @@ from core.cluster.errors import (
     HostBelongsToAnotherClusterError,
     HostDoesNotExistError,
 )
+from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
 )
 
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.config.utils import ConfigSchemaMixin
 from api_v2.host.filters import HostClusterFilter, HostFilter
 from api_v2.host.permissions import (
@@ -63,15 +70,123 @@ from api_v2.host.serializers import (
     HostSerializer,
     HostUpdateSerializer,
 )
-from api_v2.host.utils import add_new_host_and_map_it, maintenance_mode
-from api_v2.views import (
-    CamelCaseModelViewSet,
-    CamelCaseReadOnlyModelViewSet,
-    ObjectWithStatusViewMixin,
+from api_v2.host.utils import create_host, maintenance_mode, process_config_issues_policies_hc
+from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
+
+
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getHosts",
+        description="Get a list of all hosts.",
+        summary="GET hosts",
+        parameters=[
+            OpenApiParameter(name="name", description="Case insensitive and partial filter by host name."),
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                type=str,
+                enum=("name", "-name", "id", "-id"),
+                default="name",
+            ),
+        ],
+        responses={
+            HTTP_200_OK: HostSerializer(many=True),
+        },
+    ),
+    create=extend_schema(
+        operation_id="postHosts",
+        description="Create a new hosts.",
+        summary="POST hosts",
+        responses={
+            HTTP_201_CREATED: HostSerializer,
+            **{err_code: ErrorSerializer for err_code in (HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT)},
+        },
+    ),
+    retrieve=extend_schema(
+        operation_id="getHost",
+        description="Get information about a specific host.",
+        summary="GET host",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="Host id.",
+            ),
+        ],
+        responses={
+            HTTP_200_OK: HostSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+        },
+    ),
+    destroy=extend_schema(
+        operation_id="deleteHost",
+        description="Delete host from ADCM.",
+        summary="DELETE host",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="Host id.",
+            ),
+        ],
+        responses={
+            HTTP_204_NO_CONTENT: None,
+            **{err_code: ErrorSerializer for err_code in (HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)},
+        },
+    ),
+    partial_update=extend_schema(
+        operation_id="patchHost",
+        description="Change host Information.",
+        summary="PATCH host",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="Host id.",
+            ),
+        ],
+        responses={
+            HTTP_200_OK: HostSerializer,
+            **{
+                err_code: ErrorSerializer
+                for err_code in (HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+            },
+        },
+    ),
+    maintenance_mode=extend_schema(
+        operation_id="postHostMaintenanceMode",
+        description="Turn on/off maintenance mode on the host.",
+        summary="POST host maintenance-mode",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="Host id.",
+            ),
+        ],
+        responses={
+            HTTP_200_OK: HostChangeMaintenanceModeSerializer,
+            **{
+                err_code: ErrorSerializer
+                for err_code in (HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+            },
+        },
+    ),
 )
-
-
-class HostViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMixin, CamelCaseModelViewSet):
+class HostViewSet(
+    PermissionListMixin,
+    ConfigSchemaMixin,
+    ObjectWithStatusViewMixin,
+    RetrieveModelMixin,
+    ListModelMixin,
+    ADCMGenericViewSet,
+):
     queryset = (
         Host.objects.select_related("provider", "cluster", "cluster__prototype", "prototype")
         .prefetch_related("concerns", "hostcomponent_set__component__prototype")
@@ -103,15 +218,18 @@ class HostViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMi
             klass=HostProvider,
             id=serializer.validated_data["hostprovider_id"],
         )
+
         request_cluster = None
         if serializer.validated_data.get("cluster_id"):
             request_cluster = get_object_for_user(
                 user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=serializer.validated_data["cluster_id"]
             )
 
-        host = add_new_host_and_map_it(
-            provider=request_hostprovider, fqdn=serializer.validated_data["fqdn"], cluster=request_cluster
-        )
+        with atomic():
+            host = create_host(
+                provider=request_hostprovider, fqdn=serializer.validated_data["fqdn"], cluster=request_cluster
+            )
+            process_config_issues_policies_hc(host=host)
 
         return Response(
             data=HostSerializer(instance=host, context=self.get_serializer_context()).data, status=HTTP_201_CREATED
@@ -125,15 +243,16 @@ class HostViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMi
         return Response(status=HTTP_204_NO_CONTENT)
 
     @audit
-    def update(self, request, *args, **kwargs):  # noqa: ARG002
-        partial = kwargs.pop("partial", False)
-
+    def partial_update(self, request, *args, **kwargs):  # noqa: ARG002
         instance = self.get_object()
         check_custom_perm(request.user, "change", "host", instance)
 
-        serializer = self.get_serializer(instance=instance, data=request.data, partial=partial)
+        serializer = self.get_serializer(instance=instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         valid = serializer.validated_data
+
+        if valid.get("fqdn") and instance.concerns.filter(type=ConcernType.LOCK).exists():
+            raise AdcmEx(code="HOST_CONFLICT", msg="Name change is available only if no locking concern exists")
 
         if (
             valid.get("fqdn")
@@ -154,7 +273,122 @@ class HostViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMi
         return maintenance_mode(request=request, host=self.get_object())
 
 
-class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet, ObjectWithStatusViewMixin):
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getClusterHosts",
+        description="Get a list of all cluster hosts.",
+        summary="GET cluster hosts",
+        parameters=[
+            OpenApiParameter(name="name", description="Case insensitive and partial filter by host name."),
+            OpenApiParameter(name="componentId", description="Id of component."),
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                type=str,
+                enum=("name", "-name", "id", "-id"),
+                default="name",
+            ),
+            OpenApiParameter(name="search", exclude=True),
+        ],
+        responses={
+            HTTP_200_OK: HostSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+        },
+    ),
+    create=extend_schema(
+        operation_id="postCusterHosts",
+        description="Add a new hosts to cluster.",
+        summary="POST cluster hosts",
+        request=HostAddSerializer(many=True),
+        responses={
+            HTTP_201_CREATED: HostSerializer(many=True),
+            **{
+                err_code: ErrorSerializer
+                for err_code in (HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+            },
+        },
+    ),
+    retrieve=extend_schema(
+        operation_id="getClusterHost",
+        description="Get information about a specific cluster host.",
+        summary="GET cluster host",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="Host id.",
+            ),
+        ],
+        responses={
+            HTTP_200_OK: HostSerializer,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+        },
+    ),
+    destroy=extend_schema(
+        operation_id="deleteClusterHost",
+        description="Unlink host from cluster.",
+        summary="DELETE cluster host",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="Host id.",
+            ),
+        ],
+        responses={
+            HTTP_204_NO_CONTENT: None,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
+        },
+    ),
+    maintenance_mode=extend_schema(
+        operation_id="postClusterHostMaintenanceMode",
+        description="Turn on/off maintenance mode on the cluster host.",
+        summary="POST cluster host maintenance-mode",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="Host id.",
+            ),
+        ],
+        responses={
+            HTTP_200_OK: HostChangeMaintenanceModeSerializer,
+            **{
+                err_code: ErrorSerializer
+                for err_code in (HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+            },
+        },
+    ),
+    statuses=extend_schema(
+        operation_id="getHostStatuses",
+        description="Get information about cluster host status.",
+        summary="GET host status",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="Host id.",
+            ),
+        ],
+        responses={
+            HTTP_200_OK: ClusterHostStatusSerializer,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+        },
+    ),
+)
+class HostClusterViewSet(
+    PermissionListMixin, RetrieveModelMixin, ListModelMixin, ObjectWithStatusViewMixin, ADCMGenericViewSet
+):
     permission_required = [VIEW_HOST_PERM]
     permission_classes = [HostsClusterPermissions]
     # have to define it here for `ObjectWithStatusViewMixin` to be able to determine model related to view
@@ -267,7 +501,41 @@ class HostClusterViewSet(PermissionListMixin, CamelCaseReadOnlyModelViewSet, Obj
         )
 
 
-class HostGroupConfigViewSet(PermissionListMixin, GetParentObjectMixin, CamelCaseReadOnlyModelViewSet):
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getObjectConfigGroupHosts",
+        summary="GET object's config-group hosts",
+        description="Get a list of hosts added to object's config-group.",
+        responses={HTTP_200_OK: HostGroupConfigSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    retrieve=extend_schema(
+        operation_id="getObjectConfigGroupHost",
+        summary="GET object's config-group host",
+        description="Get information about a specific host of object's config-group.",
+        responses={HTTP_200_OK: HostGroupConfigSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+    create=extend_schema(
+        operation_id="postObjectConfigGroupHosts",
+        summary="POST object's config-group host",
+        description="Add host to object's config-group.",
+        responses={
+            HTTP_201_CREATED: HostGroupConfigSerializer,
+            HTTP_400_BAD_REQUEST: ErrorSerializer,
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+            HTTP_409_CONFLICT: ErrorSerializer,
+        },
+    ),
+    destroy=extend_schema(
+        operation_id="deleteObjectConfigGroupHosts",
+        summary="DELETE host from object's config-group",
+        description="Remove host from object's config-group.",
+        responses={HTTP_204_NO_CONTENT: None, HTTP_403_FORBIDDEN: ErrorSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+    ),
+)
+class HostGroupConfigViewSet(
+    PermissionListMixin, GetParentObjectMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet
+):
     queryset = (
         Host.objects.select_related("provider", "cluster")
         .prefetch_related("concerns", "hostcomponent_set")

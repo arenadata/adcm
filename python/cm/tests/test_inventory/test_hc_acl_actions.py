@@ -55,7 +55,8 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
                 "host_id": self.host_1.pk,
             }
         ]
-        self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=self.initial_hc)
+        self.initial_hc_objects = ((self.host_1, self.component_1),)
+        self.set_hostcomponent(cluster=self.cluster_1, entries=self.initial_hc_objects)
 
     def test_expand(self):
         expected_topology = {
@@ -131,7 +132,9 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
         ]
 
         delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=hc_map_add)
-        self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=hc_map_add)
+        self.set_hostcomponent(
+            cluster=self.cluster_1, entries=[*self.initial_hc_objects, (self.host_2, self.component_2)]
+        )
 
         for obj, action in [
             (self.cluster_1, self.hc_acl_action_cluster),
@@ -151,11 +154,9 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
                 )
 
     def test_shrink(self):
-        initial_hc = [
-            *self.initial_hc,
-            {"service_id": self.service.pk, "component_id": self.component_2.pk, "host_id": self.host_2.pk},
-        ]
-        self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=initial_hc)
+        self.set_hostcomponent(
+            cluster=self.cluster_1, entries=[*self.initial_hc_objects, (self.host_2, self.component_2)]
+        )
 
         expected_topology = {
             "CLUSTER": [self.host_1.fqdn, self.host_2.fqdn],
@@ -211,7 +212,7 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
             ),
         }
         delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=self.initial_hc)
-        self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=self.initial_hc)
+        self.set_hostcomponent(cluster=self.cluster_1, entries=self.initial_hc_objects)
 
         for obj, action in (
             (self.cluster_1, self.hc_acl_action_cluster),
@@ -231,15 +232,9 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
                 )
 
     def test_move(self):
-        initial_hc = [
-            *self.initial_hc,
-            {
-                "service_id": self.service.pk,
-                "component_id": self.component_2.pk,
-                "host_id": self.host_2.pk,
-            },
-        ]
-        self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=initial_hc)
+        self.set_hostcomponent(
+            cluster=self.cluster_1, entries=[*self.initial_hc_objects, (self.host_2, self.component_2)]
+        )
 
         expected_topology = {
             "CLUSTER": [self.host_1.fqdn, self.host_2.fqdn],
@@ -343,7 +338,9 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
         ]
 
         delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=hc_map_move)
-        self.add_hostcomponent_map(cluster=self.cluster_1, hc_map=hc_map_move)
+        self.set_hostcomponent(
+            cluster=self.cluster_1, entries=[(self.host_2, self.component_1), (self.host_1, self.component_2)]
+        )
 
         for obj, action in [
             (self.cluster_1, self.hc_acl_action_cluster),

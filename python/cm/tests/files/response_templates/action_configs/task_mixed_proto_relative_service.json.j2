@@ -16,9 +16,6 @@
         "client_id": null,
         "secret": null
       },
-      "ansible_settings": {
-        "forks": 5
-      },
       "logrotate": null,
       "audit_data_retention": {
         "log_rotation_on_fs": 365,
@@ -53,7 +50,7 @@
     "action": "task_mixed",
     "job_name": "proto_relative",
     "command": "proto_relative",
-    "script": "./in_here.yaml",
+    "script": "in_here.yaml",
     "verbose": false,
     "playbook": "{{ stackdir }}/data/bundle/{{ cluster_bundle.hash }}/in_here.yaml",
     "cluster_id": 1,

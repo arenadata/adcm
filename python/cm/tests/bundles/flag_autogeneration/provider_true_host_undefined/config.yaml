@@ -1,0 +1,10 @@
+- type: provider
+  name: provider_auto_true
+  version: 1
+
+  flag_autogeneration:
+    enable_outdated_config: true
+
+- type: host
+  name: not_defined
+  version: 2

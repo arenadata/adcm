@@ -1,0 +1,28 @@
+:global {
+  body.theme-dark {
+    --component-restrictions-item-color: #989AA8;
+    --component-restrictions-constraint-item-color: var(--color-xwhite-off);
+  }
+
+  body.theme-light {
+    --component-restrictions-item-color: var(--color-adcmx);
+    --component-restrictions-constraint-item-color: var(--color-xdark)
+  }
+}
+
+.componentRestrictions {
+  font-size: 15px;
+  font-weight: 500px;
+
+  &__listItem {
+    color: var(--component-restrictions-item-color);
+
+    &:not(:last-child) {
+      margin-bottom: 8px;
+    }
+
+    &_constraint {
+      color: var(--component-restrictions-constraint-item-color);
+    }
+  }
+}

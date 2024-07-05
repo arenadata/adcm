@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from collections import defaultdict
 
 from adcm.permissions import VIEW_ROLE_PERMISSION, CustomModelPermissionsByMethod
@@ -16,21 +17,135 @@ from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ProductCategory
 from django.db.models import Prefetch
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rbac.models import ObjectType as RBACObjectType
 from rbac.models import Role, RoleTypes
 from rbac.services.role import role_create, role_update
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
+from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.rbac.role.filters import RoleFilter
-from api_v2.rbac.role.serializers import RoleCreateUpdateSerializer, RoleSerializer
-from api_v2.views import CamelCaseModelViewSet
+from api_v2.rbac.role.serializers import RoleCreateSerializer, RoleSerializer, RoleUpdateSerializer
+from api_v2.views import ADCMGenericViewSet
 
 
-class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getRoles",
+        description="Get information about user roles in ADCM.",
+        summary="GET roles",
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            OpenApiParameter(name="name", description="Case insensitive and partial filter by role name."),
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                type=str,
+                enum=("displayName", "-displayName"),
+                default="displayName",
+            ),
+        ],
+        responses={
+            HTTP_200_OK: RoleSerializer(many=True),
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+        },
+    ),
+    create=extend_schema(
+        operation_id="postRoles",
+        description="Create a new user role in ADCM.",
+        summary="POST roles",
+        responses={
+            HTTP_201_CREATED: RoleSerializer(many=False),
+            **{err_code: ErrorSerializer for err_code in (HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST)},
+        },
+    ),
+    retrieve=extend_schema(
+        operation_id="getRole",
+        description="Get information about a specific ADCM user role.",
+        summary="GET role",
+        responses={
+            HTTP_200_OK: RoleSerializer(many=False),
+            **{err_code: ErrorSerializer for err_code in (HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN)},
+        },
+    ),
+    partial_update=extend_schema(
+        operation_id="patchRole",
+        description="Change information about the ADCM user role.",
+        summary="PATCH role",
+        parameters=[
+            OpenApiParameter(
+                name="displayName",
+                type=str,
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="The new name of the role.",
+            ),
+            OpenApiParameter(
+                name="description",
+                type=str,
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="The new description of the role.",
+            ),
+        ],
+        responses={
+            HTTP_200_OK: RoleCreateSerializer,
+            **{
+                err_code: ErrorSerializer
+                for err_code in (HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND)
+            },
+        },
+    ),
+    destroy=extend_schema(
+        operation_id="deleteRole",
+        description="Delete a specific ADCM user role.",
+        summary="DELETE role",
+        responses={
+            HTTP_204_NO_CONTENT: None,
+            **{err_code: ErrorSerializer for err_code in (HTTP_409_CONFLICT, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
+        },
+    ),
+    object_candidates=extend_schema(
+        operation_id="getCandidateobject",
+        description="Get information about objects which are might be chosen in policy for concrete role.",
+        summary="GET Candidate",
+        responses={
+            HTTP_200_OK: OpenApiResponse(response={"cluster": [], "provider": [], "service": [], "host": []}),
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+        },
+    ),
+    categories=extend_schema(
+        operation_id="getCategories",
+        description="Get information about objects which are might be chosen in policy for concrete role.",
+        summary="GET Candidate",
+        responses={
+            HTTP_200_OK: OpenApiResponse(response=[ProductCategory.value]),
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+        },
+    ),
+)
+class RoleViewSet(
+    PermissionListMixin,
+    ListModelMixin,
+    RetrieveModelMixin,
+    DestroyModelMixin,
+    CreateModelMixin,
+    ADCMGenericViewSet,
+):
     queryset = (
         Role.objects.prefetch_related(
             Prefetch(lookup="child", queryset=Role.objects.exclude(type=RoleTypes.HIDDEN)), "category", "policy_set"
@@ -47,8 +162,11 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):
     filterset_class = RoleFilter
 
     def get_serializer_class(self):
-        if self.action in ("create", "update", "partial_update"):
-            return RoleCreateUpdateSerializer
+        if self.action == "create":
+            return RoleCreateSerializer
+
+        if self.action == "partial_update":
+            return RoleUpdateSerializer
 
         return RoleSerializer
 
@@ -61,16 +179,15 @@ class RoleViewSet(PermissionListMixin, CamelCaseModelViewSet):
         return Response(data=RoleSerializer(instance=role).data, status=HTTP_201_CREATED)
 
     @audit
-    def update(self, request, *args, **kwargs):  # noqa: ARG002
-        partial = kwargs.pop("partial", False)
+    def partial_update(self, request, *args, **kwargs):  # noqa: ARG002
         instance = self.get_object()
 
         if instance.built_in:
             raise AdcmEx(code="ROLE_UPDATE_ERROR", msg=f"Can't modify role {instance.name} as it is auto created")
 
-        serializer = self.get_serializer(data=request.data, partial=partial)
+        serializer = self.get_serializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        role = role_update(role=instance, partial=partial, **serializer.validated_data)
+        role = role_update(role=instance, partial=True, **serializer.validated_data)
 
         return Response(data=RoleSerializer(instance=role).data, status=HTTP_200_OK)
 

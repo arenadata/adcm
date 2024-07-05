@@ -22,7 +22,7 @@ const ConfigurationField = ({
   onResetToDefault,
 }: ConfigurationFieldProps) => {
   const handleResetToDefaultClick = () => {
-    onResetToDefault((fieldSchema.default ?? '') as JSONPrimitive);
+    onResetToDefault(fieldSchema.default as JSONPrimitive);
   };
 
   return (

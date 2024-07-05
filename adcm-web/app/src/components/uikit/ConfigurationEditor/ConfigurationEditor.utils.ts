@@ -1,12 +1,12 @@
-import { ConfigurationData, SchemaDefinition } from '@models/adcm';
-import { JSONObject, JSONPrimitive, JSONValue } from '@models/json';
-import { ConfigurationNodePath } from './ConfigurationEditor.types';
-import { generateFromSchema } from '@utils/jsonSchemaUtils';
+import type { ConfigurationData, SchemaDefinition } from '@models/adcm';
+import type { JSONObject, JSONPrimitive, JSONValue } from '@models/json';
+import type { ConfigurationNodePath } from './ConfigurationEditor.types';
+import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 import { isObject } from '@utils/objectUtils';
 
 export const editField = (configuration: ConfigurationData, path: ConfigurationNodePath, value: JSONValue) => {
   if (path.length) {
-    const newConfiguration = JSON.parse(JSON.stringify(configuration));
+    const newConfiguration = cloneConfiguration(configuration);
 
     const fieldName = path.pop()!;
 
@@ -22,7 +22,7 @@ export const editField = (configuration: ConfigurationData, path: ConfigurationN
 };
 
 export const addField = (configuration: ConfigurationData, path: ConfigurationNodePath, value: JSONPrimitive) => {
-  const newConfiguration = JSON.parse(JSON.stringify(configuration));
+  const newConfiguration = cloneConfiguration(configuration);
 
   const fieldName = path.pop()!;
 
@@ -41,7 +41,7 @@ export const addField = (configuration: ConfigurationData, path: ConfigurationNo
 };
 
 export const deleteField = (configuration: ConfigurationData, path: ConfigurationNodePath) => {
-  const newConfiguration = JSON.parse(JSON.stringify(configuration));
+  const newConfiguration = cloneConfiguration(configuration);
 
   const fieldName = path.pop()!;
 
@@ -60,7 +60,7 @@ export const addArrayItem = (
   path: ConfigurationNodePath,
   schema: SchemaDefinition,
 ) => {
-  const newConfiguration = JSON.parse(JSON.stringify(configuration));
+  const newConfiguration = cloneConfiguration(configuration);
 
   let node = newConfiguration;
   for (const part of path) {
@@ -79,7 +79,7 @@ export const addArrayItem = (
 };
 
 export const deleteArrayItem = (configuration: ConfigurationData, path: ConfigurationNodePath) => {
-  const newConfiguration = JSON.parse(JSON.stringify(configuration));
+  const newConfiguration = cloneConfiguration(configuration);
 
   const fieldName = path.pop()!;
 
@@ -110,4 +110,8 @@ export const removeEmpty = (value: unknown): unknown => {
   }
 
   return value;
+};
+
+const cloneConfiguration = (configuration: ConfigurationData) => {
+  return JSON.parse(JSON.stringify(configuration));
 };

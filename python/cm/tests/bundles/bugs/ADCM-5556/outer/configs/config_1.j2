@@ -1,0 +1,15 @@
+- name: full
+  display_name: "Full"
+  type: structure
+  yspec: outer/text.yaml
+  required: False
+- name: relative
+  type: structure
+  yspec: ./text.yaml
+  required: no
+- name: fplain
+  type: file
+  default: outer/text.yaml
+- name: fsec
+  type: secretfile
+  default: ./text.yaml

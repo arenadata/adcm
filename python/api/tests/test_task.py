@@ -173,6 +173,9 @@ class TestTaskAPI(BaseTestCase):
         )
 
     def test_restart(self):
+        self.task_1.status = "failed"
+        self.task_1.save()
+
         with patch("api.job.views.restart_task"):
             response: Response = self.client.put(
                 path=reverse(viewname="v1:tasklog-restart", kwargs={"task_pk": self.task_1.pk}),

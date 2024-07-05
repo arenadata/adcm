@@ -12,7 +12,6 @@
 
 from cm.models import ADCM, Action
 from django.conf import settings
-from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK
 
 from api_v2.tests.base import BaseAPITestCase
@@ -22,28 +21,37 @@ class TestADCM(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
+        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = self.create_user(**self.test_user_credentials)
+
     def test_retrieve_success(self):
-        response = self.client.get(path=reverse(viewname="v2:adcm-detail"))
+        response = self.client.v2["adcm"].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], ADCM.objects.first().pk)
 
     def test_list_actions_success(self):
-        response = self.client.get(path=reverse(viewname="v2:adcm-action-list"))
+        response = self.client.v2["adcm", "actions"].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 2)
 
     def test_retrieve_actions_success(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:adcm-action-detail", kwargs={"pk": Action.objects.last().pk})
-        )
+        response = self.client.v2["adcm", "actions", Action.objects.last().pk].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], Action.objects.last().pk)
 
     def test_get_versions_success(self):
-        response = self.client.get(path=reverse(viewname="versions"))
+        response = self.client.versions.get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertDictEqual(response.json(), {"adcm": {"version": settings.ADCM_VERSION}})
+
+    def test_adcm_5461_adcm_basic_actions_success(self):
+        self.client.login(**self.test_user_credentials)
+
+        response = self.client.v2["adcm", "actions"].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.json()), 0)
