@@ -14,7 +14,7 @@ from cm.converters import orm_object_to_core_type
 from cm.models import ClusterObject, HostComponent, ServiceComponent
 from cm.services.job.run.repo import JobRepoImpl
 
-from ansible_plugin.errors import PluginContextError, PluginTargetDetectionError
+from ansible_plugin.errors import PluginContextError, PluginIncorrectCallError, PluginTargetDetectionError
 from ansible_plugin.executors.delete_service import ADCMDeleteServicePluginExecutor
 from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
@@ -90,7 +90,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         expected = [(entry.host_id, entry.component_id) for entry in self.initial_hc]
         self.assertEqual(actual, expected)
 
-    def test_delete_service_by_name_from_service_context(self) -> None:
+    def test_delete_service_by_name_from_service_context_fail(self) -> None:
         task = self.prepare_task(owner=self.service_1, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
         executor = self.prepare_executor(
@@ -101,9 +101,10 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
 
         result = executor.execute()
 
-        self.assertIsNone(result.error)
+        self.assertIsInstance(result.error, PluginIncorrectCallError)
+        self.assertIn("Service can be deleted by name only from cluster's context.", result.error.message)
         self.assertTrue(ClusterObject.objects.filter(pk=self.service_1.pk).exists())
-        self.assertFalse(ClusterObject.objects.filter(pk=self.service_2.pk).exists())
+        self.assertTrue(ClusterObject.objects.filter(pk=self.service_2.pk).exists())
 
     def test_delete_non_existing_service_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
