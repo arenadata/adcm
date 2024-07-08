@@ -46,6 +46,7 @@
       type: job
       script: ./playbook.yaml
       script_type: ansible
+      allow_to_terminate: true
       states:
         available: any
 
