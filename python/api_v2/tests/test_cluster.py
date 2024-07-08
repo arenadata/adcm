@@ -305,10 +305,11 @@ class TestCluster(BaseAPITestCase):
         response = (self.client.v2[self.cluster_1] / "service-prototypes").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 7)
+        self.assertEqual(len(response.json()), 8)
         self.assertListEqual(
             [prototype["displayName"] for prototype in response.json()],
             [
+                "adcm_5756",
                 "service_1",
                 "service_1_clone",
                 "service_2",
@@ -325,10 +326,11 @@ class TestCluster(BaseAPITestCase):
         response = (self.client.v2[self.cluster_1] / "service-candidates").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 6)
+        self.assertEqual(len(response.json()), 7)
         self.assertListEqual(
             [prototype["displayName"] for prototype in response.json()],
             [
+                "adcm_5756",
                 "service_1",
                 "service_1_clone",
                 "service_2",

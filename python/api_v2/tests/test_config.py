@@ -787,6 +787,31 @@ class TestServiceConfig(BaseAPITestCase):
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
+    def test_adcm_5756_500_on_non_required_field(self):
+        service: ClusterObject = self.add_services_to_cluster(["adcm_5756"], cluster=self.cluster_1).get()
+
+        config = self.client.v2[service, "configs", service.config.current].get().json()
+
+        # change only boolean field
+        new_data = {"adcmMeta": config["adcmMeta"], "config": config["config"] | {"boolean": True}}
+
+        with self.subTest("json=None"):
+            response = self.client.v2[service, "configs"].post(data=new_data)
+
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+            service.refresh_from_db(fields=["config"])
+            record = ConfigLog.objects.get(id=service.config.current)
+            self.assertEqual(record.config["json"], None)
+
+        with self.subTest("json='{}'"):
+            new_data = {"adcmMeta": config["adcmMeta"], "config": config["config"] | {"json": "{}"}}
+            response = self.client.v2[service, "configs"].post(data=new_data)
+
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+            service.refresh_from_db(fields=["config"])
+            record = ConfigLog.objects.get(id=service.config.current)
+            self.assertEqual(record.config["json"], {})
+
 
 class TestServiceGroupConfig(BaseAPITestCase):
     def setUp(self) -> None:
