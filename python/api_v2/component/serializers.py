@@ -13,6 +13,7 @@
 from cm.adcm_config.config import get_main_info
 from cm.models import Host, HostComponent, MaintenanceMode, ServiceComponent
 from drf_spectacular.utils import extend_schema_field
+from rest_framework.fields import BooleanField
 from rest_framework.serializers import (
     CharField,
     ChoiceField,
@@ -36,7 +37,8 @@ class ComponentMappingSerializer(ModelSerializer):
     depend_on = SerializerMethodField()
     constraints = ListField(source="constraint")
     prototype = PrototypeRelatedSerializer(read_only=True)
-    maintenance_mode = ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value))
+    maintenance_mode = SerializerMethodField()
+    is_maintenance_mode_available = SerializerMethodField()
 
     class Meta:
         model = ServiceComponent
@@ -59,6 +61,14 @@ class ComponentMappingSerializer(ModelSerializer):
             return get_depend_on(prototype=instance.prototype)
 
         return None
+
+    @extend_schema_field(field=ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value)))
+    def get_maintenance_mode(self, instance: ServiceComponent):
+        return self.context["mm"].components.get(instance.id, MaintenanceMode.OFF).value
+
+    @extend_schema_field(field=BooleanField())
+    def get_is_maintenance_mode_available(self, _instance: ServiceComponent):
+        return self.context["is_mm_available"]
 
 
 class ComponentSerializer(WithStatusSerializer):
