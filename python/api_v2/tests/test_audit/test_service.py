@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action, ClusterObject, ObjectType
-from rest_framework.reverse import reverse
+from cm.models import Action, Cluster, ClusterObject, MaintenanceMode, ObjectType
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -19,6 +18,7 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
 )
 
 from api_v2.tests.base import BaseAPITestCase
@@ -48,13 +48,7 @@ class TestServiceAudit(BaseAPITestCase):
         self.service_action = Action.objects.get(name="action", prototype=self.service_1.prototype)
 
     def test_update_config_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
-            ),
-            data=self.config_post_data,
-        )
+        response = self.client.v2[self.service_1, "configs"].post(data=self.config_post_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         self.check_last_audit_record(
@@ -68,13 +62,7 @@ class TestServiceAudit(BaseAPITestCase):
     def test_update_config_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
-            ),
-            data=self.config_post_data,
-        )
+        response = self.client.v2[self.service_1, "configs"].post(data=self.config_post_data)
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -89,13 +77,7 @@ class TestServiceAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="View service configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:service-config-list",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
-                ),
-                data=self.config_post_data,
-            )
+            response = self.client.v2[self.service_1, "configs"].post(data=self.config_post_data)
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -107,13 +89,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
 
     def test_update_config_wrong_data_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
-            ),
-            data={"wrong": ["d", "a", "t", "a"]},
-        )
+        response = self.client.v2[self.service_1, "configs"].post(data={"wrong": ["d", "a", "t", "a"]})
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
         self.check_last_audit_record(
@@ -125,11 +101,9 @@ class TestServiceAudit(BaseAPITestCase):
         )
 
     def test_update_config_not_exists_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.get_non_existent_pk(model=ClusterObject)},
-            ),
+        response = self.client.v2[
+            self.cluster_1, "services", self.get_non_existent_pk(model=ClusterObject), "configs"
+        ].post(
             data=self.config_post_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -144,13 +118,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
 
     def test_change_mm_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-maintenance-mode",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk},
-            ),
-            data={"maintenanceMode": "on"},
-        )
+        response = self.client.v2[self.service_1, "maintenance-mode"].post(data={"maintenanceMode": "on"})
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.check_last_audit_record(
@@ -165,13 +133,7 @@ class TestServiceAudit(BaseAPITestCase):
     def test_change_mm_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-maintenance-mode",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk},
-            ),
-            data={"maintenanceMode": "on"},
-        )
+        response = self.client.v2[self.service_1, "maintenance-mode"].post(data={"maintenanceMode": "on"})
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -186,13 +148,7 @@ class TestServiceAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="View service configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:service-maintenance-mode",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk},
-                ),
-                data={"maintenanceMode": "on"},
-            )
+            response = self.client.v2[self.service_1, "maintenance-mode"].post(data={"maintenanceMode": "on"})
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -204,13 +160,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
 
     def test_change_mm_incorrect_data_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-maintenance-mode",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk},
-            ),
-            data={},
-        )
+        response = self.client.v2[self.service_1, "maintenance-mode"].post(data={})
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
         self.check_last_audit_record(
@@ -221,31 +171,60 @@ class TestServiceAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-    def test_change_mm_not_exist_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-maintenance-mode",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.get_non_existent_pk(model=ClusterObject)},
-            ),
-            data={"maintenanceMode": "on"},
-        )
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+    def test_change_mm_from_changing_state_fail(self):
+        self.service_1.maintenance_mode = MaintenanceMode.CHANGING
+        self.service_1.save(update_fields=["_maintenance_mode"])
+
+        response = self.client.v2[self.service_1, "maintenance-mode"].post(data={"maintenanceMode": "on"})
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
         self.check_last_audit_record(
             operation_name="Service updated",
             operation_type="update",
             operation_result="fail",
-            audit_object__isnull=True,
+            **self.prepare_audit_object_arguments(self.service_1),
             user__username="admin",
         )
 
-    def test_run_action_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-action-run",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk, "pk": self.service_action.pk},
+    def test_change_mm_not_exist_fail(self):
+        endpoints = {
+            "absent_cluster": (
+                self.client.v2
+                / "clusters"
+                / self.get_non_existent_pk(model=Cluster)
+                / "services"
+                / self.service_1.pk
+                / "maintenance-mode",
+                self.prepare_audit_object_arguments(expected_object=self.service_1),
             ),
-        )
+            "absent_service": (
+                self.client.v2
+                / "clusters"
+                / self.cluster_1.pk
+                / "services"
+                / self.get_non_existent_pk(model=ClusterObject)
+                / "maintenance-mode",
+                self.prepare_audit_object_arguments(expected_object=None),
+            ),
+        }
+
+        for name, data in endpoints.items():
+            endpoint, object_kwargs = data
+
+            with self.subTest(name):
+                response = endpoint.post(data={"maintenanceMode": "on"})
+
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+                self.check_last_audit_record(
+                    operation_name="Service updated",
+                    operation_type="update",
+                    operation_result="fail",
+                    **object_kwargs,
+                    user__username="admin",
+                )
+
+    def test_run_action_success(self):
+        response = self.client.v2[self.service_1, "actions", self.service_action, "run"].post()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.check_last_audit_record(
@@ -260,16 +239,7 @@ class TestServiceAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="View service configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:service-action-run",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "pk": self.service_action.pk,
-                    },
-                ),
-            )
+            response = self.client.v2[self.service_1, "actions", self.service_action, "run"].post()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -281,16 +251,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
 
     def test_run_action_not_found_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-action-run",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "pk": self.get_non_existent_pk(model=Action),
-                },
-            ),
-        )
+        response = self.client.v2[self.service_1, "actions", self.get_non_existent_pk(model=Action), "run"].post()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -302,11 +263,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
 
     def test_create_import_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-import-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
-            ),
+        response = self.client.v2[self.service_1, "imports"].post(
             data=[{"source": {"id": self.export_service.pk, "type": ObjectType.SERVICE}}],
         )
 
@@ -323,11 +280,7 @@ class TestServiceAudit(BaseAPITestCase):
     def test_create_import_no_perm_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-import-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
-            ),
+        response = self.client.v2[self.service_1, "imports"].post(
             data=[{"source": {"id": self.export_service.pk, "type": ObjectType.SERVICE}}],
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -346,11 +299,7 @@ class TestServiceAudit(BaseAPITestCase):
         with self.grant_permissions(
             to=self.test_user, on=self.service_1, role_name="View service configurations"
         ), self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:service-import-list",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
-                ),
+            response = self.client.v2[self.service_1, "imports"].post(
                 data=[{"source": {"id": self.export_service.pk, "type": ObjectType.SERVICE}}],
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -364,11 +313,7 @@ class TestServiceAudit(BaseAPITestCase):
         )
 
     def test_create_import_incorrect_data_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-import-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
-            ),
+        response = self.client.v2[self.service_1, "imports"].post(
             data=[{"source": {"id": self.export_service.pk, "type": "cool"}}],
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -382,11 +327,9 @@ class TestServiceAudit(BaseAPITestCase):
         )
 
     def test_create_import_not_found_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-import-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.get_non_existent_pk(model=ClusterObject)},
-            ),
+        response = self.client.v2[
+            self.cluster_1, "services", self.get_non_existent_pk(model=ClusterObject), "imports"
+        ].post(
             data=[{"source": {"id": self.export_service.pk, "type": ObjectType.SERVICE}}],
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -404,11 +347,7 @@ class TestServiceAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="Remove service"):
-            response = self.client.delete(
-                path=reverse(
-                    viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk}
-                )
-            )
+            response = self.client.v2[self.service_1].delete()
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
@@ -423,11 +362,7 @@ class TestServiceAudit(BaseAPITestCase):
     def test_remove_service_not_found_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk}
-            )
-        )
+        response = self.client.v2[self.service_1].delete()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
@@ -443,11 +378,7 @@ class TestServiceAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=self.service_1, role_name="View service configurations"):
-            response = self.client.delete(
-                path=reverse(
-                    viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk}
-                )
-            )
+            response = self.client.v2[self.service_1].delete()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 

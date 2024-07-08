@@ -11,14 +11,14 @@
 # limitations under the License.
 
 
-from cm.models import Action, ClusterObject, ServiceComponent
-from rest_framework.reverse import reverse
+from cm.models import Action, Cluster, ClusterObject, MaintenanceMode, ServiceComponent
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
 )
 
 from api_v2.tests.base import BaseAPITestCase
@@ -46,17 +46,7 @@ class TestComponentAudit(BaseAPITestCase):
         }
 
     def test_run_action_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-action-run",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "pk": self.component_action.pk,
-                },
-            ),
-        )
+        response = self.client.v2[self.component_1, "actions", self.component_action.pk, "run"].post()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.check_last_audit_record(
@@ -71,17 +61,7 @@ class TestComponentAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=self.component_1, role_name="View component configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:component-action-run",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_1.pk,
-                        "pk": self.component_action.pk,
-                    },
-                ),
-            )
+            response = self.client.v2[self.component_1, "actions", self.component_action, "run"].post()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -93,17 +73,7 @@ class TestComponentAudit(BaseAPITestCase):
         )
 
     def test_run_action_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-action-run",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "pk": self.get_non_existent_pk(model=Action),
-                },
-            ),
-        )
+        response = self.client.v2[self.component_1, "actions", self.get_non_existent_pk(model=Action), "run"].post()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -115,17 +85,7 @@ class TestComponentAudit(BaseAPITestCase):
         )
 
     def test_update_config_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                },
-            ),
-            data=self.config_post_data,
-        )
+        response = self.client.v2[self.component_1, "configs"].post(data=self.config_post_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         self.check_last_audit_record(
@@ -139,17 +99,7 @@ class TestComponentAudit(BaseAPITestCase):
     def test_update_config_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                },
-            ),
-            data=self.config_post_data,
-        )
+        response = self.client.v2[self.component_1, "configs"].post(data=self.config_post_data)
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -168,17 +118,7 @@ class TestComponentAudit(BaseAPITestCase):
             self.grant_permissions(to=self.test_user, on=self.service_1, role_name="View service configurations"),
             self.grant_permissions(to=self.test_user, on=self.component_1, role_name="View component configurations"),
         ):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:component-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_1.pk,
-                    },
-                ),
-                data=self.config_post_data,
-            )
+            response = self.client.v2[self.component_1, "configs"].post(data=self.config_post_data)
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -190,17 +130,7 @@ class TestComponentAudit(BaseAPITestCase):
         )
 
     def test_update_config_wrong_data_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                },
-            ),
-            data={"wrong": ["d", "a", "t", "a"]},
-        )
+        response = self.client.v2[self.component_1, "configs"].post(data={"wrong": ["d", "a", "t", "a"]})
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
         self.check_last_audit_record(
@@ -212,15 +142,9 @@ class TestComponentAudit(BaseAPITestCase):
         )
 
     def test_update_config_not_exists_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.get_non_existent_pk(model=ServiceComponent),
-                },
-            ),
+        response = self.client.v2[
+            self.service_1, "components", self.get_non_existent_pk(model=ServiceComponent), "configs"
+        ].post(
             data=self.config_post_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -234,13 +158,7 @@ class TestComponentAudit(BaseAPITestCase):
         )
 
     def test_change_mm_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-maintenance-mode",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk, "pk": self.component_1.pk},
-            ),
-            data={"maintenanceMode": "on"},
-        )
+        response = self.client.v2[self.component_1, "maintenance-mode"].post(data={"maintenanceMode": "on"})
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.check_last_audit_record(
@@ -255,17 +173,7 @@ class TestComponentAudit(BaseAPITestCase):
     def test_change_mm_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-maintenance-mode",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "pk": self.component_1.pk,
-                },
-            ),
-            data={"maintenanceMode": "on"},
-        )
+        response = self.client.v2[self.component_1, "maintenance-mode"].post(data={"maintenanceMode": "on"})
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -284,17 +192,7 @@ class TestComponentAudit(BaseAPITestCase):
             self.grant_permissions(to=self.test_user, on=self.service_1, role_name="View service configurations"),
             self.grant_permissions(to=self.test_user, on=self.component_1, role_name="View component configurations"),
         ):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:component-maintenance-mode",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "pk": self.component_1.pk,
-                    },
-                ),
-                data={"maintenanceMode": "on"},
-            )
+            response = self.client.v2[self.component_1, "maintenance-mode"].post(data={"maintenanceMode": "on"})
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -306,17 +204,7 @@ class TestComponentAudit(BaseAPITestCase):
         )
 
     def test_change_mm_incorrect_body_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-maintenance-mode",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "pk": self.component_1.pk,
-                },
-            ),
-            data={"maintenanceMode": "cough"},
-        )
+        response = self.client.v2[self.component_1, "maintenance-mode"].post(data={"maintenanceMode": "cough"})
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
         self.check_last_audit_record(
@@ -327,24 +215,71 @@ class TestComponentAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-    def test_change_mm_not_found_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-maintenance-mode",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "pk": self.get_non_existent_pk(model=ServiceComponent),
-                },
-            ),
-            data={"maintenanceMode": "on"},
-        )
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+    def test_change_mm_from_changing_state_fail(self):
+        self.component_1.maintenance_mode = MaintenanceMode.CHANGING
+        self.component_1.save(update_fields=["_maintenance_mode"])
+
+        response = self.client.v2[self.component_1, "maintenance-mode"].post(data={"maintenanceMode": "on"})
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
         self.check_last_audit_record(
             operation_name="Component updated",
             operation_type="update",
             operation_result="fail",
-            **self.prepare_audit_object_arguments(expected_object=None),
+            **self.prepare_audit_object_arguments(self.component_1),
             user__username="admin",
         )
+
+    def test_change_mm_not_found_fail(self):
+        audit_object_kwargs = self.prepare_audit_object_arguments(expected_object=self.component_1)
+        audit_object_none_kwargs = self.prepare_audit_object_arguments(expected_object=None)
+        endpoints = {
+            "absent_cluster": (
+                self.client.v2
+                / "clusters"
+                / self.get_non_existent_pk(model=Cluster)
+                / "services"
+                / self.service_1.pk
+                / "components"
+                / self.component_1.pk
+                / "maintenance-mode",
+                audit_object_kwargs,
+            ),
+            "absent_service": (
+                self.client.v2
+                / "clusters"
+                / self.cluster_1.pk
+                / "services"
+                / self.get_non_existent_pk(model=ClusterObject)
+                / "components"
+                / self.component_1.pk
+                / "maintenance-mode",
+                audit_object_kwargs,
+            ),
+            "absent_component": (
+                self.client.v2
+                / "clusters"
+                / self.cluster_1.pk
+                / "services"
+                / self.service_1.pk
+                / "components"
+                / self.get_non_existent_pk(model=ServiceComponent)
+                / "maintenance-mode",
+                audit_object_none_kwargs,
+            ),
+        }
+
+        for name, data in endpoints.items():
+            endpoint, object_kwargs = data
+
+            with self.subTest(name):
+                response = endpoint.post(data={"maintenanceMode": "on"})
+
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+                self.check_last_audit_record(
+                    operation_name="Component updated",
+                    operation_type="update",
+                    operation_result="fail",
+                    **object_kwargs,
+                    user__username="admin",
+                )
