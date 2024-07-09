@@ -30,12 +30,11 @@ from cm.issue import (
     add_concern_to_object,
     check_components_mapping_contraints,
     remove_concern_from_object,
-    update_hierarchy_issues,
-    update_issue_after_deleting,
 )
 from cm.models import (
     Cluster,
     ClusterObject,
+    ConcernCause,
     GroupConfig,
     Host,
     HostComponent,
@@ -44,8 +43,12 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.cluster import retrieve_clusters_topology
+from cm.services.concern import delete_issue
+from cm.services.concern.distribution import redistribute_issues_and_flags
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import send_host_component_map_update_event
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import QuerySet
 from django.db.transaction import atomic, on_commit
@@ -280,10 +283,16 @@ def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
     HostComponent.objects.filter(cluster_id=mapping_data.cluster.id).delete()
     HostComponent.objects.bulk_create(objs=mapping_objects)
 
-    update_hierarchy_issues(obj=mapping_data.orm_objects["cluster"])
-    for provider_id in {host.provider_id for host in mapping_data.hosts.values()}:
-        update_hierarchy_issues(obj=mapping_data.orm_objects["providers"][provider_id])
-    update_issue_after_deleting()
+    delete_issue(
+        owner=CoreObjectDescriptor(id=mapping_data.cluster.id, type=ADCMCoreType.CLUSTER),
+        cause=ConcernCause.HOSTCOMPONENT,
+    )
+    redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((mapping_data.cluster.id,))))
+
+    # update_hierarchy_issues(obj=mapping_data.orm_objects["cluster"])
+    # for provider_id in {host.provider_id for host in mapping_data.hosts.values()}:
+    #     update_hierarchy_issues(obj=mapping_data.orm_objects["providers"][provider_id])
+    # update_issue_after_deleting()
 
     _handle_mapping_policies(mapping_data=mapping_data)
     send_host_component_map_update_event(cluster=mapping_data.orm_objects["cluster"])

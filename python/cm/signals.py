@@ -63,13 +63,17 @@ def rename_audit_object_host(sender, instance, **kwargs) -> None:
 
 
 @receiver(signal=pre_delete, sender=ConcernItem)
-def send_delete_event(sender, instance, **kwargs):  # noqa: ARG001
-    for object_ in instance.related_objects:
-        on_commit(
-            func=partial(
-                send_concern_delete_event,
-                object_id=object_.pk,
-                object_type=object_.prototype.type,
-                concern_id=instance.pk,
+def send_delete_event(sender, instance: ConcernItem, **kwargs):  # noqa: ARG001
+    # This is "sort of" optimization, not sure if there's a lot of profit in sending all these stuff anyway.
+    # Also, probably it'll be better to collect all data for send and then pass closure func looping over those values:
+    # that way there won't be much of a queue for on commit => fewer objects => less memory => less processing.
+    for qs in instance.related_querysets:
+        for object_id, object_type in qs.values_list("id", "prototype__type"):
+            on_commit(
+                func=partial(
+                    send_concern_delete_event,
+                    object_id=object_id,
+                    object_type=object_type,
+                    concern_id=instance.pk,
+                )
             )
-        )

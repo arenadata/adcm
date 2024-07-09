@@ -10,8 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
+from typing import Iterable
+
 from cm.models import (
     Action,
+    ADCMEntity,
+    Cluster,
+    ConcernCause,
+    ConcernItem,
+    Host,
     JobLog,
     ObjectType,
     Prototype,
@@ -345,3 +353,222 @@ class TestConcernsLogic(BaseAPITestCase):
         # not mapped host has no concerns
         response: Response = self.client.v2[host_2].get()
         self.assertEqual(len(response.json()["concerns"]), 0)
+
+
+class TestConcernRedistribution(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        bundles_dir = Path(__file__).parent / "bundles"
+
+        self.cluster = self.add_cluster(
+            bundle=self.add_bundle(bundles_dir / "cluster_all_concerns"), name="With Concerns"
+        )
+
+        self.provider = self.add_provider(
+            bundle=self.add_bundle(bundles_dir / "provider_concerns"), name="Concerned HP"
+        )
+
+        self.control_cluster = self.add_cluster(bundle=self.cluster.prototype.bundle, name="Control Cluster")
+        self.control_provider = self.add_provider(bundle=self.provider.prototype.bundle, name="Control HP")
+        self.control_host = self.add_host(provider=self.control_provider, fqdn="control_host")
+        self.control_service = self.add_services_to_cluster(["main"], cluster=self.control_cluster).get()
+        self.control_component = self.control_service.servicecomponent_set.get(prototype__name="single")
+
+        self.control_concerns = {
+            object_: tuple(object_.concerns.all())
+            for object_ in (
+                self.control_cluster,
+                self.control_service,
+                self.control_component,
+                self.control_provider,
+                self.control_host,
+            )
+        }
+
+    def repr_concerns(self, concerns: Iterable[ConcernItem]) -> str:
+        return "\n".join(
+            f"  {i}. {rec}"
+            for i, rec in enumerate(sorted(f"{concern.cause} from {concern.owner}" for concern in concerns), start=1)
+        )
+
+    def check_concerns(self, object_: ADCMEntity, concerns: Iterable[ConcernItem]) -> None:
+        expected_concerns = tuple(concerns)
+        object_concerns = tuple(object_.concerns.all())
+
+        actual_amount = len(object_concerns)
+        expected_amount = len(expected_concerns)
+
+        # avoid calculation of message for success passes
+        if actual_amount != expected_amount:
+            message = (
+                "Incorrect amount of records.\n"
+                f"Actual:\n{self.repr_concerns(object_concerns)}\n"
+                f"Expected:\n{self.repr_concerns(expected_concerns)}\n"
+            )
+            self.assertEqual(actual_amount, expected_amount, message)
+
+        for concern in expected_concerns:
+            self.assertIn(concern, object_concerns)
+
+    def check_concerns_of_control_objects(self) -> None:
+        for object_, expected_concerns in self.control_concerns.items():
+            self.check_concerns(object_, expected_concerns)
+
+    def change_mapping_via_api(self, entries: Iterable[tuple[Host, ServiceComponent]]) -> None:
+        response = self.client.v2[self.cluster, "mapping"].post(
+            data=[{"hostId": host.id, "componentId": component.id} for host, component in entries]
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def test_concerns_swap_on_mapping_changes(self) -> None:
+        # prepare
+        host_1, host_2, unmapped_host = (
+            self.add_host(self.provider, fqdn=f"host_{i}", cluster=self.cluster) for i in range(3)
+        )
+        unbound_host = self.add_host(self.provider, fqdn="free-host")
+        self.change_configuration(host_2, config_diff={"field": 4})
+
+        main_s = self.add_services_to_cluster(["main"], cluster=self.cluster).get()
+        single_c = main_s.servicecomponent_set.get(prototype__name="single")
+        free_c = main_s.servicecomponent_set.get(prototype__name="free")
+
+        require_dummy_s = self.add_services_to_cluster(["require_dummy_service"], cluster=self.cluster).get()
+        silent_c = require_dummy_s.servicecomponent_set.get(prototype__name="silent")
+        sir_c = require_dummy_s.servicecomponent_set.get(prototype__name="sir")
+
+        # have to add it to proceed to hc set
+        dummy_s = self.add_services_to_cluster(["dummy"], cluster=self.cluster).get()
+        dummy_c = dummy_s.servicecomponent_set.get()
+
+        # component-less service
+        no_components_s = self.add_services_to_cluster(["no_components"], cluster=self.cluster).get()
+
+        # find own concerns
+        provider_config_con = self.provider.get_own_issue(ConcernCause.CONFIG)
+        host_1_config_con = host_1.get_own_issue(ConcernCause.CONFIG)
+        unbound_host_con = unbound_host.get_own_issue(ConcernCause.CONFIG)
+        unmapped_host_con = unmapped_host.get_own_issue(ConcernCause.CONFIG)
+
+        main_service_own_con = main_s.get_own_issue(ConcernCause.CONFIG)
+
+        cluster_own_cons = tuple(
+            ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
+        )
+        main_and_single_cons = (main_service_own_con, single_c.get_own_issue(ConcernCause.CONFIG))
+        sir_c_conn = sir_c.get_own_issue(ConcernCause.CONFIG)
+        no_components_conn = no_components_s.get_own_issue(ConcernCause.IMPORT)
+
+        with self.subTest("Pre-Mapping Concerns Distribution"):
+            self.check_concerns_of_control_objects()
+
+            self.check_concerns(unbound_host, concerns=(provider_config_con, unbound_host_con))
+            self.check_concerns(host_1, concerns=(provider_config_con, host_1_config_con))
+            self.check_concerns(host_2, concerns=(provider_config_con,))
+            self.check_concerns(unmapped_host, concerns=(provider_config_con, unmapped_host_con))
+
+            self.check_concerns(
+                self.cluster, concerns=(*cluster_own_cons, *main_and_single_cons, sir_c_conn, no_components_conn)
+            )
+
+            self.check_concerns(main_s, concerns=(*cluster_own_cons, *main_and_single_cons))
+            self.check_concerns(require_dummy_s, concerns=(*cluster_own_cons, sir_c_conn))
+            self.check_concerns(dummy_s, concerns=cluster_own_cons)
+            self.check_concerns(no_components_s, concerns=(*cluster_own_cons, no_components_conn))
+
+            self.check_concerns(single_c, concerns=(*cluster_own_cons, *main_and_single_cons))
+            self.check_concerns(free_c, concerns=(*cluster_own_cons, main_service_own_con))
+            self.check_concerns(silent_c, concerns=cluster_own_cons)
+            self.check_concerns(sir_c, concerns=(*cluster_own_cons, sir_c_conn))
+
+        with self.subTest("Fist Mapping Set"):
+            hc_concern = self.cluster.get_own_issue(ConcernCause.HOSTCOMPONENT)
+            self.assertIsNotNone(hc_concern)
+
+            self.change_mapping_via_api(
+                entries=(
+                    (host_1, single_c),
+                    (host_1, silent_c),
+                    (host_2, free_c),
+                    (host_2, silent_c),
+                    (host_2, sir_c),
+                    (host_1, dummy_c),
+                ),
+            )
+
+            cluster_own_cons = tuple(
+                ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
+            )
+            self.assertNotIn(hc_concern, cluster_own_cons)
+
+            self.check_concerns(unbound_host, concerns=(provider_config_con, unbound_host_con))
+            self.check_concerns(
+                host_1, concerns=(provider_config_con, host_1_config_con, *cluster_own_cons, *main_and_single_cons)
+            )
+            self.check_concerns(
+                host_2, concerns=(provider_config_con, *cluster_own_cons, main_service_own_con, sir_c_conn)
+            )
+            self.check_concerns(unmapped_host, concerns=(provider_config_con, unmapped_host_con))
+
+            self.check_concerns(
+                self.cluster,
+                concerns=(
+                    *cluster_own_cons,
+                    *main_and_single_cons,
+                    sir_c_conn,
+                    no_components_conn,
+                    provider_config_con,
+                    host_1_config_con,
+                ),
+            )
+
+            self.check_concerns(
+                main_s, concerns=(*cluster_own_cons, *main_and_single_cons, provider_config_con, host_1_config_con)
+            )
+            self.check_concerns(
+                require_dummy_s, concerns=(*cluster_own_cons, sir_c_conn, provider_config_con, host_1_config_con)
+            )
+            self.check_concerns(no_components_s, concerns=(*cluster_own_cons, no_components_conn))
+
+            self.check_concerns(
+                single_c, concerns=(*cluster_own_cons, *main_and_single_cons, provider_config_con, host_1_config_con)
+            )
+            self.check_concerns(free_c, concerns=(*cluster_own_cons, main_service_own_con, provider_config_con))
+            self.check_concerns(silent_c, concerns=(*cluster_own_cons, host_1_config_con, provider_config_con))
+            self.check_concerns(sir_c, concerns=(*cluster_own_cons, sir_c_conn, provider_config_con))
+
+            self.check_concerns_of_control_objects()
+
+        with self.subTest("Second Mapping Set"):
+            self.change_mapping_via_api(
+                entries=((host_2, single_c), (host_2, free_c), (host_1, silent_c), (host_1, dummy_c))
+            )
+
+            self.check_concerns(host_1, concerns=(provider_config_con, host_1_config_con, *cluster_own_cons))
+            self.check_concerns(host_2, concerns=(provider_config_con, *cluster_own_cons, *main_and_single_cons))
+            self.check_concerns(unmapped_host, concerns=(provider_config_con, unmapped_host_con))
+
+            self.check_concerns(
+                self.cluster,
+                concerns=(
+                    *cluster_own_cons,
+                    *main_and_single_cons,
+                    sir_c_conn,
+                    no_components_conn,
+                    provider_config_con,
+                    host_1_config_con,
+                ),
+            )
+
+            self.check_concerns(main_s, concerns=(*cluster_own_cons, *main_and_single_cons, provider_config_con))
+            self.check_concerns(
+                require_dummy_s, concerns=(*cluster_own_cons, sir_c_conn, provider_config_con, host_1_config_con)
+            )
+            self.check_concerns(no_components_s, concerns=(*cluster_own_cons, no_components_conn))
+
+            self.check_concerns(single_c, concerns=(*cluster_own_cons, *main_and_single_cons, provider_config_con))
+            self.check_concerns(free_c, concerns=(*cluster_own_cons, main_service_own_con, provider_config_con))
+            self.check_concerns(silent_c, concerns=(*cluster_own_cons, host_1_config_con, provider_config_con))
+            self.check_concerns(sir_c, concerns=(*cluster_own_cons, sir_c_conn))
+
+            self.check_concerns_of_control_objects()

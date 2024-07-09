@@ -1,0 +1,68 @@
+- type: cluster
+  name: all_concerns
+  version: 3.4
+
+  # no import for service
+  import: &import
+    for_export:
+      multibind: false
+      required: true
+
+  config: &required_config
+    - name: field
+      type: integer
+      required: true
+
+  actions: &actions
+    dummy:
+      type: job
+      script_type: ansible
+      script: ./action.yaml
+      masking:
+
+- type: service
+  name: main
+  version: 1
+
+  config: *required_config
+
+  actions: *actions
+
+  components:
+    single:
+      constraint: [1]
+      config: *required_config
+    free:
+      actions: *actions
+
+- type: service
+  name: required
+  version: 2
+  required: true
+
+- type: service
+  name: dummy
+  version: 4
+
+  components:
+    same_dummy:
+
+- type: service
+  name: require_dummy_service
+  version: 3
+
+  requires:
+    - service: dummy
+
+  actions: *actions
+
+  components:
+    silent:
+    sir:
+      config: *required_config
+
+- type: service
+  name: no_components
+  version: 5
+
+  import: *import

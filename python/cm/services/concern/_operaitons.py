@@ -10,6 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ._operaitons import delete_issue
+from core.types import CoreObjectDescriptor
+from django.contrib.contenttypes.models import ContentType
 
-__all__ = ["delete_issue"]
+from cm.converters import core_type_to_model
+from cm.models import ConcernCause, ConcernItem, ConcernType
+
+
+def delete_issue(owner: CoreObjectDescriptor, cause: ConcernCause) -> None:
+    owner_type = ContentType.objects.get_for_model(core_type_to_model(core_type=owner.type))
+    ConcernItem.objects.filter(owner_id=owner.id, owner_type=owner_type, cause=cause, type=ConcernType.ISSUE).delete()
