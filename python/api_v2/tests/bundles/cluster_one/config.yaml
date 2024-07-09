@@ -46,6 +46,7 @@
       type: job
       script: ./playbook.yaml
       script_type: ansible
+      allow_to_terminate: true
       states:
         available: any
 
@@ -229,3 +230,32 @@
 
 - <<: *service_1
   name: service_1_clone
+
+- name: adcm_5756
+  type: service
+  version: "bug"
+  config:
+      - type: boolean
+        name: boolean
+        required: false
+      - type: map
+        name: map
+        required: false
+      - type: secretmap
+        name: secretmap
+        required: false
+      - type: json
+        name: json
+        required: false
+      - type: list
+        name: list
+        required: false
+      - name: plain_group
+        type: group
+        subs:
+          - name: map
+            type: map
+            required: false
+          - name: listofstuff
+            type: list
+            required: false

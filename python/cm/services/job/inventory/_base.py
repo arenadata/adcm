@@ -16,6 +16,7 @@ from typing import Iterable
 
 from core.cluster.operations import calculate_maintenance_mode_for_cluster_objects
 from core.cluster.types import ClusterTopology, MaintenanceModeOfObjects, ObjectMaintenanceModeState
+from core.job.types import RelatedObjects
 from core.types import (
     ActionTargetDescriptor,
     ADCMCoreType,
@@ -61,29 +62,69 @@ from cm.services.job.inventory._types import (
 )
 
 
-def get_inventory_data(target: ActionTargetDescriptor, is_host_action: bool, delta: dict | None = None) -> dict:
+def get_inventory_data(
+    target: ActionTargetDescriptor,
+    is_host_action: bool,
+    delta: dict | None = None,
+    related_objects: RelatedObjects | None = None,
+) -> dict:
     if target.type == ExtraActionTargetType.ACTION_HOST_GROUP:
+        # Some time ago `_get_inventory_for_action_from_cluster_bundle` required full ORM object to proceed,
+        # now it's not the case, so you can optimize this call if you want to.
         group = ActionHostGroup.objects.prefetch_related("hosts", "object").get(id=target.id)
+
+        # It is possible that `object` does not exist at that point (deleted via `delete_service` in previous jobs),
+        # but it's inadequate situation and in "context of action target group" such mutations aren't expected.
         return _get_inventory_for_action_from_cluster_bundle(
-            object_=group.object,
+            cluster_id=group.object.id if isinstance(group.object, Cluster) else group.object.cluster_id,
             delta=delta or {},
             target_hosts=tuple((host.pk, host.fqdn) for host in group.hosts.all()),
         )
 
-    target_object = core_type_to_model(target.type).objects.get(id=target.id)
-    if isinstance(target_object, HostProvider) or (isinstance(target_object, Host) and not is_host_action):
-        return _get_inventory_for_action_from_hostprovider_bundle(object_=target_object)
+    if target.type == ADCMCoreType.HOSTPROVIDER or (target.type == ADCMCoreType.HOST and not is_host_action):
+        return _get_inventory_for_action_from_hostprovider_bundle(
+            object_=core_type_to_model(target.type).objects.get(id=target.id)
+        )
 
-    target_hosts = ()
-    if isinstance(target_object, Host):
+    # Retrieval of full object was changed to `cluster_id` only for cluster-related action inventory building,
+    # because target deletion cases exists.
+    # For example, action is defined on service and previous job calls `delete_service` ansible plugin,
+    # then there will be no service at this point.
+    # And we don't actually need the full object, just `cluster_id` to detect the topology.
+    # We also has information about `owner` (not `target`) related objects with possible presence of `cluster_id`.
+    # It is still possible that `cluster_id` will be undetected, then this approach should be reworked
+    # by storing required info at point when object has to exist (e.g. at task start).
+    cluster_id: int | None = None
+    target_hosts: tuple[tuple[int, str], ...] = ()
+    if target.type == ADCMCoreType.HOST:
         if not is_host_action:
             message = "Only actions with `host_action: true` can be launched on host"
             raise RuntimeError(message)
 
-        target_hosts = ((target_object.pk, target_object.fqdn),)
+        host_id, host_name, cluster_id = Host.objects.filter(id=target.id).values_list("id", "fqdn", "cluster_id").get()
+        target_hosts = ((host_id, host_name),)
+
+    if not cluster_id:
+        if target.type == ADCMCoreType.CLUSTER:
+            cluster_id = target.id
+        elif related_objects and related_objects.cluster:
+            cluster_id = related_objects.cluster.id
+        elif target.type in (ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT):
+            # In real scenarios it's unlikely situation, but since we can get it that way, we should.
+            # It also easies testing when we don't want to specify `related_object` due to object existence.
+            # We don't catch non-existence errors in here, since it'll be descriptive enough.
+            cluster_id = core_type_to_model(target.type).objects.values_list("cluster_id", flat=True).get(id=target.id)
+
+    if not cluster_id:
+        message = (
+            f"Failed to detect cluster id based on target and related objects.\n"
+            f"Target: {target}\n"
+            f"Related objects: {related_objects}"
+        )
+        raise RuntimeError(message)
 
     return _get_inventory_for_action_from_cluster_bundle(
-        object_=target_object, delta=delta or {}, target_hosts=target_hosts
+        cluster_id=cluster_id, delta=delta or {}, target_hosts=target_hosts
     )
 
 
@@ -110,22 +151,14 @@ def get_cluster_vars(topology: ClusterTopology) -> ClusterVars:
 
 
 def _get_inventory_for_action_from_cluster_bundle(
-    object_: Cluster | ClusterObject | ServiceComponent | Host | ActionHostGroup,
-    delta: dict,
-    target_hosts: Iterable[tuple[HostID, HostName]],
+    cluster_id: int, delta: dict, target_hosts: Iterable[tuple[HostID, HostName]]
 ) -> dict:
     host_groups: dict[HostGroupName, set[tuple[HostID, HostName]]] = {}
 
     if target_hosts:
         host_groups["target"] = set(target_hosts)
 
-    if isinstance(object_, Cluster):
-        cluster_topology = next(retrieve_clusters_topology([object_.pk]))
-    elif object_.cluster_id is not None:
-        cluster_topology = next(retrieve_clusters_topology([object_.cluster_id]))
-    else:
-        message = f"Cluster is unbound to {object_}, can't generate inventory"
-        raise RuntimeError(message)
+    cluster_topology = next(retrieve_clusters_topology([cluster_id]))
 
     hosts_in_maintenance_mode: set[int] = set(
         Host.objects.filter(maintenance_mode=MaintenanceMode.ON).values_list("id", flat=True)

@@ -39,7 +39,7 @@ class TestCheckPluginExecutor(BaseTestEffectsOfADCMAnsiblePlugins):
             call_arguments="""
                 title: title
                 result: true
-                msg: test_message
+                msg: ''
             """,
             call_context=job,
         )

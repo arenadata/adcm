@@ -9,6 +9,7 @@ import {
   AdcmClusterServiceConfigGroupConfigsApi,
   AdcmClusterServiceComponentsConfigsApi,
   AdcmClusterServiceComponentGroupConfigConfigsApi,
+  AdcmClusterAnsibleSettingsApi,
 } from '@api';
 import {
   ApiRequestsDictionary,
@@ -34,6 +35,10 @@ import {
   LoadClusterGroupConfigurationVersionsArgs,
   LoadClusterGroupConfigurationArgs,
   SaveClusterGroupConfigurationArgs,
+  // Cluster ansible settings
+  LoadClusterAnsibleSettingsArgs,
+  LoadClusterAnsibleSettingsSchemaArgs,
+  SaveClusterAnsibleSettingsArgs,
   // Host
   LoadHostConfigurationVersionsArgs,
   LoadHostConfigurationArgs,
@@ -102,6 +107,14 @@ export const ApiRequests: ApiRequestsDictionary = {
       AdcmClusterGroupConfigsConfigsApi.getConfigSchema(args as LoadClusterGroupConfigurationArgs),
     createConfig: (args: SaveConfigurationArgs) =>
       AdcmClusterGroupConfigsConfigsApi.createConfiguration(args as SaveClusterGroupConfigurationArgs),
+  },
+  'cluster-ansible-settings': {
+    getConfig: (args: LoadConfigurationArgs) =>
+      AdcmClusterAnsibleSettingsApi.getConfig(args as LoadClusterAnsibleSettingsArgs),
+    getConfigSchema: (args: LoadConfigurationArgs) =>
+      AdcmClusterAnsibleSettingsApi.getConfigSchema(args as LoadClusterAnsibleSettingsSchemaArgs),
+    createConfig: (args: SaveConfigurationArgs) =>
+      AdcmClusterAnsibleSettingsApi.createConfiguration(args as SaveClusterAnsibleSettingsArgs),
   },
   host: {
     getConfigVersions: (args: LoadConfigurationVersionsArgs) =>

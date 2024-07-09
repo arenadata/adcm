@@ -305,10 +305,11 @@ class TestCluster(BaseAPITestCase):
         response = (self.client.v2[self.cluster_1] / "service-prototypes").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 7)
+        self.assertEqual(len(response.json()), 8)
         self.assertListEqual(
             [prototype["displayName"] for prototype in response.json()],
             [
+                "adcm_5756",
                 "service_1",
                 "service_1_clone",
                 "service_2",
@@ -325,10 +326,11 @@ class TestCluster(BaseAPITestCase):
         response = (self.client.v2[self.cluster_1] / "service-candidates").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 6)
+        self.assertEqual(len(response.json()), 7)
         self.assertListEqual(
             [prototype["displayName"] for prototype in response.json()],
             [
+                "adcm_5756",
                 "service_1",
                 "service_1_clone",
                 "service_2",
@@ -379,8 +381,68 @@ class TestCluster(BaseAPITestCase):
     def test_retrieve_ansible_config_schema_success(self):
         response = self.client.v2[self.cluster_1, "ansible-config-schema"].get()
 
+        schema = {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Ansible configuration",
+            "description": "",
+            "readOnly": False,
+            "adcmMeta": {
+                "isAdvanced": False,
+                "isInvisible": False,
+                "activation": None,
+                "synchronization": None,
+                "NoneValue": None,
+                "isSecret": False,
+                "stringExtra": None,
+                "enumExtra": None,
+            },
+            "type": "object",
+            "properties": {
+                "defaults": {
+                    "title": "defaults",
+                    "type": "object",
+                    "description": "",
+                    "default": {},
+                    "readOnly": False,
+                    "adcmMeta": {
+                        "isAdvanced": False,
+                        "isInvisible": False,
+                        "activation": None,
+                        "synchronization": None,
+                        "NoneValue": None,
+                        "isSecret": False,
+                        "stringExtra": None,
+                        "enumExtra": None,
+                    },
+                    "additionalProperties": False,
+                    "properties": {
+                        "forks": {
+                            "title": "forks",
+                            "type": "integer",
+                            "description": "",
+                            "default": 5,
+                            "readOnly": False,
+                            "adcmMeta": {
+                                "isAdvanced": False,
+                                "isInvisible": False,
+                                "activation": None,
+                                "synchronization": None,
+                                "NoneValue": None,
+                                "isSecret": False,
+                                "stringExtra": None,
+                                "enumExtra": None,
+                            },
+                            "minimum": 1,
+                        }
+                    },
+                    "required": ["forks"],
+                }
+            },
+            "additionalProperties": False,
+            "required": ["defaults"],
+        }
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual("Ansible configuration", response.json()["title"])
+        self.assertDictEqual(schema, response.json())
 
     def test_retrieve_ansible_config_fail(self):
         response = (self.client.v2 / "clusters" / str(self.get_non_existent_pk(model=Cluster)) / "ansible-config").get()

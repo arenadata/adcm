@@ -13,7 +13,13 @@
 
 from pathlib import Path
 
+from core.job.dto import TaskPayloadDTO
+from core.types import ADCMCoreType, CoreObjectDescriptor
+from django.core.exceptions import ObjectDoesNotExist
+
 from cm.models import Action
+from cm.services.job.inventory import get_inventory_data
+from cm.services.job.prepare import prepare_task_for_action
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
@@ -189,3 +195,31 @@ class TestClusterHosts(BaseInventoryTestCase):
         ):
             with self.subTest(msg=f"Object: {obj.prototype.type} #{obj.pk} {obj.name}, action: {action.name}"):
                 self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
+
+    def test_adcm_5747_delete_service(self) -> None:
+        service = self.add_services_to_cluster(["service_one_component"], cluster=self.cluster_1).get()
+        host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
+        self.set_hostcomponent(cluster=self.cluster_1, entries=[(host, service.servicecomponent_set.first())])
+
+        action = Action.objects.get(prototype=service.prototype, name="action_on_service")
+        target = owner_descriptor = CoreObjectDescriptor(id=service.id, type=ADCMCoreType.SERVICE)
+        task = prepare_task_for_action(
+            target=target, owner=owner_descriptor, action=action.id, payload=TaskPayloadDTO()
+        )
+
+        # imitate service deletion during task run (prev job deleted service)
+        service.delete()
+
+        # without related objects it fails
+        with self.assertRaises(ObjectDoesNotExist) as err_context:
+            get_inventory_data(target=task.target, is_host_action=False)
+
+        self.assertIn("ClusterObject matching query does not exist.", str(err_context.exception))
+
+        # with those inventory is generated
+        data = get_inventory_data(target=task.target, is_host_action=False, related_objects=task.owner.related_objects)
+
+        self.assertSetEqual(set(data["all"]["vars"]), {"cluster", "services"})
+        self.assertDictEqual(data["all"]["vars"]["services"], {})
+        self.assertSetEqual(set(data["all"]["children"]), {"CLUSTER"})
+        self.assertIn("host_1", data["all"]["children"]["CLUSTER"]["hosts"])

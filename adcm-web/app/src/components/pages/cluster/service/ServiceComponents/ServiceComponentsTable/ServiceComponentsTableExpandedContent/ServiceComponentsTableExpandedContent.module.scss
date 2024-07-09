@@ -1,0 +1,34 @@
+:global {
+  body.theme-dark {
+    --service-components-expanded-block-title-color: var(--color-xgreen-saturated);
+  }
+
+  body.theme-light {
+    --service-components-expanded-block-title-color: var(--color-xgreen);
+  }
+}
+
+.serviceComponentsTableExpandedContent {
+  margin-top: 20px;
+
+  &__title {
+    color: var(--service-components-expanded-block-title-color);
+    margin: 16px 0;
+    font-weight: 500;
+  }
+
+  &__checkboxes label {
+    margin-right: 30px;
+  }
+
+  &__tags {
+    flex-direction: row;
+    width: fit-content;
+    margin: 16px 16px 0 0;
+
+    div {
+      width: fit-content;
+      padding: 6px 12px;
+    }
+  }
+}

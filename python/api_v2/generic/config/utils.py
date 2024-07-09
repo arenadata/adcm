@@ -834,7 +834,8 @@ def represent_string_as_json_type(
         name = prototype_config.name
         sub_name = prototype_config.subname
 
-        if name not in value or sub_name not in value[name]:
+        # json may be `null`/`None` if it's not required, so we patch it as () to skip this field
+        if name not in value or sub_name not in (value[name] or ()):
             continue
 
         try:

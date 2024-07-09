@@ -16,7 +16,7 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase, BusinessLogicMixin
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 from cm.api import add_host_to_cluster, save_hc
 from cm.errors import AdcmEx
@@ -177,7 +177,7 @@ class TestHC(BaseTestCase, BusinessLogicMixin):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_adcm_4929_run_same_hc_bug(self) -> None:
+    def test_adcm_4929_run_same_hc_success(self) -> None:
         bundles_dir = Path(__file__).parent / "bundles"
         bundle = self.add_bundle(bundles_dir / "cluster_1")
         cluster = self.add_cluster(bundle=bundle, name="Cool")
@@ -207,7 +207,7 @@ class TestHC(BaseTestCase, BusinessLogicMixin):
         )
         action = Action.objects.get(prototype=service_with_action.prototype, name="with_hc")
 
-        with RunTaskMock() as run_task:
+        with RunTaskMock():
             response = self.client.post(
                 path=f"/api/v2/clusters/{cluster.id}/services/{service_with_action.id}/actions/{action.id}/run/",
                 data={
@@ -216,6 +216,5 @@ class TestHC(BaseTestCase, BusinessLogicMixin):
                 content_type=APPLICATION_JSON,
             )
 
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.json()["desc"], "Host-component is expected to be changed for this action")
-        self.assertIsNone(run_task.target_task)
+        # expectations changed due to existing behavior in bundles
+        self.assertEqual(response.status_code, HTTP_200_OK)

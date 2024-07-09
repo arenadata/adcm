@@ -26,7 +26,7 @@ from ansible_plugin.base import (
     PluginExecutorConfig,
     RuntimeEnvironment,
 )
-from ansible_plugin.errors import PluginRuntimeError, PluginTargetDetectionError
+from ansible_plugin.errors import PluginIncorrectCallError, PluginRuntimeError, PluginTargetDetectionError
 
 
 class DeleteServiceArguments(BaseStrictModel):
@@ -44,7 +44,14 @@ class ADCMDeleteServicePluginExecutor(ADCMAnsiblePluginExecutor[DeleteServiceArg
     ) -> CallResult[None]:
         _ = targets
 
-        if arguments.service:
+        if arguments.service is not None:
+            if runtime.context_owner.type == ADCMCoreType.SERVICE:
+                message = (
+                    "Service can be deleted by name only from cluster's context. "
+                    "To delete caller-service don't specify `service` argument."
+                )
+                raise PluginIncorrectCallError(message)
+
             search_kwargs = {"cluster_id": runtime.vars.context.cluster_id, "prototype__name": arguments.service}
         elif runtime.context_owner.type == ADCMCoreType.SERVICE:
             search_kwargs = {"id": runtime.context_owner.id}

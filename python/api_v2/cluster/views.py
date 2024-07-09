@@ -42,9 +42,15 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
-from cm.services.cluster import perform_host_to_cluster_map
+from cm.services.cluster import (
+    perform_host_to_cluster_map,
+    retrieve_clusters_objects_maintenance_mode,
+    retrieve_clusters_topology,
+)
 from cm.services.status import notify
 from core.cluster.errors import HostAlreadyBoundError, HostBelongsToAnotherClusterError, HostDoesNotExistError
+from core.cluster.operations import calculate_maintenance_mode_for_cluster_objects
+from core.cluster.types import MaintenanceModeOfObjects
 from django.contrib.contenttypes.models import ContentType
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -449,8 +455,28 @@ class ClusterViewSet(
     )
     def mapping_components(self, request: Request, *args, **kwargs):  # noqa: ARG002
         cluster = self.get_object()
+
+        is_mm_available = Prototype.objects.values_list("allow_maintenance_mode", flat=True).get(
+            id=cluster.prototype_id
+        )
+
+        objects_mm = (
+            calculate_maintenance_mode_for_cluster_objects(
+                topology=next(retrieve_clusters_topology(cluster_ids=(cluster.id,))),
+                own_maintenance_mode=retrieve_clusters_objects_maintenance_mode(cluster_ids=(cluster.id,)),
+            )
+            if is_mm_available
+            else MaintenanceModeOfObjects(services={}, components={}, hosts={})
+        )
+
         serializer = self.get_serializer(
-            instance=ServiceComponent.objects.filter(cluster=cluster).order_by("pk"), many=True
+            instance=(
+                ServiceComponent.objects.filter(cluster=cluster)
+                .select_related("prototype", "service__prototype")
+                .order_by("pk")
+            ),
+            many=True,
+            context={"mm": objects_mm, "is_mm_available": is_mm_available},
         )
 
         return Response(status=HTTP_200_OK, data=serializer.data)
@@ -540,11 +566,14 @@ class ClusterViewSet(
                             "minimum": 1,
                         },
                     },
+                    "required": [
+                        "forks",
+                    ],
                 },
             },
             "additionalProperties": False,
             "required": [
-                "defaults.forks",
+                "defaults",
             ],
         }
 

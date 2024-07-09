@@ -61,6 +61,7 @@ import ServiceComponentConfigurationGroups from '@pages/cluster/service/componen
 import ServiceComponentConfigGroupSingle from '@pages/cluster/service/component/ServiceComponentConfiguration/ServiceComponentConfigGroupSingle/ServiceComponentConfigGroupSingle';
 import HostProviderConfigurationGroupSingle from '@pages/HostProviderPage/HostProviderConfigurationGroupSingle/HostProviderConfigurationGroupSingle';
 import NotFoundPage from '@pages/NotFoundPage/NotFoundPage';
+import ClusterAnsibleSettings from '@pages/cluster/ClusterConfiguration/ClusterAnsibleSettings/ClusterAnsibleSettings';
 
 function App() {
   return (
@@ -154,6 +155,11 @@ function App() {
                     <Route
                       path="/clusters/:clusterId/configuration/config-groups/:configGroupId/"
                       element={<ClusterConfigGroupSingle />}
+                    />
+                    <Route index element={<Navigate to="ansible-settings" replace />} />
+                    <Route
+                      path="/clusters/:clusterId/configuration/ansible-settings"
+                      element={<ClusterAnsibleSettings />}
                     />
                   </Route>
                   <Route path="/clusters/:clusterId/import" element={<ClusterImport />}>
