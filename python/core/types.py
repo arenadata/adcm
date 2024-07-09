@@ -27,6 +27,7 @@ ActionID: TypeAlias = int
 TaskID: TypeAlias = int
 
 ConfigID: TypeAlias = int
+ConcernID: TypeAlias = int
 
 HostName: TypeAlias = str
 ServiceName: TypeAlias = str
