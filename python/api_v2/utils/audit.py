@@ -135,8 +135,36 @@ parent_host_from_lookup = _extract_host_from(extract_id=ExtractID(field="host_pk
 _extract_user_from = partial(
     GeneralAuditObjectRetriever, audit_object_type=AuditObjectType.USER, create_new=create_audit_user_object
 )
+
+
+@dataclass
+class ProfileRetriever(GeneralAuditObjectRetriever):
+    def __call__(
+        self,
+        context: "OperationAuditContext",
+        call_arguments: AuditedCallArguments,  # noqa: ARG002
+        result: Result | None,  # noqa: ARG002
+        exception: Exception | None,  # noqa: ARG002
+    ) -> AuditObject | None:
+        id_ = str(context.user.id) if context.user else None
+        if not id_:
+            return None
+
+        audit_object = AuditObject.objects.filter(
+            object_id=id_, object_type=self.audit_object_type, is_deleted=self.is_deleted
+        ).first()
+        if audit_object:
+            return audit_object
+
+        return self.create_new(id_, self.audit_object_type)
+
+
+_extract_profile_from = partial(
+    ProfileRetriever, audit_object_type=AuditObjectType.USER, create_new=create_audit_user_object
+)
 user_from_response = _extract_user_from(extract_id=ExtractID(field="id").from_response)
 user_from_lookup = _extract_user_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
+profile_of_current_user = _extract_profile_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
 
 _extract_group_from = partial(
     GeneralAuditObjectRetriever, audit_object_type=AuditObjectType.GROUP, create_new=create_audit_group_object

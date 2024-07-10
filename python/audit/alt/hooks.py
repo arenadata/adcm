@@ -266,6 +266,27 @@ def extract_from_object(
     class HookImpl(AuditHook):
         def __call__(self):
             id_ = self.call_arguments.get(id_arg) if section == "previous" else self.result.data.get(id_field)
+
+            if id_ is None:
+                return
+
+            if section not in self.context.meta.changes:
+                self.context.meta.changes[section] = {}
+
+            self.context.meta.changes[section] |= func(id_=id_)
+
+    return HookImpl
+
+
+def extract_for_current_user(func: HookObjectLookupFunc, section: Literal["current", "previous"]):
+    """
+    Hook for retrieving user in requests to profile endpoints
+    """
+
+    class HookImpl(AuditHook):
+        def __call__(self):
+            id_ = self.context.user.id if self.context.user else None
+
             if id_ is None:
                 return
 
