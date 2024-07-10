@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import reverse
 from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
@@ -25,18 +24,14 @@ class TestAuditObjectNameChanged(BaseAPITestCase):
         first_new_name = "Best Cluster Name EVER"
         second_new_name = "Another Name"
 
-        response = self.client.patch(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}), data={"name": first_new_name}
-        )
+        response = self.client.v2[self.cluster_1].patch(data={"name": first_new_name})
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         log = self.get_most_recent_audit_log()
 
         self.assertEqual(log.audit_object.object_name, first_new_name)
 
-        response = self.client.patch(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}), data={"name": second_new_name}
-        )
+        response = self.client.v2[self.cluster_1].patch(data={"name": second_new_name})
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         log.refresh_from_db()
@@ -47,8 +42,7 @@ class TestAuditObjectNameChanged(BaseAPITestCase):
         first_name = "best-cluster-fqdn-ever"
         second_name = "another-name"
 
-        response = self.client.post(
-            path=reverse(viewname="v2:host-list"),
+        response = (self.client.v2 / "hosts").post(
             data={"name": first_name, "hostproviderId": self.provider.pk},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -57,9 +51,7 @@ class TestAuditObjectNameChanged(BaseAPITestCase):
 
         self.assertEqual(log.audit_object.object_name, first_name)
 
-        response = self.client.patch(
-            path=reverse(viewname="v2:host-detail", kwargs={"pk": response.json()["id"]}), data={"name": second_name}
-        )
+        response = (self.client.v2 / "hosts" / response.json()["id"]).patch(data={"name": second_name})
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         log.refresh_from_db()
@@ -82,11 +74,7 @@ class TestAuditObjectNameChanged(BaseAPITestCase):
             object=[self.cluster_1],
         )
 
-        response = self.client.patch(
-            path=reverse(
-                viewname="v2:rbac:policy-detail",
-                kwargs={"pk": policy.pk},
-            ),
+        response = self.client.v2[policy].patch(
             data={"displayName": "changed display name"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -95,9 +83,7 @@ class TestAuditObjectNameChanged(BaseAPITestCase):
 
         self.assertEqual(log.audit_object.object_name, first_name)
 
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": policy.pk}), data={"name": second_name}
-        )
+        response = self.client.v2[policy].patch(data={"name": second_name})
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         log.refresh_from_db()

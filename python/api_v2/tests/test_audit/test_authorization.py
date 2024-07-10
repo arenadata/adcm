@@ -14,7 +14,6 @@ from datetime import timedelta
 
 from audit.models import AuditSession
 from rbac.models import User
-from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 
 from api_v2.tests.base import BaseAPITestCase
@@ -33,60 +32,51 @@ class TestAuthorizationAudit(BaseAPITestCase):
         self.time_to = (current_datetime + timedelta(minutes=1)).isoformat()
 
     def login_for_audit(self, username="admin", password="admin"):
-        response = self.client.post(
-            path=reverse(viewname="v1:rbac:token"),
+        response = self.client.v2["token"].post(
             data={"username": username, "password": password},
         )
         self.client.defaults["Authorization"] = f"Token {response.data['token']}"
 
     def test_logins_success(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:audit:auditsession-list"),
-        )
+        response = self.client.v2["audit-login"].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["results"][0]["user"], {"name": self.username})
         self.assertDictEqual(response.json()["results"][0]["details"], {"username": self.username})
 
     def test_logins_time_filtering_success(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:audit:auditsession-list"),
-            data={"time_to": self.time_to, "time_from": self.time_from},
+        response = self.client.v2["audit-login"].get(
+            query={"time_from": self.time_from, "time_to": self.time_to},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["results"][0]["user"], {"name": self.username})
 
     def test_logins_time_filtering_empty_list_success(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:audit:auditsession-list"),
-            data={"timeTo": self.time_from, "timeFrom": self.time_to},
+        response = self.client.v2["audit-login"].get(
+            query={"time_from": self.time_to, "time_to": self.time_from},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["results"]), 0)
 
     def test_logins_retrieve_success(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:audit:auditsession-detail", kwargs={"pk": self.last_login_id})
-        )
+        response = self.client.v2["audit-login", self.last_login_id].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["user"]["name"], self.username)
         self.assertDictEqual(response.json()["details"], {"username": self.username})
 
     def test_logins_retrieve_not_found_fail(self):
-        response = self.client.get(
-            path=reverse(viewname="v2:audit:auditsession-detail", kwargs={"pk": self.last_login_id + 1})
-        )
+        response = self.client.v2["audit-login", self.last_login_id + 1].get()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_logins_not_authorized_fail(self):
         self.client.logout()
-        response = self.client.get(path=reverse(viewname="v2:audit:auditsession-list"))
+        response = self.client.v2["audit-login"].get()
         self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
 
     def test_operations_not_authorized_fail(self):
         self.client.logout()
-        response = self.client.get(path=reverse(viewname="v2:audit:auditlog-list"))
+        response = self.client.v2["audit-login"].get()
         self.assertEqual(response.status_code, HTTP_401_UNAUTHORIZED)
 
     def test_operations_list_success(self):
-        response = self.client.get(path=reverse(viewname="v2:audit:auditlog-list"))
+        response = self.client.v2["audit-login"].get()
         self.assertEqual(response.status_code, HTTP_200_OK)

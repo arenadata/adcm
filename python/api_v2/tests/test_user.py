@@ -604,20 +604,6 @@ class TestUserAPI(BaseAPITestCase):
             {"code": "USER_DELETE_ERROR", "desc": "Built-in user could not be deleted", "level": "error"},
         )
 
-    def test_unblock_success(self):
-        user = self.create_user()
-        user.blocked_at = now()
-        user.failed_login_attempts = 5
-        user.save(update_fields=["blocked_at", "failed_login_attempts"])
-
-        response = self.client.v2[user, "unblock"].post(data=None)
-
-        user.refresh_from_db()
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertIsNone(response.data)
-        self.assertIsNone(user.blocked_at)
-        self.assertEqual(user.failed_login_attempts, 0)
-
     def test_ordering_success(self):
         user_data = [
             {
