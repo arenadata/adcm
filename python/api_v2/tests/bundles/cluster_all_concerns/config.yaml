@@ -1,6 +1,7 @@
 - type: cluster
   name: all_concerns
   version: 3.4
+  allow_maintenance_mode: true
 
   # no import for service
   import: &import
