@@ -166,21 +166,26 @@ def _drop_concerns_from_objects_in_mm(
     if not objects_in_mm_own_concerns:
         return concern_links
 
-    # todo check this logic out, because:
-    #  1. it's strange AS IS (or unclear)
-    #  2. probably unmapped hosts shouldn't participate in counting too
+    unmapped_hosts = topology.unmapped_hosts
     hostprovider_concerns_to_unlink = set()
     hostproviders_to_exclude = deque()
-    for hostprovider_id, hosts in provider_host_map:
-        # If all hosts are in MM, then HP concerns should be removed from all objects that aren't hosts.
-        # If at least one host is not in MM, concerns should be passed in a regular way.
-        if hosts == hosts_in_mm:
+    for hostprovider_id, hosts in provider_host_map.items():
+        # If all mapped hosts are in MM, then HP concerns should be removed from all objects that aren't hosts.
+        # If at least one mapped host is not in MM, concerns should be passed in a regular way.
+        mapped_hosts = hosts - unmapped_hosts
+        if mapped_hosts and mapped_hosts.issubset(hosts_in_mm):
             hostproviders_to_exclude.append(hostprovider_id)
 
     if hostproviders_to_exclude:
-        hostprovider_concerns_to_unlink |= _get_own_concerns_of_objects(
-            with_types=(ConcernType.ISSUE, ConcernType.FLAG), hostproviders=hostproviders_to_exclude
-        ).get(ADCMCoreType.HOSTPROVIDER, set())
+        hostprovider_concerns_to_unlink |= set(
+            chain.from_iterable(
+                _get_own_concerns_of_objects(
+                    with_types=(ConcernType.ISSUE, ConcernType.FLAG), hostproviders=hostproviders_to_exclude
+                )
+                .get(ADCMCoreType.HOSTPROVIDER, {})
+                .values()
+            )
+        )
 
     own_concerns_to_keep: OwnObjectConcernMap = defaultdict(lambda: defaultdict(set))
     concerns_to_unlink: set[int] = copy(hostprovider_concerns_to_unlink)

@@ -15,7 +15,6 @@ from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
 
-from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.models import (
     Action,
     ClusterObject,
@@ -27,6 +26,8 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.cluster import retrieve_clusters_topology
+from cm.services.concern.distribution import redistribute_issues_and_flags
 from cm.services.concern.flags import update_hierarchy
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.status.notify import reset_objects_in_mm
@@ -52,16 +53,18 @@ def _change_mm_via_action(
 
 
 def _update_mm_hierarchy_issues(obj: Host | ClusterObject | ServiceComponent) -> None:
-    if isinstance(obj, Host):
-        update_hierarchy_issues(obj.provider)
+    redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((obj.cluster_id,))))
 
-    providers = {host_component.host.provider for host_component in HostComponent.objects.filter(cluster=obj.cluster)}
-    for provider in providers:
-        update_hierarchy_issues(provider)
-
-    update_hierarchy_issues(obj.cluster)
-    update_issue_after_deleting()
-    _update_flags()
+    # if isinstance(obj, Host):
+    #     update_hierarchy_issues(obj.provider)
+    #
+    # providers = {host_component.host.provider for host_component in HostComponent.objects.filter(cluster=obj.cluster)}
+    # for provider in providers:
+    #     update_hierarchy_issues(provider)
+    #
+    # update_hierarchy_issues(obj.cluster)
+    # update_issue_after_deleting()
+    # _update_flags()
     reset_objects_in_mm()
 
 
