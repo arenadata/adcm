@@ -10,7 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from audit.utils import audit
+from audit.alt.api import audit_update
+from audit.alt.hooks import (
+    extract_for_current_user,
+)
 from cm.errors import AdcmEx
 from cm.services.adcm import retrieve_password_requirements
 from core.rbac.operations import update_user_password
@@ -24,6 +27,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED
 
 from api_v2.api_schema import ErrorSerializer
 from api_v2.profile.serializers import ProfileSerializer, ProfileUpdateSerializer
+from api_v2.utils.audit import profile_of_current_user, retrieve_user_password_groups
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -59,7 +63,12 @@ class ProfileView(RetrieveModelMixin, ADCMGenericViewSet):
 
         return ProfileSerializer
 
-    @audit
+    @(
+        audit_update(name="Profile updated", object_=profile_of_current_user).track_changes(
+            before=(extract_for_current_user(func=retrieve_user_password_groups, section="previous"),),
+            after=(extract_for_current_user(func=retrieve_user_password_groups, section="current"),),
+        )
+    )
     def partial_update(self, request, *_, **__):
         user = self.get_object()
 
