@@ -14,7 +14,6 @@
 from audit.models import AuditLogOperationType, AuditObject
 from cm.models import Bundle, Prototype
 from django.conf import settings
-from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -37,11 +36,7 @@ class TestBundleAudit(BaseAPITestCase):
         new_bundle_file = self.prepare_bundle_file(source_dir=self.test_bundles_dir / "cluster_one")
 
         with open(settings.DOWNLOAD_DIR / new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
-            response = self.client.post(
-                path=reverse(viewname="v2:bundle-list"),
-                data={"file": f},
-                format="multipart",
-            )
+            response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.check_last_audit_record(
@@ -57,11 +52,7 @@ class TestBundleAudit(BaseAPITestCase):
         new_bundle_file = self.prepare_bundle_file(source_dir=self.test_bundles_dir / "cluster_one")
 
         with open(settings.DOWNLOAD_DIR / new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
-            response = self.client.post(
-                path=reverse(viewname="v2:bundle-list"),
-                data={"file": f},
-                format="multipart",
-            )
+            response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.check_last_audit_record(
@@ -77,11 +68,7 @@ class TestBundleAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with open(settings.DOWNLOAD_DIR / new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
-            response = self.client.post(
-                path=reverse(viewname="v2:bundle-list"),
-                data={"file": f},
-                format="multipart",
-            )
+            response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_last_audit_record(
@@ -105,7 +92,7 @@ class TestBundleAudit(BaseAPITestCase):
             is_deleted=False,
         )
 
-        response = self.client.delete(path=reverse(viewname="v2:bundle-detail", kwargs={"pk": bundle.pk}))
+        response = self.client.v2[bundle].delete()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.check_last_audit_record(
@@ -117,9 +104,7 @@ class TestBundleAudit(BaseAPITestCase):
         )
 
     def test_audit_delete_non_existent_fail(self):
-        response = self.client.delete(
-            path=reverse(viewname="v2:bundle-detail", kwargs={"pk": self.get_non_existent_pk(Bundle)})
-        )
+        response = (self.client.v2 / "bundles" / self.get_non_existent_pk(Bundle)).delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -134,7 +119,7 @@ class TestBundleAudit(BaseAPITestCase):
         bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_one")
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.delete(path=reverse(viewname="v2:bundle-detail", kwargs={"pk": bundle.pk}))
+        response = self.client.v2[bundle].delete()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_last_audit_record(
@@ -149,9 +134,7 @@ class TestBundleAudit(BaseAPITestCase):
         bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_one")
         bundle_prototype = Prototype.objects.get(bundle=bundle, type="cluster")
 
-        response = self.client.post(
-            path=reverse(viewname="v2:prototype-accept-license", kwargs={"pk": bundle_prototype.pk})
-        )
+        response = self.client.v2[bundle_prototype, "license", "accept"].post()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_last_audit_record(
@@ -167,9 +150,7 @@ class TestBundleAudit(BaseAPITestCase):
         bundle_prototype = Prototype.objects.get(bundle=bundle, type="cluster")
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(viewname="v2:prototype-accept-license", kwargs={"pk": bundle_prototype.pk})
-        )
+        response = self.client.v2[bundle_prototype, "license", "accept"].post()
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -181,7 +162,7 @@ class TestBundleAudit(BaseAPITestCase):
         )
 
     def test_audit_accept_license_fail(self):
-        response = self.client.post(path=reverse(viewname="v2:prototype-accept-license", kwargs={"pk": 1000}))
+        response = (self.client.v2 / "prototypes" / self.get_non_existent_pk(Bundle) / "license" / "accept").post()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
