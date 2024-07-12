@@ -22,10 +22,11 @@ from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 
-from cm.converters import core_type_to_model
+from cm.converters import core_type_to_model, model_name_to_core_type
 from cm.hierarchy import Tree
 from cm.issue import add_concern_to_object, remove_concern_from_object
 from cm.models import ADCMEntity, ConcernCause, ConcernItem, ConcernType
+from cm.services.concern.distribution import distribute_concern_on_related_objects
 from cm.services.concern.messages import (
     ADCM_ENTITY_AS_PLACEHOLDERS,
     ConcernMessage,
@@ -120,13 +121,15 @@ def lower_all_flags(on_objects: Collection[CoreObjectDescriptor]) -> bool:
 
 
 def update_hierarchy_for_flag(flag: ConcernFlag, on_objects: Collection[CoreObjectDescriptor]) -> None:
-    for concern in ConcernItem.objects.filter(
+    for concern in ConcernItem.objects.select_related("owner_type").filter(
         Q(name=flag.name, cause=flag.cause, type=ConcernType.FLAG)
         & _get_filter_for_flags_of_objects(
             content_type_id_map=_get_owner_ids_grouped_by_content_type(objects=on_objects)
         )
     ):
-        update_hierarchy(concern)
+        owner = CoreObjectDescriptor(id=concern.owner_id, type=model_name_to_core_type(concern.owner_type.model))
+        distribute_concern_on_related_objects(owner=owner, concern_id=concern.id)
+        # update_hierarchy(concern)
 
 
 def update_hierarchy(concern: ConcernItem) -> None:

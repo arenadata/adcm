@@ -2,6 +2,9 @@
   name: provider_with_concerns
   version: 12
 
+  flag_autogeneration:
+    enable_outdated_config: true
+
   config: &required_config
     - name: field
       type: integer
@@ -17,6 +20,9 @@
 - type: host
   name: hohoho
   version: 2
+
+  flag_autogeneration:
+    enable_outdated_config: true
 
   config: *required_config
   actions: *actions

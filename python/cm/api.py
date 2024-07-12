@@ -32,7 +32,7 @@ from cm.adcm_config.config import (
 )
 from cm.adcm_config.utils import proto_ref
 from cm.api_context import CTX
-from cm.converters import orm_object_to_core_type
+from cm.converters import orm_object_to_action_target_type, orm_object_to_core_type
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.issue import (
     add_concern_to_object,
@@ -52,6 +52,7 @@ from cm.models import (
     Cluster,
     ClusterBind,
     ClusterObject,
+    ConcernCause,
     ConcernItem,
     ConcernType,
     ConfigLog,
@@ -68,7 +69,9 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from cm.services.concern.flags import BuiltInFlag, raise_flag, update_hierarchy
+from cm.services.concern import delete_issue
+from cm.services.concern.distribution import distribute_concern_on_related_objects
+from cm.services.concern.flags import BuiltInFlag, raise_flag
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import (
     send_config_creation_event,
@@ -398,7 +401,11 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
 
     with atomic():
         config_log = save_object_config(object_config=obj_conf, config=new_conf, attr=attr, description=description)
-        update_hierarchy_issues(obj=obj)
+
+        delete_issue(
+            owner=CoreObjectDescriptor(id=obj.id, type=orm_object_to_action_target_type(object_=obj)),
+            cause=ConcernCause.CONFIG,
+        )
         # flag on ADCM can't be raised (only objects of `ADCMCoreType` are supported)
         if not isinstance(obj, ADCM):
             raise_outdated_config_flag_if_required(object_=obj)
@@ -414,15 +421,22 @@ def raise_outdated_config_flag_if_required(object_: MainObject):
         return
 
     flag = BuiltInFlag.ADCM_OUTDATED_CONFIG.value
-    flag_exists = object_.concerns.filter(name=flag.name, type=ConcernType.FLAG).exists()
+    flag_exists = object_.concerns.filter(
+        name=flag.name, type=ConcernType.FLAG, owner_id=object_.id, owner_type=object_.content_type
+    ).exists()
     # raise unconditionally here, because message should be from "default" flag
-    raise_flag(flag=flag, on_objects=[CoreObjectDescriptor(id=object_.id, type=orm_object_to_core_type(object_))])
+    owner = CoreObjectDescriptor(id=object_.id, type=orm_object_to_core_type(object_))
+    raise_flag(flag=flag, on_objects=[owner])
     if not flag_exists:
-        update_hierarchy(
-            concern=ConcernItem.objects.get(
-                name=flag.name, type=ConcernType.FLAG, owner_id=object_.id, owner_type=object_.content_type
-            )
+        concern_id = ConcernItem.objects.values_list("id", flat=True).get(
+            name=flag.name, type=ConcernType.FLAG, owner_id=object_.id, owner_type=object_.content_type
         )
+        distribute_concern_on_related_objects(owner=owner, concern_id=concern_id)
+        # update_hierarchy(
+        #     concern=ConcernItem.objects.get(
+        #         name=flag.name, type=ConcernType.FLAG, owner_id=object_.id, owner_type=object_.content_type
+        #     )
+        # )
 
 
 def set_object_config_with_plugin(obj: ADCMEntity, config: dict, attr: dict) -> ConfigLog:
@@ -432,7 +446,6 @@ def set_object_config_with_plugin(obj: ADCMEntity, config: dict, attr: dict) -> 
         config_log = save_object_config(
             object_config=obj.config, config=new_conf, attr=attr, description="ansible update"
         )
-        update_hierarchy_issues(obj=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     return config_log
