@@ -13,6 +13,7 @@
 from pathlib import Path
 from typing import Iterable
 
+from cm.converters import orm_object_to_core_type
 from cm.models import (
     Action,
     ADCMEntity,
@@ -20,6 +21,7 @@ from cm.models import (
     ClusterObject,
     ConcernCause,
     ConcernItem,
+    ConcernType,
     Host,
     JobLog,
     ObjectType,
@@ -27,9 +29,12 @@ from cm.models import (
     PrototypeImport,
     ServiceComponent,
 )
+from cm.services.concern.flags import BuiltInFlag, lower_flag
 from cm.services.concern.messages import ConcernMessage
 from cm.tests.mocks.task_runner import RunTaskMock
 from core.cluster.types import ObjectMaintenanceModeState as MM  # noqa: N814
+from core.types import ADCMCoreType, CoreObjectDescriptor
+from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
@@ -391,8 +396,27 @@ class TestConcernRedistribution(BaseAPITestCase):
     def repr_concerns(self, concerns: Iterable[ConcernItem]) -> str:
         return "\n".join(
             f"  {i}. {rec}"
-            for i, rec in enumerate(sorted(f"{concern.cause} from {concern.owner}" for concern in concerns), start=1)
+            for i, rec in enumerate(
+                sorted(f"{concern.type} | {concern.cause} from {concern.owner}" for concern in concerns), start=1
+            )
         )
+
+    def get_config_issues_of(self, *objects: ADCMEntity) -> tuple[ConcernItem, ...]:
+        return ConcernItem.objects.filter(
+            self.prepare_objects_filter(*objects), type=ConcernType.ISSUE, cause=ConcernCause.CONFIG
+        )
+
+    def get_config_flags_of(self, *objects: ADCMEntity) -> tuple[ConcernItem, ...]:
+        return ConcernItem.objects.filter(
+            self.prepare_objects_filter(*objects), type=ConcernType.FLAG, cause=ConcernCause.CONFIG
+        )
+
+    def prepare_objects_filter(self, *objects: ADCMEntity):
+        object_filter = Q()
+        for object_ in objects:
+            object_filter |= Q(owner_id=object_.id, owner_type=object_.content_type)
+
+        return object_filter
 
     def check_concerns(self, object_: ADCMEntity, concerns: Iterable[ConcernItem]) -> None:
         expected_concerns = tuple(concerns)
@@ -435,6 +459,12 @@ class TestConcernRedistribution(BaseAPITestCase):
                 HTTP_200_OK,
             )
 
+    def change_config_via_api(self, object_: ADCMEntity) -> None:
+        self.assertEqual(
+            self.client.v2[object_, "configs"].post(data={"config": {"field": 1}, "adcmMeta": {}}).status_code,
+            HTTP_201_CREATED,
+        )
+
     def test_concerns_swap_on_mapping_changes(self) -> None:
         # prepare
         host_1, host_2, unmapped_host = (
@@ -442,6 +472,10 @@ class TestConcernRedistribution(BaseAPITestCase):
         )
         unbound_host = self.add_host(self.provider, fqdn="free-host")
         self.change_configuration(host_2, config_diff={"field": 4})
+        lower_flag(
+            BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name,
+            on_objects=[CoreObjectDescriptor(id=host_2.id, type=ADCMCoreType.HOST)],
+        )
 
         main_s = self.add_services_to_cluster(["main"], cluster=self.cluster).get()
         single_c = main_s.servicecomponent_set.get(prototype__name="single")
@@ -598,6 +632,8 @@ class TestConcernRedistribution(BaseAPITestCase):
 
         for object_ in (host_no_concerns, host_2):
             self.change_configuration(object_, config_diff={"field": 1})
+            object_desc = CoreObjectDescriptor(id=object_.id, type=orm_object_to_core_type(object_))
+            lower_flag(BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name, on_objects=[object_desc])
 
         main_s, no_components_s = (
             self.add_services_to_cluster(["main", "no_components"], cluster=self.cluster)
@@ -814,3 +850,129 @@ class TestConcernRedistribution(BaseAPITestCase):
             )
 
             self.check_concerns_of_control_objects()
+
+    def test_concern_removal_with_flag_autogeneration_on_config_change(self) -> None:
+        # prepare
+        host_1 = self.add_host(self.provider, fqdn="host-1", cluster=self.cluster)
+        host_2 = self.add_host(self.provider, fqdn="host-2", cluster=self.cluster)
+        unmapped_host = self.add_host(self.provider, fqdn="unmapped-host", cluster=self.cluster)
+        another_provider = self.add_provider(bundle=self.provider.prototype.bundle, name="No Concerns HP")
+        another_host = self.add_host(provider=another_provider, fqdn="no-concerns-host", cluster=self.cluster)
+
+        main_s = self.add_services_to_cluster(["main"], cluster=self.cluster).get()
+        no_components_s = self.add_services_to_cluster(["no_components"], cluster=self.cluster).get()
+        single_c = main_s.servicecomponent_set.get(prototype__name="single")
+        free_c = main_s.servicecomponent_set.get(prototype__name="free")
+
+        self.set_hostcomponent(
+            cluster=self.cluster,
+            entries=((host_1, single_c), (host_1, free_c), (host_2, free_c), (another_host, free_c)),
+        )
+        self.change_mm_via_api(MM.ON, host_2, single_c)
+
+        # find own concerns
+        expected = {}
+
+        no_components_s_own_con = no_components_s.get_own_issue(ConcernCause.IMPORT)
+        expected["main_s_own_con"] = main_s.get_own_issue(ConcernCause.CONFIG)
+        expected["cluster_own_cons"] = tuple(
+            ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
+        )
+        expected["single_c_con"] = single_c.get_own_issue(ConcernCause.CONFIG)
+
+        def check_concerns():
+            mapped_hosts_concerns = (*expected["host_1_concerns"], *expected["another_host_concerns"])
+            self.check_concerns(
+                self.cluster,
+                concerns=(
+                    *expected["cluster_own_cons"],
+                    expected["main_s_own_con"],
+                    no_components_s_own_con,
+                    *mapped_hosts_concerns,
+                ),
+            )
+            self.check_concerns(no_components_s, concerns=(*expected["cluster_own_cons"], no_components_s_own_con))
+            self.check_concerns(
+                main_s, concerns=(*expected["cluster_own_cons"], expected["main_s_own_con"], *mapped_hosts_concerns)
+            )
+            self.check_concerns(
+                free_c, concerns=(*expected["cluster_own_cons"], expected["main_s_own_con"], *mapped_hosts_concerns)
+            )
+            self.check_concerns(
+                single_c,
+                concerns=(
+                    *expected["cluster_own_cons"],
+                    expected["main_s_own_con"],
+                    expected["single_c_con"],
+                    *expected["host_1_concerns"],
+                ),
+            )
+
+            self.check_concerns(
+                host_1,
+                concerns=(*expected["cluster_own_cons"], expected["main_s_own_con"], *expected["host_1_concerns"]),
+            )
+            self.check_concerns(
+                host_2,
+                concerns=(
+                    *expected["cluster_own_cons"],
+                    expected["main_s_own_con"],
+                    *self.get_config_issues_of(host_2, self.provider),
+                ),
+            )
+            self.check_concerns(
+                another_host,
+                concerns=(
+                    *expected["cluster_own_cons"],
+                    expected["main_s_own_con"],
+                    *expected["another_host_concerns"],
+                ),
+            )
+            self.check_concerns(unmapped_host, concerns=self.get_config_issues_of(unmapped_host, self.provider))
+            self.check_concerns(self.provider, concerns=self.get_config_issues_of(self.provider))
+            self.check_concerns(another_provider, concerns=self.get_config_flags_of(another_provider))
+
+            self.check_concerns_of_control_objects()
+
+        # test
+        self.change_config_via_api(another_provider)
+
+        expected["host_1_concerns"] = self.get_config_issues_of(host_1, self.provider)
+        expected["another_host_concerns"] = (
+            *self.get_config_issues_of(another_host),
+            *self.get_config_flags_of(another_provider),
+        )
+
+        with self.subTest("Change HostProvider Config"):
+            check_concerns()
+
+        self.change_config_via_api(host_1)
+
+        expected["host_1_concerns"] = (*self.get_config_issues_of(self.provider), *self.get_config_flags_of(host_1))
+        expected["another_host_concerns"] = (
+            *self.get_config_issues_of(another_host),
+            *self.get_config_flags_of(another_provider),
+        )
+
+        with self.subTest("Change Host Config"):
+            check_concerns()
+
+        self.change_config_via_api(single_c)
+        expected["single_c_con"] = self.get_config_flags_of(single_c)[0]
+
+        with self.subTest("Change Component in MM Config"):
+            check_concerns()
+
+        self.change_config_via_api(self.cluster)
+        expected["cluster_own_cons"] = tuple(
+            ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
+        )
+
+        with self.subTest("Change Cluster Config"):
+            check_concerns()
+
+        self.change_config_via_api(main_s)
+        expected["main_s_own_con"] = self.get_config_flags_of(main_s)[0]
+
+        with self.subTest("Change Service Config"):
+            check_concerns()

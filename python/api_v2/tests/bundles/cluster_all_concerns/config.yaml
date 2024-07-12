@@ -3,6 +3,9 @@
   version: 3.4
   allow_maintenance_mode: true
 
+  flag_autogeneration:
+    enable_outdated_config: true
+
   # no import for service
   import: &import
     for_export:
@@ -24,6 +27,8 @@
 - type: service
   name: main
   version: 1
+  flag_autogeneration:
+    enable_outdated_config: true
 
   config: *required_config
 
@@ -33,8 +38,12 @@
     single:
       constraint: [1]
       config: *required_config
+      flag_autogeneration:
+        enable_outdated_config: true
     free:
       actions: *actions
+      flag_autogeneration:
+        enable_outdated_config: true
 
 - type: service
   name: required

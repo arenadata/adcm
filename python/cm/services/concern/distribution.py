@@ -13,11 +13,26 @@
 from collections import defaultdict, deque
 from copy import copy
 from itertools import chain
+from operator import itemgetter
 from typing import Iterable, TypeAlias
 
-from core.cluster.operations import calculate_maintenance_mode_for_cluster_objects
+from core.cluster.operations import (
+    calculate_maintenance_mode_for_cluster_objects,
+    calculate_maintenance_mode_for_component,
+    calculate_maintenance_mode_for_service,
+)
 from core.cluster.types import ClusterTopology, ObjectMaintenanceModeState
-from core.types import ADCMCoreType, ClusterID, ComponentID, ConcernID, HostID, HostProviderID, ObjectID, ServiceID
+from core.types import (
+    ADCMCoreType,
+    ClusterID,
+    ComponentID,
+    ConcernID,
+    CoreObjectDescriptor,
+    HostID,
+    HostProviderID,
+    ObjectID,
+    ServiceID,
+)
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 
@@ -28,12 +43,13 @@ from cm.models import (
     ConcernItem,
     ConcernType,
     Host,
+    HostComponent,
     HostProvider,
     ServiceComponent,
 )
 from cm.services.cluster import retrieve_clusters_objects_maintenance_mode
 
-# PUBLIC redistribute_concerns_on_mapping_change
+# PUBLIC redistribute_issues_and_flags
 
 
 TopologyObjectMap: TypeAlias = dict[ADCMCoreType, tuple[ObjectID, ...]]
@@ -247,6 +263,127 @@ def _relink_concerns_to_objects_in_db(
             for concern_id in (concerns - hostprovider_hierarchy_concerns)
         )
     )
+
+
+# PUBLIC distribute_concern_on_related_objects
+
+ConcernRelatedObjects: TypeAlias = dict[ADCMCoreType, set[ObjectID]]
+
+
+def distribute_concern_on_related_objects(owner: CoreObjectDescriptor, concern_id: ConcernID):
+    distribution_targets = _find_concern_distribution_targets(owner=owner)
+    _add_concern_links_to_objects_in_db(targets=distribution_targets, concern_id=concern_id)
+
+
+def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRelatedObjects:
+    """
+    Find objects that should be affected by appeared concern on given objects considering HC and MM.
+    """
+    targets: ConcernRelatedObjects = defaultdict(set)
+
+    targets[owner.type].add(owner.id)
+
+    match owner.type:
+        case ADCMCoreType.CLUSTER:
+            targets[ADCMCoreType.SERVICE] |= set(
+                ClusterObject.objects.values_list("id", flat=True).filter(cluster_id=owner.id)
+            )
+            targets[ADCMCoreType.COMPONENT] |= set(
+                ServiceComponent.objects.values_list("id", flat=True).filter(cluster_id=owner.id)
+            )
+            targets[ADCMCoreType.HOST] |= set(
+                HostComponent.objects.values_list("host_id", flat=True).filter(cluster_id=owner.id)
+            )
+
+        case ADCMCoreType.SERVICE:
+            hosts_info = HostComponent.objects.values_list("host_id", "host__maintenance_mode").filter(
+                service_id=owner.id
+            )
+            components_info = ServiceComponent.objects.values_list("id", "_maintenance_mode").filter(
+                service_id=owner.id
+            )
+
+            raw_own_mm, cluster_id = ClusterObject.objects.values_list("_maintenance_mode", "cluster_id").get(
+                id=owner.id
+            )
+
+            own_mm = calculate_maintenance_mode_for_service(
+                own_mm=ObjectMaintenanceModeState(raw_own_mm),
+                service_components_own_mm=(
+                    ObjectMaintenanceModeState(component_mm) for _, component_mm in components_info
+                ),
+                service_hosts_mm=(ObjectMaintenanceModeState(host_mm) for _, host_mm in hosts_info),
+            )
+
+            if own_mm == ObjectMaintenanceModeState.OFF:
+                targets[ADCMCoreType.CLUSTER].add(cluster_id)
+                targets[ADCMCoreType.COMPONENT].update(map(itemgetter(0), components_info))
+                targets[ADCMCoreType.HOST].update(map(itemgetter(0), hosts_info))
+
+        case ADCMCoreType.COMPONENT:
+            raw_own_mm, cluster_id, service_id, service_raw_own_mm = ServiceComponent.objects.values_list(
+                "_maintenance_mode", "cluster_id", "service_id", "service___maintenance_mode"
+            ).get(id=owner.id)
+
+            hosts_info = HostComponent.objects.values_list("host_id", "host__maintenance_mode").filter(
+                component_id=owner.id
+            )
+
+            own_mm = calculate_maintenance_mode_for_component(
+                own_mm=ObjectMaintenanceModeState(raw_own_mm),
+                service_mm=ObjectMaintenanceModeState(service_raw_own_mm),
+                component_hosts_mm=(ObjectMaintenanceModeState(host_mm) for _, host_mm in hosts_info),
+            )
+
+            if own_mm == ObjectMaintenanceModeState.OFF:
+                targets[ADCMCoreType.CLUSTER].add(cluster_id)
+                targets[ADCMCoreType.SERVICE].add(service_id)
+                targets[ADCMCoreType.HOST].update(map(itemgetter(0), hosts_info))
+
+        case ADCMCoreType.HOST:
+            own_mm = ObjectMaintenanceModeState(
+                Host.objects.values_list("maintenance_mode", flat=True).get(id=owner.id)
+            )
+
+            if own_mm == ObjectMaintenanceModeState.OFF:
+                hc_records = tuple(
+                    HostComponent.objects.values("cluster_id", "service_id", "component_id").filter(host_id=owner.id)
+                )
+                if hc_records:
+                    targets[ADCMCoreType.CLUSTER].add(hc_records[0]["cluster_id"])
+                    targets[ADCMCoreType.SERVICE].update(map(itemgetter("service_id"), hc_records))
+                    targets[ADCMCoreType.COMPONENT].update(map(itemgetter("component_id"), hc_records))
+
+        case ADCMCoreType.HOSTPROVIDER:
+            targets[ADCMCoreType.HOST] |= set(Host.objects.values_list("id", flat=True).filter(provider_id=owner.id))
+
+            hc_records = tuple(
+                HostComponent.objects.values("cluster_id", "service_id", "component_id").filter(
+                    host_id__in=targets.get(ADCMCoreType.HOST, ())
+                )
+            )
+            if hc_records:
+                targets[ADCMCoreType.CLUSTER].add(hc_records[0]["cluster_id"])
+                targets[ADCMCoreType.SERVICE].update(map(itemgetter("service_id"), hc_records))
+                targets[ADCMCoreType.COMPONENT].update(map(itemgetter("component_id"), hc_records))
+
+        case _:
+            message = f"Direct concerns distribution isn't implemented for {owner.type}"
+            raise NotImplementedError(message)
+
+    return targets
+
+
+def _add_concern_links_to_objects_in_db(targets: ConcernRelatedObjects, concern_id: ConcernID) -> None:
+    for core_type, ids in targets.items():
+        orm_model = core_type_to_model(core_type)
+        id_field = f"{orm_model.__name__.lower()}_id"
+        m2m_model = orm_model.concerns.through
+
+        m2m_model.objects.bulk_create(
+            objs=(m2m_model(concernitem_id=concern_id, **{id_field: object_id}) for object_id in ids),
+            ignore_conflicts=True,
+        )
 
 
 # PROTECTED generic-purpose methods
