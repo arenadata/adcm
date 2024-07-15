@@ -37,7 +37,7 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from api_v2.tests.base import BaseAPITestCase
 
@@ -1112,5 +1112,60 @@ class TestConcernRedistribution(BaseAPITestCase):
             self.check_concerns(component_2, concerns=(*cluster_own_cons, import_s_con, *host_1_cons))
             self.check_concerns(host_1, concerns=(*host_1_cons, import_s_con, *cluster_own_cons))
             self.check_concerns(host_2, concerns=host_2_cons)
+
+            self.check_concerns_of_control_objects()
+
+    def test_concerns_dis_appearance_on_move_cluster_host(self) -> None:
+        # prepare
+        host_1 = self.add_host(self.provider, fqdn="host-1")
+        mapped_host = self.add_host(self.provider, fqdn="mapped-host", cluster=self.cluster)
+
+        greedy_s = self.add_services_to_cluster(["greedy"], cluster=self.cluster).get()
+        on_all_c = greedy_s.servicecomponent_set.get(prototype__name="on_all")
+
+        # find concerns
+        provider_config_con = self.provider.get_own_issue(ConcernCause.CONFIG)
+        host_1_cons = (provider_config_con, host_1.get_own_issue(ConcernCause.CONFIG))
+        mapped_host_cons = (provider_config_con, mapped_host.get_own_issue(ConcernCause.CONFIG))
+        greedy_s_con = greedy_s.get_own_issue(ConcernCause.CONFIG)
+
+        self.set_hostcomponent(cluster=self.cluster, entries=[(mapped_host, on_all_c)])
+        self.assertIsNone(self.cluster.get_own_issue(ConcernCause.HOSTCOMPONENT))
+
+        cluster_own_cons = tuple(
+            ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
+        )
+
+        # test
+        self.assertEqual(
+            self.client.v2[self.cluster, "hosts"].post(data={"hostId": host_1.id}).status_code, HTTP_201_CREATED
+        )
+
+        with self.subTest("Add Host To Cluster"):
+            hc_issue = self.cluster.get_own_issue(ConcernCause.HOSTCOMPONENT)
+            self.assertIsNotNone(hc_issue)
+
+            self.check_concerns(self.provider, concerns=(provider_config_con,))
+            self.check_concerns(host_1, concerns=host_1_cons)
+            self.check_concerns(mapped_host, concerns=(*cluster_own_cons, hc_issue, greedy_s_con, *mapped_host_cons))
+
+            self.check_concerns(self.cluster, concerns=(*cluster_own_cons, hc_issue, greedy_s_con, *mapped_host_cons))
+            self.check_concerns(greedy_s, concerns=(*cluster_own_cons, hc_issue, greedy_s_con, *mapped_host_cons))
+            self.check_concerns(on_all_c, concerns=(*cluster_own_cons, hc_issue, greedy_s_con, *mapped_host_cons))
+
+            self.check_concerns_of_control_objects()
+
+        self.assertEqual(self.client.v2[self.cluster, "hosts", host_1].delete().status_code, HTTP_204_NO_CONTENT)
+
+        with self.subTest("Remove Host From Cluster"):
+            self.assertIsNone(self.cluster.get_own_issue(ConcernCause.HOSTCOMPONENT))
+
+            self.check_concerns(self.provider, concerns=(provider_config_con,))
+            self.check_concerns(host_1, concerns=host_1_cons)
+            self.check_concerns(mapped_host, concerns=(*cluster_own_cons, greedy_s_con, *mapped_host_cons))
+
+            self.check_concerns(self.cluster, concerns=(*cluster_own_cons, greedy_s_con, *mapped_host_cons))
+            self.check_concerns(greedy_s, concerns=(*cluster_own_cons, greedy_s_con, *mapped_host_cons))
+            self.check_concerns(on_all_c, concerns=(*cluster_own_cons, greedy_s_con, *mapped_host_cons))
 
             self.check_concerns_of_control_objects()
