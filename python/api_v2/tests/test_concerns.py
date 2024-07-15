@@ -34,6 +34,7 @@ from cm.services.concern.messages import ConcernMessage
 from cm.tests.mocks.task_runner import RunTaskMock
 from core.cluster.types import ObjectMaintenanceModeState as MM  # noqa: N814
 from core.types import ADCMCoreType, CoreObjectDescriptor
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
@@ -229,8 +230,25 @@ class TestConcernsLogic(BaseAPITestCase):
         bundle_dir = self.test_bundles_dir / "hc_mapping_constraints"
         self.hc_mapping_constraints_bundle = self.add_bundle(source_dir=bundle_dir)
 
+        bundle_dir = self.test_bundles_dir / "service_add_concerns"
+        self.service_add_concerns_bundle = self.add_bundle(source_dir=bundle_dir)
+
         bundle_dir = self.test_bundles_dir / "provider_no_config"
         self.provider_no_config_bundle = self.add_bundle(source_dir=bundle_dir)
+
+    def _check_concerns(self, object_: Cluster | ClusterObject | ServiceComponent, expected_concerns: list[dict]):
+        object_concerns = object_.concerns.all()
+        self.assertEqual(object_concerns.count(), len(expected_concerns))
+
+        for expected_concern in expected_concerns:
+            target_concern = object_concerns.filter(
+                owner_id=expected_concern["owner_id"],
+                owner_type=expected_concern["owner_type"],
+                cause=expected_concern["cause"],
+                name=expected_concern["name"],
+                type="issue",
+            )
+            self.assertEqual(target_concern.count(), 1)
 
     def test_import_concern_resolved_after_saving_import(self):
         import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
@@ -360,6 +378,59 @@ class TestConcernsLogic(BaseAPITestCase):
         # not mapped host has no concerns
         response: Response = self.client.v2[host_2].get()
         self.assertEqual(len(response.json()["concerns"]), 0)
+
+    def test_concerns_on_add_services(self):
+        cluster = self.add_cluster(bundle=self.service_add_concerns_bundle, name="service_add_concerns_cluster")
+        required_service_concern = {
+            "owner_id": cluster.pk,
+            "owner_type": ContentType.objects.get_for_model(cluster),
+            "cause": "service",
+            "name": "service_issue",
+        }
+        self._check_concerns(object_=cluster, expected_concerns=[required_service_concern])
+
+        service_1 = self.add_services_to_cluster(
+            service_names=["service_requires_service_with_many_issues_on_add"], cluster=cluster
+        ).get()
+        unsatisfied_requirements_concern = {
+            "owner_id": service_1.pk,
+            "owner_type": ContentType.objects.get_for_model(service_1),
+            "cause": "requirement",
+            "name": "requirement_issue",
+        }
+        self._check_concerns(
+            object_=cluster, expected_concerns=[required_service_concern, unsatisfied_requirements_concern]
+        )
+        self._check_concerns(
+            object_=service_1, expected_concerns=[required_service_concern, unsatisfied_requirements_concern]
+        )
+
+        service_2 = self.add_services_to_cluster(
+            service_names=["service_with_many_issues_on_add"], cluster=cluster
+        ).get()
+        component = service_2.servicecomponent_set.get()
+        hc_concern = {
+            "owner_id": cluster.pk,
+            "owner_type": ContentType.objects.get_for_model(cluster),
+            "cause": "host-component",
+            "name": "host-component_issue",
+        }
+        config_concern = {
+            "owner_id": service_2.pk,
+            "owner_type": ContentType.objects.get_for_model(service_2),
+            "cause": "config",
+            "name": "config_issue",
+        }
+        import_concern = {
+            "owner_id": service_2.pk,
+            "owner_type": ContentType.objects.get_for_model(service_2),
+            "cause": "import",
+            "name": "import_issue",
+        }
+        self._check_concerns(object_=service_2, expected_concerns=[hc_concern, config_concern, import_concern])
+        self._check_concerns(object_=component, expected_concerns=[hc_concern, config_concern, import_concern])
+        self._check_concerns(object_=service_1, expected_concerns=[hc_concern])
+        self._check_concerns(object_=cluster, expected_concerns=[hc_concern, config_concern, import_concern])
 
 
 class TestConcernRedistribution(BaseAPITestCase):

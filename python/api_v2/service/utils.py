@@ -14,7 +14,6 @@ from typing import Literal
 
 from cm.adcm_config.config import get_prototype_config, process_file_type
 from cm.errors import AdcmEx
-from cm.issue import update_hierarchy_issues
 from cm.models import (
     ADCMEntity,
     Cluster,
@@ -25,6 +24,9 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.cluster import retrieve_clusters_topology
+from cm.services.concern.cases import recalculate_own_concerns_on_add_services
+from cm.services.concern.distribution import redistribute_issues_and_flags
 from cm.services.status.notify import reset_hc_map
 from django.db import connection, transaction
 from django.db.models import QuerySet
@@ -37,7 +39,7 @@ def bulk_add_services_to_cluster(cluster: Cluster, prototypes: QuerySet[Prototyp
     services = ClusterObject.objects.filter(cluster=cluster, prototype__in=prototypes).select_related("prototype")
     bulk_init_config(objects=services)
 
-    service_proto_service_map = {serv.prototype.pk: serv for serv in services}
+    service_proto_service_map = {service.prototype.pk: service for service in services}
     ServiceComponent.objects.bulk_create(
         objs=[
             ServiceComponent(
@@ -51,7 +53,15 @@ def bulk_add_services_to_cluster(cluster: Cluster, prototypes: QuerySet[Prototyp
     components = ServiceComponent.objects.filter(cluster=cluster, service__in=services).select_related("prototype")
     bulk_init_config(objects=components)
 
-    update_hierarchy_issues(obj=cluster)
+    new_concerns = recalculate_own_concerns_on_add_services(
+        cluster=cluster,
+        services=services.prefetch_related(
+            "servicecomponent_set"
+        ).all(),  # refresh values from db to update `config` field
+    )
+    if new_concerns:  # TODO: redistribute only new issues. See ADCM-5798
+        redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((cluster.pk,))))
+
     re_apply_object_policy(apply_object=cluster)
     reset_hc_map()
 

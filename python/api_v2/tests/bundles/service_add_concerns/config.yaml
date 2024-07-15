@@ -1,0 +1,25 @@
+- type: cluster
+  name: cluster_with_many_concerns_on_add_services
+  version: &version '1.0'
+  edition: community
+
+- name: service_requires_service_with_many_issues_on_add
+  type: service
+  version: *version
+  requires:
+    - service: service_with_many_issues_on_add
+
+- name: service_with_many_issues_on_add
+  type: service
+  version: *version
+  required: true
+  components:
+    component_plus_constraint:
+      constraint: [ + ]
+  config:
+    - name: boolean
+      type: boolean
+      required: true
+  import:
+    some_cluster:
+      required: true
