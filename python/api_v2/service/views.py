@@ -98,6 +98,7 @@ from api_v2.utils.audit import (
     parent_service_from_lookup,
     service_does_exist,
     service_from_lookup,
+    service_with_parents_specified_in_path_exists,
     set_service_name_from_object,
     set_service_names_from_request,
 )
@@ -244,9 +245,13 @@ class ServiceViewSet(
         instance = self.get_object()
         return delete_service_from_api(service=instance)
 
-    @audit_update(name="Service updated", object_=service_from_lookup).track_changes(
-        before=extract_previous_from_object(model=ClusterObject, maintenance_mode=F("_maintenance_mode")),
-        after=extract_current_from_response("maintenance_mode"),
+    @(
+        audit_update(name="Service updated", object_=service_from_lookup)
+        .attach_hooks(on_collect=adjust_denied_on_404_result(service_with_parents_specified_in_path_exists))
+        .track_changes(
+            before=extract_previous_from_object(model=ClusterObject, maintenance_mode=F("_maintenance_mode")),
+            after=extract_current_from_response("maintenance_mode"),
+        )
     )
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])

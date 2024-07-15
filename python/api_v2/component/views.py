@@ -22,7 +22,7 @@ from adcm.permissions import (
     get_object_for_user,
 )
 from audit.alt.api import audit_update
-from audit.alt.hooks import extract_current_from_response, extract_previous_from_object
+from audit.alt.hooks import adjust_denied_on_404_result, extract_current_from_response, extract_previous_from_object
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, ServiceComponent
 from cm.services.maintenance_mode import get_maintenance_mode_response
@@ -75,7 +75,11 @@ from api_v2.generic.group_config.audit import (
     audit_host_group_config_viewset,
 )
 from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
-from api_v2.utils.audit import component_from_lookup, parent_component_from_lookup
+from api_v2.utils.audit import (
+    component_from_lookup,
+    component_with_parents_specified_in_path_exists,
+    parent_component_from_lookup,
+)
 from api_v2.views import (
     ADCMGenericViewSet,
     ADCMReadOnlyModelViewSet,
@@ -176,9 +180,13 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
 
         return ComponentSerializer
 
-    @audit_update(name="Component updated", object_=component_from_lookup).track_changes(
-        before=extract_previous_from_object(model=ServiceComponent, maintenance_mode=F("_maintenance_mode")),
-        after=extract_current_from_response("maintenance_mode"),
+    @(
+        audit_update(name="Component updated", object_=component_from_lookup)
+        .attach_hooks(on_collect=adjust_denied_on_404_result(component_with_parents_specified_in_path_exists))
+        .track_changes(
+            before=extract_previous_from_object(model=ServiceComponent, maintenance_mode=F("_maintenance_mode")),
+            after=extract_current_from_response("maintenance_mode"),
+        )
     )
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
