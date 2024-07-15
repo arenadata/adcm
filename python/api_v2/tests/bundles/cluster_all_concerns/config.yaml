@@ -8,7 +8,7 @@
 
   # no import for service
   import: &import
-    for_export:
+    cluster_export:
       multibind: false
       required: true
 
@@ -76,3 +76,22 @@
   version: 5
 
   import: *import
+
+- type: service
+  name: with_multiple_imports
+  version: 2
+
+
+  import:
+    cluster_export:
+      multibind: false
+      required: true
+
+    service_export:
+      multibind: true
+      required: true
+
+  components:
+    component_1:
+      config: *required_config
+    component_2:

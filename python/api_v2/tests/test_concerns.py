@@ -366,14 +366,14 @@ class TestConcernRedistribution(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        bundles_dir = Path(__file__).parent / "bundles"
+        self.bundles_dir = Path(__file__).parent / "bundles"
 
         self.cluster = self.add_cluster(
-            bundle=self.add_bundle(bundles_dir / "cluster_all_concerns"), name="With Concerns"
+            bundle=self.add_bundle(self.bundles_dir / "cluster_all_concerns"), name="With Concerns"
         )
 
         self.provider = self.add_provider(
-            bundle=self.add_bundle(bundles_dir / "provider_concerns"), name="Concerned HP"
+            bundle=self.add_bundle(self.bundles_dir / "provider_concerns"), name="Concerned HP"
         )
 
         self.control_cluster = self.add_cluster(bundle=self.cluster.prototype.bundle, name="Control Cluster")
@@ -435,7 +435,10 @@ class TestConcernRedistribution(BaseAPITestCase):
             self.assertEqual(actual_amount, expected_amount, message)
 
         for concern in expected_concerns:
-            self.assertIn(concern, object_concerns)
+            if concern not in expected_concerns:
+                cur_concern = f"{concern.type} | {concern.cause} from {concern.owner}"
+                message = f"{cur_concern} not found in:\n{self.repr_concerns(concerns)}"
+                self.assertIn(concern, object_concerns, message)
 
     def check_concerns_of_control_objects(self) -> None:
         for object_, expected_concerns in self.control_concerns.items():
@@ -462,6 +465,12 @@ class TestConcernRedistribution(BaseAPITestCase):
     def change_config_via_api(self, object_: ADCMEntity) -> None:
         self.assertEqual(
             self.client.v2[object_, "configs"].post(data={"config": {"field": 1}, "adcmMeta": {}}).status_code,
+            HTTP_201_CREATED,
+        )
+
+    def change_imports_via_api(self, target: Cluster | ClusterObject, imports: list[dict]) -> None:
+        self.assertEqual(
+            self.client.v2[target, "imports"].post(data=imports).status_code,
             HTTP_201_CREATED,
         )
 
@@ -976,3 +985,61 @@ class TestConcernRedistribution(BaseAPITestCase):
 
         with self.subTest("Change Service Config"):
             check_concerns()
+
+    def test_concerns_changes_on_import(self) -> None:
+        # prepare
+        host_1 = self.add_host(self.provider, fqdn="host-1", cluster=self.cluster)
+        host_2 = self.add_host(self.provider, fqdn="host-2", cluster=self.cluster)
+
+        import_s = self.add_services_to_cluster(["with_multiple_imports"], cluster=self.cluster).get()
+        component_1, component_2 = import_s.servicecomponent_set.order_by("prototype__name")
+
+        self.set_hostcomponent(
+            cluster=self.cluster,
+            entries=((host_1, component_2),),
+        )
+
+        export_cluster = self.add_cluster(self.add_bundle(self.bundles_dir / "cluster_export"), "Exporter")
+        export_service = self.add_services_to_cluster(["service_export"], cluster=export_cluster).get()
+
+        # find own concerns
+        provider_config_con = self.provider.get_own_issue(ConcernCause.CONFIG)
+        host_1_cons = (provider_config_con, host_1.get_own_issue(ConcernCause.CONFIG))
+        host_2_cons = (provider_config_con, host_2.get_own_issue(ConcernCause.CONFIG))
+        cluster_own_cons = tuple(
+            ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
+        )
+        import_s_con = import_s.get_own_issue(ConcernCause.IMPORT)
+        component_1_con = component_1.get_own_issue(ConcernCause.CONFIG)
+
+        # test
+
+        self.change_imports_via_api(
+            import_s,
+            imports=[
+                {"source": {"type": "service", "id": export_service.id}},
+                {"source": {"type": "cluster", "id": export_cluster.id}},
+            ],
+        )
+
+        with self.subTest("Set All Imports On Service"):
+            self.check_concerns(self.cluster, concerns=(*cluster_own_cons, component_1_con, *host_1_cons))
+            self.check_concerns(import_s, concerns=(*cluster_own_cons, component_1_con, *host_1_cons))
+            self.check_concerns(component_1, concerns=(*cluster_own_cons, component_1_con))
+            self.check_concerns(component_2, concerns=(*cluster_own_cons, *host_1_cons))
+            self.check_concerns(host_1, concerns=(*host_1_cons, *cluster_own_cons))
+            self.check_concerns(host_2, concerns=host_2_cons)
+
+            self.check_concerns_of_control_objects()
+
+        self.change_imports_via_api(import_s, imports=[{"source": {"type": "service", "id": export_service.id}}])
+
+        with self.subTest("Set 1/2 Required Imports On Service"):
+            self.check_concerns(self.cluster, concerns=(*cluster_own_cons, import_s_con, component_1_con, *host_1_cons))
+            self.check_concerns(import_s, concerns=(*cluster_own_cons, import_s_con, component_1_con, *host_1_cons))
+            self.check_concerns(component_1, concerns=(*cluster_own_cons, import_s_con, component_1_con))
+            self.check_concerns(component_2, concerns=(*cluster_own_cons, import_s_con, *host_1_cons))
+            self.check_concerns(host_1, concerns=(*host_1_cons, import_s_con, *cluster_own_cons))
+            self.check_concerns(host_2, concerns=host_2_cons)
+
+            self.check_concerns_of_control_objects()

@@ -97,8 +97,7 @@ def check_required_import(obj: [Cluster, ClusterObject]) -> bool:
     else:
         raise AdcmEx(code="ISSUE_INTEGRITY_ERROR", msg=f"Could not check import for {obj}")
 
-    res, _ = do_check_import(cluster=cluster, service=service)
-    return res
+    return do_check_import(cluster=cluster, service=service)
 
 
 def check_service_requires(cluster: Cluster, proto: Prototype) -> None:
@@ -135,8 +134,7 @@ def check_requires(service: ClusterObject) -> bool:
     return True
 
 
-def do_check_import(cluster: Cluster, service: ClusterObject | None = None) -> tuple[bool, str | None]:
-    import_exist = (True, None)
+def do_check_import(cluster: Cluster, service: ClusterObject | None = None) -> bool:
     proto = cluster.prototype
 
     if service:
@@ -144,24 +142,22 @@ def do_check_import(cluster: Cluster, service: ClusterObject | None = None) -> t
 
     prototype_imports = PrototypeImport.objects.filter(prototype=proto)
     if not prototype_imports.exists():
-        return import_exist
+        return True
 
     if not any(prototype_imports.values_list("required", flat=True)):
-        return True, "NOT_REQUIRED"
+        return True
 
-    for prototype_import in prototype_imports.filter(required=True):
-        import_exist = (False, None)
-        for cluster_bind in ClusterBind.objects.filter(cluster=cluster):
-            if cluster_bind.source_cluster and cluster_bind.source_cluster.prototype.name == prototype_import.name:
-                import_exist = (True, "CLUSTER_IMPORTED")
+    required_import_names = set(prototype_imports.values_list("name", flat=True).filter(required=True))
 
-            if cluster_bind.source_service and cluster_bind.source_service.prototype.name == prototype_import.name:
-                import_exist = (True, "SERVICE_IMPORTED")
+    for cluster_name, service_name in ClusterBind.objects.values_list(
+        "source_cluster__prototype__name", "source_service__prototype__name"
+    ).filter(cluster=cluster, service=service):
+        if service_name:
+            required_import_names -= {service_name}
+        elif cluster_name:
+            required_import_names -= {cluster_name}
 
-        if not import_exist[0]:
-            break
-
-    return import_exist
+    return required_import_names == set()
 
 
 def check_hc(cluster: Cluster) -> bool:
