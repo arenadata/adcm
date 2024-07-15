@@ -16,7 +16,7 @@ from typing import Literal, TypedDict
 import json
 
 from adcm_version import compare_prototype_versions
-from core.types import CoreObjectDescriptor
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
@@ -46,6 +46,7 @@ from cm.issue import (
     update_hierarchy_issues,
     update_issue_after_deleting,
 )
+from cm.issue import check_hc as check_hostcomponent_issue
 from cm.logger import logger
 from cm.models import (
     ADCM,
@@ -589,12 +590,17 @@ def save_hc(
         host_component.save()
         host_component_list.append(host_component)
 
-    update_hierarchy_issues(cluster)
+    # HC may break
+    # We can't be sure this method is called after some sort of "check"
+    if check_hostcomponent_issue(cluster=cluster):
+        delete_issue(
+            owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=ConcernCause.HOSTCOMPONENT
+        )
+    elif not cluster.get_own_issue(cause=ConcernCause.HOSTCOMPONENT):
+        create_issue(obj=cluster, issue_cause=ConcernCause.HOSTCOMPONENT)
 
-    for provider in {host.provider for host in Host.objects.filter(cluster=cluster)}:
-        update_hierarchy_issues(provider)
+    redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((cluster.id,))))
 
-    update_issue_after_deleting()
     reset_hc_map()
     reset_objects_in_mm()
 
