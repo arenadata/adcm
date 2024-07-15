@@ -28,6 +28,24 @@ from cm.services.concern import delete_issue
 from cm.services.concern.distribution import OwnObjectConcernMap
 
 
+def recalculate_own_concerns_on_add_clusters(cluster: Cluster) -> OwnObjectConcernMap:
+    new_concerns: OwnObjectConcernMap = defaultdict(lambda: defaultdict(set))
+
+    cluster_checks = (
+        (ConcernCause.CONFIG, check_config),
+        (ConcernCause.IMPORT, check_required_import),
+        (ConcernCause.HOSTCOMPONENT, check_hc),
+        (ConcernCause.SERVICE, check_required_services),
+    )
+
+    for cause, check in cluster_checks:
+        if not check(cluster):
+            issue = create_issue(obj=cluster, issue_cause=cause)
+            new_concerns[ADCMCoreType.CLUSTER][cluster.pk].add(issue.pk)
+
+    return new_concerns
+
+
 def recalculate_own_concerns_on_add_services(
     cluster: Cluster, services: QuerySet[ClusterObject]
 ) -> OwnObjectConcernMap:

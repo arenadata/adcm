@@ -71,8 +71,10 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.cluster import retrieve_clusters_topology
 from cm.services.concern import delete_issue
-from cm.services.concern.distribution import distribute_concern_on_related_objects
+from cm.services.concern.cases import recalculate_own_concerns_on_add_clusters
+from cm.services.concern.distribution import distribute_concern_on_related_objects, redistribute_issues_and_flags
 from cm.services.concern.flags import BuiltInFlag, raise_flag
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import (
@@ -134,7 +136,9 @@ def add_cluster(prototype: Prototype, name: str, description: str = "") -> Clust
             object_type=ContentType.objects.get_for_model(Cluster),
         )
 
-        update_hierarchy_issues(cluster)
+        # update_hierarchy_issues(cluster)
+        if recalculate_own_concerns_on_add_clusters(cluster):  # TODO: redistribute only new issues. See ADCM-5798
+            redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((cluster.pk,))))
 
     reset_hc_map()
 
