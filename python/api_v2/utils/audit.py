@@ -13,7 +13,7 @@
 from contextlib import suppress
 from dataclasses import dataclass
 from functools import partial
-from typing import Any
+from typing import Any, TypeAlias
 import json
 
 from audit.alt.core import AuditedCallArguments, IDBasedAuditObjectCreator, OperationAuditContext, Result
@@ -29,6 +29,10 @@ from rbac.models import Group, Policy, Role, User
 from rest_framework.response import Response
 
 # object retrievers
+
+
+ObjectField: TypeAlias = str
+CallArgument: TypeAlias = str
 
 
 @dataclass(slots=True)
@@ -326,13 +330,27 @@ def _retrieve_request_body(request: WSGIRequest) -> Any | None:
     return body
 
 
-def object_does_exist(hook: AuditHook, model: type[Model], id_field: str = "pk") -> bool:
+def object_does_exist(
+    hook: AuditHook,
+    model: type[Model],
+    id_field: str = "pk",
+    arg_model_field_map: dict[CallArgument, ObjectField] | None = None,
+) -> bool:
     id_ = hook.call_arguments.get(id_field)
     if not id_:
         # it's quite a stretch, but I don't see an alternative way for a safe implementation here
         return False
 
-    return model.objects.filter(id=id_).exists()
+    lookup_kwargs = (
+        {
+            object_field: hook.call_arguments.get(call_argument)
+            for call_argument, object_field in arg_model_field_map.items()
+        }
+        if arg_model_field_map
+        else {}
+    )
+
+    return model.objects.filter(id=id_, **lookup_kwargs).exists()
 
 
 def nested_host_does_exist(hook: AuditHook) -> bool:
@@ -341,6 +359,17 @@ def nested_host_does_exist(hook: AuditHook) -> bool:
 
 def service_does_exist(hook: AuditHook) -> bool:
     return object_does_exist(hook=hook, model=ClusterObject)
+
+
+service_with_parents_specified_in_path_exists = partial(
+    object_does_exist, model=ClusterObject, arg_model_field_map={"cluster_pk": "cluster_id"}
+)
+
+component_with_parents_specified_in_path_exists = partial(
+    object_does_exist,
+    model=ServiceComponent,
+    arg_model_field_map={"cluster_pk": "cluster_id", "service_pk": "service_id"},
+)
 
 
 def retrieve_user_password_groups(id_: int) -> dict:
