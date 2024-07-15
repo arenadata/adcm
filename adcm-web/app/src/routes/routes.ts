@@ -394,6 +394,25 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/clusters/:clusterId/configuration/action-host-groups': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        label: 'Configuration',
+      },
+      {
+        label: 'Action hosts groups',
+      },
+    ],
+  },
   '/clusters/:clusterId/configuration/config-groups/:groupId': {
     pageTitle: 'Clusters',
     breadcrumbs: [

@@ -40,6 +40,11 @@ export interface AdcmJob {
   isTerminatable: boolean;
   childJobs?: AdcmJob[];
   logs?: AdcmJobLogItem[];
+  action?: {
+    id: number;
+    name: string;
+    displayName?: string;
+  };
 }
 
 export type AdcmJobLogCheckContentItem = {

@@ -4,6 +4,7 @@ import authSlice from '@store/authSlice';
 import notificationsSlice from '@store/notificationsSlice';
 import clustersSlice from '@store/adcm/clusters/clustersSlice';
 import clustersDynamicActionsSlice from '@store/adcm/clusters/clustersDynamicActionsSlice';
+import clusterActionHostGroupsSlice from '@store/adcm/entityActionHostGroups/actionHostGroupsSlice';
 import clusterUpgradesSlice from '@store/adcm/clusters/clusterUpgradesSlice';
 import clusterHostsSlice from '@store/adcm/cluster/hosts/hostsSlice';
 import clusterHostsTableSlice from '@store/adcm/cluster/hosts/hostsTableSlice';
@@ -114,6 +115,7 @@ const rootReducer = combineReducers({
     clusterHost: clusterHostSlice,
     clusterHostsActions: clusterHostsActionsSlice,
     clusterHostsDynamicActions: clusterHostsDynamicActionsSlice,
+    clusterActionHostGroups: clusterActionHostGroupsSlice,
     hostComponentsDynamicActions: hostComponentsDynamicActionsSlice,
     clusterHostsTable: clusterHostsTableSlice,
     clusterMapping: clusterMappingSlice,
