@@ -346,6 +346,67 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
             object_: self.create_action_host_group(owner=object_, name=f"Group for {object_.name}")
             for object_ in objects
         }
+        self.user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = self.create_user(user_data=self.user_credentials)
+        self.user_client = self.client_class()
+        self.user_client.login(**self.user_credentials)
+
+    def test_list_hosts_in_group_success(self) -> None:
+        host_1, host_2, *_ = self.hosts
+        expected = [{"id": host_1.id, "name": host_1.name}, {"id": host_2.id, "name": host_2.name}]
+
+        for target in (self.cluster, self.service, self.component):
+            group = self.group_map[target]
+            type_ = orm_object_to_core_type(target)
+            with self.subTest(f"[{type_.name}] {target.name} Expect {len(expected)}"):
+                self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
+
+                response = self.client.v2[group, "hosts"].get()
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json(), expected)
+
+    def test_retrieve_host_from_group_success(self) -> None:
+        host_1, host_2, *_ = self.hosts
+        expected = {"id": host_1.id, "name": host_1.name}
+
+        for target in (self.cluster, self.service, self.component):
+            group = self.group_map[target]
+            type_ = orm_object_to_core_type(target)
+            with self.subTest(f"[{type_.name}] {target.name} Expect {len(expected)}"):
+                self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
+
+                response = self.client.v2[group, "hosts", host_1.pk].get()
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["id"], host_1.pk)
+
+    def test_retrieve_host_from_group_not_found_fail(self) -> None:
+        host_1, host_2, host_3, *_ = self.hosts
+
+        for target in (self.cluster, self.service, self.component):
+            group = self.group_map[target]
+            type_ = orm_object_to_core_type(target)
+            with self.subTest(f"[{type_.name}] {target.name} Expect Not Found"):
+                self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
+
+                response = self.client.v2[group, "hosts", host_3.pk].get()
+
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_retrieve_host_from_group_permission_denied(self) -> None:
+        self.user_client.login(**self.user_credentials)
+        host_1, host_2, *_ = self.hosts
+
+        for target in (self.cluster, self.service, self.component):
+            group = self.group_map[target]
+            type_ = orm_object_to_core_type(target)
+            with self.subTest(f"[{type_.name}] {target.name} Expect Permission Denied"):
+                self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
+
+                response = self.user_client.v2[group, "hosts", host_1.pk].get()
+
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_add_host_to_group(self) -> None:
         host_1, host_2, host_3, host_4, *_ = self.hosts
