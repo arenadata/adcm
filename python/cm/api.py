@@ -39,7 +39,9 @@ from cm.issue import (
     check_bound_components,
     check_component_constraint,
     check_hc_requires,
+    check_required_import,
     check_service_requires,
+    create_issue,
     remove_concern_from_object,
     update_hierarchy_issues,
     update_issue_after_deleting,
@@ -852,7 +854,12 @@ def multi_bind(cluster: Cluster, service: ClusterObject | None, bind_list: list[
         cluster_bind.save()
         logger.info("bind %s to %s", obj_ref(obj=export_obj), obj_ref(obj=import_obj))
 
-        update_hierarchy_issues(obj=cluster)
+    import_target = CoreObjectDescriptor(id=import_obj.id, type=orm_object_to_core_type(import_obj))
+    if check_required_import(obj=import_obj):
+        delete_issue(owner=import_target, cause=ConcernCause.IMPORT)
+    elif not import_obj.get_own_issue(ConcernCause.IMPORT):
+        concern = create_issue(obj=import_obj, issue_cause=ConcernCause.IMPORT)
+        distribute_concern_on_related_objects(owner=import_target, concern_id=concern.id)
 
     return get_import(cluster=cluster, service=service)
 

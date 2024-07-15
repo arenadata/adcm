@@ -200,19 +200,19 @@ class TestImport(BaseTestCase):
     def test_no_import(self):
         _, _, cluster = self.cook_cluster("Hadoop", "Cluster1")
 
-        self.assertEqual(do_check_import(cluster), (True, None))
+        self.assertTrue(do_check_import(cluster))
 
     def test_import_required(self):
         _, proto1, cluster = self.cook_cluster("Hadoop", "Cluster1")
         PrototypeImport.objects.create(prototype=proto1, name="Monitoring", required=True)
 
-        self.assertEqual(do_check_import(cluster), (False, None))
+        self.assertFalse(do_check_import(cluster))
 
     def test_import_not_required(self):
         _, proto1, cluster = self.cook_cluster("Hadoop", "Cluster1")
         PrototypeImport.objects.create(prototype=proto1, name="Monitoring", required=False)
 
-        self.assertEqual(do_check_import(cluster), (True, "NOT_REQUIRED"))
+        self.assertTrue(do_check_import(cluster))
 
     def test_cluster_imported(self):
         _, proto1, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
@@ -221,7 +221,7 @@ class TestImport(BaseTestCase):
         _, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2)
 
-        self.assertEqual(do_check_import(cluster1), (True, "CLUSTER_IMPORTED"))
+        self.assertTrue(do_check_import(cluster1))
 
     def test_service_imported(self):
         _, proto1, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
@@ -232,7 +232,7 @@ class TestImport(BaseTestCase):
         service = add_service_to_cluster(cluster2, proto3)
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2, source_service=service)
 
-        self.assertEqual(do_check_import(cluster1), (True, "SERVICE_IMPORTED"))
+        self.assertTrue(do_check_import(cluster1))
 
     def test_import_to_service(self):
         bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
@@ -243,7 +243,7 @@ class TestImport(BaseTestCase):
         _, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
 
-        self.assertEqual(do_check_import(cluster1, service), (True, "CLUSTER_IMPORTED"))
+        self.assertTrue(do_check_import(cluster1, service))
 
     def test_import_service_to_service(self):
         bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
@@ -261,7 +261,7 @@ class TestImport(BaseTestCase):
             source_service=service2,
         )
 
-        self.assertEqual(do_check_import(cluster1, service1), (True, "SERVICE_IMPORTED"))
+        self.assertTrue(do_check_import(cluster1, service1))
 
     def test_issue_cluster_required_import(self):
         _, proto1, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
