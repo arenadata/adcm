@@ -81,7 +81,6 @@
   name: with_multiple_imports
   version: 2
 
-
   import:
     cluster_export:
       multibind: false
@@ -95,3 +94,13 @@
     component_1:
       config: *required_config
     component_2:
+
+- type: service
+  name: greedy
+  version: 4.3
+
+  config: *required_config
+
+  components:
+    on_all:
+      constraint: [+]

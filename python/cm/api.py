@@ -294,10 +294,14 @@ def remove_host_from_cluster(host: Host) -> Host:
 
         for group in cluster.group_config.order_by("id"):
             group.hosts.remove(host)
-            update_hierarchy_issues(obj=host)
 
         remove_concern_from_object(object_=host, concern=CTX.lock)
-        update_hierarchy_issues(obj=cluster)
+
+        if check_hostcomponent_issue(cluster):
+            delete_issue(
+                owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=ConcernCause.HOSTCOMPONENT
+            )
+
         re_apply_object_policy(apply_object=cluster)
 
     reset_hc_map()
