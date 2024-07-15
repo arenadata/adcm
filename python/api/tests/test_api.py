@@ -871,8 +871,7 @@ class TestAPI2(BaseTestCase):
         )
 
     @patch("cm.api.reset_hc_map")
-    @patch("cm.api.update_hierarchy_issues")
-    def test_save_hc(self, mock_update_issues, mock_reset_hc_map):
+    def test_save_hc(self, mock_reset_hc_map):
         cluster_object = ClusterObject.objects.create(prototype=self.prototype, cluster=self.cluster)
         host = Host.objects.create(prototype=self.prototype, cluster=self.cluster)
         component = Prototype.objects.create(
@@ -899,7 +898,6 @@ class TestAPI2(BaseTestCase):
 
         self.assertListEqual(hc_list, [HostComponent.objects.first()])
 
-        mock_update_issues.assert_called()
         mock_reset_hc_map.assert_called_once()
 
     @patch("cm.api.CTX")

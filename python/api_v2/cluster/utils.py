@@ -289,11 +289,6 @@ def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
     )
     redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((mapping_data.cluster.id,))))
 
-    # update_hierarchy_issues(obj=mapping_data.orm_objects["cluster"])
-    # for provider_id in {host.provider_id for host in mapping_data.hosts.values()}:
-    #     update_hierarchy_issues(obj=mapping_data.orm_objects["providers"][provider_id])
-    # update_issue_after_deleting()
-
     _handle_mapping_policies(mapping_data=mapping_data)
     send_host_component_map_update_event(cluster=mapping_data.orm_objects["cluster"])
 
