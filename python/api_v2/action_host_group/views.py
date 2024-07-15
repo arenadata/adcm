@@ -239,8 +239,8 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
 
         check_has_group_permissions(user=request.user, parent=parent, dto=VIEW_ONLY_NOT_FOUND)
 
-        hosts = self.action_host_group_service.get_host_candidates(group_id=int(pk))
-        return Response(data=list(Host.objects.values("id", name=F("fqdn")).filter(id__in=hosts).order_by("fqdn")))
+        host_ids = self.action_host_group_service.get_host_candidates(group_id=int(pk))
+        return Response(data=list(Host.objects.values("id", name=F("fqdn")).filter(id__in=host_ids).order_by("fqdn")))
 
     def filter_by_parent(self, qs: QuerySet, parent: CoreObjectDescriptor) -> QuerySet:
         return qs.filter(
@@ -279,7 +279,8 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
 )
 class HostActionHostGroupViewSet(ADCMGenericViewSet):
     serializer_class = AddHostSerializer
-    action_host_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
+    repo = ActionHostGroupRepo()
+    action_host_group_service = ActionHostGroupService(repository=repo)
 
     @contextmanager
     def convert_exception(self) -> None:
@@ -333,6 +334,29 @@ class HostActionHostGroupViewSet(ADCMGenericViewSet):
             self.action_host_group_service.remove_hosts_from_group(group_id=host_group.id, hosts=[int(pk)])
 
         return Response(status=HTTP_204_NO_CONTENT)
+
+    @with_group_object
+    def list(
+        self, request: Request, *_, parent: CoreObjectDescriptor, host_group: HostGroupDescriptor, **__
+    ) -> Response:
+        check_has_group_permissions(user=request.user, parent=parent, dto=VIEW_ONLY_NOT_FOUND)
+
+        host_ids = self.repo.get_hosts(id=host_group.id)
+        return Response(data=list(Host.objects.values("id", name=F("fqdn")).filter(id__in=host_ids).order_by("fqdn")))
+
+    @with_group_object
+    def retrieve(
+        self, request: Request, *_, parent: CoreObjectDescriptor, host_group: HostGroupDescriptor, **__
+    ) -> Response:
+        check_has_group_permissions(user=request.user, parent=parent, dto=VIEW_ONLY_NOT_FOUND)
+        host_id = int(self.kwargs["pk"])
+
+        all_hosts = self.repo.get_hosts(id=host_group.id)
+
+        if host_id not in all_hosts:
+            raise NotFound()
+
+        return Response(data=ShortHostSerializer(instance=Host.objects.get(id=host_id)).data)
 
 
 @extend_schema_view(
