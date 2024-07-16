@@ -642,7 +642,9 @@ class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
                 TaskLog.objects.all().delete()
 
                 with RunTaskMock() as run_task:
-                    response = self.client.v2[action_run_target, "actions", action, "run"].post(data={})
+                    response = self.client.v2[action_run_target, "actions", action, "run"].post(
+                        data={"configuration": {"config": {"val": 4}, "adcmMeta": {}}}
+                    )
 
                 self.assertEqual(response.status_code, HTTP_200_OK)
 
@@ -897,7 +899,9 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
                         self.assertEqual(response.status_code, HTTP_200_OK)
 
                     with self.subTest(f"[{type_name}] RUN Action With Run Perms"), RunTaskMock():
-                        response = self.user_client.v2[group, "actions", action, "run"].post(data={})
+                        response = self.user_client.v2[group, "actions", action, "run"].post(
+                            data={"configuration": {"config": {"val": 2}, "adcmMeta": {}}}
+                        )
                         self.assertEqual(response.status_code, HTTP_200_OK)
 
                     ConcernItem.objects.all().delete()
@@ -974,7 +978,9 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
 
             action = Action.objects.get(prototype=self.component.prototype, name="allowed_from_component")
             with RunTaskMock():
-                response = self.user_client.v2[self.group_map[self.component], "actions", action, "run"].post()
+                response = self.user_client.v2[self.group_map[self.component], "actions", action, "run"].post(
+                    data={"configuration": {"config": {"val": 3}, "adcmMeta": {}}}
+                )
                 self.assertEqual(response.status_code, HTTP_200_OK)
 
         ConcernItem.objects.all().delete()
