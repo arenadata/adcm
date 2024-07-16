@@ -234,8 +234,16 @@ def delete_service(service: ClusterObject) -> None:
     service_pk = service.pk
     service.delete()
 
-    update_issue_after_deleting()
-    update_hierarchy_issues(service.cluster)
+    cluster = service.cluster
+    if check_hostcomponent_issue(cluster=cluster):
+        delete_issue(
+            owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=ConcernCause.HOSTCOMPONENT
+        )
+    elif cluster.get_own_issue(cause=ConcernCause.HOSTCOMPONENT) is None:
+        concern = create_issue(obj=cluster, issue_cause=ConcernCause.HOSTCOMPONENT)
+        distribute_concern_on_related_objects(
+            owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), concern_id=concern.id
+        )
 
     keep_objects = defaultdict(set)
     for task in TaskLog.objects.filter(
@@ -247,7 +255,7 @@ def delete_service(service: ClusterObject) -> None:
             for log in job.logstorage_set.all():
                 keep_objects[log.__class__].add(log.pk)
 
-    re_apply_object_policy(apply_object=service.cluster, keep_objects=keep_objects)
+    re_apply_object_policy(apply_object=cluster, keep_objects=keep_objects)
 
     reset_hc_map()
     on_commit(func=partial(send_delete_service_event, service_id=service_pk))

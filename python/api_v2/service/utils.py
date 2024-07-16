@@ -53,14 +53,13 @@ def bulk_add_services_to_cluster(cluster: Cluster, prototypes: QuerySet[Prototyp
     components = ServiceComponent.objects.filter(cluster=cluster, service__in=services).select_related("prototype")
     bulk_init_config(objects=components)
 
-    new_concerns = recalculate_own_concerns_on_add_services(
+    recalculate_own_concerns_on_add_services(
         cluster=cluster,
         services=services.prefetch_related(
             "servicecomponent_set"
         ).all(),  # refresh values from db to update `config` field
     )
-    if new_concerns:  # TODO: redistribute only new issues. See ADCM-5798
-        redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((cluster.pk,))))
+    redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((cluster.pk,))))
 
     re_apply_object_policy(apply_object=cluster)
     reset_hc_map()
