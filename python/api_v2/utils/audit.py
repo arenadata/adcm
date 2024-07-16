@@ -20,7 +20,20 @@ from audit.alt.core import AuditedCallArguments, IDBasedAuditObjectCreator, Oper
 from audit.alt.hooks import AuditHook
 from audit.alt.object_retrievers import GeneralAuditObjectRetriever
 from audit.models import AuditObject, AuditObjectType
-from cm.models import ADCM, Bundle, Cluster, ClusterObject, Host, HostProvider, Prototype, ServiceComponent
+from cm.converters import core_type_to_model, model_name_to_audit_object_type, model_name_to_core_type
+from cm.models import (
+    ADCM,
+    ADCMCoreType,
+    Bundle,
+    Cluster,
+    ClusterObject,
+    Host,
+    HostProvider,
+    JobLog,
+    Prototype,
+    ServiceComponent,
+    TaskLog,
+)
 from cm.utils import get_obj_type
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import Model, Prefetch
@@ -87,7 +100,6 @@ create_audit_user_object = IDBasedAuditObjectCreator(model=User, name_field="use
 create_audit_group_object = IDBasedAuditObjectCreator(model=Group)
 create_audit_policy_object = IDBasedAuditObjectCreator(model=Policy)
 create_audit_role_object = IDBasedAuditObjectCreator(model=Role)
-
 
 bundle_from_lookup = GeneralAuditObjectRetriever(
     audit_object_type=AuditObjectType.BUNDLE,
@@ -515,3 +527,127 @@ def set_service_name_from_object(
     )
 
     context.name = context.name.format(service_name=service_name).strip()
+
+
+def detect_object_for_job(
+    context: OperationAuditContext,  # noqa: ARG001
+    call_arguments: AuditedCallArguments,
+    result: Response | None,  # noqa: ARG001
+    exception: Exception | None,  # noqa: ARG001
+) -> AuditObject | None:
+    try:
+        object_id, model_name = (
+            JobLog.objects.filter(id=call_arguments["pk"])
+            .values_list("task__object_id", "task__object_type__model")
+            .first()
+        )
+    except TypeError:  # this error is returned to unpack None, which can return if the object is not found
+        return None
+
+    model = core_type_to_model(core_type=model_name_to_core_type(model_name=model_name))
+
+    if not model.objects.filter(id=object_id).exists():
+        return None
+
+    name = get_audit_object_name(object_id=object_id, model_name=model_name)
+
+    return AuditObject.objects.filter(
+        object_id=object_id,
+        object_type=model_name_to_audit_object_type(model_name=model_name),
+        object_name=name,
+    ).first()
+
+
+def detect_object_for_task(
+    context: OperationAuditContext,  # noqa: ARG001
+    call_arguments: AuditedCallArguments,
+    result: Response | None,  # noqa: ARG001
+    exception: Exception | None,  # noqa: ARG001
+) -> AuditObject | None:
+    try:
+        object_id, model_name = (
+            TaskLog.objects.filter(id=call_arguments["pk"]).values_list("object_id", "object_type__model").first()
+        )
+    except TypeError:  # this error is returned to unpack None, which can return if the object is not found
+        return None
+
+    model = core_type_to_model(core_type=model_name_to_core_type(model_name=model_name))
+
+    if not model.objects.filter(id=object_id).exists():
+        return None
+
+    name = get_audit_object_name(object_id=object_id, model_name=model_name)
+
+    return AuditObject.objects.filter(
+        object_id=object_id,
+        object_type=model_name_to_audit_object_type(model_name=model_name),
+        object_name=name,
+    ).first()
+
+
+def set_job_name(
+    context: OperationAuditContext,
+    call_arguments: AuditedCallArguments,
+    result: Result | None,  # noqa: ARG001
+    exception: Exception | None,  # noqa: ARG001
+) -> None:
+    job_name = (
+        JobLog.objects.select_related("task__action")
+        .values_list("task__action__display_name", flat=True)
+        .filter(id=call_arguments["pk"])
+        .first()
+    )
+
+    if job_name is None:
+        job_name = "Job"
+
+    context.name = context.name.format(job_name=job_name).strip()
+
+
+def set_task_name(
+    context: OperationAuditContext,
+    call_arguments: AuditedCallArguments,
+    result: Result | None,  # noqa: ARG001
+    exception: Exception | None,  # noqa: ARG001
+) -> None:
+    task_name = (
+        TaskLog.objects.select_related("action")
+        .values_list("action__display_name", flat=True)
+        .filter(id=call_arguments["pk"])
+        .first()
+    )
+
+    if task_name is None:
+        task_name = "Task"
+
+    context.name = context.name.format(task_name=task_name).strip()
+
+
+def get_audit_object_name(object_id: int, model_name: str) -> str:
+    core_type = model_name_to_core_type(model_name=model_name)
+
+    match core_type:
+        case ADCMCoreType.CLUSTER:
+            names = Cluster.objects.values_list("name").filter(id=object_id).first()
+        case ADCMCoreType.SERVICE:
+            names = (
+                ClusterObject.objects.values_list("cluster__name", "prototype__display_name")
+                .filter(id=object_id)
+                .first()
+            )
+        case ADCMCoreType.COMPONENT:
+            names = (
+                ServiceComponent.objects.values_list(
+                    "cluster__name", "service__prototype__display_name", "prototype__display_name"
+                )
+                .filter(id=object_id)
+                .first()
+            )
+        case ADCMCoreType.HOSTPROVIDER:
+            names = HostProvider.objects.values_list("name").filter(id=object_id).first()
+        case ADCMCoreType.HOST:
+            names = Host.objects.values_list("fqdn").filter(id=object_id).first()
+        case _:
+            raise ValueError(f"Unsupported core type: {core_type}")
+
+    return "/".join(names or ())
