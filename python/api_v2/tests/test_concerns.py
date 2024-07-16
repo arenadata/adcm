@@ -1169,3 +1169,27 @@ class TestConcernRedistribution(BaseAPITestCase):
             self.check_concerns(on_all_c, concerns=(*cluster_own_cons, greedy_s_con, *mapped_host_cons))
 
             self.check_concerns_of_control_objects()
+
+    def test_concerns_on_service_deletion(self) -> None:
+        # prepare
+        greedy_s = self.add_services_to_cluster(["greedy"], cluster=self.cluster).get()
+
+        dummy_s = self.add_services_to_cluster(["dummy"], cluster=self.cluster).get()
+        dummy_c = dummy_s.servicecomponent_set.get(prototype__name="same_dummy")
+
+        # test
+        self.assertIsNotNone(self.cluster.get_own_issue(ConcernCause.HOSTCOMPONENT))
+
+        self.assertEqual(self.client.v2[greedy_s].delete().status_code, HTTP_204_NO_CONTENT)
+
+        hc_issue = self.cluster.get_own_issue(ConcernCause.HOSTCOMPONENT)
+        self.assertIsNone(hc_issue)
+        cluster_own_cons = tuple(
+            ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
+        )
+
+        self.check_concerns(self.cluster, concerns=cluster_own_cons)
+        self.check_concerns(dummy_s, concerns=cluster_own_cons)
+        self.check_concerns(dummy_c, concerns=cluster_own_cons)
+
+        self.check_concerns_of_control_objects()
