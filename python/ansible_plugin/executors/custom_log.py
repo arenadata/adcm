@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
+from enum import Enum
 from pathlib import Path
 from typing import Callable, Collection
 
@@ -31,16 +32,25 @@ from ansible_plugin.base import (
 from ansible_plugin.utils import assign_view_logstorage_permissions_by_job
 
 
+class LogFormat(str, Enum):
+    JSON = "json"
+    TXT = "txt"
+
+
 class CustomLogArguments(BaseStrictModel):
     name: str
-    format: str
+    format: LogFormat
     path: Path | None = None
     content: str | None = None
 
     @model_validator(mode="after")
-    def check_either_is_specified(self) -> Self:
+    def check_path_and_content(self) -> Self:
         if self.path is None and self.content is None:
             message = "either `path` or `content` has to be specified"
+            raise ValueError(message)
+
+        if self.path and self.content:
+            message = "`path` and `content` shouldn't be specified together"
             raise ValueError(message)
 
         return self
@@ -65,7 +75,7 @@ class ADCMCustomLogPluginExecutor(ADCMAnsiblePluginExecutor[CustomLogArguments, 
 
         with atomic():
             log = LogStorage.objects.create(
-                job_id=runtime.vars.job.id, name=arguments.name, type="custom", format=arguments.format, body=body
+                job_id=runtime.vars.job.id, name=arguments.name, type="custom", format=arguments.format.value, body=body
             )
             assign_view_logstorage_permissions_by_job(log_storage=log)
 
