@@ -16,15 +16,15 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.models import QuerySet
 
 from cm.issue import (
-    check_config,
     check_hc,
     check_required_import,
     check_required_services,
     check_requires,
     create_issue,
 )
-from cm.models import Cluster, ClusterObject, ConcernCause
+from cm.models import Cluster, ClusterObject, ConcernCause, ServiceComponent
 from cm.services.concern import delete_issue
+from cm.services.concern.checks import object_configuration_has_issue
 from cm.services.concern.distribution import OwnObjectConcernMap
 
 
@@ -32,7 +32,7 @@ def recalculate_own_concerns_on_add_clusters(cluster: Cluster) -> OwnObjectConce
     new_concerns: OwnObjectConcernMap = defaultdict(lambda: defaultdict(set))
 
     cluster_checks = (
-        (ConcernCause.CONFIG, check_config),
+        (ConcernCause.CONFIG, lambda obj: not object_configuration_has_issue(obj)),
         (ConcernCause.IMPORT, check_required_import),
         (ConcernCause.HOSTCOMPONENT, check_hc),
         (ConcernCause.SERVICE, check_required_services),
@@ -57,7 +57,7 @@ def recalculate_own_concerns_on_add_services(
         new_concerns[ADCMCoreType.CLUSTER][cluster.pk].add(issue.pk)
 
     service_checks = (
-        (ConcernCause.CONFIG, check_config),
+        (ConcernCause.CONFIG, lambda obj: not object_configuration_has_issue(obj)),
         (ConcernCause.IMPORT, check_required_import),
         (ConcernCause.REQUIREMENT, check_requires),
     )
@@ -67,10 +67,10 @@ def recalculate_own_concerns_on_add_services(
                 issue = create_issue(obj=service, issue_cause=concern_cause)
                 new_concerns[ADCMCoreType.SERVICE][service.pk].add(issue.pk)
 
-        for component in service.servicecomponent_set.all():
-            if not check_config(component):
-                issue = create_issue(obj=component, issue_cause=ConcernCause.CONFIG)
-                new_concerns[ADCMCoreType.COMPONENT][component.pk].add(issue.pk)
+    for component in ServiceComponent.objects.filter(service__in=services):
+        if object_configuration_has_issue(component):
+            issue = create_issue(obj=component, issue_cause=ConcernCause.CONFIG)
+            new_concerns[ADCMCoreType.COMPONENT][component.pk].add(issue.pk)
 
     # remove gone concerns
     if check_required_services(cluster=cluster):
