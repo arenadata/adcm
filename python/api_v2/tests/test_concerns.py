@@ -17,12 +17,14 @@ from cm.converters import orm_object_to_core_type
 from cm.models import (
     Action,
     ADCMEntity,
+    Bundle,
     Cluster,
     ClusterObject,
     ConcernCause,
     ConcernItem,
     ConcernType,
     Host,
+    HostProvider,
     JobLog,
     ObjectType,
     Prototype,
@@ -1193,3 +1195,48 @@ class TestConcernRedistribution(BaseAPITestCase):
         self.check_concerns(dummy_c, concerns=cluster_own_cons)
 
         self.check_concerns_of_control_objects()
+
+    def test_remove_provider(self):
+        host_1 = self.add_host_via_api(self.provider, fqdn="host1")
+        host_2 = self.add_host_via_api(self.provider, fqdn="host2")
+        provider_pk, host_1_pk, host_2_pk = self.provider.pk, host_1.pk, host_2.pk
+        another_provider = self.add_provider(
+            bundle=Bundle.objects.get(name="provider_with_concerns"), name="Concerned HP 2"
+        )
+
+        self.client.v2[host_1].delete()
+        self.client.v2[host_2].delete()
+        self.client.v2[self.provider].delete()
+
+        self.assertFalse(ConcernItem.objects.filter(owner_id=host_1_pk, owner_type=Host.class_content_type))
+        self.assertFalse(ConcernItem.objects.filter(owner_id=host_2_pk, owner_type=Host.class_content_type))
+        self.assertFalse(ConcernItem.objects.filter(owner_id=provider_pk, owner_type=HostProvider.class_content_type))
+        self.assertEqual(
+            ConcernItem.objects.filter(
+                owner_id=another_provider.pk, owner_type=HostProvider.class_content_type
+            ).count(),
+            1,
+        )
+
+    def test_remove_host(self):
+        host_1 = self.add_host_via_api(self.provider, fqdn="host1")
+        host_2 = self.add_host_via_api(self.provider, fqdn="host2")
+        host_1_pk = host_1.pk
+        another_provider = self.add_provider(
+            bundle=Bundle.objects.get(name="provider_with_concerns"), name="Concerned HP 2"
+        )
+        host_3 = self.add_host_via_api(another_provider, fqdn="host3")
+
+        self.client.v2[host_1].delete()
+
+        self.assertFalse(ConcernItem.objects.filter(owner_id=host_1_pk, owner_type=Host.class_content_type))
+
+        self.assertEqual(host_2.concerns.count(), 2)
+        self.assertEqual(host_3.concerns.count(), 2)
+        self.assertEqual(self.provider.concerns.count(), 1)
+        self.assertEqual(another_provider.concerns.count(), 1)
+
+    def add_host_via_api(self, provider: HostProvider, fqdn: str) -> Host:
+        response = (self.client.v2 / "hosts").post(data={"hostprovider_id": provider.pk, "name": fqdn})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        return Host.objects.get(fqdn=fqdn)

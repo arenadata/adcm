@@ -226,7 +226,7 @@ def delete_host(host: Host, cancel_tasks: bool = True) -> None:
     host.delete()
     reset_hc_map()
     reset_objects_in_mm()
-    update_issue_after_deleting()
+    #  update_issue_after_deleting()
     logger.info("host #%s is deleted", host_pk)
 
 
