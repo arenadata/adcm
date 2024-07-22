@@ -508,9 +508,9 @@ class TestConcernRedistribution(BaseAPITestCase):
             self.assertEqual(actual_amount, expected_amount, message)
 
         for concern in expected_concerns:
-            if concern not in expected_concerns:
+            if concern not in object_concerns:
                 cur_concern = f"{concern.type} | {concern.cause} from {concern.owner}"
-                message = f"{cur_concern} not found in:\n{self.repr_concerns(concerns)}"
+                message = f"\n{cur_concern} not found in:\n{self.repr_concerns(object_concerns)}"
                 self.assertIn(concern, object_concerns, message)
 
     def check_concerns_of_control_objects(self) -> None:
@@ -1082,7 +1082,6 @@ class TestConcernRedistribution(BaseAPITestCase):
         cluster_own_cons = tuple(
             ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
         )
-        import_s_con = import_s.get_own_issue(ConcernCause.IMPORT)
         component_1_con = component_1.get_own_issue(ConcernCause.CONFIG)
 
         # test
@@ -1107,7 +1106,12 @@ class TestConcernRedistribution(BaseAPITestCase):
 
         self.change_imports_via_api(import_s, imports=[{"source": {"type": "service", "id": export_service.id}}])
 
+        # we need to reread it, so it will be correctly searched within the collection
+        import_s_con = import_s.get_own_issue(ConcernCause.IMPORT)
+
         with self.subTest("Set 1/2 Required Imports On Service"):
+            self.assertIsNotNone(import_s_con)
+
             self.check_concerns(self.cluster, concerns=(*cluster_own_cons, import_s_con, component_1_con, *host_1_cons))
             self.check_concerns(import_s, concerns=(*cluster_own_cons, import_s_con, component_1_con, *host_1_cons))
             self.check_concerns(component_1, concerns=(*cluster_own_cons, import_s_con, component_1_con))
@@ -1240,3 +1244,123 @@ class TestConcernRedistribution(BaseAPITestCase):
         response = (self.client.v2 / "hosts").post(data={"hostprovider_id": provider.pk, "name": fqdn})
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         return Host.objects.get(fqdn=fqdn)
+
+    def test_host_config_issue(self):
+        host = self.add_host_via_api(self.provider, fqdn="host1")
+
+        self.assertIsNotNone(host.get_own_issue(ConcernCause.CONFIG))
+        self.assertIsNotNone(self.provider.get_own_issue(ConcernCause.CONFIG))
+
+        #  host config issue resolved, provider remains
+        self.change_config_via_api(host)
+
+        self.assertIsNotNone(self.provider.get_own_issue(ConcernCause.CONFIG))
+        self.assertIsNone(host.get_own_issue(ConcernCause.CONFIG))
+
+        host_2 = self.add_host(self.provider, fqdn="host2")
+        host_2_config_issue = host_2.get_own_issue(ConcernCause.CONFIG)
+        self.assertIsNotNone(host_2_config_issue)
+        self.check_concerns(host_2, concerns=(host_2_config_issue, self.provider.get_own_issue(ConcernCause.CONFIG)))
+
+        host_flag = host.concerns.filter(
+            type=ConcernType.FLAG,
+            owner_id=host.pk,
+            owner_type=host.content_type,
+            cause=ConcernCause.CONFIG,
+        ).first()
+        self.check_concerns(host, concerns=(self.provider.get_own_issue(ConcernCause.CONFIG), host_flag))
+
+    def test_two_hosts_config_issue_one_resolved(self):
+        host_1 = self.add_host_via_api(self.provider, fqdn="host1")
+        host_2 = self.add_host_via_api(self.provider, fqdn="host2")
+
+        host_1_config_issue = host_1.get_own_issue(ConcernCause.CONFIG)
+        host_2_config_issue = host_2.get_own_issue(ConcernCause.CONFIG)
+        provider_config_issue = self.provider.get_own_issue(ConcernCause.CONFIG)
+
+        self.assertIsNotNone(host_1_config_issue)
+        self.assertIsNotNone(host_2_config_issue)
+        self.assertIsNotNone(provider_config_issue)
+
+        #  host config issue resolved, provider remains
+        self.change_config_via_api(host_1)
+
+        self.assertIsNotNone(self.provider.get_own_issue(ConcernCause.CONFIG))
+        self.assertIsNone(host_1.get_own_issue(ConcernCause.CONFIG))
+        self.assertIsNotNone(host_2.get_own_issue(ConcernCause.CONFIG))
+
+        host_1_flag = host_1.concerns.filter(
+            type=ConcernType.FLAG,
+            owner_id=host_1.pk,
+            owner_type=host_1.content_type,
+            cause=ConcernCause.CONFIG,
+        ).first()
+
+        self.check_concerns(host_1, concerns=(provider_config_issue, host_1_flag))
+        self.check_concerns(host_2, concerns=(provider_config_issue, host_2.get_own_issue(ConcernCause.CONFIG)))
+
+    def test_host_config_issue_from_hostprovider(self):
+        host_1 = self.add_host_via_api(self.provider, fqdn="host1")
+
+        host_config_issue = host_1.get_own_issue(ConcernCause.CONFIG)
+        provider_config_issue = self.provider.get_own_issue(ConcernCause.CONFIG)
+
+        self.assertIsNotNone(host_config_issue)
+        self.assertIsNotNone(provider_config_issue)
+
+        #  hostprovider config issue resolved
+        self.change_config_via_api(self.provider)
+
+        host_2 = self.add_host(self.provider, fqdn="host2")
+
+        self.assertIsNone(self.provider.get_own_issue(ConcernCause.CONFIG))
+        self.assertIsNotNone(host_1.get_own_issue(ConcernCause.CONFIG))
+        self.assertIsNotNone(host_2.get_own_issue(ConcernCause.CONFIG))
+
+        provider_flag = self.provider.concerns.filter(
+            type=ConcernType.FLAG,
+            owner_id=self.provider.pk,
+            owner_type=self.provider.content_type,
+            cause=ConcernCause.CONFIG,
+        ).first()
+
+        self.check_concerns(
+            host_1,
+            concerns=(
+                provider_flag,
+                host_1.get_own_issue(ConcernCause.CONFIG),
+            ),
+        )
+        self.check_concerns(
+            host_2,
+            concerns=(host_2.get_own_issue(ConcernCause.CONFIG),),
+        )
+
+    def test_two_hosts_config_issue_from_hostprovider_resolved(self):
+        host_1 = self.add_host_via_api(self.provider, fqdn="host1")
+        host_2 = self.add_host_via_api(self.provider, fqdn="host2")
+
+        host_1_config_issue = host_1.get_own_issue(ConcernCause.CONFIG)
+        host_2_config_issue = host_2.get_own_issue(ConcernCause.CONFIG)
+        provider_config_issue = self.provider.get_own_issue(ConcernCause.CONFIG)
+
+        self.assertIsNotNone(host_1_config_issue)
+        self.assertIsNotNone(host_2_config_issue)
+        self.assertIsNotNone(provider_config_issue)
+
+        #  hostprovider config issue resolved
+        self.change_config_via_api(self.provider)
+
+        self.assertIsNone(self.provider.get_own_issue(ConcernCause.CONFIG))
+        self.assertIsNotNone(host_1.get_own_issue(ConcernCause.CONFIG))
+        self.assertIsNotNone(host_2.get_own_issue(ConcernCause.CONFIG))
+
+        provider_flag = self.provider.concerns.filter(
+            type=ConcernType.FLAG,
+            owner_id=self.provider.pk,
+            owner_type=self.provider.content_type,
+            cause=ConcernCause.CONFIG,
+        ).first()
+
+        self.check_concerns(host_1, concerns=(provider_flag, host_1.get_own_issue(ConcernCause.CONFIG)))
+        self.check_concerns(host_2, concerns=(provider_flag, host_2.get_own_issue(ConcernCause.CONFIG)))

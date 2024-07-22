@@ -74,7 +74,8 @@ from cm.models import (
 )
 from cm.services.cluster import retrieve_clusters_topology
 from cm.services.concern import delete_issue
-from cm.services.concern.cases import recalculate_own_concerns_on_add_clusters
+from cm.services.concern.cases import recalculate_own_concerns_on_add_clusters, recalculate_own_concerns_on_add_hosts
+from cm.services.concern.checks import object_configuration_has_issue
 from cm.services.concern.distribution import distribute_concern_on_related_objects, redistribute_issues_and_flags
 from cm.services.concern.flags import BuiltInFlag, raise_flag
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
@@ -137,7 +138,6 @@ def add_cluster(prototype: Prototype, name: str, description: str = "") -> Clust
             object_type=ContentType.objects.get_for_model(Cluster),
         )
 
-        # update_hierarchy_issues(cluster)
         if recalculate_own_concerns_on_add_clusters(cluster):  # TODO: redistribute only new issues. See ADCM-5798
             redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((cluster.pk,))))
 
@@ -166,7 +166,15 @@ def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, descriptio
         host.config = obj_conf
         host.save()
         add_concern_to_object(object_=host, concern=CTX.lock)
-        update_hierarchy_issues(host.provider)
+
+        if concerns := recalculate_own_concerns_on_add_hosts(host):  # TODO: redistribute only new issues. See ADCM-5798
+            distribute_concern_on_related_objects(
+                owner=CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST),
+                concern_id=concerns[ADCMCoreType.HOST][host.id],
+            )
+        if concern := provider.get_own_issue(ConcernCause.CONFIG):
+            host.concerns.add(concern)
+
         re_apply_object_policy(provider)
 
     reset_hc_map()
@@ -186,7 +194,13 @@ def add_host_provider(prototype: Prototype, name: str, description: str = ""):
         provider.config = obj_conf
         provider.save()
         add_concern_to_object(object_=provider, concern=CTX.lock)
-        update_hierarchy_issues(provider)
+        #  update_hierarchy_issues(provider)
+
+        if object_configuration_has_issue(provider):
+            concern = create_issue(obj=provider, issue_cause=ConcernCause.CONFIG)
+            distribute_concern_on_related_objects(
+                owner=CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.HOSTPROVIDER), concern_id=concern.id
+            )
 
     logger.info("host provider #%s %s is added", provider.pk, provider.name)
 
@@ -451,11 +465,6 @@ def raise_outdated_config_flag_if_required(object_: MainObject):
             name=flag.name, type=ConcernType.FLAG, owner_id=object_.id, owner_type=object_.content_type
         )
         distribute_concern_on_related_objects(owner=owner, concern_id=concern_id)
-        # update_hierarchy(
-        #     concern=ConcernItem.objects.get(
-        #         name=flag.name, type=ConcernType.FLAG, owner_id=object_.id, owner_type=object_.content_type
-        #     )
-        # )
 
 
 def set_object_config_with_plugin(obj: ADCMEntity, config: dict, attr: dict) -> ConfigLog:
