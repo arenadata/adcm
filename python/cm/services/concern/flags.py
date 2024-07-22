@@ -129,7 +129,6 @@ def update_hierarchy_for_flag(flag: ConcernFlag, on_objects: Collection[CoreObje
     ):
         owner = CoreObjectDescriptor(id=concern.owner_id, type=model_name_to_core_type(concern.owner_type.model))
         distribute_concern_on_related_objects(owner=owner, concern_id=concern.id)
-        # update_hierarchy(concern)
 
 
 def update_hierarchy(concern: ConcernItem) -> None:

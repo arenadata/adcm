@@ -54,17 +54,6 @@ def _change_mm_via_action(
 
 def _update_mm_hierarchy_issues(obj: Host | ClusterObject | ServiceComponent) -> None:
     redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((obj.cluster_id,))))
-
-    # if isinstance(obj, Host):
-    #     update_hierarchy_issues(obj.provider)
-    #
-    # providers = {host_component.host.provider for host_component in HostComponent.objects.filter(cluster=obj.cluster)}
-    # for provider in providers:
-    #     update_hierarchy_issues(provider)
-    #
-    # update_hierarchy_issues(obj.cluster)
-    # update_issue_after_deleting()
-    # _update_flags()
     reset_objects_in_mm()
 
 

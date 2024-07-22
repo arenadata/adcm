@@ -22,7 +22,7 @@ from cm.issue import (
     check_requires,
     create_issue,
 )
-from cm.models import Cluster, ClusterObject, ConcernCause, ServiceComponent
+from cm.models import Cluster, ClusterObject, ConcernCause, Host, ServiceComponent
 from cm.services.concern import delete_issue
 from cm.services.concern.checks import object_configuration_has_issue
 from cm.services.concern.distribution import OwnObjectConcernMap
@@ -83,3 +83,11 @@ def recalculate_own_concerns_on_add_services(
             )
 
     return new_concerns
+
+
+def recalculate_own_concerns_on_add_hosts(host: Host) -> OwnObjectConcernMap:
+    if object_configuration_has_issue(host):
+        issue = create_issue(obj=host, issue_cause=ConcernCause.CONFIG)
+        return {ADCMCoreType.HOST: {host.id: issue.id}}
+
+    return {}
