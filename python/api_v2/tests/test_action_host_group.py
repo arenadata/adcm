@@ -278,6 +278,51 @@ class TestActionHostGroup(CommonActionHostGroupTest):
             ],
         )
 
+    def test_filter_groups_success(self) -> None:
+        host_1, host_2, host_3, *_ = self.hosts
+
+        cluster_group = self.create_action_host_group(name="Cluster Group", owner=self.cluster)
+        group_1 = self.create_action_host_group(name="Service Group", owner=self.service)
+        group_2 = self.create_action_host_group(name="Super Custom", owner=self.service)
+        group_3 = self.create_action_host_group(name="Service Group #2", owner=self.service)
+
+        self.set_hostcomponent(cluster=self.cluster, entries=[(host, self.component) for host in self.hosts])
+
+        self.action_host_group_service.add_hosts_to_group(cluster_group.id, hosts=[host_1.id, host_2.id, host_3.id])
+        self.action_host_group_service.add_hosts_to_group(group_1.id, hosts=[host_1.id, host_2.id])
+        self.action_host_group_service.add_hosts_to_group(group_2.id, hosts=[host_2.id, host_3.id])
+        self.action_host_group_service.add_hosts_to_group(group_3.id, hosts=[host_1.id])
+
+        endpoint = self.client.v2[self.service, ACTION_HOST_GROUPS]
+
+        with self.subTest("Filter by Name"):
+            response = endpoint.get(query={"name": "group"})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(list(map(itemgetter("id"), response.json()["results"])), [group_1.id, group_3.id])
+
+            response = endpoint.get(query={"name": "er c"})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(list(map(itemgetter("id"), response.json()["results"])), [group_2.id])
+
+        with self.subTest("Filter by Host"):
+            response = endpoint.get(query={"hasHost": "3"})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(response.json()["results"], [])
+
+            response = endpoint.get(query={"hasHost": "0"})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(list(map(itemgetter("id"), response.json()["results"])), [group_1.id, group_3.id])
+
+        with self.subTest("Filter by Name AND Host"):
+            response = endpoint.get(query={"hasHost": "0", "name": "#2"})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(list(map(itemgetter("id"), response.json()["results"])), [group_3.id])
+
     def test_host_candidates_success(self) -> None:
         host_1, host_2, host_3 = self.hosts
         host_1_data, host_2_data, host_3_data = ({"id": host.id, "name": host.fqdn} for host in self.hosts)
@@ -301,6 +346,19 @@ class TestActionHostGroup(CommonActionHostGroupTest):
 
             with self.subTest(f"[{type_.name}] {target.name} Expect {len(expected)}"):
                 response = self.client.v2[target, "host-candidates"].get()
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertListEqual(response.json(), expected)
+
+        for target, expected in (
+            (self.cluster, [host_1_data, host_2_data, host_3_data]),
+            (self.service, [host_1_data, host_2_data]),
+            (self.component, [host_1_data, host_2_data]),
+        ):
+            type_ = orm_object_to_core_type(target)
+
+            with self.subTest(f"[{type_.name}] Own {target.name} Expect {len(expected)}"):
+                response = self.client.v2[target, ACTION_HOST_GROUPS, "host-candidates"].get()
 
                 self.assertEqual(response.status_code, HTTP_200_OK)
                 self.assertListEqual(response.json(), expected)
@@ -827,6 +885,7 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
 
                 for allowed_to_view_ep in (
                     self.user_client.v2[target, ACTION_HOST_GROUPS],
+                    self.user_client.v2[target, ACTION_HOST_GROUPS, "host-candidates"],
                     self.user_client.v2[group],
                     self.user_client.v2[group, "host-candidates"],
                     self.user_client.v2[group, "actions"],
@@ -854,6 +913,7 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
                     (self.user_client.v2[group, "host-candidates"], "get"),
                     (self.user_client.v2[group, "actions"], "get"),
                     (self.user_client.v2[group, "actions", action], "get"),
+                    (self.user_client.v2[target, ACTION_HOST_GROUPS, "host-candidates"], "get"),
                     (self.user_client.v2[target, ACTION_HOST_GROUPS], "post"),
                     (self.user_client.v2[group, "actions", action, "run"], "post"),
                     (self.user_client.v2[group, "hosts"], "post"),
@@ -874,6 +934,7 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
                 with self.subTest(f"[{type_name}] GET EPs"):
                     for ep in (
                         self.user_client.v2[target, ACTION_HOST_GROUPS],
+                        self.user_client.v2[target, ACTION_HOST_GROUPS, "host-candidates"],
                         self.user_client.v2[group],
                         self.user_client.v2[group, "host-candidates"],
                     ):
@@ -927,6 +988,9 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
                 group = self.group_map[target]
 
                 response = self.user_client.v2[target, ACTION_HOST_GROUPS].get()
+                self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+                response = self.user_client.v2[target, ACTION_HOST_GROUPS, "host-candidates"].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
                 response = self.user_client.v2[target, ACTION_HOST_GROUPS].post()

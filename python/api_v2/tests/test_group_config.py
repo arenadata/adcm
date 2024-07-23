@@ -10,8 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import ConfigLog, GroupConfig, Host, ServiceComponent
+from operator import attrgetter, itemgetter
+from typing import Iterable, NamedTuple, TypeAlias
+
+from adcm.tests.client import WithID
+from cm.converters import orm_object_to_core_type
+from cm.models import Cluster, ClusterObject, ConfigLog, GroupConfig, Host, HostProvider, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
+from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -24,6 +30,9 @@ from rest_framework.status import (
 from api_v2.tests.base import BaseAPITestCase
 
 CONFIG_GROUPS = "config-groups"
+HOST_CANDIDATES = "host-candidates"
+
+ObjectWithConfigHostGroup: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider
 
 
 class BaseClusterGroupConfigTestCase(BaseAPITestCase):
@@ -207,11 +216,30 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):
         )
 
     def test_host_candidates(self):
-        response = self.client.v2[self.cluster_1_group_config, "host-candidates"].get()
+        with self.subTest("Group"):
+            response = self.client.v2[self.cluster_1_group_config, "host-candidates"].get()
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 1)
-        self.assertEqual(response.json()[0]["name"], self.new_host.name)
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(len(response.json()), 1)
+            self.assertEqual(response.json()[0]["name"], self.new_host.name)
+
+        with self.subTest("Own Group"):
+            response = self.client.v2[self.cluster_1, CONFIG_GROUPS, "host-candidates"].get()
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(len(response.json()), 1)
+            self.assertEqual(response.json()[0]["name"], self.new_host.name)
+
+        new_host = self.add_host(provider=self.provider, fqdn="new-host", cluster=self.cluster_1)
+        response = self.client.v2[self.cluster_1_group_config, "hosts"].post(data={"hostId": self.new_host.pk})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        with self.subTest("Own Group When One Added To Group"):
+            response = self.client.v2[self.cluster_1, CONFIG_GROUPS, "host-candidates"].get()
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(len(response.json()), 1)
+            self.assertEqual(response.json()[0]["name"], new_host.name)
 
     def test_delete_host_success(self):
         response = self.client.v2[self.cluster_1_group_config, "hosts", self.host].delete()
@@ -1043,3 +1071,143 @@ class TestHostProviderGroupConfig(BaseAPITestCase):
             response = self.client.v2[self.cluster_1, CONFIG_GROUPS].get()
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+
+class TestHostCandidateForConfigHostsGroups(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.cluster = self.cluster_1
+        self.service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        self.component_1 = self.service.servicecomponent_set.get(prototype__name="component_1")
+        self.component_2 = self.service.servicecomponent_set.get(prototype__name="component_2")
+
+        self.hostprovider = self.provider
+        self.hosts = tuple(self.add_host(provider=self.hostprovider, fqdn=f"host-{i}") for i in range(4))
+
+    class Case(NamedTuple):
+        target: ObjectWithConfigHostGroup
+        # hosts to group
+        add_to_first: tuple[Host, ...]
+        add_to_second: tuple[Host, ...]
+        # candidates
+        at_start: tuple[Host, ...]
+        after_one_added: tuple[Host, ...]
+        after_second_added: tuple[Host, ...]
+
+    @staticmethod
+    def extract_ids(source: Response | Iterable[WithID]) -> list[int]:
+        if isinstance(source, Response):
+            data = source.json()
+            getter = itemgetter
+        else:
+            data = source
+            getter = attrgetter
+
+        return list(map(getter("id"), data))
+
+    def create_group_and_add_hosts_via_api(
+        self, object_: ObjectWithConfigHostGroup, name: str, hosts: Iterable[Host]
+    ) -> GroupConfig:
+        response = self.client.v2[object_, CONFIG_GROUPS].post(data={"name": name, "description": ""})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        group_id = response.json()["id"]
+
+        for host in hosts:
+            self.assertEqual(
+                self.client.v2[object_, CONFIG_GROUPS, group_id, "hosts"].post(data={"hostId": host.id}).status_code,
+                HTTP_201_CREATED,
+            )
+
+        return GroupConfig.objects.get(id=group_id)
+
+    def check_host_candidates_of_object(self, object_: ObjectWithConfigHostGroup, hosts: Iterable[Host]) -> None:
+        response = self.client.v2[object_, CONFIG_GROUPS, HOST_CANDIDATES].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(self.extract_ids(response), self.extract_ids(hosts))
+
+    def check_host_candidates_of_group(self, group: GroupConfig, hosts: Iterable[Host]) -> None:
+        response = self.client.v2[group, HOST_CANDIDATES].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(self.extract_ids(response), self.extract_ids(hosts))
+
+    def test_host_candidates(self) -> None:
+        # prepare
+        host_1, host_2, host_3, host_4 = self.hosts
+        for host in self.hosts:
+            self.add_host_to_cluster(cluster=self.cluster, host=host)
+        self.set_hostcomponent(
+            cluster=self.cluster,
+            entries=[
+                (host_1, self.component_1),
+                (host_2, self.component_1),
+                (host_3, self.component_1),
+                (host_2, self.component_2),
+                (host_4, self.component_2),
+            ],
+        )
+
+        # cases
+        cases = (
+            self.Case(
+                target=self.cluster,
+                at_start=self.hosts,
+                add_to_first=(host_1,),
+                after_one_added=(host_2, host_3, host_4),
+                add_to_second=(host_2, host_3),
+                after_second_added=(host_4,),
+            ),
+            self.Case(
+                target=self.service,
+                at_start=self.hosts,
+                add_to_first=(host_2, host_4),
+                after_one_added=(host_1, host_3),
+                add_to_second=(host_1, host_3),
+                after_second_added=(),
+            ),
+            self.Case(
+                target=self.component_1,
+                at_start=(host_1, host_2, host_3),
+                add_to_first=(),
+                after_one_added=(host_1, host_2, host_3),
+                add_to_second=(host_2,),
+                after_second_added=(host_1, host_3),
+            ),
+            self.Case(
+                target=self.hostprovider,
+                at_start=self.hosts,
+                add_to_first=(host_1, host_3, host_4),
+                after_one_added=(host_2,),
+                add_to_second=(),
+                after_second_added=(host_2,),
+            ),
+        )
+
+        # test
+        for case in cases:
+            target_desc = orm_object_to_core_type(case.target).name
+            with self.subTest(f"[{target_desc}] No Groups"):
+                self.check_host_candidates_of_object(object_=case.target, hosts=case.at_start)
+
+            group_1 = self.create_group_and_add_hosts_via_api(
+                object_=case.target, name=f"{target_desc} 1", hosts=case.add_to_first
+            )
+
+            with self.subTest(
+                f"[{target_desc}] One Group | {len(case.add_to_first)} Hosts | {len(case.after_one_added)} Candidates"
+            ):
+                self.check_host_candidates_of_object(object_=case.target, hosts=case.after_one_added)
+                self.check_host_candidates_of_group(group=group_1, hosts=case.after_one_added)
+
+            group_2 = self.create_group_and_add_hosts_via_api(
+                object_=case.target, name=f"{target_desc} 2", hosts=case.add_to_second
+            )
+
+            with self.subTest(
+                f"[{target_desc}] One Group | {len(case.add_to_first)} Hosts | {len(case.after_one_added)} Candidates"
+            ):
+                self.check_host_candidates_of_object(object_=case.target, hosts=case.after_second_added)
+                self.check_host_candidates_of_group(group=group_1, hosts=case.after_second_added)
+                self.check_host_candidates_of_group(group=group_2, hosts=case.after_second_added)
