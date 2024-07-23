@@ -36,6 +36,7 @@ from core.types import ADCMCoreType, CoreObjectDescriptor, HostGroupDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Model, QuerySet
 from django.db.transaction import atomic
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from guardian.shortcuts import get_objects_for_user
 from rbac.models import User
@@ -48,6 +49,7 @@ from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
@@ -55,6 +57,7 @@ from rest_framework.status import (
 from api_v2.action.serializers import ActionListSerializer, ActionRetrieveSerializer
 from api_v2.action.utils import has_run_perms
 from api_v2.action.views import ActionViewSet
+from api_v2.action_host_group.filters import ActionHostGroupFilter
 from api_v2.action_host_group.serializers import (
     ActionHostGroupCreateResultSerializer,
     ActionHostGroupCreateSerializer,
@@ -150,6 +153,16 @@ def check_has_group_permissions(user: User, parent: CoreObjectDescriptor, dto: P
         description="Delete specific object's action host group.",
         responses={HTTP_204_NO_CONTENT: None, HTTP_404_NOT_FOUND: ErrorSerializer, HTTP_409_CONFLICT: ErrorSerializer},
     ),
+    owner_host_candidate=extend_schema(
+        operation_id="getObjectActionHostGroupOwnCandidates",
+        summary="GET object's host candidates for new Action Host Group",
+        description="Return list of object's hosts that can be added to newly created action host group.",
+        responses={
+            HTTP_200_OK: ShortHostSerializer(many=True),
+            HTTP_403_FORBIDDEN: ErrorSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+        },
+    ),
     host_candidate=extend_schema(
         operation_id="getObjectActionHostGroupCandidates",
         summary="GET object's Action Host Group's host candidates",
@@ -159,8 +172,10 @@ def check_has_group_permissions(user: User, parent: CoreObjectDescriptor, dto: P
 )
 class ActionHostGroupViewSet(ADCMGenericViewSet):
     queryset = ActionHostGroup.objects.prefetch_related("hosts").order_by("id")
-    action_host_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
-    filter_backends = []
+    repo = ActionHostGroupRepo()
+    action_host_group_service = ActionHostGroupService(repository=repo)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = ActionHostGroupFilter
 
     def get_serializer_class(self) -> type[Serializer]:
         if self.action == "create":
@@ -201,7 +216,10 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
         check_has_group_permissions(user=request.user, parent=parent, dto=VIEW_ONLY_PERMISSION_DENIED)
 
         serializer = self.get_serializer(
-            instance=self.paginate_queryset(self.filter_by_parent(qs=self.get_queryset(), parent=parent)), many=True
+            instance=self.paginate_queryset(
+                self.filter_queryset(self.filter_by_parent(qs=self.get_queryset(), parent=parent))
+            ),
+            many=True,
         )
         return self.get_paginated_response(serializer.data)
 
@@ -230,6 +248,26 @@ class ActionHostGroupViewSet(ADCMGenericViewSet):
             raise AdcmEx(code="TASK_ERROR", msg=err.message) from None
 
         return Response(status=HTTP_204_NO_CONTENT)
+
+    @action(
+        methods=["get"], detail=False, url_path="host-candidates", url_name="host-candidates", pagination_class=None
+    )
+    @with_parent_object
+    def owner_host_candidate(self, request: Request, parent: CoreObjectDescriptor, **__):
+        check_has_group_permissions(user=request.user, parent=parent, dto=VIEW_ONLY_PERMISSION_DENIED)
+
+        match parent.type:
+            case ADCMCoreType.CLUSTER:
+                host_ids = self.repo.get_all_host_candidates_for_cluster(cluster_id=parent.id)
+            case ADCMCoreType.SERVICE:
+                host_ids = self.repo.get_all_host_candidates_for_service(service_id=parent.id)
+            case ADCMCoreType.COMPONENT:
+                host_ids = self.repo.get_all_host_candidates_for_component(component_id=parent.id)
+            case _:
+                message = f"Can't get host candidates for {parent.type}"
+                raise RuntimeError(message)
+
+        return Response(data=list(Host.objects.values("id", name=F("fqdn")).filter(id__in=host_ids).order_by("fqdn")))
 
     @action(methods=["get"], detail=True, url_path="host-candidates", url_name="host-candidates", pagination_class=None)
     @with_parent_object
