@@ -1,4 +1,11 @@
+:global {
+  body.theme-dark {
+    --dialog-mapping-background: var(--color-xblack);
+  }
+}
+
 .configGroupMappingDialog {
+  background: var(--dialog-mapping-background);
   max-height: 100%;
   display: grid;
   // dialog title - min-content

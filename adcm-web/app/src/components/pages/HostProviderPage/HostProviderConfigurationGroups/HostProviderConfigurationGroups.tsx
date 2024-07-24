@@ -45,17 +45,20 @@ const HostProviderConfigurationGroups: React.FC = () => {
   return (
     <PermissionsChecker requestState={accessCheckStatus}>
       <ConfigGroupsHeader onCreate={handleCreateConfigGroup} />
-      <ConfigGroupsTable
-        configGroups={hostProviderConfigGroups}
-        isLoading={isLoading}
-        sortParams={sortParams}
-        onSorting={handleSorting}
-        onMapping={handleMappingConfigGroup}
-        editUrlPattern={`/hostproviders/${hostProviderId}/configuration-groups/:configGroupId`}
-        onDelete={handleDeleteConfigGroup}
-      />
-      <HostProviderConfigurationGroupTableFooter />
-
+      {hostProviderConfigGroups.length > 0 && (
+        <>
+          <ConfigGroupsTable
+            configGroups={hostProviderConfigGroups}
+            isLoading={isLoading}
+            sortParams={sortParams}
+            onSorting={handleSorting}
+            onMapping={handleMappingConfigGroup}
+            editUrlPattern={`/hostproviders/${hostProviderId}/configuration-groups/:configGroupId`}
+            onDelete={handleDeleteConfigGroup}
+          />
+          <HostProviderConfigurationGroupTableFooter />
+        </>
+      )}
       <HostProviderConfigGroupDialogs />
     </PermissionsChecker>
   );
