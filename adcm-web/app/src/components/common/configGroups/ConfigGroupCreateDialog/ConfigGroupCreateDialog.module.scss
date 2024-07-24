@@ -1,0 +1,9 @@
+:global {
+  body.theme-dark {
+    --dialog-create-background: var(--color-xblack);
+  }
+}
+
+.configGroupCreateDialog {
+  background: var(--dialog-create-background);
+}
