@@ -74,7 +74,11 @@ from cm.models import (
 )
 from cm.services.cluster import retrieve_clusters_topology
 from cm.services.concern import delete_issue
-from cm.services.concern.cases import recalculate_own_concerns_on_add_clusters, recalculate_own_concerns_on_add_hosts
+from cm.services.concern.cases import (
+    recalculate_own_concerns_on_add_clusters,
+    recalculate_own_concerns_on_add_hosts,
+    recalculate_own_concerns_on_add_services,
+)
 from cm.services.concern.checks import object_configuration_has_issue
 from cm.services.concern.distribution import distribute_concern_on_related_objects, redistribute_issues_and_flags
 from cm.services.concern.flags import BuiltInFlag, raise_flag
@@ -194,7 +198,6 @@ def add_host_provider(prototype: Prototype, name: str, description: str = ""):
         provider.config = obj_conf
         provider.save()
         add_concern_to_object(object_=provider, concern=CTX.lock)
-        #  update_hierarchy_issues(provider)
 
         if object_configuration_has_issue(provider):
             concern = create_issue(obj=provider, issue_cause=ConcernCause.CONFIG)
@@ -240,7 +243,7 @@ def delete_host(host: Host, cancel_tasks: bool = True) -> None:
     host.delete()
     reset_hc_map()
     reset_objects_in_mm()
-    #  update_issue_after_deleting()
+
     logger.info("host #%s is deleted", host_pk)
 
 
@@ -360,7 +363,10 @@ def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
         service.config = obj_conf
         service.save(update_fields=["config"])
         add_components_to_service(cluster=cluster, service=service)
-        update_hierarchy_issues(obj=cluster)
+
+        recalculate_own_concerns_on_add_services(cluster=cluster, services=(service,))
+        redistribute_issues_and_flags(next(retrieve_clusters_topology((cluster.id,))))
+
         re_apply_object_policy(apply_object=cluster)
 
     reset_hc_map()
@@ -381,7 +387,6 @@ def add_components_to_service(cluster: Cluster, service: ClusterObject) -> None:
         obj_conf = init_object_config(proto=comp, obj=service_component)
         service_component.config = obj_conf
         service_component.save(update_fields=["config"])
-        update_hierarchy_issues(obj=service_component)
 
 
 def get_license(proto: Prototype) -> str | None:

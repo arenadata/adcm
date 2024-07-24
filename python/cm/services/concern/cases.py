@@ -11,9 +11,11 @@
 # limitations under the License.
 
 from collections import defaultdict
+from operator import attrgetter, itemgetter
+from typing import Iterable
 
 from core.types import ADCMCoreType, CoreObjectDescriptor
-from django.db.models import QuerySet
+from django.contrib.contenttypes.models import ContentType
 
 from cm.issue import (
     check_hc,
@@ -22,7 +24,7 @@ from cm.issue import (
     check_requires,
     create_issue,
 )
-from cm.models import Cluster, ClusterObject, ConcernCause, Host, ServiceComponent
+from cm.models import Cluster, ClusterObject, ConcernCause, ConcernItem, ConcernType, Host, ServiceComponent
 from cm.services.concern import delete_issue
 from cm.services.concern.checks import object_configuration_has_issue
 from cm.services.concern.distribution import OwnObjectConcernMap
@@ -47,7 +49,7 @@ def recalculate_own_concerns_on_add_clusters(cluster: Cluster) -> OwnObjectConce
 
 
 def recalculate_own_concerns_on_add_services(
-    cluster: Cluster, services: QuerySet[ClusterObject]
+    cluster: Cluster, services: Iterable[ClusterObject]
 ) -> OwnObjectConcernMap:
     new_concerns: OwnObjectConcernMap = defaultdict(lambda: defaultdict(set))
 
@@ -91,3 +93,67 @@ def recalculate_own_concerns_on_add_hosts(host: Host) -> OwnObjectConcernMap:
         return {ADCMCoreType.HOST: {host.id: issue.id}}
 
     return {}
+
+
+def recalculate_concerns_on_cluster_upgrade(cluster: Cluster) -> None:
+    cluster_checks = (
+        (ConcernCause.CONFIG, lambda obj: not object_configuration_has_issue(obj)),
+        (ConcernCause.IMPORT, check_required_import),
+        (ConcernCause.HOSTCOMPONENT, check_hc),
+        (ConcernCause.SERVICE, check_required_services),
+    )
+
+    existing_cluster_concern_causes = set(
+        ConcernItem.objects.values_list("cause", flat=True).filter(
+            owner_id=cluster.id,
+            owner_type=ContentType.objects.get_for_model(Cluster),
+            type=ConcernType.ISSUE,
+            cause__in=map(itemgetter(0), cluster_checks),
+        )
+    )
+
+    for cause, check in cluster_checks:
+        if cause in existing_cluster_concern_causes:
+            continue
+
+        if not check(cluster):
+            create_issue(obj=cluster, issue_cause=cause)
+
+    service_checks = (
+        (ConcernCause.CONFIG, lambda obj: not object_configuration_has_issue(obj)),
+        (ConcernCause.IMPORT, check_required_import),
+        (ConcernCause.REQUIREMENT, check_requires),
+    )
+
+    services = tuple(ClusterObject.objects.select_related("prototype").filter(cluster=cluster))
+    existing_service_concern_causes = set(
+        ConcernItem.objects.values_list("owner_id", "cause").filter(
+            owner_id__in=map(attrgetter("id"), services),
+            owner_type=ContentType.objects.get_for_model(ClusterObject),
+            type=ConcernType.ISSUE,
+            cause__in=map(itemgetter(0), service_checks),
+        )
+    )
+    for service in services:
+        for concern_cause, func in service_checks:
+            if (service.id, concern_cause) in existing_service_concern_causes:
+                continue
+
+            if not func(service):
+                create_issue(obj=service, issue_cause=concern_cause)
+
+    components_with_config_concerns = set(
+        ConcernItem.objects.values_list("owner_id", flat=True).filter(
+            owner_id__in=ServiceComponent.objects.values_list("id", flat=True).filter(service__in=services),
+            owner_type=ContentType.objects.get_for_model(ServiceComponent),
+            type=ConcernType.ISSUE,
+            cause=ConcernCause.CONFIG,
+        )
+    )
+    for component in (
+        ServiceComponent.objects.select_related("prototype")
+        .filter(service__in=services)
+        .exclude(id__in=components_with_config_concerns)
+    ):
+        if object_configuration_has_issue(component):
+            create_issue(obj=component, issue_cause=ConcernCause.CONFIG)
