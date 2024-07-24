@@ -1364,3 +1364,66 @@ class TestConcernRedistribution(BaseAPITestCase):
 
         self.check_concerns(host_1, concerns=(provider_flag, host_1.get_own_issue(ConcernCause.CONFIG)))
         self.check_concerns(host_2, concerns=(provider_flag, host_2.get_own_issue(ConcernCause.CONFIG)))
+
+    def test_dis_appearance_of_require_concern_on_service(self) -> None:
+        require_dummy_proto_id = Prototype.objects.get(
+            bundle_id=self.cluster.prototype.bundle_id, type="service", name="require_dummy_service"
+        ).id
+
+        response = self.client.v2[self.cluster, "services"].post(data={"prototypeId": require_dummy_proto_id})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        require_dummy_s = ClusterObject.objects.get(id=response.json()["id"])
+        sir_c = require_dummy_s.servicecomponent_set.get(prototype__name="sir")
+        silent_c = require_dummy_s.servicecomponent_set.get(prototype__name="silent")
+
+        requirement_con = require_dummy_s.get_own_issue(ConcernCause.REQUIREMENT)
+        component_config_con = sir_c.get_own_issue(ConcernCause.CONFIG)
+        cluster_own_cons = tuple(
+            ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
+        )
+        expected_concerns = (*cluster_own_cons, requirement_con, component_config_con)
+
+        with self.subTest("Appeared On Add"):
+            self.assertIsNotNone(requirement_con)
+            self.check_concerns(self.cluster, concerns=expected_concerns)
+            self.check_concerns(require_dummy_s, concerns=expected_concerns)
+            self.check_concerns(sir_c, concerns=expected_concerns)
+            self.check_concerns(silent_c, concerns=(*cluster_own_cons, requirement_con))
+
+        service_proto_id = Prototype.objects.get(
+            bundle_id=self.cluster.prototype.bundle_id, type="service", name="required"
+        ).id
+        self.assertEqual(
+            self.client.v2[self.cluster, "services"].post(data={"prototypeId": service_proto_id}).status_code,
+            HTTP_201_CREATED,
+        )
+
+        # SERVICE concern on cluster is gone, need to reread
+        cluster_own_cons = tuple(
+            ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
+        )
+        expected_concerns = (*cluster_own_cons, requirement_con, component_config_con)
+
+        with self.subTest("Stayed On Unrelated Service Add"):
+            self.assertIsNotNone(require_dummy_s.get_own_issue(ConcernCause.REQUIREMENT))
+            self.check_concerns(self.cluster, concerns=expected_concerns)
+            self.check_concerns(require_dummy_s, concerns=expected_concerns)
+            self.check_concerns(sir_c, concerns=expected_concerns)
+            self.check_concerns(silent_c, concerns=(*cluster_own_cons, requirement_con))
+
+        dummy_proto_id = Prototype.objects.get(
+            bundle_id=self.cluster.prototype.bundle_id, type="service", name="dummy"
+        ).id
+        response = self.client.v2[self.cluster, "services"].post(data={"prototypeId": dummy_proto_id})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        dummy_s = ClusterObject.objects.get(id=response.json()["id"])
+
+        with self.subTest("Disappeared On Required Service Add"):
+            self.assertIsNone(require_dummy_s.get_own_issue(ConcernCause.REQUIREMENT))
+            self.check_concerns(self.cluster, concerns=(*cluster_own_cons, component_config_con))
+            self.check_concerns(require_dummy_s, concerns=(*cluster_own_cons, component_config_con))
+            self.check_concerns(sir_c, concerns=(*cluster_own_cons, component_config_con))
+            self.check_concerns(silent_c, concerns=cluster_own_cons)
+            self.check_concerns(dummy_s, concerns=cluster_own_cons)
