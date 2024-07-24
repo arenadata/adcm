@@ -17,16 +17,10 @@ from typing import Iterable
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 
-from cm.issue import (
-    check_hc,
-    check_required_import,
-    check_required_services,
-    check_requires,
-    create_issue,
-)
+from cm.issue import check_hc, check_required_import, check_required_services, create_issue
 from cm.models import Cluster, ClusterObject, ConcernCause, ConcernItem, ConcernType, Host, ServiceComponent
 from cm.services.concern import delete_issue
-from cm.services.concern.checks import object_configuration_has_issue
+from cm.services.concern.checks import object_configuration_has_issue, service_requirements_has_issue
 from cm.services.concern.distribution import OwnObjectConcernMap
 
 
@@ -61,7 +55,7 @@ def recalculate_own_concerns_on_add_services(
     service_checks = (
         (ConcernCause.CONFIG, lambda obj: not object_configuration_has_issue(obj)),
         (ConcernCause.IMPORT, check_required_import),
-        (ConcernCause.REQUIREMENT, check_requires),
+        (ConcernCause.REQUIREMENT, lambda obj: not service_requirements_has_issue(obj)),
     )
     for service in services:
         for concern_cause, func in service_checks:
@@ -79,7 +73,7 @@ def recalculate_own_concerns_on_add_services(
         delete_issue(owner=CoreObjectDescriptor(type=ADCMCoreType.CLUSTER, id=cluster.pk), cause=ConcernCause.SERVICE)
 
     for service in cluster.clusterobject_set.exclude(pk__in=(service.pk for service in services)):
-        if check_requires(service=service):
+        if not service_requirements_has_issue(service=service):
             delete_issue(
                 owner=CoreObjectDescriptor(type=ADCMCoreType.SERVICE, id=service.pk), cause=ConcernCause.REQUIREMENT
             )
@@ -122,7 +116,7 @@ def recalculate_concerns_on_cluster_upgrade(cluster: Cluster) -> None:
     service_checks = (
         (ConcernCause.CONFIG, lambda obj: not object_configuration_has_issue(obj)),
         (ConcernCause.IMPORT, check_required_import),
-        (ConcernCause.REQUIREMENT, check_requires),
+        (ConcernCause.REQUIREMENT, lambda obj: not service_requirements_has_issue(obj)),
     )
 
     services = tuple(ClusterObject.objects.select_related("prototype").filter(cluster=cluster))

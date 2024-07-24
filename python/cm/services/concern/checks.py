@@ -12,9 +12,9 @@
 
 from collections import deque
 from operator import attrgetter
-from typing import Iterable, TypeAlias
+from typing import Iterable, Literal, NamedTuple, TypeAlias
 
-from core.types import ConfigID, ObjectID
+from core.types import ClusterID, ConfigID, ObjectID
 
 from cm.models import (
     Cluster,
@@ -29,6 +29,11 @@ from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 
 ObjectWithConfig: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
 HasIssue: TypeAlias = bool
+
+
+class MissingRequirement(NamedTuple):
+    type: Literal["service", "component"]
+    name: str
 
 
 def object_configuration_has_issue(target: ObjectWithConfig) -> HasIssue:
@@ -72,3 +77,43 @@ def filter_objects_with_configuration_issues(config_spec: FlatSpec, *objects: Ob
                 break
 
     return objects_with_issues
+
+
+def service_requirements_has_issue(service: ClusterObject) -> HasIssue:
+    return bool(find_unsatisfied_requirements(cluster_id=service.cluster_id, requires=service.prototype.requires))
+
+
+def find_unsatisfied_requirements(
+    cluster_id: ClusterID, requires: list[dict[Literal["service", "component"], str]]
+) -> tuple[MissingRequirement, ...]:
+    if not requires:
+        return ()
+
+    names_of_required_services: set[str] = set()
+    required_components: set[tuple[str, str]] = set()
+
+    for requirement in requires:
+        service_name = requirement["service"]
+
+        if component_name := requirement.get("component"):
+            required_components.add((service_name, component_name))
+        else:
+            names_of_required_services.add(service_name)
+
+    missing_requirements = deque()
+
+    if names_of_required_services:
+        for missing_service_name in names_of_required_services.difference(
+            ClusterObject.objects.values_list("prototype__name", flat=True).filter(cluster_id=cluster_id)
+        ):
+            missing_requirements.append(MissingRequirement(type="service", name=missing_service_name))
+
+    if required_components:
+        for _, missing_component_name in required_components.difference(
+            ServiceComponent.objects.values_list("service__prototype__name", "prototype__name").filter(
+                cluster_id=cluster_id
+            )
+        ):
+            missing_requirements.append(MissingRequirement(type="component", name=missing_component_name))
+
+    return tuple(missing_requirements)
