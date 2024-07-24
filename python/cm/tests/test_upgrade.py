@@ -37,7 +37,7 @@ from cm.models import (
     Upgrade,
 )
 from cm.tests.utils import gen_cluster
-from cm.upgrade import bundle_revert, check_upgrade, do_upgrade, switch_components
+from cm.upgrade import _switch_components, bundle_revert, check_upgrade, do_upgrade
 
 
 def cook_cluster_bundle(ver):
@@ -520,7 +520,7 @@ class TestUpgrade(BaseTestCase):
         self.assertEqual(service_component_12.prototype.parent, service.prototype)
 
         new_service_proto = Prototype.objects.get(type="service", name="hadoop", bundle=bundle_2)
-        switch_components(cluster, service, new_service_proto)
+        _switch_components(cluster, service, new_service_proto)
 
         new_component_prototype_1 = Prototype.objects.get(name="server", type="component", parent=new_service_proto)
         service_component_21 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="server")
