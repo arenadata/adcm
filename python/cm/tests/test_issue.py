@@ -33,12 +33,14 @@ from cm.models import (
     ClusterBind,
     ClusterObject,
     ConcernCause,
+    ObjectType,
     Prototype,
     PrototypeImport,
 )
 from cm.services.cluster import perform_host_to_cluster_map
+from cm.services.concern.checks import object_has_required_services_issue
 from cm.services.status import notify
-from cm.tests.utils import gen_job_log, gen_service, gen_task_log, generate_hierarchy
+from cm.tests.utils import gen_cluster, gen_job_log, gen_service, gen_task_log, generate_hierarchy
 
 mock_issue_check_map = {
     ConcernCause.CONFIG: lambda x: False,
@@ -134,6 +136,35 @@ class CreateIssueTest(BaseTestCase):
         cluster_issue = self.cluster.concerns.filter(cause=ConcernCause.SERVICE).first()
         self.assertEqual(cluster_issue.cause, ConcernCause.SERVICE)
         self.assertEqual(cluster_issue.reason["placeholder"]["target"]["name"], service_prototype.name)
+
+    def test_issue_detection_on_service(self):
+        cluster_2 = gen_cluster(
+            prototype=Prototype.objects.filter(type=ObjectType.CLUSTER, bundle=self.cluster.prototype.bundle).first()
+        )
+        Prototype.objects.create(
+            type="service", bundle=self.cluster.prototype.bundle, required=False, name="required service"
+        )
+
+        with self.subTest("Clusters have no required services"):
+            self.assertFalse(object_has_required_services_issue(self.cluster))
+            self.assertFalse(object_has_required_services_issue(cluster_2))
+
+        with self.subTest("Clusters have required services"):
+            prototype = Prototype.objects.create(
+                type="service", bundle=self.cluster.prototype.bundle, required=True, name="required service"
+            )
+            self.assertTrue(object_has_required_services_issue(self.cluster))
+            self.assertTrue(object_has_required_services_issue(cluster_2))
+
+        with self.subTest("Clusters have required services and the service is added to one of them cluster"):
+            service = add_service_to_cluster(self.cluster, prototype)
+            self.assertFalse(object_has_required_services_issue(self.cluster))
+            self.assertTrue(object_has_required_services_issue(cluster_2))
+
+        with self.subTest("Clusters have no required services after prototype deleted"):
+            service.delete()
+            self.assertTrue(object_has_required_services_issue(self.cluster))
+            self.assertTrue(object_has_required_services_issue(cluster_2))
 
 
 class RemoveIssueTest(BaseTestCase):
