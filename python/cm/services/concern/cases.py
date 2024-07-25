@@ -17,10 +17,14 @@ from typing import Iterable
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 
-from cm.issue import check_hc, check_required_import, check_required_services, create_issue
+from cm.issue import check_hc, check_required_services, create_issue
 from cm.models import Cluster, ClusterObject, ConcernCause, ConcernItem, ConcernType, Host, ServiceComponent
 from cm.services.concern import delete_issue
-from cm.services.concern.checks import object_configuration_has_issue, service_requirements_has_issue
+from cm.services.concern.checks import (
+    object_configuration_has_issue,
+    object_imports_has_issue,
+    service_requirements_has_issue,
+)
 from cm.services.concern.distribution import OwnObjectConcernMap
 
 
@@ -29,7 +33,7 @@ def recalculate_own_concerns_on_add_clusters(cluster: Cluster) -> OwnObjectConce
 
     cluster_checks = (
         (ConcernCause.CONFIG, lambda obj: not object_configuration_has_issue(obj)),
-        (ConcernCause.IMPORT, check_required_import),
+        (ConcernCause.IMPORT, lambda obj: not object_imports_has_issue(obj)),
         (ConcernCause.HOSTCOMPONENT, check_hc),
         (ConcernCause.SERVICE, check_required_services),
     )
@@ -54,7 +58,7 @@ def recalculate_own_concerns_on_add_services(
 
     service_checks = (
         (ConcernCause.CONFIG, lambda obj: not object_configuration_has_issue(obj)),
-        (ConcernCause.IMPORT, check_required_import),
+        (ConcernCause.IMPORT, lambda obj: not object_imports_has_issue(obj)),
         (ConcernCause.REQUIREMENT, lambda obj: not service_requirements_has_issue(obj)),
     )
     for service in services:
@@ -92,7 +96,7 @@ def recalculate_own_concerns_on_add_hosts(host: Host) -> OwnObjectConcernMap:
 def recalculate_concerns_on_cluster_upgrade(cluster: Cluster) -> None:
     cluster_checks = (
         (ConcernCause.CONFIG, lambda obj: not object_configuration_has_issue(obj)),
-        (ConcernCause.IMPORT, check_required_import),
+        (ConcernCause.IMPORT, lambda obj: not object_imports_has_issue(obj)),
         (ConcernCause.HOSTCOMPONENT, check_hc),
         (ConcernCause.SERVICE, check_required_services),
     )
@@ -115,7 +119,7 @@ def recalculate_concerns_on_cluster_upgrade(cluster: Cluster) -> None:
 
     service_checks = (
         (ConcernCause.CONFIG, lambda obj: not object_configuration_has_issue(obj)),
-        (ConcernCause.IMPORT, check_required_import),
+        (ConcernCause.IMPORT, lambda obj: not object_imports_has_issue(obj)),
         (ConcernCause.REQUIREMENT, lambda obj: not service_requirements_has_issue(obj)),
     )
 

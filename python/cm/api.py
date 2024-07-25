@@ -39,7 +39,6 @@ from cm.issue import (
     check_bound_components,
     check_component_constraint,
     check_hc_requires,
-    check_required_import,
     check_service_requires,
     create_issue,
     remove_concern_from_object,
@@ -79,7 +78,7 @@ from cm.services.concern.cases import (
     recalculate_own_concerns_on_add_hosts,
     recalculate_own_concerns_on_add_services,
 )
-from cm.services.concern.checks import object_configuration_has_issue
+from cm.services.concern.checks import object_configuration_has_issue, object_imports_has_issue
 from cm.services.concern.distribution import distribute_concern_on_related_objects, redistribute_issues_and_flags
 from cm.services.concern.flags import BuiltInFlag, raise_flag
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
@@ -891,7 +890,7 @@ def multi_bind(cluster: Cluster, service: ClusterObject | None, bind_list: list[
         logger.info("bind %s to %s", obj_ref(obj=export_obj), obj_ref(obj=import_obj))
 
     import_target = CoreObjectDescriptor(id=import_obj.id, type=orm_object_to_core_type(import_obj))
-    if check_required_import(obj=import_obj):
+    if not object_imports_has_issue(target=import_obj):
         delete_issue(owner=import_target, cause=ConcernCause.IMPORT)
     elif not import_obj.get_own_issue(ConcernCause.IMPORT):
         concern = create_issue(obj=import_obj, issue_cause=ConcernCause.IMPORT)
