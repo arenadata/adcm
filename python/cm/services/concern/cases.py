@@ -22,6 +22,7 @@ from cm.models import Cluster, ClusterObject, ConcernCause, ConcernItem, Concern
 from cm.services.concern import delete_issue
 from cm.services.concern.checks import (
     object_configuration_has_issue,
+    object_has_required_services_issue,
     object_imports_has_issue,
     service_requirements_has_issue,
 )
@@ -35,7 +36,7 @@ def recalculate_own_concerns_on_add_clusters(cluster: Cluster) -> OwnObjectConce
         (ConcernCause.CONFIG, lambda obj: not object_configuration_has_issue(obj)),
         (ConcernCause.IMPORT, lambda obj: not object_imports_has_issue(obj)),
         (ConcernCause.HOSTCOMPONENT, check_hc),
-        (ConcernCause.SERVICE, check_required_services),
+        (ConcernCause.SERVICE, lambda obj: not object_has_required_services_issue(obj)),
     )
 
     for cause, check in cluster_checks:
@@ -73,7 +74,7 @@ def recalculate_own_concerns_on_add_services(
             new_concerns[ADCMCoreType.COMPONENT][component.pk].add(issue.pk)
 
     # remove gone concerns
-    if check_required_services(cluster=cluster):
+    if not object_has_required_services_issue(cluster=cluster):
         delete_issue(owner=CoreObjectDescriptor(type=ADCMCoreType.CLUSTER, id=cluster.pk), cause=ConcernCause.SERVICE)
 
     for service in cluster.clusterobject_set.exclude(pk__in=(service.pk for service in services)):

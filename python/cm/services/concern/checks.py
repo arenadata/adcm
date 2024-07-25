@@ -24,6 +24,7 @@ from cm.models import (
     Host,
     HostProvider,
     ObjectConfig,
+    Prototype,
     PrototypeImport,
     ServiceComponent,
 )
@@ -67,6 +68,18 @@ def object_imports_has_issue(target: Cluster | ClusterObject) -> HasIssue:
             required_import_names -= {cluster_name}
 
     return required_import_names != set()
+
+
+def object_has_required_services_issue(cluster: Cluster) -> HasIssue:
+    bundle_id = cluster.prototype.bundle_id
+
+    required_protos = Prototype.objects.filter(bundle_id=bundle_id, type="service", required=True)
+
+    if (required_count := required_protos.count()) == 0:
+        return False
+
+    existing_required_objects = ClusterObject.objects.filter(cluster=cluster, prototype__in=required_protos)
+    return existing_required_objects.count() != required_count
 
 
 def filter_objects_with_configuration_issues(config_spec: FlatSpec, *objects: ObjectWithConfig) -> Iterable[ObjectID]:
