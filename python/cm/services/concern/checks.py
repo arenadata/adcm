@@ -15,13 +15,16 @@ from operator import attrgetter
 from typing import Iterable, Literal, NamedTuple, TypeAlias
 
 from core.types import ClusterID, ConfigID, ObjectID
+from django.db.models import Q
 
 from cm.models import (
     Cluster,
+    ClusterBind,
     ClusterObject,
     Host,
     HostProvider,
     ObjectConfig,
+    PrototypeImport,
     ServiceComponent,
 )
 from cm.services.config import retrieve_config_attr_pairs
@@ -42,6 +45,28 @@ def object_configuration_has_issue(target: ObjectWithConfig) -> HasIssue:
         return False
 
     return target.id in filter_objects_with_configuration_issues(config_spec, target)
+
+
+def object_imports_has_issue(target: Cluster | ClusterObject) -> HasIssue:
+    prototype_id = target.prototype_id
+    prototype_imports = PrototypeImport.objects.filter(prototype_id=prototype_id)
+    required_import_names = set(prototype_imports.values_list("name", flat=True).filter(required=True))
+
+    if not required_import_names:
+        return False
+
+    if not any(prototype_imports.values_list("required", flat=True)):
+        return False
+
+    for cluster_name, service_name in ClusterBind.objects.values_list(
+        "source_cluster__prototype__name", "source_service__prototype__name"
+    ).filter(Q(cluster__prototype_id=prototype_id) | Q(service__prototype_id=prototype_id)):
+        if service_name:
+            required_import_names -= {service_name}
+        elif cluster_name:
+            required_import_names -= {cluster_name}
+
+    return required_import_names != set()
 
 
 def filter_objects_with_configuration_issues(config_spec: FlatSpec, *objects: ObjectWithConfig) -> Iterable[ObjectID]:

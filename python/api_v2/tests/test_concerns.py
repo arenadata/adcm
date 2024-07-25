@@ -254,9 +254,14 @@ class TestConcernsLogic(BaseAPITestCase):
 
     def test_import_concern_resolved_after_saving_import(self):
         import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
+        unused_import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="unused_import_cluster")
         export_cluster = self.cluster_1
 
         response: Response = self.client.v2[import_cluster].get()
+        self.assertEqual(len(response.json()["concerns"]), 1)
+        self.assertEqual(import_cluster.concerns.count(), 1)
+
+        response: Response = self.client.v2[unused_import_cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertEqual(import_cluster.concerns.count(), 1)
 
@@ -267,6 +272,10 @@ class TestConcernsLogic(BaseAPITestCase):
         response: Response = self.client.v2[import_cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 0)
         self.assertEqual(import_cluster.concerns.count(), 0)
+
+        response: Response = self.client.v2[unused_import_cluster].get()
+        self.assertEqual(len(response.json()["concerns"]), 1)
+        self.assertEqual(unused_import_cluster.concerns.count(), 1)
 
     def test_non_required_import_do_not_raises_concern(self):
         self.assertGreater(PrototypeImport.objects.filter(prototype=self.cluster_2.prototype).count(), 0)
