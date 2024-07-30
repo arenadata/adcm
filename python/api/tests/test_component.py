@@ -80,7 +80,7 @@ class TestComponentAPI(BaseTestCase):
         self.assertEqual(response.data["maintenance_mode"], "ON")
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.ON)
 
-    def test_change_maintenance_mode_on_no_service_issue_success(self):
+    def test_adcm_5822_change_maintenance_mode_on_does_not_affect_parent_issues(self):
         bundle = self.upload_and_load_bundle(
             path=Path(
                 self.base_dir,
@@ -95,6 +95,8 @@ class TestComponentAPI(BaseTestCase):
         )
         cluster = Cluster.objects.get(pk=cluster_response.data["id"])
 
+        self.assertFalse(cluster.concerns.exists())
+
         service_prototype = Prototype.objects.get(bundle=bundle, type="service")
         service_response: Response = self.client.post(
             path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
@@ -105,6 +107,7 @@ class TestComponentAPI(BaseTestCase):
         component_1 = ServiceComponent.objects.get(service=service, prototype__name="first_component")
         component_2 = ServiceComponent.objects.get(service=service, prototype__name="second_component")
 
+        self.assertTrue(cluster.concerns.exists())
         self.assertTrue(service.concerns.exists())
         self.assertTrue(component_2.concerns.exists())
         self.assertFalse(component_1.concerns.exists())
@@ -120,7 +123,8 @@ class TestComponentAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["maintenance_mode"], "ON")
         self.assertEqual(component_2.maintenance_mode, MaintenanceMode.ON)
-        self.assertFalse(service.concerns.exists())
+        self.assertTrue(service.concerns.exists())
+        self.assertTrue(cluster.concerns.exists())
 
     def test_change_maintenance_mode_on_with_action_success(self):
         HostComponent.objects.create(

@@ -18,17 +18,12 @@ from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
 from cm.models import (
     Action,
     ClusterObject,
-    ConcernItem,
-    ConcernType,
     Host,
     HostComponent,
     MaintenanceMode,
     Prototype,
     ServiceComponent,
 )
-from cm.services.cluster import retrieve_clusters_topology
-from cm.services.concern.distribution import redistribute_issues_and_flags
-from cm.services.concern.flags import update_hierarchy
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import send_object_update_event
@@ -50,16 +45,6 @@ def _change_mm_via_action(
         serializer.validated_data["maintenance_mode"] = MaintenanceMode.CHANGING
 
     return serializer
-
-
-def _update_mm_hierarchy_issues(obj: Host | ClusterObject | ServiceComponent) -> None:
-    redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((obj.cluster_id,))))
-    reset_objects_in_mm()
-
-
-def _update_flags() -> None:
-    for flag in ConcernItem.objects.filter(type=ConcernType.FLAG):
-        update_hierarchy(concern=flag)
 
 
 def get_maintenance_mode_response(
@@ -134,7 +119,7 @@ def get_maintenance_mode_response(
             serializer.validated_data["maintenance_mode"] = MaintenanceMode.ON
 
         serializer.save()
-        _update_mm_hierarchy_issues(obj=obj)
+        reset_objects_in_mm()
         send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
 
         return Response()
@@ -162,7 +147,7 @@ def get_maintenance_mode_response(
             serializer.validated_data["maintenance_mode"] = MaintenanceMode.OFF
 
         serializer.save()
-        _update_mm_hierarchy_issues(obj=obj)
+        reset_objects_in_mm()
         send_object_update_event(object_=obj, changes={"maintenanceMode": obj.maintenance_mode})
 
         return Response()

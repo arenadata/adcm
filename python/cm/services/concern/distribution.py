@@ -10,18 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict, deque
+from collections import defaultdict
 from copy import copy
 from itertools import chain
 from operator import itemgetter
 from typing import Iterable, TypeAlias
 
-from core.cluster.operations import (
-    calculate_maintenance_mode_for_cluster_objects,
-    calculate_maintenance_mode_for_component,
-    calculate_maintenance_mode_for_service,
-)
-from core.cluster.types import ClusterTopology, ObjectMaintenanceModeState
+from core.cluster.types import ClusterTopology
 from core.types import (
     ADCMCoreType,
     ClusterID,
@@ -47,7 +42,6 @@ from cm.models import (
     HostProvider,
     ServiceComponent,
 )
-from cm.services.cluster import retrieve_clusters_objects_maintenance_mode
 
 # PUBLIC redistribute_issues_and_flags
 
@@ -86,12 +80,7 @@ def redistribute_issues_and_flags(topology: ClusterTopology) -> None:
         topology=topology, objects_concerns=objects_concerns
     )
 
-    # Step #3. Remove concerns from objects in MM
-    concern_links = _drop_concerns_from_objects_in_mm(
-        topology=topology, concern_links=concern_links, provider_host_map=provider_host_ids_mapping
-    )
-
-    # Step #4. Link objects to concerns
+    # Step #3. Link objects to concerns
     _relink_concerns_to_objects_in_db(
         concern_links=concern_links,
         topology_objects=topology_objects,
@@ -162,63 +151,6 @@ def _calculate_concerns_distribution_for_topology(
     return concern_links
 
 
-def _drop_concerns_from_objects_in_mm(
-    topology: ClusterTopology, concern_links: AffectedObjectConcernMap, provider_host_map: ProviderHostMap
-) -> AffectedObjectConcernMap:
-    mm_of_objects = calculate_maintenance_mode_for_cluster_objects(
-        topology=topology,
-        own_maintenance_mode=retrieve_clusters_objects_maintenance_mode(cluster_ids=(topology.cluster_id,)),
-    )
-
-    hosts_in_mm = set(_keep_objects_in_mm(mm_of_objects.hosts))
-
-    objects_in_mm_own_concerns: OwnObjectConcernMap = _get_own_concerns_of_objects(
-        with_types=(ConcernType.ISSUE, ConcernType.FLAG),
-        hosts=hosts_in_mm,
-        services=_keep_objects_in_mm(mm_of_objects.services),
-        components=_keep_objects_in_mm(mm_of_objects.components),
-    )
-
-    if not objects_in_mm_own_concerns:
-        return concern_links
-
-    unmapped_hosts = topology.unmapped_hosts
-    hostprovider_concerns_to_unlink = set()
-    hostproviders_to_exclude = deque()
-    for hostprovider_id, hosts in provider_host_map.items():
-        # If all mapped hosts are in MM, then HP concerns should be removed from all objects that aren't hosts.
-        # If at least one mapped host is not in MM, concerns should be passed in a regular way.
-        mapped_hosts = hosts - unmapped_hosts
-        if mapped_hosts and mapped_hosts.issubset(hosts_in_mm):
-            hostproviders_to_exclude.append(hostprovider_id)
-
-    if hostproviders_to_exclude:
-        hostprovider_concerns_to_unlink |= set(
-            chain.from_iterable(
-                _get_own_concerns_of_objects(
-                    with_types=(ConcernType.ISSUE, ConcernType.FLAG), hostproviders=hostproviders_to_exclude
-                )
-                .get(ADCMCoreType.HOSTPROVIDER, {})
-                .values()
-            )
-        )
-
-    own_concerns_to_keep: OwnObjectConcernMap = defaultdict(lambda: defaultdict(set))
-    concerns_to_unlink: set[int] = copy(hostprovider_concerns_to_unlink)
-
-    for core_type, concern_dict in objects_in_mm_own_concerns.items():
-        hostprovider_concerns_to_keep = set() if core_type != ADCMCoreType.HOST else hostprovider_concerns_to_unlink
-        for object_id, concerns in concern_dict.items():
-            own_concerns_to_keep[core_type][object_id] = concerns | hostprovider_concerns_to_keep
-            concerns_to_unlink |= concerns
-
-    for core_type, concern_dict in concern_links.items():
-        for object_id, concerns in concern_dict.items():
-            concern_dict[object_id] = concerns - (concerns_to_unlink - own_concerns_to_keep[core_type][object_id])
-
-    return concern_links
-
-
 def _relink_concerns_to_objects_in_db(
     concern_links: dict[ADCMCoreType, dict[ObjectID, set[int]]],
     topology_objects: TopologyObjectMap,
@@ -277,7 +209,7 @@ def distribute_concern_on_related_objects(owner: CoreObjectDescriptor, concern_i
 
 def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRelatedObjects:
     """
-    Find objects that should be affected by appeared concern on given objects considering HC and MM.
+    Find objects that should be affected by appeared concern on given objects considering HC.
     """
     targets: ConcernRelatedObjects = defaultdict(set)
 
@@ -296,63 +228,33 @@ def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRe
             )
 
         case ADCMCoreType.SERVICE:
-            hosts_info = HostComponent.objects.values_list("host_id", "host__maintenance_mode").filter(
-                service_id=owner.id
+            targets[ADCMCoreType.HOST] |= set(
+                HostComponent.objects.values_list("host_id", flat=True).filter(service_id=owner.id)
             )
-            components_info = ServiceComponent.objects.values_list("id", "_maintenance_mode").filter(
-                service_id=owner.id
+            targets[ADCMCoreType.COMPONENT] |= set(
+                ServiceComponent.objects.values_list("id", flat=True).filter(service_id=owner.id)
             )
-
-            raw_own_mm, cluster_id = ClusterObject.objects.values_list("_maintenance_mode", "cluster_id").get(
-                id=owner.id
+            targets[ADCMCoreType.CLUSTER].add(
+                ClusterObject.objects.values_list("cluster_id", flat=True).get(id=owner.id)
             )
-
-            own_mm = calculate_maintenance_mode_for_service(
-                own_mm=ObjectMaintenanceModeState(raw_own_mm),
-                service_components_own_mm=(
-                    ObjectMaintenanceModeState(component_mm) for _, component_mm in components_info
-                ),
-                service_hosts_mm=(ObjectMaintenanceModeState(host_mm) for _, host_mm in hosts_info),
-            )
-
-            if own_mm == ObjectMaintenanceModeState.OFF:
-                targets[ADCMCoreType.CLUSTER].add(cluster_id)
-                targets[ADCMCoreType.COMPONENT].update(map(itemgetter(0), components_info))
-                targets[ADCMCoreType.HOST].update(map(itemgetter(0), hosts_info))
 
         case ADCMCoreType.COMPONENT:
-            raw_own_mm, cluster_id, service_id, service_raw_own_mm = ServiceComponent.objects.values_list(
-                "_maintenance_mode", "cluster_id", "service_id", "service___maintenance_mode"
-            ).get(id=owner.id)
+            cluster_id, service_id = ServiceComponent.objects.values_list("cluster_id", "service_id").get(id=owner.id)
 
-            hosts_info = HostComponent.objects.values_list("host_id", "host__maintenance_mode").filter(
-                component_id=owner.id
+            targets[ADCMCoreType.CLUSTER].add(cluster_id)
+            targets[ADCMCoreType.SERVICE].add(service_id)
+            targets[ADCMCoreType.HOST] |= set(
+                HostComponent.objects.values_list("host_id", flat=True).filter(component_id=owner.id)
             )
-
-            own_mm = calculate_maintenance_mode_for_component(
-                own_mm=ObjectMaintenanceModeState(raw_own_mm),
-                service_mm=ObjectMaintenanceModeState(service_raw_own_mm),
-                component_hosts_mm=(ObjectMaintenanceModeState(host_mm) for _, host_mm in hosts_info),
-            )
-
-            if own_mm == ObjectMaintenanceModeState.OFF:
-                targets[ADCMCoreType.CLUSTER].add(cluster_id)
-                targets[ADCMCoreType.SERVICE].add(service_id)
-                targets[ADCMCoreType.HOST].update(map(itemgetter(0), hosts_info))
 
         case ADCMCoreType.HOST:
-            own_mm = ObjectMaintenanceModeState(
-                Host.objects.values_list("maintenance_mode", flat=True).get(id=owner.id)
+            hc_records = tuple(
+                HostComponent.objects.values("cluster_id", "service_id", "component_id").filter(host_id=owner.id)
             )
-
-            if own_mm == ObjectMaintenanceModeState.OFF:
-                hc_records = tuple(
-                    HostComponent.objects.values("cluster_id", "service_id", "component_id").filter(host_id=owner.id)
-                )
-                if hc_records:
-                    targets[ADCMCoreType.CLUSTER].add(hc_records[0]["cluster_id"])
-                    targets[ADCMCoreType.SERVICE].update(map(itemgetter("service_id"), hc_records))
-                    targets[ADCMCoreType.COMPONENT].update(map(itemgetter("component_id"), hc_records))
+            if hc_records:
+                targets[ADCMCoreType.CLUSTER].add(hc_records[0]["cluster_id"])
+                targets[ADCMCoreType.SERVICE].update(map(itemgetter("service_id"), hc_records))
+                targets[ADCMCoreType.COMPONENT].update(map(itemgetter("component_id"), hc_records))
 
         case ADCMCoreType.HOSTPROVIDER:
             targets[ADCMCoreType.HOST] |= set(Host.objects.values_list("id", flat=True).filter(provider_id=owner.id))
@@ -387,10 +289,6 @@ def _add_concern_links_to_objects_in_db(targets: ConcernRelatedObjects, concern_
 
 
 # PROTECTED generic-purpose methods
-
-
-def _keep_objects_in_mm(entries: dict[int, ObjectMaintenanceModeState]) -> Iterable[int]:
-    return (id_ for id_, mm in entries.items() if mm != ObjectMaintenanceModeState.OFF)
 
 
 def _get_own_concerns_of_objects(
