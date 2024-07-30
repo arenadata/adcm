@@ -11,11 +11,14 @@
 # limitations under the License.
 
 from collections import deque
+from functools import partial
 from operator import attrgetter
-from typing import Iterable, Literal, NamedTuple, TypeAlias
+from typing import Callable, Iterable, Literal, NamedTuple, TypeAlias
 
-from core.types import ClusterID, ConfigID, ObjectID
+from core.cluster.types import ServiceTopology
+from core.types import ClusterID, ComponentID, ConfigID, HostID, ObjectID, PrototypeID, ServiceID
 from django.db.models import Q
+from typing_extensions import Self
 
 from cm.models import (
     Cluster,
@@ -24,20 +27,82 @@ from cm.models import (
     Host,
     HostProvider,
     ObjectConfig,
+    ObjectType,
     Prototype,
     PrototypeImport,
     ServiceComponent,
 )
+from cm.services.cluster import retrieve_clusters_topology
 from cm.services.config import retrieve_config_attr_pairs
 from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 
 ObjectWithConfig: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
 HasIssue: TypeAlias = bool
+RequiresEntry: TypeAlias = dict[Literal["service", "component"], str]
+ConstraintDBFormat: TypeAlias = tuple[str] | tuple[int | str, int | str]
 
 
 class MissingRequirement(NamedTuple):
     type: Literal["service", "component"]
     name: str
+
+
+class Constraint(NamedTuple):
+    internal: ConstraintDBFormat
+    checks: tuple[Callable[[int, int], bool], ...]
+
+    @classmethod
+    def from_db_repr(cls, constraint: ConstraintDBFormat) -> Self:
+        match constraint:
+            case [0, "+"]:
+                # no checks actually required, it's the "default"
+                checks = ()
+            case ["+"]:
+                checks = (check_on_all,)
+            case ["odd"]:
+                checks = (check_is_odd,)
+            case [int(exact)]:
+                checks = (partial(check_exact, argument=exact),)
+            case [int(min_), "odd"]:
+                checks = (partial(check_equal_or_greater, argument=min_), check_is_odd)
+            case [int(min_), "+"]:
+                checks = (partial(check_equal_or_greater, argument=min_),)
+            case [int(min_), int(max_)]:
+                checks = (partial(check_equal_or_greater, argument=min_), partial(check_equal_or_less, argument=max_))
+            case _:
+                checks = ()
+
+        return Constraint(internal=constraint, checks=checks)
+
+    def is_met_for(self, mapped_hosts: int, hosts_in_cluster: int) -> bool:
+        return all(check(mapped_hosts, hosts_in_cluster) for check in self.checks)
+
+
+class ServiceExternalRequirement(NamedTuple):
+    name: str
+
+
+class ComponentExternalRequirement(NamedTuple):
+    name: str
+    service_name: str
+
+
+class ComponentMappingRequirements(NamedTuple):
+    constraint: Constraint
+    requires: tuple[ServiceExternalRequirement | ComponentExternalRequirement, ...]
+    bound_to: ComponentExternalRequirement | None
+
+    @property
+    def is_constraint_check_required(self) -> bool:
+        return len(self.constraint.checks) > 0
+
+    @property
+    def is_requires_check_required(self) -> bool:
+        return len(self.requires) > 0
+
+    @property
+    def is_bound_to_check_required(self) -> bool:
+        return self.bound_to is not None
 
 
 def object_configuration_has_issue(target: ObjectWithConfig) -> HasIssue:
@@ -122,7 +187,7 @@ def service_requirements_has_issue(service: ClusterObject) -> HasIssue:
 
 
 def find_unsatisfied_requirements(
-    cluster_id: ClusterID, requires: list[dict[Literal["service", "component"], str]]
+    cluster_id: ClusterID, requires: list[RequiresEntry]
 ) -> tuple[MissingRequirement, ...]:
     if not requires:
         return ()
@@ -155,3 +220,121 @@ def find_unsatisfied_requirements(
             missing_requirements.append(MissingRequirement(type="component", name=missing_component_name))
 
     return tuple(missing_requirements)
+
+
+def cluster_mapping_has_issue(cluster: Cluster) -> HasIssue:
+    """
+    Checks:
+      - requires (components only)
+      - constraint
+      - bound_to
+    """
+
+    # extract requirements
+
+    bundle_id = cluster.prototype.bundle_id
+
+    requirements_from_components: dict[PrototypeID, ComponentMappingRequirements] = {}
+
+    for prototype_id, constraint, requires, bound_to in Prototype.objects.values_list(
+        "id", "constraint", "requires", "bound_to"
+    ).filter(bundle_id=bundle_id, type=ObjectType.COMPONENT):
+        prepared_requires = deque()
+        for requirement in requires:
+            service_name = requirement["service"]
+            if component_name := requirement.get("component"):
+                prepared_requires.append(ComponentExternalRequirement(name=component_name, service_name=service_name))
+            else:
+                prepared_requires.append(ServiceExternalRequirement(name=service_name))
+
+        requirements_from_components[prototype_id] = ComponentMappingRequirements(
+            constraint=Constraint.from_db_repr(constraint),
+            requires=tuple(prepared_requires),
+            bound_to=ComponentExternalRequirement(name=bound_to["component"], service_name=bound_to["service"])
+            if bound_to
+            else None,
+        )
+
+    # prepare data for check
+
+    topology = next(retrieve_clusters_topology((cluster.id,)))
+
+    component_prototype_map: dict[ComponentID, tuple[PrototypeID, ServiceID]] = {}
+    existing_objects_map: dict[ComponentExternalRequirement | ServiceExternalRequirement, ComponentID | ServiceID] = {
+        ServiceExternalRequirement(name=service_name): service_id
+        for service_id, service_name in ClusterObject.objects.values_list("id", "prototype__name").filter(
+            cluster=cluster
+        )
+    }
+
+    for component_id, prototype_id, service_id, component_name, service_name in ServiceComponent.objects.values_list(
+        "id", "prototype_id", "service_id", "prototype__name", "service__prototype__name"
+    ).filter(id__in=topology.component_ids):
+        component_prototype_map[component_id] = (prototype_id, service_id)
+        existing_objects_map[
+            ComponentExternalRequirement(name=component_name, service_name=service_name)
+        ] = component_id
+
+    hosts_amount = len(topology.hosts)
+
+    existing_objects = set(existing_objects_map.keys())
+
+    # run checks
+
+    for component_id, (prototype_id, service_id) in component_prototype_map.items():
+        requirements = requirements_from_components[prototype_id]
+
+        if requirements.is_requires_check_required and not existing_objects.issuperset(requirements.requires):
+            return True
+
+        if requirements.is_constraint_check_required and not requirements.constraint.is_met_for(
+            mapped_hosts=len(topology.services[service_id].components[component_id].hosts),
+            hosts_in_cluster=hosts_amount,
+        ):
+            return True
+
+        if requirements.is_bound_to_check_required:
+            bound_component_id = existing_objects_map.get(requirements.bound_to)
+            if not bound_component_id:
+                return True
+
+            service_id_of_bound_component = existing_objects_map.get(
+                ServiceExternalRequirement(name=requirements.bound_to.service_name)
+            )
+            if not service_id_of_bound_component:
+                return True
+
+            bound_service_topology: ServiceTopology | None = topology.services.get(service_id_of_bound_component)
+            if not bound_service_topology:
+                return True
+
+            bound_component_hosts: set[HostID] = set(bound_service_topology.components[bound_component_id].hosts)
+            current_component_hosts: set[HostID] = set(topology.services[service_id].components[component_id].hosts)
+
+            if bound_component_hosts != current_component_hosts:
+                return True
+
+    return False
+
+
+# constraint check functions
+
+
+def check_equal_or_less(mapped_hosts: int, _: int, argument: int):
+    return mapped_hosts <= argument
+
+
+def check_equal_or_greater(mapped_hosts: int, _: int, argument: int):
+    return mapped_hosts >= argument
+
+
+def check_exact(mapped_hosts: int, _: int, argument: int):
+    return mapped_hosts == argument
+
+
+def check_is_odd(mapped_hosts: int, _: int):
+    return mapped_hosts % 2 == 1
+
+
+def check_on_all(mapped_hosts: int, hosts_in_cluster: int):
+    return mapped_hosts > 0 and mapped_hosts == hosts_in_cluster
