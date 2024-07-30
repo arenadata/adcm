@@ -712,7 +712,7 @@ class TestConcernRedistribution(BaseAPITestCase):
 
             self.check_concerns_of_control_objects()
 
-    def test_concerns_distribution_mm(self) -> None:
+    def test_mm_does_not_affect_concerns_distribution(self) -> None:
         # prepare
         second_provider = self.add_provider(bundle=self.provider.prototype.bundle, name="No Concerns HP")
         host_no_concerns = self.add_host(provider=second_provider, fqdn="no-concerns-host", cluster=self.cluster)
@@ -751,26 +751,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         single_con = single_c.get_own_issue(ConcernCause.CONFIG)
         main_and_single_cons = (main_service_own_con, single_con)
 
-        # test
-        with self.subTest("Unmapped Distribution Turn Service ON"):
-            self.change_mm_via_api(MM.ON, main_s)
-
-            self.check_concerns(self.cluster, concerns=(*cluster_own_cons, no_components_service_own_con))
-            self.check_concerns(main_s, concerns=(*cluster_own_cons, main_service_own_con))
-            self.check_concerns(single_c, concerns=(*cluster_own_cons, single_con))
-            self.check_concerns(free_c, concerns=cluster_own_cons)
-            self.check_concerns(no_components_s, concerns=(*cluster_own_cons, no_components_service_own_con))
-
-            self.check_concerns(host_1, concerns=(host_1_config_con, provider_config_con))
-            self.check_concerns(host_2, concerns=(provider_config_con,))
-            self.check_concerns(unmapped_host, concerns=(provider_config_con, unmapped_host_con))
-            self.check_concerns(host_no_concerns, concerns=(second_provider_con,))
-
-            self.check_concerns_of_control_objects()
-
-        with self.subTest("Unmapped Distribution Turn Service OFF"):
-            self.change_mm_via_api(MM.OFF, main_s)
-
+        def check_concerns():
             self.check_concerns(
                 self.cluster, concerns=(*cluster_own_cons, *main_and_single_cons, no_components_service_own_con)
             )
@@ -786,130 +767,7 @@ class TestConcernRedistribution(BaseAPITestCase):
 
             self.check_concerns_of_control_objects()
 
-        self.set_hostcomponent(
-            cluster=self.cluster,
-            entries=((host_1, single_c), (host_1, free_c), (host_2, free_c), (host_no_concerns, free_c)),
-        )
-        cluster_own_cons = tuple(
-            ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
-        )
-
-        with self.subTest("Mapped Turn Component ON"):
-            self.change_mm_via_api(MM.ON, single_c)
-
-            self.check_concerns(
-                self.cluster,
-                concerns=(
-                    *cluster_own_cons,
-                    main_service_own_con,
-                    no_components_service_own_con,
-                    *all_mapped_hosts_cons,
-                ),
-            )
-            self.check_concerns(main_s, concerns=(*cluster_own_cons, main_service_own_con, *all_mapped_hosts_cons))
-            self.check_concerns(
-                single_c,
-                concerns=(*cluster_own_cons, *main_and_single_cons, provider_config_con, host_1_config_con),
-            )
-            self.check_concerns(free_c, concerns=(*cluster_own_cons, main_service_own_con, *all_mapped_hosts_cons))
-            self.check_concerns(no_components_s, concerns=(*cluster_own_cons, no_components_service_own_con))
-
-            self.check_concerns(
-                host_1, concerns=(*cluster_own_cons, main_service_own_con, host_1_config_con, provider_config_con)
-            )
-            self.check_concerns(
-                host_2,
-                concerns=(*cluster_own_cons, main_service_own_con, provider_config_con),
-            )
-            self.check_concerns(unmapped_host, concerns=(provider_config_con, unmapped_host_con))
-            self.check_concerns(
-                host_no_concerns, concerns=(*cluster_own_cons, main_service_own_con, second_provider_con)
-            )
-
-            self.check_concerns_of_control_objects()
-
-        with self.subTest("Mapped Turn Host ON"):
-            self.change_mm_via_api(MM.ON, host_1)
-
-            self.check_concerns(
-                self.cluster,
-                concerns=(*cluster_own_cons, main_service_own_con, no_components_service_own_con, *provider_cons),
-            )
-            self.check_concerns(main_s, concerns=(*cluster_own_cons, main_service_own_con, *provider_cons))
-            self.check_concerns(
-                single_c,
-                concerns=(*cluster_own_cons, *main_and_single_cons, provider_config_con),
-            )
-            self.check_concerns(free_c, concerns=(*cluster_own_cons, main_service_own_con, *provider_cons))
-            self.check_concerns(no_components_s, concerns=(*cluster_own_cons, no_components_service_own_con))
-
-            self.check_concerns(
-                host_1, concerns=(*cluster_own_cons, main_service_own_con, host_1_config_con, provider_config_con)
-            )
-            self.check_concerns(
-                host_2,
-                concerns=(*cluster_own_cons, main_service_own_con, provider_config_con),
-            )
-            self.check_concerns(unmapped_host, concerns=(provider_config_con, unmapped_host_con))
-            self.check_concerns(
-                host_no_concerns, concerns=(*cluster_own_cons, main_service_own_con, second_provider_con)
-            )
-
-            self.check_concerns_of_control_objects()
-
-        with self.subTest("Mapped Turn Second Host ON"):
-            self.change_mm_via_api(MM.ON, host_2)
-
-            self.check_concerns(
-                self.cluster,
-                concerns=(*cluster_own_cons, main_service_own_con, no_components_service_own_con, second_provider_con),
-            )
-            self.check_concerns(main_s, concerns=(*cluster_own_cons, main_service_own_con, second_provider_con))
-            self.check_concerns(single_c, concerns=(*cluster_own_cons, *main_and_single_cons))
-            self.check_concerns(free_c, concerns=(*cluster_own_cons, main_service_own_con, second_provider_con))
-            self.check_concerns(no_components_s, concerns=(*cluster_own_cons, no_components_service_own_con))
-
-            self.check_concerns(
-                host_1, concerns=(*cluster_own_cons, main_service_own_con, host_1_config_con, provider_config_con)
-            )
-            self.check_concerns(
-                host_2,
-                concerns=(*cluster_own_cons, main_service_own_con, provider_config_con),
-            )
-            self.check_concerns(unmapped_host, concerns=(provider_config_con, unmapped_host_con))
-            self.check_concerns(
-                host_no_concerns, concerns=(*cluster_own_cons, main_service_own_con, second_provider_con)
-            )
-
-            self.check_concerns_of_control_objects()
-
-        with self.subTest("Mapped Turn Service Without Components ON"):
-            self.change_mm_via_api(MM.ON, no_components_s)
-
-            self.check_concerns(self.cluster, concerns=(*cluster_own_cons, main_service_own_con, second_provider_con))
-            self.check_concerns(main_s, concerns=(*cluster_own_cons, main_service_own_con, second_provider_con))
-            self.check_concerns(single_c, concerns=(*cluster_own_cons, *main_and_single_cons))
-            self.check_concerns(free_c, concerns=(*cluster_own_cons, main_service_own_con, second_provider_con))
-            self.check_concerns(no_components_s, concerns=(*cluster_own_cons, no_components_service_own_con))
-
-            self.check_concerns(
-                host_1, concerns=(*cluster_own_cons, main_service_own_con, host_1_config_con, provider_config_con)
-            )
-            self.check_concerns(
-                host_2,
-                concerns=(*cluster_own_cons, main_service_own_con, provider_config_con),
-            )
-            self.check_concerns(unmapped_host, concerns=(provider_config_con, unmapped_host_con))
-            self.check_concerns(
-                host_no_concerns,
-                concerns=(*cluster_own_cons, main_service_own_con, second_provider_con),
-            )
-
-            self.check_concerns_of_control_objects()
-
-        with self.subTest("Mapped Turn All OFF"):
-            self.change_mm_via_api(MM.OFF, no_components_s, host_1, host_2, single_c)
-
+        def check_concerns_after_mapping():
             self.check_concerns(
                 self.cluster,
                 concerns=(
@@ -936,11 +794,50 @@ class TestConcernRedistribution(BaseAPITestCase):
             )
             self.check_concerns(unmapped_host, concerns=(provider_config_con, unmapped_host_con))
             self.check_concerns(
-                host_no_concerns,
-                concerns=(*cluster_own_cons, main_service_own_con, second_provider_con),
+                host_no_concerns, concerns=(*cluster_own_cons, main_service_own_con, second_provider_con)
             )
 
             self.check_concerns_of_control_objects()
+
+        # test
+        with self.subTest("Initial state"):
+            check_concerns()
+
+        with self.subTest("Unmapped Distribution Turn Service ON"):
+            self.change_mm_via_api(MM.ON, main_s)
+            check_concerns()
+
+        with self.subTest("Unmapped Distribution Turn Service OFF"):
+            self.change_mm_via_api(MM.OFF, main_s)
+            check_concerns()
+
+        self.set_hostcomponent(
+            cluster=self.cluster,
+            entries=((host_1, single_c), (host_1, free_c), (host_2, free_c), (host_no_concerns, free_c)),
+        )
+        cluster_own_cons = tuple(
+            ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
+        )
+
+        with self.subTest("Mapped Turn Component ON"):
+            self.change_mm_via_api(MM.ON, single_c)
+            check_concerns_after_mapping()
+
+        with self.subTest("Mapped Turn Host ON"):
+            self.change_mm_via_api(MM.ON, host_1)
+            check_concerns_after_mapping()
+
+        with self.subTest("Mapped Turn Second Host ON"):
+            self.change_mm_via_api(MM.ON, host_2)
+            check_concerns_after_mapping()
+
+        with self.subTest("Mapped Turn Service Without Components ON"):
+            self.change_mm_via_api(MM.ON, no_components_s)
+            check_concerns_after_mapping()
+
+        with self.subTest("Mapped Turn All OFF"):
+            self.change_mm_via_api(MM.OFF, no_components_s, host_1, host_2, single_c)
+            check_concerns_after_mapping()
 
     def test_concern_removal_with_flag_autogeneration_on_config_change(self) -> None:
         # prepare
@@ -959,113 +856,133 @@ class TestConcernRedistribution(BaseAPITestCase):
             cluster=self.cluster,
             entries=((host_1, single_c), (host_1, free_c), (host_2, free_c), (another_host, free_c)),
         )
-        self.change_mm_via_api(MM.ON, host_2, single_c)
+        self.change_mm_via_api(MM.ON, host_2, single_c)  # ADCM-5882: MM should not affect concerns
 
         # find own concerns
-        expected = {}
-
-        no_components_s_own_con = no_components_s.get_own_issue(ConcernCause.IMPORT)
-        expected["main_s_own_con"] = main_s.get_own_issue(ConcernCause.CONFIG)
-        expected["cluster_own_cons"] = tuple(
+        no_components_s_own_concern = no_components_s.get_own_issue(ConcernCause.IMPORT)
+        main_s_own_concern = main_s.get_own_issue(ConcernCause.CONFIG)
+        cluster_own_concerns = tuple(
             ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
         )
-        expected["single_c_con"] = single_c.get_own_issue(ConcernCause.CONFIG)
+        single_c_concern = single_c.get_own_issue(ConcernCause.CONFIG)
+        host_1_concern = host_1.get_own_issue(ConcernCause.CONFIG)
+        host_2_concern = host_2.get_own_issue(ConcernCause.CONFIG)
+        another_host_concern = another_host.get_own_issue(ConcernCause.CONFIG)
+        provider_concern = self.provider.get_own_issue(ConcernCause.CONFIG)
+        another_provider_concern = another_provider.get_own_issue(ConcernCause.CONFIG)
+
+        expected_concerns = {}
+
+        def _update_expected_concerns():
+            mapped_hosts_concerns = (
+                host_1_concern,
+                host_2_concern,
+                provider_concern,
+                another_host_concern,
+                another_provider_concern,
+            )
+
+            expected_concerns["cluster"] = (
+                *cluster_own_concerns,
+                main_s_own_concern,
+                no_components_s_own_concern,
+                single_c_concern,
+                *mapped_hosts_concerns,
+            )
+            expected_concerns["no_components_s"] = (*cluster_own_concerns, no_components_s_own_concern)
+            expected_concerns["main_s"] = (
+                *cluster_own_concerns,
+                main_s_own_concern,
+                single_c_concern,
+                *mapped_hosts_concerns,
+            )
+            expected_concerns["free_c"] = (*cluster_own_concerns, main_s_own_concern, *mapped_hosts_concerns)
+            expected_concerns["single_c"] = (
+                *cluster_own_concerns,
+                main_s_own_concern,
+                single_c_concern,
+                host_1_concern,
+                provider_concern,
+            )
+            expected_concerns["host_1"] = (
+                *cluster_own_concerns,
+                main_s_own_concern,
+                single_c_concern,
+                host_1_concern,
+                provider_concern,
+            )
+            expected_concerns["host_2"] = (*cluster_own_concerns, main_s_own_concern, host_2_concern, provider_concern)
+            expected_concerns["another_host"] = (
+                *cluster_own_concerns,
+                main_s_own_concern,
+                another_host_concern,
+                another_provider_concern,
+            )
+            expected_concerns["unmapped_host"] = self.get_config_issues_of(unmapped_host, self.provider)
+            expected_concerns["provider"] = (provider_concern,)
+            expected_concerns["another_provider"] = (another_provider_concern,)
 
         def check_concerns():
-            mapped_hosts_concerns = (*expected["host_1_concerns"], *expected["another_host_concerns"])
-            self.check_concerns(
-                self.cluster,
-                concerns=(
-                    *expected["cluster_own_cons"],
-                    expected["main_s_own_con"],
-                    no_components_s_own_con,
-                    *mapped_hosts_concerns,
-                ),
-            )
-            self.check_concerns(no_components_s, concerns=(*expected["cluster_own_cons"], no_components_s_own_con))
-            self.check_concerns(
-                main_s, concerns=(*expected["cluster_own_cons"], expected["main_s_own_con"], *mapped_hosts_concerns)
-            )
-            self.check_concerns(
-                free_c, concerns=(*expected["cluster_own_cons"], expected["main_s_own_con"], *mapped_hosts_concerns)
-            )
-            self.check_concerns(
-                single_c,
-                concerns=(
-                    *expected["cluster_own_cons"],
-                    expected["main_s_own_con"],
-                    expected["single_c_con"],
-                    *expected["host_1_concerns"],
-                ),
-            )
+            self.check_concerns(self.cluster, concerns=expected_concerns["cluster"])
+            self.check_concerns(no_components_s, concerns=expected_concerns["no_components_s"])
+            self.check_concerns(main_s, concerns=expected_concerns["main_s"])
+            self.check_concerns(free_c, concerns=expected_concerns["free_c"])
+            self.check_concerns(single_c, concerns=expected_concerns["single_c"])
 
-            self.check_concerns(
-                host_1,
-                concerns=(*expected["cluster_own_cons"], expected["main_s_own_con"], *expected["host_1_concerns"]),
-            )
-            self.check_concerns(
-                host_2,
-                concerns=(
-                    *expected["cluster_own_cons"],
-                    expected["main_s_own_con"],
-                    *self.get_config_issues_of(host_2, self.provider),
-                ),
-            )
-            self.check_concerns(
-                another_host,
-                concerns=(
-                    *expected["cluster_own_cons"],
-                    expected["main_s_own_con"],
-                    *expected["another_host_concerns"],
-                ),
-            )
-            self.check_concerns(unmapped_host, concerns=self.get_config_issues_of(unmapped_host, self.provider))
-            self.check_concerns(self.provider, concerns=self.get_config_issues_of(self.provider))
-            self.check_concerns(another_provider, concerns=self.get_config_flags_of(another_provider))
+            self.check_concerns(host_1, concerns=expected_concerns["host_1"])
+            self.check_concerns(host_2, concerns=expected_concerns["host_2"])
+            self.check_concerns(another_host, concerns=expected_concerns["another_host"])
+            self.check_concerns(unmapped_host, concerns=expected_concerns["unmapped_host"])
+            self.check_concerns(self.provider, concerns=expected_concerns["provider"])
+            self.check_concerns(another_provider, concerns=expected_concerns["another_provider"])
 
             self.check_concerns_of_control_objects()
 
         # test
-        self.change_config_via_api(another_provider)
-
-        expected["host_1_concerns"] = self.get_config_issues_of(host_1, self.provider)
-        expected["another_host_concerns"] = (
-            *self.get_config_issues_of(another_host),
-            *self.get_config_flags_of(another_provider),
-        )
+        with self.subTest("Initial concerns"):
+            _update_expected_concerns()
+            check_concerns()
 
         with self.subTest("Change HostProvider Config"):
+            self.change_config_via_api(another_provider)
+
+            another_provider_concern = self.get_config_flags_of(another_provider)[0]
+            _update_expected_concerns()
+
             check_concerns()
-
-        self.change_config_via_api(host_1)
-
-        expected["host_1_concerns"] = (*self.get_config_issues_of(self.provider), *self.get_config_flags_of(host_1))
-        expected["another_host_concerns"] = (
-            *self.get_config_issues_of(another_host),
-            *self.get_config_flags_of(another_provider),
-        )
 
         with self.subTest("Change Host Config"):
-            check_concerns()
+            self.change_config_via_api(host_1)
 
-        self.change_config_via_api(single_c)
-        expected["single_c_con"] = self.get_config_flags_of(single_c)[0]
+            host_1_concern = self.get_config_flags_of(host_1)[0]
+            _update_expected_concerns()
+
+            check_concerns()
 
         with self.subTest("Change Component in MM Config"):
-            check_concerns()
+            self.change_config_via_api(single_c)
 
-        self.change_config_via_api(self.cluster)
-        expected["cluster_own_cons"] = tuple(
-            ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
-        )
+            single_c_concern = self.get_config_flags_of(single_c)[0]
+            _update_expected_concerns()
+
+            check_concerns()
 
         with self.subTest("Change Cluster Config"):
+            self.change_config_via_api(self.cluster)
+
+            cluster_own_concerns = tuple(
+                ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
+            )
+            _update_expected_concerns()
+
             check_concerns()
 
-        self.change_config_via_api(main_s)
-        expected["main_s_own_con"] = self.get_config_flags_of(main_s)[0]
-
         with self.subTest("Change Service Config"):
+            self.change_config_via_api(main_s)
+
+            main_s_own_concern = self.get_config_flags_of(main_s)[0]
+            _update_expected_concerns()
+
             check_concerns()
 
     def test_concerns_changes_on_import(self) -> None:

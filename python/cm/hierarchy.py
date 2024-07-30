@@ -16,7 +16,6 @@ from cm.models import (
     ClusterObject,
     Host,
     HostComponent,
-    MaintenanceMode,
     ServiceComponent,
 )
 
@@ -164,16 +163,13 @@ class Tree:
         if node.type == "cluster":
             parent_values = [None]
         elif node.type == "service":
-            parent_values = [node.value.cluster] if node.value.maintenance_mode == MaintenanceMode.OFF else []
+            parent_values = [node.value.cluster]
         elif node.type == "component":
-            parent_values = [node.value.service] if node.value.maintenance_mode == MaintenanceMode.OFF else []
+            parent_values = [node.value.service]
         elif node.type == "host":
             parent_values = [
                 hc.component
-                for hc in HostComponent.objects.filter(host=node.value)
-                .exclude(host__maintenance_mode=MaintenanceMode.ON)
-                .select_related("component")
-                .order_by("id")
+                for hc in HostComponent.objects.filter(host=node.value).select_related("component").order_by("id")
             ]
         elif node.type == "provider":
             parent_values = Host.objects.filter(provider=node.value).order_by("id")
