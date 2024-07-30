@@ -173,7 +173,7 @@ def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, descriptio
         if concerns := recalculate_own_concerns_on_add_hosts(host):  # TODO: redistribute only new issues. See ADCM-5798
             distribute_concern_on_related_objects(
                 owner=CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST),
-                concern_id=concerns[ADCMCoreType.HOST][host.id],
+                concern_id=next(iter(concerns[ADCMCoreType.HOST][host.id])),
             )
         if concern := provider.get_own_issue(ConcernCause.CONFIG):
             host.concerns.add(concern)

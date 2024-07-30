@@ -17,10 +17,11 @@ from typing import Iterable
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 
-from cm.issue import check_hc, check_required_services, create_issue
+from cm.issue import create_issue
 from cm.models import Cluster, ClusterObject, ConcernCause, ConcernItem, ConcernType, Host, ServiceComponent
 from cm.services.concern import delete_issue
 from cm.services.concern.checks import (
+    cluster_mapping_has_issue,
     object_configuration_has_issue,
     object_has_required_services_issue,
     object_imports_has_issue,
@@ -33,14 +34,14 @@ def recalculate_own_concerns_on_add_clusters(cluster: Cluster) -> OwnObjectConce
     new_concerns: OwnObjectConcernMap = defaultdict(lambda: defaultdict(set))
 
     cluster_checks = (
-        (ConcernCause.CONFIG, lambda obj: not object_configuration_has_issue(obj)),
-        (ConcernCause.IMPORT, lambda obj: not object_imports_has_issue(obj)),
-        (ConcernCause.HOSTCOMPONENT, check_hc),
-        (ConcernCause.SERVICE, lambda obj: not object_has_required_services_issue(obj)),
+        (ConcernCause.CONFIG, object_configuration_has_issue),
+        (ConcernCause.IMPORT, object_imports_has_issue),
+        (ConcernCause.HOSTCOMPONENT, cluster_mapping_has_issue),
+        (ConcernCause.SERVICE, object_has_required_services_issue),
     )
 
-    for cause, check in cluster_checks:
-        if not check(cluster):
+    for cause, has_issue in cluster_checks:
+        if has_issue(cluster):
             issue = create_issue(obj=cluster, issue_cause=cause)
             new_concerns[ADCMCoreType.CLUSTER][cluster.pk].add(issue.pk)
 
@@ -53,18 +54,18 @@ def recalculate_own_concerns_on_add_services(
     new_concerns: OwnObjectConcernMap = defaultdict(lambda: defaultdict(set))
 
     # create new concerns
-    if not check_hc(cluster=cluster) and cluster.get_own_issue(cause=ConcernCause.HOSTCOMPONENT) is None:
+    if cluster_mapping_has_issue(cluster=cluster) and cluster.get_own_issue(cause=ConcernCause.HOSTCOMPONENT) is None:
         issue = create_issue(obj=cluster, issue_cause=ConcernCause.HOSTCOMPONENT)
         new_concerns[ADCMCoreType.CLUSTER][cluster.pk].add(issue.pk)
 
     service_checks = (
-        (ConcernCause.CONFIG, lambda obj: not object_configuration_has_issue(obj)),
-        (ConcernCause.IMPORT, lambda obj: not object_imports_has_issue(obj)),
-        (ConcernCause.REQUIREMENT, lambda obj: not service_requirements_has_issue(obj)),
+        (ConcernCause.CONFIG, object_configuration_has_issue),
+        (ConcernCause.IMPORT, object_imports_has_issue),
+        (ConcernCause.REQUIREMENT, service_requirements_has_issue),
     )
     for service in services:
-        for concern_cause, func in service_checks:
-            if not func(service):
+        for concern_cause, has_issue in service_checks:
+            if has_issue(service):
                 issue = create_issue(obj=service, issue_cause=concern_cause)
                 new_concerns[ADCMCoreType.SERVICE][service.pk].add(issue.pk)
 
@@ -89,17 +90,17 @@ def recalculate_own_concerns_on_add_services(
 def recalculate_own_concerns_on_add_hosts(host: Host) -> OwnObjectConcernMap:
     if object_configuration_has_issue(host):
         issue = create_issue(obj=host, issue_cause=ConcernCause.CONFIG)
-        return {ADCMCoreType.HOST: {host.id: issue.id}}
+        return {ADCMCoreType.HOST: {host.id: {issue.id}}}
 
     return {}
 
 
 def recalculate_concerns_on_cluster_upgrade(cluster: Cluster) -> None:
     cluster_checks = (
-        (ConcernCause.CONFIG, lambda obj: not object_configuration_has_issue(obj)),
-        (ConcernCause.IMPORT, lambda obj: not object_imports_has_issue(obj)),
-        (ConcernCause.HOSTCOMPONENT, check_hc),
-        (ConcernCause.SERVICE, check_required_services),
+        (ConcernCause.CONFIG, object_configuration_has_issue),
+        (ConcernCause.IMPORT, object_imports_has_issue),
+        (ConcernCause.HOSTCOMPONENT, cluster_mapping_has_issue),
+        (ConcernCause.SERVICE, object_has_required_services_issue),
     )
 
     existing_cluster_concern_causes = set(
@@ -111,17 +112,17 @@ def recalculate_concerns_on_cluster_upgrade(cluster: Cluster) -> None:
         )
     )
 
-    for cause, check in cluster_checks:
+    for cause, has_issue in cluster_checks:
         if cause in existing_cluster_concern_causes:
             continue
 
-        if not check(cluster):
+        if has_issue(cluster):
             create_issue(obj=cluster, issue_cause=cause)
 
     service_checks = (
-        (ConcernCause.CONFIG, lambda obj: not object_configuration_has_issue(obj)),
-        (ConcernCause.IMPORT, lambda obj: not object_imports_has_issue(obj)),
-        (ConcernCause.REQUIREMENT, lambda obj: not service_requirements_has_issue(obj)),
+        (ConcernCause.CONFIG, object_configuration_has_issue),
+        (ConcernCause.IMPORT, object_imports_has_issue),
+        (ConcernCause.REQUIREMENT, service_requirements_has_issue),
     )
 
     services = tuple(ClusterObject.objects.select_related("prototype").filter(cluster=cluster))
@@ -134,11 +135,11 @@ def recalculate_concerns_on_cluster_upgrade(cluster: Cluster) -> None:
         )
     )
     for service in services:
-        for concern_cause, func in service_checks:
+        for concern_cause, has_issue in service_checks:
             if (service.id, concern_cause) in existing_service_concern_causes:
                 continue
 
-            if not func(service):
+            if has_issue(service):
                 create_issue(obj=service, issue_cause=concern_cause)
 
     components_with_config_concerns = set(
