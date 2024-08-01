@@ -39,7 +39,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Model, QuerySet
 from django.db.transaction import atomic
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import extend_schema, extend_schema_view
 from guardian.shortcuts import get_objects_for_user
 from rbac.models import User
 from rest_framework.decorators import action
@@ -62,6 +61,7 @@ from api_v2.generic.action_host_group.audit import (
     set_group_and_host_names,
     set_group_and_host_names_from_response,
 )
+from api_v2.generic.action_host_group.filters import ActionHostGroupFilter
 from api_v2.generic.action_host_group.serializers import (
     ActionHostGroupCreateResultSerializer,
     ActionHostGroupCreateSerializer,

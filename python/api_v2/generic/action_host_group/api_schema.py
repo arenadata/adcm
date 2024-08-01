@@ -64,6 +64,14 @@ def document_action_host_group_viewset(object_type: str):
             description=f"Return list of {object_type}'s hosts that can be added to action host group.",
             responses=responses(success=ShortHostSerializer(many=True), errors=HTTP_404_NOT_FOUND),
         ),
+        owner_host_candidate=extend_schema(
+            operation_id=f"get{capitalized_type}ActionHostGroupOwnCandidates",
+            summary=f"GET {object_type}'s host candidates for new Action Host Group",
+            description=f"Return list of {object_type}'s hosts that can be added to newly created action host group.",
+            responses=responses(
+                success=ShortHostSerializer(many=True), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)
+            ),
+        ),
     )
 
 

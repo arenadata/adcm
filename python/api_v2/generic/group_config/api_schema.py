@@ -23,6 +23,7 @@ from rest_framework.status import (
 
 from api_v2.api_schema import ErrorSerializer, responses
 from api_v2.generic.group_config.serializers import GroupConfigSerializer, HostGroupConfigSerializer
+from api_v2.host.serializers import HostShortSerializer
 
 
 def document_group_config_viewset(object_type: str):
@@ -64,6 +65,12 @@ def document_group_config_viewset(object_type: str):
             summary=f"GET {object_type}'s config-group host candidates",
             description=f"Get a list of hosts available for adding to {object_type}'s config group.",
             responses={HTTP_200_OK: HostGroupConfigSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
+        ),
+        owner_host_candidates=extend_schema(
+            operation_id=f"get{capitalized_type}ConfigGroupHostOwnCandidates",
+            summary=f"GET {object_type}'s host candidates for new config group",
+            description=f"Get a list of hosts available for adding to {object_type}'s new config group.",
+            responses={HTTP_200_OK: HostShortSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
         ),
     )
 

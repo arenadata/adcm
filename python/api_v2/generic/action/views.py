@@ -15,7 +15,6 @@ from itertools import compress
 from adcm.mixins import GetParentObjectMixin
 from cm.errors import AdcmEx
 from cm.models import (
-    ADCM,
     Action,
     ADCMEntity,
     ConcernType,
