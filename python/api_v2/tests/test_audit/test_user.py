@@ -14,7 +14,6 @@ from audit.models import AuditObject
 from django.utils import timezone
 from rbac.models import User
 from rbac.services.group import create as create_group
-from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -51,7 +50,7 @@ class TestUserAudit(BaseAPITestCase):
         self.group = create_group(name_to_display="Some group")
 
     def test_user_create_success(self):
-        response = self.client.post(path=reverse(viewname="v2:rbac:user-list"), data=self.user_create_data)
+        response = (self.client.v2 / "rbac" / "users").post(data=self.user_create_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         self.check_last_audit_record(
@@ -65,7 +64,7 @@ class TestUserAudit(BaseAPITestCase):
     def test_user_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(path=reverse(viewname="v2:rbac:user-list"), data={"wrong": "data"})
+        response = (self.client.v2 / "rbac" / "users").post(data={"wrong": "data"})
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_last_audit_record(
@@ -78,7 +77,7 @@ class TestUserAudit(BaseAPITestCase):
         )
 
     def test_user_create_wrong_data_fail(self):
-        response = self.client.post(path=reverse(viewname="v2:rbac:user-list"), data={"wrong": "data"})
+        response = (self.client.v2 / "rbac" / "users").post(data={"wrong": "data"})
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
         self.check_last_audit_record(
@@ -91,9 +90,7 @@ class TestUserAudit(BaseAPITestCase):
         )
 
     def test_user_update_success(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.test_user.pk}), data=self.user_update_data
-        )
+        response = self.client.v2[self.test_user].patch(data=self.user_update_data)
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.check_last_audit_record(
@@ -114,9 +111,7 @@ class TestUserAudit(BaseAPITestCase):
             "password": "new_password1",
             "groups": [self.group.pk],
         }
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.test_user.pk}), data=user_update_data
-        )
+        response = self.client.v2[self.test_user].patch(data=user_update_data)
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_object_changes = {
@@ -152,8 +147,7 @@ class TestUserAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View users"):
-            response = self.client.patch(
-                path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.blocked_user.pk}),
+            response = self.client.v2[self.blocked_user].patch(
                 data=self.user_update_data,
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -169,8 +163,7 @@ class TestUserAudit(BaseAPITestCase):
     def test_user_update_no_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.blocked_user.pk}),
+        response = self.client.v2[self.blocked_user].patch(
             data=self.user_update_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -184,8 +177,7 @@ class TestUserAudit(BaseAPITestCase):
         )
 
     def test_user_update_incorrect_data_fail(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.test_user.pk}),
+        response = self.client.v2[self.test_user].patch(
             data={"email": "s"},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -199,8 +191,7 @@ class TestUserAudit(BaseAPITestCase):
         )
 
     def test_user_update_not_exists_fail(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.get_non_existent_pk(model=User)}),
+        response = (self.client.v2 / "rbac" / "users" / self.get_non_existent_pk(model=User)).patch(
             data=self.user_update_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -225,7 +216,7 @@ class TestUserAudit(BaseAPITestCase):
             is_deleted=False,
         )
 
-        response = self.client.delete(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.blocked_user.pk}))
+        response = self.client.v2[self.blocked_user].delete()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.check_last_audit_record(
@@ -239,7 +230,7 @@ class TestUserAudit(BaseAPITestCase):
     def test_user_delete_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.delete(path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.blocked_user.pk}))
+        response = self.client.v2[self.blocked_user].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -254,9 +245,7 @@ class TestUserAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View users"):
-            response = self.client.delete(
-                path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.blocked_user.pk})
-            )
+            response = self.client.v2[self.blocked_user].delete()
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -268,9 +257,7 @@ class TestUserAudit(BaseAPITestCase):
         )
 
     def test_user_delete_non_existent_fail(self):
-        response = self.client.delete(
-            path=reverse(viewname="v2:rbac:user-detail", kwargs={"pk": self.get_non_existent_pk(model=User)})
-        )
+        response = (self.client.v2 / "rbac" / "users" / self.get_non_existent_pk(model=User)).delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -283,7 +270,7 @@ class TestUserAudit(BaseAPITestCase):
         )
 
     def test_user_unblock_success(self):
-        response = self.client.post(path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": self.blocked_user.pk}))
+        response = self.client.v2[self.blocked_user, "unblock"].post()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.check_last_audit_record(
@@ -297,7 +284,7 @@ class TestUserAudit(BaseAPITestCase):
     def test_user_unblock_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": self.blocked_user.pk}))
+        response = self.client.v2[self.blocked_user, "unblock"].post()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -312,9 +299,7 @@ class TestUserAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View users"):
-            response = self.client.post(
-                path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": self.blocked_user.pk})
-            )
+            response = self.client.v2[self.blocked_user, "unblock"].post()
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -326,9 +311,7 @@ class TestUserAudit(BaseAPITestCase):
         )
 
     def test_user_unblock_not_exists_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:rbac:user-unblock", kwargs={"pk": self.get_non_existent_pk(model=User)})
-        )
+        response = (self.client.v2 / "rbac" / "users" / self.get_non_existent_pk(model=User) / "unblock").post()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -341,7 +324,7 @@ class TestUserAudit(BaseAPITestCase):
         )
 
     def test_user_block_success(self):
-        response = self.client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.test_user.pk}))
+        response = self.client.v2[self.test_user, "block"].post()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.check_last_audit_record(
@@ -355,7 +338,7 @@ class TestUserAudit(BaseAPITestCase):
     def test_user_block_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.blocked_user.pk}))
+        response = self.client.v2[self.blocked_user, "block"].post()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -370,9 +353,7 @@ class TestUserAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View users"):
-            response = self.client.post(
-                path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.blocked_user.pk})
-            )
+            response = self.client.v2[self.blocked_user, "block"].post()
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -384,9 +365,7 @@ class TestUserAudit(BaseAPITestCase):
         )
 
     def test_user_block_not_exists_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:rbac:user-block", kwargs={"pk": self.get_non_existent_pk(model=User)})
-        )
+        response = (self.client.v2 / "rbac" / "users" / self.get_non_existent_pk(model=User) / "block").post()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(

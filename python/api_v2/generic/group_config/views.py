@@ -13,7 +13,7 @@
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from adcm.permissions import VIEW_GROUP_CONFIG_PERM, VIEW_HOST_PERM, check_config_perm
 from cm.errors import AdcmEx
-from cm.models import GroupConfig, Host
+from cm.models import Cluster, ClusterObject, GroupConfig, Host, HostProvider, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -30,11 +30,12 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
 )
 
+from api_v2.api_schema import ErrorSerializer
 from api_v2.generic.config.utils import ConfigSchemaMixin
 from api_v2.generic.group_config.permissions import GroupConfigHostsPermissions, GroupConfigPermissions
 from api_v2.generic.group_config.serializers import GroupConfigSerializer, HostGroupConfigSerializer
 from api_v2.host.filters import HostMemberFilter
-from api_v2.host.serializers import HostAddSerializer
+from api_v2.host.serializers import HostGroupConfigSerializer, HostShortSerializer
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -90,6 +91,48 @@ class GroupConfigViewSet(
         re_apply_object_policy(apply_object=parent_object)
 
         return Response(data=self.get_serializer(group_config).data, status=HTTP_201_CREATED)
+
+    @action(
+        methods=["get"], detail=False, url_path="host-candidates", url_name="host-candidates", pagination_class=None
+    )
+    def owner_host_candidates(self, request: Request, *_, **__):  # noqa: ARG002
+        parent_object = self.get_parent_object()
+
+        self._check_parent_permissions(parent_object=parent_object)
+
+        # taken from GroupConfig.host_candidate
+        if isinstance(parent_object, (Cluster, HostProvider)):
+            hosts_qs = parent_object.host_set
+        elif isinstance(parent_object, ClusterObject):
+            hosts_qs = Host.objects.filter(
+                cluster_id=parent_object.cluster_id, hostcomponent__service=parent_object
+            ).distinct()
+        elif isinstance(parent_object, ServiceComponent):
+            hosts_qs = Host.objects.filter(
+                cluster_id=parent_object.cluster_id, hostcomponent__component=parent_object
+            ).distinct()
+        else:
+            raise AdcmEx("GROUP_CONFIG_TYPE_ERROR")
+
+        taken_host_id_qs = (
+            GroupConfig.hosts.through.objects.values_list("host_id", flat=True)
+            .filter(
+                groupconfig_id__in=(
+                    GroupConfig.objects.values_list("id", flat=True).filter(
+                        object_id=parent_object.id,
+                        object_type=ContentType.objects.get_for_model(model=parent_object.__class__),
+                    )
+                )
+            )
+            .distinct()
+        )
+
+        return Response(
+            data=HostShortSerializer(
+                instance=hosts_qs.values("id", "fqdn").exclude(id__in=taken_host_id_qs), many=True
+            ).data,
+            status=HTTP_200_OK,
+        )
 
     @action(methods=["get"], detail=True, url_path="host-candidates", url_name="host-candidates", pagination_class=None)
     def host_candidates(self, request: Request, *args, **kwargs):  # noqa: ARG001, ARG002

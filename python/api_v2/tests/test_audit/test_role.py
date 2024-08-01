@@ -14,7 +14,6 @@
 from audit.models import AuditObject
 from rbac.models import Role
 from rbac.services.role import role_create
-from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -46,7 +45,7 @@ class TestRoleAudit(BaseAPITestCase):
         )
 
     def test_role_create_success(self):
-        response = self.client.post(path=reverse(viewname="v2:rbac:role-list"), data=self.role_create_data)
+        response = (self.client.v2 / "rbac" / "roles").post(data=self.role_create_data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.check_last_audit_record(
@@ -60,7 +59,7 @@ class TestRoleAudit(BaseAPITestCase):
     def test_role_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(path=reverse(viewname="v2:rbac:role-list"), data=self.role_create_data)
+        response = (self.client.v2 / "rbac" / "roles").post(data=self.role_create_data)
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_last_audit_record(
@@ -72,7 +71,7 @@ class TestRoleAudit(BaseAPITestCase):
         )
 
     def test_role_create_wrong_data_fail(self):
-        response = self.client.post(path=reverse(viewname="v2:rbac:role-list"), data={"displayName": "Some role"})
+        response = (self.client.v2 / "rbac" / "roles").post(data={"displayName": "Some role"})
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.check_last_audit_record(
@@ -84,8 +83,7 @@ class TestRoleAudit(BaseAPITestCase):
         )
 
     def test_role_update_success(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
+        response = self.client.v2[self.custom_role].patch(
             data=self.role_create_data,
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -123,8 +121,7 @@ class TestRoleAudit(BaseAPITestCase):
 
         old_description = self.custom_role.description
 
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
+        response = self.client.v2[self.custom_role].patch(
             data=role_create_data,
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -161,8 +158,7 @@ class TestRoleAudit(BaseAPITestCase):
             "description": "new description",
         }
 
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
+        response = self.client.v2[self.custom_role].patch(
             data=role_create_data,
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -193,8 +189,7 @@ class TestRoleAudit(BaseAPITestCase):
     def test_role_update_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
+        response = self.client.v2[self.custom_role].patch(
             data=self.role_create_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -211,8 +206,7 @@ class TestRoleAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View roles"):
-            response = self.client.patch(
-                path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
+            response = self.client.v2[self.custom_role].patch(
                 data=self.role_create_data,
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -226,8 +220,7 @@ class TestRoleAudit(BaseAPITestCase):
         )
 
     def test_role_update_not_found_fail(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": 1000}),
+        response = (self.client.v2 / "rbac" / "roles" / self.get_non_existent_pk(model=Role)).patch(
             data={"displayName": "Custom role name"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -243,8 +236,7 @@ class TestRoleAudit(BaseAPITestCase):
     def test_role_update_duplicate_name_fail(self):
         role_create(display_name="Custom role name", child=[Role.objects.get(name="View cluster configurations")])
 
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}),
+        response = self.client.v2[self.custom_role].patch(
             data={"displayName": "Custom role name"},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -268,7 +260,7 @@ class TestRoleAudit(BaseAPITestCase):
             is_deleted=False,
         )
 
-        response = self.client.delete(path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}))
+        response = self.client.v2[self.custom_role].delete()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.check_last_audit_record(
@@ -282,7 +274,7 @@ class TestRoleAudit(BaseAPITestCase):
     def test_role_delete_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.delete(path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk}))
+        response = self.client.v2[self.custom_role].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -297,9 +289,7 @@ class TestRoleAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View roles"):
-            response = self.client.delete(
-                path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.custom_role.pk})
-            )
+            response = self.client.v2[self.custom_role].delete()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_last_audit_record(
@@ -311,9 +301,7 @@ class TestRoleAudit(BaseAPITestCase):
         )
 
     def test_role_delete_not_exists_fail(self):
-        response = self.client.delete(
-            path=reverse(viewname="v2:rbac:role-detail", kwargs={"pk": self.get_non_existent_pk(model=Role)})
-        )
+        response = (self.client.v2 / "rbac" / "roles" / self.get_non_existent_pk(model=Role)).delete()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_last_audit_record(

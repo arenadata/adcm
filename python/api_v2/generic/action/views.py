@@ -14,7 +14,15 @@ from itertools import compress
 
 from adcm.mixins import GetParentObjectMixin
 from cm.errors import AdcmEx
-from cm.models import Action, ADCMEntity, ConcernType, Host, HostComponent, PrototypeConfig
+from cm.models import (
+    ADCM,
+    Action,
+    ADCMEntity,
+    ConcernType,
+    Host,
+    HostComponent,
+    PrototypeConfig,
+)
 from cm.services.config.jinja import get_jinja_config
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.stack import check_hostcomponents_objects_exist
@@ -127,7 +135,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
 
         self.check_permissions_for_run(request=request, action=action_)
 
-        config_schema, config, adcm_meta = get_action_configuration(action_=action_, object_=self.parent_object)
+        config_schema, config, adcm_meta = get_action_configuration(action_=action_, object_=self._get_actions_owner())
 
         serializer = self.get_serializer_class()(
             instance=action_,
@@ -145,10 +153,11 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
     def run(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         self.parent_object = self.get_parent_object()
         target_action = self.get_object()
+        action_owner = self._get_actions_owner()
 
         self.check_permissions_for_run(request=request, action=target_action)
 
-        if reason := target_action.get_start_impossible_reason(self.parent_object):
+        if reason := target_action.get_start_impossible_reason(action_owner):
             raise AdcmEx("ACTION_ERROR", msg=reason)
 
         serializer = self.get_serializer_class()(data=request.data)
@@ -163,7 +172,7 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
             adcm_meta = configuration["adcm_meta"]
 
         if target_action.config_jinja:
-            prototype_configs, _ = get_jinja_config(action=target_action, cluster_relative_object=self.parent_object)
+            prototype_configs, _ = get_jinja_config(action=target_action, cluster_relative_object=action_owner)
             prototype_configs = [
                 prototype_config for prototype_config in prototype_configs if prototype_config.type == "json"
             ]

@@ -113,6 +113,8 @@ class V2RootNode(RootNode):
         "profile": "profile",
         "adcm": "adcm",
         "schema": "schema",
+        "token": "token",
+        "audit-login": "audit/logins",
     }
 
     def __getitem__(self, item: PathObject | tuple[PathObject, str | int | WithID, ...]) -> APINode:

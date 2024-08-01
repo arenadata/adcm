@@ -10,9 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import GroupConfig, ServiceComponent
+from cm.models import Cluster, ClusterObject, GroupConfig, Host, HostProvider, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
-from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -135,8 +134,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         }
 
     def test_cluster_create_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1, "config-groups"].post(
             data={"name": "group-config-new", "description": "group-config-new"},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -150,8 +148,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_cluster_create_incorrect_body_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1, "config-groups"].post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -165,8 +162,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_cluster_create_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": 1000}),
+        response = (self.client.v2 / "clusters" / self.get_non_existent_pk(model=Cluster) / "config-groups").post(
             data={"name": "group-config-new", "description": "group-config-new"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -182,8 +178,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
     def test_cluster_create_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.cluster_1], role_name="View cluster configurations"):
-            response = self.client.post(
-                path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            response = self.client.v2[self.cluster_1, "config-groups"].post(
                 data={"name": "group-config-new", "description": "group-config-new"},
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -198,8 +193,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_cluster_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-group-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1, "config-groups"].post(
             data={"name": "group-config-new", "description": "group-config-new"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -213,8 +207,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_provider_create_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:hostprovider-group-config-list", kwargs={"hostprovider_pk": self.provider.pk}),
+        response = self.client.v2[self.provider, "config-groups"].post(
             data={"name": "group-config-new", "description": "group-config-new"},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -228,8 +221,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_provider_create_incorrect_body_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:hostprovider-group-config-list", kwargs={"hostprovider_pk": self.provider.pk}),
+        response = self.client.v2[self.provider, "config-groups"].post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -243,8 +235,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_provider_create_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:hostprovider-group-config-list", kwargs={"hostprovider_pk": 1000}),
+        response = (self.client.v2 / "hostproviders" / self.get_non_existent_pk(model=Cluster) / "config-groups").post(
             data={"name": "group-config-new", "description": "group-config-new"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -260,10 +251,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
     def test_provider_create_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.provider], role_name="View provider configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:hostprovider-group-config-list", kwargs={"hostprovider_pk": self.provider.pk}
-                ),
+            response = self.client.v2[self.provider, "config-groups"].post(
                 data={"name": "group-config-new", "description": "group-config-new"},
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -278,8 +266,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_provider_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(
-            path=reverse(viewname="v2:hostprovider-group-config-list", kwargs={"hostprovider_pk": self.provider.pk}),
+        response = self.client.v2[self.provider, "config-groups"].post(
             data={"name": "group-config-new", "description": "group-config-new"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -293,15 +280,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_component_create_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                },
-            ),
+        response = self.client.v2[self.component_1, "config-groups"].post(
             data={"name": "group-config-new", "description": "group-config-new"},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -315,15 +294,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_component_create_incorrect_data_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                },
-            ),
+        response = self.client.v2[self.component_1, "config-groups"].post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -337,15 +308,9 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_component_create_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": 1000,
-                },
-            ),
+        response = self.client.v2[
+            self.service_1, "components", self.get_non_existent_pk(model=ServiceComponent), "config-groups"
+        ].post(
             data={"name": "group-config-new", "description": "group-config-new"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -363,15 +328,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         with self.grant_permissions(
             to=self.test_user, on=[self.component_1], role_name="View component configurations"
         ):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:component-group-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_1.pk,
-                    },
-                ),
+            response = self.client.v2[self.component_1, "config-groups"].post(
                 data={"name": "group-config-new", "description": "group-config-new"},
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -386,15 +343,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_component_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                },
-            ),
+        response = self.client.v2[self.component_1, "config-groups"].post(
             data={"name": "group-config-new", "description": "group-config-new"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -408,11 +357,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_service_create_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-group-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
-            ),
+        response = self.client.v2[self.service_1, "config-groups"].post(
             data={"name": "group-config-new", "description": "group-config-new"},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -426,11 +371,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_service_create_incorrect_data_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-group-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
-            ),
+        response = self.client.v2[self.service_1, "config-groups"].post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -444,11 +385,9 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_service_create_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-group-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": 1000},
-            ),
+        response = self.client.v2[
+            self.cluster_1, "services", self.get_non_existent_pk(model=ClusterObject), "config-groups"
+        ].post(
             data={"name": "group-config-new", "description": "group-config-new"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -464,11 +403,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
     def test_service_create_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.service_1], role_name="View service configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:service-group-config-list",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
-                ),
+            response = self.client.v2[self.service_1, "config-groups"].post(
                 data={"name": "group-config-new", "description": "group-config-new"},
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -483,11 +418,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_service_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-group-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk},
-            ),
+        response = self.client.v2[self.service_1, "config-groups"].post(
             data={"name": "group-config-new", "description": "group-config-new"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -501,12 +432,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_cluster_delete_success(self):
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:cluster-group-config-detail",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
-            ),
-        )
+        response = self.client.v2[self.cluster_1_group_config].delete()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.check_last_audit_record(
@@ -518,12 +444,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_cluster_delete_fail(self):
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:cluster-group-config-detail",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": 1000},
-            ),
-        )
+        response = self.client.v2[self.cluster_1, "config-groups", self.get_non_existent_pk(model=GroupConfig)].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -537,12 +458,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
     def test_cluster_delete_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.cluster_1], role_name="View cluster configurations"):
-            response = self.client.delete(
-                path=reverse(
-                    viewname="v2:cluster-group-config-detail",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
-                ),
-            )
+            response = self.client.v2[self.cluster_1_group_config].delete()
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -555,12 +471,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_cluster_delete_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:cluster-group-config-detail",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
-            ),
-        )
+        response = self.client.v2[self.cluster_1_group_config].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -572,12 +483,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_provider_delete_success(self):
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-detail",
-                kwargs={"hostprovider_pk": self.cluster_1.pk, "pk": self.provider_group_config.pk},
-            ),
-        )
+        response = self.client.v2[self.provider_group_config].delete()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.check_last_audit_record(
@@ -589,12 +495,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_provider_delete_fail(self):
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-detail",
-                kwargs={"hostprovider_pk": self.provider.pk, "pk": 1000},
-            ),
-        )
+        response = self.client.v2[self.provider, "config-groups", self.get_non_existent_pk(model=GroupConfig)].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -608,12 +509,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
     def test_provider_delete_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.provider], role_name="View provider configurations"):
-            response = self.client.delete(
-                path=reverse(
-                    viewname="v2:hostprovider-group-config-detail",
-                    kwargs={"hostprovider_pk": self.provider.pk, "pk": self.provider_group_config.pk},
-                ),
-            )
+            response = self.client.v2[self.provider_group_config].delete()
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -626,12 +522,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_provider_delete_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-detail",
-                kwargs={"hostprovider_pk": self.provider.pk, "pk": self.provider_group_config.pk},
-            ),
-        )
+        response = self.client.v2[self.provider_group_config].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -643,16 +534,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_service_delete_success(self):
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:service-group-config-detail",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "pk": self.service_1_group_config.pk,
-                },
-            ),
-        )
+        response = self.client.v2[self.service_1_group_config].delete()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.check_last_audit_record(
@@ -664,12 +546,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_service_delete_fail(self):
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:service-group-config-detail",
-                kwargs={"cluster_pk": self.cluster_1.pk, "service_pk": self.service_1.pk, "pk": 1000},
-            ),
-        )
+        response = self.client.v2[self.service_1, "config-groups", self.get_non_existent_pk(model=GroupConfig)].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -683,16 +560,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
     def test_service_delete_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.service_1], role_name="View service configurations"):
-            response = self.client.delete(
-                path=reverse(
-                    viewname="v2:service-group-config-detail",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "pk": self.service_1_group_config.pk,
-                    },
-                ),
-            )
+            response = self.client.v2[self.service_1_group_config].delete()
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -705,16 +573,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_service_delete_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:service-group-config-detail",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "pk": self.service_1_group_config.pk,
-                },
-            ),
-        )
+        response = self.client.v2[self.service_1_group_config].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -726,17 +585,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_component_delete_success(self):
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:component-group-config-detail",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "pk": self.component_1_group_config.pk,
-                },
-            ),
-        )
+        response = self.client.v2[self.component_1_group_config].delete()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.check_last_audit_record(
@@ -748,17 +597,9 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_component_delete_fail(self):
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:component-group-config-detail",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "pk": 1000,
-                },
-            ),
-        )
+        response = self.client.v2[
+            self.component_1, "config-groups", self.get_non_existent_pk(model=GroupConfig)
+        ].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -774,17 +615,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         with self.grant_permissions(
             to=self.test_user, on=[self.component_1], role_name="View component configurations"
         ):
-            response = self.client.delete(
-                path=reverse(
-                    viewname="v2:component-group-config-detail",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_1.pk,
-                        "pk": self.component_1_group_config.pk,
-                    },
-                ),
-            )
+            response = self.client.v2[self.component_1_group_config].delete()
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -797,17 +628,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_component_delete_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:component-group-config-detail",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "pk": self.component_1_group_config.pk,
-                },
-            ),
-        )
+        response = self.client.v2[self.component_1_group_config].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -819,12 +640,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_cluster_update_success(self):
-        response = self.client.patch(
-            path=reverse(
-                viewname="v2:cluster-group-config-detail",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
-            ),
-        )
+        response = self.client.v2[self.cluster_1_group_config].patch(data={})
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.check_last_audit_record(
@@ -836,11 +652,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_cluster_update_incorrect_body_fail(self):
-        response = self.client.patch(
-            path=reverse(
-                viewname="v2:cluster-group-config-detail",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
-            ),
+        response = self.client.v2[self.cluster_1_group_config].patch(
             data={"name": {}},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -854,11 +666,8 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_cluster_update_fail(self):
-        response = self.client.patch(
-            path=reverse(
-                viewname="v2:cluster-group-config-detail",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": 1000},
-            ),
+        response = self.client.v2[self.cluster_1, "config-groups", self.get_non_existent_pk(model=GroupConfig)].patch(
+            data={}
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
@@ -873,12 +682,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
     def test_cluster_update_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.cluster_1], role_name="View cluster configurations"):
-            response = self.client.patch(
-                path=reverse(
-                    viewname="v2:cluster-group-config-detail",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
-                ),
-            )
+            response = self.client.v2[self.cluster_1_group_config].patch(data={})
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -891,12 +695,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_cluster_update_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.patch(
-            path=reverse(
-                viewname="v2:cluster-group-config-detail",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_1_group_config.pk},
-            ),
-        )
+        response = self.client.v2[self.cluster_1_group_config].patch(data={})
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -908,11 +707,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_cluster_config_create_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-group-config-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
-            ),
+        response = self.client.v2[self.cluster_1_group_config, "configs"].post(
             data=self.cluster_config_data,
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -926,11 +721,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_cluster_config_create_incorrect_data_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-group-config-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
-            ),
+        response = self.client.v2[self.cluster_1_group_config, "configs"].post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -944,11 +735,14 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_cluster_config_create_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-group-config-config-list",
-                kwargs={"cluster_pk": 1000, "group_config_pk": self.cluster_1_group_config.pk},
-            ),
+        response = (
+            self.client.v2
+            / "clusters"
+            / self.get_non_existent_pk(model=Cluster)
+            / "config-groups"
+            / self.cluster_1_group_config.pk
+            / "configs"
+        ).post(
             data=self.cluster_config_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -964,11 +758,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
     def test_cluster_config_create_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.cluster_1], role_name="View cluster configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:cluster-group-config-config-list",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
-                ),
+            response = self.client.v2[self.cluster_1_group_config, "configs"].post(
                 data=self.cluster_config_data,
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -983,11 +773,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_cluster_config_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-group-config-config-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
-            ),
+        response = self.client.v2[self.cluster_1_group_config, "configs"].post(
             data=self.cluster_config_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -1001,15 +787,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_service_config_create_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "group_config_pk": self.service_1_group_config.pk,
-                },
-            ),
+        response = self.client.v2[self.service_1_group_config, "configs"].post(
             data=self.service_config_data,
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -1023,15 +801,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_service_config_create_incorrect_data_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "group_config_pk": self.service_1_group_config.pk,
-                },
-            ),
+        response = self.client.v2[self.service_1_group_config, "configs"].post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -1045,15 +815,9 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_service_config_create_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": 1000,
-                    "group_config_pk": self.service_1_group_config.pk,
-                },
-            ),
+        response = self.client.v2[
+            self.cluster_1, "services", 1000, "config-groups", self.service_1_group_config.pk, "configs"
+        ].post(
             data=self.service_config_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -1069,15 +833,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
     def test_service_config_create_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.service_1], role_name="View service configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:service-group-config-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "group_config_pk": self.service_1_group_config.pk,
-                    },
-                ),
+            response = self.client.v2[self.service_1_group_config, "configs"].post(
                 data=self.service_config_data,
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -1092,15 +848,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_service_config_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "group_config_pk": self.service_1_group_config.pk,
-                },
-            ),
+        response = self.client.v2[self.service_1_group_config, "configs"].post(
             data=self.service_config_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -1114,16 +862,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_component_config_create_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "group_config_pk": self.component_1_group_config.pk,
-                },
-            ),
+        response = self.client.v2[self.component_1_group_config, "configs"].post(
             data=self.component_config_data,
         )
 
@@ -1138,16 +877,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_component_config_create_incorrect_data_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "group_config_pk": self.component_1_group_config.pk,
-                },
-            ),
+        response = self.client.v2[self.component_1_group_config, "configs"].post(
             data={"config": {}, "adcmMeta": {}},
         )
 
@@ -1162,16 +892,16 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_component_config_create_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": 1000,
-                    "group_config_pk": self.component_1_group_config.pk,
-                },
-            ),
+        response = self.client.v2[
+            self.cluster_1,
+            "services",
+            self.service_1.pk,
+            "components",
+            1000,
+            "config-groups",
+            self.component_1_group_config.pk,
+            "configs",
+        ].post(
             data=self.component_config_data,
         )
 
@@ -1190,16 +920,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         with self.grant_permissions(
             to=self.test_user, on=[self.component_1], role_name="View component configurations"
         ):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:component-group-config-config-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_1.pk,
-                        "group_config_pk": self.component_1_group_config.pk,
-                    },
-                ),
+            response = self.client.v2[self.component_1_group_config, "configs"].post(
                 data=self.component_config_data,
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -1214,16 +935,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_component_config_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-config-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "group_config_pk": self.component_1_group_config.pk,
-                },
-            ),
+        response = self.client.v2[self.component_1_group_config, "configs"].post(
             data=self.component_config_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -1237,14 +949,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_hostprovider_config_create_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-config-list",
-                kwargs={
-                    "hostprovider_pk": self.provider.pk,
-                    "group_config_pk": self.provider_group_config.pk,
-                },
-            ),
+        response = self.client.v2[self.provider_group_config, "configs"].post(
             data=self.provider_config_data,
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -1258,14 +963,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_hostprovider_config_create_incorrect_data_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-config-list",
-                kwargs={
-                    "hostprovider_pk": self.provider.pk,
-                    "group_config_pk": self.provider_group_config.pk,
-                },
-            ),
+        response = self.client.v2[self.provider_group_config, "configs"].post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -1279,14 +977,14 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_hostprovider_config_create_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-config-list",
-                kwargs={
-                    "hostprovider_pk": 1000,
-                    "group_config_pk": self.provider_group_config.pk,
-                },
-            ),
+        response = (
+            self.client.v2
+            / "hostproviders"
+            / self.get_non_existent_pk(model=HostProvider)
+            / "config-groups"
+            / self.provider_group_config.pk
+            / "configs"
+        ).post(
             data=self.provider_config_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -1302,14 +1000,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
     def test_hostprovider_config_create_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.provider], role_name="View provider configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:hostprovider-group-config-config-list",
-                    kwargs={
-                        "hostprovider_pk": self.provider.pk,
-                        "group_config_pk": self.provider_group_config.pk,
-                    },
-                ),
+            response = self.client.v2[self.provider_group_config, "configs"].post(
                 data=self.provider_config_data,
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -1324,14 +1015,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_hostprovider_config_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-config-list",
-                kwargs={
-                    "hostprovider_pk": self.provider.pk,
-                    "group_config_pk": self.provider_group_config.pk,
-                },
-            ),
+        response = self.client.v2[self.provider_group_config, "configs"].post(
             data=self.provider_config_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -1345,11 +1029,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_provider_add_host_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-hosts-list",
-                kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": self.provider_group_config.pk},
-            ),
+        response = self.client.v2[self.provider_group_config, "hosts"].post(
             data={"hostId": self.new_host.pk},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -1363,11 +1043,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_provider_add_host_incorrect_data_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-hosts-list",
-                kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": self.provider_group_config.pk},
-            ),
+        response = self.client.v2[self.provider_group_config, "hosts"].post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -1381,11 +1057,9 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_provider_add_host_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-hosts-list",
-                kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": 10000},
-            ),
+        response = self.client.v2[
+            self.provider, "config-groups", self.get_non_existent_pk(model=GroupConfig), "hosts"
+        ].post(
             data={"hostId": self.new_host.pk},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -1401,11 +1075,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
     def test_provider_add_host_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.provider], role_name="View provider configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:hostprovider-group-config-hosts-list",
-                    kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": self.provider_group_config.pk},
-                ),
+            response = self.client.v2[self.provider_group_config, "hosts"].post(
                 data={"hostId": self.new_host.pk},
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -1420,11 +1090,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_provider_add_host_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:hostprovider-group-config-hosts-list",
-                kwargs={"hostprovider_pk": self.provider.pk, "group_config_pk": self.provider_group_config.pk},
-            ),
+        response = self.client.v2[self.provider_group_config, "hosts"].post(
             data={"hostId": self.new_host.pk},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -1438,15 +1104,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_service_add_host_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-group-config-hosts-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "group_config_pk": self.service_1_group_config.pk,
-                },
-            ),
+        response = self.client.v2[self.service_1_group_config, "hosts"].post(
             data={"hostId": self.host_for_service.pk},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -1461,15 +1119,14 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_service_add_host_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-group-config-hosts-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": 1000,
-                    "group_config_pk": self.service_1_group_config.pk,
-                },
-            ),
+        response = self.client.v2[
+            self.cluster_1,
+            "services",
+            self.get_non_existent_pk(model=ClusterObject),
+            "config-groups",
+            self.service_1_group_config,
+            "hosts",
+        ].post(
             data={"hostId": self.host_for_service.pk},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -1487,15 +1144,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[self.service_1], role_name="View service configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:service-group-config-hosts-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "group_config_pk": self.service_1_group_config.pk,
-                    },
-                ),
+            response = self.client.v2[self.service_1_group_config, "hosts"].post(
                 data={"hostId": self.host_for_service.pk},
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -1511,15 +1160,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_service_add_host_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:service-group-config-hosts-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "group_config_pk": self.service_1_group_config.pk,
-                },
-            ),
+        response = self.client.v2[self.service_1_group_config, "hosts"].post(
             data={"hostId": self.host_for_service.pk},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -1534,11 +1175,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_cluster_add_host_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-group-config-hosts-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
-            ),
+        response = self.client.v2[self.cluster_1_group_config, "hosts"].post(
             data={"hostId": self.new_host.pk},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -1552,11 +1189,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_cluster_add_host_incorrect_data_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-group-config-hosts-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
-            ),
+        response = self.client.v2[self.cluster_1_group_config, "hosts"].post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -1570,11 +1203,14 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_cluster_add_host_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-group-config-hosts-list",
-                kwargs={"cluster_pk": 1000, "group_config_pk": self.cluster_1_group_config.pk},
-            ),
+        response = (
+            self.client.v2
+            / "clusters"
+            / self.get_non_existent_pk(model=Cluster)
+            / "config-groups"
+            / self.cluster_1_group_config
+            / "hosts"
+        ).post(
             data={"hostId": self.new_host.pk},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -1591,11 +1227,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[self.cluster_1], role_name="View cluster configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:cluster-group-config-hosts-list",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
-                ),
+            response = self.client.v2[self.cluster_1_group_config, "hosts"].post(
                 data={"hostId": self.new_host.pk},
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -1610,11 +1242,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_cluster_add_host_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-group-config-hosts-list",
-                kwargs={"cluster_pk": self.cluster_1.pk, "group_config_pk": self.cluster_1_group_config.pk},
-            ),
+        response = self.client.v2[self.cluster_1_group_config, "hosts"].post(
             data={"hostId": self.new_host.pk},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -1628,16 +1256,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_component_add_host_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-hosts-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "group_config_pk": self.component_1_group_config.pk,
-                },
-            ),
+        response = self.client.v2[self.component_1_group_config, "hosts"].post(
             data={"hostId": self.host_for_service.pk},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -1652,16 +1271,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_component_add_host_incorrect_data_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-hosts-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "group_config_pk": self.component_1_group_config.pk,
-                },
-            ),
+        response = self.client.v2[self.component_1_group_config, "hosts"].post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -1675,16 +1285,14 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
 
     def test_component_add_host_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-hosts-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": 1000,
-                    "group_config_pk": self.component_1_group_config.pk,
-                },
-            ),
+        response = self.client.v2[
+            self.service_1,
+            "components",
+            self.get_non_existent_pk(model=ServiceComponent),
+            "config-groups",
+            self.component_1_group_config,
+            "hosts",
+        ].post(
             data={"hostId": self.host_for_service.pk},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -1703,16 +1311,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         with self.grant_permissions(
             to=self.test_user, on=[self.component_1], role_name="View component configurations"
         ):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:component-group-config-hosts-list",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "service_pk": self.service_1.pk,
-                        "component_pk": self.component_1.pk,
-                        "group_config_pk": self.component_1_group_config.pk,
-                    },
-                ),
+            response = self.client.v2[self.component_1_group_config, "hosts"].post(
                 data={"hostId": self.host_for_service.pk},
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -1728,16 +1327,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_component_add_host_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:component-group-config-hosts-list",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "group_config_pk": self.component_1_group_config.pk,
-                },
-            ),
+        response = self.client.v2[self.component_1_group_config, "hosts"].post(
             data={"hostId": self.host_for_service.pk},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -1754,18 +1344,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
     def test_component_remove_host_success(self):
         self.component_1_group_config.hosts.add(self.host_for_service)
 
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:component-group-config-hosts-detail",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "component_pk": self.component_1.pk,
-                    "group_config_pk": self.component_1_group_config.pk,
-                    "pk": self.host_for_service.pk,
-                },
-            ),
-        )
+        response = self.client.v2[self.component_1_group_config, "hosts", self.host_for_service.pk].delete()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.check_last_audit_record(
@@ -1780,17 +1359,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
     def test_service_remove_host_not_found_fail(self):
         self.service_1_group_config.hosts.add(self.host_for_service)
 
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:service-group-config-hosts-detail",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "service_pk": self.service_1.pk,
-                    "group_config_pk": self.service_1_group_config.pk,
-                    "pk": 100,
-                },
-            ),
-        )
+        response = self.client.v2[self.service_1_group_config, "hosts", self.get_non_existent_pk(model=Host)].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -1819,16 +1388,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
         self.cluster_1_group_config.hosts.add(self.host_for_service)
 
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:cluster-group-config-hosts-detail",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "group_config_pk": self.cluster_1_group_config.pk,
-                    "pk": self.host_for_service.pk,
-                },
-            ),
-        )
+        response = self.client.v2[self.cluster_1_group_config, "hosts", self.host_for_service.pk].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -1845,16 +1405,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         self.provider_group_config.hosts.add(self.host_for_service)
 
         with self.grant_permissions(to=self.test_user, on=[self.provider], role_name="View provider configurations"):
-            response = self.client.delete(
-                path=reverse(
-                    viewname="v2:hostprovider-group-config-hosts-detail",
-                    kwargs={
-                        "hostprovider_pk": self.provider.pk,
-                        "group_config_pk": self.provider_group_config.pk,
-                        "pk": self.host_for_service.pk,
-                    },
-                ),
-            )
+            response = self.client.v2[self.provider_group_config, "hosts", self.host_for_service.pk].delete()
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
