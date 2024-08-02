@@ -14,9 +14,97 @@ from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 
 from cm.converters import core_type_to_model
-from cm.models import ConcernCause, ConcernItem, ConcernType
+from cm.models import ClusterObject, ConcernCause, ConcernItem, ConcernType, ObjectType, Prototype
+from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, PlaceholderTypeDTO, build_concern_reason
+
+_issue_template_map = {
+    ConcernCause.CONFIG: ConcernMessage.CONFIG_ISSUE,
+    ConcernCause.IMPORT: ConcernMessage.REQUIRED_IMPORT_ISSUE,
+    ConcernCause.SERVICE: ConcernMessage.REQUIRED_SERVICE_ISSUE,
+    ConcernCause.HOSTCOMPONENT: ConcernMessage.HOST_COMPONENT_ISSUE,
+    ConcernCause.REQUIREMENT: ConcernMessage.UNSATISFIED_REQUIREMENT_ISSUE,
+}
 
 
 def delete_issue(owner: CoreObjectDescriptor, cause: ConcernCause) -> None:
     owner_type = ContentType.objects.get_for_model(core_type_to_model(core_type=owner.type))
     ConcernItem.objects.filter(owner_id=owner.id, owner_type=owner_type, cause=cause, type=ConcernType.ISSUE).delete()
+
+
+def retrieve_issue(owner: CoreObjectDescriptor, cause: ConcernCause) -> ConcernItem | None:
+    owner_type = ContentType.objects.get_for_model(core_type_to_model(core_type=owner.type))
+    return ConcernItem.objects.filter(
+        owner_id=owner.id, owner_type=owner_type, cause=cause, type=ConcernType.ISSUE
+    ).first()
+
+
+def create_issue(owner: CoreObjectDescriptor, cause: ConcernCause) -> ConcernItem:
+    concern_message = _issue_template_map[cause]
+    target, placeholder_types_dto = _get_target_and_placeholder_types(concern_message=concern_message, owner=owner)
+    reason = build_concern_reason(
+        template=concern_message.template,
+        placeholder_objects=PlaceholderObjectsDTO(
+            source=core_type_to_model(owner.type).objects.get(pk=owner.id), target=target
+        ),
+        placeholder_types=placeholder_types_dto,
+    )
+    name = f"{cause or ''}_{ConcernType.ISSUE}".strip("_")
+    owner_type = ContentType.objects.get_for_model(core_type_to_model(core_type=owner.type))
+
+    return ConcernItem.objects.create(
+        type=ConcernType.ISSUE, name=name, reason=reason, owner_id=owner.id, owner_type=owner_type, cause=cause
+    )
+
+
+def _get_target_and_placeholder_types(
+    concern_message: ConcernMessage, owner: CoreObjectDescriptor
+) -> tuple[Prototype | None, PlaceholderTypeDTO]:
+    owner_prototype = Prototype.objects.values("type", "bundle_id", "requires").get(
+        pk=core_type_to_model(owner.type).objects.values_list("prototype_id", flat=True).get(pk=owner.id)
+    )
+    target = None
+
+    match concern_message:
+        case ConcernMessage.CONFIG_ISSUE:
+            placeholder_type_dto = PlaceholderTypeDTO(source=f"{owner_prototype['type']}_config")
+
+        case ConcernMessage.REQUIRED_IMPORT_ISSUE:
+            placeholder_type_dto = PlaceholderTypeDTO(source="cluster_import")
+
+        case ConcernMessage.REQUIRED_SERVICE_ISSUE:
+            # owner type = cluster
+
+            placeholder_type_dto = PlaceholderTypeDTO(source="cluster_services", target="prototype")
+            target = (
+                Prototype.objects.filter(
+                    bundle_id=owner_prototype["bundle_id"],
+                    type=ObjectType.SERVICE,
+                    required=True,
+                )
+                .exclude(
+                    id__in=ClusterObject.objects.values_list("prototype_id", flat=True).filter(cluster_id=owner.id)
+                )
+                .first()
+            )
+
+        case ConcernMessage.HOST_COMPONENT_ISSUE:
+            placeholder_type_dto = PlaceholderTypeDTO(source="cluster_mapping")
+
+        case ConcernMessage.UNSATISFIED_REQUIREMENT_ISSUE:
+            # owner type = service
+
+            cluster_id = ClusterObject.objects.values_list("cluster_id", flat=True).get(pk=owner.id)
+            placeholder_type_dto = PlaceholderTypeDTO(source="cluster_services", target="prototype")
+
+            required_services_names = {require["service"] for require in owner_prototype["requires"]}
+            existing_required_services = set(
+                ClusterObject.objects.values_list("prototype__name", flat=True).filter(
+                    cluster_id=cluster_id, prototype__name__in=required_services_names
+                )
+            )
+            if absent_services_names := required_services_names.difference(existing_required_services):
+                target = Prototype.objects.filter(
+                    name__in=absent_services_names, type=ObjectType.SERVICE, bundle_id=owner_prototype["bundle_id"]
+                ).first()
+
+    return target, placeholder_type_dto

@@ -10,6 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ._operaitons import delete_issue
+from ._operaitons import create_issue, delete_issue, retrieve_issue
 
-__all__ = ["delete_issue"]
+__all__ = ["delete_issue", "retrieve_issue", "create_issue"]

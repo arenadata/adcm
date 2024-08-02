@@ -35,8 +35,9 @@ from cm.api import (
     is_version_suitable,
     save_hc,
 )
+from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
-from cm.issue import check_config, create_issue
+from cm.issue import check_config
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
@@ -60,6 +61,7 @@ from cm.models import (
     Upgrade,
 )
 from cm.services.cluster import retrieve_clusters_topology
+from cm.services.concern import create_issue, retrieve_issue
 from cm.services.concern.cases import (
     recalculate_concerns_on_cluster_upgrade,
 )
@@ -567,11 +569,11 @@ class _HostProviderBundleSwitch(_BundleSwitch):
                 _switch_object(host, prototype)
 
     def _update_concerns(self) -> None:
-        if not self._target.get_own_issue(ConcernCause.CONFIG) and not check_config(self._target):
-            concern = create_issue(obj=self._target, issue_cause=ConcernCause.CONFIG)
-            distribute_concern_on_related_objects(
-                owner=CoreObjectDescriptor(id=self._target.id, type=ADCMCoreType.HOSTPROVIDER), concern_id=concern.id
-            )
+        target_cod = CoreObjectDescriptor(id=self._target.id, type=orm_object_to_core_type(self._target))
+        target_own_config_issue = retrieve_issue(owner=target_cod, cause=ConcernCause.CONFIG)
+        if target_own_config_issue is None and not check_config(self._target):
+            concern = create_issue(owner=target_cod, cause=ConcernCause.CONFIG)
+            distribute_concern_on_related_objects(owner=target_cod, concern_id=concern.id)
 
         clusters_for_redistribution: set[ClusterID] = set()
         m2m_model = Host.concerns.through
@@ -589,7 +591,9 @@ class _HostProviderBundleSwitch(_BundleSwitch):
             )
         ):
             if not check_config(host):
-                concern = create_issue(obj=host, issue_cause=ConcernCause.CONFIG)
+                concern = create_issue(
+                    owner=CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST), cause=ConcernCause.CONFIG
+                )
                 clusters_for_redistribution.add(host.cluster_id)
                 host_own_concerns_to_link.append(m2m_model(host_id=host.id, concernitem_id=concern.id))
 

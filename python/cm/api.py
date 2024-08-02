@@ -41,7 +41,6 @@ from cm.issue import (
     check_component_constraint,
     check_hc_requires,
     check_service_requires,
-    create_issue,
     remove_concern_from_object,
     update_hierarchy_issues,
     update_issue_after_deleting,
@@ -73,7 +72,7 @@ from cm.models import (
     TaskLog,
 )
 from cm.services.cluster import retrieve_clusters_topology
-from cm.services.concern import delete_issue
+from cm.services.concern import create_issue, delete_issue, retrieve_issue
 from cm.services.concern.cases import (
     recalculate_own_concerns_on_add_clusters,
     recalculate_own_concerns_on_add_hosts,
@@ -176,7 +175,9 @@ def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, descriptio
                 owner=CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST),
                 concern_id=next(iter(concerns[ADCMCoreType.HOST][host.id])),
             )
-        if concern := provider.get_own_issue(ConcernCause.CONFIG):
+        if concern := retrieve_issue(
+            owner=CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.HOSTPROVIDER), cause=ConcernCause.CONFIG
+        ):
             host.concerns.add(concern)
 
         re_apply_object_policy(provider)
@@ -199,11 +200,10 @@ def add_host_provider(prototype: Prototype, name: str, description: str = ""):
         provider.save()
         add_concern_to_object(object_=provider, concern=CTX.lock)
 
+        provider_cod = CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.HOSTPROVIDER)
         if object_configuration_has_issue(provider):
-            concern = create_issue(obj=provider, issue_cause=ConcernCause.CONFIG)
-            distribute_concern_on_related_objects(
-                owner=CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.HOSTPROVIDER), concern_id=concern.id
-            )
+            concern = create_issue(owner=provider_cod, cause=ConcernCause.CONFIG)
+            distribute_concern_on_related_objects(owner=provider_cod, concern_id=concern.id)
 
     logger.info("host provider #%s %s is added", provider.pk, provider.name)
 
@@ -262,15 +262,12 @@ def delete_service(service: ClusterObject) -> None:
     service.delete()
 
     cluster = service.cluster
+    cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
     if check_hostcomponent_issue(cluster=cluster):
-        delete_issue(
-            owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=ConcernCause.HOSTCOMPONENT
-        )
-    elif cluster.get_own_issue(cause=ConcernCause.HOSTCOMPONENT) is None:
-        concern = create_issue(obj=cluster, issue_cause=ConcernCause.HOSTCOMPONENT)
-        distribute_concern_on_related_objects(
-            owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), concern_id=concern.id
-        )
+        delete_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
+    elif retrieve_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT) is None:
+        concern = create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
+        distribute_concern_on_related_objects(owner=cluster_cod, concern_id=concern.id)
 
     keep_objects = defaultdict(set)
     for task in TaskLog.objects.filter(
@@ -628,12 +625,11 @@ def save_hc(
 
     # HC may break
     # We can't be sure this method is called after some sort of "check"
+    cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
     if check_hostcomponent_issue(cluster=cluster):
-        delete_issue(
-            owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=ConcernCause.HOSTCOMPONENT
-        )
-    elif not cluster.get_own_issue(cause=ConcernCause.HOSTCOMPONENT):
-        create_issue(obj=cluster, issue_cause=ConcernCause.HOSTCOMPONENT)
+        delete_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
+    elif retrieve_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT) is None:
+        create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
 
     redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((cluster.id,))))
 
@@ -903,8 +899,8 @@ def multi_bind(cluster: Cluster, service: ClusterObject | None, bind_list: list[
     import_target = CoreObjectDescriptor(id=import_obj.id, type=orm_object_to_core_type(import_obj))
     if not object_imports_has_issue(target=import_obj):
         delete_issue(owner=import_target, cause=ConcernCause.IMPORT)
-    elif not import_obj.get_own_issue(ConcernCause.IMPORT):
-        concern = create_issue(obj=import_obj, issue_cause=ConcernCause.IMPORT)
+    elif retrieve_issue(owner=import_target, cause=ConcernCause.IMPORT) is None:
+        concern = create_issue(owner=import_target, cause=ConcernCause.IMPORT)
         distribute_concern_on_related_objects(owner=import_target, concern_id=concern.id)
 
     return get_import(cluster=cluster, service=service)

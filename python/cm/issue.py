@@ -14,12 +14,14 @@ from functools import partial
 from typing import Iterable
 
 from api_v2.concern.serializers import ConcernSerializer
+from core.types import CoreObjectDescriptor
 from django.conf import settings
 from django.db.transaction import on_commit
 from djangorestframework_camel_case.util import camelize
 
 from cm.adcm_config.config import get_prototype_config
 from cm.adcm_config.utils import proto_ref
+from cm.converters import orm_object_to_core_type
 from cm.data_containers import PrototypeData
 from cm.errors import AdcmEx
 from cm.hierarchy import Tree
@@ -43,7 +45,8 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, PlaceholderTypeDTO, build_concern_reason
+from cm.services.concern import create_issue, retrieve_issue
+from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, build_concern_reason
 from cm.status_api import send_concern_creation_event, send_concern_delete_event
 from cm.utils import obj_ref
 
@@ -378,80 +381,13 @@ _prototype_issue_map = {
     ObjectType.PROVIDER: (ConcernCause.CONFIG,),
     ObjectType.HOST: (ConcernCause.CONFIG,),
 }
-_issue_template_map = {
-    ConcernCause.CONFIG: ConcernMessage.CONFIG_ISSUE,
-    ConcernCause.IMPORT: ConcernMessage.REQUIRED_IMPORT_ISSUE,
-    ConcernCause.SERVICE: ConcernMessage.REQUIRED_SERVICE_ISSUE,
-    ConcernCause.HOSTCOMPONENT: ConcernMessage.HOST_COMPONENT_ISSUE,
-    ConcernCause.REQUIREMENT: ConcernMessage.UNSATISFIED_REQUIREMENT_ISSUE,
-}
-
-
-def _gen_issue_name(cause: ConcernCause) -> str:
-    return f"{ConcernType.ISSUE}_{cause.value}"
-
-
-def _get_kwargs_for_issue(concern_name: ConcernMessage, source: ADCMEntity) -> tuple[dict, dict]:
-    kwargs_for_objects = {"source": source}
-    kwargs_for_objects_types = {"source": None, "target": None}
-    target = None
-
-    if concern_name == ConcernMessage.REQUIRED_SERVICE_ISSUE:
-        kwargs_for_objects_types["source"] = "cluster_services"
-        kwargs_for_objects_types["target"] = "prototype"
-        bundle = source.prototype.bundle
-        # source is expected to be Cluster here
-        target = (
-            Prototype.objects.filter(
-                bundle=bundle,
-                type="service",
-                required=True,
-            )
-            .exclude(id__in=ClusterObject.objects.values_list("prototype_id", flat=True).filter(cluster=source))
-            .first()
-        )
-
-    elif concern_name == ConcernMessage.UNSATISFIED_REQUIREMENT_ISSUE:
-        kwargs_for_objects_types["source"] = "cluster_services"
-        kwargs_for_objects_types["target"] = "prototype"
-        for require in source.prototype.requires:
-            try:
-                ClusterObject.objects.get(prototype__name=require["service"], cluster=source.cluster)
-            except ClusterObject.DoesNotExist:
-                target = Prototype.objects.get(name=require["service"], type="service", bundle=source.prototype.bundle)
-                break
-
-    elif concern_name == ConcernMessage.CONFIG_ISSUE:
-        kwargs_for_objects_types["source"] = f"{source.prototype.type}_config"
-
-    elif concern_name == ConcernMessage.HOST_COMPONENT_ISSUE:
-        kwargs_for_objects_types["source"] = "cluster_mapping"
-
-    elif concern_name == ConcernMessage.REQUIRED_IMPORT_ISSUE:
-        kwargs_for_objects_types["source"] = "cluster_import"
-
-    kwargs_for_objects["target"] = target
-    return kwargs_for_objects, kwargs_for_objects_types
-
-
-def create_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> ConcernItem:
-    concern_message = _issue_template_map[issue_cause]
-    kwargs_for_objects, kwargs_for_objects_types = _get_kwargs_for_issue(concern_name=concern_message, source=obj)
-    reason = build_concern_reason(
-        template=concern_message.template,
-        placeholder_objects=PlaceholderObjectsDTO(**kwargs_for_objects),
-        placeholder_types=PlaceholderTypeDTO(**kwargs_for_objects_types),
-    )
-    type_: str = ConcernType.ISSUE.value
-    cause: str = issue_cause.value
-    return ConcernItem.objects.create(
-        type=type_, name=f"{cause or ''}_{type_}".strip("_"), reason=reason, owner=obj, cause=cause
-    )
 
 
 def add_issue_on_linked_objects(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
     """Create newly discovered issue and add it to linked objects concerns"""
-    issue = obj.get_own_issue(cause=issue_cause) or create_issue(obj=obj, issue_cause=issue_cause)
+    object_cod = CoreObjectDescriptor(id=obj.id, type=orm_object_to_core_type(obj))
+    object_own_issue = retrieve_issue(owner=object_cod, cause=issue_cause)
+    issue = object_own_issue or create_issue(owner=object_cod, cause=issue_cause)
 
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(node=tree.built_from)
@@ -462,7 +398,7 @@ def add_issue_on_linked_objects(obj: ADCMEntity, issue_cause: ConcernCause) -> N
 
 def remove_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
     """Remove outdated issue from other's concerns"""
-    issue = obj.get_own_issue(cause=issue_cause)
+    issue = retrieve_issue(owner=CoreObjectDescriptor(id=obj.id, type=orm_object_to_core_type(obj)), cause=issue_cause)
     if not issue:
         return
     issue.delete()
