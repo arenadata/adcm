@@ -243,9 +243,8 @@ def cluster_mapping_has_issue(cluster: Cluster) -> HasIssue:
         for requirement in requires:
             service_name = requirement["service"]
             if component_name := requirement.get("component"):
+                # "service" requirements aren't checked for mapping issue
                 prepared_requires.append(ComponentExternalRequirement(name=component_name, service_name=service_name))
-            else:
-                prepared_requires.append(ServiceExternalRequirement(name=service_name))
 
         requirements_from_components[prototype_id] = ComponentMappingRequirements(
             constraint=Constraint.from_db_repr(constraint),
@@ -284,14 +283,29 @@ def cluster_mapping_has_issue(cluster: Cluster) -> HasIssue:
     for component_id, (prototype_id, service_id) in component_prototype_map.items():
         requirements = requirements_from_components[prototype_id]
 
-        if requirements.is_requires_check_required and not existing_objects.issuperset(requirements.requires):
-            return True
-
         if requirements.is_constraint_check_required and not requirements.constraint.is_met_for(
             mapped_hosts=len(topology.services[service_id].components[component_id].hosts),
             hosts_in_cluster=hosts_amount,
         ):
             return True
+
+        # only mapped components should be checked for requires and bound_to
+        if not topology.services[service_id].components[component_id].hosts:
+            continue
+
+        if requirements.is_requires_check_required:
+            # all required components should be added
+            if not existing_objects.issuperset(requirements.requires):
+                return True
+
+            for required_component in requirements.requires:
+                required_component_id = existing_objects_map[required_component]
+                required_service_id = existing_objects_map[
+                    ServiceExternalRequirement(name=required_component.service_name)
+                ]
+                # if required component is unmapped - that's mapping issue
+                if not topology.services[required_service_id].components[required_component_id].hosts:
+                    return True
 
         if requirements.is_bound_to_check_required:
             bound_component_id = existing_objects_map.get(requirements.bound_to)

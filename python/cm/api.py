@@ -20,6 +20,7 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
+from django.db.models import Q
 from django.db.transaction import atomic, on_commit
 from rbac.models import Policy, re_apply_object_policy
 from rbac.roles import apply_policy_for_new_config
@@ -248,6 +249,16 @@ def delete_host(host: Host, cancel_tasks: bool = True) -> None:
 
 def delete_service(service: ClusterObject) -> None:
     service_pk = service.pk
+
+    # need to remove concerns of components manually, because they aren't cleared otherwise
+    ConcernItem.objects.filter(
+        Q(
+            owner_id__in=ServiceComponent.objects.values_list("id", flat=True).filter(service=service),
+            owner_type=ServiceComponent.class_content_type,
+        )
+        | Q(owner_id=service_pk, owner_type=service.content_type)
+    ).delete()
+
     service.delete()
 
     cluster = service.cluster
