@@ -490,9 +490,9 @@ def update_hierarchy_issues(obj: ADCMEntity) -> None:
         recheck_issues(obj=node.value)
 
 
-def update_issue_after_deleting() -> None:
-    """Remove issues which have no owners after object deleting"""
-    for concern in ConcernItem.objects.filter(type=ConcernType.ISSUE):
+def update_issues_and_flags_after_deleting() -> None:
+    """Remove issues and flags which have no owners after object deleting"""
+    for concern in ConcernItem.objects.filter(type__in=(ConcernType.ISSUE, ConcernType.FLAG)):
         tree = Tree(obj=concern.owner)
         affected = {node.value for node in tree.get_directly_affected(node=tree.built_from)}
         related = set(concern.related_objects)
