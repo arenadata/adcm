@@ -31,7 +31,7 @@ from cm.issue import (
     check_components_mapping_contraints,
     remove_concern_from_object,
     update_hierarchy_issues,
-    update_issue_after_deleting,
+    update_issues_and_flags_after_deleting,
 )
 from cm.models import (
     Cluster,
@@ -283,7 +283,7 @@ def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
     update_hierarchy_issues(obj=mapping_data.orm_objects["cluster"])
     for provider_id in {host.provider_id for host in mapping_data.hosts.values()}:
         update_hierarchy_issues(obj=mapping_data.orm_objects["providers"][provider_id])
-    update_issue_after_deleting()
+    update_issues_and_flags_after_deleting()
 
     _handle_mapping_policies(mapping_data=mapping_data)
     send_host_component_map_update_event(cluster=mapping_data.orm_objects["cluster"])
