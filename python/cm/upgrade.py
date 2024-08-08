@@ -37,7 +37,6 @@ from cm.api import (
 )
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
-from cm.issue import check_config
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
@@ -65,6 +64,7 @@ from cm.services.concern import create_issue, retrieve_issue
 from cm.services.concern.cases import (
     recalculate_concerns_on_cluster_upgrade,
 )
+from cm.services.concern.checks import object_configuration_has_issue
 from cm.services.concern.distribution import distribute_concern_on_related_objects, redistribute_issues_and_flags
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.status_api import send_prototype_and_state_update_event
@@ -571,7 +571,7 @@ class _HostProviderBundleSwitch(_BundleSwitch):
     def _update_concerns(self) -> None:
         target_cod = CoreObjectDescriptor(id=self._target.id, type=orm_object_to_core_type(self._target))
         target_own_config_issue = retrieve_issue(owner=target_cod, cause=ConcernCause.CONFIG)
-        if target_own_config_issue is None and not check_config(self._target):
+        if target_own_config_issue is None and object_configuration_has_issue(self._target):
             concern = create_issue(owner=target_cod, cause=ConcernCause.CONFIG)
             distribute_concern_on_related_objects(owner=target_cod, concern_id=concern.id)
 
@@ -590,7 +590,7 @@ class _HostProviderBundleSwitch(_BundleSwitch):
                 )
             )
         ):
-            if not check_config(host):
+            if object_configuration_has_issue(host):
                 concern = create_issue(
                     owner=CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST), cause=ConcernCause.CONFIG
                 )

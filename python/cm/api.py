@@ -45,7 +45,6 @@ from cm.issue import (
     update_hierarchy_issues,
     update_issue_after_deleting,
 )
-from cm.issue import check_hc as check_hostcomponent_issue
 from cm.logger import logger
 from cm.models import (
     ADCM,
@@ -78,7 +77,11 @@ from cm.services.concern.cases import (
     recalculate_own_concerns_on_add_hosts,
     recalculate_own_concerns_on_add_services,
 )
-from cm.services.concern.checks import object_configuration_has_issue, object_imports_has_issue
+from cm.services.concern.checks import (
+    cluster_mapping_has_issue,
+    object_configuration_has_issue,
+    object_imports_has_issue,
+)
 from cm.services.concern.distribution import distribute_concern_on_related_objects, redistribute_issues_and_flags
 from cm.services.concern.flags import BuiltInFlag, raise_flag
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
@@ -263,8 +266,10 @@ def delete_service(service: ClusterObject) -> None:
 
     cluster = service.cluster
     cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
-    if check_hostcomponent_issue(cluster=cluster):
-        delete_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
+    if not cluster_mapping_has_issue(cluster=cluster):
+        delete_issue(
+            owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=ConcernCause.HOSTCOMPONENT
+        )
     elif retrieve_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT) is None:
         concern = create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
         distribute_concern_on_related_objects(owner=cluster_cod, concern_id=concern.id)
@@ -329,7 +334,7 @@ def remove_host_from_cluster(host: Host) -> Host:
 
         remove_concern_from_object(object_=host, concern=CTX.lock)
 
-        if check_hostcomponent_issue(cluster):
+        if not cluster_mapping_has_issue(cluster):
             delete_issue(
                 owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=ConcernCause.HOSTCOMPONENT
             )
@@ -626,7 +631,7 @@ def save_hc(
     # HC may break
     # We can't be sure this method is called after some sort of "check"
     cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
-    if check_hostcomponent_issue(cluster=cluster):
+    if not cluster_mapping_has_issue(cluster=cluster):
         delete_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
     elif retrieve_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT) is None:
         create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)

@@ -230,10 +230,9 @@ def cluster_mapping_has_issue(cluster: Cluster) -> HasIssue:
       - bound_to
     """
 
-    # extract requirements
-
     bundle_id = cluster.prototype.bundle_id
 
+    # extract requirements
     requirements_from_components: dict[PrototypeID, ComponentMappingRequirements] = {}
 
     for prototype_id, constraint, requires, bound_to in Prototype.objects.values_list(

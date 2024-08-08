@@ -917,9 +917,9 @@ class TestAPI2(BaseTestCase):
             host_2 is unlocked
             host_3 became locked
         """
-        service = gen_service(self.cluster)
-        component_1 = gen_component(service)
-        component_2 = gen_component(service)
+        service = gen_service(self.cluster, bundle=self.bundle)
+        component_1 = gen_component(service, bundle=self.bundle)
+        component_2 = gen_component(service, bundle=self.bundle)
         provider = gen_provider()
         host_1 = gen_host(provider, cluster=self.cluster)
         host_2 = gen_host(provider, cluster=self.cluster)
@@ -969,9 +969,9 @@ class TestAPI2(BaseTestCase):
             host_2 remains unlocked
             host_3 remains unlocked
         """
-        service = gen_service(self.cluster)
-        component_1 = gen_component(service)
-        component_2 = gen_component(service)
+        service = gen_service(self.cluster, bundle=self.bundle)
+        component_1 = gen_component(service, bundle=self.bundle)
+        component_2 = gen_component(service, bundle=self.bundle)
         provider = gen_provider()
         host_1 = gen_host(provider, cluster=self.cluster)
         host_2 = gen_host(provider, cluster=self.cluster)

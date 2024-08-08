@@ -30,22 +30,26 @@ from cm.models import (
     ADCMEntity,
     Bundle,
     Cluster,
-    ClusterBind,
     ClusterObject,
     ConcernCause,
     ConcernItem,
     ConcernType,
     ConfigLog,
     Host,
-    HostComponent,
     JobLog,
     ObjectType,
     Prototype,
-    PrototypeImport,
     ServiceComponent,
     TaskLog,
 )
 from cm.services.concern import create_issue, retrieve_issue
+from cm.services.concern.checks import (
+    cluster_mapping_has_issue,
+    object_configuration_has_issue,
+    object_has_required_services_issue,
+    object_imports_has_issue,
+    service_requirements_has_issue,
+)
 from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, build_concern_reason
 from cm.status_api import send_concern_creation_event, send_concern_delete_event
 from cm.utils import obj_ref
@@ -79,30 +83,6 @@ def check_config(obj: ADCMEntity) -> bool:
     return True
 
 
-def check_required_services(cluster: Cluster) -> bool:
-    bundle = cluster.prototype.bundle
-    for proto in Prototype.objects.filter(bundle=bundle, type="service", required=True):
-        try:
-            ClusterObject.objects.get(cluster=cluster, prototype=proto)
-        except ClusterObject.DoesNotExist:
-            logger.debug("required service %s of %s is missing", proto_ref(prototype=proto), obj_ref(obj=cluster))
-            return False
-    return True
-
-
-def check_required_import(obj: [Cluster, ClusterObject]) -> bool:
-    if obj.prototype.type == ObjectType.CLUSTER:
-        cluster = obj
-        service = None
-    elif obj.prototype.type == ObjectType.SERVICE:
-        service = obj
-        cluster = obj.cluster
-    else:
-        raise AdcmEx(code="ISSUE_INTEGRITY_ERROR", msg=f"Could not check import for {obj}")
-
-    return do_check_import(cluster=cluster, service=service)
-
-
 def check_service_requires(cluster: Cluster, proto: Prototype) -> None:
     if not proto.requires:
         return
@@ -124,74 +104,6 @@ def check_service_requires(cluster: Cluster, proto: Prototype) -> None:
                 code="SERVICE_CONFLICT",
                 msg=f"No required {proto_ref(prototype=obj_prototype.first())} for {proto_ref(prototype=proto)}",
             )
-
-
-def check_requires(service: ClusterObject) -> bool:
-    try:
-        check_service_requires(cluster=service.cluster, proto=service.prototype)
-    except AdcmEx:
-        logger.debug("requirements not satisfied for %s", proto_ref(prototype=service.prototype))
-
-        return False
-
-    return True
-
-
-def do_check_import(cluster: Cluster, service: ClusterObject | None = None) -> bool:
-    proto = cluster.prototype
-
-    if service:
-        proto = service.prototype
-
-    prototype_imports = PrototypeImport.objects.filter(prototype=proto)
-    if not prototype_imports.exists():
-        return True
-
-    if not any(prototype_imports.values_list("required", flat=True)):
-        return True
-
-    required_import_names = set(prototype_imports.values_list("name", flat=True).filter(required=True))
-
-    for cluster_name, service_name in ClusterBind.objects.values_list(
-        "source_cluster__prototype__name", "source_service__prototype__name"
-    ).filter(cluster=cluster, service=service):
-        if service_name:
-            required_import_names -= {service_name}
-        elif cluster_name:
-            required_import_names -= {cluster_name}
-
-    return required_import_names == set()
-
-
-def check_hc(cluster: Cluster) -> bool:
-    shc_list = []
-    for hostcomponent in HostComponent.objects.filter(cluster=cluster):
-        shc_list.append((hostcomponent.service, hostcomponent.host, hostcomponent.component))
-
-    if not shc_list:
-        for service in ClusterObject.objects.filter(cluster=cluster):
-            for comp in Prototype.objects.filter(parent=service.prototype, type="component"):
-                const = comp.constraint
-                if len(const) == 2 and const[0] == 0:
-                    continue
-                logger.debug("void host components for %s", proto_ref(prototype=service.prototype))
-                return False
-
-    for service in ClusterObject.objects.filter(cluster=cluster):
-        try:
-            check_component_constraint(
-                cluster=cluster, service_prototype=service.prototype, hc_in=[i for i in shc_list if i[0] == service]
-            )
-        except AdcmEx:
-            return False
-
-    try:
-        check_hc_requires(shc_list=shc_list)
-        check_bound_components(shc_list=shc_list)
-    except AdcmEx:
-        return False
-
-    return True
 
 
 def check_hc_requires(shc_list: list[tuple[ClusterObject, Host, ServiceComponent]]) -> None:
@@ -362,11 +274,11 @@ def check_component_constraint(
 
 
 _issue_check_map = {
-    ConcernCause.CONFIG: check_config,
-    ConcernCause.IMPORT: check_required_import,
-    ConcernCause.SERVICE: check_required_services,
-    ConcernCause.HOSTCOMPONENT: check_hc,
-    ConcernCause.REQUIREMENT: check_requires,
+    ConcernCause.CONFIG: object_configuration_has_issue,
+    ConcernCause.IMPORT: object_imports_has_issue,
+    ConcernCause.SERVICE: object_has_required_services_issue,
+    ConcernCause.HOSTCOMPONENT: cluster_mapping_has_issue,
+    ConcernCause.REQUIREMENT: service_requirements_has_issue,
 }
 _prototype_issue_map = {
     ObjectType.ADCM: (ConcernCause.CONFIG,),
@@ -408,7 +320,7 @@ def recheck_issues(obj: ADCMEntity) -> None:
     """Re-check for object's type-specific issues"""
     issue_causes = _prototype_issue_map.get(obj.prototype.type, [])
     for issue_cause in issue_causes:
-        if not _issue_check_map[issue_cause](obj):
+        if _issue_check_map[issue_cause](obj):
             add_issue_on_linked_objects(obj=obj, issue_cause=issue_cause)
         else:
             remove_issue(obj=obj, issue_cause=issue_cause)

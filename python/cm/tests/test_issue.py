@@ -22,7 +22,6 @@ from cm.issue import (
     add_concern_to_object,
     add_issue_on_linked_objects,
     create_lock,
-    do_check_import,
     recheck_issues,
     remove_issue,
     update_hierarchy_issues,
@@ -38,16 +37,16 @@ from cm.models import (
     PrototypeImport,
 )
 from cm.services.cluster import perform_host_to_cluster_map
-from cm.services.concern.checks import object_has_required_services_issue
+from cm.services.concern.checks import object_has_required_services_issue, object_imports_has_issue
 from cm.services.status import notify
 from cm.tests.utils import gen_cluster, gen_job_log, gen_service, gen_task_log, generate_hierarchy
 
 mock_issue_check_map = {
-    ConcernCause.CONFIG: lambda x: False,
-    ConcernCause.IMPORT: lambda x: True,
+    ConcernCause.CONFIG: lambda x: True,
+    ConcernCause.IMPORT: lambda x: False,
     ConcernCause.SERVICE: lambda x: False,
-    ConcernCause.HOSTCOMPONENT: lambda x: True,
-    ConcernCause.REQUIREMENT: lambda x: True,
+    ConcernCause.HOSTCOMPONENT: lambda x: False,
+    ConcernCause.REQUIREMENT: lambda x: False,
 }
 
 
@@ -231,19 +230,19 @@ class TestImport(BaseTestCase):
     def test_no_import(self):
         _, _, cluster = self.cook_cluster("Hadoop", "Cluster1")
 
-        self.assertTrue(do_check_import(cluster))
+        self.assertFalse(object_imports_has_issue(cluster))
 
     def test_import_required(self):
         _, proto1, cluster = self.cook_cluster("Hadoop", "Cluster1")
         PrototypeImport.objects.create(prototype=proto1, name="Monitoring", required=True)
 
-        self.assertFalse(do_check_import(cluster))
+        self.assertTrue(object_imports_has_issue(cluster))
 
     def test_import_not_required(self):
         _, proto1, cluster = self.cook_cluster("Hadoop", "Cluster1")
         PrototypeImport.objects.create(prototype=proto1, name="Monitoring", required=False)
 
-        self.assertTrue(do_check_import(cluster))
+        self.assertFalse(object_imports_has_issue(cluster))
 
     def test_cluster_imported(self):
         _, proto1, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
@@ -252,7 +251,7 @@ class TestImport(BaseTestCase):
         _, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2)
 
-        self.assertTrue(do_check_import(cluster1))
+        self.assertFalse(object_imports_has_issue(cluster1))
 
     def test_service_imported(self):
         _, proto1, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
@@ -263,7 +262,7 @@ class TestImport(BaseTestCase):
         service = add_service_to_cluster(cluster2, proto3)
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2, source_service=service)
 
-        self.assertTrue(do_check_import(cluster1))
+        self.assertFalse(object_imports_has_issue(cluster1))
 
     def test_import_to_service(self):
         bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
@@ -274,7 +273,8 @@ class TestImport(BaseTestCase):
         _, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
 
-        self.assertTrue(do_check_import(cluster1, service))
+        self.assertFalse(object_imports_has_issue(cluster1))
+        self.assertFalse(object_imports_has_issue(service))
 
     def test_import_service_to_service(self):
         bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
@@ -292,7 +292,8 @@ class TestImport(BaseTestCase):
             source_service=service2,
         )
 
-        self.assertTrue(do_check_import(cluster1, service1))
+        self.assertFalse(object_imports_has_issue(cluster1))
+        self.assertFalse(object_imports_has_issue(service1))
 
     def test_issue_cluster_required_import(self):
         _, proto1, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
