@@ -17,6 +17,7 @@ from cm.models import (
     Action,
     ADCMEntityStatus,
     AnsibleConfig,
+    Bundle,
     Cluster,
     ClusterObject,
     Prototype,
@@ -770,12 +771,13 @@ class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
 
         hierarchy_1 = generate_hierarchy()
         self.cluster_1 = hierarchy_1["cluster"]
+        cluster_bundle = Bundle.objects.get(pk=self.cluster_1.bundle_id)
         self.service_11 = hierarchy_1["service"]
         self.component_111 = hierarchy_1["component"]
-        self.component_112 = gen_component(service=self.service_11)
-        self.service_12 = gen_service(cluster=self.cluster_1)
-        self.component_121 = gen_component(service=self.service_12)
-        self.component_122 = gen_component(service=self.service_12)
+        self.component_112 = gen_component(service=self.service_11, bundle=cluster_bundle)
+        self.service_12 = gen_service(cluster=self.cluster_1, bundle=cluster_bundle)
+        self.component_121 = gen_component(service=self.service_12, bundle=cluster_bundle)
+        self.component_122 = gen_component(service=self.service_12, bundle=cluster_bundle)
         self.host_1 = hierarchy_1["host"]
         self.host_2 = gen_host(provider=hierarchy_1["provider"], cluster=self.cluster_1)
         self.set_hostcomponent(

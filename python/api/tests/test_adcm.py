@@ -11,7 +11,11 @@
 # limitations under the License.
 
 from adcm.tests.base import BaseTestCase
-from cm.models import ADCM, ConcernItem
+from cm.converters import orm_object_to_core_type
+from cm.issue import add_concern_to_object
+from cm.models import ADCM, ConcernCause
+from cm.services.concern import create_issue
+from core.types import CoreObjectDescriptor
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
@@ -22,7 +26,11 @@ class TestADCM(BaseTestCase):
         super().setUp()
 
         self.adcm = ADCM.objects.select_related("prototype").last()
-        self.concern = ConcernItem.objects.last()
+        self.concern = create_issue(
+            owner=CoreObjectDescriptor(id=self.adcm.id, type=orm_object_to_core_type(self.adcm)),
+            cause=ConcernCause.CONFIG,
+        )
+        add_concern_to_object(object_=self.adcm, concern=self.concern)
 
     def test_list(self):
         test_data = {
