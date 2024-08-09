@@ -10,8 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.types import CoreObjectDescriptor
+from typing import Iterable
+
+from core.types import ADCMCoreType, CoreObjectDescriptor, ObjectID
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
 
 from cm.converters import core_type_to_model
 from cm.models import ClusterObject, ConcernCause, ConcernItem, ConcernType, ObjectType, Prototype
@@ -24,6 +27,15 @@ _issue_template_map = {
     ConcernCause.HOSTCOMPONENT: ConcernMessage.HOST_COMPONENT_ISSUE,
     ConcernCause.REQUIREMENT: ConcernMessage.UNSATISFIED_REQUIREMENT_ISSUE,
 }
+
+
+def delete_concerns_of_removed_objects(objects: dict[ADCMCoreType, Iterable[ObjectID]]) -> None:
+    query = Q()
+
+    for type_, ids in objects.items():
+        query |= Q(owner_type=core_type_to_model(type_).class_content_type, owner_id__in=ids)
+
+    ConcernItem.objects.filter(query).delete()
 
 
 def delete_issue(owner: CoreObjectDescriptor, cause: ConcernCause) -> None:
