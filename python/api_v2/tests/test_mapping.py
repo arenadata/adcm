@@ -11,18 +11,24 @@
 # limitations under the License.
 
 from cm.models import (
+    Bundle,
     Cluster,
     ClusterObject,
+    ConcernCause,
+    ConcernItem,
     GroupConfig,
     Host,
     HostComponent,
     MaintenanceMode,
+    Prototype,
     ServiceComponent,
+    Upgrade,
 )
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_409_CONFLICT,
@@ -1142,6 +1148,69 @@ class TestMappingConstraints(BaseAPITestCase):
             },
         )
         self.assertEqual(HostComponent.objects.count(), 0)
+
+
+class TestBoundTo(BaseAPITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.old_bundle = Bundle.objects.get(name="cluster_one", version="1.0")
+        self.new_bundle = self.add_bundle(self.test_bundles_dir / "cluster_one_upgrade")
+        Prototype.objects.filter(license="unaccepted").update(license="accepted")
+
+    def test_concern_appear_after_upgrade_success(self) -> None:
+        cluster_old = self.add_cluster(bundle=self.old_bundle, name="Created Old")
+
+        service = self.add_services_to_cluster(["service_1"], cluster=cluster_old).get()
+        component = service.servicecomponent_set.get(prototype__name="component_1")
+        service_with_dependency = self.add_services_to_cluster(["service_with_bound_to"], cluster=cluster_old).get()
+        dependent_component = service_with_dependency.servicecomponent_set.get(prototype__name="will_have_bound_to")
+
+        host_1 = self.add_host(provider=self.provider, fqdn="h1", cluster=cluster_old)
+        host_2 = self.add_host(provider=self.provider, fqdn="h2", cluster=cluster_old)
+
+        self.set_hostcomponent(
+            cluster=cluster_old, entries=((host_1, component), (host_2, component), (host_2, dependent_component))
+        )
+
+        self.assertFalse(ConcernItem.objects.filter(cause=ConcernCause.HOSTCOMPONENT).exists())
+
+        upgrade = Upgrade.objects.get(name="upgrade")
+
+        response = self.client.v2[cluster_old, "upgrades", upgrade, "run"].post()
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+        cluster_old.refresh_from_db()
+
+        concern = ConcernItem.objects.filter(cause=ConcernCause.HOSTCOMPONENT).first()
+
+        self.assertIsNotNone(concern)
+        self.assertEqual(concern.owner, cluster_old)
+
+    def test_save_mapping_with_unsatisfied_bound_to_fail(self) -> None:
+        cluster_new = self.add_cluster(bundle=self.new_bundle, name="Created New")
+
+        service = self.add_services_to_cluster(["service_1"], cluster=cluster_new).get()
+        component = service.servicecomponent_set.get(prototype__name="component_1")
+        service_with_dependency = self.add_services_to_cluster(["service_with_bound_to"], cluster=cluster_new).get()
+        dependent_component = service_with_dependency.servicecomponent_set.get(prototype__name="will_have_bound_to")
+
+        host_1 = self.add_host(provider=self.provider, fqdn="h1", cluster=cluster_new)
+        host_2 = self.add_host(provider=self.provider, fqdn="h2", cluster=cluster_new)
+
+        response = self.client.v2[cluster_new, "mapping"].post(
+            data=[
+                {"hostId": host.id, "componentId": component.id}
+                for host, component in ((host_1, component), (host_2, component), (host_2, dependent_component))
+            ]
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertIn(
+            'No component "will_have_bound_to" of service "service_with_bound_to" on host "h1" '
+            'for component "component_1" of service "service_1"',
+            response.json()["desc"],
+        )
 
 
 class GroupConfigRelatedTests(BaseAPITestCase):
