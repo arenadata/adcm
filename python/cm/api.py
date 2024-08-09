@@ -20,7 +20,6 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
-from django.db.models import Q
 from django.db.transaction import atomic, on_commit
 from rbac.models import Policy, re_apply_object_policy
 from rbac.roles import apply_policy_for_new_config
@@ -43,7 +42,6 @@ from cm.issue import (
     check_service_requires,
     remove_concern_from_object,
     update_hierarchy_issues,
-    update_issue_after_deleting,
 )
 from cm.logger import logger
 from cm.models import (
@@ -72,6 +70,7 @@ from cm.models import (
 )
 from cm.services.cluster import retrieve_clusters_topology
 from cm.services.concern import create_issue, delete_issue, retrieve_issue
+from cm.services.concern._operaitons import delete_concerns_of_removed_objects
 from cm.services.concern.cases import (
     recalculate_own_concerns_on_add_clusters,
     recalculate_own_concerns_on_add_hosts,
@@ -253,14 +252,14 @@ def delete_host(host: Host, cancel_tasks: bool = True) -> None:
 def delete_service(service: ClusterObject) -> None:
     service_pk = service.pk
 
-    # need to remove concerns of components manually, because they aren't cleared otherwise
-    ConcernItem.objects.filter(
-        Q(
-            owner_id__in=ServiceComponent.objects.values_list("id", flat=True).filter(service=service),
-            owner_type=ServiceComponent.class_content_type,
-        )
-        | Q(owner_id=service_pk, owner_type=service.content_type)
-    ).delete()
+    delete_concerns_of_removed_objects(
+        objects={
+            ADCMCoreType.SERVICE: (service_pk,),
+            ADCMCoreType.COMPONENT: tuple(
+                ServiceComponent.objects.values_list("id", flat=True).filter(service_id=service_pk)
+            ),
+        }
+    )
 
     service.delete()
 
@@ -306,8 +305,21 @@ def delete_cluster(cluster: Cluster) -> None:
         MaintenanceMode.OFF,
         ", ".join(host_pks),
     )
+
+    delete_concerns_of_removed_objects(
+        objects={
+            ADCMCoreType.CLUSTER: (cluster.id,),
+            ADCMCoreType.SERVICE: tuple(
+                ClusterObject.objects.values_list("id", flat=True).filter(cluster_id=cluster.id)
+            ),
+            ADCMCoreType.COMPONENT: tuple(
+                ServiceComponent.objects.values_list("id", flat=True).filter(cluster_id=cluster.id)
+            ),
+        }
+    )
+
     cluster.delete()
-    update_issue_after_deleting()
+
     reset_hc_map()
     reset_objects_in_mm()
 
