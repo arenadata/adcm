@@ -305,7 +305,6 @@ class TestCluster(BaseAPITestCase):
         response = (self.client.v2[self.cluster_1] / "service-prototypes").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 8)
         self.assertListEqual(
             [prototype["displayName"] for prototype in response.json()],
             [
@@ -317,6 +316,7 @@ class TestCluster(BaseAPITestCase):
                 "service_4_save_config_without_required_field",
                 "service_5_variant_type_without_values",
                 "service_6_delete_with_action",
+                "service_with_bound_to",
             ],
         )
 
@@ -326,7 +326,6 @@ class TestCluster(BaseAPITestCase):
         response = (self.client.v2[self.cluster_1] / "service-candidates").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 7)
         self.assertListEqual(
             [prototype["displayName"] for prototype in response.json()],
             [
@@ -337,6 +336,7 @@ class TestCluster(BaseAPITestCase):
                 "service_4_save_config_without_required_field",
                 "service_5_variant_type_without_values",
                 "service_6_delete_with_action",
+                "service_with_bound_to",
             ],
         )
 

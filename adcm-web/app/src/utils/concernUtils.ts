@@ -8,7 +8,7 @@ export interface ConcernObjectPathsData {
 
 const concernTypeUrlDict: Record<string, string> = {
   [AdcmConcernType.AdcmConfig]: '',
-  [AdcmConcernType.ClusterConfig]: '/clusters/:clusterId/primary-configuration/',
+  [AdcmConcernType.ClusterConfig]: '/clusters/:clusterId/configuration/primary-configuration',
   [AdcmConcernType.ClusterImport]: '/clusters/:clusterId/import/',
   [AdcmConcernType.ServiceConfig]: '/clusters/:clusterId/services/:serviceId/primary-configuration/',
   [AdcmConcernType.ComponentConfig]:
@@ -41,9 +41,10 @@ export const getConcernLinkObjectPathsDataArray = (
 
     Object.entries(concern.reason.placeholder).forEach(([key, placeholderItem]) => {
       const generatedPath = generatePath(concernTypeUrlDict[placeholderItem.type], placeholderItem.params);
+      const clusterServiceId = (placeholderItem as AdcmConcernServicePlaceholder).params.serviceId;
       const path =
-        placeholderItem.type === AdcmConcernType.ClusterImport
-          ? `${generatedPath}/services/?serviceId=${(placeholderItem as AdcmConcernServicePlaceholder).params.serviceId}`
+        placeholderItem.type === AdcmConcernType.ClusterImport && clusterServiceId
+          ? `${generatedPath}/services/?serviceId=${clusterServiceId}`
           : generatedPath;
       linksDataMap.set(key, {
         path,
