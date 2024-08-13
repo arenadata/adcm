@@ -5,7 +5,7 @@ import { DynamicActionCommonOptions } from '@commonComponents/DynamicActionDialo
 import s from '@commonComponents/DynamicActionDialog/DynamicActionDialog.module.scss';
 import { useClusterMapping } from '@pages/cluster/ClusterMapping/useClusterMapping';
 import ComponentContainer from '@pages/cluster/ClusterMapping/ComponentsMapping/ComponentContainer/ComponentContainer';
-import { getMappings } from '@store/adcm/clusters/clustersDynamicActionsSlice';
+import { getMappings } from '@store/adcm/entityDynamicActions/dynamicActionsMappingSlice';
 import { getComponentMapActions, getDisabledMappings } from './DynamicActionHostMapping.utils';
 import { Link } from 'react-router-dom';
 import { LoadState } from '@models/loadState';
@@ -30,9 +30,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
     }
   }, [clusterId, dispatch]);
 
-  const {
-    dialog: { hosts, components, mapping, loadState },
-  } = useStore(({ adcm }) => adcm.clustersDynamicActions);
+  const { hosts, components, mapping, loadState } = useStore(({ adcm }) => adcm.dynamicActionsMapping);
 
   const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
 

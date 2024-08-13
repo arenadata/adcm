@@ -4,7 +4,11 @@ import authSlice from '@store/authSlice';
 import notificationsSlice from '@store/notificationsSlice';
 import clustersSlice from '@store/adcm/clusters/clustersSlice';
 import clustersDynamicActionsSlice from '@store/adcm/clusters/clustersDynamicActionsSlice';
-import clusterActionHostGroupsSlice from '@store/adcm/entityActionHostGroups/actionHostGroupsSlice';
+import actionHostGroupsSlice from '@store/adcm/entityActionHostGroups/actionHostGroupsSlice';
+import actionHostGroupsTableSlice from '@store/adcm/entityActionHostGroups/actionHostGroupsTableSlice';
+import actionHostGroupsActionsSlice from '@store/adcm/entityActionHostGroups/actionHostGroupsActionsSlice';
+import dynamicActionsSlice from '@store/adcm/entityDynamicActions/dynamicActionsSlice';
+import dynamicActionsMappingSlice from '@store/adcm/entityDynamicActions/dynamicActionsMappingSlice';
 import clusterUpgradesSlice from '@store/adcm/clusters/clusterUpgradesSlice';
 import clusterHostsSlice from '@store/adcm/cluster/hosts/hostsSlice';
 import clusterHostsTableSlice from '@store/adcm/cluster/hosts/hostsTableSlice';
@@ -115,7 +119,9 @@ const rootReducer = combineReducers({
     clusterHost: clusterHostSlice,
     clusterHostsActions: clusterHostsActionsSlice,
     clusterHostsDynamicActions: clusterHostsDynamicActionsSlice,
-    clusterActionHostGroups: clusterActionHostGroupsSlice,
+    actionHostGroups: actionHostGroupsSlice,
+    actionHostGroupsTable: actionHostGroupsTableSlice,
+    actionHostGroupsActions: actionHostGroupsActionsSlice,
     hostComponentsDynamicActions: hostComponentsDynamicActionsSlice,
     clusterHostsTable: clusterHostsTableSlice,
     clusterMapping: clusterMappingSlice,
@@ -198,6 +204,8 @@ const rootReducer = combineReducers({
     adcmSettingsDynamicActions: adcmSettingsDynamicActionsSlice,
     entityConfigurationCompare: adcmEntityConfigurationCompareSlice,
     entityConfiguration: adcmEntityConfigurationSlice,
+    dynamicActions: dynamicActionsSlice,
+    dynamicActionsMapping: dynamicActionsMappingSlice,
   }),
 });
 

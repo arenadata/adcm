@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { SearchInput, Tag, Tags } from '@uikit';
 import type { AdcmActionHostGroupHost } from '@models/adcm/actionHostGroup';
-import s from './ClusterActionHostGroupsTableExpandedContent.module.scss';
+import s from './ActionHostGroupsTableExpandedContent.module.scss';
 
 export interface ServiceComponentsTableExpandedContentProps {
   children: AdcmActionHostGroupHost[];
@@ -21,10 +21,10 @@ const ClusterActionHostGroupsTableExpandedContent = ({ children }: ServiceCompon
   };
 
   return (
-    <div className={s.clusterActionHostGroupsTableExpandedContent}>
+    <div className={s.actionHostGroupsTableExpandedContent}>
       <SearchInput placeholder="Search hosts" value={textEntered} onChange={handleHostsNameFilter} />
       {childrenFiltered.length > 0 && (
-        <Tags className={s.clusterActionHostGroupsTableExpandedContent__tags}>
+        <Tags className={s.actionHostGroupsTableExpandedContent__tags}>
           {childrenFiltered.map((child) => (
             <Tag key={child.id} children={child.name} />
           ))}

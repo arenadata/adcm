@@ -38,3 +38,5 @@ export interface AdcmDynamicActionRunConfig {
   isVerbose: boolean;
   configuration: Pick<AdcmConfig, 'config' | 'adcmMeta'> | null;
 }
+
+export type EntitiesDynamicActions = Record<number, AdcmDynamicAction[]>;

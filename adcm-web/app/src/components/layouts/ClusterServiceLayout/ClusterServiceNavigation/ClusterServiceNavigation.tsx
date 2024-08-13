@@ -39,6 +39,7 @@ const ClusterServiceNavigation: React.FC = () => {
       <TabsBlock variant="secondary">
         <Tab to={`/clusters/${cluster?.id}/services/${service?.id}/primary-configuration`}>Primary configuration</Tab>
         <Tab to={`/clusters/${cluster?.id}/services/${service?.id}/configuration-groups`}>Configuration groups</Tab>
+        <Tab to="action-host-groups">Action host groups</Tab>
         <Tab to="components">Components</Tab>
         <Tab to="info">Info</Tab>
       </TabsBlock>

@@ -4,11 +4,11 @@ import CreateActionHostGroupDialog from '@commonComponents/ActionHostGroups/Acti
 import DynamicActionDialog from '@commonComponents/DynamicActionDialog/DynamicActionDialog';
 import EditActionHostGroupDialog from '@commonComponents/ActionHostGroups/ActionHostGroupDialogs/EditActionHostGroupDialog/EditActionHostGroupDialog';
 import DeleteActionHostGroupDialog from '@commonComponents/ActionHostGroups/ActionHostGroupDialogs/DeleteActionHostGroupDialog/DeleteActionHostGroupDialog';
-import { useClusterActionHostGroups } from './useClusterActionHostGroups';
+import { useComponentActionHostGroups } from './useComponentActionHostGroups';
 
-const ClusterActionHostGroups = () => {
+const ComponentActionHostGroups = () => {
   const { toolbarProps, tableProps, createDialogProps, dynamicActionDialogProps, editDialogProps, deleteDialogProps } =
-    useClusterActionHostGroups();
+    useComponentActionHostGroups();
 
   return (
     <>
@@ -22,4 +22,4 @@ const ClusterActionHostGroups = () => {
   );
 };
 
-export default ClusterActionHostGroups;
+export default ComponentActionHostGroups;

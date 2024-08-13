@@ -10,7 +10,7 @@ import { AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
 import DynamicActionConfirm from '@commonComponents/DynamicActionDialog/DynamicActionConfirm/DynamicActionConfirm';
 import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/CustomDialogControls';
 
-interface DynamicActionDialogProps extends Omit<DynamicActionCommonOptions, 'onSubmit'> {
+export interface DynamicActionDialogProps extends Omit<DynamicActionCommonOptions, 'onSubmit'> {
   clusterId: number | null;
   onSubmit: (data: AdcmDynamicActionRunConfig) => void;
 }

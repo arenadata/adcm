@@ -1,31 +1,30 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { AdcmClusterActionHostGroupsApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { LoadState } from '@models/loadState';
 import type { AdcmActionHostGroup } from '@models/adcm/actionHostGroup';
+import { GetActionHostGroupsActionPayload } from './actionHostGroups.types';
+import { services } from './actionHostGroupsSlice.constants';
 
-type AdcmClusterActionHostGroupsState = {
+type AdcmActionHostGroupsState = {
   actionHostGroups: AdcmActionHostGroup[];
   totalCount: number;
   loadState: LoadState;
 };
 
-type GetClusterActionHostGroupsArgs = {
-  clusterId: number;
-};
-
-type DeleteClusterActionHostsGroupArgs = {
-  clusterId: number;
-  actionHostGroupId: number;
-};
-
-const loadClusterActionHostGroupsFromBackend = createAsyncThunk(
-  'adcm/clusterActionHostGroups/loadClusterActionHostGroupsFromBackend',
-  async (clusterId: number, thunkAPI) => {
+const loadActionHostGroupsFromBackend = createAsyncThunk(
+  'adcm/actionHostGroups/loadActionHostGroupsFromBackend',
+  async ({ entityType, entityArgs }: GetActionHostGroupsActionPayload, thunkAPI) => {
     try {
-      const batch = await AdcmClusterActionHostGroupsApi.getActionHostGroups(clusterId, { pageNumber: 0, perPage: 10 });
+      const service = services[entityType];
+      const {
+        adcm: {
+          actionHostGroupsTable: { filter, paginationParams },
+        },
+      } = thunkAPI.getState();
+
+      const batch = await service.getActionHostGroups({ ...entityArgs, filter, paginationParams });
       return batch;
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
@@ -33,13 +32,13 @@ const loadClusterActionHostGroupsFromBackend = createAsyncThunk(
   },
 );
 
-const getClusterActionHostGroups = createAsyncThunk(
-  'adcm/clusterActionHostGroups/getClusterActionHostGroups',
-  async ({ clusterId }: GetClusterActionHostGroupsArgs, thunkAPI) => {
+const getActionHostGroups = createAsyncThunk(
+  'adcm/actionHostGroups/getActionHostGroups',
+  async (args: GetActionHostGroupsActionPayload, thunkAPI) => {
     thunkAPI.dispatch(setLoadState(LoadState.Loading));
     const startDate = new Date();
 
-    await thunkAPI.dispatch(loadClusterActionHostGroupsFromBackend(clusterId));
+    await thunkAPI.dispatch(loadActionHostGroupsFromBackend(args));
 
     executeWithMinDelay({
       startDate,
@@ -51,45 +50,34 @@ const getClusterActionHostGroups = createAsyncThunk(
   },
 );
 
-const deleteClusterActionHostGroup = createAsyncThunk(
-  'adcm/clusterActionHostGroups/deleteClusterActionHostGroup',
-  async (args: DeleteClusterActionHostsGroupArgs, thunkAPI) => {
-    try {
-      await AdcmClusterActionHostGroupsApi.deleteActionHostGroup(args.clusterId, args.actionHostGroupId);
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
-const createInitialState = (): AdcmClusterActionHostGroupsState => ({
+const createInitialState = (): AdcmActionHostGroupsState => ({
   actionHostGroups: [],
   totalCount: 0,
   loadState: LoadState.NotLoaded,
 });
 
-const clusterHostsSlice = createSlice({
-  name: 'adcm/clusterActionHostGroups',
+const actionHostGroupsSlice = createSlice({
+  name: 'adcm/actionHostGroups',
   initialState: createInitialState(),
   reducers: {
     setLoadState(state, action) {
       state.loadState = action.payload;
     },
-    cleanupClusterActionHostGroups() {
+    cleanupActionHostGroups() {
       return createInitialState();
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(loadClusterActionHostGroupsFromBackend.fulfilled, (state, action) => {
+    builder.addCase(loadActionHostGroupsFromBackend.fulfilled, (state, action) => {
       state.actionHostGroups = action.payload.results;
       state.totalCount = action.payload.count;
     });
-    builder.addCase(loadClusterActionHostGroupsFromBackend.rejected, (state) => {
+    builder.addCase(loadActionHostGroupsFromBackend.rejected, (state) => {
       state.actionHostGroups = [];
     });
   },
 });
 
-const { setLoadState, cleanupClusterActionHostGroups } = clusterHostsSlice.actions;
-export { getClusterActionHostGroups, cleanupClusterActionHostGroups, deleteClusterActionHostGroup };
-export default clusterHostsSlice.reducer;
+const { setLoadState, cleanupActionHostGroups } = actionHostGroupsSlice.actions;
+export { getActionHostGroups, cleanupActionHostGroups };
+export default actionHostGroupsSlice.reducer;

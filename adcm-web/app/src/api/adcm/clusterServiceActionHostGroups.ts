@@ -1,25 +1,30 @@
 import { httpClient } from '@api/httpClient';
-import type { PaginationParams, SortParams } from '@models/table';
+import type { AdcmDynamicAction, AdcmDynamicActionDetails, AdcmJob, Batch } from '@models/adcm';
 import type {
-  AdcmDynamicAction,
-  AdcmDynamicActionDetails,
-  AdcmDynamicActionRunConfig,
-  AdcmJob,
-  Batch,
-} from '@models/adcm';
-import type {
-  AdcmActionHostGroupHost,
   AdcmActionHostGroup,
-  AdcmActionHostGroupsActionsFilter,
-  AddAdcmActionHostGroupHostPayload,
-  CreateAdcmActionHostGroupPayload,
+  GetAdcmServiceActionHostGroupsArgs,
+  GetAdcmServiceActionHostGroupArgs,
+  CreateAdcmServiceActionHostGroupArgs,
+  DeleteAdcmServiceActionHostGroupArgs,
+  GetAdcmServiceActionHostGroupActionsArgs,
+  GetAdcmServiceActionHostGroupActionArgs,
+  RunAdcmServiceActionHostGroupActionArgs,
+  GetAdcmServiceActionHostGroupsHostCandidatesArgs,
+  AdcmActionHostGroupHost,
+  GetAdcmServiceActionHostGroupHostCandidatesArgs,
+  GetAdcmServiceActionHostGroupHostsArgs,
+  AddAdcmServiceActionHostGroupHostArgs,
+  DeleteAdcmServiceActionHostGroupHostArgs,
 } from '@models/adcm/actionHostGroup';
 import { prepareQueryParams } from '@utils/apiUtils';
 import qs from 'qs';
 
 export class AdcmClusterServiceActionHostGroupsApi {
-  public static async getActionHostGroups(clusterId: number, serviceId: number, paginationParams: PaginationParams) {
-    const queryParams = prepareQueryParams(undefined, undefined, paginationParams);
+  // CRUD
+
+  public static async getActionHostGroups(args: GetAdcmServiceActionHostGroupsArgs) {
+    const { clusterId, serviceId, filter, paginationParams } = args;
+    const queryParams = prepareQueryParams(filter, undefined, paginationParams);
     const query = qs.stringify(queryParams);
 
     const response = await httpClient.get<Batch<AdcmActionHostGroup>>(
@@ -29,57 +34,48 @@ export class AdcmClusterServiceActionHostGroupsApi {
     return response.data;
   }
 
-  public static async postActionHostGroup(
-    clusterId: number,
-    serviceId: number,
-    newActionGroup: CreateAdcmActionHostGroupPayload,
-  ) {
+  public static async getActionHostGroup(args: GetAdcmServiceActionHostGroupArgs) {
+    const { clusterId, serviceId, actionHostGroupId } = args;
+    const response = await httpClient.get<AdcmActionHostGroup>(
+      `/api/v2/clusters/${clusterId}/serviceId/${serviceId}/action-host-groups/${actionHostGroupId}/`,
+    );
+
+    return response.data;
+  }
+
+  public static async postActionHostGroup(args: CreateAdcmServiceActionHostGroupArgs) {
+    const { clusterId, serviceId, actionHostGroup } = args;
     const response = await httpClient.post<AdcmActionHostGroup>(
       `/api/v2/clusters/${clusterId}/services/${serviceId}/action-host-groups/`,
-      newActionGroup,
+      actionHostGroup,
     );
 
     return response.data;
   }
 
-  public static async getActionHostGroup(clusterId: number, serviceId: number, actionHostGroupId: number) {
-    await httpClient.get<AdcmActionHostGroup>(
-      `/api/v2/clusters/${clusterId}/service/${serviceId}/action-host-groups/${actionHostGroupId}/`,
-    );
-  }
-
-  public static async deleteActionHostGroup(clusterId: number, serviceId: number, actionHostGroupId: number) {
-    const response = await httpClient.delete<AdcmActionHostGroup>(
+  public static async deleteActionHostGroup(args: DeleteAdcmServiceActionHostGroupArgs) {
+    const { clusterId, serviceId, actionHostGroupId } = args;
+    await httpClient.delete(
       `/api/v2/clusters/${clusterId}/services/${serviceId}/action-host-groups/${actionHostGroupId}/`,
     );
-
-    return response.data;
   }
 
-  public static async getActionHostGroupActions(
-    clusterId: number,
-    serviceId: number,
-    actionHostGroupId: number,
-    sortParams: SortParams,
-    paginationParams: PaginationParams,
-    filter: AdcmActionHostGroupsActionsFilter,
-  ) {
+  // Actions
+
+  public static async getActionHostGroupActions(args: GetAdcmServiceActionHostGroupActionsArgs) {
+    const { clusterId, serviceId, actionHostGroupId, sortParams, filter, paginationParams } = args;
     const queryParams = prepareQueryParams(filter, sortParams, paginationParams);
     const query = qs.stringify(queryParams);
 
-    const response = await httpClient.get<Batch<AdcmDynamicAction>>(
+    const response = await httpClient.get<AdcmDynamicAction[]>(
       `/api/v2/clusters/${clusterId}/services/${serviceId}/action-host-groups/${actionHostGroupId}/actions/?${query}`,
     );
 
     return response.data;
   }
 
-  public static async getActionHostGroupAction(
-    clusterId: number,
-    serviceId: number,
-    actionHostGroupId: number,
-    actionId: number,
-  ) {
+  public static async getActionHostGroupAction(args: GetAdcmServiceActionHostGroupActionArgs) {
+    const { clusterId, serviceId, actionHostGroupId, actionId } = args;
     const response = await httpClient.get<AdcmDynamicActionDetails>(
       `/api/v2/clusters/${clusterId}/services/${serviceId}/action-host-groups/${actionHostGroupId}/actions/${actionId}/`,
     );
@@ -87,13 +83,8 @@ export class AdcmClusterServiceActionHostGroupsApi {
     return response.data;
   }
 
-  public static async postActionHostGroupAction(
-    clusterId: number,
-    serviceId: number,
-    actionHostGroupId: number,
-    actionId: number,
-    actionRunConfig: AdcmDynamicActionRunConfig,
-  ) {
+  public static async postActionHostGroupAction(args: RunAdcmServiceActionHostGroupActionArgs) {
+    const { clusterId, serviceId, actionHostGroupId, actionId, actionRunConfig } = args;
     const response = await httpClient.post<AdcmJob>(
       `/api/v2/clusters/${clusterId}/services/${serviceId}/action-host-groups/${actionHostGroupId}/actions/${actionId}/run/`,
       actionRunConfig,
@@ -102,40 +93,60 @@ export class AdcmClusterServiceActionHostGroupsApi {
     return response.data;
   }
 
-  public static async postActionHostGroupHost(
-    clusterId: number,
-    serviceId: number,
-    actionHostGroupId: number,
-    host: AddAdcmActionHostGroupHostPayload,
-  ) {
+  // Host candidates
+
+  public static async getActionHostGroupsHostCandidates(args: GetAdcmServiceActionHostGroupsHostCandidatesArgs) {
+    const { clusterId, serviceId, filter } = args;
+    const queryParams = prepareQueryParams(filter);
+    const query = qs.stringify(queryParams);
+
+    const response = await httpClient.get<AdcmActionHostGroupHost[]>(
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/action-host-groups/host-candidates/?${query}`,
+    );
+
+    return response.data;
+  }
+
+  public static async getActionHostGroupHostCandidates(args: GetAdcmServiceActionHostGroupHostCandidatesArgs) {
+    const { clusterId, serviceId, actionHostGroupId, filter } = args;
+    const queryParams = prepareQueryParams(filter);
+    const query = qs.stringify(queryParams);
+
+    const response = await httpClient.get<AdcmActionHostGroupHost[]>(
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/action-host-groups/${actionHostGroupId}/host-candidates/?${query}`,
+    );
+
+    return response.data;
+  }
+
+  // Hosts
+
+  public static async getActionHostGroupHosts(args: GetAdcmServiceActionHostGroupHostsArgs) {
+    const { clusterId, serviceId, actionHostGroupId, sortParams, paginationParams } = args;
+    const queryParams = prepareQueryParams(undefined, sortParams, paginationParams);
+    const query = qs.stringify(queryParams);
+
+    const response = await httpClient.get<Batch<AdcmActionHostGroupHost>>(
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/action-host-groups/${actionHostGroupId}/hosts/?${query}`,
+    );
+
+    return response.data;
+  }
+
+  public static async postActionHostGroupHost(args: AddAdcmServiceActionHostGroupHostArgs) {
+    const { clusterId, serviceId, actionHostGroupId, hostId } = args;
     const response = await httpClient.post<AdcmActionHostGroupHost>(
       `/api/v2/clusters/${clusterId}/services/${serviceId}/action-host-groups/${actionHostGroupId}/hosts/`,
-      host,
+      { hostId },
     );
 
     return response.data;
   }
 
-  public static async deleteActionHostGroupHost(
-    clusterId: number,
-    serviceId: number,
-    actionHostGroupId: number,
-    hostId: number,
-  ) {
-    await httpClient.delete<AdcmActionHostGroupHost>(
+  public static async deleteActionHostGroupHost(args: DeleteAdcmServiceActionHostGroupHostArgs) {
+    const { clusterId, serviceId, actionHostGroupId, hostId } = args;
+    await httpClient.delete(
       `/api/v2/clusters/${clusterId}/services/${serviceId}/action-host-groups/${actionHostGroupId}/hosts/${hostId}/`,
     );
-  }
-
-  public static async getActionHostGroupHostCandidates(
-    clusterId: number,
-    serviceId: number,
-    actionHostGroupId: number,
-  ) {
-    const response = await httpClient.get<AdcmActionHostGroupHost[]>(
-      `/api/v2/clusters/${clusterId}/services/${serviceId}/action-host-groups/${actionHostGroupId}/host-candidates/`,
-    );
-
-    return response.data;
   }
 }
