@@ -123,7 +123,8 @@ const dynamicActionsSlice = createSlice({
       state.dynamicActions = [];
     });
     builder.addCase(openDynamicActionDialog.fulfilled, (state, action) => {
-      // @ts-expect-error 'ignore Type instantiation is excessively deep and possibly infinite error'
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       state.actionDetails = action.payload;
       state.actionHostGroupId = action.meta.arg.actionHostGroupId;
     });

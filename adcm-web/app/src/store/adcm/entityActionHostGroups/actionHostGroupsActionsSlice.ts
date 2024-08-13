@@ -62,13 +62,13 @@ const createActionHostGroup = createAsyncThunk(
       const totalRequestsCount = hostIds.size;
       const allPromises = await Promise.allSettled(promises);
 
-      const fullfilledPromises = fulfilledFilter(allPromises);
-      if (fullfilledPromises.length === 0 && totalRequestsCount > 0) {
+      const fulfilledPromises = fulfilledFilter(allPromises);
+      if (fulfilledPromises.length === 0 && totalRequestsCount > 0) {
         // throw exception because full crash
         throw new Error('All hosts can not mapped on this group');
       }
 
-      if (fullfilledPromises.length < totalRequestsCount) {
+      if (fulfilledPromises.length < totalRequestsCount) {
         thunkAPI.dispatch(showInfo({ message: 'Some hosts were successfully mapped on this group' }));
         thunkAPI.dispatch(showError({ message: 'Some hosts can not mapped on this group' }));
 
@@ -156,13 +156,13 @@ const updateActionHostGroup = createAsyncThunk(
 
       const totalRequestsCount = toAdd.size + toDelete.size;
 
-      const fullfilledPromises = fulfilledFilter(allPromises);
-      if (fullfilledPromises.length === 0 && totalRequestsCount > 0) {
+      const fulfilledPromises = fulfilledFilter(allPromises);
+      if (fulfilledPromises.length === 0 && totalRequestsCount > 0) {
         // throw exception because full crash
         throw new Error('All hosts can not mapped on this group');
       }
 
-      if (fullfilledPromises.length < totalRequestsCount) {
+      if (fulfilledPromises.length < totalRequestsCount) {
         thunkAPI.dispatch(showInfo({ message: 'Some hosts were successfully mapped on this group' }));
         thunkAPI.dispatch(showError({ message: 'Some hosts can not mapped on this group' }));
 
