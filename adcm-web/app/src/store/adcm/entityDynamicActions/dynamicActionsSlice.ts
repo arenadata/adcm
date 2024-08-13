@@ -12,7 +12,6 @@ import type {
   OpenDynamicActionActionPayload,
   RunActionHostGroupDynamicActionActionPayload,
 } from '../entityActionHostGroups/actionHostGroups.types';
-import { Statusable } from '@uikit';
 
 const loadDynamicActions = createAsyncThunk(
   'adcm/dynamicActions/loadDynamicActions',
@@ -124,6 +123,7 @@ const dynamicActionsSlice = createSlice({
       state.dynamicActions = [];
     });
     builder.addCase(openDynamicActionDialog.fulfilled, (state, action) => {
+      // @ts-expect-error 'ignore Type instantiation is excessively deep and possibly infinite error'
       state.actionDetails = action.payload;
       state.actionHostGroupId = action.meta.arg.actionHostGroupId;
     });

@@ -18,6 +18,7 @@ import type {
 } from './actionHostGroups.types';
 import type { AdcmActionHostGroup, AdcmActionHostGroupHost } from '@models/adcm';
 import { splitHosts } from './actionHostGroupsActionsSlice.utils';
+import { fulfilledFilter } from '@utils/promiseUtils';
 
 const openCreateDialog = createAsyncThunk(
   'adcm/actionHostsGroupsActions/openCreateDialog',
@@ -58,7 +59,25 @@ const createActionHostGroup = createAsyncThunk(
         );
       }
 
-      return host;
+      const totalRequestsCount = hostIds.size;
+      const allPromises = await Promise.allSettled(promises);
+
+      const fullfilledPromises = fulfilledFilter(allPromises);
+      if (fullfilledPromises.length === 0 && totalRequestsCount > 0) {
+        // throw exception because full crash
+        throw new Error('All hosts can not mapped on this group');
+      }
+
+      if (fullfilledPromises.length < totalRequestsCount) {
+        thunkAPI.dispatch(showInfo({ message: 'Some hosts were successfully mapped on this group' }));
+        thunkAPI.dispatch(showError({ message: 'Some hosts can not mapped on this group' }));
+
+        // return false because process done with partly success
+        return false;
+      }
+
+      thunkAPI.dispatch(showSuccess({ message: 'All hosts were successfully mapped on this group' }));
+      return true;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -132,6 +151,27 @@ const updateActionHostGroup = createAsyncThunk(
           }),
         );
       }
+
+      const allPromises = await Promise.allSettled([...addPromises, ...deletePromises]);
+
+      const totalRequestsCount = toAdd.size + toDelete.size;
+
+      const fullfilledPromises = fulfilledFilter(allPromises);
+      if (fullfilledPromises.length === 0 && totalRequestsCount > 0) {
+        // throw exception because full crash
+        throw new Error('All hosts can not mapped on this group');
+      }
+
+      if (fullfilledPromises.length < totalRequestsCount) {
+        thunkAPI.dispatch(showInfo({ message: 'Some hosts were successfully mapped on this group' }));
+        thunkAPI.dispatch(showError({ message: 'Some hosts can not mapped on this group' }));
+
+        // return false because process done with partly success
+        return false;
+      }
+
+      thunkAPI.dispatch(showSuccess({ message: 'All hosts were successfully mapped on this group' }));
+      return true;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
