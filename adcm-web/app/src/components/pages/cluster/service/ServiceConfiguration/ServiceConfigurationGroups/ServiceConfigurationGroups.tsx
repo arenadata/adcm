@@ -46,16 +46,20 @@ const ServiceConfigurationGroups: React.FC = () => {
   return (
     <PermissionsChecker requestState={accessCheckStatus}>
       <ConfigGroupsHeader onCreate={handleCreateConfigGroup} />
-      <ConfigGroupsTable
-        configGroups={clusterServiceConfigGroups}
-        isLoading={isLoading}
-        sortParams={sortParams}
-        onSorting={handleSorting}
-        onMapping={handleMappingConfigGroup}
-        editUrlPattern={`/clusters/${clusterId}/services/${serviceId}/configuration-groups/:configGroupId`}
-        onDelete={handleDeleteConfigGroup}
-      />
-      <ServiceConfigGroupTableFooter />
+      {clusterServiceConfigGroups.length > 0 && (
+        <>
+          <ConfigGroupsTable
+            configGroups={clusterServiceConfigGroups}
+            isLoading={isLoading}
+            sortParams={sortParams}
+            onSorting={handleSorting}
+            onMapping={handleMappingConfigGroup}
+            editUrlPattern={`/clusters/${clusterId}/services/${serviceId}/configuration-groups/:configGroupId`}
+            onDelete={handleDeleteConfigGroup}
+          />
+          <ServiceConfigGroupTableFooter />
+        </>
+      )}
 
       <ServiceConfigGroupDialogs />
     </PermissionsChecker>

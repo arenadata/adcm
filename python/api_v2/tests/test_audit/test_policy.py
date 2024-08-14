@@ -16,7 +16,6 @@ from rbac.models import Policy, Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
-from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -69,8 +68,7 @@ class TestPolicyAudit(BaseAPITestCase):
         )
 
     def test_policy_create_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:rbac:policy-list"),
+        response = (self.client.v2 / "rbac" / "policies").post(
             data=self.policy_create_data,
         )
 
@@ -87,8 +85,7 @@ class TestPolicyAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View policy"):
-            response = self.client.post(
-                path=reverse(viewname="v2:rbac:policy-list"),
+            response = (self.client.v2 / "rbac" / "policies").post(
                 data=self.policy_create_data,
             )
 
@@ -105,8 +102,7 @@ class TestPolicyAudit(BaseAPITestCase):
         wrong_data = self.policy_create_data.copy()
         wrong_data["objects"] = [{"id": self.provider.pk, "type": "provider"}]
 
-        response = self.client.post(
-            path=reverse(viewname="v2:rbac:policy-list"),
+        response = (self.client.v2 / "rbac" / "policies").post(
             data=wrong_data,
         )
 
@@ -120,8 +116,7 @@ class TestPolicyAudit(BaseAPITestCase):
         )
 
     def test_policy_edit_success(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}),
+        response = self.client.v2[self.policy].patch(
             data=self.policy_update_data,
         )
 
@@ -145,8 +140,7 @@ class TestPolicyAudit(BaseAPITestCase):
             "role": {"id": self.another_role.pk},
             "object": [{"name": self.cluster_2.name, "type": self.cluster_2.prototype.type, "id": self.cluster_2.pk}],
         }
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.another_policy.pk}),
+        response = self.client.v2[self.another_policy].patch(
             data=policy_update_data,
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -180,8 +174,7 @@ class TestPolicyAudit(BaseAPITestCase):
     def test_policy_edit_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}),
+        response = self.client.v2[self.policy].patch(
             data=self.policy_update_data,
         )
 
@@ -198,8 +191,7 @@ class TestPolicyAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View policy"):
-            response = self.client.patch(
-                path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}),
+            response = self.client.v2[self.policy].patch(
                 data=self.policy_update_data,
             )
 
@@ -213,8 +205,7 @@ class TestPolicyAudit(BaseAPITestCase):
         )
 
     def test_policy_edit_incorrect_data_fail(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}),
+        response = self.client.v2[self.policy].patch(
             data={"name": ""},
         )
 
@@ -228,8 +219,7 @@ class TestPolicyAudit(BaseAPITestCase):
         )
 
     def test_policy_edit_not_exists_fail(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.get_non_existent_pk(model=Policy)}),
+        response = (self.client.v2 / "rbac" / "policies" / self.get_non_existent_pk(model=Policy)).patch(
             data=self.policy_update_data,
         )
 
@@ -253,7 +243,7 @@ class TestPolicyAudit(BaseAPITestCase):
             is_deleted=False,
         )
 
-        response = self.client.delete(path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}))
+        response = self.client.v2[self.policy].delete()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.check_last_audit_record(
@@ -267,7 +257,7 @@ class TestPolicyAudit(BaseAPITestCase):
     def test_policy_delete_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.delete(path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}))
+        response = self.client.v2[self.policy].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -282,7 +272,7 @@ class TestPolicyAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View policy"):
-            response = self.client.delete(path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.policy.pk}))
+            response = self.client.v2[self.policy].delete()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_last_audit_record(
@@ -294,9 +284,7 @@ class TestPolicyAudit(BaseAPITestCase):
         )
 
     def test_policy_delete_not_exists_fail(self):
-        response = self.client.delete(
-            path=reverse(viewname="v2:rbac:policy-detail", kwargs={"pk": self.get_non_existent_pk(model=Policy)})
-        )
+        response = (self.client.v2 / "rbac" / "policies" / self.get_non_existent_pk(model=Policy)).delete()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_last_audit_record(

@@ -305,7 +305,7 @@ def prepare_ansible_cfg(task: Task) -> ConfigParser:
             "callback_whitelist": "profile_tasks",
             "stdout_callback": "yaml",
         }
-        config_parser["ssh_connection"] = {"retries": "3", "pipelining": True}
+        config_parser["ssh_connection"] = {"retries": "3"}
 
     if task.owner.type in {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT}:
         cluster_id = task.owner.id if task.owner.type == ADCMCoreType.CLUSTER else task.owner.related_objects.cluster.id

@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
 
-from cm.issue import update_hierarchy_issues, update_issue_after_deleting
+from cm.issue import update_hierarchy_issues, update_issues_and_flags_after_deleting
 from cm.models import (
     Action,
     ClusterObject,
@@ -60,7 +60,7 @@ def _update_mm_hierarchy_issues(obj: Host | ClusterObject | ServiceComponent) ->
         update_hierarchy_issues(provider)
 
     update_hierarchy_issues(obj.cluster)
-    update_issue_after_deleting()
+    update_issues_and_flags_after_deleting()
     _update_flags()
     reset_objects_in_mm()
 

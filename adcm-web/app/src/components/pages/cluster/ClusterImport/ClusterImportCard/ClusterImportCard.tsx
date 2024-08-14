@@ -83,7 +83,7 @@ const ClusterImportCard = ({
   // If cluster required for import and there is not selected cluster with same name
   const isClusterRequired =
     clusterImport.importCluster?.isRequired &&
-    isItemSelected([...selectedImports.clusters.values()], clusterImport.importCluster.prototype.name);
+    !isItemSelected([...selectedImports.clusters.values()], clusterImport.importCluster.prototype.name);
 
   const isClusterSelected = !!(clusterImport.importCluster && selectedImports.clusters.has(clusterImport.cluster.id));
   const clusterCheckHandler = () => {

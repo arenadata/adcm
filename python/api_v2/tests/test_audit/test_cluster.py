@@ -23,7 +23,6 @@ from cm.models import (
     Upgrade,
 )
 from django.contrib.contenttypes.models import ContentType
-from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -88,8 +87,7 @@ class TestClusterAudit(BaseAPITestCase):
         self.cluster_upgrade = Upgrade.objects.get(bundle=self.upgrade_bundle, name="upgrade_via_action_simple")
 
     def test_create_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-list"),
+        response = (self.client.v2 / "clusters").post(
             data={"prototypeId": self.prototype.pk, "name": "audit_test_cluster"},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -107,8 +105,7 @@ class TestClusterAudit(BaseAPITestCase):
     def test_create_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-list"),
+        response = (self.client.v2 / "clusters").post(
             data={"prototypeId": self.prototype.pk, "name": "audit_test_cluster"},
         )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -122,8 +119,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_create_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-list"),
+        response = (self.client.v2 / "clusters").post(
             data={"prototypeId": self.prototype.pk, "name": self.cluster_1.name},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -138,8 +134,7 @@ class TestClusterAudit(BaseAPITestCase):
 
     def test_edit_success(self):
         old_name = self.cluster_1.name
-        response = self.client.patch(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1].patch(
             data={"name": "new_cluster_name"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -158,8 +153,7 @@ class TestClusterAudit(BaseAPITestCase):
     def test_edit_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.patch(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1].patch(
             data={"name": "new_cluster_name"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -173,8 +167,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_edit_incorrect_body_fail(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1].patch(
             data={"name": "new , cluster_name"},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -188,8 +181,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_edit_not_found_fail(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.get_non_existent_pk(model=Cluster)}),
+        response = (self.client.v2 / "clusters" / self.get_non_existent_pk(model=Cluster)).patch(
             data={"name": "new_cluster_name"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -213,9 +205,7 @@ class TestClusterAudit(BaseAPITestCase):
             is_deleted=False,
         )
 
-        response = self.client.delete(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
-        )
+        response = self.client.v2[self.cluster_1].delete()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.check_last_audit_record(
@@ -229,9 +219,7 @@ class TestClusterAudit(BaseAPITestCase):
     def test_delete_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.delete(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
-        )
+        response = self.client.v2[self.cluster_1].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -243,9 +231,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_delete_fail(self):
-        response = self.client.delete(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.get_non_existent_pk(model=Cluster)}),
-        )
+        response = (self.client.v2 / "clusters" / self.get_non_existent_pk(model=Cluster)).delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -257,8 +243,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_create_mapping_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1, "mapping"].post(
             data=[{"hostId": self.host_1.pk, "componentId": self.component_1.pk}],
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -275,8 +260,7 @@ class TestClusterAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View host-components"):
-            response = self.client.post(
-                path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
+            response = self.client.v2[self.cluster_1, "mapping"].post(
                 data=[{"hostId": self.host_1.pk, "componentId": self.component_1.pk}],
             )
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -292,8 +276,7 @@ class TestClusterAudit(BaseAPITestCase):
     def test_create_mapping_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1, "mapping"].post(
             data=[{"hostId": self.host_1.pk, "componentId": self.component_1.pk}],
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -307,8 +290,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_create_mapping_incorrect_body_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1, "mapping"].post(
             data=[{"host_id": 4}],
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -322,8 +304,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_create_mapping_not_found_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-mapping", kwargs={"pk": self.get_non_existent_pk(model=Cluster)}),
+        response = (self.client.v2 / "clusters" / self.get_non_existent_pk(model=Cluster) / "mapping").post(
             data=[{"hostId": self.host_1.pk, "componentId": self.component_1.pk}],
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -337,8 +318,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_create_import_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
+        response = self.client.v2[self.import_cluster, "imports"].post(
             data=[{"source": {"id": self.cluster_1.pk, "type": ObjectType.CLUSTER}}],
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -354,8 +334,7 @@ class TestClusterAudit(BaseAPITestCase):
     def test_create_import_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
+        response = self.client.v2[self.import_cluster, "imports"].post(
             data=[{"source": {"id": self.cluster_1.pk, "type": ObjectType.CLUSTER}}],
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -369,8 +348,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_create_import_incorrect_body_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.import_cluster.pk}),
+        response = self.client.v2[self.import_cluster, "imports"].post(
             data=[{}],
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -384,10 +362,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_create_import_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-import-list", kwargs={"cluster_pk": self.get_non_existent_pk(model=Cluster)}
-            ),
+        response = (self.client.v2 / "clusters" / self.get_non_existent_pk(model=Cluster) / "imports").post(
             data=[{"source": {"id": self.cluster_1.pk, "type": ObjectType.CLUSTER}}],
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -401,8 +376,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_update_config_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1, "configs"].post(
             data=self.cluster_1_config_post_data,
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -419,8 +393,7 @@ class TestClusterAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
-            response = self.client.post(
-                path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+            response = self.client.v2[self.cluster_1, "configs"].post(
                 data=self.cluster_1_config_post_data,
             )
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -436,8 +409,7 @@ class TestClusterAudit(BaseAPITestCase):
     def test_update_config_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1, "configs"].post(
             data=self.cluster_1_config_post_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -451,8 +423,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_update_config_incorrect_body_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1, "configs"].post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -466,10 +437,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_update_config_not_found_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-config-list", kwargs={"cluster_pk": self.get_non_existent_pk(model=Cluster)}
-            ),
+        response = (self.client.v2 / "clusters" / self.get_non_existent_pk(model=Cluster) / "configs").post(
             data=self.cluster_1_config_post_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -483,11 +451,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_delete_host_success(self):
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:host-cluster-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk}
-            ),
-        )
+        response = (self.client.v2[self.cluster_1] / "hosts" / self.host_1).delete()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.check_last_audit_record(
@@ -502,11 +466,7 @@ class TestClusterAudit(BaseAPITestCase):
     def test_delete_host_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:host-cluster-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk}
-            ),
-        )
+        response = (self.client.v2[self.cluster_1] / "hosts" / self.host_1).delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -518,12 +478,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_delete_host_fail(self):
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:host-cluster-detail",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.get_non_existent_pk(model=Host)},
-            ),
-        )
+        response = (self.client.v2[self.cluster_1] / "hosts" / self.get_non_existent_pk(model=Host)).delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -537,8 +492,7 @@ class TestClusterAudit(BaseAPITestCase):
     # add single host
 
     def test_add_host_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = (self.client.v2[self.cluster_1] / "hosts").post(
             data={"hostId": self.host_2.pk},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -554,8 +508,7 @@ class TestClusterAudit(BaseAPITestCase):
     def test_add_host_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = (self.client.v2[self.cluster_1] / "hosts").post(
             data={"hostId": self.host_2.pk},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -569,8 +522,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_add_host_incorrect_body_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = (self.client.v2[self.cluster_1] / "hosts").post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -584,8 +536,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_add_non_existing_host_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = (self.client.v2[self.cluster_1] / "hosts").post(
             data={"hostId": self.get_non_existent_pk(Host)},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -599,10 +550,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_add_host_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.get_non_existent_pk(model=Cluster)}
-            ),
+        response = (self.client.v2 / "clusters" / self.get_non_existent_pk(model=Cluster) / "hosts").post(
             data={"hostId": self.host_2.pk},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -616,8 +564,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_add_host_wrong_data_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = (self.client.v2 / "clusters" / self.cluster_1.pk / "hosts").post(
             data=[{"totally": "wrong"}, "request data"],
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -633,8 +580,7 @@ class TestClusterAudit(BaseAPITestCase):
     # add multiple hosts
 
     def test_add_many_hosts_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = (self.client.v2 / "clusters" / self.cluster_1.pk / "hosts").post(
             data=[{"hostId": self.host_2.pk}, {"hostId": self.host_3.pk}],
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -650,8 +596,7 @@ class TestClusterAudit(BaseAPITestCase):
     def test_add_many_hosts_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = (self.client.v2 / "clusters" / self.cluster_1.pk / "hosts").post(
             data=[{"hostId": self.host_2.pk}, {"hostId": self.host_3.pk}],
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -665,8 +610,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_add_many_hosts_incorrect_body_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = (self.client.v2 / "clusters" / self.cluster_1.pk / "hosts").post(
             data=[{"hey": "you"}, {"hostId": self.host_2.pk}],
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -680,8 +624,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_add_many_non_existing_host_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:host-cluster-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = (self.client.v2 / "clusters" / self.cluster_1.pk / "hosts").post(
             data=[{"hostId": self.get_non_existent_pk(Host)}],
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -695,11 +638,9 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_change_host_mm_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:host-cluster-maintenance-mode",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk},
-            ),
+        response = (
+            self.client.v2 / "clusters" / self.cluster_1.pk / "hosts" / self.host_1.pk / "maintenance-mode"
+        ).post(
             data={"maintenanceMode": "on"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -716,11 +657,9 @@ class TestClusterAudit(BaseAPITestCase):
     def test_change_host_mm_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:host-cluster-maintenance-mode",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk},
-            ),
+        response = (
+            self.client.v2 / "clusters" / self.cluster_1.pk / "hosts" / self.host_1.pk / "maintenance-mode"
+        ).post(
             data={"maintenanceMode": "on"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -738,11 +677,9 @@ class TestClusterAudit(BaseAPITestCase):
         cluster_proto.allow_maintenance_mode = False
         cluster_proto.save(update_fields=["allow_maintenance_mode"])
 
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:host-cluster-maintenance-mode",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk},
-            ),
+        response = (
+            self.client.v2 / "clusters" / self.cluster_1.pk / "hosts" / self.host_1.pk / "maintenance-mode"
+        ).post(
             data={"maintenanceMode": "on"},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -758,8 +695,7 @@ class TestClusterAudit(BaseAPITestCase):
     # add multiple services
 
     def test_add_service_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1, "services"].post(
             data=[
                 {"prototypeId": self.service_add_prototypes[0].pk},
                 {"prototypeId": self.service_add_prototypes[1].pk},
@@ -778,8 +714,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_add_service_wrong_data_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1, "services"].post(
             data=[
                 {"id_of_prototype": self.service_add_prototypes[0].pk},
                 {"prototypeId": self.service_add_prototypes[1].pk},
@@ -798,8 +733,7 @@ class TestClusterAudit(BaseAPITestCase):
     def test_add_service_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1, "services"].post(
             data=[
                 {"prototypeId": self.service_add_prototypes[0].pk},
                 {"prototypeId": self.service_add_prototypes[1].pk},
@@ -818,8 +752,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_add_service_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.get_non_existent_pk(model=Cluster)}),
+        response = (self.client.v2 / "clusters" / self.get_non_existent_pk(model=Cluster) / "services").post(
             data=[
                 {"prototypeId": self.service_add_prototypes[0].pk},
                 {"prototypeId": self.service_add_prototypes[1].pk},
@@ -840,8 +773,7 @@ class TestClusterAudit(BaseAPITestCase):
     # add single service
 
     def test_add_one_service_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1, "services"].post(
             data={"prototypeId": self.service_add_prototypes[0].pk},
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -855,8 +787,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_add_one_service_wrong_data_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1, "services"].post(
             data={"id_of_prototype": self.service_add_prototypes[0].pk},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -872,8 +803,7 @@ class TestClusterAudit(BaseAPITestCase):
     def test_add_one_service_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1, "services"].post(
             data={"prototypeId": self.service_add_prototypes[1].pk},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -887,8 +817,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_add_one_service_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:service-list", kwargs={"cluster_pk": self.get_non_existent_pk(model=Cluster)}),
+        response = (self.client.v2 / "clusters" / self.get_non_existent_pk(model=Cluster) / "services").post(
             data={"prototypeId": self.service_add_prototypes[0].pk},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -902,11 +831,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_delete_service_success(self):
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk}
-            ),
-        )
+        response = self.client.v2[self.service_1].delete()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.check_last_audit_record(
@@ -920,11 +845,7 @@ class TestClusterAudit(BaseAPITestCase):
     def test_delete_service_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:service-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.service_1.pk}
-            ),
-        )
+        response = self.client.v2[self.service_1].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -936,12 +857,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_delete_non_existent_service_fail(self):
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:service-detail",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.get_non_existent_pk(model=ClusterObject)},
-            ),
-        )
+        response = self.client.v2[self.cluster_1, "services", self.get_non_existent_pk(model=ServiceComponent)].delete()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_last_audit_record(
@@ -953,12 +869,9 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_delete_service_from_non_existent_cluster_fail(self):
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:service-detail",
-                kwargs={"cluster_pk": self.get_non_existent_pk(model=Cluster), "pk": self.service_1.pk},
-            ),
-        )
+        response = (
+            self.client.v2 / "clusters" / self.get_non_existent_pk(model=Cluster) / "services" / self.service_1.pk
+        ).delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -970,11 +883,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_run_cluster_action_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-action-run", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action.pk}
-            ),
-        )
+        response = (self.client.v2 / "clusters" / self.cluster_1.pk / "actions" / self.cluster_action.pk / "run").post()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.check_last_audit_record(
@@ -989,12 +898,9 @@ class TestClusterAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:cluster-action-run",
-                    kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.cluster_action.pk},
-                ),
-            )
+            response = (
+                self.client.v2 / "clusters" / self.cluster_1.pk / "actions" / self.cluster_action.pk / "run"
+            ).post()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -1006,14 +912,14 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_run_cluster_action_incorrect_body_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-action-run",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "pk": Action.objects.get(name="with_config", prototype=self.cluster_1.prototype).pk,
-                },
-            ),
+        response = (
+            self.client.v2
+            / "clusters"
+            / self.cluster_1.pk
+            / "actions"
+            / Action.objects.get(name="with_config", prototype=self.cluster_1.prototype).pk
+            / "run"
+        ).post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -1027,12 +933,9 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_run_non_existent_cluster_action_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:cluster-action-run",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.get_non_existent_pk(model=Action)},
-            ),
-        )
+        response = (
+            self.client.v2 / "clusters" / self.cluster_1.pk / "actions" / self.get_non_existent_pk(model=Action) / "run"
+        ).post()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -1044,16 +947,16 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_run_host_action_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:host-cluster-action-run",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "host_pk": self.host_1.pk,
-                    "pk": self.host_action.pk,
-                },
-            ),
-        )
+        response = (
+            self.client.v2
+            / "clusters"
+            / self.cluster_1.pk
+            / "hosts"
+            / self.host_1.pk
+            / "actions"
+            / self.host_action.pk
+            / "run"
+        ).post()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.check_last_audit_record(
@@ -1070,16 +973,16 @@ class TestClusterAudit(BaseAPITestCase):
         with self.grant_permissions(
             to=self.test_user, on=self.host_1, role_name="View host configurations"
         ), self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:host-cluster-action-run",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "host_pk": self.host_1.pk,
-                        "pk": self.host_action.pk,
-                    },
-                ),
-            )
+            response = (
+                self.client.v2
+                / "clusters"
+                / self.cluster_1.pk
+                / "hosts"
+                / self.host_1.pk
+                / "actions"
+                / self.host_action.pk
+                / "run"
+            ).post()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
@@ -1092,16 +995,16 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_run_host_action_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:host-cluster-action-run",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "host_pk": self.host_1.pk,
-                    "pk": self.get_non_existent_pk(model=Action),
-                },
-            ),
-        )
+        response = (
+            self.client.v2
+            / "clusters"
+            / self.cluster_1.pk
+            / "hosts"
+            / self.host_1.pk
+            / "actions"
+            / self.get_non_existent_pk(model=Action)
+            / "run"
+        ).post()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -1113,15 +1016,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_upgrade_cluster_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:upgrade-run",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "pk": self.cluster_upgrade.pk,
-                },
-            ),
-        )
+        response = self.client.v2[self.cluster_1, "upgrades", self.cluster_upgrade, "run"].post()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.check_last_audit_record(
@@ -1136,15 +1031,7 @@ class TestClusterAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:upgrade-run",
-                    kwargs={
-                        "cluster_pk": self.cluster_1.pk,
-                        "pk": self.cluster_upgrade.pk,
-                    },
-                ),
-            )
+            response = self.client.v2[self.cluster_1, "upgrades", self.cluster_upgrade, "run"].post()
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -1156,16 +1043,12 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_upgrade_cluster_incorrect_data_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:upgrade-run",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "pk": Upgrade.objects.get(bundle=self.upgrade_bundle, name="upgrade_via_action_complex").pk,
-                },
-            ),
-            data={},
-        )
+        response = self.client.v2[
+            self.cluster_1,
+            "upgrades",
+            Upgrade.objects.get(bundle=self.upgrade_bundle, name="upgrade_via_action_complex").pk,
+            "run",
+        ].post()
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
         self.check_last_audit_record(
@@ -1177,15 +1060,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_upgrade_cluster_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:upgrade-run",
-                kwargs={
-                    "cluster_pk": self.cluster_1.pk,
-                    "pk": self.get_non_existent_pk(model=Upgrade),
-                },
-            ),
-        )
+        response = self.client.v2[self.cluster_1, "upgrades", self.get_non_existent_pk(model=Upgrade), "run"].post()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -1197,8 +1072,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_cluster_object_changes_one_field_success(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1].patch(
             data={"name": "new_cluster_name"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -1214,8 +1088,7 @@ class TestClusterAudit(BaseAPITestCase):
 
     def test_cluster_object_changes_name_on_installed_fail(self):
         self.cluster_1.set_state("installed")
-        response = self.client.patch(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1].patch(
             data={"name": "new_cluster_name"},
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -1229,8 +1102,7 @@ class TestClusterAudit(BaseAPITestCase):
         )
 
     def test_cluster_object_changes_all_fields_success(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:cluster-detail", kwargs={"pk": self.cluster_1.pk}),
+        response = self.client.v2[self.cluster_1].patch(
             data={"name": "new_cluster_name", "description": "new description"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)

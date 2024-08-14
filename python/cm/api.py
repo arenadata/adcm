@@ -42,7 +42,7 @@ from cm.issue import (
     check_service_requires,
     remove_concern_from_object,
     update_hierarchy_issues,
-    update_issue_after_deleting,
+    update_issues_and_flags_after_deleting,
 )
 from cm.logger import logger
 from cm.models import (
@@ -216,7 +216,7 @@ def delete_host(host: Host, cancel_tasks: bool = True) -> None:
     host.delete()
     reset_hc_map()
     reset_objects_in_mm()
-    update_issue_after_deleting()
+    update_issues_and_flags_after_deleting()
     logger.info("host #%s is deleted", host_pk)
 
 
@@ -224,7 +224,7 @@ def delete_service(service: ClusterObject) -> None:
     service_pk = service.pk
     service.delete()
 
-    update_issue_after_deleting()
+    update_issues_and_flags_after_deleting()
     update_hierarchy_issues(service.cluster)
 
     keep_objects = defaultdict(set)
@@ -260,7 +260,7 @@ def delete_cluster(cluster: Cluster) -> None:
         ", ".join(host_pks),
     )
     cluster.delete()
-    update_issue_after_deleting()
+    update_issues_and_flags_after_deleting()
     reset_hc_map()
     reset_objects_in_mm()
 
@@ -575,7 +575,7 @@ def save_hc(
     for provider in {host.provider for host in Host.objects.filter(cluster=cluster)}:
         update_hierarchy_issues(provider)
 
-    update_issue_after_deleting()
+    update_issues_and_flags_after_deleting()
     reset_hc_map()
     reset_objects_in_mm()
 

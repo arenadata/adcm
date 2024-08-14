@@ -384,24 +384,23 @@ export const checkComponentMappingAvailability = (
   component: AdcmMappingComponent,
   allowActions?: Set<AdcmHostComponentMapRuleAction>,
 ): ComponentAvailabilityErrors => {
-  const isAvailable =
-    component.service.state === AdcmEntitySystemState.Created && component.maintenanceMode === AdcmMaintenanceMode.Off;
-
-  const result: ComponentAvailabilityErrors = {
-    componentNotAvailableError:
-      !isAvailable && !allowActions
-        ? 'Service of this component must have "Created" state. Maintenance mode on the components must be Off'
-        : undefined,
-  };
-
+  const result: ComponentAvailabilityErrors = {};
   if (allowActions) {
     result.componentNotAvailableError =
-      allowActions.size === 0 ? 'Mapping is not allowed in action configuration' : result.componentNotAvailableError;
+      allowActions.size === 0 ? 'Mapping is not allowed in action configuration' : undefined;
     result.addingHostsNotAllowedError = !allowActions.has(AdcmHostComponentMapRuleAction.Add)
       ? 'Adding hosts is not allowed in the action configuration'
       : undefined;
     result.removingHostsNotAllowedError = !allowActions.has(AdcmHostComponentMapRuleAction.Remove)
       ? 'Removing hosts is not allowed in the action configuration'
+      : undefined;
+  } else {
+    const isAvailable =
+      component.service.state === AdcmEntitySystemState.Created &&
+      component.maintenanceMode === AdcmMaintenanceMode.Off;
+
+    result.componentNotAvailableError = !isAvailable
+      ? 'Service of this component must have "Created" state. Maintenance mode on the components must be Off'
       : undefined;
   }
 
@@ -413,13 +412,11 @@ export const checkHostMappingAvailability = (
   allowActions?: Set<AdcmHostComponentMapRuleAction>,
   disabledHosts?: Set<HostId>,
 ): string | undefined => {
-  const isAvailable = host.maintenanceMode === AdcmMaintenanceMode.Off;
-  let result = !isAvailable ? 'Maintenance mode on the host must be Off' : undefined;
-
   if (allowActions && disabledHosts) {
     const isDisabled = !allowActions.has(AdcmHostComponentMapRuleAction.Remove) && disabledHosts.has(host.id);
-    result = isDisabled ? 'Removing host is not allowed in the action configuration' : result;
+    return isDisabled ? 'Removing host is not allowed in the action configuration' : undefined;
+  } else {
+    const isAvailable = host.maintenanceMode === AdcmMaintenanceMode.Off;
+    return !isAvailable ? 'Maintenance mode on the host must be Off' : undefined;
   }
-
-  return result;
 };

@@ -3,6 +3,7 @@ import { Dialog, FormField, FormFieldsContainer, Input } from '@uikit';
 import { AdcmClusterConfigGroupCreateData } from '@api/adcm/clusterGroupConfig';
 import { useForm } from '@hooks';
 import { required } from '@utils/validationsUtils';
+import s from './ConfigGroupCreateDialog.module.scss';
 
 interface ConfigGroupCreateDialogProps {
   isCreating: boolean;
@@ -51,6 +52,7 @@ const ConfigGroupCreateDialog: React.FC<ConfigGroupCreateDialogProps> = ({ isCre
       actionButtonLabel="Next"
       onCancel={onClose}
       onAction={handleSubmit}
+      className={s.configGroupCreateDialog}
     >
       <FormFieldsContainer>
         <FormField label="Configuration group name" error={errors.name}>
