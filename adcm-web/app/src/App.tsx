@@ -111,7 +111,7 @@ function App() {
                         element={<ServiceConfigGroupSingle />}
                       />
                       <Route
-                        path="/clusters/:clusterId/services/:serviceId/action-host-groups"
+                        path="/clusters/:clusterId/services/:serviceId/action-hosts-groups"
                         element={<ServiceActionHostGroups />}
                       />
                       <Route

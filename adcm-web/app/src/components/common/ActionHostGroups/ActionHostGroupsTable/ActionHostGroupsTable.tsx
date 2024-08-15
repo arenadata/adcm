@@ -57,14 +57,14 @@ const ClusterActionHostGroupsTable = ({
               <IconButton
                 icon="g1-edit"
                 size={32}
-                title="edit"
+                title="Edit"
                 onClick={() => onOpenEditDialog(actionHostGroup)}
                 tooltipProps={{ placement: 'bottom-start' }}
               />
               <IconButton
                 icon="g1-delete"
                 size={32}
-                title="delete"
+                title="Delete"
                 onClick={() => onOpenDeleteDialog(actionHostGroup)}
                 tooltipProps={{ placement: 'bottom-start' }}
               />
