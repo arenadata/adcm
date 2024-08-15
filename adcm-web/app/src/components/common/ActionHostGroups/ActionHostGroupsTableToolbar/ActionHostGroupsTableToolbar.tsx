@@ -15,7 +15,7 @@ const ClusterActionHostGroupsTableToolbar = ({
   <TableToolbar>
     <ClusterActionHostGroupsTableFilters {...filterProps} />
     <ButtonGroup>
-      <Button onClick={onOpenCreateDialog}>Create</Button>
+      <Button onClick={onOpenCreateDialog}>Create action hosts group</Button>
     </ButtonGroup>
   </TableToolbar>
 );
