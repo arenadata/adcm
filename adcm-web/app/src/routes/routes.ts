@@ -246,6 +246,38 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/clusters/:clusterId/services/:serviceId/components/:componentId/action-hosts-groups': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        href: '/clusters/:clusterId/services',
+        label: 'Services',
+      },
+      {
+        href: '/clusters/:clusterId/services/:serviceId',
+        label: ':serviceId',
+      },
+      {
+        href: '/clusters/:clusterId/services/:serviceId/components',
+        label: 'Components',
+      },
+      {
+        href: '/clusters/:clusterId/services/:serviceId/components/:componentId',
+        label: ':componentId',
+      },
+      {
+        label: 'Action hosts groups',
+      },
+    ],
+  },
   '/clusters/:clusterId/services/:serviceId/info': {
     pageTitle: 'Clusters',
     breadcrumbs: [

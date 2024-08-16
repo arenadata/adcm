@@ -132,7 +132,7 @@ function App() {
                           element={<ServiceComponentConfigurationGroups />}
                         />
                         <Route
-                          path="/clusters/:clusterId/services/:serviceId/components/:componentId/action-host-groups"
+                          path="/clusters/:clusterId/services/:serviceId/components/:componentId/action-hosts-groups"
                           element={<ComponentActionHostGroups />}
                         />
                         <Route
