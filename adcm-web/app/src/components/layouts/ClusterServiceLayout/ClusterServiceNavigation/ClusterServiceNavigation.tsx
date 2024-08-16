@@ -38,8 +38,8 @@ const ClusterServiceNavigation: React.FC = () => {
   return (
     <SubNavigationWrapper>
       <TabsBlock variant="secondary">
-        <Tab to={`/clusters/${cluster?.id}/services/${service?.id}/primary-configuration`}>Primary configuration</Tab>
-        <Tab to={`/clusters/${cluster?.id}/services/${service?.id}/configuration-groups`}>Configuration groups</Tab>
+        <Tab to="primary-configuration">Primary configuration</Tab>
+        <Tab to="configuration-groups">Configuration groups</Tab>
         <Tab to="action-hosts-groups">Action hosts groups</Tab>
         <Tab to="components">Components</Tab>
         <Tab to="info">Info</Tab>
