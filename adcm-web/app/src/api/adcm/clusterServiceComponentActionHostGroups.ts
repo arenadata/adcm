@@ -113,7 +113,7 @@ export class AdcmClusterServiceComponentActionHostGroupsApi {
     const query = qs.stringify(queryParams);
 
     const response = await httpClient.get<AdcmActionHostGroupHost[]>(
-      `/api/v2/clusters/${clusterId}/services/${serviceId}/component/${componentId}/action-host-groups/${actionHostGroupId}/host-candidates/?${query}`,
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/components/${componentId}/action-host-groups/${actionHostGroupId}/host-candidates/?${query}`,
     );
 
     return response.data;

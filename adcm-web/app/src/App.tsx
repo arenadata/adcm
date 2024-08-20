@@ -173,7 +173,7 @@ function App() {
                       element={<ClusterAnsibleSettings />}
                     />
                     <Route
-                      path="/clusters/:clusterId/configuration/action-host-groups"
+                      path="/clusters/:clusterId/configuration/action-hosts-groups"
                       element={<ClusterActionHostGroups />}
                     />
                   </Route>

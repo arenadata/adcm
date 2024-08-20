@@ -5,10 +5,30 @@ import DynamicActionDialog from '@commonComponents/DynamicActionDialog/DynamicAc
 import EditActionHostGroupDialog from '@commonComponents/ActionHostGroups/ActionHostGroupDialogs/EditActionHostGroupDialog/EditActionHostGroupDialog';
 import DeleteActionHostGroupDialog from '@commonComponents/ActionHostGroups/ActionHostGroupDialogs/DeleteActionHostGroupDialog/DeleteActionHostGroupDialog';
 import { useClusterActionHostGroups } from './useClusterActionHostGroups';
+import { useDispatch, useStore } from '@hooks';
+import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
+import { useEffect } from 'react';
 
 const ClusterActionHostGroups = () => {
   const { toolbarProps, tableProps, createDialogProps, dynamicActionDialogProps, editDialogProps, deleteDialogProps } =
     useClusterActionHostGroups();
+
+  const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
+
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (cluster) {
+      dispatch(
+        setBreadcrumbs([
+          { href: '/clusters', label: 'Clusters' },
+          { href: `/clusters/${cluster.id}`, label: cluster.name },
+          { href: `/clusters/${cluster.id}/configuration`, label: 'Configuration' },
+          { label: 'Action hosts groups' },
+        ]),
+      );
+    }
+  }, [cluster, dispatch]);
 
   return (
     <>

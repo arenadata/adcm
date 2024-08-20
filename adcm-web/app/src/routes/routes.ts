@@ -450,7 +450,7 @@ const routes: RoutesConfigs = {
       },
     ],
   },
-  '/clusters/:clusterId/configuration/action-host-groups': {
+  '/clusters/:clusterId/configuration/action-hosts-groups': {
     pageTitle: 'Clusters',
     breadcrumbs: [
       {
