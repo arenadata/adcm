@@ -7,7 +7,7 @@ export interface ServiceComponentsTableExpandedContentProps {
   children: AdcmActionHostGroupHost[];
 }
 
-const ClusterActionHostGroupsTableExpandedContent = ({ children }: ServiceComponentsTableExpandedContentProps) => {
+const ActionHostGroupsTableExpandedContent = ({ children }: ServiceComponentsTableExpandedContentProps) => {
   const [textEntered, setTextEntered] = useState('');
 
   const childrenFiltered = useMemo(() => {
@@ -34,4 +34,4 @@ const ClusterActionHostGroupsTableExpandedContent = ({ children }: ServiceCompon
   );
 };
 
-export default ClusterActionHostGroupsTableExpandedContent;
+export default ActionHostGroupsTableExpandedContent;

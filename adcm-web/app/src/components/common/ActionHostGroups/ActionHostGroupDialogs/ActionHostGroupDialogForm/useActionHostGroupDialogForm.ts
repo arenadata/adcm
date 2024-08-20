@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from '@hooks';
 import { AdcmActionHostGroup } from '@models/adcm';
 import { required } from '@utils/validationsUtils';
@@ -24,7 +24,7 @@ export const useActionHostGroupDialogForm = (actionHostGroup?: AdcmActionHostGro
       : emptyFormData;
   }, [actionHostGroup]);
 
-  const { formData, handleChangeFormData, errors, setErrors, isValid } =
+  const { setFormData, formData, handleChangeFormData, errors, setErrors, isValid } =
     useForm<AdcmActionHostGroupFormData>(initialFormData);
 
   useEffect(() => {
@@ -33,10 +33,15 @@ export const useActionHostGroupDialogForm = (actionHostGroup?: AdcmActionHostGro
     });
   }, [formData, setErrors]);
 
+  const resetFormData = useCallback(() => {
+    setFormData(initialFormData);
+  }, [initialFormData, setFormData]);
+
   return {
     formData,
     isValid,
     errors,
     onChangeFormData: handleChangeFormData,
+    resetFormData,
   };
 };

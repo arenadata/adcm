@@ -3,17 +3,13 @@ import { Button, SearchInput } from '@uikit';
 import TableFilters from '@commonComponents/Table/TableFilters/TableFilters';
 import { AdcmActionHostGroupsFilter } from '@models/adcm';
 
-export interface ClusterActionHostGroupsTableFiltersProps {
+export interface ActionHostGroupsTableFiltersProps {
   filter: AdcmActionHostGroupsFilter;
   onFilterChange: (changes: Partial<AdcmActionHostGroupsFilter>) => void;
   onFilterReset: () => void;
 }
 
-const ClusterActionHostGroupsTableFilters = ({
-  filter,
-  onFilterChange,
-  onFilterReset,
-}: ClusterActionHostGroupsTableFiltersProps) => {
+const ActionHostGroupsTableFilters = ({ filter, onFilterChange, onFilterReset }: ActionHostGroupsTableFiltersProps) => {
   const handleGroupNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onFilterChange({ name: event.target.value });
   };
@@ -41,4 +37,4 @@ const ClusterActionHostGroupsTableFilters = ({
   );
 };
 
-export default ClusterActionHostGroupsTableFilters;
+export default ActionHostGroupsTableFilters;
