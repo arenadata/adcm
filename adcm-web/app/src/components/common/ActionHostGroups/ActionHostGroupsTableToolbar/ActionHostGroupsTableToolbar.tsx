@@ -1,23 +1,18 @@
 import { Button, ButtonGroup } from '@uikit';
 import TableToolbar from '@commonComponents/Table/TableToolbar/TableToolbar';
-import ClusterActionHostGroupsTableFilters, {
-  ClusterActionHostGroupsTableFiltersProps,
-} from './ActionHostGroupsTableFilters';
+import ActionHostGroupsTableFilters, { ActionHostGroupsTableFiltersProps } from './ActionHostGroupsTableFilters';
 
-export interface ClusterActionHostGroupsTableToolbarProps extends ClusterActionHostGroupsTableFiltersProps {
+export interface ActionHostGroupsTableToolbarProps extends ActionHostGroupsTableFiltersProps {
   onOpenCreateDialog: () => void;
 }
 
-const ClusterActionHostGroupsTableToolbar = ({
-  onOpenCreateDialog,
-  ...filterProps
-}: ClusterActionHostGroupsTableToolbarProps) => (
+const ActionHostGroupsTableToolbar = ({ onOpenCreateDialog, ...filterProps }: ActionHostGroupsTableToolbarProps) => (
   <TableToolbar>
-    <ClusterActionHostGroupsTableFilters {...filterProps} />
+    <ActionHostGroupsTableFilters {...filterProps} />
     <ButtonGroup>
       <Button onClick={onOpenCreateDialog}>Create action hosts group</Button>
     </ButtonGroup>
   </TableToolbar>
 );
 
-export default ClusterActionHostGroupsTableToolbar;
+export default ActionHostGroupsTableToolbar;

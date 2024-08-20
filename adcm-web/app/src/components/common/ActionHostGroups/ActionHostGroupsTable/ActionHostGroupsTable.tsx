@@ -6,8 +6,9 @@ import type { EntitiesDynamicActions } from '@models/adcm';
 import type { AdcmActionHostGroup } from '@models/adcm/actionHostGroup';
 import { useState } from 'react';
 import ExpandDetailsCell from '@commonComponents/ExpandDetailsCell/ExpandDetailsCell';
+import ActionHostGroupTableFooter from '../ActionHostGroupTableFooter/ActionHostGroupFooter';
 
-export interface ClusterActionHostGroupsTableProps {
+export interface ActionHostGroupsTableProps {
   actionHostGroups: AdcmActionHostGroup[];
   dynamicActions: EntitiesDynamicActions;
   isLoading: boolean;
@@ -16,14 +17,14 @@ export interface ClusterActionHostGroupsTableProps {
   onOpenDeleteDialog: (actionHostGroup: AdcmActionHostGroup) => void;
 }
 
-const ClusterActionHostGroupsTable = ({
+const ActionHostGroupsTable = ({
   actionHostGroups,
   dynamicActions,
   isLoading,
   onOpenDynamicActionDialog,
   onOpenEditDialog,
   onOpenDeleteDialog,
-}: ClusterActionHostGroupsTableProps) => {
+}: ActionHostGroupsTableProps) => {
   const [expandableRows, setExpandableRows] = useState<Record<number, boolean>>({});
 
   const handleExpandClick = (id: number) => {
@@ -34,46 +35,49 @@ const ClusterActionHostGroupsTable = ({
   };
 
   return (
-    <Table isLoading={isLoading} columns={columns} variant="secondary">
-      {actionHostGroups.map((actionHostGroup: AdcmActionHostGroup) => {
-        return (
-          <ExpandableRowComponent
-            key={actionHostGroup.id}
-            colSpan={columns.length}
-            isExpanded={expandableRows[actionHostGroup.id] || false}
-            isInactive={actionHostGroup.hosts.length === 0}
-            expandedContent={<ActionHostGroupsTableExpandedContent children={actionHostGroup.hosts || []} />}
-          >
-            <TableCell>{actionHostGroup.name}</TableCell>
-            <TableCell>{actionHostGroup.description}</TableCell>
-            <ExpandDetailsCell handleExpandRow={() => handleExpandClick(actionHostGroup.id)}>
-              {actionHostGroup.hosts.length}
-            </ExpandDetailsCell>
-            <TableCell hasIconOnly align="center">
-              <ActionHostGroupDynamicActionsIconButton
-                dynamicActions={dynamicActions[actionHostGroup.id]}
-                onActionSelect={(actionId: number) => onOpenDynamicActionDialog(actionHostGroup, actionId)}
-              />
-              <IconButton
-                icon="g1-edit"
-                size={32}
-                title="Edit"
-                onClick={() => onOpenEditDialog(actionHostGroup)}
-                tooltipProps={{ placement: 'bottom-start' }}
-              />
-              <IconButton
-                icon="g1-delete"
-                size={32}
-                title="Delete"
-                onClick={() => onOpenDeleteDialog(actionHostGroup)}
-                tooltipProps={{ placement: 'bottom-start' }}
-              />
-            </TableCell>
-          </ExpandableRowComponent>
-        );
-      })}
-    </Table>
+    <>
+      <Table isLoading={isLoading} columns={columns} variant="secondary">
+        {actionHostGroups.map((actionHostGroup: AdcmActionHostGroup) => {
+          return (
+            <ExpandableRowComponent
+              key={actionHostGroup.id}
+              colSpan={columns.length}
+              isExpanded={expandableRows[actionHostGroup.id] || false}
+              isInactive={actionHostGroup.hosts.length === 0}
+              expandedContent={<ActionHostGroupsTableExpandedContent children={actionHostGroup.hosts || []} />}
+            >
+              <TableCell>{actionHostGroup.name}</TableCell>
+              <TableCell>{actionHostGroup.description}</TableCell>
+              <ExpandDetailsCell handleExpandRow={() => handleExpandClick(actionHostGroup.id)}>
+                {actionHostGroup.hosts.length}
+              </ExpandDetailsCell>
+              <TableCell hasIconOnly align="center">
+                <ActionHostGroupDynamicActionsIconButton
+                  dynamicActions={dynamicActions[actionHostGroup.id]}
+                  onActionSelect={(actionId: number) => onOpenDynamicActionDialog(actionHostGroup, actionId)}
+                />
+                <IconButton
+                  icon="g1-edit"
+                  size={32}
+                  title="Edit"
+                  onClick={() => onOpenEditDialog(actionHostGroup)}
+                  tooltipProps={{ placement: 'bottom-start' }}
+                />
+                <IconButton
+                  icon="g1-delete"
+                  size={32}
+                  title="Delete"
+                  onClick={() => onOpenDeleteDialog(actionHostGroup)}
+                  tooltipProps={{ placement: 'bottom-start' }}
+                />
+              </TableCell>
+            </ExpandableRowComponent>
+          );
+        })}
+      </Table>
+      <ActionHostGroupTableFooter />
+    </>
   );
 };
 
-export default ClusterActionHostGroupsTable;
+export default ActionHostGroupsTable;

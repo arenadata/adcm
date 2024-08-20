@@ -6,6 +6,7 @@ import {
 } from '../ActionHostGroupDialogForm/useActionHostGroupDialogForm';
 import s from '../ActionHostGroupDialogForm/ActionHostGroupDialogForm.module.scss';
 import { AdcmActionHostGroupHost } from '@models/adcm';
+import { useEffect } from 'react';
 
 export interface CreateActionHostGroupDialogProps {
   isOpen: boolean;
@@ -20,7 +21,13 @@ const CreateActionHostGroupDialog = ({
   onCreate,
   onClose,
 }: CreateActionHostGroupDialogProps) => {
-  const { isValid, formData, onChangeFormData, errors } = useActionHostGroupDialogForm();
+  const { isValid, formData, errors, onChangeFormData, resetFormData } = useActionHostGroupDialogForm();
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetFormData();
+    }
+  }, [isOpen, resetFormData]);
 
   const handleAction = () => {
     onCreate(formData);

@@ -17,9 +17,9 @@ import {
 } from '@store/adcm/entityDynamicActions/dynamicActionsSlice';
 import { setFilter, resetFilter } from '@store/adcm/entityActionHostGroups/actionHostGroupsTableSlice';
 import type { AdcmActionHostGroupFormData } from '@commonComponents/ActionHostGroups/ActionHostGroupDialogs/ActionHostGroupDialogForm/useActionHostGroupDialogForm';
-import type { ClusterActionHostGroupsTableToolbarProps } from '@commonComponents/ActionHostGroups/ActionHostGroupsTableToolbar/ActionHostGroupsTableToolbar';
-import type { ClusterActionHostGroupsTableFiltersProps } from '@commonComponents/ActionHostGroups/ActionHostGroupsTableToolbar/ActionHostGroupsTableFilters';
-import type { ClusterActionHostGroupsTableProps } from '@commonComponents/ActionHostGroups/ActionHostGroupsTable/ActionHostGroupsTable';
+import type { ActionHostGroupsTableToolbarProps } from '@commonComponents/ActionHostGroups/ActionHostGroupsTableToolbar/ActionHostGroupsTableToolbar';
+import type { ActionHostGroupsTableFiltersProps } from '@commonComponents/ActionHostGroups/ActionHostGroupsTableToolbar/ActionHostGroupsTableFilters';
+import type { ActionHostGroupsTableProps } from '@commonComponents/ActionHostGroups/ActionHostGroupsTable/ActionHostGroupsTable';
 import type { CreateActionHostGroupDialogProps } from '@commonComponents/ActionHostGroups/ActionHostGroupDialogs/CreateActionHostGroupDialog/CreateActionHostGroupDialog';
 import type { DynamicActionDialogProps } from '@commonComponents/DynamicActionDialog/DynamicActionDialog';
 import type { EditActionHostGroupDialogProps } from './ActionHostGroupDialogs/EditActionHostGroupDialog/EditActionHostGroupDialog';
@@ -31,8 +31,8 @@ import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 type UseActionHostGroupsResult<T extends ActionHostGroupOwner> = {
   entityArgs: EntityArgs<T>;
-  toolbarProps: ClusterActionHostGroupsTableToolbarProps & ClusterActionHostGroupsTableFiltersProps;
-  tableProps: ClusterActionHostGroupsTableProps;
+  toolbarProps: ActionHostGroupsTableToolbarProps & ActionHostGroupsTableFiltersProps;
+  tableProps: ActionHostGroupsTableProps;
   createDialogProps: CreateActionHostGroupDialogProps;
   dynamicActionDialogProps?: DynamicActionDialogProps;
   editDialogProps?: EditActionHostGroupDialogProps;
