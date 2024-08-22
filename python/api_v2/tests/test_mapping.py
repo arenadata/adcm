@@ -639,8 +639,8 @@ class TestMappingConstraints(BaseAPITestCase):
                 "code": "COMPONENT_CONSTRAINT_ERROR",
                 "level": "error",
                 "desc": (
-                    f'Less then 1 required component "{component.display_name}" (0) in host component list '
-                    f'for service "{service.display_name}"'
+                    f'Component "{component.display_name}" of service "{component.service.name}" '
+                    f"has unsatisfied constraint: {component.prototype.constraint}"
                 ),
             },
         )
@@ -670,8 +670,8 @@ class TestMappingConstraints(BaseAPITestCase):
                 "code": "COMPONENT_CONSTRAINT_ERROR",
                 "level": "error",
                 "desc": (
-                    f'Amount (2) of component "{component.display_name}" more then maximum (1) in host component list '
-                    f'for service "{service.display_name}"'
+                    f'Component "{component.display_name}" of service "{component.service.name}" '
+                    f"has unsatisfied constraint: {component.prototype.constraint}"
                 ),
             },
         )
@@ -718,8 +718,8 @@ class TestMappingConstraints(BaseAPITestCase):
                 "code": "COMPONENT_CONSTRAINT_ERROR",
                 "level": "error",
                 "desc": (
-                    f'Amount (2) of component "{component.display_name}" more then maximum (1) in host component '
-                    f'list for service "{service.display_name}"'
+                    f'Component "{component.display_name}" of service "{component.service.name}" '
+                    f"has unsatisfied constraint: {component.prototype.constraint}"
                 ),
             },
         )
@@ -752,21 +752,17 @@ class TestMappingConstraints(BaseAPITestCase):
             cluster=self.cluster,
         )
 
-        for data, err_msg in (
-            (
-                [],
-                f'Less then 1 required component "{component.display_name}" (0) '
-                f'in host component list for service "{service.display_name}"',
-            ),
-            (
-                [
-                    {"hostId": self.host_1.pk, "componentId": component.pk},
-                    {"hostId": self.host_2.pk, "componentId": component.pk},
-                    {"hostId": self.host_3.pk, "componentId": component.pk},
-                ],
-                f'Amount (3) of component "{component.display_name}" more then maximum (2) '
-                f'in host component list for service "{service.display_name}"',
-            ),
+        err_msg = (
+            f'Component "{component.display_name}" of service "{component.service.name}" '
+            f"has unsatisfied constraint: {component.prototype.constraint}"
+        )
+        for data in (
+            [],
+            [
+                {"hostId": self.host_1.pk, "componentId": component.pk},
+                {"hostId": self.host_2.pk, "componentId": component.pk},
+                {"hostId": self.host_3.pk, "componentId": component.pk},
+            ],
         ):
             with self.subTest(f"[1,2] constraint, data: {data}"):
                 response: Response = self.client.v2[self.cluster, "mapping"].post(data=data)
@@ -815,20 +811,16 @@ class TestMappingConstraints(BaseAPITestCase):
             cluster=self.cluster,
         )
 
-        for data, err_msg in (
-            (
-                [],
-                f'Less then 1 required component "{component.display_name}" (0) '
-                f'in host component list for service "{service.display_name}"',
-            ),
-            (
-                [
-                    {"hostId": self.host_1.pk, "componentId": component.pk},
-                    {"hostId": self.host_2.pk, "componentId": component.pk},
-                ],
-                f'Amount (2) of component "{component.display_name}" should be odd (odd) '
-                f'in host component list for service "{service.display_name}"',
-            ),
+        err_msg = (
+            f'Component "{component.display_name}" of service "{component.service.name}" '
+            f"has unsatisfied constraint: {component.prototype.constraint}"
+        )
+        for data in (
+            [],
+            [
+                {"hostId": self.host_1.pk, "componentId": component.pk},
+                {"hostId": self.host_2.pk, "componentId": component.pk},
+            ],
         ):
             with self.subTest(f"[1,odd] constraint, data: {data}"):
                 response: Response = self.client.v2[self.cluster, "mapping"].post(data=data)
@@ -877,21 +869,16 @@ class TestMappingConstraints(BaseAPITestCase):
             service=service,
             cluster=self.cluster,
         )
-
-        for data, err_msg in (
-            (
-                [],
-                f'Less then 1 required component "{component.display_name}" (0) '
-                f'in host component list for service "{service.display_name}"',
-            ),
-            (
-                [
-                    {"hostId": self.host_1.pk, "componentId": component.pk},
-                    {"hostId": self.host_2.pk, "componentId": component.pk},
-                ],
-                f'Amount (2) of component "{component.display_name}" should be odd (odd) '
-                f'in host component list for service "{service.display_name}"',
-            ),
+        err_msg = (
+            f'Component "{component.display_name}" of service "{component.service.name}" '
+            f"has unsatisfied constraint: {component.prototype.constraint}"
+        )
+        for data in (
+            [],
+            [
+                {"hostId": self.host_1.pk, "componentId": component.pk},
+                {"hostId": self.host_2.pk, "componentId": component.pk},
+            ],
         ):
             with self.subTest(f"[odd] constraint, data: {data}"):
                 response: Response = self.client.v2[self.cluster, "mapping"].post(data=data)
@@ -954,8 +941,8 @@ class TestMappingConstraints(BaseAPITestCase):
             {
                 "code": "COMPONENT_CONSTRAINT_ERROR",
                 "level": "error",
-                "desc": f'Amount (2) of component "{component.display_name}" should be odd (odd) '
-                f'in host component list for service "{service.display_name}"',
+                "desc": f'Component "{component.display_name}" of service "{component.service.name}" '
+                f"has unsatisfied constraint: {component.prototype.constraint}",
             },
         )
         self.assertEqual(HostComponent.objects.count(), 0)
@@ -1003,8 +990,8 @@ class TestMappingConstraints(BaseAPITestCase):
             {
                 "code": "COMPONENT_CONSTRAINT_ERROR",
                 "level": "error",
-                "desc": f'Less then 1 required component "{component.display_name}" (0) '
-                f'in host component list for service "{service.display_name}"',
+                "desc": f'Component "{component.display_name}" of service "{component.service.name}" '
+                f"has unsatisfied constraint: {component.prototype.constraint}",
             },
         )
         self.assertEqual(HostComponent.objects.count(), 0)
@@ -1060,8 +1047,8 @@ class TestMappingConstraints(BaseAPITestCase):
             {
                 "code": "COMPONENT_CONSTRAINT_ERROR",
                 "level": "error",
-                "desc": f'Less then 3 required component "{component.display_name}" (2) '
-                f'in host component list for service "{service.display_name}"',
+                "desc": f'Component "{component.display_name}" of service "{component.service.name}" '
+                f"has unsatisfied constraint: {component.prototype.constraint}",
             },
         )
         self.assertEqual(HostComponent.objects.count(), 0)

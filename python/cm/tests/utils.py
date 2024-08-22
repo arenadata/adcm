@@ -98,7 +98,7 @@ def gen_service(
 ) -> ClusterObject:
     """Generate service of specified cluster and prototype"""
     if not prototype:
-        bundle = bundle or gen_bundle()
+        bundle = bundle or cluster.prototype.bundle or gen_bundle()
         prototype = gen_prototype(bundle, "service")
     return ClusterObject.objects.create(
         cluster=cluster,
@@ -115,7 +115,7 @@ def gen_component(
 ) -> ServiceComponent:
     """Generate service component for specified service and prototype"""
     if not prototype:
-        bundle = bundle or gen_bundle()
+        bundle = bundle or service.prototype.bundle or gen_bundle()
         prototype = gen_prototype(bundle, "component")
     return ServiceComponent.objects.create(
         cluster=service.cluster,
@@ -139,7 +139,7 @@ def gen_provider(name: str | None = None, bundle=None, prototype=None) -> HostPr
 def gen_host(provider, cluster=None, fqdn: str | None = None, bundle=None, prototype=None) -> Host:
     """Generate host for specified cluster, provider, and prototype"""
     if not prototype:
-        bundle = bundle or gen_bundle()
+        bundle = bundle or provider.prototype.bundle or gen_bundle()
         prototype = gen_prototype(bundle, "host")
     return Host.objects.create(
         fqdn=fqdn or gen_name("host-"),

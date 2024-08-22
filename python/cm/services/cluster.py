@@ -21,7 +21,7 @@ from core.cluster.types import (
     MaintenanceModeOfObjects,
     ObjectMaintenanceModeState,
 )
-from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor, HostID, ShortObjectInfo
+from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor, HostID, MappingDict, ShortObjectInfo
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
 
@@ -122,8 +122,10 @@ def perform_host_to_cluster_map(
     return hosts
 
 
-def retrieve_clusters_topology(cluster_ids: Iterable[ClusterID]) -> Generator[ClusterTopology, None, None]:
-    return build_clusters_topology(cluster_ids=cluster_ids, db=ClusterDB)
+def retrieve_clusters_topology(
+    cluster_ids: Iterable[ClusterID], input_mapping: dict[ClusterID, list[MappingDict]] | None = None
+) -> Generator[ClusterTopology, None, None]:
+    return build_clusters_topology(cluster_ids=cluster_ids, db=ClusterDB, input_mapping=input_mapping)
 
 
 def retrieve_related_cluster_topology(orm_object: Cluster | ClusterObject | ServiceComponent | Host) -> ClusterTopology:
