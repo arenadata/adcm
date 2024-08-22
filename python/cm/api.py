@@ -36,10 +36,6 @@ from cm.converters import orm_object_to_action_target_type, orm_object_to_core_t
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.issue import (
     add_concern_to_object,
-    check_bound_components,
-    check_component_constraint,
-    check_hc_requires,
-    check_service_requires,
     remove_concern_from_object,
     update_hierarchy_issues,
 )
@@ -78,6 +74,10 @@ from cm.services.concern.cases import (
 )
 from cm.services.concern.checks import (
     cluster_mapping_has_issue,
+    extract_data_for_requirements_check,
+    is_bound_to_requirements_unsatisfied,
+    is_constraint_requirements_unsatisfied,
+    is_requires_requirements_unsatisfied,
     object_configuration_has_issue,
     object_imports_has_issue,
 )
@@ -562,13 +562,36 @@ def check_hc(cluster: Cluster, hc_in: list[dict]) -> list[tuple[ClusterObject, H
     check_sub_key(hc_in=hc_in)
     host_comp_list = make_host_comp_list(cluster=cluster, hc_in=hc_in)
 
-    check_hc_requires(shc_list=host_comp_list)
-    check_bound_components(shc_list=host_comp_list)
-    for service in ClusterObject.objects.filter(cluster=cluster):
-        check_component_constraint(
-            cluster=cluster, service_prototype=service.prototype, hc_in=[i for i in host_comp_list if i[0] == service]
-        )
-        check_service_requires(cluster=cluster, proto=service.prototype)
+    requirements_data = extract_data_for_requirements_check(cluster=cluster, input_mapping=hc_in)
+
+    requires_not_ok, error_message = is_requires_requirements_unsatisfied(
+        topology=requirements_data.topology,
+        component_prototype_map=requirements_data.component_prototype_map,
+        prototype_requirements=requirements_data.prototype_requirements,
+        existing_objects_map=requirements_data.existing_objects_map,
+        existing_objects_by_type=requirements_data.objects_map_by_type,
+    )
+    if requires_not_ok and error_message is not None:
+        raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=error_message)
+
+    bound_not_ok, error_message = is_bound_to_requirements_unsatisfied(
+        topology=requirements_data.topology,
+        component_prototype_map=requirements_data.component_prototype_map,
+        prototype_requirements=requirements_data.prototype_requirements,
+        existing_objects_map=requirements_data.existing_objects_map,
+    )
+    if bound_not_ok and error_message:
+        raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=error_message)
+
+    constraint_not_ok, error_message = is_constraint_requirements_unsatisfied(
+        topology=requirements_data.topology,
+        component_prototype_map=requirements_data.component_prototype_map,
+        prototype_requirements=requirements_data.prototype_requirements,
+        components_map=requirements_data.objects_map_by_type["component"],
+    )
+    if constraint_not_ok and error_message is not None:
+        raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=error_message)
+
     check_maintenance_mode(cluster=cluster, host_comp_list=host_comp_list)
 
     return host_comp_list

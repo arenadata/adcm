@@ -12,7 +12,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import NamedTuple, TypeAlias
+from typing import Literal, NamedTuple, TypeAlias
 
 ObjectID: TypeAlias = int
 ClusterID: TypeAlias = ObjectID
@@ -32,6 +32,8 @@ ConcernID: TypeAlias = int
 HostName: TypeAlias = str
 ServiceName: TypeAlias = str
 ComponentName: TypeAlias = str
+
+MappingDict: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], HostID | ComponentID | ServiceID]
 
 
 class ADCMCoreError(Exception):
