@@ -6,12 +6,14 @@ import type { AdcmActionHostGroupFormData } from './useActionHostGroupDialogForm
 import ListTransfer from '@uikit/ListTransfer/ListTransfer';
 import { availableHostsPanel, selectedHostsPanel } from './ActionHostGroupDialogForm.constants';
 import s from './ActionHostGroupDialogForm.module.scss';
+import TextFormField from '@commonComponents/Forms/TextFormField/TextFormField';
 
 export interface ActionHostGroupDialogFormProps {
   formData: AdcmActionHostGroupFormData;
   hostCandidates: AdcmActionHostGroupHost[];
   errors: FormErrors<AdcmActionHostGroupFormData>;
   onChangeFormData: (changes: Partial<AdcmActionHostGroupFormData>) => void;
+  isCreateNew?: boolean;
 }
 
 const ActionHostGroupDialogForm = ({
@@ -19,6 +21,7 @@ const ActionHostGroupDialogForm = ({
   hostCandidates,
   errors,
   onChangeFormData,
+  isCreateNew,
 }: ActionHostGroupDialogFormProps) => {
   const allHosts = useMemo(() => {
     return hostCandidates.map((host) => {
@@ -45,23 +48,31 @@ const ActionHostGroupDialogForm = ({
     <FormFieldsContainer className={s.actionHostGroupDialogForm}>
       <div className={s.actionHostGroupDialogForm__column}>
         <FormField label="Action hosts group name" error={errors.name}>
-          <Input
-            value={formData.name}
-            type="text"
-            onChange={handleNameChange}
-            placeholder="Enter name"
-            autoComplete="off"
-            autoFocus
-          />
+          {isCreateNew ? (
+            <Input
+              value={formData.name}
+              type="text"
+              onChange={handleNameChange}
+              placeholder="Enter name"
+              autoComplete="off"
+              autoFocus
+            />
+          ) : (
+            <TextFormField>{formData.name}</TextFormField>
+          )}
         </FormField>
         <FormField label="Description">
-          <Input
-            value={formData.description}
-            type="text"
-            onChange={handleDescriptionChange}
-            placeholder="Enter short description"
-            autoComplete="off"
-          />
+          {isCreateNew ? (
+            <Input
+              value={formData.description}
+              type="text"
+              onChange={handleDescriptionChange}
+              placeholder="Enter short description"
+              autoComplete="off"
+            />
+          ) : (
+            <TextFormField>{formData.name}</TextFormField>
+          )}
         </FormField>
       </div>
 
