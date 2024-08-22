@@ -51,6 +51,7 @@ const CreateActionHostGroupDialog = ({
         errors={errors}
         hostCandidates={hostCandidates}
         onChangeFormData={onChangeFormData}
+        isCreateNew={true}
       />
     </Dialog>
   );
