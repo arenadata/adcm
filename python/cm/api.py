@@ -410,7 +410,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
 
 
 def raise_outdated_config_flag_if_required(object_: MainObject):
-    if not object_.prototype.flag_autogeneration.get("enable_outdated_config", False):
+    if object_.state == "created" or not object_.prototype.flag_autogeneration.get("enable_outdated_config", False):
         return
 
     flag = BuiltInFlag.ADCM_OUTDATED_CONFIG.value
