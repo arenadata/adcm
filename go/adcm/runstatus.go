@@ -30,5 +30,19 @@ func main() {
 		os.Exit(0)
 	}
 
-	status.Start(status.ReadSecret(fileAuthKey), *logFile, status.GetLogLevel())
+	status.Start(status.ReadSecret(fileAuthKey), *logFile, GetLogLevel())
+}
+
+func GetLogLevel() string {
+	priorityLogLevel, ok := os.LookupEnv("STATUS_LOG_LEVEL")
+	if ok {
+		return priorityLogLevel
+	}
+
+	logLevel, ok := os.LookupEnv("LOG_LEVEL")
+	if !ok {
+		return status.DefaultLogLevel
+	}
+
+	return logLevel
 }
