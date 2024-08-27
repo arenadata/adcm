@@ -15,6 +15,10 @@
 
     allowed_in_group_1: &allowed
       <<: *job
+      config:
+        - name: val
+          type: integer
+          default: 4
       allow_for_action_host_group: true
 
 - type: service

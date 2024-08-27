@@ -15,6 +15,7 @@ from unittest.mock import patch
 from cm.models import LogStorage
 from cm.services.job.run.repo import JobRepoImpl
 
+from ansible_plugin.errors import PluginValidationError
 from ansible_plugin.executors.custom_log import ADCMCustomLogPluginExecutor
 from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
@@ -71,28 +72,44 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         log = LogStorage.objects.filter(job_id=job.id, type="custom", format=format_, name=name).get()
         self.assertEqual(log.body, path)
 
-    def test_path_priority_over_content(self) -> None:
-        name = "cool name"
-        format_ = "txt"
-        content = "bestcontent ever !!!"
-        path = "/some/path"
-
+    def test_path_and_content_error(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=self.EXECUTOR_CLASS,
-            call_arguments={"name": name, "format": format_, "content": content, "path": path},
+            call_arguments={
+                "name": "cool name",
+                "format": "txt",
+                "content": "bestcontent ever !!!",
+                "path": "/some/path",
+            },
             call_context=job,
         )
 
-        with patch(f"{EXECUTOR_MODULE}.assign_view_logstorage_permissions_by_job") as permissions_mock:
-            result = executor.execute()
+        result = executor.execute()
 
-        self.assertIsNone(result.error)
-        log = LogStorage.objects.filter(job_id=job.id, type="custom", format=format_, name=name).get()
-        self.assertEqual(log.body, path)
-        permissions_mock.assert_called_once()
+        self.assertIsInstance(result.error, PluginValidationError)
+        self.assertIn("`path` and `content` shouldn't be specified together", result.error.message)
+
+    def test_incorrect_format(self) -> None:
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=self.EXECUTOR_CLASS,
+            call_arguments={
+                "name": "cool name",
+                "format": "abababa",
+                "content": "bestcontent ever !!!",
+            },
+            call_context=job,
+        )
+
+        result = executor.execute()
+
+        self.assertIsInstance(result.error, PluginValidationError)
+        self.assertIn("format - Input should be", result.error.message)
 
     def test_forbidden_arg_fail(self):
         name = "cool name"

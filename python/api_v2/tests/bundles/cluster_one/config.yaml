@@ -259,3 +259,11 @@
           - name: listofstuff
             type: list
             required: false
+
+- name: service_with_bound_to
+  type: service
+  version: "hehe"
+
+  components:
+    will_have_bound_to:
+      description: This component will have `bound_to` constraint after upgrade

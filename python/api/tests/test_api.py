@@ -917,14 +917,12 @@ class TestAPI2(BaseTestCase):
 
         mock_reset_hc_map.assert_called_once()
 
-    @patch("cm.api.CTX")
     @patch("cm.services.status.notify.reset_hc_map")
     @patch("cm.api.update_hierarchy_issues")
     def test_save_hc__big_update__locked_hierarchy(
         self,
         mock_issue,  # noqa: ARG002
         mock_load,  # noqa: ARG002
-        ctx,
     ):
         """
         Update bigger HC map - move `component_2` from `host_2` to `host_3`
@@ -955,7 +953,6 @@ class TestAPI2(BaseTestCase):
         tree = Tree(self.cluster)
         affected = (node.value for node in tree.get_all_affected(tree.built_from))
         lock_affected_objects(task=task, objects=affected)
-        ctx.lock = task.lock
 
         # refresh due to new instances were updated in task.lock_affected()
         host_1.refresh_from_db()

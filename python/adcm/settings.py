@@ -270,7 +270,7 @@ if not DEBUG:
                 "backupCount": 10,
             },
             "audit_file_handler": {
-                "class": "logging.handlers.TimedRotatingFileHandler",
+                "class": "adcm.custom_loggers.LockingTimedRotatingFileHandler",
                 "filename": LOG_DIR / "audit.log",
                 "when": "midnight",
                 "backupCount": 10,

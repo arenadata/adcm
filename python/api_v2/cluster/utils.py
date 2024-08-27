@@ -14,7 +14,6 @@ from collections import defaultdict
 from itertools import chain
 from typing import Literal
 
-from cm.api_context import CTX
 from cm.data_containers import (
     ClusterData,
     ComponentData,
@@ -46,6 +45,7 @@ from cm.services.cluster import retrieve_clusters_topology
 from cm.services.concern import delete_issue
 from cm.services.concern.checks import extract_data_for_requirements_check, is_constraint_requirements_unsatisfied
 from cm.services.concern.distribution import redistribute_issues_and_flags
+from cm.services.concern.locks import get_lock_on_object
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import send_host_component_map_update_event
 from core.types import ADCMCoreType, CoreObjectDescriptor
@@ -264,11 +264,15 @@ def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
     on_commit(func=reset_hc_map)
     on_commit(func=reset_objects_in_mm)
 
-    for removed_host in mapping_data.removed_hosts:
-        remove_concern_from_object(object_=removed_host, concern=CTX.lock)
+    cluster = mapping_data.orm_objects["cluster"]
 
-    for added_host in mapping_data.added_hosts:
-        add_concern_to_object(object_=added_host, concern=CTX.lock)
+    lock = get_lock_on_object(object_=cluster)
+    if lock:
+        for removed_host in mapping_data.removed_hosts:
+            remove_concern_from_object(object_=removed_host, concern=lock)
+
+        for added_host in mapping_data.added_hosts:
+            add_concern_to_object(object_=added_host, concern=lock)
 
     _handle_mapping_config_groups(mapping_data=mapping_data)
 

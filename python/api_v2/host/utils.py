@@ -13,7 +13,6 @@
 from adcm.permissions import check_custom_perm
 from cm.adcm_config.config import init_object_config
 from cm.api import check_license
-from cm.api_context import CTX
 from cm.issue import (
     _prototype_issue_map,
     add_concern_to_object,
@@ -21,6 +20,7 @@ from cm.issue import (
 )
 from cm.logger import logger
 from cm.models import Cluster, Host, HostProvider, ObjectType, Prototype
+from cm.services.concern.locks import get_lock_on_object
 from cm.services.concern import retrieve_issue
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import reset_hc_map
@@ -59,7 +59,7 @@ def process_config_issues_policies_hc(host: Host) -> None:
     host.config = obj_conf
     host.save(update_fields=["config"])
 
-    add_concern_to_object(object_=host, concern=CTX.lock)
+    add_concern_to_object(object_=host, concern=get_lock_on_object(host.provider))
     _recheck_new_host_issues(host=host)
     re_apply_object_policy(apply_object=host.provider)
 

@@ -15,7 +15,6 @@ from audit.models import AuditObject
 from django.utils import timezone
 from rbac.models import Group
 from rbac.services.group import create as create_group
-from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -47,8 +46,7 @@ class TestGroupAudit(BaseAPITestCase):
         self.group = create_group(name_to_display="Some group")
 
     def test_group_create_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:rbac:group-list"),
+        response = (self.client.v2 / "rbac" / "groups").post(
             data={"displayName": "New test group"},
         )
 
@@ -64,8 +62,7 @@ class TestGroupAudit(BaseAPITestCase):
     def test_group_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(viewname="v2:rbac:group-list"),
+        response = (self.client.v2 / "rbac" / "groups").post(
             data={"displayName": "New test group"},
         )
 
@@ -79,8 +76,7 @@ class TestGroupAudit(BaseAPITestCase):
         )
 
     def test_group_create_wrong_data_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:rbac:group-list"),
+        response = (self.client.v2 / "rbac" / "groups").post(
             data={"description": "dscr"},
         )
 
@@ -103,8 +99,7 @@ class TestGroupAudit(BaseAPITestCase):
             "previous": {"description": "", "name": "Some group", "user": []},
         }
 
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
+        response = self.client.v2[self.group].patch(
             data=self.group_update_data,
         )
 
@@ -130,8 +125,7 @@ class TestGroupAudit(BaseAPITestCase):
             "previous": {"name": "Some group"},
         }
 
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
+        response = self.client.v2[self.group].patch(
             data={"displayName": "new display name"},
         )
 
@@ -152,8 +146,7 @@ class TestGroupAudit(BaseAPITestCase):
     def test_group_update_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
+        response = self.client.v2[self.group].patch(
             data=self.group_update_data,
         )
 
@@ -170,8 +163,7 @@ class TestGroupAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View group"):
-            response = self.client.patch(
-                path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
+            response = self.client.v2[self.group].patch(
                 data=self.group_update_data,
             )
 
@@ -185,8 +177,7 @@ class TestGroupAudit(BaseAPITestCase):
         )
 
     def test_group_update_incorrect_data_fail(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
+        response = self.client.v2[self.group].patch(
             data={"displayName": []},
         )
 
@@ -200,8 +191,7 @@ class TestGroupAudit(BaseAPITestCase):
         )
 
     def test_group_update_not_exists_fail(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.get_non_existent_pk(model=Group)}),
+        response = (self.client.v2 / "rbac" / "groups" / self.get_non_existent_pk(model=Group)).patch(
             data=self.group_update_data,
         )
 
@@ -226,9 +216,7 @@ class TestGroupAudit(BaseAPITestCase):
             is_deleted=False,
         )
 
-        response = self.client.delete(
-            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
-        )
+        response = self.client.v2[self.group].delete()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
         self.check_last_audit_record(
@@ -242,9 +230,7 @@ class TestGroupAudit(BaseAPITestCase):
     def test_group_delete_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.delete(
-            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
-        )
+        response = self.client.v2[self.group].delete()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_last_audit_record(
@@ -259,9 +245,7 @@ class TestGroupAudit(BaseAPITestCase):
         self.client.login(**self.test_user_credentials)
 
         with self.grant_permissions(to=self.test_user, on=[], role_name="View group"):
-            response = self.client.delete(
-                path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.group.pk}),
-            )
+            response = self.client.v2[self.group].delete()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_last_audit_record(
@@ -273,9 +257,7 @@ class TestGroupAudit(BaseAPITestCase):
         )
 
     def test_group_delete_not_exists_fail(self):
-        response = self.client.delete(
-            path=reverse(viewname="v2:rbac:group-detail", kwargs={"pk": self.get_non_existent_pk(model=Group)}),
-        )
+        response = (self.client.v2 / "rbac" / "groups" / self.get_non_existent_pk(model=Group)).delete()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_last_audit_record(

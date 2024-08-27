@@ -11,8 +11,7 @@
 # limitations under the License.
 
 from audit.models import AuditObject
-from cm.models import Host, ObjectType, Prototype
-from rest_framework.reverse import reverse
+from cm.models import Cluster, Host, ObjectType, Prototype
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -38,8 +37,7 @@ class TestHostAudit(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
 
     def test_create_success(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:host-list"),
+        response = (self.client.v2 / "hosts").post(
             data={
                 "hostproviderId": self.provider.pk,
                 "name": "new-test-host",
@@ -56,8 +54,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_create_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:host-list"),
+        response = (self.client.v2 / "hosts").post(
             data={
                 "name": "new-test-host",
             },
@@ -75,8 +72,7 @@ class TestHostAudit(BaseAPITestCase):
     def test_create_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.post(
-            path=reverse(viewname="v2:host-list"),
+        response = (self.client.v2 / "hosts").post(
             data={
                 "hostproviderId": self.provider.pk,
                 "name": "new-test-host",
@@ -93,8 +89,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_update_success(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
+        response = self.client.v2[self.host_2].patch(
             data={"name": "new.name"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -112,8 +107,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_update_full_success(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
+        response = self.client.v2[self.host_2].patch(
             data={"name": "new.name", "description": "new description"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -134,8 +128,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_update_incorrect_data_fail(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
+        response = self.client.v2[self.host_2].patch(
             data={"name": "a"},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -149,8 +142,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_update_not_found_fail(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:host-detail", kwargs={"pk": 1000}),
+        response = (self.client.v2 / "hosts" / self.get_non_existent_pk(model=Host)).patch(
             data={"name": "new.name"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -166,8 +158,7 @@ class TestHostAudit(BaseAPITestCase):
     def test_update_view_config_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.host_2], role_name="View host configurations"):
-            response = self.client.patch(
-                path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
+            response = self.client.v2[self.host_2].patch(
                 data={"name": "new.name"},
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -183,8 +174,7 @@ class TestHostAudit(BaseAPITestCase):
     def test_update_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        response = self.client.patch(
-            path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
+        response = self.client.v2[self.host_2].patch(
             data={"name": "new.name"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -208,9 +198,7 @@ class TestHostAudit(BaseAPITestCase):
             is_deleted=False,
         )
 
-        response = self.client.delete(
-            path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
-        )
+        response = self.client.v2[self.host_2].delete()
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         self.check_last_audit_record(
@@ -222,10 +210,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_delete_not_found_fail(self):
-        response = self.client.delete(
-            path=reverse(viewname="v2:host-detail", kwargs={"pk": 1000}),
-            data={"name": "new.name"},
-        )
+        response = (self.client.v2 / "hosts" / self.get_non_existent_pk(model=Host)).delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -239,9 +224,7 @@ class TestHostAudit(BaseAPITestCase):
     def test_delete_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.host_2], role_name="View host configurations"):
-            response = self.client.delete(
-                path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
-            )
+            response = self.client.v2[self.host_2].delete()
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
@@ -254,9 +237,7 @@ class TestHostAudit(BaseAPITestCase):
 
     def test_delete_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.delete(
-            path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
-        )
+        response = self.client.v2[self.host_2].delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -268,11 +249,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_remove_from_cluster_success(self):
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:host-cluster-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk}
-            ),
-        )
+        response = self.client.v2[self.cluster_1, "hosts", self.host_1].delete()
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
@@ -284,9 +261,9 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_remove_from_cluster_not_found_cluster_fail(self):
-        response = self.client.delete(
-            path=reverse(viewname="v2:host-cluster-detail", kwargs={"cluster_pk": 100, "pk": self.host_2.pk}),
-        )
+        response = (
+            self.client.v2 / "clusters" / self.get_non_existent_pk(model=Cluster) / "hosts" / self.host_2
+        ).delete()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
@@ -298,9 +275,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_remove_from_cluster_not_found_host_fail(self):
-        response = self.client.delete(
-            path=reverse(viewname="v2:host-cluster-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": 1000}),
-        )
+        response = self.client.v2[self.cluster_1, "hosts", self.get_non_existent_pk(model=Host)].delete()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
@@ -314,11 +289,7 @@ class TestHostAudit(BaseAPITestCase):
     def test_remove_from_cluster_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.cluster_1], role_name="View cluster configurations"):
-            response = self.client.delete(
-                path=reverse(
-                    viewname="v2:host-cluster-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk}
-                ),
-            )
+            response = self.client.v2[self.cluster_1, "hosts", self.host_1].delete()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
@@ -332,11 +303,7 @@ class TestHostAudit(BaseAPITestCase):
 
     def test_remove_from_cluster_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.delete(
-            path=reverse(
-                viewname="v2:host-cluster-detail", kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk}
-            ),
-        )
+        response = self.client.v2[self.cluster_1, "hosts", self.host_1].delete()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
@@ -349,11 +316,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_switch_maintenance_mode_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:host-maintenance-mode",
-                kwargs={"pk": self.host_1.pk},
-            ),
+        response = self.client.v2[self.host_1, "maintenance-mode"].post(
             data={"maintenanceMode": "on"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -367,11 +330,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_switch_maintenance_mode_incorrect_body_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:host-maintenance-mode",
-                kwargs={"pk": self.host_1.pk},
-            ),
+        response = self.client.v2[self.host_1, "maintenance-mode"].post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -384,11 +343,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_switch_maintenance_mode_not_found_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:host-maintenance-mode",
-                kwargs={"pk": 1000},
-            ),
+        response = (self.client.v2 / "hosts" / self.get_non_existent_pk(model=Host) / "maintenance-mode").post(
             data={"maintenanceMode": "on"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -404,11 +359,7 @@ class TestHostAudit(BaseAPITestCase):
     def test_switch_maintenance_mode_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.host_1], role_name="View host configurations"):
-            response = self.client.post(
-                path=reverse(
-                    viewname="v2:host-maintenance-mode",
-                    kwargs={"pk": self.host_1.pk},
-                ),
+            response = self.client.v2[self.host_1, "maintenance-mode"].post(
                 data={"maintenanceMode": "on"},
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -423,11 +374,7 @@ class TestHostAudit(BaseAPITestCase):
 
     def test_switch_maintenance_mode_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:host-maintenance-mode",
-                kwargs={"pk": self.host_1.pk},
-            ),
+        response = self.client.v2[self.host_1, "maintenance-mode"].post(
             data={"maintenanceMode": "on"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -441,11 +388,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_switch_maintenance_mode_cluster_success(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:host-cluster-maintenance-mode",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk},
-            ),
+        response = self.client.v2[self.cluster_1, "hosts", self.host_1, "maintenance-mode"].post(
             data={"maintenanceMode": "on"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -459,11 +402,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_switch_maintenance_mode_cluster_incorrect_body_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:host-cluster-maintenance-mode",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk},
-            ),
+        response = self.client.v2[self.cluster_1, "hosts", self.host_1, "maintenance-mode"].post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -476,11 +415,9 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_switch_maintenance_mode_cluster_not_found_fail(self):
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:host-cluster-maintenance-mode",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": 1000},
-            ),
+        response = self.client.v2[
+            self.cluster_1, "hosts", self.get_non_existent_pk(model=Host), "maintenance-mode"
+        ].post(
             data={"maintenanceMode": "on"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -494,11 +431,7 @@ class TestHostAudit(BaseAPITestCase):
 
     def test_switch_maintenance_mode_cluster_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(
-            path=reverse(
-                viewname="v2:host-cluster-maintenance-mode",
-                kwargs={"cluster_pk": self.cluster_1.pk, "pk": self.host_1.pk},
-            ),
+        response = self.client.v2[self.cluster_1, "hosts", self.host_1, "maintenance-mode"].post(
             data={"maintenanceMode": "on"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -526,8 +459,7 @@ class TestHostAudit(BaseAPITestCase):
             "adcmMeta": {"/activatable_group": {"isActive": True}},
             "description": "new config",
         }
-        response = self.client.post(
-            path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host_1.pk}),
+        response = self.client.v2[self.host_1, "configs"].post(
             data=data,
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
@@ -540,8 +472,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_update_host_config_incorrect_data_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host_1.pk}),
+        response = self.client.v2[self.host_1, "configs"].post(
             data={"config": {}, "adcmMeta": {"/activatable_group": {"isActive": True}}},
         )
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
@@ -554,8 +485,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_update_host_config_not_found_fail(self):
-        response = self.client.post(
-            path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": 1000}),
+        response = (self.client.v2 / "hosts" / self.get_non_existent_pk(model=Host) / "configs").post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -571,8 +501,7 @@ class TestHostAudit(BaseAPITestCase):
     def test_update_host_config_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.host_1], role_name="View host configurations"):
-            response = self.client.post(
-                path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host_1.pk}),
+            response = self.client.v2[self.host_1, "configs"].post(
                 data={},
             )
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -587,8 +516,7 @@ class TestHostAudit(BaseAPITestCase):
 
     def test_update_host_config_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.post(
-            path=reverse(viewname="v2:host-config-list", kwargs={"host_pk": self.host_1.pk}),
+        response = self.client.v2[self.host_1, "configs"].post(
             data={},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -602,8 +530,7 @@ class TestHostAudit(BaseAPITestCase):
         )
 
     def test_host_object_changes_all_fields_success(self):
-        response = self.client.patch(
-            path=reverse(viewname="v2:host-detail", kwargs={"pk": self.host_2.pk}),
+        response = self.client.v2[self.host_2].patch(
             data={"name": "new.name", "description": "new description"},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
