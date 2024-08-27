@@ -31,7 +31,6 @@ from cm.adcm_config.config import (
     save_object_config,
 )
 from cm.adcm_config.utils import proto_ref
-from cm.api_context import CTX
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.issue import (
@@ -69,6 +68,7 @@ from cm.models import (
     TaskLog,
 )
 from cm.services.concern.flags import BuiltInFlag, raise_flag, update_hierarchy
+from cm.services.concern.locks import get_lock_on_object
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import (
     send_config_creation_event,
@@ -155,7 +155,7 @@ def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, descriptio
         obj_conf = init_object_config(prototype, host)
         host.config = obj_conf
         host.save()
-        add_concern_to_object(object_=host, concern=CTX.lock)
+        add_concern_to_object(object_=host, concern=get_lock_on_object(object_=provider))
         update_hierarchy_issues(host.provider)
         re_apply_object_policy(provider)
 
@@ -175,7 +175,6 @@ def add_host_provider(prototype: Prototype, name: str, description: str = ""):
         obj_conf = init_object_config(prototype, provider)
         provider.config = obj_conf
         provider.save()
-        add_concern_to_object(object_=provider, concern=CTX.lock)
         update_hierarchy_issues(provider)
 
     logger.info("host provider #%s %s is added", provider.pk, provider.name)
@@ -286,7 +285,8 @@ def remove_host_from_cluster(host: Host) -> Host:
             group.hosts.remove(host)
             update_hierarchy_issues(obj=host)
 
-        remove_concern_from_object(object_=host, concern=CTX.lock)
+        # if there's no lock on cluster, nothing should be removed
+        remove_concern_from_object(object_=host, concern=get_lock_on_object(object_=cluster))
         update_hierarchy_issues(obj=cluster)
         re_apply_object_policy(apply_object=cluster)
 
@@ -410,7 +410,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
 
 
 def raise_outdated_config_flag_if_required(object_: MainObject):
-    if not object_.prototype.flag_autogeneration.get("enable_outdated_config", False):
+    if object_.state == "created" or not object_.prototype.flag_autogeneration.get("enable_outdated_config", False):
         return
 
     flag = BuiltInFlag.ADCM_OUTDATED_CONFIG.value
@@ -535,11 +535,13 @@ def save_hc(
     old_hosts = {i.host for i in hc_queryset.select_related("host")}
     new_hosts = {i[1] for i in host_comp_list}
 
-    for removed_host in old_hosts.difference(new_hosts):
-        remove_concern_from_object(object_=removed_host, concern=CTX.lock)
+    lock = get_lock_on_object(object_=cluster)
+    if lock:
+        for removed_host in old_hosts.difference(new_hosts):
+            remove_concern_from_object(object_=removed_host, concern=lock)
 
-    for added_host in new_hosts.difference(old_hosts):
-        add_concern_to_object(object_=added_host, concern=CTX.lock)
+        for added_host in new_hosts.difference(old_hosts):
+            add_concern_to_object(object_=added_host, concern=lock)
 
     still_hc = still_existed_hc(cluster, host_comp_list)
     host_service_of_still_hc = {(hc.host, hc.service) for hc in still_hc}
@@ -930,8 +932,8 @@ def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
 
     with atomic():
         host.cluster = cluster
-        host.save()
-        add_concern_to_object(object_=host, concern=CTX.lock)
+        host.save(update_fields=["cluster"])
+
         update_hierarchy_issues(host)
         update_hierarchy_issues(cluster)
         re_apply_object_policy(cluster)

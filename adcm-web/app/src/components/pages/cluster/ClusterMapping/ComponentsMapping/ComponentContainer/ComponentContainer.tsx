@@ -4,18 +4,14 @@ import MappingItemSelect from '../../MappingItemSelect/MappingItemSelect';
 import MappedHost from './MappedHost/MappedHost';
 import AddMappingButton from '../../AddMappingButton/AddMappingButton';
 import ComponentRestrictions from '../../HostsMapping/RestrictionsList/ComponentRestrictions';
-import {
-  type AdcmHostShortView,
-  type AdcmMappingComponent,
-  type HostId,
-  AdcmHostComponentMapRuleAction,
-} from '@models/adcm';
-import type { ComponentMapping, ComponentMappingErrors, MappingFilter } from '../../ClusterMapping.types';
-import {
-  getConstraintsLimit,
-  checkComponentMappingAvailability,
-  checkHostMappingAvailability,
-} from '../../ClusterMapping.utils';
+import { type AdcmHostShortView, type AdcmMappingComponent } from '@models/adcm';
+import type {
+  ComponentAvailabilityErrors,
+  ComponentMapping,
+  ComponentMappingErrors,
+  MappingFilter,
+} from '../../ClusterMapping.types';
+import { getConstraintsLimit } from '../../ClusterMapping.utils';
 import s from './ComponentContainer.module.scss';
 import cn from 'classnames';
 
@@ -24,13 +20,13 @@ export interface ComponentContainerProps {
   mappingErrors?: ComponentMappingErrors;
   filter: MappingFilter;
   allHosts: AdcmHostShortView[];
-  disabledHosts?: Set<HostId>;
   onMap: (hosts: AdcmHostShortView[], component: AdcmMappingComponent) => void;
   onUnmap: (hostId: number, componentId: number) => void;
   onInstallServices?: (component: AdcmMappingComponent) => void;
-  allowActions?: Set<AdcmHostComponentMapRuleAction>;
   denyAddHostReason?: React.ReactNode;
   denyRemoveHostReason?: React.ReactNode;
+  checkComponentMappingAvailability: (component: AdcmMappingComponent) => ComponentAvailabilityErrors;
+  checkHostMappingAvailability: (host: AdcmHostShortView) => string | undefined;
 }
 
 const ComponentContainer = ({
@@ -38,24 +34,21 @@ const ComponentContainer = ({
   mappingErrors,
   filter,
   allHosts,
-  disabledHosts,
   onUnmap,
   onMap,
   onInstallServices,
-  allowActions,
+  checkComponentMappingAvailability,
+  checkHostMappingAvailability,
 }: ComponentContainerProps) => {
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const addIconRef = useRef(null);
   const { component, hosts } = componentMapping;
-  const { componentNotAvailableError, addingHostsNotAllowedError } = checkComponentMappingAvailability(
-    component,
-    allowActions,
-  );
+  const { componentNotAvailableError, addingHostsNotAllowedError } = checkComponentMappingAvailability(component);
 
   const hostsOptions = useMemo<SelectOption<AdcmHostShortView>[]>(
     () =>
       allHosts.map((host) => {
-        const hostMappingAvailabilityError = checkHostMappingAvailability(host, allowActions, disabledHosts);
+        const hostMappingAvailabilityError = checkHostMappingAvailability(host);
         return {
           label: host.name,
           value: host,
@@ -63,7 +56,7 @@ const ComponentContainer = ({
           title: hostMappingAvailabilityError,
         };
       }),
-    [allHosts, allowActions, disabledHosts],
+    [allHosts, checkHostMappingAvailability],
   );
 
   const visibleHosts = useMemo(
@@ -140,7 +133,7 @@ const ComponentContainer = ({
             <div className={s.componentContainerContent__mappedHosts}>
               <Tags>
                 {visibleHosts.map((host) => {
-                  const removingHostNotAllowedError = checkHostMappingAvailability(host, allowActions, disabledHosts);
+                  const removingHostNotAllowedError = checkHostMappingAvailability(host);
                   return (
                     <MappedHost
                       key={host.id}

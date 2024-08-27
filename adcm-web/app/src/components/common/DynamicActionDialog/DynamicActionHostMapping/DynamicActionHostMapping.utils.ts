@@ -1,11 +1,16 @@
-import type {
-  AdcmDynamicActionDetails,
+import {
+  type AdcmDynamicActionDetails,
   AdcmHostComponentMapRuleAction,
-  AdcmMapping,
-  AdcmMappingComponent,
-  AdcmMappingComponentService,
+  type AdcmHostShortView,
+  type AdcmMapping,
+  type AdcmMappingComponent,
+  type AdcmMappingComponentService,
+  type HostId,
 } from '@models/adcm';
-import type { DisabledComponentsMappings } from '@pages/cluster/ClusterMapping/ClusterMapping.types';
+import type {
+  ComponentAvailabilityErrors,
+  DisabledComponentsMappings,
+} from '@pages/cluster/ClusterMapping/ClusterMapping.types';
 
 export const getComponentMapActions = (
   actionDetails: AdcmDynamicActionDetails,
@@ -35,4 +40,31 @@ export const getDisabledMappings = (mapping: AdcmMapping[]) => {
   }
 
   return result;
+};
+
+export const checkComponentActionsMappingAvailability = (
+  component: AdcmMappingComponent,
+  allowActions: Set<AdcmHostComponentMapRuleAction>,
+): ComponentAvailabilityErrors => {
+  const result: ComponentAvailabilityErrors = {};
+
+  result.componentNotAvailableError =
+    allowActions.size === 0 ? 'Mapping is not allowed in action configuration' : result.componentNotAvailableError;
+  result.addingHostsNotAllowedError = !allowActions.has(AdcmHostComponentMapRuleAction.Add)
+    ? 'Adding hosts is not allowed in the action configuration'
+    : undefined;
+  result.removingHostsNotAllowedError = !allowActions.has(AdcmHostComponentMapRuleAction.Remove)
+    ? 'Removing hosts is not allowed in the action configuration'
+    : undefined;
+
+  return result;
+};
+
+export const checkHostActionsMappingAvailability = (
+  host: AdcmHostShortView,
+  allowActions: Set<AdcmHostComponentMapRuleAction>,
+  disabledHosts: Set<HostId> = new Set(),
+): string | undefined => {
+  const isDisabled = !allowActions.has(AdcmHostComponentMapRuleAction.Remove) && disabledHosts.has(host.id);
+  return isDisabled ? 'Removing host is not allowed in the action configuration' : undefined;
 };

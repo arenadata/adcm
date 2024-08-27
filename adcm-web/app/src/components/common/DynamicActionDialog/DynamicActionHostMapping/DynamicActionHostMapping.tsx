@@ -1,14 +1,20 @@
 import React, { useEffect, useMemo } from 'react';
 import { useDispatch, useStore } from '@hooks';
 import { Button, ButtonGroup, SearchInput, SpinnerPanel, ToolbarPanel } from '@uikit';
-import { DynamicActionCommonOptions } from '@commonComponents/DynamicActionDialog/DynamicAction.types';
+import type { DynamicActionCommonOptions } from '@commonComponents/DynamicActionDialog/DynamicAction.types';
 import s from '@commonComponents/DynamicActionDialog/DynamicActionDialog.module.scss';
 import { useClusterMapping } from '@pages/cluster/ClusterMapping/useClusterMapping';
 import ComponentContainer from '@pages/cluster/ClusterMapping/ComponentsMapping/ComponentContainer/ComponentContainer';
 import { getMappings } from '@store/adcm/clusters/clustersDynamicActionsSlice';
-import { getComponentMapActions, getDisabledMappings } from './DynamicActionHostMapping.utils';
+import {
+  checkComponentActionsMappingAvailability,
+  checkHostActionsMappingAvailability,
+  getComponentMapActions,
+  getDisabledMappings,
+} from './DynamicActionHostMapping.utils';
 import { Link } from 'react-router-dom';
 import { LoadState } from '@models/loadState';
+import type { AdcmHostShortView, AdcmMappingComponent } from '@models/adcm';
 
 interface DynamicActionHostMappingProps extends DynamicActionCommonOptions {
   submitLabel?: string;
@@ -92,17 +98,29 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
               const allowActions = getComponentMapActions(actionDetails, service, componentMapping.component);
               const componentMappingErrors = mappingErrors[componentMapping.component.id];
 
+              const checkComponentMappingAvailability = (component: AdcmMappingComponent) => {
+                return checkComponentActionsMappingAvailability(component, allowActions);
+              };
+
+              const checkHostMappingAvailability = (host: AdcmHostShortView) => {
+                return checkHostActionsMappingAvailability(
+                  host,
+                  allowActions,
+                  disabledMappings[componentMapping.component.id],
+                );
+              };
+
               return (
                 <ComponentContainer
                   key={componentMapping.component.id}
                   componentMapping={componentMapping}
                   filter={mappingFilter}
                   allHosts={hosts}
-                  disabledHosts={disabledMappings[componentMapping.component.id]}
                   mappingErrors={componentMappingErrors}
                   onMap={handleMapHostsToComponent}
                   onUnmap={handleUnmap}
-                  allowActions={allowActions}
+                  checkComponentMappingAvailability={checkComponentMappingAvailability}
+                  checkHostMappingAvailability={checkHostMappingAvailability}
                 />
               );
             }),
