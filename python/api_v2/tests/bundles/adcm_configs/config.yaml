@@ -100,32 +100,6 @@
           default: 5
           min: 1
           max: 100
-    - name: "logrotate"
-      display_name: "Nginx Server Logrotate"
-      type: "group"
-      activatable: true
-      ui_options:
-        invisible: true
-      subs:
-        - name: size
-          display_name: "Max file size"
-          description: |
-            Specifies the allowed size the log file can reach before it is archived
-          type: string
-          default: 10M
-        - name: max_history
-          display_name: "Max files history"
-          description: |
-            Controls the maximum number of archive files to keep
-          type: integer
-          default: 10
-          min: 1
-        - name: compress
-          display_name: "Enable compression"
-          description: |
-            Compress the rotated files
-          type: boolean
-          default: false
     - name: "config_rotation"
       display_name: "Configuration rotation"
       description: |
