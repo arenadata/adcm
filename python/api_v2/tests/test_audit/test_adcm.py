@@ -41,7 +41,6 @@ class TestADCMAudit(BaseAPITestCase):
                 "global": {"adcm_url": "http://127.0.0.1:8000", "verification_public_key": "\n"},
                 "google_oauth": {"client_id": None, "secret": None},
                 "yandex_oauth": {"client_id": None, "secret": None},
-                "logrotate": {"size": "10M", "max_history": 10, "compress": False},
                 "audit_data_retention": {
                     "log_rotation_on_fs": 365,
                     "log_rotation_in_db": 365,
@@ -74,7 +73,6 @@ class TestADCMAudit(BaseAPITestCase):
                 },
             },
             "adcmMeta": {
-                "/logrotate": {"isActive": False},
                 "/ldap_integration": {"isActive": False},
                 "/statistics_collection": {"isActive": False},
             },

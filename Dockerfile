@@ -13,7 +13,6 @@ RUN apk update && \
         libffi \
         libstdc++ \
         libxslt \
-        logrotate \
         musl-dev \
         nginx \
         openldap-dev \
