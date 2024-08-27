@@ -137,13 +137,29 @@ class TestConcernsResponse(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response: Response = self.client.v2[cluster].get()
-
         self.assertEqual(response.status_code, HTTP_200_OK)
-        data = response.json()
-        self.assertEqual(len(data["concerns"]), 1)
-        concern, *_ = data["concerns"]
-        self.assertEqual(concern["type"], "flag")
-        self.assertDictEqual(concern["reason"], expected_concern_reason)
+
+        with self.subTest("Absent on state = 'created'"):
+            data = response.json()
+            self.assertEqual(len(data["concerns"]), 0)
+
+        cluster.state = "notcreated"
+        cluster.save(update_fields=["state"])
+
+        response: Response = self.client.v2[cluster, "configs"].post(
+            data={"config": {"string": "new_string"}, "adcmMeta": {}, "description": ""},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        response: Response = self.client.v2[cluster].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        with self.subTest("Present on another state"):
+            data = response.json()
+            self.assertEqual(len(data["concerns"]), 1)
+            concern, *_ = data["concerns"]
+            self.assertEqual(concern["type"], "flag")
+            self.assertDictEqual(concern["reason"], expected_concern_reason)
 
     def test_service_requirements(self):
         cluster = self.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")
