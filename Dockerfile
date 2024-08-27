@@ -24,8 +24,7 @@ RUN apk update && \
         sshpass && \
     curl -sSL https://install.python-poetry.org | python -
 ENV PATH="/root/.local/bin:$PATH"
-COPY pyproject.toml /adcm/
-COPY poetry.lock /adcm/
+COPY pyproject.toml poetry.lock /adcm/
 RUN python -m venv /adcm/venv/2.9 && \
     poetry config virtualenvs.create false && \
     poetry -C /adcm install --no-root && \
