@@ -82,7 +82,6 @@ from cm.services.concern.checks import (
 )
 from cm.services.concern.distribution import distribute_concern_on_related_objects, redistribute_issues_and_flags
 from cm.services.concern.flags import BuiltInFlag, raise_flag
-from cm.services.concern.flags import BuiltInFlag, raise_flag, update_hierarchy
 from cm.services.concern.locks import get_lock_on_object
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import (

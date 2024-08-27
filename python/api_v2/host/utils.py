@@ -20,8 +20,8 @@ from cm.issue import (
 )
 from cm.logger import logger
 from cm.models import Cluster, Host, HostProvider, ObjectType, Prototype
-from cm.services.concern.locks import get_lock_on_object
 from cm.services.concern import retrieve_issue
+from cm.services.concern.locks import get_lock_on_object
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import reset_hc_map
 from core.types import ADCMCoreType, CoreObjectDescriptor
