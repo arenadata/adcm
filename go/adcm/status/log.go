@@ -179,6 +179,11 @@ func (w *fileWriter) ReopenLogFile() {
 func GetLogLevel() string {
 	const defaultLogLevel = "ERROR"
 
+	priorityLogLevel, ok := os.LookupEnv("STATUS_LOG_LEVEL")
+	if ok {
+		return priorityLogLevel
+	}
+
 	logLevel, ok := os.LookupEnv("LOG_LEVEL")
 	if !ok {
 		return defaultLogLevel

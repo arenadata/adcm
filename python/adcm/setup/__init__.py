@@ -1,4 +1,3 @@
-#!/bin/sh
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,20 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-. /etc/adcmenv
-
-waitforwsgi
-
-if [ -z "$MIGRATION_MODE" ] || [ "$MIGRATION_MODE" -ne 1 ]; then
-    echo "Run Nginx ..."
-
-    exec 1>"${adcmlog}/nginx/service_nginx.out"
-    exec 2>"${adcmlog}/nginx/service_nginx.err"
-
-    # Cleanup tmp dir during restart of nginx.
-    # That dir is for uploading bundles cache.
-    # This is for old existing installations
-    rm -rf  ${adcmtmp}/nginx_client_temp || true
-    exec /usr/sbin/nginx -c /etc/nginx/nginx.conf  -g "daemon off;"
-fi
