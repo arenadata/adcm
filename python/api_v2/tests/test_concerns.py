@@ -491,6 +491,10 @@ class TestConcernRedistribution(BaseAPITestCase):
             )
         }
 
+        # so flag autogen will work
+        self.provider.state = "changed"
+        self.provider.save(update_fields=["state"])
+
     def repr_concerns(self, concerns: Iterable[ConcernItem]) -> str:
         return "\n".join(
             f"  {i}. {rec}"
@@ -887,6 +891,13 @@ class TestConcernRedistribution(BaseAPITestCase):
         provider_concern = self.provider.get_own_issue(ConcernCause.CONFIG)
         another_provider_concern = another_provider.get_own_issue(ConcernCause.CONFIG)
 
+        # update states, so flag autogeneration will work as expected
+        Host.objects.all().update(state="something")
+        HostProvider.objects.all().update(state="something")
+        Cluster.objects.all().update(state="something")
+        ClusterObject.objects.all().update(state="something")
+        ServiceComponent.objects.all().update(state="something")
+
         expected_concerns = {}
 
         def _update_expected_concerns():
@@ -1194,6 +1205,8 @@ class TestConcernRedistribution(BaseAPITestCase):
         self.assertIsNotNone(self.provider.get_own_issue(ConcernCause.CONFIG))
 
         #  host config issue resolved, provider remains
+        host.state = "changed"
+        host.save(update_fields=["state"])
         self.change_config_via_api(host)
 
         self.assertIsNotNone(self.provider.get_own_issue(ConcernCause.CONFIG))
@@ -1214,6 +1227,8 @@ class TestConcernRedistribution(BaseAPITestCase):
 
     def test_two_hosts_config_issue_one_resolved(self):
         host_1 = self.add_host_via_api(self.provider, fqdn="host1")
+        host_1.state = "changed"
+        host_1.save(update_fields=["state"])
         host_2 = self.add_host_via_api(self.provider, fqdn="host2")
 
         host_1_config_issue = host_1.get_own_issue(ConcernCause.CONFIG)
