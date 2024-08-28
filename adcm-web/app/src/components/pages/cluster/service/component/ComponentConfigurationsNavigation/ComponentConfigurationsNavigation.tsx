@@ -10,7 +10,7 @@ const ComponentConfigurationsNavigation: React.FC = () => {
         <TabsBlock variant="secondary" dataTest="tab-container-components">
           <Tab to="primary-configuration">Primary configuration</Tab>
           <Tab to="configuration-groups">Configuration groups</Tab>
-          <Tab to="action-hosts-groups">Action hosts groups</Tab>
+          <Tab to="action-hosts-groups">Action host groups</Tab>
         </TabsBlock>
       </SubNavigationWrapper>
       <Outlet />

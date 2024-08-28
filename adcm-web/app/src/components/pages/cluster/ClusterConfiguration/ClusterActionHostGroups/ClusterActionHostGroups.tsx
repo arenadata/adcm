@@ -24,7 +24,7 @@ const ClusterActionHostGroups = () => {
           { href: '/clusters', label: 'Clusters' },
           { href: `/clusters/${cluster.id}`, label: cluster.name },
           { href: `/clusters/${cluster.id}/configuration`, label: 'Configuration' },
-          { label: 'Action hosts groups' },
+          { label: 'Action host groups' },
         ]),
       );
     }

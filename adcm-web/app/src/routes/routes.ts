@@ -154,7 +154,7 @@ const routes: RoutesConfigs = {
         label: ':serviceId',
       },
       {
-        label: 'Action hosts groups',
+        label: 'Action host groups',
       },
     ],
   },
@@ -274,7 +274,7 @@ const routes: RoutesConfigs = {
         label: ':componentId',
       },
       {
-        label: 'Action hosts groups',
+        label: 'Action host groups',
       },
     ],
   },
@@ -465,7 +465,7 @@ const routes: RoutesConfigs = {
         label: 'Configuration',
       },
       {
-        label: 'Action hosts groups',
+        label: 'Action host groups',
       },
     ],
   },

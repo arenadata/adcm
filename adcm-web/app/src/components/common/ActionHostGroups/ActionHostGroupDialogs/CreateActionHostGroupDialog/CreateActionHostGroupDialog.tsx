@@ -35,7 +35,7 @@ const CreateActionHostGroupDialog = ({
 
   return (
     <Dialog
-      title="Create action hosts group"
+      title="Create action host group"
       actionButtonLabel="Create"
       isOpen={isOpen}
       onOpenChange={onClose}

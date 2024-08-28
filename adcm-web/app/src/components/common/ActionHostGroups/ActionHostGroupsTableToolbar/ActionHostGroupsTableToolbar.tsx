@@ -10,7 +10,7 @@ const ActionHostGroupsTableToolbar = ({ onOpenCreateDialog, ...filterProps }: Ac
   <TableToolbar>
     <ActionHostGroupsTableFilters {...filterProps} />
     <ButtonGroup>
-      <Button onClick={onOpenCreateDialog}>Create action hosts group</Button>
+      <Button onClick={onOpenCreateDialog}>Create action host group</Button>
     </ButtonGroup>
   </TableToolbar>
 );
