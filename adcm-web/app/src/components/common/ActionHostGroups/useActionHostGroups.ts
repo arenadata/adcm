@@ -25,9 +25,15 @@ import type { DynamicActionDialogProps } from '@commonComponents/DynamicActionDi
 import type { EditActionHostGroupDialogProps } from './ActionHostGroupDialogs/EditActionHostGroupDialog/EditActionHostGroupDialog';
 import type { DeleteActionHostGroupDialogProps } from '@commonComponents/ActionHostGroups/ActionHostGroupDialogs/DeleteActionHostGroupDialog/DeleteActionHostGroupDialog';
 import type { ActionHostGroupOwner, EntityArgs } from '@store/adcm/entityActionHostGroups/actionHostGroups.types';
-import type { AdcmActionHostGroup, AdcmActionHostGroupsFilter, AdcmDynamicActionRunConfig } from '@models/adcm';
+import type {
+  AdcmActionHostGroup,
+  AdcmActionHostGroupsFilter,
+  AdcmConcerns,
+  AdcmDynamicActionRunConfig,
+} from '@models/adcm';
 import { useRequestActionHostGroups } from './useRequestActionHostGroups';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
+import { isBlockingConcernPresent } from '@utils/concernUtils';
 
 type UseActionHostGroupsResult<T extends ActionHostGroupOwner> = {
   entityArgs: EntityArgs<T>;
@@ -42,6 +48,7 @@ type UseActionHostGroupsResult<T extends ActionHostGroupOwner> = {
 export const useActionHostGroups = <T extends ActionHostGroupOwner>(
   entityType: T,
   entityArgs: EntityArgs<T>,
+  parentConcerns: AdcmConcerns[] = [],
 ): UseActionHostGroupsResult<T> => {
   const dispatch = useDispatch();
 
@@ -169,6 +176,8 @@ export const useActionHostGroups = <T extends ActionHostGroupOwner>(
       onOpenCreateDialog: handleOpenCreateDialog,
     },
     tableProps: {
+      // if parent entity has a concerns then we should block dynamic actions for action host groups
+      isDynamicActionsDisabled: isBlockingConcernPresent(parentConcerns),
       actionHostGroups,
       dynamicActions,
       isLoading: isActionHostGroupsLoading,
