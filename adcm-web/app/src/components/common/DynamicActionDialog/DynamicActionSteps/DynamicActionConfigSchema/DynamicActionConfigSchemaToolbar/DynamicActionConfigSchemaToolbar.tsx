@@ -1,21 +1,18 @@
 import React from 'react';
-import s from '@commonComponents/DynamicActionDialog/DynamicActionDialog.module.scss';
-import { Button, ButtonGroup, SearchInput, Switch } from '@uikit';
-import ToolbarPanel from '@uikit/ToolbarPanel/ToolbarPanel';
+import { Button, ButtonGroup, SearchInput, Switch, ToolbarPanel } from '@uikit';
 import { useConfigurationFormContext } from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContext.context';
+import s from '@commonComponents/DynamicActionDialog/DynamicActionDialog.module.scss';
 
 interface DynamicActionConfigSchemaToolbarProps {
-  onSubmit: () => void;
+  onNext: () => void;
   onCancel: () => void;
   onReset: () => void;
-  submitLabel: string;
 }
 
 const DynamicActionConfigSchemaToolbar: React.FC<DynamicActionConfigSchemaToolbarProps> = ({
   onReset,
-  onSubmit,
+  onNext,
   onCancel,
-  submitLabel,
 }) => {
   const { filter, onFilterChange, isValid, areExpandedAll, handleChangeExpandedAll } = useConfigurationFormContext();
 
@@ -39,8 +36,8 @@ const DynamicActionConfigSchemaToolbar: React.FC<DynamicActionConfigSchemaToolba
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
-        <Button onClick={onSubmit} hasError={!isValid} disabled={!isValid}>
-          {submitLabel}
+        <Button onClick={onNext} hasError={!isValid} disabled={!isValid}>
+          Next
         </Button>
       </ButtonGroup>
     </ToolbarPanel>

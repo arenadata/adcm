@@ -37,7 +37,7 @@ export class AdcmClusterServiceActionHostGroupsApi {
   public static async getActionHostGroup(args: GetAdcmServiceActionHostGroupArgs) {
     const { clusterId, serviceId, actionHostGroupId } = args;
     const response = await httpClient.get<AdcmActionHostGroup>(
-      `/api/v2/clusters/${clusterId}/serviceId/${serviceId}/action-host-groups/${actionHostGroupId}/`,
+      `/api/v2/clusters/${clusterId}/services/${serviceId}/action-host-groups/${actionHostGroupId}/`,
     );
 
     return response.data;
