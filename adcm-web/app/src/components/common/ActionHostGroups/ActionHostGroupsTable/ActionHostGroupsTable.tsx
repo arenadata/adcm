@@ -9,6 +9,9 @@ import ExpandDetailsCell from '@commonComponents/ExpandDetailsCell/ExpandDetails
 import ActionHostGroupTableFooter from '../ActionHostGroupTableFooter/ActionHostGroupFooter';
 
 export interface ActionHostGroupsTableProps {
+  // action host group not independent entity
+  // is parent entity have some concerns then we can't run dynamic actions on actions groups
+  isDynamicActionsDisabled: boolean;
   actionHostGroups: AdcmActionHostGroup[];
   dynamicActions: EntitiesDynamicActions;
   isLoading: boolean;
@@ -20,6 +23,7 @@ export interface ActionHostGroupsTableProps {
 const ActionHostGroupsTable = ({
   actionHostGroups,
   dynamicActions,
+  isDynamicActionsDisabled,
   isLoading,
   onOpenDynamicActionDialog,
   onOpenEditDialog,
@@ -53,6 +57,7 @@ const ActionHostGroupsTable = ({
               </ExpandDetailsCell>
               <TableCell hasIconOnly align="center">
                 <ActionHostGroupDynamicActionsIconButton
+                  isDisabled={isDynamicActionsDisabled}
                   dynamicActions={dynamicActions[actionHostGroup.id]}
                   onActionSelect={(actionId: number) => onOpenDynamicActionDialog(actionHostGroup, actionId)}
                 />
