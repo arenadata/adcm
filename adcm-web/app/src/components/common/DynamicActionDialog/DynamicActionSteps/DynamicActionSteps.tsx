@@ -1,39 +1,42 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import WizardSteps from '@uikit/WizardSteps/WizardSteps';
-import DynamicActionConfigSchema from '@commonComponents/DynamicActionDialog/DynamicActionConfigSchema/DynamicActionConfigSchema';
-import {
-  DynamicActionCommonOptions,
-  DynamicActionType,
-} from '@commonComponents/DynamicActionDialog/DynamicAction.types';
-import DynamicActionHostMapping from '@commonComponents/DynamicActionDialog/DynamicActionHostMapping/DynamicActionHostMapping';
-import { AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
-import s from '../DynamicActionDialog.module.scss';
+import { DynamicActionStep } from '../DynamicAction.types';
+import DynamicActionConfigSchema from './DynamicActionConfigSchema/DynamicActionConfigSchema';
+import DynamicActionAgreeActionHostsGroup from './DynamicActionAgreeActionHostsGroup/DynamicActionAgreeActionHostsGroup';
+import DynamicActionHostMapping from './DynamicActionHostMapping/DynamicActionHostMapping';
+import type { AdcmActionHostGroup, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm';
 import { getNextStep, isLastStep } from '@uikit/WizardSteps/WizardSteps.utils';
+import DynamicActionConfirm from './DynamicActionConfirm/DynamicActionConfirm';
+import { getDefaultRunConfig } from '../DynamicActionDialog.utils';
+import s from '../DynamicActionDialog.module.scss';
 
-const stepsTitles: Record<DynamicActionType, string> = {
-  [DynamicActionType.ConfigSchema]: 'Configuration',
-  [DynamicActionType.HostComponentMapping]: 'Host - Component',
-  [DynamicActionType.Confirm]: 'Confirm',
+const stepsTitles: Record<DynamicActionStep, string> = {
+  [DynamicActionStep.AgreeActionHostsGroup]: 'Hosts group',
+  [DynamicActionStep.ConfigSchema]: 'Configuration',
+  [DynamicActionStep.HostComponentMapping]: 'Host - Component',
+  [DynamicActionStep.Confirm]: 'Confirm',
 };
 
-interface DynamicActionsStepsProps extends DynamicActionCommonOptions {
+interface DynamicActionsStepsProps {
   clusterId: number | null;
-  actionSteps: DynamicActionType[];
+  actionDetails: AdcmDynamicActionDetails;
+  actionHostGroup?: AdcmActionHostGroup;
+  actionSteps: DynamicActionStep[];
+  onSubmit: (runConfig: AdcmDynamicActionRunConfig) => void;
+  onCancel: () => void;
 }
 
-const DynamicActionSteps: React.FC<DynamicActionsStepsProps> = ({
+const DynamicActionSteps = ({
   actionDetails,
+  actionHostGroup,
   onSubmit,
   onCancel,
   clusterId,
   actionSteps,
-}) => {
-  const [localActionRunConfig, setLocalActionRunConfig] = useState<Partial<AdcmDynamicActionRunConfig>>(() => {
-    return {
-      configuration: null,
-      hostComponentMap: [],
-    };
-  });
+}: DynamicActionsStepsProps) => {
+  const [localActionRunConfig, setLocalActionRunConfig] = useState<AdcmDynamicActionRunConfig>(() =>
+    getDefaultRunConfig(),
+  );
 
   const [currentStep, setCurrentStep] = useState<string>(actionSteps[0]);
 
@@ -44,12 +47,11 @@ const DynamicActionSteps: React.FC<DynamicActionsStepsProps> = ({
     }));
   }, [actionSteps]);
 
-  const handleSubmit = (data: Partial<AdcmDynamicActionRunConfig>) => {
+  const handleStepChange = (data: Partial<AdcmDynamicActionRunConfig>) => {
     const newActionRunConfig = { ...localActionRunConfig, ...data };
     setLocalActionRunConfig(newActionRunConfig);
 
     if (isLastStep(currentStep, wizardStepsOptions)) {
-      // if submit of last step - call full submit
       onSubmit(newActionRunConfig);
     } else {
       setCurrentStep(getNextStep(currentStep, wizardStepsOptions));
@@ -68,22 +70,31 @@ const DynamicActionSteps: React.FC<DynamicActionsStepsProps> = ({
           className={s.dynamicActionDialog__tabs}
         />
       )}
-      {currentStep === DynamicActionType.ConfigSchema && (
+      {currentStep === DynamicActionStep.AgreeActionHostsGroup && actionHostGroup && (
+        <DynamicActionAgreeActionHostsGroup
+          actionHostGroup={actionHostGroup}
+          onNext={handleStepChange}
+          onCancel={onCancel}
+        />
+      )}
+      {currentStep === DynamicActionStep.ConfigSchema && (
         <DynamicActionConfigSchema
           actionDetails={actionDetails}
-          onSubmit={handleSubmit}
+          onNext={handleStepChange}
           onCancel={onCancel}
-          submitLabel={isFewSteps ? 'Next' : 'Run'}
           configuration={localActionRunConfig.configuration}
         />
       )}
-      {currentStep === DynamicActionType.HostComponentMapping && clusterId && (
+      {currentStep === DynamicActionStep.HostComponentMapping && clusterId && (
         <DynamicActionHostMapping
           clusterId={clusterId}
           actionDetails={actionDetails}
-          onSubmit={handleSubmit}
+          onNext={handleStepChange}
           onCancel={onCancel}
         />
+      )}
+      {currentStep === DynamicActionStep.Confirm && (
+        <DynamicActionConfirm actionDetails={actionDetails} onRun={handleStepChange} onCancel={onCancel} />
       )}
     </div>
   );

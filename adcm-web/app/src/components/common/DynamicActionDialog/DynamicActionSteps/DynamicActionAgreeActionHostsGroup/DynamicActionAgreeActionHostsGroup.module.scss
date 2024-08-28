@@ -1,0 +1,36 @@
+:global {
+  body.theme-dark {
+    --hosts-border: var(--color-xdark);
+  }
+
+  body.theme-light {
+    --hosts-border: var(--alert-border-success);
+  }
+}
+
+.dynamicActionAgreeActionHostsGroup {
+  display: flex;
+  flex-direction: column;
+
+  &__filter {
+    display: flex;
+    gap: 12px;
+  }
+
+  &__dynamicActionAgreeActionHostsGroup__content {
+    flex: 1;
+  }
+
+  &__hosts {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 20px;
+    max-height: 272px;
+
+    border-radius: 8px;
+    border: 1px solid var(--hosts-border);
+  }
+}

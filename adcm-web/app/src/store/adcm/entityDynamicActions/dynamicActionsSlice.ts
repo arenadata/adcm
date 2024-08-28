@@ -3,7 +3,7 @@ import { createAsyncThunk } from '@store/redux';
 import { RequestError } from '@api';
 import { fulfilledFilter } from '@utils/promiseUtils';
 import { showError, showSuccess } from '@store/notificationsSlice';
-import type { AdcmDynamicActionDetails, EntitiesDynamicActions } from '@models/adcm/dynamicAction';
+import type { AdcmActionHostGroup, AdcmDynamicActionDetails, EntitiesDynamicActions } from '@models/adcm';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { ActionStatuses } from '@constants';
 import { services } from '@store/adcm/entityActionHostGroups/actionHostGroupsSlice.constants';
@@ -56,8 +56,9 @@ const openDynamicActionDialog = createAsyncThunk(
     try {
       const service = services[entityType];
       const actionDetails = await service.getActionHostGroupAction({ ...entityArgs, actionHostGroupId, actionId });
+      const actionHostGroup = await service.getActionHostGroup({ ...entityArgs, actionHostGroupId });
 
-      return actionDetails;
+      return { actionDetails, actionHostGroup };
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(null);
@@ -92,13 +93,13 @@ const runDynamicAction = createAsyncThunk(
 );
 
 type AdcmDynamicActionsState = {
-  actionHostGroupId: number | null;
+  actionHostGroup: AdcmActionHostGroup | null;
   actionDetails: AdcmDynamicActionDetails | null;
   dynamicActions: EntitiesDynamicActions;
 };
 
 const createInitialState = (): AdcmDynamicActionsState => ({
-  actionHostGroupId: null,
+  actionHostGroup: null,
   actionDetails: null,
   dynamicActions: {},
 });
@@ -112,7 +113,7 @@ const dynamicActionsSlice = createSlice({
     },
     closeDynamicActionDialog(state) {
       state.actionDetails = null;
-      state.actionHostGroupId = null;
+      state.actionHostGroup = null;
     },
   },
   extraReducers: (builder) => {
@@ -123,18 +124,19 @@ const dynamicActionsSlice = createSlice({
       state.dynamicActions = [];
     });
     builder.addCase(openDynamicActionDialog.fulfilled, (state, action) => {
+      const { actionDetails, actionHostGroup } = action.payload;
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      state.actionDetails = action.payload;
-      state.actionHostGroupId = action.meta.arg.actionHostGroupId;
+      state.actionDetails = actionDetails;
+      state.actionHostGroup = actionHostGroup;
     });
     builder.addCase(openDynamicActionDialog.rejected, (state) => {
       state.actionDetails = null;
-      state.actionHostGroupId = null;
+      state.actionHostGroup = null;
     });
     builder.addCase(runDynamicAction.pending, (state) => {
       state.actionDetails = null;
-      state.actionHostGroupId = null;
+      state.actionHostGroup = null;
     });
   },
 });

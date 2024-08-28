@@ -1,35 +1,44 @@
-import { DynamicActionType } from '@commonComponents/DynamicActionDialog/DynamicAction.types';
-import { AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
-import { AdcmConfiguration, ConfigurationData } from '@models/adcm';
+import { DynamicActionStep } from '@commonComponents/DynamicActionDialog/DynamicAction.types';
+import type {
+  AdcmActionHostGroup,
+  AdcmConfiguration,
+  ConfigurationData,
+  AdcmDynamicActionDetails,
+  AdcmDynamicActionRunConfig,
+} from '@models/adcm';
 import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
 
-export const getDynamicActionTypes = (actionDetails: AdcmDynamicActionDetails): DynamicActionType[] => {
-  const res = [] as DynamicActionType[];
+export const getDynamicActionSteps = (
+  actionDetails: AdcmDynamicActionDetails,
+  actionHostsGroup: AdcmActionHostGroup | undefined,
+): DynamicActionStep[] => {
+  const steps = [] as DynamicActionStep[];
+
+  if (actionHostsGroup) {
+    steps.push(DynamicActionStep.AgreeActionHostsGroup);
+  }
+
   if (actionDetails.configuration !== null) {
-    res.push(DynamicActionType.ConfigSchema);
+    steps.push(DynamicActionStep.ConfigSchema);
   }
 
   if (actionDetails.hostComponentMapRules.length > 0) {
-    res.push(DynamicActionType.HostComponentMapping);
+    steps.push(DynamicActionStep.HostComponentMapping);
   }
 
-  if (res.length > 0) {
-    return res;
-  }
-
-  // fallback for standard message 'Are you sure?'
-  return [DynamicActionType.Confirm];
+  steps.push(DynamicActionStep.Confirm);
+  return steps;
 };
 
-export const getDefaultHostMappingRunConfig = (): Pick<AdcmDynamicActionRunConfig, 'hostComponentMap'> => ({
+const getDefaultHostMappingRunConfig = (): Pick<AdcmDynamicActionRunConfig, 'hostComponentMap'> => ({
   hostComponentMap: [],
 });
 
-export const getDefaultConfigurationRunConfig = (): Pick<AdcmDynamicActionRunConfig, 'configuration'> => ({
+const getDefaultConfigurationRunConfig = (): Pick<AdcmDynamicActionRunConfig, 'configuration'> => ({
   configuration: null,
 });
 
-export const getDefaultVerboseRunConfig = (): Pick<AdcmDynamicActionRunConfig, 'isVerbose'> => ({
+const getDefaultVerboseRunConfig = (): Pick<AdcmDynamicActionRunConfig, 'isVerbose'> => ({
   isVerbose: false,
 });
 

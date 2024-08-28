@@ -50,8 +50,8 @@ export const useActionHostGroups = <T extends ActionHostGroupOwner>(
   const isActionHostGroupsLoading = useStore(({ adcm }) => isShowSpinner(adcm.actionHostGroups.loadState));
   const actionHostGroups = useStore(({ adcm }) => adcm.actionHostGroups.actionHostGroups);
 
-  const runnableActionHostGroupId = useStore(({ adcm }) => adcm.dynamicActions.actionHostGroupId);
   const dynamicActions = useStore(({ adcm }) => adcm.dynamicActions.dynamicActions);
+  const runnableActionHostGroup = useStore(({ adcm }) => adcm.dynamicActions.actionHostGroup);
   const dynamicActionDetails = useStore(({ adcm }) => adcm.dynamicActions.actionDetails);
 
   const isCreateDialogOpen = useStore(({ adcm }) => adcm.actionHostGroupsActions.createDialog.isOpen);
@@ -96,15 +96,17 @@ export const useActionHostGroups = <T extends ActionHostGroupOwner>(
   };
 
   const handleSubmitDynamicAction = (actionRunConfig: AdcmDynamicActionRunConfig) => {
-    dispatch(
-      runDynamicAction({
-        entityType,
-        entityArgs,
-        actionHostGroupId: runnableActionHostGroupId!,
-        actionId: dynamicActionDetails!.id,
-        actionRunConfig,
-      }),
-    );
+    if (runnableActionHostGroup && dynamicActionDetails) {
+      dispatch(
+        runDynamicAction({
+          entityType,
+          entityArgs,
+          actionHostGroupId: runnableActionHostGroup.id,
+          actionId: dynamicActionDetails.id,
+          actionRunConfig,
+        }),
+      );
+    }
   };
 
   const handleCloseDynamicActionDialog = () => {
@@ -185,6 +187,7 @@ export const useActionHostGroups = <T extends ActionHostGroupOwner>(
     dynamicActionDialogProps: dynamicActionDetails
       ? {
           actionDetails: dynamicActionDetails,
+          actionHostGroup: runnableActionHostGroup ?? undefined,
           clusterId: entityArgs.clusterId,
           onSubmit: handleSubmitDynamicAction,
           onCancel: handleCloseDynamicActionDialog,

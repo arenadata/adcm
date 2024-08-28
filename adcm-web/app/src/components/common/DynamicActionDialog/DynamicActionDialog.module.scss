@@ -1,13 +1,13 @@
 .dynamicActionDialog {
-  &__toolbar {
-    margin-bottom: 24px;
-  }
-
   &__tabs {
     margin-bottom: 24px;
   }
 
-  &__verbose {
-    margin-top: 32px;
+  &__toolbar {
+    margin-bottom: 24px;
+  }
+
+  &__footer {
+    margin-top: 24px;
   }
 }
