@@ -10,7 +10,7 @@ const ClusterConfigurationsNavigation: React.FC = () => {
           <Tab to="primary-configuration">Primary configuration</Tab>
           <Tab to="config-groups">Configuration groups</Tab>
           <Tab to="ansible-settings">Ansible settings</Tab>
-          <Tab to="action-hosts-groups">Action hosts groups</Tab>
+          <Tab to="action-hosts-groups">Action host groups</Tab>
         </TabsBlock>
       </SubNavigationWrapper>
     </>

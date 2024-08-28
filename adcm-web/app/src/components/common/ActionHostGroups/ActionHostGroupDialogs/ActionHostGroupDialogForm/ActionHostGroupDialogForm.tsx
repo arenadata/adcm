@@ -47,7 +47,7 @@ const ActionHostGroupDialogForm = ({
   return (
     <FormFieldsContainer className={s.actionHostGroupDialogForm}>
       <div className={s.actionHostGroupDialogForm__column}>
-        <FormField label="Action hosts group name" error={errors.name}>
+        <FormField label="Action host group name" error={errors.name}>
           {isCreateNew ? (
             <Input
               value={formData.name}

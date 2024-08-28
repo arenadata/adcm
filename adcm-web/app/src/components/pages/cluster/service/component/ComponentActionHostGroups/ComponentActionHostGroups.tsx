@@ -31,7 +31,7 @@ const ComponentActionHostGroups = () => {
             href: `/clusters/${cluster.id}/services/${service.id}/components/${component.id}`,
             label: component.displayName,
           },
-          { label: 'Action hosts groups' },
+          { label: 'Action host groups' },
         ]),
       );
     }

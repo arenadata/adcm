@@ -30,7 +30,7 @@ const EditActionHostGroupDialog = ({
 
   return (
     <Dialog
-      title="Edit action hosts group"
+      title="Edit action host group"
       actionButtonLabel="Save"
       isOpen={isOpen}
       onOpenChange={onClose}
