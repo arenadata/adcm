@@ -111,7 +111,7 @@ function App() {
                         element={<ServiceConfigGroupSingle />}
                       />
                       <Route
-                        path="/clusters/:clusterId/services/:serviceId/action-hosts-groups"
+                        path="/clusters/:clusterId/services/:serviceId/action-host-groups"
                         element={<ServiceActionHostGroups />}
                       />
                       <Route
@@ -132,7 +132,7 @@ function App() {
                           element={<ServiceComponentConfigurationGroups />}
                         />
                         <Route
-                          path="/clusters/:clusterId/services/:serviceId/components/:componentId/action-hosts-groups"
+                          path="/clusters/:clusterId/services/:serviceId/components/:componentId/action-host-groups"
                           element={<ComponentActionHostGroups />}
                         />
                         <Route
@@ -173,7 +173,7 @@ function App() {
                       element={<ClusterAnsibleSettings />}
                     />
                     <Route
-                      path="/clusters/:clusterId/configuration/action-hosts-groups"
+                      path="/clusters/:clusterId/configuration/action-host-groups"
                       element={<ClusterActionHostGroups />}
                     />
                   </Route>
