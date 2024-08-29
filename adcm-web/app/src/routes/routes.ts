@@ -134,7 +134,7 @@ const routes: RoutesConfigs = {
       },
     ],
   },
-  '/clusters/:clusterId/services/:serviceId/action-hosts-groups': {
+  '/clusters/:clusterId/services/:serviceId/action-host-groups': {
     pageTitle: 'Clusters',
     breadcrumbs: [
       {
@@ -246,7 +246,7 @@ const routes: RoutesConfigs = {
       },
     ],
   },
-  '/clusters/:clusterId/services/:serviceId/components/:componentId/action-hosts-groups': {
+  '/clusters/:clusterId/services/:serviceId/components/:componentId/action-host-groups': {
     pageTitle: 'Clusters',
     breadcrumbs: [
       {
@@ -450,7 +450,7 @@ const routes: RoutesConfigs = {
       },
     ],
   },
-  '/clusters/:clusterId/configuration/action-hosts-groups': {
+  '/clusters/:clusterId/configuration/action-host-groups': {
     pageTitle: 'Clusters',
     breadcrumbs: [
       {
