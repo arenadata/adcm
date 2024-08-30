@@ -8,9 +8,10 @@ export interface CodeEditorContentProps {
   children: HighlighterChildType;
   isReadonly?: boolean;
   onChange: (code: string) => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
 }
 
-const CodeEditorContent = ({ code, children, isReadonly, onChange }: CodeEditorContentProps) => {
+const CodeEditorContent = ({ code, children, isReadonly, onChange, onKeyDown }: CodeEditorContentProps) => {
   const [, childArray] = children;
   const rowCount = childArray.length || 1;
 
@@ -20,7 +21,13 @@ const CodeEditorContent = ({ code, children, isReadonly, onChange }: CodeEditorC
       <LinesWrapper
         children={childArray}
         subComponent={
-          <CodeEditorTextArea code={code} onChange={onChange} isReadonly={isReadonly} rowCount={rowCount} />
+          <CodeEditorTextArea
+            code={code}
+            isReadonly={isReadonly}
+            rowCount={rowCount}
+            onChange={onChange}
+            onKeyDown={onKeyDown}
+          />
         }
       />
     </div>

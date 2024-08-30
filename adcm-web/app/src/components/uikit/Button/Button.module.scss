@@ -126,7 +126,7 @@
   border: 2px solid var(--button-border);
   white-space: nowrap;
 
-  &:hover {
+  &:hover, &:focus {
     background: var(--button-background-hover);
     border-color: var(--button-border-hover);
     color: var(--button-color-hover);
