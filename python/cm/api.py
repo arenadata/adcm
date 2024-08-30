@@ -46,6 +46,7 @@ from cm.issue import (
 from cm.logger import logger
 from cm.models import (
     ADCM,
+    ActionHostGroup,
     ADCMEntity,
     AnsibleConfig,
     Cluster,
@@ -277,6 +278,8 @@ def remove_host_from_cluster(host: Host) -> Host:
         return raise_adcm_ex(code="HOST_CONFLICT", msg="It is forbidden to delete host from cluster in upgrade mode")
 
     with atomic():
+        # As the host is bounded to a certain cluster it is safe to delete all relations at once
+        ActionHostGroup.hosts.through.objects.filter(host_id=host.id).delete()
         host.maintenance_mode = MaintenanceMode.OFF
         host.cluster = None
         host.save()

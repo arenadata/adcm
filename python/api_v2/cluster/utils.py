@@ -11,7 +11,9 @@
 # limitations under the License.
 
 from collections import defaultdict
+from functools import reduce
 from itertools import chain
+from operator import or_
 from typing import Literal
 
 from cm.data_containers import (
@@ -33,6 +35,7 @@ from cm.issue import (
     update_issues_and_flags_after_deleting,
 )
 from cm.models import (
+    ActionHostGroup,
     Cluster,
     ClusterObject,
     GroupConfig,
@@ -43,11 +46,13 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.cluster import retrieve_clusters_topology
 from cm.services.concern.locks import get_lock_on_object
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import send_host_component_map_update_event
+from core.cluster.types import MovedHosts
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django.db.transaction import atomic, on_commit
 from rbac.models import Policy
 from rest_framework.status import HTTP_409_CONFLICT
@@ -255,6 +260,8 @@ def _check_mapping_data(mapping_data: MappingData) -> None:
 
 @atomic
 def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
+    original_topology = next(retrieve_clusters_topology(cluster_ids=(mapping_data.cluster.id,)))
+
     on_commit(func=reset_hc_map)
     on_commit(func=reset_objects_in_mm)
 
@@ -284,6 +291,10 @@ def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
     HostComponent.objects.filter(cluster_id=mapping_data.cluster.id).delete()
     HostComponent.objects.bulk_create(objs=mapping_objects)
 
+    updated_topology = next(retrieve_clusters_topology(cluster_ids=(mapping_data.cluster.id,)))
+
+    handle_mapping_action_host_groups(mapping_delta=original_topology - updated_topology)
+
     update_hierarchy_issues(obj=mapping_data.orm_objects["cluster"])
     for provider_id in {host.provider_id for host in mapping_data.hosts.values()}:
         update_hierarchy_issues(obj=mapping_data.orm_objects["providers"][provider_id])
@@ -309,6 +320,29 @@ def _handle_mapping_config_groups(mapping_data: MappingData) -> None:
         hosts__in=removed_mapping_host_ids,
     ).distinct():
         group_config.hosts.remove(*removed_hosts_not_in_mapping)
+
+
+def handle_mapping_action_host_groups(mapping_delta: MovedHosts) -> None:
+    select_predicates = []
+    for service_id, hosts in mapping_delta.services.items():
+        select_predicates.append(
+            Q(
+                host_id__in=hosts,
+                actionhostgroup__object_id=service_id,
+                actionhostgroup__object_type=ContentType.objects.get_for_model(ClusterObject),
+            )
+        )
+    for component_id, hosts in mapping_delta.components.items():
+        select_predicates.append(
+            Q(
+                host_id__in=hosts,
+                actionhostgroup__object_id=component_id,
+                actionhostgroup__object_type=ContentType.objects.get_for_model(ServiceComponent),
+            )
+        )
+
+    if len(select_predicates) > 0:
+        ActionHostGroup.hosts.through.objects.filter(reduce(or_, select_predicates)).delete()
 
 
 def _handle_mapping_policies(mapping_data: MappingData) -> None:

@@ -14,6 +14,8 @@ from enum import Enum
 from itertools import chain
 from typing import Generator, NamedTuple
 
+from typing_extensions import Self
+
 from core.types import ClusterID, ComponentID, HostID, ServiceID, ShortObjectInfo
 
 
@@ -41,6 +43,11 @@ class ServiceTopology(NamedTuple):
         return chain.from_iterable(component.hosts for component in self.components.values())
 
 
+class MovedHosts(NamedTuple):
+    services: dict[ServiceID, set[HostID]]
+    components: dict[ComponentID, set[HostID]]
+
+
 class ClusterTopology(NamedTuple):
     cluster_id: ClusterID
     services: dict[ServiceID, ServiceTopology]
@@ -49,6 +56,33 @@ class ClusterTopology(NamedTuple):
     @property
     def component_ids(self) -> Generator[ComponentID, None, None]:
         return chain.from_iterable(service.components for service in self.services.values())
+
+    def __sub__(self, previous: Self) -> MovedHosts:
+        """Returns unmapped hosts that were in the previous and removed from self"""
+        services_diff, components_diff = {}, {}
+        for service_id, service_topology in previous.services.items():
+            new_service_topology = self.services.get(service_id)
+            if not new_service_topology:
+                if host_diff := set(service_topology.host_ids):
+                    services_diff[service_id] = host_diff
+                continue
+
+            host_diff = set(new_service_topology.host_ids) - set(service_topology.host_ids)
+            if host_diff:
+                services_diff[service_id] = host_diff
+
+            for component_id, component_topology in service_topology.components.items():
+                new_component_topology = new_service_topology.components.get(component_id)
+                if not new_component_topology:
+                    if host_diff := set(service_topology.host_ids):
+                        components_diff[service_id] = host_diff
+                    continue
+
+                host_diff = set(new_component_topology.hosts) - set(component_topology.hosts)
+                if host_diff:
+                    components_diff[component_id] = host_diff
+
+        return MovedHosts(services=services_diff, components=components_diff)
 
 
 class ObjectMaintenanceModeState(Enum):
