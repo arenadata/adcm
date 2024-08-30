@@ -75,6 +75,7 @@ const AddConfigurationFieldDialog = ({
             fieldSchema={node.data.fieldSchema}
             isReadonly={false}
             onChange={handleValueChange}
+            onApply={handleApply}
           />
         ) : (
           <StringControl
@@ -83,6 +84,7 @@ const AddConfigurationFieldDialog = ({
             fieldSchema={node.data.fieldSchema}
             isReadonly={false}
             onChange={handleValueChange}
+            onApply={handleApply}
           />
         )}
       </div>

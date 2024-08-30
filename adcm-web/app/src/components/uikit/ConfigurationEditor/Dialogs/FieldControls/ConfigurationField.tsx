@@ -38,6 +38,7 @@ const ConfigurationField = ({
           title="Reset to default"
           tooltipProps={{ placement: 'bottom' }}
           onClick={handleResetToDefaultClick}
+          tabIndex={-1}
         />
       </div>
     </div>
