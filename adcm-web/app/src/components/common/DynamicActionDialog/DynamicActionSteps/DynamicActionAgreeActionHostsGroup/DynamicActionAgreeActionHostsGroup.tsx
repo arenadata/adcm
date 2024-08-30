@@ -48,7 +48,12 @@ const DynamicActionAgreeActionHostsGroup = ({
     <div className={s.dynamicActionAgreeActionHostsGroup}>
       <ToolbarPanel className={dialogStyles.dynamicActionDialog__toolbar}>
         <div className={s.dynamicActionAgreeActionHostsGroup__filter}>
-          <SearchInput value={hostNameFilter} onChange={handleHostNameFilterChange} />
+          <SearchInput
+            value={hostNameFilter}
+            placeholder="Search host name"
+            onChange={handleHostNameFilterChange}
+            className={cn(s.dynamicActionAgreeActionHostsGroup__filter, s.searchInput)}
+          />
           <Button variant="tertiary" iconLeft="g1-return" onClick={handleFilterReset} />
         </div>
         <ButtonGroup>

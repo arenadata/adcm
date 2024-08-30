@@ -15,6 +15,11 @@
   &__filter {
     display: flex;
     gap: 12px;
+    flex: 1;
+
+    .searchInput {
+      width: 100%;
+    }
   }
 
   &__dynamicActionAgreeActionHostsGroup__content {

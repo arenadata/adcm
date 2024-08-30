@@ -14,7 +14,7 @@ const stepsTitles: Record<DynamicActionStep, string> = {
   [DynamicActionStep.AgreeActionHostsGroup]: 'Hosts group',
   [DynamicActionStep.ConfigSchema]: 'Configuration',
   [DynamicActionStep.HostComponentMapping]: 'Host - Component',
-  [DynamicActionStep.Confirm]: 'Confirm',
+  [DynamicActionStep.Confirm]: 'Confirmation',
 };
 
 interface DynamicActionsStepsProps {
