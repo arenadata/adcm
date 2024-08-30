@@ -14,23 +14,6 @@ from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 from tempfile import gettempdir
 import fcntl
-import logging
-
-
-def configure_logging_from_file(filepath: Path | str):
-    if not Path(filepath).is_file():
-        print(f"File with loggers configuration is missing at {filepath}")
-        return
-
-    from django.conf import settings
-
-    logging.config.fileConfig(
-        filepath,
-        defaults={
-            "LOG_DIR": settings.LOG_DIR,
-            "LOG_LEVEL": settings.LOG_LEVEL,
-        },
-    )
 
 
 class LockingTimedRotatingFileHandler(TimedRotatingFileHandler):
