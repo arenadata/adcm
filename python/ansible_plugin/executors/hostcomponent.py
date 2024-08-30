@@ -12,8 +12,10 @@
 
 from typing import Any, Collection, Literal
 
+from api_v2.cluster.utils import handle_mapping_action_host_groups
 from cm.api import add_hc, get_hc
 from cm.models import Cluster, Host, JobLog, ServiceComponent
+from cm.services.cluster import retrieve_clusters_topology
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from pydantic import field_validator
 
@@ -85,6 +87,9 @@ class ADCMHostComponentPluginExecutor(ADCMAnsiblePluginExecutor[ChangeHostCompon
             raise PluginIncorrectCallError(message="You can not change hc in plugin for action with hc_acl")
 
         cluster = Cluster.objects.get(id=runtime.vars.context.cluster_id)
+
+        original_topology = next(retrieve_clusters_topology(cluster_ids=(cluster.id,)))
+
         hostcomponent = get_hc(cluster)
         for operation in arguments.operations:
             component_id, service_id = ServiceComponent.objects.values_list("id", "service_id").get(
@@ -121,5 +126,8 @@ class ADCMHostComponentPluginExecutor(ADCMAnsiblePluginExecutor[ChangeHostCompon
                 hostcomponent.remove(item)
 
         add_hc(cluster, hostcomponent)
+
+        updated_topology = next(retrieve_clusters_topology(cluster_ids=(cluster.id,)))
+        handle_mapping_action_host_groups(mapping_delta=original_topology - updated_topology)
 
         return CallResult(value=None, changed=True, error=None)
