@@ -99,6 +99,9 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
                 "edit_action_host_group_cluster",
                 "edit_action_host_group_clusterobject",
                 "edit_action_host_group_servicecomponent",
+                "view_logstorage",
+                "view_joblog",
+                "view_tasklog",
             },
         )
 
@@ -470,6 +473,9 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
                 "view_servicecomponent",
                 "view_upgrade_of_cluster",
                 "view_ansible_config_of_cluster",
+                "view_logstorage",
+                "view_joblog",
+                "view_tasklog",
             },
         )
 
@@ -546,5 +552,8 @@ class PolicyWithClusterAdminRoleTestCase(PolicyBaseTestCase):
                 "edit_action_host_group_cluster",
                 "edit_action_host_group_clusterobject",
                 "edit_action_host_group_servicecomponent",
+                "view_logstorage",
+                "view_joblog",
+                "view_tasklog",
             },
         )

@@ -48,6 +48,7 @@ const InputPassword = React.forwardRef<HTMLInputElement, InputPasswordProps>(
             size={20}
             onClick={toggleShowPassword}
             disabled={props.disabled}
+            tabIndex={-1}
           />
         }
       />

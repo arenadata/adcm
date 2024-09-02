@@ -61,6 +61,9 @@ class PolicyWithProviderAdminRole(PolicyBaseTestCase):
                 "view_upgrade_of_hostprovider",
                 "view_configlog",
                 "view_objectconfig",
+                "view_logstorage",
+                "view_joblog",
+                "view_tasklog",
             },
         )
 

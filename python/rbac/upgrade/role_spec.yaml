@@ -1,6 +1,6 @@
 ---
 
-version: 12
+version: 13
 
 roles:
   - name: Add host
@@ -941,6 +941,15 @@ roles:
               - view
               - view_upgrade_of
               - do_upgrade_of
+          - name: joblog
+            codenames:
+              - view
+          - name: tasklog
+            codenames:
+              - view
+          - name: logstorage
+            codenames:
+              - view
 
   - name: Upgrade provider bundle
     description: Update the provider bundle
@@ -961,6 +970,16 @@ roles:
               - view
               - view_upgrade_of
               - do_upgrade_of
+          - name: joblog
+            codenames:
+              - view
+          - name: tasklog
+            codenames:
+              - view
+          - name: logstorage
+            codenames:
+              - view
+
 
   - name: Remove cluster
     description: The ability to remove cluster

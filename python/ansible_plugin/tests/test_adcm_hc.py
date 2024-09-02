@@ -13,8 +13,10 @@
 from operator import itemgetter
 
 from cm.converters import orm_object_to_core_type
-from cm.models import HostComponent, ServiceComponent
+from cm.models import ActionHostGroup, HostComponent, ServiceComponent
+from cm.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
 from cm.services.job.run.repo import JobRepoImpl
+from core.types import CoreObjectDescriptor
 
 from ansible_plugin.errors import PluginContextError, PluginIncorrectCallError, PluginRuntimeError
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
@@ -250,6 +252,47 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         )
         self.assertEqual(self.get_current_hc_dicts(), expected_hc)
 
+    def test_remove_host_with_action_group_called_success(self) -> None:
+        service_2 = self.add_services_to_cluster(["service_2"], cluster=self.cluster).first()
+        component_2 = ServiceComponent.objects.filter(service=service_2).first()
+        self.set_hostcomponent(
+            cluster=self.cluster,
+            entries=(
+                (self.host_1, self.component_1),
+                (self.host_2, component_2),
+            ),
+        )
+
+        action_host_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
+
+        action_group = self.create_action_host_group(action_host_group_service, "Component Group", self.component_1)
+        action_group_2 = self.create_action_host_group(action_host_group_service, "Component Group 2", component_2)
+
+        action_host_group_service.add_hosts_to_group(group_id=action_group.id, hosts=[self.host_1.id])
+        action_host_group_service.add_hosts_to_group(group_id=action_group_2.id, hosts=[self.host_2.id])
+
+        task = self.prepare_task(owner=self.cluster, name="dummy")
+        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+
+        executor = self.prepare_executor(
+            executor_type=ADCMHostComponentPluginExecutor,
+            call_arguments=f"""
+                        operations:
+                          - action: remove
+                            service: {self.service_1.name}
+                            component: {self.component_1.name}
+                            host: {self.host_1.fqdn}
+                    """,
+            call_context=job,
+        )
+
+        result = executor.execute()
+
+        self.assertIsNone(result.error)
+
+        self.assertEqual(action_group.hosts.count(), 0)
+        self.assertEqual(action_group_2.hosts.count(), 1)
+
     def test_remove_absent_fail(self) -> None:
         object_ = self.component_1
         self.set_hostcomponent(
@@ -280,3 +323,16 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
             result.error.message, f'There is no component "{self.component_1.name}" on host "{self.host_2.fqdn}"'
         )
         self.assertEqual(self.get_current_hc_dicts(), expected_hc)
+
+    def create_action_host_group(
+        self, action_host_group_service: ActionHostGroupService, name: str, component: ServiceComponent
+    ) -> ActionHostGroup:
+        return ActionHostGroup.objects.get(
+            id=action_host_group_service.create(
+                CreateDTO(
+                    name=name,
+                    owner=CoreObjectDescriptor(id=component.id, type=orm_object_to_core_type(component)),
+                    description="description",
+                )
+            )
+        )

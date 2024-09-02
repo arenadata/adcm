@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import UserDict
+from dataclasses import dataclass, field
 from enum import Enum
 from itertools import chain
 from typing import Generator, NamedTuple
@@ -49,6 +51,27 @@ class ClusterTopology(NamedTuple):
     @property
     def component_ids(self) -> Generator[ComponentID, None, None]:
         return chain.from_iterable(service.components for service in self.services.values())
+
+
+class NoEmptyValuesDict(UserDict):
+    def __setitem__(self, key, value):
+        # if value is "empty" for one reason or another
+        if not value:
+            return
+
+        super().__setitem__(key, value)
+
+
+@dataclass(slots=True)
+class MovedHosts:
+    services: NoEmptyValuesDict[ServiceID, set[HostID]] = field(default_factory=NoEmptyValuesDict)
+    components: NoEmptyValuesDict[ComponentID, set[HostID]] = field(default_factory=NoEmptyValuesDict)
+
+
+@dataclass(slots=True)
+class TopologyHostDiff:
+    mapped: MovedHosts = field(default_factory=MovedHosts)
+    unmapped: MovedHosts = field(default_factory=MovedHosts)
 
 
 class ObjectMaintenanceModeState(Enum):
