@@ -1,5 +1,5 @@
-import { AdcmMapping } from './clusterMapping';
-import { AdcmConfig, ConfigurationSchema } from './configuration';
+import type { AdcmMapping } from './clusterMapping';
+import type { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from './configuration';
 
 export enum AdcmHostComponentMapRuleAction {
   Add = 'add',
@@ -19,7 +19,9 @@ export interface AdcmDynamicAction {
   startImpossibleReason: string;
 }
 
-export type AdcmDynamicActionConfiguration = Pick<AdcmConfig, 'config' | 'adcmMeta'> & {
+export type AdcmDynamicActionConfiguration = {
+  config: ConfigurationData;
+  adcmMeta: ConfigurationAttributes;
   configSchema: ConfigurationSchema;
 };
 
@@ -36,5 +38,10 @@ export interface AdcmDynamicActionDetails {
 export interface AdcmDynamicActionRunConfig {
   hostComponentMap: AdcmMapping[];
   isVerbose: boolean;
-  configuration: Pick<AdcmConfig, 'config' | 'adcmMeta'> | null;
+  configuration: {
+    config: ConfigurationData;
+    adcmMeta: ConfigurationAttributes;
+  } | null;
 }
+
+export type EntitiesDynamicActions = Record<number, AdcmDynamicAction[]>;

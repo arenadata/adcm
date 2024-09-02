@@ -134,6 +134,30 @@ const routes: RoutesConfigs = {
       },
     ],
   },
+  '/clusters/:clusterId/services/:serviceId/action-host-groups': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        href: '/clusters/:clusterId/services',
+        label: 'Services',
+      },
+      {
+        href: '/clusters/:clusterId/services/:serviceId',
+        label: ':serviceId',
+      },
+      {
+        label: 'Action host groups',
+      },
+    ],
+  },
   '/clusters/:clusterId/services/:serviceId/components': {
     pageTitle: 'Clusters',
     breadcrumbs: [
@@ -219,6 +243,38 @@ const routes: RoutesConfigs = {
       },
       {
         label: 'Configuration groups',
+      },
+    ],
+  },
+  '/clusters/:clusterId/services/:serviceId/components/:componentId/action-host-groups': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        href: '/clusters/:clusterId/services',
+        label: 'Services',
+      },
+      {
+        href: '/clusters/:clusterId/services/:serviceId',
+        label: ':serviceId',
+      },
+      {
+        href: '/clusters/:clusterId/services/:serviceId/components',
+        label: 'Components',
+      },
+      {
+        href: '/clusters/:clusterId/services/:serviceId/components/:componentId',
+        label: ':componentId',
+      },
+      {
+        label: 'Action host groups',
       },
     ],
   },
@@ -391,6 +447,25 @@ const routes: RoutesConfigs = {
       },
       {
         label: 'Ansible settings',
+      },
+    ],
+  },
+  '/clusters/:clusterId/configuration/action-host-groups': {
+    pageTitle: 'Clusters',
+    breadcrumbs: [
+      {
+        href: '/clusters',
+        label: 'Clusters',
+      },
+      {
+        href: '/clusters/:clusterId',
+        label: ':clusterId',
+      },
+      {
+        label: 'Configuration',
+      },
+      {
+        label: 'Action host groups',
       },
     ],
   },
