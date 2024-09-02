@@ -50,6 +50,7 @@ from cm.services.cluster import retrieve_clusters_topology
 from cm.services.concern.locks import get_lock_on_object
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import send_host_component_map_update_event
+from core.cluster.operations import find_hosts_difference
 from core.cluster.types import MovedHosts
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, QuerySet
@@ -293,7 +294,9 @@ def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
 
     updated_topology = next(retrieve_clusters_topology(cluster_ids=(mapping_data.cluster.id,)))
 
-    handle_mapping_action_host_groups(mapping_delta=original_topology - updated_topology)
+    handle_mapping_action_host_groups(
+        mapping_delta=find_hosts_difference(old_topology=original_topology, new_topology=updated_topology).unmapped
+    )
 
     update_hierarchy_issues(obj=mapping_data.orm_objects["cluster"])
     for provider_id in {host.provider_id for host in mapping_data.hosts.values()}:

@@ -25,6 +25,7 @@ from core.cluster.types import (
     MaintenanceModeOfObjects,
     ObjectMaintenanceModeState,
     ServiceTopology,
+    TopologyHostDiff,
 )
 from core.types import ClusterID, ComponentID, HostID, ShortObjectInfo
 
@@ -158,6 +159,54 @@ def calculate_maintenance_mode_for_component(
         return ObjectMaintenanceModeState.ON
 
     return own_mm
+
+
+def find_hosts_difference(new_topology: ClusterTopology, old_topology: ClusterTopology) -> TopologyHostDiff:
+    """
+    Detect which hosts were mapped and unmapped between new and old topologies
+
+    Note that results will contain newly added and removed services and components:
+    - all hosts on newly added objects are considered mapped
+    - all hosts on removed objects are considered unmapped
+    """
+    diff = TopologyHostDiff()
+
+    dummy_info = ShortObjectInfo(id=-1, name="notexist")
+
+    for service_id, new_service_topology in new_topology.services.items():
+        old_service_topology = old_topology.services.get(service_id, ServiceTopology(info=dummy_info, components={}))
+
+        old_service_hosts = set(old_service_topology.host_ids)
+        new_service_hosts = set(new_service_topology.host_ids)
+
+        diff.unmapped.services[service_id] = old_service_hosts - new_service_hosts
+        diff.mapped.services[service_id] = new_service_hosts - old_service_hosts
+
+        for component_id, new_component_topology in new_service_topology.components.items():
+            old_component_topology = old_service_topology.components.get(
+                component_id, ComponentTopology(info=dummy_info, hosts={})
+            )
+
+            old_component_hosts = set(old_component_topology.hosts)
+            new_component_hosts = set(new_component_topology.hosts)
+
+            diff.unmapped.components[component_id] = old_component_hosts - new_component_hosts
+            diff.mapped.components[component_id] = new_component_hosts - old_component_hosts
+
+        # it's possible that some components are gone now, for universality reasons we should handle that case
+        for gone_component_id in set(old_service_topology.components).difference(new_service_topology.components):
+            diff.unmapped.components[gone_component_id] = set(old_service_topology.components[gone_component_id].hosts)
+
+    # Appearance of new services is well covered in previous loop (new/old components too),
+    # but disappearance of old services isn't, so we handle it in here
+    for gone_service_id in set(old_topology.services).difference(new_topology.services):
+        gone_service_topology = old_topology.services[gone_service_id]
+        diff.unmapped.services[gone_service_id] = set(gone_service_topology.host_ids)
+
+        for gone_component_id, gone_component_topology in gone_service_topology.components.items():
+            diff.unmapped.components[gone_component_id] = set(gone_component_topology.hosts)
+
+    return diff
 
 
 # !===== Hosts In Cluster =====!

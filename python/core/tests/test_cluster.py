@@ -16,12 +16,16 @@ from core.cluster.operations import (
     calculate_maintenance_mode_for_cluster_objects,
     calculate_maintenance_mode_for_component,
     calculate_maintenance_mode_for_service,
+    find_hosts_difference,
 )
 from core.cluster.types import (
     ClusterTopology,
     ComponentTopology,
     MaintenanceModeOfObjects,
+    MovedHosts,
+    NoEmptyValuesDict,
     ServiceTopology,
+    TopologyHostDiff,
 )
 from core.cluster.types import ObjectMaintenanceModeState as MM  # noqa: N814
 from core.types import ShortObjectInfo
@@ -187,3 +191,66 @@ class TestMaintenanceMode(TestCase):
                     ),
                     expected_result,
                 )
+
+    def test_find_hosts_difference(self) -> None:
+        h1, h2, h3, h4, h5 = (ShortObjectInfo(id=i, name=f"host{i}") for i in range(1, 6))
+        s1, s2, s3, s4 = (ShortObjectInfo(id=i, name=f"service{i}") for i in range(1, 5))
+        c1, c2, c3, c4, c5 = (ShortObjectInfo(id=i, name=f"component{i}") for i in range(1, 6))
+
+        on_hosts = lambda *hosts_: {h.id: h for h in hosts_}  # noqa: E731
+
+        topology_1 = ClusterTopology(
+            cluster_id=1,
+            services={
+                s1.id: ServiceTopology(
+                    info=s1,
+                    components={
+                        c1.id: ComponentTopology(info=c1, hosts=on_hosts(h1, h2, h3)),
+                        c2.id: ComponentTopology(info=c2, hosts=on_hosts(h1)),
+                    },
+                ),
+                s2.id: ServiceTopology(
+                    info=s2,
+                    components={c3.id: ComponentTopology(info=c3, hosts=on_hosts(h4))},
+                ),
+                s3.id: ServiceTopology(info=s3, components={c4.id: ComponentTopology(info=c4, hosts=on_hosts(h1))}),
+            },
+            hosts=on_hosts(h1, h2, h3, h4),
+        )
+
+        topology_2 = ClusterTopology(
+            cluster_id=1,
+            services={
+                s1.id: ServiceTopology(
+                    info=s1,
+                    components={
+                        c1.id: ComponentTopology(info=c1, hosts=on_hosts(h1)),
+                        c2.id: ComponentTopology(info=c2, hosts=on_hosts(h1, h2)),
+                    },
+                ),
+                s2.id: ServiceTopology(info=s2, components={c3.id: ComponentTopology(info=c3, hosts=on_hosts(h4, h5))}),
+                s4.id: ServiceTopology(info=s4, components={c5.id: ComponentTopology(info=c5, hosts=on_hosts(h4))}),
+            },
+            hosts=on_hosts(h1, h2, h3, h4, h5),
+        )
+
+        diff_new_2_old_1 = TopologyHostDiff(
+            mapped=MovedHosts(
+                services=NoEmptyValuesDict({s2.id: {h5.id}, s4.id: {h4.id}}),
+                components=NoEmptyValuesDict({c2.id: {h2.id}, c3.id: {h5.id}, c5.id: {h4.id}}),
+            ),
+            unmapped=MovedHosts(
+                services=NoEmptyValuesDict({s1.id: {h3.id}, s3.id: {h1.id}}),
+                components=NoEmptyValuesDict({c1.id: {h2.id, h3.id}, c4.id: {h1.id}}),
+            ),
+        )
+
+        with self.subTest("Direct"):
+            actual_diff = find_hosts_difference(new_topology=topology_2, old_topology=topology_1)
+            self.assertEqual(actual_diff, diff_new_2_old_1)
+
+        with self.subTest("Reversed"):
+            actual_diff = find_hosts_difference(new_topology=topology_1, old_topology=topology_2)
+            self.assertEqual(
+                actual_diff, TopologyHostDiff(mapped=diff_new_2_old_1.unmapped, unmapped=diff_new_2_old_1.mapped)
+            )
