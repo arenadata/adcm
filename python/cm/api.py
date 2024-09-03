@@ -16,6 +16,8 @@ from typing import Literal, TypedDict
 import json
 
 from adcm_version import compare_prototype_versions
+from api_v2.cluster.utils import handle_mapping_action_host_groups
+from core.cluster.operations import find_hosts_difference
 from core.types import CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -68,6 +70,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.cluster import retrieve_clusters_topology
 from cm.services.concern.flags import BuiltInFlag, raise_flag, update_hierarchy
 from cm.services.concern.locks import get_lock_on_object
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
@@ -538,6 +541,8 @@ def save_hc(
     old_hosts = {i.host for i in hc_queryset.select_related("host")}
     new_hosts = {i[1] for i in host_comp_list}
 
+    previous_topology = next(retrieve_clusters_topology(cluster_ids=(cluster.id,)))
+
     lock = get_lock_on_object(object_=cluster)
     if lock:
         for removed_host in old_hosts.difference(new_hosts):
@@ -574,6 +579,11 @@ def save_hc(
         )
         host_component.save()
         host_component_list.append(host_component)
+
+    updated_topology = next(retrieve_clusters_topology(cluster_ids=(cluster.id,)))
+    handle_mapping_action_host_groups(
+        mapping_delta=find_hosts_difference(old_topology=previous_topology, new_topology=updated_topology).unmapped
+    )
 
     update_hierarchy_issues(cluster)
 
