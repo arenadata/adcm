@@ -15,7 +15,7 @@ const AboutAdcmModal = ({ isOpen, onOpenChange }: AboutAdcmProps) => {
         <MainLogo className={s.aboutAdcmModal__logo} onClick={(e) => e.preventDefault()} />
         <div>
           <Text component="h3" variant="h2" className={s.aboutAdcmModal__subtitle}>
-            Arendata Cluster Manager
+            Arenadata Cluster Manager
           </Text>
           version {adcmVersion}
         </div>
