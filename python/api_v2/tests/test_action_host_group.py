@@ -538,6 +538,34 @@ class TestActionHostGroup(CommonActionHostGroupTest):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertListEqual(list(map(itemgetter("id"), response.json()["results"])), [group_3.id])
 
+    def test_adcm_5931_duplicates_when_filtering_by_has_host(self) -> None:
+        host_1, host_2, *_ = self.hosts
+        host_3 = self.add_host(provider=host_1.provider, fqdn="special", cluster=self.cluster)
+
+        group_1 = self.create_action_host_group(name="Service Group", owner=self.service)
+        group_2 = self.create_action_host_group(name="Super Custom", owner=self.service)
+        group_3 = self.create_action_host_group(name="Super Custom #2", owner=self.service)
+
+        self.set_hostcomponent(
+            cluster=self.cluster, entries=[(host, self.component) for host in (host_1, host_2, host_3)]
+        )
+
+        self.action_host_group_service.add_hosts_to_group(group_1.id, hosts=[host_1.id, host_2.id])
+        self.action_host_group_service.add_hosts_to_group(group_2.id, hosts=[host_1.id, host_3.id, host_2.id])
+        self.action_host_group_service.add_hosts_to_group(group_3.id, hosts=[host_3.id])
+
+        with self.subTest("Only hasHost filter"):
+            response = self.client.v2[self.service, ACTION_HOST_GROUPS].get(query={"hasHost": "host"})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(list(map(itemgetter("id"), response.json()["results"])), [group_1.id, group_2.id])
+
+        with self.subTest("Name and hasHost filter"):
+            response = self.client.v2[self.service, ACTION_HOST_GROUPS].get(query={"hasHost": "host", "name": "Super"})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(list(map(itemgetter("id"), response.json()["results"])), [group_2.id])
+
     def test_host_candidates_success(self) -> None:
         host_1, host_2, host_3 = self.hosts
         host_1_data, host_2_data, host_3_data = ({"id": host.id, "name": host.fqdn} for host in self.hosts)
