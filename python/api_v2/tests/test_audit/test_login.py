@@ -12,7 +12,6 @@
 
 from audit.models import AuditSession, AuditSessionLoginResult
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
 from api_v2.tests.base import BaseAPITestCase
@@ -23,7 +22,7 @@ class TestLoginAudit(BaseAPITestCase):
         super().setUp()
 
         self.client.logout()
-        self.target_url_paths = [reverse(viewname="v2:token"), reverse(viewname="v2:login")]
+        self.target_url_paths = [(self.client.v2 / "token").path, (self.client.v2 / "login").path]
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)

@@ -5,6 +5,7 @@ import type { ComponentsMappingErrors, MappingFilter, ComponentMapping } from '.
 import type { AdcmHostShortView, AdcmMappingComponent, AdcmMappingComponentService } from '@models/adcm';
 import s from './Service.module.scss';
 import cn from 'classnames';
+import { checkComponentMappingAvailability, checkHostMappingAvailability } from '../../ClusterMapping.utils';
 
 export interface ServiceProps {
   service: AdcmMappingComponentService;
@@ -59,6 +60,8 @@ const Service = ({
             onMap={onMap}
             onUnmap={onUnmap}
             onInstallServices={onInstallServices}
+            checkComponentMappingAvailability={checkComponentMappingAvailability}
+            checkHostMappingAvailability={checkHostMappingAvailability}
           />
         );
       })}

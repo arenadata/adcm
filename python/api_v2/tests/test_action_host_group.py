@@ -189,6 +189,221 @@ class TestActionHostGroup(CommonActionHostGroupTest):
                     **self.prepare_audit_object_arguments(expected_object=target),
                 )
 
+    def test_unlink_host_from_component_success(self) -> None:
+        service_2 = self.add_services_to_cluster(["second"], cluster=self.cluster).get()
+
+        component_2 = self.service.servicecomponent_set.last()
+        component_3 = service_2.servicecomponent_set.last()
+        self.hosts += [
+            self.add_host(provider=self.hostprovider, fqdn=f"host-{i}", cluster=self.cluster) for i in range(3, 6)
+        ]
+
+        self.set_hostcomponent(
+            cluster=self.cluster,
+            entries=(
+                (self.hosts[0], self.component),
+                (self.hosts[1], self.component),
+                (self.hosts[3], component_2),
+                (self.hosts[4], component_2),
+                (self.hosts[5], component_2),
+                (self.hosts[0], component_3),
+                (self.hosts[1], component_3),
+                (self.hosts[2], component_3),
+            ),
+        )
+
+        component_group = self.create_action_host_group(name="Component Group", owner=self.component)
+        component_group_2 = self.create_action_host_group(name="Component Group 2", owner=component_2)
+        component_group_3 = self.create_action_host_group(name="Component Group 3", owner=component_3)
+        self.action_host_group_service.add_hosts_to_group(
+            group_id=component_group.id, hosts=[self.hosts[0].id, self.hosts[1].id]
+        )
+
+        self.action_host_group_service.add_hosts_to_group(
+            group_id=component_group_2.id, hosts=[self.hosts[3].id, self.hosts[4].id, self.hosts[5].id]
+        )
+
+        self.action_host_group_service.add_hosts_to_group(
+            group_id=component_group_3.id, hosts=[self.hosts[0].id, self.hosts[1].id, self.hosts[2].id]
+        )
+
+        response = self.client.v2[self.cluster, "mapping"].post(
+            data=[
+                {"hostId": self.hosts[4].id, "componentId": component_2.pk},
+                {"hostId": self.hosts[5].id, "componentId": component_2.pk},
+                {"hostId": self.hosts[0].id, "componentId": component_3.pk},
+                {"hostId": self.hosts[1].id, "componentId": component_3.pk},
+                {"hostId": self.hosts[2].id, "componentId": component_3.pk},
+            ]
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        self.assertEqual(
+            ActionHostGroup.objects.filter(
+                object_id__in=(self.component.id, component_2.id, component_3.id),
+                object_type=self.component.content_type,
+            ).count(),
+            3,
+        )
+        self.assertEqual(
+            component_group.hosts.count(),
+            0,
+        )
+
+        self.assertEqual(
+            component_group_2.hosts.count(),
+            2,
+        )
+
+        self.assertEqual(
+            component_group_3.hosts.count(),
+            3,
+        )
+
+    def test_move_host_to_another_component_success(self) -> None:
+        service_2 = self.add_services_to_cluster(["second"], cluster=self.cluster).get()
+        component_1 = service_2.servicecomponent_set.first()
+        component_2 = service_2.servicecomponent_set.last()
+
+        self.set_hostcomponent(
+            cluster=self.cluster,
+            entries=(
+                (self.hosts[0], self.component),
+                (self.hosts[1], self.component),
+                (self.hosts[2], self.component),
+                (self.hosts[0], component_1),
+                (self.hosts[1], component_1),
+                (self.hosts[2], component_1),
+                (self.hosts[0], component_2),
+            ),
+        )
+
+        service_group = self.create_action_host_group(name="Service Group", owner=self.service)
+        service_group_2 = self.create_action_host_group(name="Service Group 2", owner=service_2)
+
+        component_group = self.create_action_host_group(name="Component Group", owner=self.component)
+        component_group_2 = self.create_action_host_group(name="Component Group 2", owner=component_1)
+        component_group_3 = self.create_action_host_group(name="Component Group 3", owner=component_2)
+
+        for group in [service_group, service_group_2, component_group, component_group_2]:
+            self.action_host_group_service.add_hosts_to_group(
+                group_id=group.id, hosts=[self.hosts[0].id, self.hosts[1].id, self.hosts[2].id]
+            )
+
+        self.action_host_group_service.add_hosts_to_group(group_id=component_group_3.id, hosts=[self.hosts[0].id])
+
+        response = self.client.v2[self.cluster, "mapping"].post(
+            data=[
+                {"hostId": self.hosts[2].id, "componentId": self.component.pk},
+                {"hostId": self.hosts[1].id, "componentId": self.component.pk},
+                {"hostId": self.hosts[2].id, "componentId": component_1.pk},
+                {"hostId": self.hosts[0].id, "componentId": component_1.pk},
+            ]
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        for group in [service_group, component_group]:
+            self.assertListEqual(
+                list(group.hosts.order_by("id")),
+                [self.hosts[1], self.hosts[2]],
+            )
+
+        for group in [service_group_2, component_group_2]:
+            self.assertListEqual(
+                list(group.hosts.order_by("id")),
+                [self.hosts[0], self.hosts[2]],
+            )
+
+        self.assertEqual(component_group_3.hosts.count(), 0)
+
+    def test_unlink_hosts_from_correct_service_success(self) -> None:
+        service_2 = self.add_services_to_cluster(["second"], cluster=self.cluster).get()
+        component_2 = service_2.servicecomponent_set.last()
+        self.set_hostcomponent(
+            cluster=self.cluster,
+            entries=(
+                (self.hosts[0], self.component),
+                (self.hosts[1], self.component),
+                (self.hosts[0], component_2),
+                (self.hosts[1], component_2),
+            ),
+        )
+
+        component_group = self.create_action_host_group(name="Component Group", owner=self.component)
+        component_group_2 = self.create_action_host_group(name="Component Group 2", owner=component_2)
+
+        self.action_host_group_service.add_hosts_to_group(
+            group_id=component_group.id, hosts=[self.hosts[0].id, self.hosts[1].id]
+        )
+
+        self.action_host_group_service.add_hosts_to_group(
+            group_id=component_group_2.id, hosts=[self.hosts[0].id, self.hosts[1].id]
+        )
+
+        response = self.client.v2[self.cluster, "mapping"].post(
+            data=[
+                {"hostId": self.hosts[0].id, "componentId": self.component.pk},
+                {"hostId": self.hosts[1].id, "componentId": component_2.pk},
+            ]
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        self.assertListEqual(
+            list(component_group.hosts.all()),
+            [self.hosts[0]],
+        )
+
+        self.assertListEqual(
+            list(component_group_2.hosts.all()),
+            [self.hosts[1]],
+        )
+
+    def test_unlink_host_from_cluster_service_and_component_success(self) -> None:
+        self.set_hostcomponent(
+            cluster=self.cluster, entries=((self.hosts[0], self.component), (self.hosts[1], self.component))
+        )
+
+        cluster_group = self.create_action_host_group(name="Cluster Group", owner=self.cluster)
+        self.action_host_group_service.add_hosts_to_group(group_id=cluster_group.id, hosts=[self.hosts[0].id])
+        service_group_1 = self.create_action_host_group(name="Service Group", owner=self.service)
+        self.create_action_host_group(name="Service Group #2", owner=self.service)
+        component_group = self.create_action_host_group(name="Component Group", owner=self.component)
+        self.action_host_group_service.add_hosts_to_group(
+            group_id=component_group.id, hosts=[self.hosts[0].id, self.hosts[1].id]
+        )
+
+        response = self.client.v2[self.cluster, "mapping"].post(data=[])
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        with self.subTest(msg="hosts are UNMAPPED FROM THE CLUSTER SUCCESS"):
+            for target, group, groups_left_amount in (
+                (self.service, service_group_1, 2),
+                (self.component, component_group, 1),
+            ):
+                self.assertEqual(
+                    ActionHostGroup.objects.filter(object_id=target.id, object_type=target.content_type).count(),
+                    groups_left_amount,
+                )
+                self.assertEqual(
+                    group.hosts.count(),
+                    0,
+                )
+            self.assertEqual(cluster_group.hosts.count(), 1)
+        with self.subTest(msg="host is REMOVED FROM THE CLUSTER SUCCESS"):
+            response = self.client.v2[self.cluster, "hosts", self.hosts[0]].delete()
+            self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+            self.assertEqual(
+                ActionHostGroup.objects.filter(
+                    object_id=self.cluster.id, object_type=self.cluster.content_type
+                ).count(),
+                1,
+            )
+            self.assertEqual(
+                cluster_group.hosts.count(),
+                0,
+            )
+
     def test_retrieve_success(self) -> None:
         name = "aWeSOME Group NAmE"
         host_1, host_2, host_3, *_ = self.hosts
@@ -278,6 +493,79 @@ class TestActionHostGroup(CommonActionHostGroupTest):
             ],
         )
 
+    def test_filter_groups_success(self) -> None:
+        host_1, host_2, host_3, *_ = self.hosts
+
+        cluster_group = self.create_action_host_group(name="Cluster Group", owner=self.cluster)
+        group_1 = self.create_action_host_group(name="Service Group", owner=self.service)
+        group_2 = self.create_action_host_group(name="Super Custom", owner=self.service)
+        group_3 = self.create_action_host_group(name="Service Group #2", owner=self.service)
+
+        self.set_hostcomponent(cluster=self.cluster, entries=[(host, self.component) for host in self.hosts])
+
+        self.action_host_group_service.add_hosts_to_group(cluster_group.id, hosts=[host_1.id, host_2.id, host_3.id])
+        self.action_host_group_service.add_hosts_to_group(group_1.id, hosts=[host_1.id, host_2.id])
+        self.action_host_group_service.add_hosts_to_group(group_2.id, hosts=[host_2.id, host_3.id])
+        self.action_host_group_service.add_hosts_to_group(group_3.id, hosts=[host_1.id])
+
+        endpoint = self.client.v2[self.service, ACTION_HOST_GROUPS]
+
+        with self.subTest("Filter by Name"):
+            response = endpoint.get(query={"name": "group"})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(list(map(itemgetter("id"), response.json()["results"])), [group_1.id, group_3.id])
+
+            response = endpoint.get(query={"name": "er c"})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(list(map(itemgetter("id"), response.json()["results"])), [group_2.id])
+
+        with self.subTest("Filter by Host"):
+            response = endpoint.get(query={"hasHost": "3"})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(response.json()["results"], [])
+
+            response = endpoint.get(query={"hasHost": "0"})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(list(map(itemgetter("id"), response.json()["results"])), [group_1.id, group_3.id])
+
+        with self.subTest("Filter by Name AND Host"):
+            response = endpoint.get(query={"hasHost": "0", "name": "#2"})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(list(map(itemgetter("id"), response.json()["results"])), [group_3.id])
+
+    def test_adcm_5931_duplicates_when_filtering_by_has_host(self) -> None:
+        host_1, host_2, *_ = self.hosts
+        host_3 = self.add_host(provider=host_1.provider, fqdn="special", cluster=self.cluster)
+
+        group_1 = self.create_action_host_group(name="Service Group", owner=self.service)
+        group_2 = self.create_action_host_group(name="Super Custom", owner=self.service)
+        group_3 = self.create_action_host_group(name="Super Custom #2", owner=self.service)
+
+        self.set_hostcomponent(
+            cluster=self.cluster, entries=[(host, self.component) for host in (host_1, host_2, host_3)]
+        )
+
+        self.action_host_group_service.add_hosts_to_group(group_1.id, hosts=[host_1.id, host_2.id])
+        self.action_host_group_service.add_hosts_to_group(group_2.id, hosts=[host_1.id, host_3.id, host_2.id])
+        self.action_host_group_service.add_hosts_to_group(group_3.id, hosts=[host_3.id])
+
+        with self.subTest("Only hasHost filter"):
+            response = self.client.v2[self.service, ACTION_HOST_GROUPS].get(query={"hasHost": "host"})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(list(map(itemgetter("id"), response.json()["results"])), [group_1.id, group_2.id])
+
+        with self.subTest("Name and hasHost filter"):
+            response = self.client.v2[self.service, ACTION_HOST_GROUPS].get(query={"hasHost": "host", "name": "Super"})
+
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertListEqual(list(map(itemgetter("id"), response.json()["results"])), [group_2.id])
+
     def test_host_candidates_success(self) -> None:
         host_1, host_2, host_3 = self.hosts
         host_1_data, host_2_data, host_3_data = ({"id": host.id, "name": host.fqdn} for host in self.hosts)
@@ -301,6 +589,19 @@ class TestActionHostGroup(CommonActionHostGroupTest):
 
             with self.subTest(f"[{type_.name}] {target.name} Expect {len(expected)}"):
                 response = self.client.v2[target, "host-candidates"].get()
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertListEqual(response.json(), expected)
+
+        for target, expected in (
+            (self.cluster, [host_1_data, host_2_data, host_3_data]),
+            (self.service, [host_1_data, host_2_data]),
+            (self.component, [host_1_data, host_2_data]),
+        ):
+            type_ = orm_object_to_core_type(target)
+
+            with self.subTest(f"[{type_.name}] Own {target.name} Expect {len(expected)}"):
+                response = self.client.v2[target, ACTION_HOST_GROUPS, "host-candidates"].get()
 
                 self.assertEqual(response.status_code, HTTP_200_OK)
                 self.assertListEqual(response.json(), expected)
@@ -346,6 +647,67 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
             object_: self.create_action_host_group(owner=object_, name=f"Group for {object_.name}")
             for object_ in objects
         }
+        self.user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        self.test_user = self.create_user(user_data=self.user_credentials)
+        self.user_client = self.client_class()
+        self.user_client.login(**self.user_credentials)
+
+    def test_list_hosts_in_group_success(self) -> None:
+        host_1, host_2, *_ = self.hosts
+        expected = [{"id": host_1.id, "name": host_1.name}, {"id": host_2.id, "name": host_2.name}]
+
+        for target in (self.cluster, self.service, self.component):
+            group = self.group_map[target]
+            type_ = orm_object_to_core_type(target)
+            with self.subTest(f"[{type_.name}] {target.name} Expect {len(expected)}"):
+                self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
+
+                response = self.client.v2[group, "hosts"].get()
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json(), expected)
+
+    def test_retrieve_host_from_group_success(self) -> None:
+        host_1, host_2, *_ = self.hosts
+        expected = {"id": host_1.id, "name": host_1.name}
+
+        for target in (self.cluster, self.service, self.component):
+            group = self.group_map[target]
+            type_ = orm_object_to_core_type(target)
+            with self.subTest(f"[{type_.name}] {target.name} Expect {len(expected)}"):
+                self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
+
+                response = self.client.v2[group, "hosts", host_1.pk].get()
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["id"], host_1.pk)
+
+    def test_retrieve_host_from_group_not_found_fail(self) -> None:
+        host_1, host_2, host_3, *_ = self.hosts
+
+        for target in (self.cluster, self.service, self.component):
+            group = self.group_map[target]
+            type_ = orm_object_to_core_type(target)
+            with self.subTest(f"[{type_.name}] {target.name} Expect Not Found"):
+                self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
+
+                response = self.client.v2[group, "hosts", host_3.pk].get()
+
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+    def test_retrieve_host_from_group_permission_denied(self) -> None:
+        self.user_client.login(**self.user_credentials)
+        host_1, host_2, *_ = self.hosts
+
+        for target in (self.cluster, self.service, self.component):
+            group = self.group_map[target]
+            type_ = orm_object_to_core_type(target)
+            with self.subTest(f"[{type_.name}] {target.name} Expect Permission Denied"):
+                self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[host_1.id, host_2.id])
+
+                response = self.user_client.v2[group, "hosts", host_1.pk].get()
+
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_add_host_to_group(self) -> None:
         host_1, host_2, host_3, host_4, *_ = self.hosts
@@ -581,7 +943,9 @@ class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
                 TaskLog.objects.all().delete()
 
                 with RunTaskMock() as run_task:
-                    response = self.client.v2[action_run_target, "actions", action, "run"].post(data={})
+                    response = self.client.v2[action_run_target, "actions", action, "run"].post(
+                        data={"configuration": {"config": {"val": 4}, "adcmMeta": {}}}
+                    )
 
                 self.assertEqual(response.status_code, HTTP_200_OK)
 
@@ -764,6 +1128,7 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
 
                 for allowed_to_view_ep in (
                     self.user_client.v2[target, ACTION_HOST_GROUPS],
+                    self.user_client.v2[target, ACTION_HOST_GROUPS, "host-candidates"],
                     self.user_client.v2[group],
                     self.user_client.v2[group, "host-candidates"],
                     self.user_client.v2[group, "actions"],
@@ -791,6 +1156,7 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
                     (self.user_client.v2[group, "host-candidates"], "get"),
                     (self.user_client.v2[group, "actions"], "get"),
                     (self.user_client.v2[group, "actions", action], "get"),
+                    (self.user_client.v2[target, ACTION_HOST_GROUPS, "host-candidates"], "get"),
                     (self.user_client.v2[target, ACTION_HOST_GROUPS], "post"),
                     (self.user_client.v2[group, "actions", action, "run"], "post"),
                     (self.user_client.v2[group, "hosts"], "post"),
@@ -811,6 +1177,7 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
                 with self.subTest(f"[{type_name}] GET EPs"):
                     for ep in (
                         self.user_client.v2[target, ACTION_HOST_GROUPS],
+                        self.user_client.v2[target, ACTION_HOST_GROUPS, "host-candidates"],
                         self.user_client.v2[group],
                         self.user_client.v2[group, "host-candidates"],
                     ):
@@ -836,7 +1203,9 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
                         self.assertEqual(response.status_code, HTTP_200_OK)
 
                     with self.subTest(f"[{type_name}] RUN Action With Run Perms"), RunTaskMock():
-                        response = self.user_client.v2[group, "actions", action, "run"].post(data={})
+                        response = self.user_client.v2[group, "actions", action, "run"].post(
+                            data={"configuration": {"config": {"val": 2}, "adcmMeta": {}}}
+                        )
                         self.assertEqual(response.status_code, HTTP_200_OK)
 
                     ConcernItem.objects.all().delete()
@@ -862,6 +1231,9 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
                 group = self.group_map[target]
 
                 response = self.user_client.v2[target, ACTION_HOST_GROUPS].get()
+                self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+                response = self.user_client.v2[target, ACTION_HOST_GROUPS, "host-candidates"].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
                 response = self.user_client.v2[target, ACTION_HOST_GROUPS].post()
@@ -913,7 +1285,9 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
 
             action = Action.objects.get(prototype=self.component.prototype, name="allowed_from_component")
             with RunTaskMock():
-                response = self.user_client.v2[self.group_map[self.component], "actions", action, "run"].post()
+                response = self.user_client.v2[self.group_map[self.component], "actions", action, "run"].post(
+                    data={"configuration": {"config": {"val": 3}, "adcmMeta": {}}}
+                )
                 self.assertEqual(response.status_code, HTTP_200_OK)
 
         ConcernItem.objects.all().delete()

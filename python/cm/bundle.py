@@ -39,6 +39,7 @@ from cm.models import (
     Cluster,
     ConfigLog,
     HostProvider,
+    JobStatus,
     ObjectType,
     ProductCategory,
     Prototype,
@@ -54,6 +55,7 @@ from cm.models import (
     StageSubAction,
     StageUpgrade,
     SubAction,
+    TaskLog,
     Upgrade,
 )
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
@@ -1265,6 +1267,18 @@ def delete_bundle(bundle):
         raise_adcm_ex(
             code="BUNDLE_CONFLICT",
             msg=f'There is cluster #{cluster.id} "{cluster.name}" '
+            f'of bundle #{bundle.id} "{bundle.name}" {bundle.version}',
+        )
+
+    running_task = (
+        TaskLog.objects.select_related("action")
+        .filter(status=JobStatus.RUNNING, action__prototype__bundle=bundle)
+        .first()
+    )
+    if running_task is not None:
+        raise AdcmEx(
+            code="BUNDLE_CONFLICT",
+            msg=f'There is running task #{running_task.id} "{running_task.action.display_name}" '
             f'of bundle #{bundle.id} "{bundle.name}" {bundle.version}',
         )
 

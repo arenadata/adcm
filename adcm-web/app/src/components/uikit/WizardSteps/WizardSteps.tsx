@@ -4,6 +4,8 @@ import { TabsBlock } from '@uikit';
 import { TabsBlockProps } from '@uikit/Tabs/TabsBlock';
 import { WizardStep } from '@uikit/WizardSteps/WizardSteps.types';
 import { getStepIndex } from '@uikit/WizardSteps/WizardSteps.utils';
+import s from './WizardSteps.module.scss';
+import cn from 'classnames';
 
 interface WizardStepProps extends Omit<TabsBlockProps, 'variant' | 'children'> {
   steps: WizardStep[];
@@ -19,15 +21,17 @@ const WizardSteps: React.FC<WizardStepProps> = ({ steps, currentStep, onChangeSt
   };
 
   return (
-    <TabsBlock variant="secondary" className={className}>
+    <TabsBlock variant="secondary" className={cn(className, s.wizardSteps)}>
       {steps.map((step, index) => (
         <TabButton
+          className={s.tabButton}
           isActive={currentStep === step.key}
           data-step-key={step.key}
           onClick={handleChangeStep}
           key={step.key}
           disabled={index > getStepIndex(currentStep, steps)}
         >
+          <span className={s.tabButton__stepNumber}>{index + 1}</span>
           {step.title}
         </TabButton>
       ))}

@@ -8,6 +8,7 @@ import { useLocation } from 'react-router-dom';
 const tabsNavigationDictionary: { [key: string]: string } = {
   'primary-configuration': 'Primary configuration',
   'configuration-groups': 'Configuration groups',
+  'action-host-groups': 'Action host groups',
   components: 'Components',
   info: 'Info',
 };
@@ -37,8 +38,9 @@ const ClusterServiceNavigation: React.FC = () => {
   return (
     <SubNavigationWrapper>
       <TabsBlock variant="secondary">
-        <Tab to={`/clusters/${cluster?.id}/services/${service?.id}/primary-configuration`}>Primary configuration</Tab>
-        <Tab to={`/clusters/${cluster?.id}/services/${service?.id}/configuration-groups`}>Configuration groups</Tab>
+        <Tab to="primary-configuration">Primary configuration</Tab>
+        <Tab to="configuration-groups">Configuration groups</Tab>
+        <Tab to="action-host-groups">Action host groups</Tab>
         <Tab to="components">Components</Tab>
         <Tab to="info">Info</Tab>
       </TabsBlock>

@@ -1,13 +1,6 @@
-import { AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm/dynamicAction';
-
-export interface DynamicActionCommonOptions {
-  actionDetails: AdcmDynamicActionDetails;
-  onSubmit: (data: Partial<AdcmDynamicActionRunConfig>) => void;
-  onCancel: () => void;
-}
-
-export enum DynamicActionType {
-  Confirm = 'confirm',
+export enum DynamicActionStep {
+  AgreeActionHostsGroup = 'agreeActionHostsGroup',
   ConfigSchema = 'configSchema',
   HostComponentMapping = 'hostComponentMapping',
+  Confirm = 'confirm',
 }

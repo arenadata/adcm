@@ -8,9 +8,10 @@ interface CodeEditorTextAreaProps {
   rowCount: number;
   isReadonly?: boolean;
   onChange: (code: string) => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
 }
 
-const CodeEditorTextArea = ({ code, rowCount, isReadonly, onChange }: CodeEditorTextAreaProps) => {
+const CodeEditorTextArea = ({ code, rowCount, isReadonly, onChange, onKeyDown }: CodeEditorTextAreaProps) => {
   const longestRow = code.split('\n').reduce((longest, row) => {
     return longest < row.length ? row.length : longest;
   }, 0);
@@ -23,6 +24,7 @@ const CodeEditorTextArea = ({ code, rowCount, isReadonly, onChange }: CodeEditor
       autoCapitalize="off"
       onKeyDown={(event) => {
         shortcuts(event);
+        onKeyDown?.(event);
       }}
       rows={rowCount}
       cols={longestRow}

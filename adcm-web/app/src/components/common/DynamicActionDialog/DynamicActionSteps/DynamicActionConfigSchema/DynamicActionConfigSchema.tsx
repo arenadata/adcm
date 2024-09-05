@@ -1,23 +1,23 @@
-import React, { useState } from 'react';
-import { DynamicActionCommonOptions } from '@commonComponents/DynamicActionDialog/DynamicAction.types';
+import { useState } from 'react';
 import { prepareConfigurationFromActionDetails } from '@commonComponents/DynamicActionDialog/DynamicActionDialog.utils';
 import DynamicActionConfigSchemaToolbar from './DynamicActionConfigSchemaToolbar/DynamicActionConfigSchemaToolbar';
 import ConfigurationFormContextProvider from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContextProvider';
 import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
-import { AdcmConfiguration, AdcmDynamicActionRunConfig } from '@models/adcm';
+import type { AdcmConfiguration, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm';
 
-interface DynamicActionConfigSchemaProps extends DynamicActionCommonOptions {
-  submitLabel?: string;
+interface DynamicActionConfigSchemaProps {
+  actionDetails: AdcmDynamicActionDetails;
   configuration?: AdcmDynamicActionRunConfig['configuration'] | null;
+  onNext: (changes: Partial<AdcmDynamicActionRunConfig>) => void;
+  onCancel: () => void;
 }
 
-const DynamicActionConfigSchema: React.FC<DynamicActionConfigSchemaProps> = ({
+const DynamicActionConfigSchema = ({
   actionDetails,
-  onSubmit,
+  onNext,
   onCancel,
-  submitLabel = 'Run',
   configuration: runConfiguration,
-}) => {
+}: DynamicActionConfigSchemaProps) => {
   const [localConfiguration, setLocalConfiguration] = useState<AdcmConfiguration | null>(() => {
     const configuration = prepareConfigurationFromActionDetails(actionDetails);
     if (configuration === null) return null;
@@ -34,9 +34,9 @@ const DynamicActionConfigSchema: React.FC<DynamicActionConfigSchemaProps> = ({
     setLocalConfiguration(configuration);
   };
 
-  const handleSubmit = () => {
+  const handleNext = () => {
     if (localConfiguration) {
-      onSubmit({
+      onNext({
         configuration: { config: localConfiguration.configurationData, adcmMeta: localConfiguration.attributes },
       });
     }
@@ -45,12 +45,7 @@ const DynamicActionConfigSchema: React.FC<DynamicActionConfigSchemaProps> = ({
   return (
     <div>
       <ConfigurationFormContextProvider>
-        <DynamicActionConfigSchemaToolbar
-          onCancel={onCancel}
-          submitLabel={submitLabel}
-          onReset={onReset}
-          onSubmit={handleSubmit}
-        />
+        <DynamicActionConfigSchemaToolbar onCancel={onCancel} onReset={onReset} onNext={handleNext} />
         <ConfigurationMain configuration={localConfiguration} onChangeConfiguration={setLocalConfiguration} />
       </ConfigurationFormContextProvider>
     </div>

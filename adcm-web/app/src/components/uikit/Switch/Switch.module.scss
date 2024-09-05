@@ -31,9 +31,9 @@
     --switch-blue-on-background: var(--color-xblue);
     --switch-blue-on-background-hover: var(--color-teal);
 
-    --switch-off-background: rgba(127, 130, 133, 0.2);
+    --switch-off-background: var(--color-plate-20);
     --switch-off-button-background: var(--color-xgray-light);
-    --switch-off-background-hover: rgba(127, 130, 133, 0.4);
+    --switch-off-background-hover: var(--color-plate-40);
     --switch-off-button-background-hover: var(--color-xgray-light);
 
     --switch-disabled-background: var(--color-xdark-plate20);

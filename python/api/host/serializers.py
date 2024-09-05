@@ -13,7 +13,7 @@
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
 from cm.api import add_host
-from cm.issue import update_hierarchy_issues, update_issue_after_deleting
+from cm.issue import update_hierarchy_issues, update_issues_and_flags_after_deleting
 from cm.models import (
     MAINTENANCE_MODE_BOTH_CASES_CHOICES,
     Action,
@@ -120,7 +120,7 @@ class HostUpdateSerializer(HostDetailSerializer):
 
         update_hierarchy_issues(instance.cluster)
         update_hierarchy_issues(instance.provider)
-        update_issue_after_deleting()
+        update_issues_and_flags_after_deleting()
 
         return instance
 

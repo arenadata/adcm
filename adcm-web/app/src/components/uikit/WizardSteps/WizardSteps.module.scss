@@ -1,85 +1,22 @@
 :global {
   body.theme-dark {
-    --wizard-step-color-default: var(--color-xgray-light);
-    --wizard-step-border-default: transparent;
-    --wizard-step-background-default: transparent;
-    --wizard-step-marker-background-default: var(--color-xdark);
-
-    // disabled
-    --wizard-step-color-disabled: var(--color-all-new-black);
-    --wizard-step-border-disabled: transparent;
-    --wizard-step-background-disabled: transparent;
-    --wizard-step-marker-background-disabled: var(--color-xdark-plate10);
-
-    // active
-    --wizard-step-color-active: var(--color-xgreen-saturated);
-    --wizard-step-border-active: var(--color-xdark);
-    --wizard-step-background-active: var(--color-new-light);
-
-    // error
-    --wizard-step-color-error: var(--color-xred);
-    --wizard-step-border-error: var(--color-red-10);
-    --wizard-step-background-error: var(--color-red-10);
-    --wizard-step-marker-background-error: var(--color-red-10);
+    --wizard-step--stem-number-background-color: var(--color-plate-10);
   }
 
   body.theme-light {
-    --wizard-step-marker-color: var(--color-adcmx);
-    --wizard-step-marker-background: #EEF2F5;
-
-    --wizard-step-marker-color-active: var(--color-xdark);
-    --wizard-step-marker-background-active: var(--color-popup-light);
+    --wizard-step--stem-number-background-color: var(--color-popup-light);
   }
 }
 
 .wizardSteps {
-  counter-reset: step;
-  display: flex;
-  gap: 12px;
-
-  &__item {
-    padding: 5px 11px 5px 5px;
-    font-weight: 500;
-    font-size: 15px;
-    line-height: 20px;
+  .tabButton {
     display: flex;
-    align-items: center;
-    border-radius: 4px;
-    border: 1px solid var(--wizard-step-border, var(--wizard-step-border-default));
-    background: var(--wizard-step-background, var(--wizard-step-background-default));
-    color: var(--wizard-step-color, var(--wizard-step-color-default));
-    cursor: pointer;
+    gap: 6px;
 
-    &::before {
-      content: counter(step);
-      counter-increment: step;
-      border-radius: 50px;
-      background: var(--wizard-step-marker-background, var(--wizard-step-marker-background-default));
+    &__stepNumber {
       width: 20px;
-      line-height: 20px;
-      text-align: center;
-      margin-right: 6px;
-      font-size: 13px;
-    }
-
-    &:global(.is-active) {
-      --wizard-step-border: var(--wizard-step-border-active);
-      --wizard-step-background: var(--wizard-step-background-active);
-      --wizard-step-color: var(--wizard-step-color-active);
-    }
-
-    &:global(.is-disabled) {
-      --wizard-step-border: var(--wizard-step-border-disabled);
-      --wizard-step-background: var(--wizard-step-background-disabled);
-      --wizard-step-color: var(--wizard-step-color-disabled);
-      cursor: not-allowed;
-    }
-
-    &:global(.has-error) {
-      --wizard-step-border: var(--wizard-step-border-error);
-      --wizard-step-background: var(--wizard-step-background-error);
-      --wizard-step-color: var(--wizard-step-color-error);
-      --wizard-step-marker-background: var(--wizard-step-marker-background-error);
+      border-radius: 20px;
+      background-color: var(--wizard-step--stem-number-background-color);
     }
   }
 }

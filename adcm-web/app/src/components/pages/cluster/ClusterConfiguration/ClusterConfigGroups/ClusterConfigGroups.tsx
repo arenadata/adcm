@@ -62,17 +62,20 @@ const ClusterConfigGroups: React.FC = () => {
     <PermissionsChecker requestState={accessCheckStatus}>
       <div>
         <ConfigGroupsHeader onCreate={handleCreateConfigGroup} />
-        <ConfigGroupsTable
-          configGroups={clusterConfigGroups}
-          isLoading={isLoading}
-          sortParams={sortParams}
-          onSorting={handleSorting}
-          onMapping={handleMappingConfigGroup}
-          editUrlPattern={`/clusters/${clusterId}/configuration/config-groups/:configGroupId`}
-          onDelete={handleDeleteConfigGroup}
-        />
-        <ClusterConfigGroupTableFooter />
-
+        {clusterConfigGroups.length > 0 && (
+          <>
+            <ConfigGroupsTable
+              configGroups={clusterConfigGroups}
+              isLoading={isLoading}
+              sortParams={sortParams}
+              onSorting={handleSorting}
+              onMapping={handleMappingConfigGroup}
+              editUrlPattern={`/clusters/${clusterId}/configuration/config-groups/:configGroupId`}
+              onDelete={handleDeleteConfigGroup}
+            />
+            <ClusterConfigGroupTableFooter />
+          </>
+        )}
         <ClusterConfigGroupDialogs />
       </div>
     </PermissionsChecker>

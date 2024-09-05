@@ -1,26 +1,38 @@
 import React, { useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useDispatch, useStore } from '@hooks';
 import { Button, ButtonGroup, SearchInput, SpinnerPanel, ToolbarPanel } from '@uikit';
-import { DynamicActionCommonOptions } from '@commonComponents/DynamicActionDialog/DynamicAction.types';
-import s from '@commonComponents/DynamicActionDialog/DynamicActionDialog.module.scss';
 import { useClusterMapping } from '@pages/cluster/ClusterMapping/useClusterMapping';
-import ComponentContainer from '@pages/cluster/ClusterMapping/ComponentsMapping/ComponentContainer/ComponentContainer';
-import { getMappings } from '@store/adcm/clusters/clustersDynamicActionsSlice';
-import { getComponentMapActions, getDisabledMappings } from './DynamicActionHostMapping.utils';
-import { Link } from 'react-router-dom';
+import { getMappings } from '@store/adcm/entityDynamicActions/dynamicActionsMappingSlice';
 import { LoadState } from '@models/loadState';
+import type {
+  AdcmDynamicActionDetails,
+  AdcmDynamicActionRunConfig,
+  AdcmHostShortView,
+  AdcmMappingComponent,
+} from '@models/adcm';
+import s from '@commonComponents/DynamicActionDialog/DynamicActionDialog.module.scss';
+import ComponentContainer from '@pages/cluster/ClusterMapping/ComponentsMapping/ComponentContainer/ComponentContainer';
+import {
+  checkComponentActionsMappingAvailability,
+  checkHostActionsMappingAvailability,
+  getComponentMapActions,
+  getDisabledMappings,
+} from './DynamicActionHostMapping.utils';
 
-interface DynamicActionHostMappingProps extends DynamicActionCommonOptions {
-  submitLabel?: string;
+interface DynamicActionHostMappingProps {
   clusterId: number;
+  actionDetails: AdcmDynamicActionDetails;
+  configuration?: AdcmDynamicActionRunConfig['configuration'] | null;
+  onNext: (changes: Partial<AdcmDynamicActionRunConfig>) => void;
+  onCancel: () => void;
 }
 
 const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
   clusterId,
   actionDetails,
-  onSubmit,
+  onNext,
   onCancel,
-  submitLabel = 'Run',
 }) => {
   const dispatch = useDispatch();
 
@@ -30,9 +42,7 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
     }
   }, [clusterId, dispatch]);
 
-  const {
-    dialog: { hosts, components, mapping, loadState },
-  } = useStore(({ adcm }) => adcm.clustersDynamicActions);
+  const { hosts, components, mapping, loadState } = useStore(({ adcm }) => adcm.dynamicActionsMapping);
 
   const notAddedServicesDictionary = useStore(({ adcm }) => adcm.clusterMapping.relatedData.notAddedServicesDictionary);
 
@@ -49,8 +59,8 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
 
   const isServicesMappingEmpty = servicesMapping.length === 0;
 
-  const handleSubmit = () => {
-    onSubmit({ hostComponentMap: localMapping });
+  const handleNext = () => {
+    onNext({ hostComponentMap: localMapping });
   };
 
   const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,8 +79,8 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
           <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isServicesMappingEmpty || hasErrors} hasError={false}>
-            {submitLabel}
+          <Button onClick={handleNext} disabled={isServicesMappingEmpty || hasErrors} hasError={false}>
+            Next
           </Button>
         </ButtonGroup>
       </ToolbarPanel>
@@ -92,17 +102,29 @@ const DynamicActionHostMapping: React.FC<DynamicActionHostMappingProps> = ({
               const allowActions = getComponentMapActions(actionDetails, service, componentMapping.component);
               const componentMappingErrors = mappingErrors[componentMapping.component.id];
 
+              const checkComponentMappingAvailability = (component: AdcmMappingComponent) => {
+                return checkComponentActionsMappingAvailability(component, allowActions);
+              };
+
+              const checkHostMappingAvailability = (host: AdcmHostShortView) => {
+                return checkHostActionsMappingAvailability(
+                  host,
+                  allowActions,
+                  disabledMappings[componentMapping.component.id],
+                );
+              };
+
               return (
                 <ComponentContainer
                   key={componentMapping.component.id}
                   componentMapping={componentMapping}
                   filter={mappingFilter}
                   allHosts={hosts}
-                  disabledHosts={disabledMappings[componentMapping.component.id]}
                   mappingErrors={componentMappingErrors}
                   onMap={handleMapHostsToComponent}
                   onUnmap={handleUnmap}
-                  allowActions={allowActions}
+                  checkComponentMappingAvailability={checkComponentMappingAvailability}
+                  checkHostMappingAvailability={checkHostMappingAvailability}
                 />
               );
             }),
