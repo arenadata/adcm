@@ -17,6 +17,7 @@ from django.db.models import F
 
 from cm.converters import core_type_to_model, model_name_to_core_type
 from cm.models import GroupConfig
+from cm.services.host_group_common import HostGroupRepoMixin
 
 GroupConfigName: TypeAlias = str
 
@@ -68,3 +69,8 @@ def retrieve_group_configs_for_hosts(
         group.hosts.add(ShortObjectInfo(id=record["host_id"], name=record["host_name"]))
 
     return result
+
+
+class ConfigHostGroupRepo(HostGroupRepoMixin):
+    group_hosts_model = GroupConfig.hosts.through
+    group_hosts_field_name = "groupconfig"

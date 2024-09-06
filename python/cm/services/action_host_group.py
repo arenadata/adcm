@@ -28,6 +28,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from cm.converters import core_type_to_model, model_name_to_core_type
 from cm.models import ActionHostGroup, Host, HostComponent, TaskLog
+from cm.services.host_group_common import HostGroupRepoMixin
 
 ActionHostGroupID: TypeAlias = int
 
@@ -67,8 +68,9 @@ class HostError(ADCMMessageError):
     ...
 
 
-class ActionHostGroupRepo:
+class ActionHostGroupRepo(HostGroupRepoMixin):
     group_hosts_model = ActionHostGroup.hosts.through
+    group_hosts_field_name = "actionhostgroup"
 
     def create(self, dto: CreateDTO) -> ActionHostGroupID:
         object_type = ContentType.objects.get_for_model(core_type_to_model(dto.owner.type))
