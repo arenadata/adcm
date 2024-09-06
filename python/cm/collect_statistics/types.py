@@ -12,7 +12,7 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Collection, Generic, Protocol, TypeVar
+from typing import Collection, Generic, Protocol, TypedDict, TypeVar
 
 T = TypeVar("T")
 
@@ -46,3 +46,27 @@ class Encoder(Generic[T], ABC):
     @abstractmethod
     def decode(self, data: T) -> T:
         pass
+
+
+# Host Facts Section
+
+
+class HostDeviceFacts(TypedDict):
+    name: str
+    removable: str
+    rotational: str
+    size: str
+    description: str
+
+
+class HostOSFacts(TypedDict):
+    distribution: str
+    version: str
+    family: str
+
+
+class HostFacts(TypedDict):
+    cpu_vcores: int
+    os: HostOSFacts
+    ram: int
+    devices: list[HostDeviceFacts]
