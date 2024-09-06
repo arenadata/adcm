@@ -16,7 +16,6 @@ from typing import Literal, TypedDict
 import json
 
 from adcm_version import compare_prototype_versions
-from api_v2.cluster.utils import handle_mapping_action_host_groups
 from core.cluster.operations import find_hosts_difference
 from core.types import CoreObjectDescriptor
 from django.conf import settings
@@ -70,9 +69,11 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.action_host_group import ActionHostGroupRepo
 from cm.services.cluster import retrieve_clusters_topology
 from cm.services.concern.flags import BuiltInFlag, raise_flag, update_hierarchy
 from cm.services.concern.locks import get_lock_on_object
+from cm.services.group_config import ConfigHostGroupRepo
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import (
     send_config_creation_event,
@@ -537,7 +538,7 @@ def save_hc(
     cluster: Cluster, host_comp_list: list[tuple[ClusterObject, Host, ServiceComponent]]
 ) -> list[HostComponent]:
     hc_queryset = HostComponent.objects.filter(cluster=cluster).order_by("id")
-    service_set = {hc.service for hc in hc_queryset}
+    service_set = {hc.service for hc in hc_queryset.select_related("service")}
     old_hosts = {i.host for i in hc_queryset.select_related("host")}
     new_hosts = {i[1] for i in host_comp_list}
 
@@ -550,22 +551,6 @@ def save_hc(
 
         for added_host in new_hosts.difference(old_hosts):
             add_concern_to_object(object_=added_host, concern=lock)
-
-    still_hc = still_existed_hc(cluster, host_comp_list)
-    host_service_of_still_hc = {(hc.host, hc.service) for hc in still_hc}
-
-    for removed_hc in set(hc_queryset) - set(still_hc):
-        groupconfigs = GroupConfig.objects.filter(
-            object_type__model__in=["clusterobject", "servicecomponent"],
-            hosts=removed_hc.host,
-        )
-        for group_config in groupconfigs:
-            if (group_config.object_type.model == "clusterobject") and (
-                (removed_hc.host, removed_hc.service) in host_service_of_still_hc
-            ):
-                continue
-
-            group_config.hosts.remove(removed_hc.host)
 
     hc_queryset.delete()
     host_component_list = []
@@ -581,9 +566,9 @@ def save_hc(
         host_component_list.append(host_component)
 
     updated_topology = next(retrieve_clusters_topology(cluster_ids=(cluster.id,)))
-    handle_mapping_action_host_groups(
-        mapping_delta=find_hosts_difference(old_topology=previous_topology, new_topology=updated_topology).unmapped
-    )
+    unmapped_hosts = find_hosts_difference(new_topology=updated_topology, old_topology=previous_topology).unmapped
+    ActionHostGroupRepo().remove_unmapped_hosts_from_groups(unmapped_hosts)
+    ConfigHostGroupRepo().remove_unmapped_hosts_from_groups(unmapped_hosts)
 
     update_hierarchy_issues(cluster)
 
