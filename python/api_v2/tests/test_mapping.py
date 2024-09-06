@@ -403,21 +403,15 @@ class TestMappingConstraints(BaseAPITestCase):
         component_1 = ServiceComponent.objects.get(
             prototype__name="component_1", service=service_requires_service, cluster=self.cluster
         )
-
-        service_required = self.add_services_to_cluster(service_names=["service_required"], cluster=self.cluster).get()
-        component_in_required_service = ServiceComponent.objects.get(
-            prototype__name="component_in_required_service", service=service_required, cluster=self.cluster
-        )
+        # required service must be added (not exactly mapped) on mapping save
+        self.add_services_to_cluster(service_names=["service_required"], cluster=self.cluster).get()
 
         response: Response = self.client.v2[self.cluster, "mapping"].post(
-            data=[
-                {"hostId": self.host_1.pk, "componentId": component_1.pk},
-                {"hostId": self.host_1.pk, "componentId": component_in_required_service.pk},
-            ],
+            data=[{"hostId": self.host_1.pk, "componentId": component_1.pk}],
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertEqual(HostComponent.objects.count(), 2)
+        self.assertEqual(HostComponent.objects.count(), 1)
 
     def test_no_required_component_fail(self):
         service_requires_component = self.add_services_to_cluster(

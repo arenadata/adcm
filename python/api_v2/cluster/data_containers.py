@@ -43,6 +43,7 @@ class MappingData:
     existing_mapping: list[HostComponentData]
     orm_objects: dict[Literal["hosts", "cluster", "providers"], dict[int, Any] | Any]
     not_found_object_ids: dict[Literal["hosts", "components"], set]
+    existing_services_names: list[str]
 
     @cached_property
     def mapping_difference(self) -> dict[Literal["add", "remove", "remain"], list[MappingEntryData]]:
@@ -68,21 +69,6 @@ class MappingData:
                 )
                 for ids in input_mapping_ids.intersection(existing_mapping_ids)
             ],
-        }
-
-    @cached_property
-    def mapping_names(self) -> dict[Literal["services", "components"], set[str]]:
-        return {
-            "services": {
-                self.prototypes[map_.service.prototype_id].name
-                for map_ in self.mapping
-                if self.prototypes[map_.service.prototype_id].type == "service"
-            },
-            "components": {
-                self.prototypes[map_.service.prototype_id].name
-                for map_ in self.mapping
-                if self.prototypes[map_.service.prototype_id].type == "component"
-            },
         }
 
     @cached_property

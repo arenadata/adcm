@@ -138,6 +138,7 @@ def retrieve_mapping_data(
         "existing_mapping": [],
         "orm_objects": {"cluster": cluster, "hosts": {}, "providers": {}},
         "not_found_object_ids": {},
+        "existing_services_names": [],
     }
 
     for service in (
@@ -146,6 +147,8 @@ def retrieve_mapping_data(
         .prefetch_related("servicecomponent_set", "servicecomponent_set__prototype")
     ):
         service: ClusterObject
+
+        mapping_data["existing_services_names"].append(service.prototype.name)
         mapping_data["services"][service.pk] = ServiceData.model_validate(obj=service)
         mapping_data["prototypes"][service.prototype.pk] = PrototypeData.model_validate(obj=service.prototype)
         for component in service.servicecomponent_set.all():
@@ -333,7 +336,7 @@ def _check_single_mapping_requires(mapping_entry: MappingEntryData, mapping_data
     ]:
         require: RequiresData
 
-        if require.service not in mapping_data.mapping_names["services"]:
+        if require.service not in mapping_data.existing_services_names:
             if source_type == ObjectType.COMPONENT.value:
                 reference = f'component "{component_prototype.name}" of service "{service_prototype.name}"'
             else:
