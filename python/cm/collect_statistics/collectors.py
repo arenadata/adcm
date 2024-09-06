@@ -12,14 +12,16 @@
 
 from collections import defaultdict
 from hashlib import md5
-from typing import Collection, Literal
+from itertools import chain
+from typing import Callable, Collection, Literal
 
 from django.db.models import Count, F, Q
 from pydantic import BaseModel
 from rbac.models import Policy, Role, User
 from typing_extensions import TypedDict
 
-from cm.models import Bundle, Cluster, HostComponent, HostProvider
+from cm.collect_statistics.types import HostDeviceFacts, HostFacts, HostOSFacts
+from cm.models import Bundle, Cluster, HostComponent, HostInfo, HostProvider
 
 
 class BundleData(TypedDict):
@@ -40,6 +42,7 @@ class ClusterData(TypedDict):
     host_count: int
     bundle: dict
     host_component_map: list[dict]
+    hosts: list[dict]
 
 
 class HostProviderData(TypedDict):
@@ -69,6 +72,20 @@ class RBACEntities(BaseModel):
     roles: list[RoleData]
 
 
+def _get_hosts_by_edition(data: ADCMEntities, edition: Literal["community", "enterprise"]) -> list[dict]:
+    return list(
+        chain.from_iterable(cluster["hosts"] for cluster in data.clusters if cluster["bundle"]["edition"] == edition)
+    )
+
+
+def map_community_bundle_data(data: ADCMEntities) -> ADCMEntities:
+    community_hosts = _get_hosts_by_edition(data=data, edition="community")
+    for host in community_hosts:
+        host["info"]["os"] = HostOSFacts(**{k: v for k, v in host["info"]["os"].items() if k == "family"})
+
+    return data
+
+
 class RBACCollector:
     def __init__(self, date_format: str):
         self._date_format = date_format
@@ -89,11 +106,17 @@ class RBACCollector:
 
 
 class BundleCollector:
-    __slots__ = ("_date_format", "_filters")
+    __slots__ = ("_date_format", "_filters", "_mapper")
 
-    def __init__(self, date_format: str, filters: Collection[Q]):
+    def __init__(
+        self,
+        date_format: str,
+        filters: Collection[Q] = (),
+        mapper: Callable[[ADCMEntities], ADCMEntities] = lambda x: x,
+    ):
         self._date_format = date_format
         self._filters = filters
+        self._mapper = mapper
 
     def __call__(self) -> ADCMEntities:
         bundles: dict[int, BundleData] = {
@@ -129,18 +152,35 @@ class BundleCollector:
                 )
             )
 
+        host_data = defaultdict(list)
+        for host_info in HostInfo.objects.select_related("host").filter(
+            host__cluster_id__in=cluster_general_info.keys()
+        ):
+            device_facts = [HostDeviceFacts(**device) for device in host_info.value["devices"]]
+            host_facts = HostFacts(
+                cpu_vcores=host_info.value["cpu_vcores"],
+                os=host_info.value["os"],
+                ram=host_info.value["ram"],
+                devices=device_facts,
+            )
+
+            host_data[host_info.host.cluster_id].append({"name": host_info.host.fqdn, "info": host_facts})
+
         clusters_data = [
             ClusterData(
                 name=data["name"],
                 host_count=data["host_count"],
                 bundle=bundles[data["bundle_id"]],
                 host_component_map=hostcomponent_data.get(cluster_id, []),
+                hosts=host_data.get(cluster_id, []),
             )
             for cluster_id, data in cluster_general_info.items()
         ]
 
-        return ADCMEntities(
-            clusters=clusters_data,
-            bundles=bundles.values(),
-            providers=hostproviders_data,
+        return self._mapper(
+            ADCMEntities(
+                clusters=clusters_data,
+                bundles=bundles.values(),
+                providers=hostproviders_data,
+            )
         )

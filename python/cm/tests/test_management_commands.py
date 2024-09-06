@@ -31,13 +31,13 @@ from rbac.models import Policy, Role, User
 from requests.exceptions import ConnectionError
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_405_METHOD_NOT_ALLOWED
 
-from cm.collect_statistics.collectors import BundleCollector
+from cm.collect_statistics.collectors import BundleCollector, map_community_bundle_data
 from cm.collect_statistics.encoders import TarFileEncoder
 from cm.collect_statistics.errors import RetriesExceededError, SenderConnectionError
 from cm.collect_statistics.gather_hardware_info import get_inventory
 from cm.collect_statistics.senders import SenderSettings, StatisticSender
 from cm.collect_statistics.storages import JSONFile, StorageError, TarFileWithJSONFileStorage
-from cm.models import ADCM, Bundle, ServiceComponent
+from cm.models import ADCM, Bundle, Host, HostInfo, ServiceComponent
 from cm.services.job.inventory import get_objects_configurations
 from cm.tests.utils import gen_cluster, gen_provider
 
@@ -165,7 +165,6 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
 
         host_1 = self.add_host(provider=provider_full_1, fqdn="host-1", cluster=cluster_reg_1)
         host_2 = self.add_host(provider=provider_full_1, fqdn="host-2", cluster=cluster_reg_2)
-        self.add_host(provider=provider_reg_1, fqdn="host-3", cluster=cluster_reg_1)
 
         self.add_services_to_cluster(["service_one_component"], cluster=cluster_reg_1)
         service_2 = self.add_services_to_cluster(["service_two_components"], cluster=cluster_reg_1).get()
@@ -184,6 +183,8 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
         current_year = str(timezone.now().year)
         host_1_name_hash = md5(host_1.fqdn.encode("utf-8")).hexdigest()  # noqa: S324
         host_2_name_hash = md5(host_2.fqdn.encode("utf-8")).hexdigest()  # noqa: S324
+        self.add_host(provider=provider_reg_1, fqdn="host-3", cluster=cluster_reg_1)
+
         expected_bundles = [
             {"name": bundle.name, "version": bundle.version, "edition": "community", "date": current_year}
             for bundle in (
@@ -211,6 +212,7 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
                         "host_count": 0,
                         "bundle": expected_bundles[1],
                         "host_component_map": [],
+                        "hosts": [],
                     },
                     {
                         "name": cluster_reg_1.name,
@@ -231,6 +233,7 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
                             ],
                             key=order_hc_by,
                         ),
+                        "hosts": [],
                     },
                     {
                         "name": cluster_reg_2.name,
@@ -243,6 +246,7 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
                                 "service_name": service_3.name,
                             },
                         ],
+                        "hosts": [],
                     },
                 ],
                 key=by_name,
@@ -329,6 +333,97 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
 
         self.assertDictEqual(actual_inventory, expected_inventory)
 
+    def test_host_info_dump_mapping(self):
+        bundle_cluster_reg = self.add_bundle(self.bundles_dir / "cluster_1")
+
+        bundle_prov_reg = self.add_bundle(self.bundles_dir / "provider")
+        bundle_prov_full = self.add_bundle(self.bundles_dir / "provider_full_config")
+
+        cluster_reg_1 = self.add_cluster(bundle=bundle_cluster_reg, name="Regular 1")
+        cluster_reg_2 = self.add_cluster(bundle=bundle_cluster_reg, name="Regular 2")
+
+        provider_full_1 = self.add_provider(bundle=bundle_prov_full, name="Prov Full 1")
+        provider_reg_1 = self.add_provider(bundle=bundle_prov_reg, name="Prov Reg 1")
+
+        self.add_host(provider=provider_full_1, fqdn="host-1", cluster=cluster_reg_1)
+        self.add_host(provider=provider_full_1, fqdn="host-2", cluster=cluster_reg_2)
+        self.add_host(provider=provider_reg_1, fqdn="host-3", cluster=cluster_reg_1)
+
+        host_values = [
+            {
+                "cpu_vcores": 8,
+                "os": {"family": "RedHat"},
+                "ram": 12457,
+                "devices": [{"name": "vda", "removable": 0, "size": "20.00 GB"}],
+            },
+            {
+                "cpu_vcores": 8,
+                "devices": [
+                    {
+                        "name": "vda",
+                        "removable": "0",
+                        "rotational": "0",
+                        "size": "20.00 GB",
+                        "description": "Virtual I/O device",
+                    }
+                ],
+                "os": {"distribution": "CentOS", "family": "RedHat", "version": "7.9"},
+                "ram": 15884,
+            },
+            {
+                "cpu_vcores": 6,
+                "os": {"distribution": "CentOS", "version": "7.9"},
+                "ram": 12457,
+                "devices": [{"name": "vda", "removable": 0, "size": "20.00 GB"}],
+            },
+        ]
+
+        for cluster in [cluster_reg_1, cluster_reg_2]:
+            host = Host.objects.filter(cluster__name=cluster.name)
+            for host_object in host:
+                host_hash = md5(host_object.fqdn.encode(encoding="utf-8")).hexdigest()  # noqa: S324
+                HostInfo.objects.create(host=host_object, value=host_values.pop(), hash=host_hash)
+        self.assertEqual(HostInfo.objects.count(), 3)
+
+        with self.subTest("test community edition"):
+            collect = BundleCollector(
+                date_format="%Y", filters=[Q(edition="community")], mapper=map_community_bundle_data
+            )
+            actual = collect().model_dump()
+
+            for cluster in actual["clusters"]:
+                for host in cluster["hosts"]:
+                    if host["name"] == "host-1":
+                        self.assertEqual(host["info"]["os"], {})
+                    else:
+                        self.assertEqual(host["info"]["os"], {"family": "RedHat"})
+
+        with self.subTest("test enterprise edition"):
+            for bundle in Bundle.objects.all():
+                bundle.edition = "enterprise"
+                bundle.save()
+            collect = BundleCollector(date_format="%Y", filters=[Q(edition="enterprise")])
+            actual = collect().model_dump()
+
+            for cluster in actual["clusters"]:
+                for host in cluster["hosts"]:
+                    if host["name"] == "host-1":
+                        self.assertEqual(host["info"]["os"], {"distribution": "CentOS", "version": "7.9"})
+                    elif host["name"] == "host-3":
+                        self.assertEqual(
+                            host["info"]["os"], {"distribution": "CentOS", "family": "RedHat", "version": "7.9"}
+                        )
+                    else:
+                        self.assertEqual(host["info"]["os"], {"family": "RedHat"})
+
+        with self.subTest("test mapper and filter mismatch"):
+            collect = BundleCollector(date_format="%Y", filters=[Q(edition="community")])
+            actual = collect().model_dump()
+
+            self.assertListEqual(actual["bundles"], [])
+            self.assertListEqual(actual["clusters"], [])
+            self.assertListEqual(actual["providers"], [])
+
 
 class TestStorage(BaseAPITestCase):
     def setUp(self) -> None:
@@ -352,6 +447,7 @@ class TestStorage(BaseAPITestCase):
         host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2")
         host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3")
         host_unmapped = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_unmapped")
+
         self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_not_in_cluster")
 
         for host in (host_1, host_2, host_3, host_unmapped):
@@ -438,6 +534,7 @@ class TestStorage(BaseAPITestCase):
                         "service_name": "service_1",
                     },
                 ],
+                "hosts": [],
             },
             {
                 "name": "cluster_2",
