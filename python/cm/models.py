@@ -1695,3 +1695,16 @@ def get_model_by_type(object_type):
         # This function should return a Model, this is necessary for the correct
         # construction of the schema.
         return Cluster
+
+
+class HostInfo(models.Model):
+    host = models.OneToOneField(Host, on_delete=models.CASCADE, null=False)
+    value = models.JSONField()
+    hash = models.CharField(max_length=255)
+    date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("host",)
+        indexes = [
+            models.Index(fields=["host"]),
+        ]
