@@ -16,6 +16,7 @@ interface MultilineStringControlProps {
   fieldSchema: SingleSchemaDefinition;
   isReadonly: boolean;
   onChange: (newValue: JSONPrimitive, isValid?: boolean) => void;
+  onApply: () => void;
 }
 
 const MultilineStringControl = ({
@@ -24,6 +25,7 @@ const MultilineStringControl = ({
   fieldSchema,
   isReadonly,
   onChange,
+  onApply,
 }: MultilineStringControlProps) => {
   const stringValue = value?.toString() ?? '';
   const format = fieldSchema.format ?? 'text';
@@ -49,6 +51,12 @@ const MultilineStringControl = ({
     onChange(code, error === undefined);
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.code === 'Enter' && event.ctrlKey) {
+      onApply();
+    }
+  };
+
   return (
     <ConfigurationField
       label={fieldName}
@@ -63,6 +71,7 @@ const MultilineStringControl = ({
         code={code}
         isReadonly={isReadonly}
         onChange={handleChange}
+        onKeyDown={handleKeyDown}
       />
     </ConfigurationField>
   );

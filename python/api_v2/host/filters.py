@@ -20,7 +20,21 @@ class HostFilter(FilterSet):
     cluster_name = CharFilter(label="Cluster name", field_name="cluster__name")
     is_in_cluster = BooleanFilter(label="Is host in cluster", method="filter_is_in_cluster")
     ordering = OrderingFilter(
-        fields={"fqdn": "name", "id": "id"}, field_labels={"name": "Name", "id": "Id"}, label="ordering"
+        fields={
+            "fqdn": "name",
+            "id": "id",
+            "state": "state",
+            "provider__name": "hostproviderName",
+            "cluster__name": "clusterName",
+        },
+        field_labels={
+            "fqdn": "Name",
+            "id": "Id",
+            "state": "State",
+            "provider__name": "Hostprovider name",
+            "cluster__name": "Cluster name",
+        },
+        label="ordering",
     )
 
     class Meta:
@@ -37,7 +51,19 @@ class HostMemberFilter(FilterSet):
     hostprovider_name = CharFilter(label="Hostprovider name", field_name="provider__name")
     component_id = NumberFilter(label="Component id", field_name="hostcomponent__component_id")
     ordering = OrderingFilter(
-        fields={"fqdn": "name", "id": "id"}, field_labels={"name": "Name", "id": "Id"}, label="ordering"
+        fields={
+            "fqdn": "name",
+            "state": "state",
+            "id": "id",
+            "provider__name": "hostproviderName",
+        },
+        field_labels={
+            "name": "Name",
+            "id": "Id",
+            "state": "State",
+            "hostproviderName": "Hostprovider name",
+        },
+        label="ordering",
     )
 
     class Meta:

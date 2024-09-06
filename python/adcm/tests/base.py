@@ -109,9 +109,9 @@ class ParallelReadyTestCase:
 
 class BundleLogicMixin:
     @staticmethod
-    def prepare_bundle_file(source_dir: Path) -> str:
+    def prepare_bundle_file(source_dir: Path, target_dir: Path | None = None) -> str:
         bundle_file = f"{source_dir.name}.tar"
-        with tarfile.open(settings.DOWNLOAD_DIR / bundle_file, "w") as tar:
+        with tarfile.open((target_dir or settings.DOWNLOAD_DIR) / bundle_file, "w") as tar:
             for file in source_dir.iterdir():
                 tar.add(name=file, arcname=file.name)
 

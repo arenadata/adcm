@@ -9,9 +9,10 @@ export interface NumberControlProps {
   fieldSchema: SingleSchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive) => void;
+  onApply: () => void;
 }
 
-const NumberControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: NumberControlProps) => {
+const NumberControl = ({ fieldName, fieldSchema, value, isReadonly, onChange, onApply }: NumberControlProps) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.value === '') {
       onChange('');
@@ -20,14 +21,21 @@ const NumberControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
     }
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key === 'Enter') {
+      onApply();
+    }
+  };
+
   return (
     <ConfigurationField label={fieldName} fieldSchema={fieldSchema} disabled={isReadonly} onResetToDefault={onChange}>
       <InputNumber
         value={value as number}
         disabled={isReadonly}
-        onChange={handleChange}
         min={fieldSchema.minimum}
         max={fieldSchema.maximum}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
       />
     </ConfigurationField>
   );

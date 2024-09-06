@@ -16,7 +16,7 @@ from django_filters.rest_framework import CharFilter, FilterSet
 
 class ActionHostGroupFilter(FilterSet):
     name = CharFilter(field_name="name", label="Name", lookup_expr="icontains")
-    has_host = CharFilter(field_name="hosts", label="Group Has Host", lookup_expr="fqdn__icontains")
+    has_host = CharFilter(field_name="hosts", label="Group Has Host", lookup_expr="fqdn__icontains", distinct=True)
 
     class Meta:
         model = ActionHostGroup

@@ -62,6 +62,9 @@ import ServiceComponentConfigGroupSingle from '@pages/cluster/service/component/
 import HostProviderConfigurationGroupSingle from '@pages/HostProviderPage/HostProviderConfigurationGroupSingle/HostProviderConfigurationGroupSingle';
 import NotFoundPage from '@pages/NotFoundPage/NotFoundPage';
 import ClusterAnsibleSettings from '@pages/cluster/ClusterConfiguration/ClusterAnsibleSettings/ClusterAnsibleSettings';
+import ClusterActionHostGroups from '@pages/cluster/ClusterConfiguration/ClusterActionHostGroups/ClusterActionHostGroups';
+import ServiceActionHostGroups from '@pages/cluster/service/ServiceActionHostGroups/ServiceActionHostGroups';
+import ComponentActionHostGroups from '@pages/cluster/service/component/ComponentActionHostGroups/ComponentActionHostGroups';
 
 function App() {
   return (
@@ -108,6 +111,10 @@ function App() {
                         element={<ServiceConfigGroupSingle />}
                       />
                       <Route
+                        path="/clusters/:clusterId/services/:serviceId/action-host-groups"
+                        element={<ServiceActionHostGroups />}
+                      />
+                      <Route
                         path="/clusters/:clusterId/services/:serviceId/components"
                         element={<ServiceComponents />}
                       />
@@ -123,6 +130,10 @@ function App() {
                         <Route
                           path="/clusters/:clusterId/services/:serviceId/components/:componentId/configuration-groups"
                           element={<ServiceComponentConfigurationGroups />}
+                        />
+                        <Route
+                          path="/clusters/:clusterId/services/:serviceId/components/:componentId/action-host-groups"
+                          element={<ComponentActionHostGroups />}
                         />
                         <Route
                           path="/clusters/:clusterId/services/:serviceId/components/:componentId/configuration-groups/:configGroupId"
@@ -160,6 +171,10 @@ function App() {
                     <Route
                       path="/clusters/:clusterId/configuration/ansible-settings"
                       element={<ClusterAnsibleSettings />}
+                    />
+                    <Route
+                      path="/clusters/:clusterId/configuration/action-host-groups"
+                      element={<ClusterActionHostGroups />}
                     />
                   </Route>
                   <Route path="/clusters/:clusterId/import" element={<ClusterImport />}>

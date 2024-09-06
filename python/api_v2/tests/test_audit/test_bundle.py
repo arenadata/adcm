@@ -33,9 +33,11 @@ class TestBundleAudit(BaseAPITestCase):
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_audit_upload_success(self):
-        new_bundle_file = self.prepare_bundle_file(source_dir=self.test_bundles_dir / "cluster_one")
+        new_bundle_file = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "cluster_one", target_dir=settings.TMP_DIR
+        )
 
-        with open(settings.DOWNLOAD_DIR / new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+        with open(settings.TMP_DIR / new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)

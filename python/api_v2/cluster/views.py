@@ -441,7 +441,7 @@ class ClusterViewSet(
     )
     def mapping_hosts(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = self.get_object()
-        serializer = self.get_serializer(instance=Host.objects.filter(cluster=cluster), many=True)
+        serializer = self.get_serializer(instance=Host.objects.filter(cluster=cluster).order_by("fqdn"), many=True)
 
         return Response(status=HTTP_200_OK, data=serializer.data)
 
