@@ -10,10 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.services.job.inventory._base import (
-    get_cluster_vars,
-    get_inventory_data,
-)
+from cm.services.job.inventory._base import get_basic_info_for_hosts, get_cluster_vars, get_inventory_data
 from cm.services.job.inventory._config import get_adcm_configuration, get_objects_configurations
 from cm.services.job.inventory._groups import detect_host_groups_for_cluster_bundle_action
 from cm.services.job.inventory._imports import get_imports_for_inventory
@@ -27,16 +24,17 @@ from cm.services.job.inventory._types import (
 )
 
 __all__ = [
-    "ClusterVars",
     "ClusterNode",
-    "ServiceNode",
+    "ClusterVars",
+    "ComponentNode",
     "HostNode",
     "HostProviderNode",
-    "ComponentNode",
-    "get_cluster_vars",
-    "get_inventory_data",
-    "get_imports_for_inventory",
+    "ServiceNode",
     "detect_host_groups_for_cluster_bundle_action",
     "get_adcm_configuration",
+    "get_basic_info_for_hosts",
+    "get_cluster_vars",
+    "get_imports_for_inventory",
+    "get_inventory_data",
     "get_objects_configurations",
 ]

@@ -22,6 +22,7 @@ import datetime
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from api_v2.tests.base import BaseAPITestCase, ParallelReadyTestCase
+from core.types import ADCMCoreType
 from django.conf import settings
 from django.db.models import Q
 from django.test import TestCase
@@ -33,9 +34,11 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_405_METHOD
 from cm.collect_statistics.collectors import BundleCollector
 from cm.collect_statistics.encoders import TarFileEncoder
 from cm.collect_statistics.errors import RetriesExceededError, SenderConnectionError
+from cm.collect_statistics.gather_hardware_info import get_inventory
 from cm.collect_statistics.senders import SenderSettings, StatisticSender
 from cm.collect_statistics.storages import JSONFile, StorageError, TarFileWithJSONFileStorage
 from cm.models import ADCM, Bundle, ServiceComponent
+from cm.services.job.inventory import get_objects_configurations
 from cm.tests.utils import gen_cluster, gen_provider
 
 
@@ -257,6 +260,74 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
             entry["host_component_map"] = sorted(entry["host_component_map"], key=order_hc_by)
 
         self.assertDictEqual(actual, expected)
+
+    def test_inventory(self):
+        # prepare data
+        bundle_community = self.add_bundle(self.bundles_dir / "cluster_1")
+        bundle_enterprise = self.add_bundle(self.bundles_dir / "cluster_full_config")
+        bundle_enterprise.edition = "enterprise"
+        bundle_enterprise.save(update_fields=["edition"])
+        bundle_provider = self.add_bundle(self.bundles_dir / "provider")
+
+        cluster_community = self.add_cluster(bundle=bundle_community, name="Cluster community")
+        cluster_enterprise = self.add_cluster(bundle=bundle_enterprise, name="Cluster enterprise")
+        provider = self.add_provider(bundle=bundle_provider, name="Provider")
+
+        h1_free = self.add_host(provider=provider, fqdn="H1 free")
+        h2_community = self.add_host(provider=provider, fqdn="H2 community", cluster=cluster_community)
+        h3_enterprise = self.add_host(provider=provider, fqdn="H3 enterprise", cluster=cluster_enterprise)
+        h4_enterprise = self.add_host(provider=provider, fqdn="H4 enterprise", cluster=cluster_enterprise)
+
+        configs = get_objects_configurations(
+            objects={ADCMCoreType.HOST: {h1_free.id, h2_community.id, h3_enterprise.id, h4_enterprise.id}}
+        )
+
+        # test
+        expected_inventory = {
+            "all": {
+                "children": {
+                    "ADCM": {
+                        "hosts": {
+                            h1_free.fqdn: {
+                                "adcm_hostid": h1_free.id,
+                                "state": h1_free.state,
+                                "multi_state": h1_free.multi_state,
+                                **configs[ADCMCoreType.HOST, h1_free.id],
+                            }
+                        }
+                    },
+                    "community": {
+                        "hosts": {
+                            h2_community.fqdn: {
+                                "adcm_hostid": h2_community.id,
+                                "state": h2_community.state,
+                                "multi_state": h2_community.multi_state,
+                                **configs[ADCMCoreType.HOST, h2_community.id],
+                            }
+                        }
+                    },
+                    "enterprise": {
+                        "hosts": {
+                            h3_enterprise.fqdn: {
+                                "adcm_hostid": h3_enterprise.id,
+                                "state": h3_enterprise.state,
+                                "multi_state": h3_enterprise.multi_state,
+                                **configs[ADCMCoreType.HOST, h3_enterprise.id],
+                            },
+                            h4_enterprise.fqdn: {
+                                "adcm_hostid": h4_enterprise.id,
+                                "state": h4_enterprise.state,
+                                "multi_state": h4_enterprise.multi_state,
+                                **configs[ADCMCoreType.HOST, h4_enterprise.id],
+                            },
+                        }
+                    },
+                }
+            }
+        }
+        actual_inventory = get_inventory()
+
+        self.assertDictEqual(actual_inventory, expected_inventory)
 
 
 class TestStorage(BaseAPITestCase):
