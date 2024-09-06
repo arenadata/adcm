@@ -148,9 +148,3 @@ def get_action_info(action: Action) -> ActionContext:
         owner_group = owner_prototype.type.upper()
 
     return ActionContext(name=action.name, owner_group=owner_group)
-
-
-def _get_host_group_names_only(
-    host_groups: dict[HostGroupName, set[tuple[HostID, HostName]]],
-) -> dict[HostGroupName, list[HostName]]:
-    return {group_name: [host_tuple[1] for host_tuple in group_data] for group_name, group_data in host_groups.items()}

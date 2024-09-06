@@ -53,6 +53,9 @@ optional = true
 
 [tool.poetry.group.lint.dependencies]
 ruff = "^0.1.13"
+pyright = "^1.1.378"
+django-stubs = "^5.0.4"
+djangorestframework-stubs = "^3.15.0"
 
 [tool.poetry.group.unittests]
 optional = true
@@ -125,3 +128,55 @@ select = [
     "DTZ", "ICN", "PIE", "Q", "RET",
     "SIM", "ARG", "PTH", "PLE", "TRY"
 ]
+
+[tool.pyright]
+include = [
+    "python",
+    "dev/linters",
+    "conf/adcm/python_scripts",
+]
+exclude = [
+    "python/api",
+    "python/api_ui",
+    "python/audit/cases",
+    "python/rbac/endpoints",
+    "python/rbac/endpoints_ui",
+    "python/rbac/services",
+    "**/tests",
+    "**/migrations",
+    "**/__pycache__",
+]
+
+typeCheckingMode = "standard"
+reportUnnecessaryTypeIgnoreComment = true
+
+reportMissingImports = "error"
+reportMissingTypeStubs = false
+
+pythonVersion = "3.10"
+pythonPlatform = "Linux"
+
+executionEnvironments = [
+    { root = "conf/adcm/python_scripts", extraPaths = [ "python" ]},
+]
+
+# TODO: Remove. Temporarily disable type issue checks
+reportAttributeAccessIssue = false
+reportReturnType = false
+reportOptionalMemberAccess = false
+reportArgumentType = false
+reportIncompatibleMethodOverride = false
+reportOptionalSubscript = false
+reportAssignmentType = false
+reportIncompatibleVariableOverride = false
+reportCallIssue = false
+reportOptionalIterable = false
+reportInvalidTypeForm = false
+reportOptionalCall = false
+reportInvalidTypeArguments = false
+reportPossiblyUnboundVariable = false
+reportInvalidTypeVarUse = false
+reportGeneralTypeIssues = false
+reportIndexIssue = false
+reportOperatorIssue = false
+# END Remove.
