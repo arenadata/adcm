@@ -223,108 +223,107 @@ ADWP_EVENT_SERVER = {
     "SECRET_KEY": ADCM_TOKEN,
 }
 
-LOG_LEVEL = os.getenv("LOG_LEVEL", logging.getLevelName(logging.ERROR))
+DEFAULT_LOG_LEVEL = os.getenv("LOG_LEVEL", logging.getLevelName(logging.ERROR))
+DEFAULT_FILE_HANDLER_CLASS = "logging.handlers.WatchedFileHandler"
 
-if not DEBUG:
-    LOGGING = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "filters": {
-            "require_debug_false": {
-                "()": "django.utils.log.RequireDebugFalse",
-            },
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
         },
-        "formatters": {
-            "adcm": {
-                "format": "{asctime} {levelname} {module} {message}",
-                "style": "{",
-            },
-            "ldap": {
-                "format": "{levelname} {module}: {message}",
-                "style": "{",
-            },
+    },
+    "formatters": {
+        "adcm": {
+            "format": "{asctime} {levelname} {module} {message}",
+            "style": "{",
         },
-        "handlers": {
-            "adcm_file": {
-                "filters": ["require_debug_false"],
-                "formatter": "adcm",
-                "class": "logging.FileHandler",
-                "filename": LOG_FILE,
-            },
-            "adcm_debug_file": {
-                "filters": ["require_debug_false"],
-                "formatter": "adcm",
-                "class": "logging.FileHandler",
-                "filename": LOG_DIR / "adcm_debug.log",
-            },
-            "task_runner_err_file": {
-                "filters": ["require_debug_false"],
-                "formatter": "adcm",
-                "class": "logging.FileHandler",
-                "filename": LOG_DIR / "task_runner.err",
-            },
-            "background_task_file_handler": {
-                "formatter": "adcm",
-                "class": "logging.handlers.TimedRotatingFileHandler",
-                "filename": LOG_DIR / "cron_task.log",
-                "when": "midnight",
-                "backupCount": 10,
-            },
-            "audit_file_handler": {
-                "class": "logging.handlers.TimedRotatingFileHandler",
-                "filename": LOG_DIR / "audit.log",
-                "when": "midnight",
-                "backupCount": 10,
-            },
-            "stream_stdout_handler": {
-                "class": "logging.StreamHandler",
-                "formatter": "adcm",
-                "stream": "ext://sys.stdout",
-            },
-            "stream_stderr_handler": {
-                "class": "logging.StreamHandler",
-                "formatter": "adcm",
-                "stream": "ext://sys.stderr",
-            },
-            "ldap_file_handler": {
-                "class": "logging.FileHandler",
-                "formatter": "adcm",
-                "filename": LOG_DIR / "ldap.log",
-            },
+    },
+    "handlers": {
+        # files
+        "adcm_file": {
+            "filters": ["require_debug_false"],
+            "formatter": "adcm",
+            "class": DEFAULT_FILE_HANDLER_CLASS,
+            "filename": LOG_FILE,
         },
-        "loggers": {
-            "adcm": {
-                "handlers": ["adcm_file"],
-                "level": LOG_LEVEL,
-                "propagate": True,
-            },
-            "django": {
-                "handlers": ["adcm_debug_file"],
-                "level": LOG_LEVEL,
-                "propagate": True,
-            },
-            "background_tasks": {
-                "handlers": ["background_task_file_handler"],
-                "level": LOG_LEVEL,
-                "propagate": True,
-            },
-            "audit": {
-                "handlers": ["audit_file_handler"],
-                "level": "INFO",
-                "propagate": True,
-            },
-            "task_runner_err": {
-                "handlers": ["task_runner_err_file"],
-                "level": LOG_LEVEL,
-                "propagate": True,
-            },
-            "stream_std": {
-                "handlers": ["stream_stdout_handler", "stream_stderr_handler"],
-                "level": LOG_LEVEL,
-            },
-            "django_auth_ldap": {"handlers": ["ldap_file_handler"], "level": LOG_LEVEL, "propagate": True},
+        "adcm_debug_file": {
+            "filters": ["require_debug_false"],
+            "formatter": "adcm",
+            "class": DEFAULT_FILE_HANDLER_CLASS,
+            "filename": LOG_DIR / "adcm_debug.log",
         },
-    }
+        "task_runner_err_file": {
+            "filters": ["require_debug_false"],
+            "formatter": "adcm",
+            "class": DEFAULT_FILE_HANDLER_CLASS,
+            "filename": LOG_DIR / "task_runner.err",
+        },
+        "background_task_file_handler": {
+            "formatter": "adcm",
+            "class": DEFAULT_FILE_HANDLER_CLASS,
+            "filename": LOG_DIR / "cron_task.log",
+        },
+        "ldap_file_handler": {
+            "class": DEFAULT_FILE_HANDLER_CLASS,
+            "formatter": "adcm",
+            "filename": LOG_DIR / "ldap.log",
+        },
+        # streams
+        "stream_stdout_handler": {
+            "class": "logging.StreamHandler",
+            "formatter": "adcm",
+            "stream": "ext://sys.stdout",
+        },
+        "stream_stderr_handler": {
+            "class": "logging.StreamHandler",
+            "formatter": "adcm",
+            "stream": "ext://sys.stderr",
+        },
+        # special
+        "audit_file_handler": {
+            "class": DEFAULT_FILE_HANDLER_CLASS,
+            "filename": LOG_DIR / "audit.log",
+        },
+    },
+    "loggers": {
+        "adcm": {
+            "handlers": ["adcm_file"],
+            "level": os.getenv("ADCM_LOG_LEVEL", DEFAULT_LOG_LEVEL),
+            "propagate": True,
+        },
+        "django": {
+            "handlers": ["adcm_debug_file"],
+            "level": os.getenv("ADCM_LOG_LEVEL", DEFAULT_LOG_LEVEL),
+            "propagate": True,
+        },
+        "background_tasks": {
+            "handlers": ["background_task_file_handler"],
+            "level": os.getenv("BACKGROUND_TASKS_LOG_LEVEL", DEFAULT_LOG_LEVEL),
+            "propagate": True,
+        },
+        "audit": {
+            "handlers": ["audit_file_handler"],
+            "level": os.getenv("AUDIT_LOG_LEVEL", logging.getLevelName(logging.INFO)),
+            "propagate": True,
+        },
+        "task_runner_err": {
+            "handlers": ["task_runner_err_file"],
+            "level": os.getenv("TASK_RUNNER_LOG_LEVEL", DEFAULT_LOG_LEVEL),
+            "propagate": True,
+        },
+        "stream_std": {
+            "handlers": ["stream_stdout_handler", "stream_stderr_handler"],
+            "level": DEFAULT_LOG_LEVEL,
+        },
+        "django_auth_ldap": {
+            "handlers": ["ldap_file_handler"],
+            "level": os.getenv("LDAP_LOG_LEVEL", DEFAULT_LOG_LEVEL),
+            "propagate": True,
+        },
+    },
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 

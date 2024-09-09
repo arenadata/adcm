@@ -39,7 +39,7 @@ type Hub struct {
 
 func Start(secrets *SecretConfig, logFile string, logLevel string) {
 	hub := Hub{Secrets: secrets}
-	initLog(logFile, logLevel)
+	InitLog(logFile, logLevel)
 	initSignal()
 
 	hub.MMObjects = newMMObjects()
@@ -70,7 +70,7 @@ func Start(secrets *SecretConfig, logFile string, logLevel string) {
 }
 
 func startHTTP(httpPort string, hub Hub) {
-	logg.I.f("start http server on %s", httpPort)
+	logg.I.Printf("start http server on %s", httpPort)
 
 	router := httprouter.New()
 	router.RedirectTrailingSlash = false
@@ -149,8 +149,8 @@ func initSignal() {
 	go func() {
 		for {
 			sig := <-c
-			logg.D.f("recive signal %v", sig)
-			logg.rotate()
+			logg.D.Printf("Signal received %v", sig)
+			logg.ReopenLogFile()
 		}
 	}()
 }

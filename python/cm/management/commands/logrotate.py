@@ -12,8 +12,6 @@
 
 from datetime import datetime, timedelta
 from enum import Enum
-from pathlib import Path
-from subprocess import STDOUT, CalledProcessError, check_output
 import os
 import shutil
 import logging
@@ -42,36 +40,14 @@ from cm.models import (
 logger = logging.getLogger("background_tasks")
 
 
-LOGROTATE_CONF_FILE_TEMPLATE = """
-/adcm/data/log/nginx/*.log {{
-        su root root
-        size {size}
-        missingok
-        nomail
-        {no_compress}compress
-        {no_compress}delaycompress
-        rotate {num_rotations}
-        sharedscripts
-        postrotate
-                kill -USR1 `cat /run/nginx/nginx.pid`
-        endscript
-}}
-"""
-
-
 class TargetType(Enum):
     ALL = "all"
     JOB = "job"
     CONFIG = "config"
-    NGINX = "nginx"
 
 
 class Command(BaseCommand):
     help = "Delete / rotate log files, db records, `run` directories"
-
-    __nginx_logrotate_conf = "/etc/logrotate.d/nginx"
-    __logrotate_cmd = f"logrotate {__nginx_logrotate_conf}"
-    __logrotate_cmd_debug = f"{__logrotate_cmd} -v"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -85,13 +61,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):  # noqa: ARG002
         __target_method_map = {
             TargetType.ALL.value: [
-                self.__run_nginx_log_rotation,
                 self.__run_joblog_rotation,
                 self.__run_configlog_rotation,
             ],
             TargetType.JOB.value: [self.__run_joblog_rotation],
             TargetType.CONFIG.value: [self.__run_configlog_rotation],
-            TargetType.NGINX.value: [self.__run_nginx_log_rotation],
         }
 
         self.verbose = not options["disable_logs"]
@@ -101,53 +75,14 @@ class Command(BaseCommand):
         for func in __target_method_map[target]:
             func()
 
-    def __execute_cmd(self, cmd):
-        self.__log(f"executing cmd: `{cmd}`", "info")
-        try:
-            out = check_output(cmd, shell=True, stderr=STDOUT)  # noqa: S602
-            out = out.decode(settings.ENCODING_UTF_8).strip("\n")
-            if out:
-                self.__log(out, "debug")
-        except CalledProcessError as e:
-            err_msg = e.stdout.decode(settings.ENCODING_UTF_8).strip("\n")
-            msg = f"Error! cmd: `{cmd}` return code: `{e.returncode}` msg: `{err_msg}`"
-            self.__log(msg, "exception")
-
     def __get_logrotate_config(self):
         adcm_object = ADCM.objects.first()
-        current_configlog = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
-        adcm_conf = current_configlog.config
+        current_config = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current).config
         logrotate_config = {
-            "logrotate": {
-                "active": current_configlog.attr["logrotate"]["active"],
-                "nginx": adcm_conf["logrotate"],
-            },
-            "config": adcm_conf["audit_data_retention"],
+            "config": current_config["audit_data_retention"],
         }
         self.__log(f"Got rotation config: {logrotate_config}")
         return logrotate_config
-
-    def __generate_logrotate_conf_file(self):
-        conf_file_args = {
-            "size": f"{self.config['logrotate']['nginx']['size']}",
-            "no_compress": "" if self.config["logrotate"]["nginx"]["compress"] else "#",
-            "num_rotations": self.config["logrotate"]["nginx"]["max_history"],
-        }
-        with Path(self.__nginx_logrotate_conf).open("w", encoding=settings.ENCODING_UTF_8) as conf_file:
-            conf_file.write(LOGROTATE_CONF_FILE_TEMPLATE.format(**conf_file_args))
-        self.__log(f"conf file `{self.__nginx_logrotate_conf}` generated", "debug")
-
-    def __run_nginx_log_rotation(self):
-        if self.config["logrotate"]["active"]:
-            self.__log("Nginx log rotation started", "info")
-            self.__generate_logrotate_conf_file()
-            self.__log(
-                f"Using config file `{self.__nginx_logrotate_conf}`",
-                "debug",
-            )
-            if self.verbose:
-                self.__execute_cmd(self.__logrotate_cmd_debug)
-            self.__execute_cmd(self.__logrotate_cmd)
 
     def __run_configlog_rotation(self):
         try:

@@ -68,16 +68,16 @@ func (h *wsHub) run() {
 	for {
 		select {
 		case ws := <-h.register:
-			logg.D.l("wsHub register: ", ws)
+			logg.D.Println("wsHub register: ", ws)
 			h.clients[ws] = true
 		case ws := <-h.unregister:
-			logg.D.l("wsHub unregister: ", ws)
+			logg.D.Println("wsHub unregister: ", ws)
 			if _, ok := h.clients[ws]; ok {
 				delete(h.clients, ws)
 				close(ws.send)
 			}
 		case msg := <-h.broadcast:
-			logg.D.f("wsHub broadcast: %v", msg)
+			logg.D.Printf("wsHub broadcast: %v", msg)
 			for ws := range h.clients {
 				ws.send <- msg
 			}
@@ -86,7 +86,7 @@ func (h *wsHub) run() {
 }
 
 func (h *wsHub) send2ws(s wsMsg) {
-	//logg.D.f("enter send2ws: %v", s)
+	//logg.D.Printf(enter send2ws: %v", s)
 	h.broadcast <- s
 }
 
@@ -97,18 +97,18 @@ func write2ws(c *wsClient) {
 		select {
 		case s, ok := <-c.send:
 			if !ok {
-				logg.D.l("write2ws chanel closed")
+				logg.D.Println("write2ws chanel closed")
 				return
 			}
-			logg.D.l("write2ws recive: ", s)
+			logg.D.Println("write2ws recive: ", s)
 			c.ws.SetWriteDeadline(time.Now().Add(writeWait)) //nolint: errcheck
 			js, err := s.encode()
 			if err != nil {
-				logg.E.l("write2ws incorrect json: ", s)
+				logg.E.Println("write2ws incorrect json: ", s)
 				continue
 			}
 			if err := c.ws.WriteMessage(websocket.TextMessage, js); err != nil {
-				logg.W.l("write2ws write: ", err)
+				logg.W.Println("write2ws write: ", err)
 				c.ws.Close()
 				return
 			}
@@ -131,7 +131,7 @@ func read4ws(h *wsHub, c *wsClient) {
 	for {
 		_, _, err := c.ws.ReadMessage()
 		if err != nil {
-			logg.I.f("read2ws client %v close ws: %v", c, err)
+			logg.I.Printf("read2ws client %v close ws: %v", c, err)
 			h.unregister <- c
 			c.ws.Close()
 			return
@@ -141,14 +141,14 @@ func read4ws(h *wsHub, c *wsClient) {
 
 func initWS(h *wsHub, w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
-	logg.D.l("initWs open ws")
+	logg.D.Println("initWs open ws")
 	if err != nil {
-		logg.E.l("initWs upgrade: ", err)
+		logg.E.Println("initWs upgrade: ", err)
 		return
 	}
 
 	defer func() {
-		logg.D.l("initWs close ws")
+		logg.D.Println("initWs close ws")
 		ws.Close()
 	}()
 
@@ -170,7 +170,7 @@ func checkOrigin(r *http.Request) bool {
 	}
 	s1 := strings.Split(u.Host, ":")
 	s2 := strings.Split(r.Host, ":")
-	logg.D.f("checkOrigin origin host: %v, header host: %v", u.Host, r.Host)
+	logg.D.Printf("checkOrigin origin host: %v, header host: %v", u.Host, r.Host)
 	if s1[0] == s2[0] {
 		return true
 	} else {

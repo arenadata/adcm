@@ -43,7 +43,7 @@ func checkADCMUserToken(hub Hub, token string) bool {
 func djangoAuth(r *http.Request, hub Hub) bool {
 	sessionId, err := r.Cookie("sessionid")
 	if err != nil {
-		logg.D.f("no sessionid cookie")
+		logg.D.Println("No sessionid cookie")
 		return false
 	}
 	return hub.AdcmApi.checkSessionAuth(sessionId.Value)

@@ -124,10 +124,10 @@ func (s *Storage) setTimeOut(timeout int) {
 }
 
 func (s *Storage) run() {
-	logg.I.f("start storage %s server", s.label)
+	logg.I.Printf("start storage %s server", s.label)
 	for {
 		c := <-s.in
-		logg.I.f("Storage %s command: %+v", s.label, c)
+		logg.I.Printf("Storage %s command: %+v", s.label, c)
 		switch c.command {
 		case cmdSet:
 			v := s.dbMap.set(c.key1, c.key2, c.val)
@@ -148,7 +148,7 @@ func (s *Storage) run() {
 			v, ok := s.dbMap.get1(c.key1)
 			s.out <- storageResponse{map1: v, ok: ok}
 		default:
-			logg.E.f("Storage %s unknown command: %+v", s.label, c)
+			logg.E.Printf("Storage %s unknown command: %+v", s.label, c)
 		}
 	}
 }
