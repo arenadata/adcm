@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import GroupConfig
+from cm.models import GroupConfig, Host
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.exceptions import ValidationError
+from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
 
 from api_v2.host.serializers import HostShortSerializer
@@ -37,3 +38,12 @@ class GroupConfigSerializer(ModelSerializer):
                 f"Group config with name {value} already exists for {parent_content_type} {object_.name}"
             )
         return value
+
+
+class HostGroupConfigSerializer(ModelSerializer):
+    id = PrimaryKeyRelatedField(queryset=Host.objects.all())
+
+    class Meta:
+        model = Host
+        fields = ["id", "name"]
+        extra_kwargs = {"name": {"read_only": True}}

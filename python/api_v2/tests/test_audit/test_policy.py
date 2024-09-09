@@ -152,7 +152,7 @@ class TestPolicyAudit(BaseAPITestCase):
                 "name": "Updated name",
                 "description": "new description",
                 "role": "Another custom role name",
-                "group": ["Other group [local]", "Other group 2 [local]"],
+                "group": ["Other group 2 [local]", "Other group [local]"],
             },
             "previous": {
                 "name": "Test policy 2",

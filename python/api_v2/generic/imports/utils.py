@@ -25,7 +25,7 @@ from cm.services.status.client import retrieve_status_map
 from cm.services.status.convert import convert_to_entity_status
 from django.db.models import QuerySet
 
-from api_v2.imports.types import (
+from api_v2.generic.imports.types import (
     ClusterImportCandidate,
     CommonImportCandidate,
     ServiceImportCandidate,

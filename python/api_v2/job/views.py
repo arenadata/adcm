@@ -12,7 +12,7 @@
 
 from adcm.permissions import VIEW_JOBLOG_PERMISSION
 from adcm.serializers import EmptySerializer
-from audit.utils import audit
+from audit.alt.api import audit_update
 from cm.models import JobLog
 from django.contrib.contenttypes.models import ContentType
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
@@ -32,6 +32,7 @@ from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.job.permissions import JobPermissions
 from api_v2.job.serializers import JobRetrieveSerializer
 from api_v2.task.serializers import JobListSerializer
+from api_v2.utils.audit import detect_object_for_job, set_job_name
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -92,7 +93,7 @@ class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMGe
 
         return JobListSerializer
 
-    @audit
+    @audit_update(name="{job_name} terminated", object_=detect_object_for_job).attach_hooks(on_collect=set_job_name)
     @action(methods=["post"], detail=True)
     def terminate(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         job = self.get_object()

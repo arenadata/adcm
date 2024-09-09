@@ -19,7 +19,6 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from audit.utils import audit
 from cm.errors import AdcmEx
 from cm.models import Cluster, HostProvider, PrototypeConfig, TaskLog, Upgrade
 from cm.stack import check_hostcomponents_objects_exist
@@ -33,20 +32,15 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
-from api_v2.action.serializers import ActionRunSerializer
-from api_v2.action.utils import get_action_configuration, insert_service_ids, unique_hc_entries
-from api_v2.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
+from api_v2.generic.action.serializers import ActionRunSerializer
+from api_v2.generic.action.utils import get_action_configuration, insert_service_ids, unique_hc_entries
+from api_v2.generic.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
+from api_v2.generic.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
 from api_v2.task.serializers import TaskListSerializer
-from api_v2.upgrade.serializers import UpgradeListSerializer, UpgradeRetrieveSerializer
 from api_v2.views import ADCMGenericViewSet
 
 
-class UpgradeViewSet(
-    ListModelMixin,
-    GetParentObjectMixin,
-    RetrieveModelMixin,
-    ADCMGenericViewSet,
-):
+class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, ADCMGenericViewSet):
     queryset = (
         Upgrade.objects.select_related("action", "bundle", "action__prototype")
         .prefetch_related("bundle__prototype_set")
@@ -149,7 +143,6 @@ class UpgradeViewSet(
 
         return Response(serializer.data)
 
-    @audit
     @action(methods=["post"], detail=True)
     def run(self, request: Request, *_, **__) -> Response:
         serializer = self.get_serializer_class()(data=request.data)

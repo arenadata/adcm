@@ -96,6 +96,10 @@ order-by-type = true
 "python/cm/migrations/*" = ["ARG001", "N806", "N999"]
 "python/audit/migrations/*" = ["ARG001", "N806", "N999"]
 "python/rbac/migrations/*" = ["ARG001", "N806", "N999"]
+# Hooks must implement specific interface, and it's visually convenient to name them as funcitons.
+# ARG001 - interface implementations may not use all arguments required by that interface
+# N801 - hooks that inherits from convenient class are also classes, but should be percieved as functions
+"python/audit/alt/hooks.py" = ["ARG001", "N801"]
 
 [tool.ruff.lint]
 ignore = [

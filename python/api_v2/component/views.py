@@ -21,15 +21,18 @@ from adcm.permissions import (
     check_custom_perm,
     get_object_for_user,
 )
-from audit.utils import audit
+from audit.alt.api import audit_update
+from audit.alt.hooks import adjust_denied_on_404_result, extract_current_from_response, extract_previous_from_object
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, ServiceComponent
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import update_mm_objects
+from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
+from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -48,7 +51,35 @@ from api_v2.component.serializers import (
     ComponentStatusSerializer,
     HostComponentSerializer,
 )
-from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.generic.action.api_schema import document_action_viewset
+from api_v2.generic.action.audit import audit_action_viewset
+from api_v2.generic.action.views import ActionViewSet
+from api_v2.generic.action_host_group.api_schema import (
+    document_action_host_group_actions_viewset,
+    document_action_host_group_hosts_viewset,
+    document_action_host_group_viewset,
+)
+from api_v2.generic.action_host_group.views import (
+    ActionHostGroupActionsViewSet,
+    ActionHostGroupHostsViewSet,
+    ActionHostGroupViewSet,
+)
+from api_v2.generic.config.api_schema import document_config_viewset
+from api_v2.generic.config.audit import audit_config_viewset
+from api_v2.generic.config.utils import ConfigSchemaMixin
+from api_v2.generic.config.views import ConfigLogViewSet
+from api_v2.generic.group_config.api_schema import document_group_config_viewset, document_host_group_config_viewset
+from api_v2.generic.group_config.audit import (
+    audit_config_group_config_viewset,
+    audit_group_config_viewset,
+    audit_host_group_config_viewset,
+)
+from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
+from api_v2.utils.audit import (
+    component_from_lookup,
+    component_with_parents_specified_in_path_exists,
+    parent_component_from_lookup,
+)
 from api_v2.views import (
     ADCMGenericViewSet,
     ADCMReadOnlyModelViewSet,
@@ -125,7 +156,7 @@ from api_v2.views import (
 )
 class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMixin, ADCMReadOnlyModelViewSet):
     queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("pk")
-    permission_classes = [DjangoModelPermissionsAudit]
+    permission_classes = [DjangoModelPermissions]
     permission_required = [VIEW_COMPONENT_PERM]
     filterset_class = ComponentFilter
     retrieve_status_map_actions = ("statuses", "list")
@@ -149,7 +180,14 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
 
         return ComponentSerializer
 
-    @audit
+    @(
+        audit_update(name="Component updated", object_=component_from_lookup)
+        .attach_hooks(on_collect=adjust_denied_on_404_result(component_with_parents_specified_in_path_exists))
+        .track_changes(
+            before=extract_previous_from_object(model=ServiceComponent, maintenance_mode=F("_maintenance_mode")),
+            after=extract_current_from_response("maintenance_mode"),
+        )
+    )
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
@@ -205,3 +243,48 @@ class HostComponentViewSet(PermissionListMixin, ListModelMixin, ObjectWithStatus
             .get_queryset(*args, **kwargs)
             .filter(cluster=cluster, id__in=host.hostcomponent_set.all().values_list("component_id", flat=True))
         )
+
+
+@document_group_config_viewset(object_type="component")
+@audit_group_config_viewset(retrieve_owner=parent_component_from_lookup)
+class ComponentGroupConfigViewSet(GroupConfigViewSet):
+    ...
+
+
+@document_host_group_config_viewset(object_type="component")
+@audit_host_group_config_viewset(retrieve_owner=parent_component_from_lookup)
+class ComponentHostGroupConfigViewSet(HostGroupConfigViewSet):
+    ...
+
+
+@document_config_viewset(object_type="component config group", operation_id_variant="ComponentConfigGroup")
+@audit_config_group_config_viewset(retrieve_owner=parent_component_from_lookup)
+class ComponentConfigHostGroupViewSet(ConfigLogViewSet):
+    ...
+
+
+@document_action_viewset(object_type="component")
+@audit_action_viewset(retrieve_owner=parent_component_from_lookup)
+class ComponentActionViewSet(ActionViewSet):
+    ...
+
+
+@document_action_host_group_viewset(object_type="component")
+class ComponentActionHostGroupViewSet(ActionHostGroupViewSet):
+    ...
+
+
+@document_action_host_group_hosts_viewset(object_type="component")
+class ComponentActionHostGroupHostsViewSet(ActionHostGroupHostsViewSet):
+    ...
+
+
+@document_action_host_group_actions_viewset(object_type="component")
+class ComponentActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
+    ...
+
+
+@document_config_viewset(object_type="component")
+@audit_config_viewset(type_in_name="Component", retrieve_owner=parent_component_from_lookup)
+class ComponentConfigViewSet(ConfigLogViewSet):
+    ...

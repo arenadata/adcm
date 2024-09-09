@@ -745,7 +745,7 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
 
             with self.subTest(f"[{type_.name}] Add Host Duplicate Audit FAIL"):
                 self.check_last_audit_record(
-                    operation_name=f"Host added to action host group {group.name}",
+                    operation_name=f"Host {host_1.fqdn} added to action host group {group.name}",
                     operation_type="update",
                     operation_result="fail",
                     **self.prepare_audit_object_arguments(expected_object=group),
@@ -969,7 +969,7 @@ class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
 
                 with self.subTest(f"[{message_name}] Running Task Add Hosts Audit FAIL"):
                     self.check_last_audit_record(
-                        operation_name=f"Host added to action host group {group.name}",
+                        operation_name=f"Host {host_2.fqdn} added to action host group {group.name}",
                         operation_type="update",
                         operation_result="fail",
                         **self.prepare_audit_object_arguments(expected_object=group),

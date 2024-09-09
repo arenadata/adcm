@@ -10,15 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.permissions import VIEW_POLICY_PERMISSION, CustomModelPermissionsByMethod
-from audit.utils import audit
+from adcm.permissions import VIEW_POLICY_PERMISSION
+from audit.alt.api import audit_create, audit_delete, audit_update
+from audit.alt.hooks import (
+    extract_current_from_response,
+    extract_from_object,
+    extract_previous_from_object,
+    only_on_success,
+)
 from cm.errors import AdcmEx
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rbac.models import Policy
 from rbac.services.policy import policy_create, policy_update
-from rest_framework.exceptions import NotFound
 from rest_framework.mixins import DestroyModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -33,7 +38,14 @@ from rest_framework.status import (
 
 from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.rbac.policy.filters import PolicyFilter
+from api_v2.rbac.policy.permissions import PolicyPermissions
 from api_v2.rbac.policy.serializers import PolicyCreateSerializer, PolicySerializer, PolicyUpdateSerializer
+from api_v2.utils.audit import (
+    policy_from_lookup,
+    policy_from_response,
+    retrieve_policy_role_object_group,
+    update_policy_name,
+)
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -103,11 +115,7 @@ class PolicyViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Des
     queryset = Policy.objects.select_related("role").prefetch_related("group", "object").order_by("name")
     filter_backends = (DjangoFilterBackend,)
     filterset_class = PolicyFilter
-    permission_classes = (CustomModelPermissionsByMethod,)
-    method_permissions_map = {
-        "patch": [(VIEW_POLICY_PERMISSION, NotFound)],
-        "delete": [(VIEW_POLICY_PERMISSION, NotFound)],
-    }
+    permission_classes = (PolicyPermissions,)
     permission_required = [VIEW_POLICY_PERMISSION]
 
     def get_serializer_class(self) -> type[PolicySerializer | PolicyCreateSerializer | PolicyUpdateSerializer]:
@@ -119,14 +127,27 @@ class PolicyViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Des
 
         return PolicySerializer
 
-    @audit
+    @audit_create(name="Policy created", object_=policy_from_response)
     def create(self, request, *args, **kwargs):  # noqa: ARG002
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
         policy = policy_create(**serializer.validated_data)
         return Response(data=PolicySerializer(policy).data, status=HTTP_201_CREATED)
 
-    @audit
+    @(
+        audit_update(name="Policy updated", object_=policy_from_lookup)
+        .attach_hooks(on_collect=only_on_success(update_policy_name))
+        .track_changes(
+            before=(
+                extract_previous_from_object(Policy, "name", "description"),
+                extract_from_object(func=retrieve_policy_role_object_group, section="previous"),
+            ),
+            after=(
+                extract_current_from_response("name", "description"),
+                extract_from_object(func=retrieve_policy_role_object_group, section="current"),
+            ),
+        )
+    )
     def partial_update(self, request, *args, **kwargs):  # noqa: ARG002
         policy = self.get_object()
 
@@ -138,7 +159,7 @@ class PolicyViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Des
         policy = policy_update(policy, **serializer.validated_data)
         return Response(data=PolicySerializer(policy).data)
 
-    @audit
+    @audit_delete(name="Policy deleted", object_=policy_from_lookup, removed_on_success=True)
     def destroy(self, request, *args, **kwargs):
         policy = self.get_object()
         if policy.built_in:

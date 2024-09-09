@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from audit.utils import audit
 from rest_framework.permissions import DjangoObjectPermissions
 
 
@@ -25,7 +24,6 @@ class HostProviderPermissions(DjangoObjectPermissions):
         "DELETE": ["%(app_label)s.delete_%(model_name)s"],
     }
 
-    @audit
     def has_permission(self, request, view) -> bool:
         if view.action in ["destroy", "update", "partial_update"]:
             return True

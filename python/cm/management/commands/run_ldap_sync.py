@@ -13,8 +13,8 @@
 from datetime import timedelta
 import logging
 
-from audit.models import AuditLogOperationResult
-from audit.utils import make_audit_log
+from audit.alt.background import audit_background_operation
+from audit.models import AuditLogOperationType
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
@@ -41,28 +41,24 @@ class Command(BaseCommand):
         period = get_settings(adcm_object)
         if period <= 0:
             return
+
         if TaskLog.objects.filter(action__name="run_ldap_sync", status=JobStatus.RUNNING).exists():
             logger.debug("Sync has already launched, we need to wait for the task end")
             return
+
         last_sync = TaskLog.objects.filter(
             action__name="run_ldap_sync",
             status__in=[JobStatus.SUCCESS, JobStatus.FAILED],
         ).last()
-        if last_sync is None:
+
+        if not last_sync:
             logger.debug("First ldap sync launched in %s", timezone.now())
-            make_audit_log("sync", AuditLogOperationResult.SUCCESS, "launched")
-            task = run_action(action=action, obj=adcm_object, payload=ActionRunPayload())
-            if task:
-                make_audit_log("sync", AuditLogOperationResult.SUCCESS, "completed")
-            else:
-                make_audit_log("sync", AuditLogOperationResult.FAIL, "completed")
-            return
-        new_rotate_time = last_sync.finish_date + timedelta(minutes=period - 1)
-        if new_rotate_time <= timezone.now():
+        else:
+            next_rotation_time = last_sync.finish_date + timedelta(minutes=period - 1)
+            if next_rotation_time > timezone.now():
+                return
+
             logger.debug("Ldap sync launched in %s", timezone.now())
-            make_audit_log("sync", AuditLogOperationResult.SUCCESS, "launched")
-            task = run_action(action=action, obj=adcm_object, payload=ActionRunPayload())
-            if task:
-                make_audit_log("sync", AuditLogOperationResult.SUCCESS, "completed")
-            else:
-                make_audit_log("sync", AuditLogOperationResult.FAIL, "completed")
+
+        with audit_background_operation(name='"User sync on schedule" job', type_=AuditLogOperationType.UPDATE):
+            run_action(action=action, obj=adcm_object, payload=ActionRunPayload())

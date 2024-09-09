@@ -10,8 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.permissions import VIEW_GROUP_PERMISSION, CustomModelPermissionsByMethod
-from audit.utils import audit
+from adcm.permissions import VIEW_GROUP_PERMISSION
+from audit.alt.api import audit_create, audit_delete, audit_update
+from audit.alt.hooks import (
+    extract_current_from_response,
+    extract_from_object,
+    extract_previous_from_object,
+    only_on_success,
+)
 from cm.errors import AdcmEx
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -19,7 +25,6 @@ from rbac.models import Group
 from rbac.services.group import create as create_group
 from rbac.services.group import update as update_group
 from rbac.utils import Empty
-from rest_framework.exceptions import NotFound
 from rest_framework.mixins import DestroyModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -35,10 +40,17 @@ from rest_framework.status import (
 
 from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.rbac.group.filters import GroupFilter
+from api_v2.rbac.group.permissions import GroupPermissions
 from api_v2.rbac.group.serializers import (
     GroupCreateSerializer,
     GroupSerializer,
     GroupUpdateSerializer,
+)
+from api_v2.utils.audit import (
+    group_from_lookup,
+    group_from_response,
+    retrieve_group_name_users,
+    update_group_name,
 )
 from api_v2.views import ADCMGenericViewSet
 
@@ -109,11 +121,7 @@ from api_v2.views import ADCMGenericViewSet
 class GroupViewSet(PermissionListMixin, RetrieveModelMixin, ListModelMixin, DestroyModelMixin, ADCMGenericViewSet):
     queryset = Group.objects.order_by("display_name").prefetch_related("user_set")
     filterset_class = GroupFilter
-    permission_classes = (CustomModelPermissionsByMethod,)
-    method_permissions_map = {
-        "patch": [(VIEW_GROUP_PERMISSION, NotFound)],
-        "delete": [(VIEW_GROUP_PERMISSION, NotFound)],
-    }
+    permission_classes = (GroupPermissions,)
     permission_required = [VIEW_GROUP_PERMISSION]
 
     def get_serializer_class(self) -> type[GroupSerializer | GroupCreateSerializer | GroupUpdateSerializer]:
@@ -125,7 +133,7 @@ class GroupViewSet(PermissionListMixin, RetrieveModelMixin, ListModelMixin, Dest
 
         return GroupSerializer
 
-    @audit
+    @audit_create(name="Group created", object_=group_from_response)
     def create(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -139,7 +147,20 @@ class GroupViewSet(PermissionListMixin, RetrieveModelMixin, ListModelMixin, Dest
 
         return Response(data=GroupSerializer(instance=group).data, status=HTTP_201_CREATED)
 
-    @audit
+    @(
+        audit_update(name="Group updated", object_=group_from_lookup)
+        .attach_hooks(on_collect=only_on_success(update_group_name))
+        .track_changes(
+            before=(
+                extract_previous_from_object(Group, "description"),
+                extract_from_object(func=retrieve_group_name_users, section="previous"),
+            ),
+            after=(
+                extract_current_from_response("description"),
+                extract_from_object(func=retrieve_group_name_users, section="current"),
+            ),
+        )
+    )
     def partial_update(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -158,7 +179,7 @@ class GroupViewSet(PermissionListMixin, RetrieveModelMixin, ListModelMixin, Dest
 
         return Response(data=GroupSerializer(instance=group).data, status=HTTP_200_OK)
 
-    @audit
+    @audit_delete(name="Group deleted", object_=group_from_lookup, removed_on_success=True)
     def destroy(self, request: Request, *args, **kwargs) -> Response:
         instance: Group = self.get_object()
 

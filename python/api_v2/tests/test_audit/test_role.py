@@ -133,7 +133,7 @@ class TestRoleAudit(BaseAPITestCase):
                 "current": {
                     "description": "new description",
                     "display_name": "Custom `view cluster configurations` role",
-                    "child": ["View cluster configurations", "Manage cluster Maintenance mode"],
+                    "child": ["Manage cluster Maintenance mode", "View cluster configurations"],
                 },
                 "previous": {
                     "description": old_description,

@@ -21,6 +21,7 @@ from adcm.tests.client import ADCMTestClient
 from audit.models import AuditLog, AuditObjectType, AuditSession
 from cm.models import (
     ADCM,
+    Action,
     ActionHostGroup,
     Bundle,
     Cluster,
@@ -28,8 +29,12 @@ from cm.models import (
     ConfigLog,
     Host,
     HostProvider,
+    JobLog,
+    JobStatus,
     ServiceComponent,
+    TaskLog,
 )
+from cm.tests.mocks.task_runner import RunTaskMock
 from django.conf import settings
 from django.http import HttpRequest
 from init_db import init
@@ -117,16 +122,21 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         if model is AuditLog:
             kwargs.setdefault("user__username", "admin")
 
-        # Object changes are {} for most cases,
-        # we always want to check it, but providing it each time is redundant.
-        # But sometimes structure is too complex for sqlite/ORM to handle,
-        # so we have to check changes separately.
-        if (model is AuditLog) and expect_object_changes_:
-            kwargs.setdefault("object_changes", {})
+        object_changes = kwargs.pop("object_changes", {})
 
         expected_record = model.objects.filter(**kwargs).order_by("pk").last()
         self.assertIsNotNone(expected_record, "Can't find audit record")
         self.assertEqual(last_audit_record.pk, expected_record.pk, "Expected audit record is not last")
+
+        # Object changes are {} for most cases,
+        # we always want to check it, but providing it each time is redundant.
+        # But sometimes structure is too complex for sqlite/ORM to handle,
+        # so we have to check changes separately.
+        #
+        # Check is on equality after retrieve for more clear message
+        # and to avoid object changes filtering
+        if (model is AuditLog) and expect_object_changes_:
+            self.assertDictEqual(expected_record.object_changes, object_changes)
 
         return last_audit_record
 
@@ -204,3 +214,36 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
             request.session = engine.SessionStore()
         logout(request)
         self.cookies = SimpleCookie()
+
+    def simulate_finished_task(
+        self, object_: Cluster | ClusterObject | ServiceComponent, action: Action
+    ) -> (TaskLog, JobLog):
+        with RunTaskMock() as run_task:
+            (self.client.v2[object_] / "actions" / action / "run").post(
+                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+            )
+
+        run_task.run()
+        run_task.target_task.refresh_from_db()
+
+        return run_task.target_task, run_task.target_task.joblog_set.last()
+
+    def simulate_running_task(
+        self, object_: Cluster | ClusterObject | ServiceComponent, action: Action
+    ) -> (TaskLog, JobLog):
+        with RunTaskMock() as run_task:
+            (self.client.v2[object_] / "actions" / action / "run").post(
+                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+            )
+
+        run_task.run()
+        run_task.target_task.refresh_from_db()
+        task = run_task.target_task
+        job = task.joblog_set.last()
+        task.status = JobStatus.RUNNING
+        task.save(update_fields=["status"])
+        job.status = JobStatus.RUNNING
+        job.pid = 5_000_000
+        job.save(update_fields=["status", "pid"])
+
+        return task, job

@@ -10,10 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Iterable, TypeAlias
+
 from adcm.serializers import EmptySerializer
+from cm.models import ADCMEntityStatus
 from drf_spectacular.utils import OpenApiParameter
 from rest_framework.fields import CharField
-from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
+from rest_framework.serializers import Serializer
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+)
 
 
 class ErrorSerializer(EmptySerializer):
@@ -24,6 +34,17 @@ class ErrorSerializer(EmptySerializer):
 
 DOCS_DEFAULT_ERROR_RESPONSES = {HTTP_403_FORBIDDEN: ErrorSerializer, HTTP_404_NOT_FOUND: ErrorSerializer}
 DOCS_CLIENT_INPUT_ERROR_RESPONSES = {HTTP_400_BAD_REQUEST: ErrorSerializer, HTTP_409_CONFLICT: ErrorSerializer}
+
+
+def status_param(required: bool) -> OpenApiParameter:
+    return OpenApiParameter(
+        name="status",
+        required=required,
+        location=OpenApiParameter.QUERY,
+        description="Case insensitive and partial filter by status.",
+        enum=ADCMEntityStatus.values,
+        type=str,
+    )
 
 
 class DefaultParams:
@@ -37,6 +58,9 @@ class DefaultParams:
         type=str,
     )
 
+    STATUS_REQUIRED = status_param(required=True)
+    STATUS_OPTIONAL = status_param(required=False)
+
     @classmethod
     def ordering_by(cls, *values: str | tuple[str, str], **kwargs: str | bool | type) -> OpenApiParameter:
         return OpenApiParameter(
@@ -44,3 +68,18 @@ class DefaultParams:
             enum=values,
             **{attr: getattr(cls.ORDERING, attr) for attr in ("name", "required", "description", "type")} | kwargs,
         )
+
+
+ResponseOKType: TypeAlias = Serializer | type[Serializer] | type[dict] | type[list] | None
+
+
+def responses(
+    success: ResponseOKType | tuple[int, ResponseOKType], errors: Iterable[int] | int
+) -> dict[int, Serializer]:
+    if not isinstance(success, tuple):
+        success = (HTTP_200_OK, success)
+
+    if isinstance(errors, int):
+        errors = (errors,)
+
+    return {success[0]: success[1]} | {status: ErrorSerializer for status in errors}

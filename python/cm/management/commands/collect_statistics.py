@@ -16,7 +16,8 @@ from urllib.parse import urlunparse
 import os
 import socket
 
-from audit.utils import audit_background_task
+from audit.alt.background import audit_background_operation
+from audit.models import AuditLogOperationType
 from django.conf import settings
 from django.core.management import BaseCommand
 from django.db.models import Q
@@ -98,7 +99,7 @@ class Command(BaseCommand):
             default="archive-all",
         )
 
-    @audit_background_task(start_operation_status="launched", end_operation_status="completed")
+    @audit_background_operation(name='"Statistics collection on schedule" job', type_=AuditLogOperationType.UPDATE)
     def handle(self, *_, mode: str, **__):
         logger.debug(msg="Statistics collector: started")
         statistics_data = {
