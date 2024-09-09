@@ -71,11 +71,18 @@ const JobPageChildJobsTable = () => {
       return;
     }
 
-    const nextJob =
+    let nextJob =
       task.childJobs.findLast((child) => child.status === AdcmJobStatus.Running) ||
       task.childJobs.find((child) => child.status === AdcmJobStatus.Created);
 
-    if (!nextJob) return;
+    if (!nextJob) {
+      const lastJobIndex = task.childJobs.indexOf(lastViewedJob);
+
+      if (lastJobIndex === -1 || !task.childJobs[lastJobIndex + 1]) return;
+
+      nextJob = task.childJobs[lastJobIndex + 1];
+    }
+
     setLastViewedJobId(nextJob.id);
     setExpandableRows(new Set([nextJob.id]));
   };
@@ -109,10 +116,9 @@ const JobPageChildJobsTable = () => {
     }
 
     if (task.status === AdcmJobStatus.Failed) {
-      const lastFailedJob = task.childJobs.findLast((child) => child.status === AdcmJobStatus.Running);
+      const lastFailedJob = task.childJobs.findLast((child) => child.status === AdcmJobStatus.Failed);
       if (!lastFailedJob) return;
-
-      changeExpandedRowsState([{ key: lastFailedJob.id, isExpand: true }]);
+      setExpandableRows(new Set([lastFailedJob.id]));
       return;
     }
 
@@ -164,7 +170,6 @@ const JobPageChildJobsTable = () => {
                   isAutoScroll={isAutoScrollState}
                   setIsAutoScroll={setIsAutoScroll}
                   id={job.id}
-                  isStarted={isTaskWasStartedRef?.current}
                 />
               }
             >

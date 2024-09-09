@@ -13,7 +13,13 @@
 from typing import Any
 
 from adcm.permissions import VIEW_USER_PERMISSION
-from audit.utils import audit
+from audit.alt.api import audit_create, audit_delete, audit_update
+from audit.alt.hooks import (
+    extract_current_from_response,
+    extract_from_object,
+    extract_previous_from_object,
+    only_on_success,
+)
 from cm.errors import AdcmEx
 from core.errors import NotFoundError
 from core.rbac.dto import UserCreateDTO, UserUpdateDTO
@@ -60,6 +66,13 @@ from api_v2.rbac.user.serializers import (
     UserCreateSerializer,
     UserSerializer,
     UserUpdateSerializer,
+)
+from api_v2.utils.audit import (
+    retrieve_user_password_groups,
+    set_username_for_block_actions,
+    update_user_name,
+    user_from_lookup,
+    user_from_response,
 )
 from api_v2.views import ADCMGenericViewSet
 
@@ -177,7 +190,7 @@ class UserViewSet(
 
         return UserSerializer
 
-    @audit
+    @audit_create(name="User created", object_=user_from_response)
     def create(self, request: Request, *_, **__) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -205,7 +218,25 @@ class UserViewSet(
 
         return Response(data=UserSerializer(instance=self.get_queryset().get(id=user_id)).data, status=HTTP_201_CREATED)
 
-    @audit
+    @(
+        audit_update(name="User updated", object_=user_from_lookup)
+        .attach_hooks(on_collect=only_on_success(update_user_name))
+        .track_changes(
+            before=(
+                extract_previous_from_object(User, "first_name", "last_name", "email", "password", "is_superuser"),
+                extract_from_object(func=retrieve_user_password_groups, section="previous"),
+            ),
+            after=(
+                extract_current_from_response(
+                    "first_name",
+                    "last_name",
+                    "email",
+                    is_superuser="is_super_user",
+                ),
+                extract_from_object(func=retrieve_user_password_groups, section="current"),
+            ),
+        )
+    )
     def partial_update(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -259,7 +290,9 @@ class UserViewSet(
 
         return Response(data=UserSerializer(instance=self.get_queryset().get(id=user_id)).data, status=HTTP_200_OK)
 
-    @audit
+    @audit_update(name="{username} user blocked", object_=user_from_lookup).attach_hooks(
+        pre_call=set_username_for_block_actions
+    )
     @action(methods=["post"], detail=True)
     def block(self, request: Request, *_, **kwargs: Any) -> Response:
         # to check existence
@@ -285,7 +318,9 @@ class UserViewSet(
 
         return Response(status=HTTP_200_OK)
 
-    @audit
+    @audit_update(name="{username} user unblocked", object_=user_from_lookup).attach_hooks(
+        pre_call=set_username_for_block_actions
+    )
     @action(methods=["post"], detail=True)
     def unblock(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         # to check existence
@@ -302,7 +337,7 @@ class UserViewSet(
 
         return Response(status=HTTP_200_OK)
 
-    @audit
+    @audit_delete(name="User deleted", object_=user_from_lookup, removed_on_success=True)
     def destroy(self, request: Request, *args, **kwargs) -> Response:
         user = self.get_object()
         if user.built_in:

@@ -13,7 +13,9 @@
 from collections import defaultdict
 from collections.abc import Iterable
 from pathlib import Path
+from tempfile import gettempdir
 import os
+import fcntl
 import shutil
 import hashlib
 import tarfile
@@ -245,12 +247,42 @@ def get_verification_status(bundle_archive: Path | None, signature_file: Path | 
 
 
 def upload_file(file) -> Path:
-    file_path = settings.DOWNLOAD_DIR / file.name
-    with file_path.open(mode="wb+") as f:
+    # save to tempdir
+    tmp_path = Path(gettempdir(), file.name)
+    with tmp_path.open(mode="wb+") as f:
         for chunk in file.chunks():
             f.write(chunk)
+    hash_ = get_hash_safe(path=str(tmp_path))
 
-    return file_path
+    with Path(gettempdir(), "upload.lock").open(mode="w") as lock:
+        try:
+            # consistently check hash duplicates in DOWNLOAD_DIR
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+
+            if duplicate_path := _get_file_hashes(path=settings.DOWNLOAD_DIR).get(hash_):
+                tmp_path.unlink()
+                raise AdcmEx(
+                    code="BUNDLE_CONFLICT", msg=f"Bundle with the same content is already uploaded {duplicate_path}"
+                )
+
+            # move to downloads
+            new_path = settings.DOWNLOAD_DIR / file.name
+            shutil.move(src=tmp_path, dst=new_path)
+
+            return new_path
+
+        finally:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
+
+def _get_file_hashes(path: Path) -> dict[str, Path]:
+    result = {}
+    for entry in path.iterdir():
+        if not entry.is_file():
+            continue
+        result[get_hash(bundle_file=str(entry))] = entry
+
+    return result
 
 
 def update_bundle(bundle):

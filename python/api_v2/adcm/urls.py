@@ -12,15 +12,14 @@
 
 from django.urls import path
 
-from api_v2.action.views import AdcmActionViewSet
-from api_v2.adcm.views import ADCMConfigView, ADCMViewSet
+from api_v2.adcm.views import ADCMActionViewSet, ADCMConfigView, ADCMViewSet
 
 urlpatterns = [
     path("", ADCMViewSet.as_view({"get": "retrieve"}), name="adcm-detail"),
     path("configs/", ADCMConfigView.as_view({"get": "list", "post": "create"}), name="adcm-config-list"),
     path("configs/<int:pk>/", ADCMConfigView.as_view({"get": "retrieve"}), name="adcm-config-detail"),
     path("config-schema/", ADCMConfigView.as_view({"get": "config_schema"}), name="adcm-config-schema"),
-    path("actions/", AdcmActionViewSet.as_view({"get": "list"}), name="adcm-action-list"),
-    path("actions/<int:pk>/", AdcmActionViewSet.as_view({"get": "retrieve"}), name="adcm-action-detail"),
-    path("actions/<int:pk>/run/", AdcmActionViewSet.as_view({"post": "run"}), name="adcm-action-run"),
+    path("actions/", ADCMActionViewSet.as_view({"get": "list"}), name="adcm-action-list"),
+    path("actions/<int:pk>/", ADCMActionViewSet.as_view({"get": "retrieve"}), name="adcm-action-detail"),
+    path("actions/<int:pk>/run/", ADCMActionViewSet.as_view({"post": "run"}), name="adcm-action-run"),
 ]

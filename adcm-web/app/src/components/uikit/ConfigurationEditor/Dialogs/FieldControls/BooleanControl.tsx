@@ -10,11 +10,18 @@ export interface BooleanControlProps {
   fieldSchema: SingleSchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive) => void;
+  onApply: () => void;
 }
 
-const BooleanControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: BooleanControlProps) => {
+const BooleanControl = ({ fieldName, fieldSchema, value, isReadonly, onChange, onApply }: BooleanControlProps) => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.checked);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key === 'Enter') {
+      onApply();
+    }
   };
 
   return (
@@ -25,6 +32,7 @@ const BooleanControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }:
         label={fieldName}
         onChange={handleChange}
         readOnly={isReadonly}
+        onKeyDown={handleKeyDown}
       />
     </ConfigurationField>
   );

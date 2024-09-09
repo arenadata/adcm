@@ -32,7 +32,7 @@ body {
 }
 
 .defaultThumb {
-  background: rgba(127, 130, 133, 0.2);
+  background: var(--color-plate-20);
   width: 100%;
   height: 100%;
   border-radius: 4px;

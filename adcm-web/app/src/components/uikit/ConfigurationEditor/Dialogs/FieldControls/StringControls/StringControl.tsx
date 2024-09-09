@@ -12,9 +12,10 @@ export interface StringControlProps {
   fieldSchema: SingleSchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive, isValid?: boolean) => void;
+  onApply: () => void;
 }
 
-const StringControl = ({ fieldName, value, fieldSchema, isReadonly, onChange }: StringControlProps) => {
+const StringControl = ({ fieldName, value, fieldSchema, isReadonly, onChange, onApply }: StringControlProps) => {
   const [error, setError] = useState<string | undefined>(undefined);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -22,6 +23,12 @@ const StringControl = ({ fieldName, value, fieldSchema, isReadonly, onChange }: 
 
     setError(error);
     onChange(event.target.value, error === undefined);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (error === undefined && event.key === 'Enter') {
+      onApply();
+    }
   };
 
   const stringValue = value as string;
@@ -40,9 +47,10 @@ const StringControl = ({ fieldName, value, fieldSchema, isReadonly, onChange }: 
           disabled={isReadonly}
           suggestions={fieldSchema.adcmMeta.stringExtra.suggestions}
           onChange={handleChange}
+          onKeyDown={handleKeyDown}
         />
       ) : (
-        <Input value={stringValue} disabled={isReadonly} onChange={handleChange} />
+        <Input value={stringValue} disabled={isReadonly} onChange={handleChange} onKeyDown={handleKeyDown} />
       )}
     </ConfigurationField>
   );

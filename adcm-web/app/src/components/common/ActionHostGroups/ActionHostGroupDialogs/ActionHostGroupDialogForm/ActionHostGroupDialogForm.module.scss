@@ -1,0 +1,18 @@
+.actionHostGroupDialogForm {
+  display: grid;
+  height: 100%;
+  grid-template-rows: min-content 1fr;
+
+  &__column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 20px;
+    margin-bottom: 24px;
+  }
+}
+
+.actionHostGroupDialog {
+  display: grid;
+  grid-template-rows: min-content min-content 1fr;
+  max-height: 100%;
+}

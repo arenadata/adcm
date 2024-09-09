@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 
-export const useForm = <FormData, ErrorsData extends object = Partial<Record<keyof FormData, string | undefined>>>(
+export type FormErrors<FormData> = Partial<Record<keyof FormData, string | undefined>>;
+
+export const useForm = <FormData, ErrorsData extends object = FormErrors<FormData>>(
   initialFormData: FormData,
   initialErrorsData: ErrorsData = {} as ErrorsData,
 ) => {

@@ -35,7 +35,6 @@ from cm.issue import (
 from cm.models import (
     Cluster,
     ClusterObject,
-    GroupConfig,
     Host,
     HostComponent,
     MaintenanceMode,
@@ -43,9 +42,13 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.action_host_group import ActionHostGroupRepo
+from cm.services.cluster import retrieve_clusters_topology
 from cm.services.concern.locks import get_lock_on_object
+from cm.services.group_config import ConfigHostGroupRepo
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import send_host_component_map_update_event
+from core.cluster.operations import find_hosts_difference
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import QuerySet
 from django.db.transaction import atomic, on_commit
@@ -255,6 +258,8 @@ def _check_mapping_data(mapping_data: MappingData) -> None:
 
 @atomic
 def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
+    original_topology = next(retrieve_clusters_topology(cluster_ids=(mapping_data.cluster.id,)))
+
     on_commit(func=reset_hc_map)
     on_commit(func=reset_objects_in_mm)
 
@@ -267,8 +272,6 @@ def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
 
         for added_host in mapping_data.added_hosts:
             add_concern_to_object(object_=added_host, concern=lock)
-
-    _handle_mapping_config_groups(mapping_data=mapping_data)
 
     mapping_objects: list[HostComponent] = []
     for map_ in mapping_data.mapping:
@@ -284,6 +287,12 @@ def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
     HostComponent.objects.filter(cluster_id=mapping_data.cluster.id).delete()
     HostComponent.objects.bulk_create(objs=mapping_objects)
 
+    updated_topology = next(retrieve_clusters_topology(cluster_ids=(mapping_data.cluster.id,)))
+
+    unmapped_hosts = find_hosts_difference(old_topology=original_topology, new_topology=updated_topology).unmapped
+    ActionHostGroupRepo().remove_unmapped_hosts_from_groups(unmapped_hosts)
+    ConfigHostGroupRepo().remove_unmapped_hosts_from_groups(unmapped_hosts)
+
     update_hierarchy_issues(obj=mapping_data.orm_objects["cluster"])
     for provider_id in {host.provider_id for host in mapping_data.hosts.values()}:
         update_hierarchy_issues(obj=mapping_data.orm_objects["providers"][provider_id])
@@ -293,22 +302,6 @@ def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
     send_host_component_map_update_event(cluster=mapping_data.orm_objects["cluster"])
 
     return HostComponent.objects.filter(cluster_id=mapping_data.cluster.id)
-
-
-def _handle_mapping_config_groups(mapping_data: MappingData) -> None:
-    remaining_host_service = {(diff.host.id, diff.service.id) for diff in mapping_data.mapping_difference["remain"]}
-    removed_hosts_not_in_mapping = {
-        mapping_data.orm_objects["hosts"][removed_mapping.host.id]
-        for removed_mapping in mapping_data.mapping_difference["remove"]
-        if (removed_mapping.host.id, removed_mapping.service.id) not in remaining_host_service
-    }
-    removed_mapping_host_ids = {hc.host.id for hc in mapping_data.mapping_difference["remove"]}
-
-    for group_config in GroupConfig.objects.filter(
-        object_type__model__in=["clusterobject", "servicecomponent"],
-        hosts__in=removed_mapping_host_ids,
-    ).distinct():
-        group_config.hosts.remove(*removed_hosts_not_in_mapping)
 
 
 def _handle_mapping_policies(mapping_data: MappingData) -> None:

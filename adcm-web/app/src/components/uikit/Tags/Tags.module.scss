@@ -29,7 +29,7 @@
   display: inline-flex;
   align-items: flex-start;
   gap: var(--tag-gap, 8px);
-  padding: 6px;
+  padding: 6px 12px;
   transition: 250ms background-color, 250ms color;
   background: var(--tag-background);
   color: var(--tag-color);
