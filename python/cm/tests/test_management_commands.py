@@ -387,7 +387,7 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
 
         with self.subTest("test community edition"):
             collect = BundleCollector(
-                date_format="%Y", filters=[Q(edition="community")], mapper=map_community_bundle_data
+                date_format="%Y", filters=[Q(edition="community")], postprocess_result=map_community_bundle_data
             )
             actual = collect().model_dump()
 

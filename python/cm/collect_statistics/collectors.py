@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from rbac.models import Policy, Role, User
 from typing_extensions import TypedDict
 
-from cm.collect_statistics.types import HostDeviceFacts, HostFacts, HostOSFacts
+from cm.collect_statistics.types import HostDeviceFacts, HostFacts
 from cm.models import Bundle, Cluster, HostComponent, HostInfo, HostProvider
 
 
@@ -81,7 +81,8 @@ def _get_hosts_by_edition(data: ADCMEntities, edition: Literal["community", "ent
 def map_community_bundle_data(data: ADCMEntities) -> ADCMEntities:
     community_hosts = _get_hosts_by_edition(data=data, edition="community")
     for host in community_hosts:
-        host["info"]["os"] = HostOSFacts(**{k: v for k, v in host["info"]["os"].items() if k == "family"})
+        family = host["info"]["os"].get("family", "")
+        host["info"]["os"] = {"family": family} if family else {}
 
     return data
 
@@ -106,17 +107,17 @@ class RBACCollector:
 
 
 class BundleCollector:
-    __slots__ = ("_date_format", "_filters", "_mapper")
+    __slots__ = ("_date_format", "_filters", "_postprocess_result")
 
     def __init__(
         self,
         date_format: str,
         filters: Collection[Q] = (),
-        mapper: Callable[[ADCMEntities], ADCMEntities] = lambda x: x,
+        postprocess_result: Callable[[ADCMEntities], ADCMEntities] = lambda x: x,
     ):
         self._date_format = date_format
         self._filters = filters
-        self._mapper = mapper
+        self._postprocess_result = postprocess_result
 
     def __call__(self) -> ADCMEntities:
         bundles: dict[int, BundleData] = {
@@ -177,7 +178,7 @@ class BundleCollector:
             for cluster_id, data in cluster_general_info.items()
         ]
 
-        return self._mapper(
+        return self._postprocess_result(
             ADCMEntities(
                 clusters=clusters_data,
                 bundles=bundles.values(),

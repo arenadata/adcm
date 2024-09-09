@@ -20,7 +20,6 @@ import json
 import traceback
 
 from ansible.plugins.action import ActionBase
-from core.types import HostID
 
 sys.path.append("/adcm/python")
 
@@ -28,6 +27,7 @@ import adcm.init_django  # noqa: F401, isort:skip
 
 from cm.collect_statistics.types import HostDeviceFacts, HostFacts, HostOSFacts
 from cm.models import HostInfo
+from core.types import HostID
 
 # To parse output of lshw command that'll be like:
 #
@@ -94,7 +94,9 @@ class ActionModule(ActionBase):
                 continue
 
             try:
-                disk_descriptions = _extract_disk_info(hostvars[host_name]["disk_command_out"])
+                # if data extraction failed, there won't be such key
+                disk_command_out = hostvars[host_name].get("disk_command_out", "")
+                disk_descriptions = _extract_disk_info(disk_command_out) if disk_command_out else {}
 
                 host_id = hostvars[host_name]["adcm_hostid"]
 

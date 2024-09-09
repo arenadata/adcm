@@ -23,7 +23,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from cm.adcm_config.config import get_adcm_config
-from cm.collect_statistics.collectors import ADCMEntities, BundleCollector, RBACCollector
+from cm.collect_statistics.collectors import ADCMEntities, BundleCollector, RBACCollector, map_community_bundle_data
 from cm.collect_statistics.encoders import TarFileEncoder
 from cm.collect_statistics.senders import SenderSettings, StatisticSender
 from cm.collect_statistics.storages import JSONFile, TarFileWithJSONFileStorage
@@ -37,7 +37,9 @@ STATISTIC_DIR.mkdir(exist_ok=True)
 
 logger = getLogger("background_tasks")
 
-collect_not_enterprise = BundleCollector(date_format=DATE_TIME_FORMAT, filters=[~Q(edition="enterprise")])
+collect_not_enterprise = BundleCollector(
+    date_format=DATE_TIME_FORMAT, filters=[~Q(edition="enterprise")], postprocess_result=map_community_bundle_data
+)
 collect_all = BundleCollector(date_format=DATE_TIME_FORMAT, filters=[])
 
 
