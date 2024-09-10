@@ -77,6 +77,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
+from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.cluster.depend_on import prepare_depend_on_hierarchy, retrieve_serialized_depend_on_hierarchy
 from api_v2.cluster.filters import (
@@ -164,6 +165,29 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         summary="GET clusters",
         description="Get a list of ADCM clusters with information on them.",
         operation_id="getClusters",
+        parameters=[
+            DefaultParams.LIMIT,
+            DefaultParams.OFFSET,
+            OpenApiParameter(name="prototypeName", description="Cluster prototype name."),
+            OpenApiParameter(name="prototypeDisplayName", description="Cluster prototype display name."),
+            OpenApiParameter(name="name", description="Case insensitive and partial filter by cluster name."),
+            OpenApiParameter(name="description", description="Case insensitive and partial filter by description."),
+            OpenApiParameter(name="state", description="Case insensitive and partial filter by state."),
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                type=str,
+                enum=(
+                    "name",
+                    "-name",
+                    "state",
+                    "-state",
+                    "description",
+                    "-description",
+                ),
+                default="name",
+            ),
+        ],
     ),
     retrieve=extend_schema(
         summary="GET cluster",

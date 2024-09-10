@@ -25,24 +25,32 @@ from api_v2.filters import filter_service_status
 
 class ClusterFilter(FilterSet):
     status = ChoiceFilter(label="Cluster status", choices=ADCMEntityStatus.choices, method="filter_status")
-    prototype_name = CharFilter(label="Cluster prototype name", field_name="prototype__name")
-    prototype_display_name = CharFilter(label="Cluster prototype display name", field_name="prototype__display_name")
+    prototype_name = CharFilter(label="Cluster prototype name", field_name="prototype__name", lookup_expr="icontains")
+    prototype_display_name = CharFilter(
+        label="Cluster prototype display name", field_name="prototype__display_name", lookup_expr="icontains"
+    )
     name = CharFilter(label="Cluster name", lookup_expr="icontains")
+    description = CharFilter(label="Cluster description", lookup_expr="icontains")
+    state = CharFilter(label="Cluster state", lookup_expr="icontains")
     ordering = OrderingFilter(
         fields={
             "name": "name",
             "prototype__display_name": "prototypeDisplayName",
+            "state": "state",
+            "description": "description",
         },
         field_labels={
             "name": "Cluster name",
             "prototype__display_name": "Product",
+            "state": "State",
+            "description": "Description",
         },
         label="ordering",
     )
 
     class Meta:
         model = Cluster
-        fields = ("id", "name", "status", "prototype_name", "prototype_display_name")
+        fields = ("id", "name", "status", "prototype_name", "prototype_display_name", "state", "description")
 
     @staticmethod
     def filter_status(queryset: QuerySet, _: str, value: str) -> QuerySet:

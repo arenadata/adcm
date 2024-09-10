@@ -62,16 +62,23 @@ class TestCluster(BaseAPITestCase):
         patched_request.assert_called_once()
 
     def test_adcm_4539_ordering_success(self):
-        cluster_3 = self.add_cluster(bundle=self.bundle_1, name="cluster_3", description="cluster_3")
-        cluster_4 = self.add_cluster(bundle=self.bundle_2, name="cluster_4", description="cluster_3")
-        cluster_list = [self.cluster_1.name, self.cluster_2.name, cluster_3.name, cluster_4.name]
-        response = (self.client.v2 / "clusters").get(query={"ordering": "name"})
+        self.add_cluster(bundle=self.bundle_1, name="cluster_3", description="cluster_3")
+        self.add_cluster(bundle=self.bundle_2, name="cluster_4", description="cluster_3")
+        ordering_fields = ("name", "description", "state")
 
-        self.assertListEqual([cluster["name"] for cluster in response.json()["results"]], cluster_list)
+        for ordering_field in ordering_fields:
+            with self.subTest(ordering_field=ordering_field):
+                response = (self.client.v2 / "clusters").get(query={"ordering": ordering_field})
+                self.assertListEqual(
+                    [cluster[ordering_field] for cluster in response.json()["results"]],
+                    list(Cluster.objects.order_by(ordering_field).values_list(ordering_field, flat=True)),
+                )
 
-        response = (self.client.v2 / "clusters").get(query={"ordering": "-name"})
-
-        self.assertListEqual([cluster["name"] for cluster in response.json()["results"]], cluster_list[::-1])
+                response = (self.client.v2 / "clusters").get(query={"ordering": f"-{ordering_field}"})
+                self.assertListEqual(
+                    [cluster[ordering_field] for cluster in response.json()["results"]],
+                    list(Cluster.objects.order_by(f"-{ordering_field}").values_list(ordering_field, flat=True)),
+                )
 
     def test_retrieve_success(self):
         with patch("api_v2.views.retrieve_status_map") as patched_retrieve, patch(
@@ -85,17 +92,34 @@ class TestCluster(BaseAPITestCase):
         patched_raw.assert_called_once()
         patched_retrieve.assert_not_called()
 
-    def test_filter_by_name_success(self):
-        response = (self.client.v2 / "clusters").get(query={"name": self.cluster_1.name})
+    def test_filter_simple_types_success(self):
+        filters = {
+            "name": (self.cluster_1.name, self.cluster_1.name[:-3], "wrong"),
+            "state": (self.cluster_1.state, self.cluster_1.state[:-3], "wrong"),
+            "prototypeName": (self.cluster_1.prototype.name, self.cluster_1.prototype.name[:-3], "wrong"),
+            "prototypeDisplayName": (
+                self.cluster_1.prototype.display_name,
+                self.cluster_1.prototype.display_name[:-3],
+                "wrong",
+            ),
+            "description": (self.cluster_1.description, self.cluster_1.description[:-3], "wrong"),
+        }
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
+        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
+            found_exact_items = 2 if filter_name == "state" else 1
+            found_items_partially = 2
+            with self.subTest(filter_name=filter_name):
+                response = (self.client.v2 / "clusters").get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], found_exact_items)
 
-    def test_filter_by_wrong_name_success(self):
-        response = (self.client.v2 / "clusters").get(query={"name": "wrong"})
+                response = (self.client.v2 / "clusters").get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 0)
+                response = (self.client.v2 / "clusters").get(query={filter_name: partial_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], found_items_partially)
 
     def test_filter_by_status_up_success(self):
         status_map = FullStatusMap(
@@ -124,32 +148,6 @@ class TestCluster(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
             self.assertEqual(response.json()["count"], 1)
             self.assertEqual(response.json()["results"][0]["id"], self.cluster_2.pk)
-
-    def test_filter_by_prototype_name_success(self):
-        response = (self.client.v2 / "clusters").get(query={"prototypeName": self.cluster_1.prototype.name})
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["id"], self.cluster_1.pk)
-
-    def test_filter_by_wrong_prototype_name_success(self):
-        response = (self.client.v2 / "clusters").get(query={"prototypeName": "wrong"})
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 0)
-
-    def test_filter_by_prototype_display_name_success(self):
-        response = (self.client.v2 / "clusters").get(query={"prototypeDisplayName": self.cluster_1.prototype.name})
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["id"], self.cluster_1.pk)
-
-    def test_filter_by_wrong_prototype_display_name_success(self):
-        response = (self.client.v2 / "clusters").get(query={"prototypeDisplayName": "wrong"})
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 0)
 
     def test_create_success(self):
         response = (self.client.v2 / "clusters").post(
