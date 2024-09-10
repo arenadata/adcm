@@ -65,6 +65,13 @@ def _extract_disk_info(lshw_out: str) -> dict[str, str]:
     }
 
 
+def _safe_str_to_bool(s: str) -> bool:
+    try:
+        return bool(int(s))
+    except ValueError:
+        return False
+
+
 class DataToStore(NamedTuple):
     facts: HostFacts
     hash_value: str
@@ -111,8 +118,8 @@ class ActionModule(ActionBase):
                     devices=[
                         HostDeviceFacts(
                             name=device_name,
-                            removable=device["removable"],
-                            rotational=device["rotational"],
+                            removable=_safe_str_to_bool(device["removable"]),
+                            rotational=_safe_str_to_bool(device["rotational"]),
                             size=device["size"],
                             description=disk_descriptions.get(device_name, ""),
                         )

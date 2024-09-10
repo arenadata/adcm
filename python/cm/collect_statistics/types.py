@@ -53,8 +53,8 @@ class Encoder(Generic[T], ABC):
 
 class HostDeviceFacts(TypedDict):
     name: str
-    removable: str
-    rotational: str
+    removable: bool
+    rotational: bool
     size: str
     description: str
 
