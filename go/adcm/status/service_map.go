@@ -89,10 +89,10 @@ func newServiceServer() *ServiceServer {
 }
 
 func (s *ServiceServer) run() {
-	logg.I.l("start service map server")
+	logg.I.Println("start service map server")
 	for {
 		c := <-s.in
-		logg.I.l("ServiceServer command: ", c)
+		logg.I.Println("ServiceServer command: ", c)
 		switch c.command {
 		case "init":
 			s.smap = initServiceMap(c.smap)
@@ -124,7 +124,7 @@ func (s *ServiceServer) run() {
 			hosts := s.smap.getComponentHosts(c.cluster)
 			s.out <- ssResp{rmap: hosts, ok: true}
 		default:
-			logg.E.l("ServiceServer unknown ss command: ", c)
+			logg.E.Println("ServiceServer unknown ss command: ", c)
 		}
 	}
 }

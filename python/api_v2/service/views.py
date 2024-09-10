@@ -14,17 +14,24 @@ from adcm.permissions import (
     ADD_SERVICE_PERM,
     CHANGE_MM_PERM,
     VIEW_CLUSTER_PERM,
+    VIEW_IMPORT_PERM,
     VIEW_SERVICE_PERM,
     ChangeMMPermissions,
     check_custom_perm,
     get_object_for_user,
 )
-from audit.utils import audit
+from audit.alt.api import audit_update, audit_view
+from audit.alt.hooks import (
+    adjust_denied_on_404_result,
+    extract_current_from_response,
+    extract_previous_from_object,
+)
 from cm.errors import AdcmEx
-from cm.models import ADCMEntityStatus, Cluster, ClusterObject
+from cm.models import Cluster, ClusterObject
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.service import delete_service_from_api
 from cm.services.status.notify import update_mm_objects
+from django.db.models import F
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -47,8 +54,33 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
-from api_v2.config.utils import ConfigSchemaMixin
+from api_v2.api_schema import DefaultParams, responses
+from api_v2.generic.action.api_schema import document_action_viewset
+from api_v2.generic.action.audit import audit_action_viewset
+from api_v2.generic.action.views import ActionViewSet
+from api_v2.generic.action_host_group.api_schema import (
+    document_action_host_group_actions_viewset,
+    document_action_host_group_hosts_viewset,
+    document_action_host_group_viewset,
+)
+from api_v2.generic.action_host_group.views import (
+    ActionHostGroupActionsViewSet,
+    ActionHostGroupHostsViewSet,
+    ActionHostGroupViewSet,
+)
+from api_v2.generic.config.api_schema import document_config_viewset
+from api_v2.generic.config.audit import audit_config_viewset
+from api_v2.generic.config.utils import ConfigSchemaMixin
+from api_v2.generic.config.views import ConfigLogViewSet
+from api_v2.generic.group_config.api_schema import document_group_config_viewset, document_host_group_config_viewset
+from api_v2.generic.group_config.audit import (
+    audit_config_group_config_viewset,
+    audit_group_config_viewset,
+    audit_host_group_config_viewset,
+)
+from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
+from api_v2.generic.imports.serializers import ImportPostSerializer, ImportSerializer
+from api_v2.generic.imports.views import ImportViewSet
 from api_v2.service.filters import ServiceFilter
 from api_v2.service.permissions import ServicePermissions
 from api_v2.service.serializers import (
@@ -61,6 +93,15 @@ from api_v2.service.utils import (
     bulk_add_services_to_cluster,
     validate_service_prototypes,
 )
+from api_v2.utils.audit import (
+    parent_cluster_from_lookup,
+    parent_service_from_lookup,
+    service_does_exist,
+    service_from_lookup,
+    service_with_parents_specified_in_path_exists,
+    set_service_name_from_object,
+    set_service_names_from_request,
+)
 from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
 
 
@@ -69,11 +110,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         operation_id="getClusterService",
         summary="GET cluster service",
         description="Get information about a specific cluster service.",
-        responses={
-            HTTP_200_OK: ServiceRetrieveSerializer,
-            HTTP_403_FORBIDDEN: ErrorSerializer,
-            HTTP_404_NOT_FOUND: ErrorSerializer,
-        },
+        responses=responses(success=ServiceRetrieveSerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
     ),
     list=extend_schema(
         operation_id="getClusterServices",
@@ -83,6 +120,7 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
             DefaultParams.ordering_by("Display name"),
+            DefaultParams.STATUS_OPTIONAL,
             OpenApiParameter(
                 name="name",
                 location=OpenApiParameter.QUERY,
@@ -95,84 +133,42 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
                 description="Case insensitive and partial filter by service displayName.",
                 type=str,
             ),
-            OpenApiParameter(
-                name="status",
-                location=OpenApiParameter.QUERY,
-                description="Filter by service status.",
-                enum=ADCMEntityStatus.values,
-                type=str,
-            ),
         ],
-        responses={HTTP_200_OK: ServiceRetrieveSerializer(many=True), HTTP_404_NOT_FOUND: ErrorSerializer},
+        responses=responses(success=ServiceRetrieveSerializer(many=True), errors=HTTP_404_NOT_FOUND),
     ),
     create=extend_schema(
         operation_id="postClusterServices",
         summary="POST cluster services",
         description="Add a new cluster services.",
-        responses={
-            HTTP_201_CREATED: ServiceRetrieveSerializer,
-            HTTP_400_BAD_REQUEST: ErrorSerializer,
-            HTTP_404_NOT_FOUND: ErrorSerializer,
-            HTTP_403_FORBIDDEN: ErrorSerializer,
-            HTTP_409_CONFLICT: ErrorSerializer,
-        },
+        responses=responses(
+            success=(HTTP_201_CREATED, ServiceRetrieveSerializer),
+            errors=(HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT),
+        ),
     ),
     destroy=extend_schema(
         operation_id="deleteClusterService",
         summary="DELETE cluster service",
         description="Delete a specific cluster service.",
-        responses={
-            HTTP_204_NO_CONTENT: None,
-            HTTP_400_BAD_REQUEST: ErrorSerializer,
-            HTTP_403_FORBIDDEN: ErrorSerializer,
-            HTTP_404_NOT_FOUND: ErrorSerializer,
-            HTTP_409_CONFLICT: ErrorSerializer,
-        },
+        responses=responses(
+            success=(HTTP_204_NO_CONTENT, None),
+            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+        ),
     ),
     maintenance_mode=extend_schema(
         operation_id="postServiceMaintenanceMode",
         summary="POST service maintenance-mode",
         description="Turn on/off maintenance mode on the service.",
-        responses={
-            HTTP_200_OK: ServiceMaintenanceModeSerializer,
-            HTTP_400_BAD_REQUEST: ErrorSerializer,
-            HTTP_403_FORBIDDEN: ErrorSerializer,
-            HTTP_404_NOT_FOUND: ErrorSerializer,
-            HTTP_409_CONFLICT: ErrorSerializer,
-        },
+        responses=responses(
+            success=ServiceMaintenanceModeSerializer,
+            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+        ),
     ),
     statuses=extend_schema(
         operation_id="getServiceComponentStatuses",
         summary="GET service component statuses",
         description="Get information about service component statuses.",
-        responses={
-            HTTP_200_OK: ServiceStatusSerializer,
-            HTTP_403_FORBIDDEN: ErrorSerializer,
-            HTTP_404_NOT_FOUND: ErrorSerializer,
-        },
-        parameters=[
-            OpenApiParameter(
-                name="status",
-                required=True,
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by status.",
-                type=str,
-            ),
-            OpenApiParameter(
-                name="clusterId",
-                required=True,
-                location=OpenApiParameter.PATH,
-                description="Cluster id.",
-                type=int,
-            ),
-            OpenApiParameter(
-                name="serviceId",
-                required=True,
-                location=OpenApiParameter.PATH,
-                description="Service id.",
-                type=int,
-            ),
-        ],
+        responses=responses(success=ServiceStatusSerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
+        parameters=[DefaultParams.STATUS_REQUIRED],
     ),
 )
 class ServiceViewSet(
@@ -209,7 +205,9 @@ class ServiceViewSet(
 
         return ServiceRetrieveSerializer
 
-    @audit
+    @audit_update(name="{service_names} service(s) added", object_=parent_cluster_from_lookup).attach_hooks(
+        pre_call=set_service_names_from_request
+    )
     def create(self, request: Request, *args, **kwargs):  # noqa: ARG002
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, pk=kwargs["cluster_pk"]
@@ -240,12 +238,21 @@ class ServiceViewSet(
             data=ServiceRetrieveSerializer(instance=added_services[0], context=context).data,
         )
 
-    @audit
+    @audit_update(name="{service_name} service removed", object_=parent_cluster_from_lookup).attach_hooks(
+        pre_call=set_service_name_from_object, on_collect=adjust_denied_on_404_result(service_does_exist)
+    )
     def destroy(self, request: Request, *args, **kwargs):  # noqa: ARG002
         instance = self.get_object()
         return delete_service_from_api(service=instance)
 
-    @audit
+    @(
+        audit_update(name="Service updated", object_=service_from_lookup)
+        .attach_hooks(on_collect=adjust_denied_on_404_result(service_with_parents_specified_in_path_exists))
+        .track_changes(
+            before=extract_previous_from_object(model=ClusterObject, maintenance_mode=F("_maintenance_mode")),
+            after=extract_current_from_response("maintenance_mode"),
+        )
+    )
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
@@ -274,3 +281,78 @@ class ServiceViewSet(
         service = get_object_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, id=kwargs["pk"])
 
         return Response(data=ServiceStatusSerializer(instance=service, context=self.get_serializer_context()).data)
+
+
+@extend_schema_view(
+    list=extend_schema(
+        operation_id="getServiceImports",
+        description="Get information about service imports.",
+        summary="GET service imports",
+        parameters=[DefaultParams.LIMIT, DefaultParams.OFFSET],
+        responses=responses(success=ImportSerializer(many=True), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
+    ),
+    create=extend_schema(
+        operation_id="postServiceImports",
+        description="Import data.",
+        summary="POST service imports",
+        responses=responses(
+            success=(HTTP_201_CREATED, ImportPostSerializer),
+            errors=(HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT),
+        ),
+    ),
+)
+@audit_view(create=audit_update(name="Service import updated", object_=parent_service_from_lookup))
+class ServiceImportViewSet(ImportViewSet):
+    def detect_get_check_kwargs(self) -> tuple[dict, dict]:
+        return (
+            {"perms": VIEW_SERVICE_PERM, "klass": ClusterObject, "id": self.kwargs["service_pk"]},
+            {"action_type": VIEW_IMPORT_PERM, "model": ClusterObject.__name__.lower()},
+        )
+
+    def detect_cluster_service_bind_arguments(self, obj: Cluster | ClusterObject) -> tuple[Cluster, ClusterObject]:
+        return obj.cluster, obj
+
+
+@document_group_config_viewset(object_type="service")
+@audit_group_config_viewset(retrieve_owner=parent_service_from_lookup)
+class ServiceGroupConfigViewSet(GroupConfigViewSet):
+    ...
+
+
+@document_host_group_config_viewset(object_type="service")
+@audit_host_group_config_viewset(retrieve_owner=parent_service_from_lookup)
+class ServiceHostGroupConfigViewSet(HostGroupConfigViewSet):
+    ...
+
+
+@document_config_viewset(object_type="service config group", operation_id_variant="ServiceConfigGroup")
+@audit_config_group_config_viewset(retrieve_owner=parent_service_from_lookup)
+class ServiceConfigHostGroupViewSet(ConfigLogViewSet):
+    ...
+
+
+@document_action_viewset(object_type="service")
+@audit_action_viewset(retrieve_owner=parent_service_from_lookup)
+class ServiceActionViewSet(ActionViewSet):
+    ...
+
+
+@document_action_host_group_viewset(object_type="service")
+class ServiceActionHostGroupViewSet(ActionHostGroupViewSet):
+    ...
+
+
+@document_action_host_group_hosts_viewset(object_type="service")
+class ServiceActionHostGroupHostsViewSet(ActionHostGroupHostsViewSet):
+    ...
+
+
+@document_action_host_group_actions_viewset(object_type="service")
+class ServiceActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
+    ...
+
+
+@document_config_viewset(object_type="service")
+@audit_config_viewset(type_in_name="Service", retrieve_owner=parent_service_from_lookup)
+class ServiceConfigViewSet(ConfigLogViewSet):
+    ...

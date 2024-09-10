@@ -54,31 +54,30 @@ func (api *AdcmApi) getToken() (string, bool) {
 			"password": {api.Secrets.ADCMUser.Password},
 		})
 	if err != nil {
-		logg.E.l("getToken: http error: ", err)
+		logg.E.Printf("getToken: http error: %v", err)
 		return "", false
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		logg.E.f("getToken: http status: %s", resp.Status)
+		logg.E.Printf("getToken: http status: %s", resp.Status)
 		body, err := ioutil.ReadAll(io.LimitReader(resp.Body, MaxPostSize))
 		if err == nil {
-			logg.E.f("getToken: POST body: '%s'", body)
+			logg.E.Printf("getToken: POST body: %q", body)
 		}
 		return "", false
 	}
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, MaxPostSize))
 	if err != nil {
-		logg.E.l("getToken: body read error: ", err)
+		logg.E.Printf("getToken: body read error: %v", err)
 		return "", false
 	}
-	//logg.D.f("getToken body: %s", body)
 
 	var v struct{ Token string }
 	if err := json.Unmarshal(body, &v); err != nil {
-		logg.E.l("getToken: json decode error: ", err)
+		logg.E.Printf("getToken: json decode error: %v", err)
 		return "", false
 	}
-	logg.D.l("getToken: token: ", v.Token)
+
 	api.token = v.Token
 	return v.Token, true
 }
@@ -87,18 +86,17 @@ func (api *AdcmApi) checkAuth(token string) bool {
 	client := api.getClient()
 	req, _ := http.NewRequest("GET", api.Url+"/rbac/me/", nil)
 	req.Header.Add("Authorization", "Token "+token)
-	//logg.D.f("checkAuth: client %+v, request %+v", client, req)
 	resp, err := client.Do(req)
 	if err != nil {
-		logg.E.f("checkAuth: http error: %v", err)
+		logg.E.Printf("checkAuth: http error: %v", err)
 		return false
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		logg.W.f("check ADCM token %s fail: %v", token, resp.Status)
+		logg.W.Printf("check ADCM token %s fail: %v", token, resp.Status)
 		return false
 	}
-	logg.D.l("checkAuth: check ADCM token ok")
+	logg.D.Println("checkAuth: check ADCM token ok")
 	return true
 }
 
@@ -106,18 +104,18 @@ func (api *AdcmApi) checkSessionAuth(sessionId string) bool {
 	client := api.getClient()
 	req, _ := http.NewRequest("GET", api.Url+"/stack/", nil)
 	req.AddCookie(&http.Cookie{Name: "sessionid", Value: sessionId})
-	//logg.D.f("checkSessionAuth: client %+v, request %+v", client, req)
+	//logg.D.Printf(checkSessionAuth: client %+v, request %+v", client, req)
 	resp, err := client.Do(req)
 	if err != nil {
-		logg.E.f("checkSessionAuth: http error: %v", err)
+		logg.E.Printf("checkSessionAuth: http error: %v", err)
 		return false
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		logg.W.f("check ADCM sessionId %s fail: %v", sessionId, resp.Status)
+		logg.W.Printf("check ADCM sessionId %s fail: %v", sessionId, resp.Status)
 		return false
 	}
-	logg.D.l("checkSessionAuth: check ADCM sessionId ok")
+	logg.D.Println("checkSessionAuth: check ADCM sessionId ok")
 	return true
 }
 
@@ -131,24 +129,24 @@ func (api *AdcmApi) loadServiceMap() bool {
 	req.Header.Add("Authorization", "Token "+token)
 	resp, err := client.Do(req)
 	if err != nil {
-		logg.E.l("loadServiceMap: http error: ", err)
+		logg.E.Println("loadServiceMap: http error: ", err)
 		return false
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		logg.E.f("loadServiceMap: http status: %s", resp.Status)
+		logg.E.Printf("loadServiceMap: http status: %s", resp.Status)
 		body, err := ioutil.ReadAll(io.LimitReader(resp.Body, MaxPostSize))
 		if err == nil {
-			logg.E.f("loadServiceMap: POST body: '%s'", body)
+			logg.E.Printf("loadServiceMap: POST body: '%s'", body)
 		}
 		return false
 	}
 	_, err = ioutil.ReadAll(io.LimitReader(resp.Body, MaxPostSize))
 	if err != nil {
-		logg.E.l("loadServiceMap: body read error: ", err)
+		logg.E.Println("loadServiceMap: body read error: ", err)
 		return false
 	}
-	logg.D.f("loadServiceMap: call /stack/load/servicemap/ got %s response", resp.Status)
+	logg.D.Printf("loadServiceMap: call /stack/load/servicemap/ got %s response", resp.Status)
 	return true
 }
 

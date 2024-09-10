@@ -45,6 +45,7 @@ lint:
 	poetry install --no-root --with lint
 	poetry run ruff check $(PY_FILES)
 	poetry run ruff format --check $(PY_FILES)
+	poetry run pyright --project pyproject.toml
 	poetry run python dev/linters/license_checker.py --folders $(PY_FILES) go
 	poetry run python dev/linters/migrations_checker.py python
 

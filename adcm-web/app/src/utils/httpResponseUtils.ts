@@ -10,5 +10,5 @@ export interface ResponseErrorData {
 export const getErrorMessage = (requestError: RequestError) => {
   const data = (requestError.response?.data ?? {}) as ResponseErrorData;
 
-  return data.desc ?? data.detail ?? 'Something wrong';
+  return data.desc ?? data.detail ?? requestError.message ?? 'Something wrong';
 };

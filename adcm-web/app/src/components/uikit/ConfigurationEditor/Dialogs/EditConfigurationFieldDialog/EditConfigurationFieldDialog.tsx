@@ -115,6 +115,7 @@ const EditConfigurationFieldDialog = ({
           value={value}
           isReadonly={fieldNode.data.isReadonly}
           onChange={handleValueChange}
+          onApply={handleApply}
         />
       )}
     </ConfigurationEditorDialog>

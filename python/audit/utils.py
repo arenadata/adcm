@@ -12,7 +12,6 @@
 
 from contextlib import suppress
 from functools import wraps
-from typing import Callable
 import re
 
 from api.cluster.serializers import ClusterAuditSerializer
@@ -54,8 +53,6 @@ from cm.models import (
     get_cm_model_by_type,
     get_model_by_type,
 )
-from core.job.types import ExecutionStatus
-from core.types import ADCMCoreType, NamedActionObject
 from django.contrib.auth.models import User as DjangoUser
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import Model, ObjectDoesNotExist
@@ -73,14 +70,11 @@ from rest_framework.status import (
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from audit.cases.cases import get_audit_operation_and_object
-from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
-    AuditLogOperationType,
     AuditObject,
-    AuditObjectType,
     AuditOperation,
     AuditUser,
 )
@@ -520,6 +514,7 @@ def audit(func):
                 return res
 
             # Correctly finished request (when will be `bool(res) is False`?)
+            # - when has_permission is decorated and it returns False
             status_code = res.status_code if res else HTTP_403_FORBIDDEN
         except (AdcmEx, ValidationError, Http404, NotFound) as exc:
             error = exc
@@ -595,34 +590,6 @@ def audit(func):
     return wrapped
 
 
-def make_audit_log(operation_type, result, operation_status):
-    operation_type_map = {
-        "task": {
-            "type": AuditLogOperationType.DELETE,
-            "name": '"Task log cleanup on schedule" job',
-        },
-        "config": {
-            "type": AuditLogOperationType.DELETE,
-            "name": '"Objects configurations cleanup on schedule" job',
-        },
-        "sync": {"type": AuditLogOperationType.UPDATE, "name": '"User sync on schedule" job'},
-        "audit": {
-            "type": AuditLogOperationType.DELETE,
-            "name": '"Audit log cleanup/archiving on schedule" job',
-        },
-        "statistics": {"type": "", "name": '"Statistics collection on schedule" job'},
-    }
-    operation_name = operation_type_map[operation_type]["name"] + " " + operation_status
-    audit_log = AuditLog.objects.create(
-        audit_object=None,
-        operation_name=operation_name,
-        operation_type=operation_type_map[operation_type]["type"],
-        operation_result=result,
-        user=AuditUser.objects.get(username="system"),
-    )
-    cef_logger(audit_instance=audit_log, signature_id="Background operation", empty_resource=True)
-
-
 def get_client_ip(request: WSGIRequest) -> str | None:
     header_fields = ["HTTP_X_FORWARDED_FOR", "HTTP_X_FORWARDED_HOST", "HTTP_X_FORWARDED_SERVER", "REMOTE_ADDR"]
     host = None
@@ -637,65 +604,3 @@ def get_client_ip(request: WSGIRequest) -> str | None:
 
 def get_client_agent(request: WSGIRequest) -> str:
     return request.META.get("HTTP_USER_AGENT", "")[:255]
-
-
-def audit_job_finish(
-    target: NamedActionObject, display_name: str, is_upgrade: bool, job_result: ExecutionStatus
-) -> None:
-    operation_name = f"{display_name} {'upgrade' if is_upgrade else 'action'} completed"
-
-    if target.type == ADCMCoreType.HOSTPROVIDER:
-        obj_type = AuditObjectType.PROVIDER
-    else:
-        obj_type = AuditObjectType(target.type.value)
-
-    audit_object = get_or_create_audit_obj(
-        object_id=str(target.id),
-        object_name=target.name,
-        object_type=obj_type,
-    )
-    operation_result = (
-        AuditLogOperationResult.SUCCESS if job_result == ExecutionStatus.SUCCESS else AuditLogOperationResult.FAIL
-    )
-
-    audit_log = AuditLog.objects.create(
-        audit_object=audit_object,
-        operation_name=operation_name,
-        operation_type=AuditLogOperationType.UPDATE,
-        operation_result=operation_result,
-        object_changes={},
-    )
-
-    cef_logger(audit_instance=audit_log, signature_id="Action completion")
-
-
-def audit_background_task(start_operation_status: str, end_operation_status: str) -> Callable:
-    def decorator(func: Callable) -> Callable:
-        @wraps(func)
-        def wrapped(*args, **kwargs):
-            make_audit_log(
-                operation_type="statistics",
-                result=AuditLogOperationResult.SUCCESS,
-                operation_status=start_operation_status,
-            )
-            try:
-                result = func(*args, **kwargs)
-            except Exception as error:
-                make_audit_log(
-                    operation_type="statistics",
-                    result=AuditLogOperationResult.FAIL,
-                    operation_status=end_operation_status,
-                )
-                raise error
-
-            make_audit_log(
-                operation_type="statistics",
-                result=AuditLogOperationResult.SUCCESS,
-                operation_status=end_operation_status,
-            )
-
-            return result
-
-        return wrapped
-
-    return decorator

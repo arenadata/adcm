@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from adcm.permissions import VIEW_USER_PERMISSION
-from audit.utils import audit
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import DjangoModelPermissions
 
@@ -27,7 +26,6 @@ class UserPermissions(DjangoModelPermissions):
         "DELETE": ["%(app_label)s.delete_%(model_name)s"],
     }
 
-    @audit
     def has_permission(self, request, view):
         if view.action not in ("create", "list") and not request.user.has_perm(VIEW_USER_PERMISSION):
             raise NotFound()

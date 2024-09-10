@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect, RefObject, useRef, MutableRefObject } from 'react';
-import { useStore } from '@hooks';
+import React, { useState, useMemo, useEffect, RefObject, useRef, MutableRefObject, useCallback } from 'react';
+import { useStore, useResizeObserver } from '@hooks';
 import { useRequestJobLogPage } from './useRequestJobLogPage';
 import JobLog from '@commonComponents/job/JobLog/JobLog';
 import JobLogsTabs from '@commonComponents/job/JobLogsTabs/JobLogsTabs';
@@ -13,20 +13,14 @@ const defaultLogs: AdcmJobLogItem[] = [];
 interface JobPageLogProps {
   id: number;
   isLinkEmpty?: boolean;
-  isStarted?: boolean;
   isAutoScroll?: boolean;
   setIsAutoScroll?: (isAutoScroll: boolean) => void;
   isUserScrollRef?: MutableRefObject<boolean>;
 }
 
-const JobPageLog: React.FC<JobPageLogProps> = ({
-  id,
-  isAutoScroll = false,
-  setIsAutoScroll,
-  isUserScrollRef,
-  isStarted = false,
-}) => {
+const JobPageLog: React.FC<JobPageLogProps> = ({ id, isAutoScroll = false, setIsAutoScroll, isUserScrollRef }) => {
   useRequestJobLogPage(id);
+
   const jobRef: RefObject<HTMLDivElement> = useRef(null);
   const childJob = useStore(({ adcm }) => adcm.jobs.task.childJobs.find((job) => job.id === id));
   const logs = useStore(({ adcm }) => adcm.jobs.jobLogs[id] ?? defaultLogs);
@@ -46,8 +40,8 @@ const JobPageLog: React.FC<JobPageLogProps> = ({
     };
   }, []);
 
-  useEffect(() => {
-    if (!isAutoScroll || logs.length === 0 || !isUserScrollRef || !jobRef?.current || !isStarted) return;
+  const scrollToExpandedLog = useCallback(() => {
+    if (!isAutoScroll || logs.length === 0 || !isUserScrollRef || !jobRef?.current) return;
 
     const parentTr = jobRef.current.closest('tr');
     const prevSiblingTr = parentTr?.previousSibling as HTMLDivElement;
@@ -55,7 +49,6 @@ const JobPageLog: React.FC<JobPageLogProps> = ({
 
     if (!parentTr || !tableContainer || !prevSiblingTr) return;
     const scrollTopTo = tableContainer.offsetTop + parentTr.offsetTop - (window.innerHeight - parentTr.scrollHeight);
-
     isUserScrollRef.current = false;
 
     window.scrollTo({
@@ -63,9 +56,9 @@ const JobPageLog: React.FC<JobPageLogProps> = ({
       top: scrollTopTo,
       behavior: 'smooth',
     });
+  }, [isAutoScroll, logs.length, isUserScrollRef, jobRef]);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [logs, jobRef, jobRef?.current?.scrollHeight]);
+  useResizeObserver(jobRef, scrollToExpandedLog);
 
   useEffect(() => {
     if (isMinDelayEnded && !isLoadedLogs && logs !== defaultLogs) {

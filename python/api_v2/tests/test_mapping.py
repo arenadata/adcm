@@ -42,13 +42,13 @@ class TestMapping(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_1")
+        self.host_1 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_B")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
 
-        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2")
+        self.host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_A")
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3")
+        self.host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_C")
         self.add_host_to_cluster(cluster=self.cluster_2, host=self.host_3)
 
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
@@ -199,8 +199,11 @@ class TestMapping(BaseAPITestCase):
         response = self.client.v2[self.cluster_1, "mapping", "hosts"].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 2)
-        self.assertEqual({host["id"] for host in response.json()}, {self.host_1.pk, self.host_2.pk})
+        response = response.json()
+        self.assertEqual(len(response), 2)
+        self.assertEqual({host["id"] for host in response}, {self.host_1.pk, self.host_2.pk})
+        # check sort by fqdn
+        self.assertListEqual([h["name"] for h in response], sorted([self.host_1.fqdn, self.host_2.fqdn]))
 
     def test_mapping_components_success(self):
         response = self.client.v2[self.cluster_1, "mapping", "components"].get()
@@ -400,21 +403,15 @@ class TestMappingConstraints(BaseAPITestCase):
         component_1 = ServiceComponent.objects.get(
             prototype__name="component_1", service=service_requires_service, cluster=self.cluster
         )
-
-        service_required = self.add_services_to_cluster(service_names=["service_required"], cluster=self.cluster).get()
-        component_in_required_service = ServiceComponent.objects.get(
-            prototype__name="component_in_required_service", service=service_required, cluster=self.cluster
-        )
+        # required service must be added (not exactly mapped) on mapping save
+        self.add_services_to_cluster(service_names=["service_required"], cluster=self.cluster).get()
 
         response: Response = self.client.v2[self.cluster, "mapping"].post(
-            data=[
-                {"hostId": self.host_1.pk, "componentId": component_1.pk},
-                {"hostId": self.host_1.pk, "componentId": component_in_required_service.pk},
-            ],
+            data=[{"hostId": self.host_1.pk, "componentId": component_1.pk}],
         )
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertEqual(HostComponent.objects.count(), 2)
+        self.assertEqual(HostComponent.objects.count(), 1)
 
     def test_no_required_component_fail(self):
         service_requires_component = self.add_services_to_cluster(

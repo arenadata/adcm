@@ -78,7 +78,7 @@ def bulk_init_config(objects: QuerySet[ADCMEntity]) -> None:
         {', '.join(['(0, 0)'] * objects.count())} RETURNING id;"""
     )
     object_config_ids = [item[0] for item in cursor.fetchall()]
-    object_configs: QuerySet[ObjectConfig] = ObjectConfig.objects.filter(pk__in=object_config_ids)
+    object_configs = ObjectConfig.objects.filter(pk__in=object_config_ids)
 
     obj_proto_conf_map = {}
     objects_to_update = []
@@ -88,7 +88,7 @@ def bulk_init_config(objects: QuerySet[ADCMEntity]) -> None:
         objects_to_update.append(obj)
     objects.model.objects.bulk_update(objs=objects_to_update, fields=["config"])
 
-    config_logs: list[ConfigLog] = []
+    config_logs = []
     for obj_conf in object_configs:
         obj = obj_conf.object
         spec, _, config, attr = obj_proto_conf_map[obj.pk]
@@ -96,7 +96,7 @@ def bulk_init_config(objects: QuerySet[ADCMEntity]) -> None:
         process_file_type(obj=obj, spec=spec, conf=config)
 
     ConfigLog.objects.bulk_create(objs=config_logs)
-    config_logs: QuerySet[ConfigLog] = (
+    config_logs = (
         ConfigLog.objects.filter(obj_ref__in=object_configs)
         .order_by("-pk")
         .select_related("obj_ref")[: len(config_logs)]

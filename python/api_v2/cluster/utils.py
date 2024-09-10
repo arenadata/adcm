@@ -33,7 +33,6 @@ from cm.models import (
     Cluster,
     ClusterObject,
     ConcernCause,
-    GroupConfig,
     Host,
     HostComponent,
     MaintenanceMode,
@@ -41,13 +40,16 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.action_host_group import ActionHostGroupRepo
 from cm.services.cluster import retrieve_clusters_topology
 from cm.services.concern import delete_issue
 from cm.services.concern.checks import extract_data_for_requirements_check, is_constraint_requirements_unsatisfied
 from cm.services.concern.distribution import redistribute_issues_and_flags
 from cm.services.concern.locks import get_lock_on_object
+from cm.services.group_config import ConfigHostGroupRepo
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import send_host_component_map_update_event
+from core.cluster.operations import find_hosts_difference
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import QuerySet
@@ -138,6 +140,7 @@ def retrieve_mapping_data(
         "existing_mapping": [],
         "orm_objects": {"cluster": cluster, "hosts": {}, "providers": {}},
         "not_found_object_ids": {},
+        "existing_services_names": [],
     }
 
     for service in (
@@ -146,6 +149,8 @@ def retrieve_mapping_data(
         .prefetch_related("servicecomponent_set", "servicecomponent_set__prototype")
     ):
         service: ClusterObject
+
+        mapping_data["existing_services_names"].append(service.prototype.name)
         mapping_data["services"][service.pk] = ServiceData.model_validate(obj=service)
         mapping_data["prototypes"][service.prototype.pk] = PrototypeData.model_validate(obj=service.prototype)
         for component in service.servicecomponent_set.all():
@@ -261,6 +266,8 @@ def _check_mapping_data(mapping_data: MappingData) -> None:
 
 @atomic
 def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
+    original_topology = next(retrieve_clusters_topology(cluster_ids=(mapping_data.cluster.id,)))
+
     on_commit(func=reset_hc_map)
     on_commit(func=reset_objects_in_mm)
 
@@ -273,8 +280,6 @@ def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
 
         for added_host in mapping_data.added_hosts:
             add_concern_to_object(object_=added_host, concern=lock)
-
-    _handle_mapping_config_groups(mapping_data=mapping_data)
 
     mapping_objects: list[HostComponent] = []
     for map_ in mapping_data.mapping:
@@ -290,32 +295,22 @@ def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
     HostComponent.objects.filter(cluster_id=mapping_data.cluster.id).delete()
     HostComponent.objects.bulk_create(objs=mapping_objects)
 
+    updated_topology = next(retrieve_clusters_topology(cluster_ids=(mapping_data.cluster.id,)))
+
+    unmapped_hosts = find_hosts_difference(old_topology=original_topology, new_topology=updated_topology).unmapped
+    ActionHostGroupRepo().remove_unmapped_hosts_from_groups(unmapped_hosts)
+    ConfigHostGroupRepo().remove_unmapped_hosts_from_groups(unmapped_hosts)
+
     delete_issue(
         owner=CoreObjectDescriptor(id=mapping_data.cluster.id, type=ADCMCoreType.CLUSTER),
         cause=ConcernCause.HOSTCOMPONENT,
     )
-    redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((mapping_data.cluster.id,))))
+    redistribute_issues_and_flags(topology=updated_topology)
 
     _handle_mapping_policies(mapping_data=mapping_data)
     send_host_component_map_update_event(cluster=mapping_data.orm_objects["cluster"])
 
     return HostComponent.objects.filter(cluster_id=mapping_data.cluster.id)
-
-
-def _handle_mapping_config_groups(mapping_data: MappingData) -> None:
-    remaining_host_service = {(diff.host.id, diff.service.id) for diff in mapping_data.mapping_difference["remain"]}
-    removed_hosts_not_in_mapping = {
-        mapping_data.orm_objects["hosts"][removed_mapping.host.id]
-        for removed_mapping in mapping_data.mapping_difference["remove"]
-        if (removed_mapping.host.id, removed_mapping.service.id) not in remaining_host_service
-    }
-    removed_mapping_host_ids = {hc.host.id for hc in mapping_data.mapping_difference["remove"]}
-
-    for group_config in GroupConfig.objects.filter(
-        object_type__model__in=["clusterobject", "servicecomponent"],
-        hosts__in=removed_mapping_host_ids,
-    ).distinct():
-        group_config.hosts.remove(*removed_hosts_not_in_mapping)
 
 
 def _handle_mapping_policies(mapping_data: MappingData) -> None:
@@ -347,7 +342,7 @@ def _check_single_mapping_requires(mapping_entry: MappingEntryData, mapping_data
     ]:
         require: RequiresData
 
-        if require.service not in mapping_data.mapping_names["services"]:
+        if require.service not in mapping_data.existing_services_names:
             if source_type == ObjectType.COMPONENT.value:
                 reference = f'component "{component_prototype.name}" of service "{service_prototype.name}"'
             else:

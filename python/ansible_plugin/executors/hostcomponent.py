@@ -85,6 +85,7 @@ class ADCMHostComponentPluginExecutor(ADCMAnsiblePluginExecutor[ChangeHostCompon
             raise PluginIncorrectCallError(message="You can not change hc in plugin for action with hc_acl")
 
         cluster = Cluster.objects.get(id=runtime.vars.context.cluster_id)
+
         hostcomponent = get_hc(cluster)
         for operation in arguments.operations:
             component_id, service_id = ServiceComponent.objects.values_list("id", "service_id").get(

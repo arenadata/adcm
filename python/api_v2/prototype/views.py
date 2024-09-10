@@ -10,13 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.permissions import VIEW_CLUSTER_PERM, DjangoModelPermissionsAudit
+from adcm.permissions import VIEW_CLUSTER_PERM
 from adcm.serializers import EmptySerializer
-from audit.utils import audit
+from audit.alt.api import audit_update
 from cm.models import ObjectType, Prototype
 from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.decorators import action
+from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
@@ -28,6 +29,7 @@ from api_v2.prototype.serializers import (
     PrototypeVersionsSerializer,
 )
 from api_v2.prototype.utils import accept_license
+from api_v2.utils.audit import bundle_from_lookup
 from api_v2.views import ADCMReadOnlyModelViewSet
 
 
@@ -41,7 +43,7 @@ from api_v2.views import ADCMReadOnlyModelViewSet
 )
 class PrototypeViewSet(ADCMReadOnlyModelViewSet):
     queryset = Prototype.objects.exclude(type="adcm").select_related("bundle").order_by("name")
-    permission_classes = [DjangoModelPermissionsAudit]
+    permission_classes = [DjangoModelPermissions]
     permission_required = [VIEW_CLUSTER_PERM]
     filterset_class = PrototypeFilter
 
@@ -69,7 +71,7 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
         description="Accept prototype license.",
         responses={200: None, 404: ErrorSerializer, 409: ErrorSerializer},
     )
-    @audit
+    @audit_update(name="Bundle license accepted", object_=bundle_from_lookup)
     @action(methods=["post"], detail=True, url_path="license/accept", url_name="accept-license")
     def accept(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         prototype = self.get_object()

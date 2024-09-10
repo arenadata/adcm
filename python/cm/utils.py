@@ -12,8 +12,11 @@
 
 from collections.abc import Mapping
 from copy import deepcopy
-from typing import Any, Iterable, Protocol, TypeVar
+from typing import TYPE_CHECKING, Any, Iterable, Protocol, TypeVar
 import os
+
+if TYPE_CHECKING:
+    from cm.models import ADCMEntity
 
 ANY = "any"
 AVAILABLE = "available"

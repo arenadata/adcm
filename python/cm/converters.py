@@ -12,6 +12,7 @@
 
 from typing import TypeAlias
 
+from audit.models import AuditObjectType
 from core.types import ADCMCoreType, ADCMHostGroupType, ExtraActionTargetType
 from django.db.models import Model
 
@@ -108,3 +109,30 @@ def model_to_action_target_type(model: type[Model]) -> ADCMCoreType | ExtraActio
 
 def orm_object_to_action_target_type(object_: CoreObject | ActionHostGroup) -> ADCMCoreType | ExtraActionTargetType:
     return model_to_action_target_type(model=object_.__class__)
+
+
+def model_name_to_audit_object_type(model_name: str) -> AuditObjectType:
+    # model_name is `model` field from ContentType model or str(<Model>).lower()
+    audit_object_type = _model_name_to_audit_object_type_map.get(model_name)
+
+    if audit_object_type is None:
+        raise ValueError(f"Can't convert {model_name} to audit object type")
+
+    return audit_object_type
+
+
+_model_name_to_audit_object_type_map = {
+    "cluster": AuditObjectType.CLUSTER,
+    "clusterobject": AuditObjectType.SERVICE,
+    "servicecomponent": AuditObjectType.COMPONENT,
+    "host": AuditObjectType.HOST,
+    "hostprovider": AuditObjectType.PROVIDER,
+    "bundle": AuditObjectType.BUNDLE,
+    "prototype": AuditObjectType.PROTOTYPE,
+    "adcm": AuditObjectType.ADCM,
+    "user": AuditObjectType.USER,
+    "group": AuditObjectType.GROUP,
+    "role": AuditObjectType.ROLE,
+    "policy": AuditObjectType.POLICY,
+    "actionhostgroup": AuditObjectType.ACTION_HOST_GROUP,
+}

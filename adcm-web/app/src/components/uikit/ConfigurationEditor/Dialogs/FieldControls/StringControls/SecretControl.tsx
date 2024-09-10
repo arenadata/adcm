@@ -13,9 +13,10 @@ export interface StringControlProps {
   fieldSchema: SingleSchemaDefinition;
   isReadonly: boolean;
   onChange: (value: JSONPrimitive, isValid?: boolean) => void;
+  onApply: () => void;
 }
 
-const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: StringControlProps) => {
+const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange, onApply }: StringControlProps) => {
   const [secret, setSecret] = useState(value as string);
   const [confirm, setConfirm] = useState(value as string);
   const [secretError, setSecretError] = useState<string | undefined>(undefined);
@@ -43,6 +44,13 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
     setConfirm(defaultValue as string);
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    const areEqual = secret === confirm;
+    if (areEqual && event.key === 'Enter') {
+      onApply();
+    }
+  };
+
   return (
     <form>
       <ConfigurationField
@@ -52,7 +60,13 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
         disabled={isReadonly}
         onResetToDefault={handleResetToDefault}
       >
-        <InputPassword value={secret} disabled={isReadonly} onChange={handleSecretChange} />
+        <InputPassword
+          tabIndex={0}
+          value={secret}
+          disabled={isReadonly}
+          onChange={handleSecretChange}
+          onKeyDown={handleKeyDown}
+        />
       </ConfigurationField>
       {!isReadonly && (
         <ConfigurationField
@@ -62,7 +76,13 @@ const SecretControl = ({ fieldName, fieldSchema, value, isReadonly, onChange }: 
           disabled={isReadonly}
           onResetToDefault={handleResetToDefault}
         >
-          <InputPassword value={confirm} disabled={isReadonly} onChange={handleConfirmChange} />
+          <InputPassword
+            tabIndex={0}
+            value={confirm}
+            disabled={isReadonly}
+            onChange={handleConfirmChange}
+            onKeyDown={handleKeyDown}
+          />
         </ConfigurationField>
       )}
     </form>
