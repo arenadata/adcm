@@ -12,15 +12,14 @@
 
 from collections import defaultdict
 from hashlib import md5
-from itertools import chain
-from typing import Callable, Collection, Literal
+from typing import Collection, Literal
 
+from core.types import BundleID, ClusterID
 from django.db.models import Count, F, Q
 from pydantic import BaseModel
 from rbac.models import Policy, Role, User
 from typing_extensions import TypedDict
 
-from cm.collect_statistics.types import HostDeviceFacts, HostFacts
 from cm.models import Bundle, Cluster, HostComponent, HostInfo, HostProvider
 
 
@@ -72,21 +71,6 @@ class RBACEntities(BaseModel):
     roles: list[RoleData]
 
 
-def _get_hosts_by_edition(data: ADCMEntities, edition: Literal["community", "enterprise"]) -> list[dict]:
-    return list(
-        chain.from_iterable(cluster["hosts"] for cluster in data.clusters if cluster["bundle"]["edition"] == edition)
-    )
-
-
-def map_community_bundle_data(data: ADCMEntities) -> ADCMEntities:
-    community_hosts = _get_hosts_by_edition(data=data, edition="community")
-    for host in community_hosts:
-        family = host["info"]["os"].get("family", "")
-        host["info"]["os"] = {"family": family} if family else {}
-
-    return data
-
-
 class RBACCollector:
     def __init__(self, date_format: str):
         self._date_format = date_format
@@ -106,21 +90,19 @@ class RBACCollector:
         )
 
 
+def get_host_name_hash(name: str) -> str:
+    return md5(name.encode(encoding="utf-8")).hexdigest()  # noqa: S324
+
+
 class BundleCollector:
     __slots__ = ("_date_format", "_filters", "_postprocess_result")
 
-    def __init__(
-        self,
-        date_format: str,
-        filters: Collection[Q] = (),
-        postprocess_result: Callable[[ADCMEntities], ADCMEntities] = lambda x: x,
-    ):
+    def __init__(self, date_format: str, filters: Collection[Q] = ()):
         self._date_format = date_format
         self._filters = filters
-        self._postprocess_result = postprocess_result
 
     def __call__(self) -> ADCMEntities:
-        bundles: dict[int, BundleData] = {
+        bundles: dict[BundleID, BundleData] = {
             entry.pop("id"): BundleData(date=entry.pop("date").strftime(self._date_format), **entry)
             for entry in Bundle.objects.filter(*self._filters).values("id", *BundleData.__annotations__.keys())
         }
@@ -132,7 +114,7 @@ class BundleCollector:
             .annotate(host_count=Count("host"))
         ]
 
-        cluster_general_info: dict[int, dict[Literal["name", "bundle_id", "host_count"], int | str]] = {
+        cluster_general_info: dict[ClusterID, dict[Literal["name", "bundle_id", "host_count"], int | str]] = {
             entry.pop("id"): entry
             for entry in Cluster.objects.filter(prototype__bundle_id__in=bundles.keys())
             .values("id", "name", bundle_id=F("prototype__bundle_id"))
@@ -148,24 +130,21 @@ class BundleCollector:
         ):
             hostcomponent_data[entry.pop("cluster_id")].append(
                 HostComponentData(
-                    host_name=md5(entry.pop("host_name").encode(encoding="utf-8")).hexdigest(),  # noqa: S324
+                    host_name=get_host_name_hash(entry.pop("host_name")),
                     **entry,
                 )
             )
 
         host_data = defaultdict(list)
-        for host_info in HostInfo.objects.select_related("host").filter(
-            host__cluster_id__in=cluster_general_info.keys()
-        ):
-            device_facts = [HostDeviceFacts(**device) for device in host_info.value["devices"]]
-            host_facts = HostFacts(
-                cpu_vcores=host_info.value["cpu_vcores"],
-                os=host_info.value["os"],
-                ram=host_info.value["ram"],
-                devices=device_facts,
-            )
+        for host_name, host_cluster_id, host_facts in HostInfo.objects.values_list(
+            "host__fqdn", "host__cluster_id", "value"
+        ).filter(host__cluster_id__in=cluster_general_info.keys()):
+            related_bundle_edition = bundles[cluster_general_info[host_cluster_id]["bundle_id"]]["edition"]
+            if related_bundle_edition != "enterprise":
+                # we gather only family if edition isn't enterprise and
+                host_facts["os"] = {"family": family} if (family := host_facts["os"].get("family")) else {}
 
-            host_data[host_info.host.cluster_id].append({"name": host_info.host.fqdn, "info": host_facts})
+            host_data[host_cluster_id].append({"name": get_host_name_hash(host_name), "info": host_facts})
 
         clusters_data = [
             ClusterData(
@@ -178,10 +157,4 @@ class BundleCollector:
             for cluster_id, data in cluster_general_info.items()
         ]
 
-        return self._postprocess_result(
-            ADCMEntities(
-                clusters=clusters_data,
-                bundles=bundles.values(),
-                providers=hostproviders_data,
-            )
-        )
+        return ADCMEntities(clusters=clusters_data, bundles=bundles.values(), providers=hostproviders_data)

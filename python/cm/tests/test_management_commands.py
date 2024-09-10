@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import deepcopy
 from hashlib import md5
 from operator import itemgetter
 from pathlib import Path
@@ -31,13 +32,13 @@ from rbac.models import Policy, Role, User
 from requests.exceptions import ConnectionError
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_405_METHOD_NOT_ALLOWED
 
-from cm.collect_statistics.collectors import BundleCollector, map_community_bundle_data
+from cm.collect_statistics.collectors import BundleCollector, get_host_name_hash
 from cm.collect_statistics.encoders import TarFileEncoder
 from cm.collect_statistics.errors import RetriesExceededError, SenderConnectionError
 from cm.collect_statistics.gather_hardware_info import get_inventory
 from cm.collect_statistics.senders import SenderSettings, StatisticSender
 from cm.collect_statistics.storages import JSONFile, StorageError, TarFileWithJSONFileStorage
-from cm.models import ADCM, Bundle, Host, HostInfo, ServiceComponent
+from cm.models import ADCM, Bundle, HostInfo, ServiceComponent
 from cm.services.job.inventory import get_objects_configurations
 from cm.tests.utils import gen_cluster, gen_provider
 
@@ -335,94 +336,100 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
 
     def test_host_info_dump_mapping(self):
         bundle_cluster_reg = self.add_bundle(self.bundles_dir / "cluster_1")
+        bundle_cluster_enterprise = self.add_bundle(self.bundles_dir / "cluster_full_config")
+        bundle_cluster_enterprise.edition = "enterprise"
+        bundle_cluster_enterprise.save(update_fields=["edition"])
 
         bundle_prov_reg = self.add_bundle(self.bundles_dir / "provider")
         bundle_prov_full = self.add_bundle(self.bundles_dir / "provider_full_config")
 
         cluster_reg_1 = self.add_cluster(bundle=bundle_cluster_reg, name="Regular 1")
-        cluster_reg_2 = self.add_cluster(bundle=bundle_cluster_reg, name="Regular 2")
+        enterprise_cluster = self.add_cluster(bundle=bundle_cluster_enterprise, name="Regular 2 ee")
 
         provider_full_1 = self.add_provider(bundle=bundle_prov_full, name="Prov Full 1")
         provider_reg_1 = self.add_provider(bundle=bundle_prov_reg, name="Prov Reg 1")
 
-        self.add_host(provider=provider_full_1, fqdn="host-1", cluster=cluster_reg_1)
-        self.add_host(provider=provider_full_1, fqdn="host-2", cluster=cluster_reg_2)
-        self.add_host(provider=provider_reg_1, fqdn="host-3", cluster=cluster_reg_1)
+        host_1 = self.add_host(provider=provider_full_1, fqdn="host-1", cluster=cluster_reg_1)
+        host_2 = self.add_host(provider=provider_full_1, fqdn="host-2", cluster=enterprise_cluster)
+        host_3 = self.add_host(provider=provider_reg_1, fqdn="host-3", cluster=cluster_reg_1)
 
-        host_values = [
-            {
-                "cpu_vcores": 8,
-                "os": {"family": "RedHat"},
-                "ram": 12457,
-                "devices": [{"name": "vda", "removable": 0, "size": "20.00 GB"}],
+        host_info = {
+            host_1.id: {
+                "name": get_host_name_hash(host_1.fqdn),
+                "info": {
+                    "cpu_vcores": 8,
+                    "os": {"family": "RedHat"},
+                    "ram": 12457,
+                    "devices": [{"name": "vda", "removable": 0, "size": "20.00 GB"}],
+                },
             },
-            {
-                "cpu_vcores": 8,
-                "devices": [
-                    {
-                        "name": "vda",
-                        "removable": "0",
-                        "rotational": "0",
-                        "size": "20.00 GB",
-                        "description": "Virtual I/O device",
-                    }
-                ],
-                "os": {"distribution": "CentOS", "family": "RedHat", "version": "7.9"},
-                "ram": 15884,
+            host_2.id: {
+                "name": get_host_name_hash(host_2.fqdn),
+                "info": {
+                    "cpu_vcores": 8,
+                    "devices": [
+                        {
+                            "name": "vda",
+                            "removable": "0",
+                            "rotational": "0",
+                            "size": "20.00 GB",
+                            "description": "Virtual I/O device",
+                        }
+                    ],
+                    "os": {"distribution": "CentOS", "family": "RedHat", "version": "7.9"},
+                    "ram": 15884,
+                },
             },
-            {
-                "cpu_vcores": 6,
-                "os": {"distribution": "CentOS", "version": "7.9"},
-                "ram": 12457,
-                "devices": [{"name": "vda", "removable": 0, "size": "20.00 GB"}],
+            host_3.id: {
+                "name": get_host_name_hash(host_3.fqdn),
+                "info": {
+                    "cpu_vcores": 6,
+                    "os": {"distribution": "CentOS", "version": "7.9"},
+                    "ram": 12457,
+                    "devices": [{"name": "vda", "removable": 0, "size": "20.00 GB"}],
+                },
             },
-        ]
+        }
 
-        for cluster in [cluster_reg_1, cluster_reg_2]:
-            host = Host.objects.filter(cluster__name=cluster.name)
-            for host_object in host:
-                host_hash = md5(host_object.fqdn.encode(encoding="utf-8")).hexdigest()  # noqa: S324
-                HostInfo.objects.create(host=host_object, value=host_values.pop(), hash=host_hash)
+        expected_values = deepcopy(host_info)
+        # because it's not enterprise and there's no family
+        expected_values[host_3.id]["info"]["os"] = {}
+
+        for host in (host_1, host_2, host_3):
+            HostInfo.objects.create(host=host, value=host_info[host.id]["info"], hash="")
+
         self.assertEqual(HostInfo.objects.count(), 3)
 
-        with self.subTest("test community edition"):
-            collect = BundleCollector(
-                date_format="%Y", filters=[Q(edition="community")], postprocess_result=map_community_bundle_data
-            )
-            actual = collect().model_dump()
-
-            for cluster in actual["clusters"]:
-                for host in cluster["hosts"]:
-                    if host["name"] == "host-1":
-                        self.assertEqual(host["info"]["os"], {})
-                    else:
-                        self.assertEqual(host["info"]["os"], {"family": "RedHat"})
-
-        with self.subTest("test enterprise edition"):
-            for bundle in Bundle.objects.all():
-                bundle.edition = "enterprise"
-                bundle.save()
-            collect = BundleCollector(date_format="%Y", filters=[Q(edition="enterprise")])
-            actual = collect().model_dump()
-
-            for cluster in actual["clusters"]:
-                for host in cluster["hosts"]:
-                    if host["name"] == "host-1":
-                        self.assertEqual(host["info"]["os"], {"distribution": "CentOS", "version": "7.9"})
-                    elif host["name"] == "host-3":
-                        self.assertEqual(
-                            host["info"]["os"], {"distribution": "CentOS", "family": "RedHat", "version": "7.9"}
-                        )
-                    else:
-                        self.assertEqual(host["info"]["os"], {"family": "RedHat"})
-
-        with self.subTest("test mapper and filter mismatch"):
+        with self.subTest("community"):
             collect = BundleCollector(date_format="%Y", filters=[Q(edition="community")])
-            actual = collect().model_dump()
+            result = collect().model_dump()
 
-            self.assertListEqual(actual["bundles"], [])
-            self.assertListEqual(actual["clusters"], [])
-            self.assertListEqual(actual["providers"], [])
+            actual_hosts = {
+                cluster["name"]: sorted(cluster["hosts"], key=itemgetter("name")) for cluster in result["clusters"]
+            }
+            expected_hosts = {
+                cluster_reg_1.name: sorted(
+                    (expected_values[host_1.id], expected_values[host_3.id]), key=itemgetter("name")
+                )
+            }
+
+            self.assertDictEqual(actual_hosts, expected_hosts)
+
+        with self.subTest("all"):
+            collect = BundleCollector(date_format="%Y", filters=[])
+            result = collect().model_dump()
+
+            actual_hosts = {
+                cluster["name"]: sorted(cluster["hosts"], key=itemgetter("name")) for cluster in result["clusters"]
+            }
+            expected_hosts = {
+                enterprise_cluster.name: [expected_values[host_2.id]],
+                cluster_reg_1.name: sorted(
+                    (expected_values[host_1.id], expected_values[host_3.id]), key=itemgetter("name")
+                ),
+            }
+
+            self.assertDictEqual(actual_hosts, expected_hosts)
 
 
 class TestStorage(BaseAPITestCase):
