@@ -19,7 +19,7 @@ from django.conf import settings
 from cm.models import Action, ClusterObject, ObjectType, Prototype, ServiceComponent, Upgrade
 from cm.services.job.inventory import get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase
-from cm.upgrade import bundle_switch, update_before_upgrade
+from cm.upgrade import _update_before_upgrade, bundle_switch
 
 
 class TestBeforeUpgrade(BaseInventoryTestCase):
@@ -56,7 +56,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
 
     def test_provider_two_hosts(self):
         self.provider.before_upgrade["bundle_id"] = self.provider.prototype.bundle.pk
-        update_before_upgrade(obj=self.provider)
+        _update_before_upgrade(obj=self.provider)
 
         bundle_switch(obj=self.provider, upgrade=self.upgrade_for_provider)
 
@@ -166,7 +166,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         )
 
         self.cluster_1.before_upgrade["bundle_id"] = self.cluster_1.prototype.bundle.pk
-        update_before_upgrade(obj=self.cluster_1)
+        _update_before_upgrade(obj=self.cluster_1)
 
         bundle_switch(obj=self.cluster_1, upgrade=self.upgrade_for_cluster)
 
@@ -314,7 +314,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         )
 
         self.cluster_1.before_upgrade["bundle_id"] = self.cluster_1.prototype.bundle.pk
-        update_before_upgrade(obj=self.cluster_1)
+        _update_before_upgrade(obj=self.cluster_1)
 
         bundle_switch(obj=self.cluster_1, upgrade=self.upgrade_for_cluster)
 
@@ -457,7 +457,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         )
 
         self.cluster_1.before_upgrade["bundle_id"] = self.cluster_1.prototype.bundle.pk
-        update_before_upgrade(obj=self.cluster_1)
+        _update_before_upgrade(obj=self.cluster_1)
 
         bundle_switch(obj=self.cluster_1, upgrade=self.upgrade_for_cluster)
 

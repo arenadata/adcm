@@ -294,7 +294,8 @@ class TestHostAPI(BaseTestCase):
             data={"maintenance_mode": "ON"},
         )
 
-        self.assertFalse(cluster.concerns.exists())
+        # ADCM-5822 mm does not affect concerns
+        self.assertTrue(cluster.concerns.exists())
 
     def test_mm_constraint_by_no_cluster_fail(self):
         self.host.cluster = None

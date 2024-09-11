@@ -21,11 +21,12 @@ from core.cluster.types import (
     MaintenanceModeOfObjects,
     ObjectMaintenanceModeState,
 )
-from core.types import ClusterID, HostID, ShortObjectInfo
+from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor, HostID, MappingDict, ShortObjectInfo
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
 
-from cm.models import Cluster, ClusterObject, Host, HostComponent, ServiceComponent
+from cm.models import Cluster, ClusterObject, ConcernCause, Host, HostComponent, ServiceComponent
+from cm.services.concern import create_issue, delete_issue
 
 
 class ClusterDB:
@@ -97,12 +98,23 @@ class _StatusServerService(Protocol):
 def perform_host_to_cluster_map(
     cluster_id: int, hosts: Collection[int], status_service: _StatusServerService
 ) -> Collection[int]:
-    from cm.issue import update_hierarchy_issues  # avoiding circular imports
+    # this import should be resolved later:
+    # concerns management should be passed in here the same way as `status_service`,
+    # because it's a dependency that shouldn't be directly set
+    from cm.services.concern.checks import cluster_mapping_has_issue
+    from cm.services.concern.distribution import distribute_concern_on_related_objects
 
     with atomic():
         add_hosts_to_cluster(cluster_id=cluster_id, hosts=hosts, db=ClusterDB)
         cluster = Cluster.objects.get(id=cluster_id)
-        update_hierarchy_issues(obj=cluster)
+        cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
+
+        if not cluster_mapping_has_issue(cluster=cluster):
+            delete_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
+        elif not cluster.get_own_issue(cause=ConcernCause.HOSTCOMPONENT):
+            concern = create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
+            distribute_concern_on_related_objects(owner=cluster_cod, concern_id=concern.id)
+
         re_apply_object_policy(apply_object=cluster)
 
     status_service.reset_hc_map()
@@ -110,8 +122,10 @@ def perform_host_to_cluster_map(
     return hosts
 
 
-def retrieve_clusters_topology(cluster_ids: Iterable[ClusterID]) -> Generator[ClusterTopology, None, None]:
-    return build_clusters_topology(cluster_ids=cluster_ids, db=ClusterDB)
+def retrieve_clusters_topology(
+    cluster_ids: Iterable[ClusterID], input_mapping: dict[ClusterID, list[MappingDict]] | None = None
+) -> Generator[ClusterTopology, None, None]:
+    return build_clusters_topology(cluster_ids=cluster_ids, db=ClusterDB, input_mapping=input_mapping)
 
 
 def retrieve_related_cluster_topology(orm_object: Cluster | ClusterObject | ServiceComponent | Host) -> ClusterTopology:

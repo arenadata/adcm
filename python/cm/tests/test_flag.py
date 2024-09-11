@@ -17,7 +17,7 @@ from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import ADCMCoreType, CoreObjectDescriptor
 
 from cm.converters import orm_object_to_core_type
-from cm.issue import create_issue, create_lock
+from cm.issue import create_lock
 from cm.models import (
     ADCM,
     Cluster,
@@ -31,6 +31,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.concern import create_issue
 from cm.services.concern.flags import BuiltInFlag, ConcernFlag, lower_all_flags, lower_flag, raise_flag
 
 
@@ -166,7 +167,10 @@ class TestFlag(BaseTestCase, BusinessLogicMixin):
 
         dummy_job = JobLog(name="cool", task=TaskLog(id=10))
         for object_ in (*clusters, *components, *hosts):
-            create_issue(obj=object_, issue_cause=ConcernCause.CONFIG)
+            create_issue(
+                owner=CoreObjectDescriptor(id=object_.id, type=orm_object_to_core_type(object_)),
+                cause=ConcernCause.CONFIG,
+            )
             create_lock(owner=object_, job=dummy_job)
         self.assertEqual(ConcernItem.objects.count(), 12)
         self.assertEqual(ConcernItem.objects.filter(type=ConcernType.FLAG).count(), 0)

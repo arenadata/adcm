@@ -52,6 +52,17 @@ class ClusterTopology(NamedTuple):
     def component_ids(self) -> Generator[ComponentID, None, None]:
         return chain.from_iterable(service.components for service in self.services.values())
 
+    @property
+    def unmapped_hosts(self) -> set[HostID]:
+        mapped_hosts = chain.from_iterable(
+            component_topology.hosts
+            for component_topology in chain.from_iterable(
+                service.components.values() for service in self.services.values()
+            )
+        )
+
+        return set(self.hosts).difference(mapped_hosts)
+
 
 class NoEmptyValuesDict(UserDict):
     def __setitem__(self, key, value):

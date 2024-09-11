@@ -13,8 +13,9 @@
 from contextlib import suppress
 from typing import Any, Collection
 
-from cm.issue import update_hierarchy_issues
 from cm.models import Host, MaintenanceMode
+from cm.services.cluster import retrieve_clusters_topology
+from cm.services.concern.distribution import redistribute_issues_and_flags
 from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import send_object_update_event
 from core.types import ADCMCoreType, CoreObjectDescriptor
@@ -96,7 +97,10 @@ class ADCMChangeMMExecutor(ADCMAnsiblePluginExecutor[ChangeMaintenanceModeArgume
                 update_fields=["maintenance_mode"] if isinstance(target_object, Host) else ["_maintenance_mode"]
             )
 
-            update_hierarchy_issues(target_object.cluster)
+            if not value:
+                # In terms of concerns CHANGING and ON is the same,
+                # so recalculation is required only for turning it OFF
+                redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((target_object.cluster_id,))))
 
         with suppress(Exception):
             send_object_update_event(object_=target_object, changes={"maintenanceMode": target_object.maintenance_mode})

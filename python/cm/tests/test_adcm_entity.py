@@ -11,9 +11,11 @@
 # limitations under the License.
 
 from adcm.tests.base import BaseTestCase
+from core.types import ADCMCoreType, CoreObjectDescriptor
 
-from cm.issue import add_concern_to_object, create_issue, remove_concern_from_object
+from cm.issue import add_concern_to_object, remove_concern_from_object
 from cm.models import ConcernCause, ConcernItem, ConcernType
+from cm.services.concern import create_issue
 from cm.tests.utils import gen_concern_item, generate_hierarchy
 
 
@@ -99,7 +101,7 @@ class ADCMEntityConcernTest(BaseTestCase):
         cluster = self.hierarchy["cluster"]
         service = self.hierarchy["service"]
         issue_cause = ConcernCause.CONFIG
-        issue = create_issue(obj=cluster, issue_cause=issue_cause)
+        issue = create_issue(owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=issue_cause)
         add_concern_to_object(object_=cluster, concern=issue)
         add_concern_to_object(object_=service, concern=issue)
 
@@ -108,7 +110,7 @@ class ADCMEntityConcernTest(BaseTestCase):
     def test_get_own_issue__exists(self):
         cluster = self.hierarchy["cluster"]
         issue_cause = ConcernCause.CONFIG
-        issue = create_issue(obj=cluster, issue_cause=issue_cause)
+        issue = create_issue(owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=issue_cause)
         add_concern_to_object(object_=cluster, concern=issue)
 
         self.assertIsNotNone(cluster.get_own_issue(issue_cause))

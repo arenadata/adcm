@@ -49,15 +49,16 @@ class TestHostAPI(BaseTestCase):
         }
 
         self.upload_and_load_bundle(path=Path(self.base_dir, "python", "cm", "tests", "files", "ssh.1.0.tar"))
+        config = self.create_new_config(config_data={"entry": "test"})
         self.provider = HostProvider.objects.create(
-            name="test_provider",
-            prototype=Prototype.objects.filter(type="provider").first(),
+            name="test_provider", prototype=Prototype.objects.filter(type="provider").first(), config=config
         )
         self.host = Host.objects.create(
             fqdn="test-fqdn",
             prototype=Prototype.objects.filter(type="host").first(),
             provider=self.provider,
             maintenance_mode=MaintenanceMode.ON,
+            config=config,
         )
 
     def get_host_proto_id(self):

@@ -27,7 +27,7 @@ from core.cluster.types import (
     ServiceTopology,
     TopologyHostDiff,
 )
-from core.types import ClusterID, ComponentID, HostID, ShortObjectInfo
+from core.types import ClusterID, ComponentID, HostID, MappingDict, ShortObjectInfo
 
 # !===== Cluster Topology =====!
 
@@ -51,21 +51,30 @@ class ClusterTopologyDBProtocol(Protocol):
 
 
 def build_clusters_topology(
-    cluster_ids: Iterable[ClusterID], db: ClusterTopologyDBProtocol
+    cluster_ids: Iterable[ClusterID],
+    db: ClusterTopologyDBProtocol,
+    input_mapping: dict[ClusterID, list[MappingDict]] | None = None,
 ) -> Generator[ClusterTopology, None, None]:
+    input_mapping = {} if input_mapping is None else input_mapping
+
     hosts_in_clusters = {
         cluster_id: {host.id: host for host in hosts}
         for cluster_id, hosts in db.get_clusters_hosts(cluster_ids=cluster_ids).items()
     }
     services_in_clusters = db.get_clusters_services_with_components(cluster_ids=cluster_ids)
 
+    # either existing mapping or input mapping is used to collect `hosts_on_components`
     hosts_on_components: dict[ClusterID, dict[ComponentID, set[HostID]]] = {
         cluster_id: defaultdict(set) for cluster_id in cluster_ids
     }
-    if hosts_in_clusters and services_in_clusters:
+    if hosts_in_clusters and services_in_clusters and not input_mapping:
         for cluster_id, entries in db.get_host_component_entries(cluster_ids=cluster_ids).items():
             for entry in entries:
                 hosts_on_components[cluster_id][entry.component_id].add(entry.host_id)
+
+    for cluster_id, input_mapping_list in input_mapping.items():
+        for input_mapping_entry in input_mapping_list:
+            hosts_on_components[cluster_id][input_mapping_entry["component_id"]].add(input_mapping_entry["host_id"])
 
     return (
         ClusterTopology(

@@ -27,6 +27,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
+from django.db.models import QuerySet
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
@@ -1632,6 +1633,17 @@ class ConcernItem(ADCMModel):
             self.servicecomponent_entities.order_by("id"),
             self.hostprovider_entities.order_by("id"),
             self.host_entities.order_by("id"),
+        )
+
+    @property
+    def related_querysets(self) -> Iterable[QuerySet]:
+        return (
+            self.adcm_entities,
+            self.cluster_entities,
+            self.clusterobject_entities,
+            self.servicecomponent_entities,
+            self.hostprovider_entities,
+            self.host_entities,
         )
 
 

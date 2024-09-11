@@ -39,6 +39,7 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
+    ObjectConfig,
     ObjectType,
     Prototype,
     ServiceComponent,
@@ -415,6 +416,13 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         return host
+
+    def create_new_config(self, config_data: dict) -> ObjectConfig:
+        config = ObjectConfig.objects.create(current=1, previous=0)
+        config_log = ConfigLog.objects.create(obj_ref=config, config=config_data)
+        config.current = config_log.pk
+        config.save(update_fields=["current"])
+        return config
 
     @staticmethod
     def get_hostcomponent_data(service_pk: int, host_pk: int) -> list[dict[str, int]]:

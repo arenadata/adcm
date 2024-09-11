@@ -27,14 +27,12 @@ from cm.data_containers import (
 from cm.errors import AdcmEx
 from cm.issue import (
     add_concern_to_object,
-    check_components_mapping_contraints,
     remove_concern_from_object,
-    update_hierarchy_issues,
-    update_issues_and_flags_after_deleting,
 )
 from cm.models import (
     Cluster,
     ClusterObject,
+    ConcernCause,
     Host,
     HostComponent,
     MaintenanceMode,
@@ -44,11 +42,15 @@ from cm.models import (
 )
 from cm.services.action_host_group import ActionHostGroupRepo
 from cm.services.cluster import retrieve_clusters_topology
+from cm.services.concern import delete_issue
+from cm.services.concern.checks import extract_data_for_requirements_check, is_constraint_requirements_unsatisfied
+from cm.services.concern.distribution import redistribute_issues_and_flags
 from cm.services.concern.locks import get_lock_on_object
 from cm.services.group_config import ConfigHostGroupRepo
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import send_host_component_map_update_event
 from core.cluster.operations import find_hosts_difference
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import QuerySet
 from django.db.transaction import atomic, on_commit
@@ -238,24 +240,27 @@ def _check_mapping_data(mapping_data: MappingData) -> None:
         if not isinstance(component_prototype.bound_to, Empty):
             _check_single_mapping_bound_to(mapping_entry=mapping_entry, mapping_data=mapping_data)
 
+    requirements_data = extract_data_for_requirements_check(
+        cluster=mapping_data.orm_objects["cluster"],
+        input_mapping=[
+            {"host_id": entry.host.id, "component_id": entry.component.id, "service_id": entry.service.id}
+            for entry in mapping_data.mapping
+        ],
+    )
+    constraint_not_ok, error_message = is_constraint_requirements_unsatisfied(
+        topology=requirements_data.topology,
+        component_prototype_map=requirements_data.component_prototype_map,
+        prototype_requirements=requirements_data.prototype_requirements,
+        components_map=requirements_data.objects_map_by_type["component"],
+    )
+    if constraint_not_ok and error_message is not None:
+        raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=error_message)
+
     for service in mapping_data.services.values():
         service_prototype = mapping_data.prototypes[service.prototype_id]
         if service_prototype.requires:
             _check_single_service_requires(
                 service_prototype=service_prototype, cluster_objects=mapping_data.objects_by_prototype_name
-            )
-        for component, component_prototype in mapping_data.service_components(service=service):
-            check_components_mapping_contraints(
-                hosts_count=len(mapping_data.hosts),
-                target_mapping_count=len(
-                    [
-                        map_
-                        for map_ in mapping_data.mapping
-                        if map_.service.id == service.id and map_.component.id == component.id
-                    ]
-                ),
-                service_prototype=service_prototype,
-                component_prototype=component_prototype,
             )
 
 
@@ -296,10 +301,11 @@ def _save_mapping(mapping_data: MappingData) -> QuerySet[HostComponent]:
     ActionHostGroupRepo().remove_unmapped_hosts_from_groups(unmapped_hosts)
     ConfigHostGroupRepo().remove_unmapped_hosts_from_groups(unmapped_hosts)
 
-    update_hierarchy_issues(obj=mapping_data.orm_objects["cluster"])
-    for provider_id in {host.provider_id for host in mapping_data.hosts.values()}:
-        update_hierarchy_issues(obj=mapping_data.orm_objects["providers"][provider_id])
-    update_issues_and_flags_after_deleting()
+    delete_issue(
+        owner=CoreObjectDescriptor(id=mapping_data.cluster.id, type=ADCMCoreType.CLUSTER),
+        cause=ConcernCause.HOSTCOMPONENT,
+    )
+    redistribute_issues_and_flags(topology=updated_topology)
 
     _handle_mapping_policies(mapping_data=mapping_data)
     send_host_component_map_update_event(cluster=mapping_data.orm_objects["cluster"])

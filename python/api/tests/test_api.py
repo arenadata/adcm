@@ -24,6 +24,7 @@ from cm.models import (
     Host,
     HostComponent,
     ObjectConfig,
+    ObjectType,
     Prototype,
     ServiceComponent,
 )
@@ -33,6 +34,7 @@ from cm.tests.utils import (
     gen_host,
     gen_host_component,
     gen_job_log,
+    gen_prototype,
     gen_provider,
     gen_service,
     gen_task_log,
@@ -844,26 +846,41 @@ class TestAPI2(BaseTestCase):
             date=timezone.now(),
         )
 
-        self.prototype = Prototype.objects.create(
+        common_proto_data = {
+            "version": "2.5",
+            "license": "absent",
+            "license_path": None,
+            "license_hash": None,
+            "version_order": 11,
+            "required": False,
+            "shared": False,
+            "adcm_min_version": None,
+            "monitoring": "active",
+            "description": "",
+        }
+        self.cluster_prototype = Prototype.objects.create(
             bundle_id=self.bundle.id,
-            type="cluster",
+            type=ObjectType.CLUSTER,
             name="ADB",
-            display_name="ADB",
-            version="2.5",
-            license="absent",
-            license_path=None,
-            license_hash=None,
-            version_order=11,
-            required=False,
-            shared=False,
-            adcm_min_version=None,
-            monitoring="active",
-            description="",
+            **common_proto_data,
         )
+        self.service_prototype = Prototype.objects.create(
+            bundle_id=self.bundle.id,
+            type=ObjectType.SERVICE,
+            name="some_service",
+            **common_proto_data,
+        )
+        self.component_prototype = Prototype.objects.create(
+            bundle_id=self.bundle.id,
+            type=ObjectType.COMPONENT,
+            name="some_component",
+            **common_proto_data,
+        )
+
         self.object_config = ObjectConfig.objects.create(current=0, previous=0)
 
         self.cluster = Cluster.objects.create(
-            prototype_id=self.prototype.id,
+            prototype_id=self.cluster_prototype.id,
             name="Fear Limpopo",
             description="",
             config_id=self.object_config.id,
@@ -871,12 +888,11 @@ class TestAPI2(BaseTestCase):
         )
 
     @patch("cm.api.reset_hc_map")
-    @patch("cm.api.update_hierarchy_issues")
-    def test_save_hc(self, mock_update_issues, mock_reset_hc_map):
-        cluster_object = ClusterObject.objects.create(prototype=self.prototype, cluster=self.cluster)
-        host = Host.objects.create(prototype=self.prototype, cluster=self.cluster)
+    def test_save_hc(self, mock_reset_hc_map):
+        cluster_object = ClusterObject.objects.create(prototype=self.service_prototype, cluster=self.cluster)
+        host = Host.objects.create(prototype=self.cluster_prototype, cluster=self.cluster)
         component = Prototype.objects.create(
-            parent=self.prototype,
+            parent=self.component_prototype,
             type="component",
             bundle_id=self.bundle.id,
             name="node",
@@ -899,7 +915,6 @@ class TestAPI2(BaseTestCase):
 
         self.assertListEqual(hc_list, [HostComponent.objects.first()])
 
-        mock_update_issues.assert_called()
         mock_reset_hc_map.assert_called_once()
 
     @patch("cm.services.status.notify.reset_hc_map")
@@ -918,8 +933,14 @@ class TestAPI2(BaseTestCase):
             host_3 became locked
         """
         service = gen_service(self.cluster)
-        component_1 = gen_component(service)
-        component_2 = gen_component(service)
+        component_1_prototype = gen_prototype(
+            bundle=self.cluster.prototype.bundle, proto_type=ObjectType.COMPONENT, name="component_1"
+        )
+        component_1 = gen_component(service=service, prototype=component_1_prototype)
+        component_2_prototype = gen_prototype(
+            bundle=self.cluster.prototype.bundle, proto_type=ObjectType.COMPONENT, name="component_2"
+        )
+        component_2 = gen_component(service=service, prototype=component_2_prototype)
         provider = gen_provider()
         host_1 = gen_host(provider, cluster=self.cluster)
         host_2 = gen_host(provider, cluster=self.cluster)
@@ -969,8 +990,14 @@ class TestAPI2(BaseTestCase):
             host_3 remains unlocked
         """
         service = gen_service(self.cluster)
-        component_1 = gen_component(service)
-        component_2 = gen_component(service)
+        component_1_prototype = gen_prototype(
+            bundle=self.cluster.prototype.bundle, proto_type=ObjectType.COMPONENT, name="component_1"
+        )
+        component_1 = gen_component(service=service, prototype=component_1_prototype)
+        component_2_prototype = gen_prototype(
+            bundle=self.cluster.prototype.bundle, proto_type=ObjectType.COMPONENT, name="component_2"
+        )
+        component_2 = gen_component(service=service, prototype=component_2_prototype)
         provider = gen_provider()
         host_1 = gen_host(provider, cluster=self.cluster)
         host_2 = gen_host(provider, cluster=self.cluster)

@@ -14,8 +14,13 @@ import copy
 
 from cm.api import check_hc, check_maintenance_mode, check_sub_key, get_hc, make_host_comp_list
 from cm.errors import AdcmEx
-from cm.issue import check_bound_components, check_component_constraint, check_hc_requires, check_service_requires
+from cm.issue import check_component_constraint, check_service_requires
 from cm.models import Action, Cluster, ClusterObject, ConcernType, Host, Prototype, ServiceComponent
+from cm.services.concern.checks import (
+    extract_data_for_requirements_check,
+    is_bound_to_requirements_unsatisfied,
+    is_requires_requirements_unsatisfied,
+)
 from cm.services.job._utils import cook_delta, get_old_hc
 from cm.services.job.types import HcAclAction
 
@@ -71,8 +76,31 @@ def check_constraints_for_upgrade(cluster, upgrade, host_comp_list):
             except Prototype.DoesNotExist:
                 pass
 
-        check_hc_requires(shc_list=host_comp_list)
-        check_bound_components(shc_list=host_comp_list)
+        requirements_data = extract_data_for_requirements_check(
+            cluster=cluster,
+            input_mapping=[
+                {"host_id": host.id, "component_id": component.id, "service_id": service.id}
+                for service, host, component in host_comp_list
+            ],
+        )
+        requires_not_ok, error_message = is_requires_requirements_unsatisfied(
+            topology=requirements_data.topology,
+            component_prototype_map=requirements_data.component_prototype_map,
+            prototype_requirements=requirements_data.prototype_requirements,
+            existing_objects_map=requirements_data.existing_objects_map,
+            existing_objects_by_type=requirements_data.objects_map_by_type,
+        )
+        if requires_not_ok and error_message is not None:
+            raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=error_message)
+
+        bound_not_ok, error_msg = is_bound_to_requirements_unsatisfied(
+            topology=requirements_data.topology,
+            component_prototype_map=requirements_data.component_prototype_map,
+            prototype_requirements=requirements_data.prototype_requirements,
+            existing_objects_map=requirements_data.existing_objects_map,
+        )
+        if bound_not_ok:
+            raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=error_msg)
         check_maintenance_mode(cluster=cluster, host_comp_list=host_comp_list)
     except AdcmEx as e:
         if e.code == "COMPONENT_CONSTRAINT_ERROR":
