@@ -107,7 +107,7 @@ class Command(BaseCommand):
                 "version": settings.ADCM_VERSION,
                 "is_internal": is_internal(),
             },
-            "format_version": 0.2,
+            "format_version": 0.3,
         }
         logger.debug(msg="Statistics collector: RBAC data preparation")
         rbac_entries_data: dict = RBACCollector(date_format=DATE_TIME_FORMAT)().model_dump()
