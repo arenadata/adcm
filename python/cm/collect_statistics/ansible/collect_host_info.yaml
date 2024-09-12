@@ -1,0 +1,17 @@
+- name: Gather cluster's hosts hardware information
+  hosts: all
+  serial: 20
+  ignore_unreachable: true
+  gather_facts: yes
+
+  tasks:
+    - shell:
+        cmd: "lshw -short -C disk"
+      register: lshw_result
+      ignore_errors: yes
+    - set_fact:
+        disk_command_out: "{{ lshw_result.stdout }}"
+      when: "{{ lshw_result }}"
+    - name: Save hosts info to DB
+      adcm_add_host_info:
+      run_once: true

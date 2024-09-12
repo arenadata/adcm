@@ -390,3 +390,15 @@ def _get_objects_basic_info(
             }
 
     return result
+
+
+def get_basic_info_for_hosts(hosts: set[HostID]) -> dict[HostID, HostNode]:
+    objects_in_inventory = {ADCMCoreType.HOST: hosts}
+    hosts_info = _get_objects_basic_info(
+        objects_in_inventory=objects_in_inventory,
+        objects_configuration=get_objects_configurations(objects_in_inventory),
+        objects_before_upgrade={},
+        objects_maintenance_mode=MaintenanceModeOfObjects(services={}, components={}, hosts={}),
+    )
+
+    return {host_id: host_node for (_, host_id), host_node in hosts_info.items()}

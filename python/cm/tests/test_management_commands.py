@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import deepcopy
 from hashlib import md5
 from operator import itemgetter
 from pathlib import Path
@@ -22,6 +23,7 @@ import datetime
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from api_v2.tests.base import BaseAPITestCase, ParallelReadyTestCase
+from core.types import ADCMCoreType
 from django.conf import settings
 from django.db.models import Q
 from django.test import TestCase
@@ -30,12 +32,14 @@ from rbac.models import Policy, Role, User
 from requests.exceptions import ConnectionError
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_405_METHOD_NOT_ALLOWED
 
-from cm.collect_statistics.collectors import BundleCollector
+from cm.collect_statistics.collectors import BundleCollector, get_host_name_hash
 from cm.collect_statistics.encoders import TarFileEncoder
 from cm.collect_statistics.errors import RetriesExceededError, SenderConnectionError
+from cm.collect_statistics.gather_hardware_info import get_inventory
 from cm.collect_statistics.senders import SenderSettings, StatisticSender
 from cm.collect_statistics.storages import JSONFile, StorageError, TarFileWithJSONFileStorage
-from cm.models import ADCM, Bundle, ServiceComponent
+from cm.models import ADCM, Bundle, HostInfo, ServiceComponent
+from cm.services.job.inventory import get_objects_configurations
 from cm.tests.utils import gen_cluster, gen_provider
 
 
@@ -162,7 +166,6 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
 
         host_1 = self.add_host(provider=provider_full_1, fqdn="host-1", cluster=cluster_reg_1)
         host_2 = self.add_host(provider=provider_full_1, fqdn="host-2", cluster=cluster_reg_2)
-        self.add_host(provider=provider_reg_1, fqdn="host-3", cluster=cluster_reg_1)
 
         self.add_services_to_cluster(["service_one_component"], cluster=cluster_reg_1)
         service_2 = self.add_services_to_cluster(["service_two_components"], cluster=cluster_reg_1).get()
@@ -181,6 +184,8 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
         current_year = str(timezone.now().year)
         host_1_name_hash = md5(host_1.fqdn.encode("utf-8")).hexdigest()  # noqa: S324
         host_2_name_hash = md5(host_2.fqdn.encode("utf-8")).hexdigest()  # noqa: S324
+        self.add_host(provider=provider_reg_1, fqdn="host-3", cluster=cluster_reg_1)
+
         expected_bundles = [
             {"name": bundle.name, "version": bundle.version, "edition": "community", "date": current_year}
             for bundle in (
@@ -208,6 +213,7 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
                         "host_count": 0,
                         "bundle": expected_bundles[1],
                         "host_component_map": [],
+                        "hosts": [],
                     },
                     {
                         "name": cluster_reg_1.name,
@@ -228,6 +234,7 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
                             ],
                             key=order_hc_by,
                         ),
+                        "hosts": [],
                     },
                     {
                         "name": cluster_reg_2.name,
@@ -240,6 +247,7 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
                                 "service_name": service_3.name,
                             },
                         ],
+                        "hosts": [],
                     },
                 ],
                 key=by_name,
@@ -257,6 +265,171 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
             entry["host_component_map"] = sorted(entry["host_component_map"], key=order_hc_by)
 
         self.assertDictEqual(actual, expected)
+
+    def test_inventory(self):
+        # prepare data
+        bundle_community = self.add_bundle(self.bundles_dir / "cluster_1")
+        bundle_enterprise = self.add_bundle(self.bundles_dir / "cluster_full_config")
+        bundle_enterprise.edition = "enterprise"
+        bundle_enterprise.save(update_fields=["edition"])
+        bundle_provider = self.add_bundle(self.bundles_dir / "provider")
+
+        cluster_community = self.add_cluster(bundle=bundle_community, name="Cluster community")
+        cluster_enterprise = self.add_cluster(bundle=bundle_enterprise, name="Cluster enterprise")
+        provider = self.add_provider(bundle=bundle_provider, name="Provider")
+
+        h1_free = self.add_host(provider=provider, fqdn="H1 free")
+        h2_community = self.add_host(provider=provider, fqdn="H2 community", cluster=cluster_community)
+        h3_enterprise = self.add_host(provider=provider, fqdn="H3 enterprise", cluster=cluster_enterprise)
+        h4_enterprise = self.add_host(provider=provider, fqdn="H4 enterprise", cluster=cluster_enterprise)
+
+        configs = get_objects_configurations(
+            objects={ADCMCoreType.HOST: {h1_free.id, h2_community.id, h3_enterprise.id, h4_enterprise.id}}
+        )
+
+        # test
+        expected_inventory = {
+            "all": {
+                "children": {
+                    "ADCM": {
+                        "hosts": {
+                            h1_free.fqdn: {
+                                "adcm_hostid": h1_free.id,
+                                "state": h1_free.state,
+                                "multi_state": h1_free.multi_state,
+                                **configs[ADCMCoreType.HOST, h1_free.id],
+                            }
+                        }
+                    },
+                    "community": {
+                        "hosts": {
+                            h2_community.fqdn: {
+                                "adcm_hostid": h2_community.id,
+                                "state": h2_community.state,
+                                "multi_state": h2_community.multi_state,
+                                **configs[ADCMCoreType.HOST, h2_community.id],
+                            }
+                        }
+                    },
+                    "enterprise": {
+                        "hosts": {
+                            h3_enterprise.fqdn: {
+                                "adcm_hostid": h3_enterprise.id,
+                                "state": h3_enterprise.state,
+                                "multi_state": h3_enterprise.multi_state,
+                                **configs[ADCMCoreType.HOST, h3_enterprise.id],
+                            },
+                            h4_enterprise.fqdn: {
+                                "adcm_hostid": h4_enterprise.id,
+                                "state": h4_enterprise.state,
+                                "multi_state": h4_enterprise.multi_state,
+                                **configs[ADCMCoreType.HOST, h4_enterprise.id],
+                            },
+                        }
+                    },
+                }
+            }
+        }
+        actual_inventory = get_inventory()
+
+        self.assertDictEqual(actual_inventory, expected_inventory)
+
+    def test_host_info_dump_mapping(self):
+        bundle_cluster_reg = self.add_bundle(self.bundles_dir / "cluster_1")
+        bundle_cluster_enterprise = self.add_bundle(self.bundles_dir / "cluster_full_config")
+        bundle_cluster_enterprise.edition = "enterprise"
+        bundle_cluster_enterprise.save(update_fields=["edition"])
+
+        bundle_prov_reg = self.add_bundle(self.bundles_dir / "provider")
+        bundle_prov_full = self.add_bundle(self.bundles_dir / "provider_full_config")
+
+        cluster_reg_1 = self.add_cluster(bundle=bundle_cluster_reg, name="Regular 1")
+        enterprise_cluster = self.add_cluster(bundle=bundle_cluster_enterprise, name="Regular 2 ee")
+
+        provider_full_1 = self.add_provider(bundle=bundle_prov_full, name="Prov Full 1")
+        provider_reg_1 = self.add_provider(bundle=bundle_prov_reg, name="Prov Reg 1")
+
+        host_1 = self.add_host(provider=provider_full_1, fqdn="host-1", cluster=cluster_reg_1)
+        host_2 = self.add_host(provider=provider_full_1, fqdn="host-2", cluster=enterprise_cluster)
+        host_3 = self.add_host(provider=provider_reg_1, fqdn="host-3", cluster=cluster_reg_1)
+
+        host_info = {
+            host_1.id: {
+                "name": get_host_name_hash(host_1.fqdn),
+                "info": {
+                    "cpu_vcores": 8,
+                    "os": {"family": "RedHat"},
+                    "ram": 12457,
+                    "devices": [{"name": "vda", "removable": 0, "size": "20.00 GB"}],
+                },
+            },
+            host_2.id: {
+                "name": get_host_name_hash(host_2.fqdn),
+                "info": {
+                    "cpu_vcores": 8,
+                    "devices": [
+                        {
+                            "name": "vda",
+                            "removable": "0",
+                            "rotational": "0",
+                            "size": "20.00 GB",
+                            "description": "Virtual I/O device",
+                        }
+                    ],
+                    "os": {"distribution": "CentOS", "family": "RedHat", "version": "7.9"},
+                    "ram": 15884,
+                },
+            },
+            host_3.id: {
+                "name": get_host_name_hash(host_3.fqdn),
+                "info": {
+                    "cpu_vcores": 6,
+                    "os": {"distribution": "CentOS", "version": "7.9"},
+                    "ram": 12457,
+                    "devices": [{"name": "vda", "removable": 0, "size": "20.00 GB"}],
+                },
+            },
+        }
+
+        expected_values = deepcopy(host_info)
+        # because it's not enterprise and there's no family
+        expected_values[host_3.id]["info"]["os"] = {}
+
+        for host in (host_1, host_2, host_3):
+            HostInfo.objects.create(host=host, value=host_info[host.id]["info"], hash="")
+
+        self.assertEqual(HostInfo.objects.count(), 3)
+
+        with self.subTest("community"):
+            collect = BundleCollector(date_format="%Y", filters=[Q(edition="community")])
+            result = collect().model_dump()
+
+            actual_hosts = {
+                cluster["name"]: sorted(cluster["hosts"], key=itemgetter("name")) for cluster in result["clusters"]
+            }
+            expected_hosts = {
+                cluster_reg_1.name: sorted(
+                    (expected_values[host_1.id], expected_values[host_3.id]), key=itemgetter("name")
+                )
+            }
+
+            self.assertDictEqual(actual_hosts, expected_hosts)
+
+        with self.subTest("all"):
+            collect = BundleCollector(date_format="%Y", filters=[])
+            result = collect().model_dump()
+
+            actual_hosts = {
+                cluster["name"]: sorted(cluster["hosts"], key=itemgetter("name")) for cluster in result["clusters"]
+            }
+            expected_hosts = {
+                enterprise_cluster.name: [expected_values[host_2.id]],
+                cluster_reg_1.name: sorted(
+                    (expected_values[host_1.id], expected_values[host_3.id]), key=itemgetter("name")
+                ),
+            }
+
+            self.assertDictEqual(actual_hosts, expected_hosts)
 
 
 class TestStorage(BaseAPITestCase):
@@ -281,6 +454,7 @@ class TestStorage(BaseAPITestCase):
         host_2 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_2")
         host_3 = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_3")
         host_unmapped = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_unmapped")
+
         self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="test_host_not_in_cluster")
 
         for host in (host_1, host_2, host_3, host_unmapped):
@@ -367,6 +541,7 @@ class TestStorage(BaseAPITestCase):
                         "service_name": "service_1",
                     },
                 ],
+                "hosts": [],
             },
             {
                 "name": "cluster_2",
