@@ -64,7 +64,7 @@ class TestCluster(BaseAPITestCase):
     def test_adcm_4539_ordering_success(self):
         self.add_cluster(bundle=self.bundle_1, name="cluster_3", description="cluster_3")
         self.add_cluster(bundle=self.bundle_2, name="cluster_4", description="cluster_3")
-        ordering_fields = ("name", "description", "state")
+        ordering_fields = ("id", "name", "description", "state")
 
         for ordering_field in ordering_fields:
             with self.subTest(ordering_field=ordering_field):
@@ -94,6 +94,7 @@ class TestCluster(BaseAPITestCase):
 
     def test_filter_simple_types_success(self):
         filters = {
+            "id": (self.cluster_1.id, None, 0),
             "name": (self.cluster_1.name, self.cluster_1.name[:-3], "wrong"),
             "state": (self.cluster_1.state, self.cluster_1.state[:-3], "wrong"),
             "prototypeName": (self.cluster_1.prototype.name, self.cluster_1.prototype.name[:-3], "wrong"),
@@ -117,9 +118,10 @@ class TestCluster(BaseAPITestCase):
                 self.assertEqual(response.status_code, HTTP_200_OK)
                 self.assertEqual(response.json()["count"], 0)
 
-                response = (self.client.v2 / "clusters").get(query={filter_name: partial_value})
-                self.assertEqual(response.status_code, HTTP_200_OK)
-                self.assertEqual(response.json()["count"], found_items_partially)
+                if partial_value:
+                    response = (self.client.v2 / "clusters").get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(response.json()["count"], found_items_partially)
 
     def test_filter_by_status_up_success(self):
         status_map = FullStatusMap(

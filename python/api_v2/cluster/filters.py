@@ -34,12 +34,14 @@ class ClusterFilter(FilterSet):
     state = CharFilter(label="Cluster state", lookup_expr="icontains")
     ordering = OrderingFilter(
         fields={
+            "id": "id",
             "name": "name",
             "prototype__display_name": "prototypeDisplayName",
             "state": "state",
             "description": "description",
         },
         field_labels={
+            "id": "ID",
             "name": "Cluster name",
             "prototype__display_name": "Product",
             "state": "State",
