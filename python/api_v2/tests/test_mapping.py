@@ -56,6 +56,9 @@ class TestMapping(BaseAPITestCase):
         self.component_2 = ServiceComponent.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
         )
+        self.component_3 = ServiceComponent.objects.get(
+            cluster=self.cluster_1, service=self.service_1, prototype__name="component_3"
+        )
 
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_1, self.component_1)])
 
@@ -207,8 +210,11 @@ class TestMapping(BaseAPITestCase):
         response = self.client.v2[self.cluster_1, "mapping", "components"].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 2)
-        self.assertEqual({component["id"] for component in response.json()}, {self.component_1.pk, self.component_2.pk})
+        self.assertEqual(len(response.json()), 3)
+        self.assertEqual(
+            {component["id"] for component in response.json()},
+            {self.component_1.pk, self.component_2.pk, self.component_3.pk},
+        )
 
     def test_mapping_components_with_requires_success(self):
         bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_requires_component")
