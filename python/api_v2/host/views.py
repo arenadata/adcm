@@ -111,6 +111,16 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
                 description="Is host assigned to any cluster.",
             ),
             OpenApiParameter(
+                name="maintenanceMode",
+                description="Maintenance mode filter.",
+                type=str,
+                enum=(
+                    "on",
+                    "off",
+                    "changing",
+                ),
+            ),
+            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 type=str,

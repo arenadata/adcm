@@ -134,12 +134,6 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
                 type=str,
             ),
             OpenApiParameter(
-                name="name",
-                location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by service name.",
-                type=str,
-            ),
-            OpenApiParameter(
                 name="displayName",
                 location=OpenApiParameter.QUERY,
                 description="Case insensitive and partial filter by service displayName.",
@@ -152,10 +146,35 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
                 type=str,
             ),
             OpenApiParameter(
-                name="maintenanceMode",
+                name="status",
                 location=OpenApiParameter.QUERY,
-                description="Case insensitive and partial filter by service maintenanceMode.",
                 type=str,
+                description="Status filter.",
+                enum=("up", "down"),
+            ),
+            OpenApiParameter(
+                name="maintenanceMode",
+                description="Maintenance mode filter.",
+                type=str,
+                enum=(
+                    "on",
+                    "off",
+                    "changing",
+                ),
+            ),
+            OpenApiParameter(
+                name="clusterId",
+                required=True,
+                location=OpenApiParameter.PATH,
+                description="Cluster id.",
+                type=int,
+            ),
+            OpenApiParameter(
+                name="serviceId",
+                required=True,
+                location=OpenApiParameter.PATH,
+                description="Service id.",
+                type=int,
             ),
             OpenApiParameter(
                 name="ordering",

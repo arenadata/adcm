@@ -77,9 +77,8 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.api_schema import DefaultParams, ErrorSerializer
-from api_v2.api_schema import DefaultParams, responses
 from api_v2.cluster.depend_on import prepare_depend_on_hierarchy, retrieve_serialized_depend_on_hierarchy
+from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
 from api_v2.cluster.filters import (
     ClusterFilter,
     ClusterHostFilter,
@@ -199,6 +198,13 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
                 location=OpenApiParameter.QUERY,
                 type=str,
                 description="Case insensitive and partial filter by state.",
+            ),
+            OpenApiParameter(
+                name="status",
+                location=OpenApiParameter.QUERY,
+                type=str,
+                description="Status filter.",
+                enum=("up", "down"),
             ),
             OpenApiParameter(
                 name="ordering",
@@ -710,14 +716,52 @@ class ClusterViewSet(
         description="Get a list of all cluster hosts.",
         summary="GET cluster hosts",
         parameters=[
+            OpenApiParameter(
+                name="maintenanceMode",
+                description="Maintenance mode filter.",
+                type=str,
+                enum=(
+                    "on",
+                    "off",
+                    "changing",
+                ),
+            ),
+            OpenApiParameter(name="description", description="Case insensitive and partial filter by description."),
+            OpenApiParameter(name="state", description="Case insensitive and partial filter by state."),
+            OpenApiParameter(
+                name="hostproviderName", description="Case insensitive and partial filter by hostprovider name."
+            ),
             OpenApiParameter(name="name", description="Case insensitive and partial filter by host name."),
             OpenApiParameter(name="componentId", description="Id of component."),
+            OpenApiParameter(name="id", location=OpenApiParameter.QUERY, type=int, description="Host ID."),
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
-            DefaultParams.ordering_by("name", "id", default="name"),
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                type=str,
+                enum=(
+                    "name",
+                    "-name",
+                    "id",
+                    "-id",
+                    "hostproviderName",
+                    "-hostproviderName",
+                    "state",
+                    "-state",
+                    "description",
+                    "-description",
+                    "componentId",
+                    "-componentId",
+                ),
+                default="name",
+            ),
             OpenApiParameter(name="search", exclude=True),
         ],
-        responses=responses(success=HostSerializer, errors=HTTP_404_NOT_FOUND),
+        responses={
+            HTTP_200_OK: HostSerializer,
+            HTTP_404_NOT_FOUND: ErrorSerializer,
+        },
     ),
     create=extend_schema(
         operation_id="postCusterHosts",

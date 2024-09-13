@@ -122,10 +122,14 @@ from api_v2.views import (
                 type=str,
             ),
             OpenApiParameter(
-                name="Maintenance mode",
-                location=OpenApiParameter.QUERY,
-                description="filter by maintenance mode.",
+                name="maintenanceMode",
+                description="Maintenance mode filter.",
                 type=str,
+                enum=(
+                    "on",
+                    "off",
+                    "changing",
+                ),
             ),
             OpenApiParameter(
                 name="clusterId",

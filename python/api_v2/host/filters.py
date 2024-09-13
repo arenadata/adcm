@@ -108,7 +108,6 @@ class HostMemberFilter(FilterSet):
             "name",
             "hostprovider_name",
             "component_id",
-            "ordering",
             "maintenance_mode",
             "state",
             "description",
