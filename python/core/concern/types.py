@@ -42,13 +42,15 @@ class MappingRestrictionType(Enum):
     BOUND_TO = "bound_to"
 
 
-class MappingRestrictionViolation(NamedTuple):
+@dataclass(slots=True)
+class MappingRestrictionViolation:
     restriction: MappingRestrictionType
-    component: ComponentNameKey
+    owner: ServiceRestrictionOwner | ComponentRestrictionOwner
     message: str
 
 
-class MissingServiceRequiresViolation(NamedTuple):
+@dataclass(slots=True)
+class MissingServiceRequiresViolation:
     required_service: ServiceName
     dependant_object: ServiceRestrictionOwner | ComponentRestrictionOwner
 
@@ -77,7 +79,9 @@ ServiceDependencies: TypeAlias = dict[ServiceRestrictionOwner | ComponentRestric
 class MappingRestrictions:
     constraints: dict[ComponentRestrictionOwner, Constraint]
     # Components that should be mapped at least on one host
-    required: dict[ServiceRestrictionOwner | ComponentRestrictionOwner, deque[ComponentNameKey]]
+    required_components: dict[ServiceRestrictionOwner | ComponentRestrictionOwner, deque[ComponentNameKey]]
+    # Services that should exist when component is mapped
+    required_services: dict[ComponentRestrictionOwner, set[ServiceName]]
     # Should be mapped on the same hosts
     binds: dict[ComponentRestrictionOwner, ComponentNameKey]
 
