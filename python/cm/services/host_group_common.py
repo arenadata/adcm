@@ -29,23 +29,31 @@ class HostGroupRepoMixin:
         if not (unmapped_hosts.services or unmapped_hosts.components):
             return
 
-        hosts_in_service_groups = Q(
-            Q(**{f"{self.group_hosts_field_name}__object_type": ContentType.objects.get_for_model(ClusterObject)}),
-            self._combine_with_or(
-                Q(host_id__in=hosts, **{f"{self.group_hosts_field_name}__object_id": service_id})
-                for service_id, hosts in unmapped_hosts.services.items()
-            ),
-        )
+        hosts_in_service_groups, hosts_in_component_groups = Q(), Q()
+        object_type = f"{self.group_hosts_field_name}__object_type"
+        object_id = f"{self.group_hosts_field_name}__object_id"
 
-        hosts_in_component_groups = Q(
-            Q(**{f"{self.group_hosts_field_name}__object_type": ContentType.objects.get_for_model(ServiceComponent)}),
-            self._combine_with_or(
-                Q(host_id__in=hosts, **{f"{self.group_hosts_field_name}__object_id": component_id})
-                for component_id, hosts in unmapped_hosts.components.items()
-            ),
-        )
+        if unmapped_hosts.services:
+            hosts_in_service_groups = Q(
+                Q(**{object_type: ContentType.objects.get_for_model(ClusterObject)}),
+                self._combine_with_or(
+                    Q(host_id__in=hosts, **{object_id: service_id})
+                    for service_id, hosts in unmapped_hosts.services.items()
+                ),
+            )
 
-        self.group_hosts_model.objects.filter(hosts_in_service_groups | hosts_in_component_groups).delete()
+        if unmapped_hosts.components:
+            hosts_in_component_groups = Q(
+                Q(**{object_type: ContentType.objects.get_for_model(ServiceComponent)}),
+                self._combine_with_or(
+                    Q(host_id__in=hosts, **{object_id: component_id})
+                    for component_id, hosts in unmapped_hosts.components.items()
+                ),
+            )
+
+        self.group_hosts_model.objects.filter(
+            self._combine_with_or(filter(bool, [hosts_in_service_groups, hosts_in_component_groups]))
+        ).delete()
 
     def _combine_with_or(self, clauses: Iterable[Q]) -> Q:
         return reduce(or_, clauses, Q())
