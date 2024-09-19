@@ -13,11 +13,11 @@
 
 from pathlib import Path
 
-from adcm.tests.base import BaseTestCase
+from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 from core.types import CoreObjectDescriptor
 from init_db import init as init_adcm
 
-from cm.api import add_hc, add_service_to_cluster, update_obj_config
+from cm.api import add_service_to_cluster, update_obj_config
 from cm.converters import model_name_to_core_type
 from cm.models import (
     Action,
@@ -145,7 +145,7 @@ class TestInventory(BaseTestCase):
                 self.assertDictEqual(actual_data, inv)
 
 
-class TestInventoryAndMaintenanceMode(BaseTestCase):
+class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
     def setUp(self):
         super().setUp()
         init_adcm()
@@ -207,9 +207,12 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
             "component_id": self.component_hc_acl_2.pk,
         }
 
-        add_hc(
+        self.set_hostcomponent(
             cluster=self.cluster_hc_acl,
-            hc_in=[self.hc_c1_h1, self.hc_c1_h2, self.hc_c1_h3, self.hc_c2_h1, self.hc_c2_h2],
+            entries=(
+                (Host.objects.get(id=entry["host_id"]), ServiceComponent.objects.get(id=entry["component_id"]))
+                for entry in (self.hc_c1_h1, self.hc_c1_h2, self.hc_c1_h3, self.hc_c2_h1, self.hc_c2_h2)
+            ),
         )
 
         self.action_hc_acl = Action.objects.get(name="cluster_action_hc_acl", allow_in_maintenance_mode=True)
@@ -240,19 +243,11 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
             cluster=self.cluster_target_group, prototype__name="component_1_target_group"
         )
 
-        add_hc(
+        self.set_hostcomponent(
             cluster=self.cluster_target_group,
-            hc_in=[
-                {
-                    "host_id": self.host_target_group_1.pk,
-                    "service_id": self.service_target_group.pk,
-                    "component_id": self.component_target_group.pk,
-                },
-                {
-                    "host_id": self.host_target_group_2.pk,
-                    "service_id": self.service_target_group.pk,
-                    "component_id": self.component_target_group.pk,
-                },
+            entries=[
+                (self.host_target_group_1, self.component_target_group),
+                (self.host_target_group_2, self.component_target_group),
             ],
         )
 

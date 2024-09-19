@@ -101,7 +101,7 @@ def perform_host_to_cluster_map(
     # this import should be resolved later:
     # concerns management should be passed in here the same way as `status_service`,
     # because it's a dependency that shouldn't be directly set
-    from cm.services.concern.checks import cluster_mapping_has_issue
+    from cm.services.concern.checks import cluster_mapping_has_issue_orm_version
     from cm.services.concern.distribution import distribute_concern_on_related_objects
 
     with atomic():
@@ -109,7 +109,7 @@ def perform_host_to_cluster_map(
         cluster = Cluster.objects.get(id=cluster_id)
         cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
 
-        if not cluster_mapping_has_issue(cluster=cluster):
+        if not cluster_mapping_has_issue_orm_version(cluster=cluster):
             delete_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
         elif not cluster.get_own_issue(cause=ConcernCause.HOSTCOMPONENT):
             concern = create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
@@ -122,7 +122,11 @@ def perform_host_to_cluster_map(
     return hosts
 
 
-def retrieve_clusters_topology(
+def retrieve_cluster_topology(cluster_id: ClusterID) -> ClusterTopology:
+    return next(retrieve_multiple_clusters_topology(cluster_ids=(cluster_id,)))
+
+
+def retrieve_multiple_clusters_topology(
     cluster_ids: Iterable[ClusterID], input_mapping: dict[ClusterID, list[MappingDict]] | None = None
 ) -> Generator[ClusterTopology, None, None]:
     return build_clusters_topology(cluster_ids=cluster_ids, db=ClusterDB, input_mapping=input_mapping)
@@ -137,7 +141,7 @@ def retrieve_related_cluster_topology(orm_object: Cluster | ClusterObject | Serv
         message = f"Can't detect cluster variables for {orm_object}"
         raise RuntimeError(message)
 
-    return next(retrieve_clusters_topology([cluster_id]))
+    return next(retrieve_multiple_clusters_topology([cluster_id]))
 
 
 def retrieve_clusters_objects_maintenance_mode(cluster_ids: Iterable[ClusterID]) -> MaintenanceModeOfObjects:

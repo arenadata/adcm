@@ -276,6 +276,28 @@ def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRe
     return targets
 
 
+# PUBLIC lock/unlock multiple objects
+
+
+def lock_objects(targets: Iterable[CoreObjectDescriptor], lock_id: ConcernID) -> None:
+    grouped_by_type = defaultdict(set)
+    for target in targets:
+        grouped_by_type[target.type].add(target.id)
+
+    _add_concern_links_to_objects_in_db(targets=grouped_by_type, concern_id=lock_id)
+
+
+def unlock_objects(targets: Iterable[CoreObjectDescriptor], lock_id: ConcernID) -> None:
+    grouped_by_type = defaultdict(set)
+    for target in targets:
+        grouped_by_type[target.type].add(target.id)
+
+    _remove_concern_links_from_objects_in_db(targets=grouped_by_type, concern_id=lock_id)
+
+
+# PROTECTED generic-purpose methods
+
+
 def _add_concern_links_to_objects_in_db(targets: ConcernRelatedObjects, concern_id: ConcernID) -> None:
     for core_type, ids in targets.items():
         orm_model = core_type_to_model(core_type)
@@ -288,7 +310,13 @@ def _add_concern_links_to_objects_in_db(targets: ConcernRelatedObjects, concern_
         )
 
 
-# PROTECTED generic-purpose methods
+def _remove_concern_links_from_objects_in_db(targets: ConcernRelatedObjects, concern_id: ConcernID) -> None:
+    for core_type, ids in targets.items():
+        orm_model = core_type_to_model(core_type)
+        id_field = f"{orm_model.__name__.lower()}_id"
+        m2m_model = orm_model.concerns.through
+
+        m2m_model.objects.filter(concernitem_id=concern_id, **{f"{id_field}__in": ids}).delete()
 
 
 def _get_own_concerns_of_objects(

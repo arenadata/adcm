@@ -17,6 +17,7 @@ from typing import Any, Generator, Iterable, Literal
 import json
 
 from ansible_plugin.utils import finish_check
+from core.cluster.types import HostComponentEntry
 from core.job.executors import BundleExecutorConfig, ExecutorConfig
 from core.job.runners import ExecutionTarget, ExternalSettings
 from core.job.types import Job, ScriptType, Task
@@ -25,7 +26,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
-from cm.api import get_hc, save_hc
+from cm.api import get_hc
 from cm.models import (
     AnsibleConfig,
     Cluster,
@@ -54,6 +55,7 @@ from cm.services.job.types import (
     JobEnv,
     ServiceActionType,
 )
+from cm.services.mapping import change_host_component_mapping
 from cm.status_api import send_prototype_and_state_update_event
 from cm.utils import deep_merge
 
@@ -178,7 +180,7 @@ def _switch_hc_if_required(task: TaskLog):
 
     task.hostcomponentmap = old_hc
     task.post_upgrade_hc_map = None
-    task.save()
+    task.save(update_fields=["hostcomponentmap", "post_upgrade_hc_map"])
 
     for hostcomponent in new_hc:
         if "component_prototype_id" in hostcomponent:
@@ -189,7 +191,14 @@ def _switch_hc_if_required(task: TaskLog):
 
     host_map, *_ = check_hostcomponentmap(cluster, task.action, new_hc)
     if host_map is not None:
-        save_hc(cluster, host_map)
+        change_host_component_mapping(
+            cluster_id=cluster.id,
+            bundle_id=cluster.bundle_id,
+            flat_mapping=(
+                HostComponentEntry(host_id=host.id, component_id=component.id) for (_, host, component) in host_map
+            ),
+            skip_checks=True,
+        )
 
 
 # ENVIRONMENT BUILDERS

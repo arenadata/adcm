@@ -15,7 +15,7 @@ from collections.abc import Iterable
 from urllib.parse import urljoin
 import json
 
-from core.types import CoreObjectDescriptor
+from core.types import ClusterID, CoreObjectDescriptor
 from django.conf import settings
 from requests import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
@@ -110,8 +110,8 @@ def send_delete_service_event(service_id: int) -> Response | None:
     )
 
 
-def send_host_component_map_update_event(cluster: Cluster) -> None:
-    post_event(event=EventTypes.UPDATE_HOSTCOMPONENTMAP, object_id=cluster.pk)
+def send_host_component_map_update_event(cluster_id: ClusterID) -> None:
+    post_event(event=EventTypes.UPDATE_HOSTCOMPONENTMAP, object_id=cluster_id)
 
 
 def send_config_creation_event(object_: ADCMEntity) -> None:

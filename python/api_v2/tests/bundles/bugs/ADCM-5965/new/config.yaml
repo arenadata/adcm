@@ -1,0 +1,37 @@
+- name: cluster_with_constraints
+  type: cluster
+  version: '2.0'
+  upgrade:
+  - &upgrade
+    name: Simple upgrade
+    scripts:
+    - name: before
+      script: ./succeed.yaml
+      script_type: ansible
+    - name: switch
+      script: bundle_switch
+      script_type: internal
+    - name: after
+      script: ./succeed.yaml
+      script_type: ansible
+    states:
+      available: any
+    versions:
+      max: 1.9
+      min: 0.5
+  - <<: *upgrade
+    name: With HC
+    hc_acl:
+      - action: add
+        component: component
+        service: service_with_constraints
+
+- components:
+    component:
+      constraint:
+      - 1
+      - +
+    dummy: {}
+  name: service_with_constraints
+  type: service
+  version: '1.0'

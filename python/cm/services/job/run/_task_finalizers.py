@@ -11,27 +11,24 @@
 # limitations under the License.
 
 from logging import Logger
-from operator import itemgetter
 from typing import Protocol
 
+from core.cluster.types import HostComponentEntry
 from core.job.types import Task
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 
-from cm.api import save_hc
 from cm.converters import core_type_to_model
 from cm.issue import unlock_affected_objects, update_hierarchy_issues
 from cm.models import (
     ActionHostGroup,
-    ClusterObject,
-    Host,
     JobLog,
     MaintenanceMode,
-    ServiceComponent,
     TaskLog,
     get_object_cluster,
 )
 from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, build_concern_reason
+from cm.services.mapping import change_host_component_mapping
 from cm.status_api import send_object_update_event
 
 # todo "unwrap" these functions to use repo without directly calling ORM,
@@ -67,27 +64,17 @@ def set_hostcomponent(task: Task, logger: Logger):
 
         return
 
-    new_hostcomponent = task.hostcomponent.saved
-    hosts = {
-        entry.pk: entry for entry in Host.objects.filter(id__in=set(map(itemgetter("host_id"), new_hostcomponent)))
-    }
-    services = {
-        entry.pk: entry
-        for entry in ClusterObject.objects.filter(id__in=set(map(itemgetter("service_id"), new_hostcomponent)))
-    }
-    components = {
-        entry.pk: entry
-        for entry in ServiceComponent.objects.filter(id__in=set(map(itemgetter("component_id"), new_hostcomponent)))
-    }
-
-    host_comp_list = [
-        (services[entry["service_id"]], hosts[entry["host_id"]], components[entry["component_id"]])
-        for entry in new_hostcomponent
-    ]
-
     logger.warning("task #%s is failed, restore old hc", task.id)
 
-    save_hc(cluster, host_comp_list)
+    change_host_component_mapping(
+        cluster_id=cluster.id,
+        bundle_id=cluster.prototype.bundle_id,
+        flat_mapping=(
+            HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
+            for entry in task.hostcomponent.saved
+        ),
+        skip_checks=True,
+    )
 
 
 def remove_task_lock(task_id: int) -> None:

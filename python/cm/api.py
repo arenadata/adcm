@@ -16,13 +16,12 @@ from typing import Literal, TypedDict
 import json
 
 from adcm_version import compare_prototype_versions
-from core.cluster.operations import find_hosts_difference
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
 from django.db.transaction import atomic, on_commit
-from rbac.models import Policy, re_apply_object_policy
+from rbac.models import re_apply_object_policy
 from rbac.roles import apply_policy_for_new_config
 
 from cm.adcm_config.config import (
@@ -65,8 +64,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from cm.services.action_host_group import ActionHostGroupRepo
-from cm.services.cluster import retrieve_clusters_topology
+from cm.services.cluster import retrieve_cluster_topology
 from cm.services.concern import create_issue, delete_issue, retrieve_issue
 from cm.services.concern._operaitons import delete_concerns_of_removed_objects
 from cm.services.concern.cases import (
@@ -75,23 +73,17 @@ from cm.services.concern.cases import (
     recalculate_own_concerns_on_add_services,
 )
 from cm.services.concern.checks import (
-    cluster_mapping_has_issue,
-    extract_data_for_requirements_check,
-    is_bound_to_requirements_unsatisfied,
-    is_constraint_requirements_unsatisfied,
-    is_requires_requirements_unsatisfied,
+    cluster_mapping_has_issue_orm_version,
     object_configuration_has_issue,
     object_imports_has_issue,
 )
 from cm.services.concern.distribution import distribute_concern_on_related_objects, redistribute_issues_and_flags
 from cm.services.concern.flags import BuiltInFlag, raise_flag
 from cm.services.concern.locks import get_lock_on_object
-from cm.services.group_config import ConfigHostGroupRepo
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import (
     send_config_creation_event,
     send_delete_service_event,
-    send_host_component_map_update_event,
 )
 from cm.utils import obj_ref
 
@@ -148,7 +140,7 @@ def add_cluster(prototype: Prototype, name: str, description: str = "") -> Clust
         )
 
         if recalculate_own_concerns_on_add_clusters(cluster):  # TODO: redistribute only new issues. See ADCM-5798
-            redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((cluster.pk,))))
+            redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
 
     reset_hc_map()
 
@@ -268,7 +260,7 @@ def delete_service(service: ClusterObject) -> None:
 
     cluster = service.cluster
     cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
-    if not cluster_mapping_has_issue(cluster=cluster):
+    if not cluster_mapping_has_issue_orm_version(cluster=cluster):
         delete_issue(
             owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=ConcernCause.HOSTCOMPONENT
         )
@@ -352,7 +344,7 @@ def remove_host_from_cluster(host: Host) -> Host:
         # if there's no lock on cluster, nothing should be removed
         remove_concern_from_object(object_=host, concern=get_lock_on_object(object_=cluster))
 
-        if not cluster_mapping_has_issue(cluster):
+        if not cluster_mapping_has_issue_orm_version(cluster):
             delete_issue(
                 owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=ConcernCause.HOSTCOMPONENT
             )
@@ -395,7 +387,7 @@ def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
         add_components_to_service(cluster=cluster, service=service)
 
         recalculate_own_concerns_on_add_services(cluster=cluster, services=(service,))
-        redistribute_issues_and_flags(next(retrieve_clusters_topology((cluster.id,))))
+        redistribute_issues_and_flags(retrieve_cluster_topology(cluster.id))
 
         re_apply_object_policy(apply_object=cluster)
 
@@ -562,146 +554,6 @@ def make_host_comp_list(cluster: Cluster, hc_in: list[dict]) -> list[tuple[Clust
         host_comp_list.append((service, host, comp))
 
     return host_comp_list
-
-
-def check_hc(cluster: Cluster, hc_in: list[dict]) -> list[tuple[ClusterObject, Host, ServiceComponent]]:
-    check_sub_key(hc_in=hc_in)
-    host_comp_list = make_host_comp_list(cluster=cluster, hc_in=hc_in)
-
-    requirements_data = extract_data_for_requirements_check(cluster=cluster, input_mapping=hc_in)
-
-    requires_not_ok, error_message = is_requires_requirements_unsatisfied(
-        topology=requirements_data.topology,
-        component_prototype_map=requirements_data.component_prototype_map,
-        prototype_requirements=requirements_data.prototype_requirements,
-        existing_objects_map=requirements_data.existing_objects_map,
-        existing_objects_by_type=requirements_data.objects_map_by_type,
-    )
-    if requires_not_ok and error_message is not None:
-        raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=error_message)
-
-    bound_not_ok, error_message = is_bound_to_requirements_unsatisfied(
-        topology=requirements_data.topology,
-        component_prototype_map=requirements_data.component_prototype_map,
-        prototype_requirements=requirements_data.prototype_requirements,
-        existing_objects_map=requirements_data.existing_objects_map,
-    )
-    if bound_not_ok and error_message:
-        raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=error_message)
-
-    constraint_not_ok, error_message = is_constraint_requirements_unsatisfied(
-        topology=requirements_data.topology,
-        component_prototype_map=requirements_data.component_prototype_map,
-        prototype_requirements=requirements_data.prototype_requirements,
-        components_map=requirements_data.objects_map_by_type["component"],
-    )
-    if constraint_not_ok and error_message is not None:
-        raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=error_message)
-
-    check_maintenance_mode(cluster=cluster, host_comp_list=host_comp_list)
-
-    return host_comp_list
-
-
-def check_maintenance_mode(
-    cluster: Cluster, host_comp_list: list[tuple[ClusterObject, Host, ServiceComponent]]
-) -> None:
-    for service, host, comp in host_comp_list:
-        try:
-            HostComponent.objects.get(cluster=cluster, service=service, host=host, component=comp)
-        except HostComponent.DoesNotExist:
-            if host.maintenance_mode == MaintenanceMode.ON:
-                raise_adcm_ex("INVALID_HC_HOST_IN_MM")
-
-
-def still_existed_hc(cluster: Cluster, host_comp_list: list[tuple[ClusterObject, Host, ServiceComponent]]) -> list:
-    result = []
-    for service, host, comp in host_comp_list:
-        try:
-            existed_hc = HostComponent.objects.get(cluster=cluster, service=service, host=host, component=comp)
-            result.append(existed_hc)
-        except HostComponent.DoesNotExist:
-            continue
-
-    return result
-
-
-def save_hc(
-    cluster: Cluster, host_comp_list: list[tuple[ClusterObject, Host, ServiceComponent]]
-) -> list[HostComponent]:
-    hc_queryset = HostComponent.objects.filter(cluster=cluster).order_by("id")
-    service_set = {hc.service for hc in hc_queryset.select_related("service")}
-    old_hosts = {i.host for i in hc_queryset.select_related("host")}
-    new_hosts = {i[1] for i in host_comp_list}
-
-    previous_topology = next(retrieve_clusters_topology(cluster_ids=(cluster.id,)))
-
-    lock = get_lock_on_object(object_=cluster)
-    if lock:
-        for removed_host in old_hosts.difference(new_hosts):
-            remove_concern_from_object(object_=removed_host, concern=lock)
-
-        for added_host in new_hosts.difference(old_hosts):
-            add_concern_to_object(object_=added_host, concern=lock)
-
-    hc_queryset.delete()
-    host_component_list = []
-
-    for service, host, comp in host_comp_list:
-        host_component = HostComponent(
-            cluster=cluster,
-            service=service,
-            host=host,
-            component=comp,
-        )
-        host_component.save()
-        host_component_list.append(host_component)
-
-    updated_topology = next(retrieve_clusters_topology(cluster_ids=(cluster.id,)))
-    unmapped_hosts = find_hosts_difference(new_topology=updated_topology, old_topology=previous_topology).unmapped
-    ActionHostGroupRepo().remove_unmapped_hosts_from_groups(unmapped_hosts)
-    ConfigHostGroupRepo().remove_unmapped_hosts_from_groups(unmapped_hosts)
-
-    # HC may break
-    # We can't be sure this method is called after some sort of "check"
-    cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
-    if not cluster_mapping_has_issue(cluster=cluster):
-        delete_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
-    elif retrieve_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT) is None:
-        create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
-
-    redistribute_issues_and_flags(topology=updated_topology)
-
-    reset_hc_map()
-    reset_objects_in_mm()
-
-    for host_component_item in host_component_list:
-        service_set.add(host_component_item.service)
-
-    if service_set:
-        service_list = list(service_set)
-        service_content_type = ContentType.objects.get_for_model(model=service_list[0])
-        for service in service_list:
-            for policy in Policy.objects.filter(
-                object__object_id=service.pk, object__content_type=service_content_type
-            ):
-                policy.apply()
-
-        for policy in Policy.objects.filter(
-            object__object_id=service_list[0].cluster.pk,
-            object__content_type=ContentType.objects.get_for_model(model=service_list[0].cluster),
-        ):
-            policy.apply()
-
-    send_host_component_map_update_event(cluster=cluster)
-    return host_component_list
-
-
-def add_hc(cluster: Cluster, hc_in: list[dict]) -> list[HostComponent]:
-    host_comp_list = check_hc(cluster=cluster, hc_in=hc_in)
-
-    with atomic():
-        return save_hc(cluster=cluster, host_comp_list=host_comp_list)
 
 
 def get_bind(

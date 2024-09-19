@@ -14,7 +14,7 @@ from contextlib import suppress
 from typing import Any, Collection
 
 from cm.models import Host, MaintenanceMode
-from cm.services.cluster import retrieve_clusters_topology
+from cm.services.cluster import retrieve_cluster_topology
 from cm.services.concern.distribution import redistribute_issues_and_flags
 from cm.services.status.notify import reset_objects_in_mm
 from cm.status_api import send_object_update_event
@@ -100,7 +100,7 @@ class ADCMChangeMMExecutor(ADCMAnsiblePluginExecutor[ChangeMaintenanceModeArgume
             if not value:
                 # In terms of concerns CHANGING and ON is the same,
                 # so recalculation is required only for turning it OFF
-                redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((target_object.cluster_id,))))
+                redistribute_issues_and_flags(topology=retrieve_cluster_topology(target_object.cluster_id))
 
         with suppress(Exception):
             send_object_update_event(object_=target_object, changes={"maintenanceMode": target_object.maintenance_mode})

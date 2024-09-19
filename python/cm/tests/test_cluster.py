@@ -19,7 +19,7 @@ from django.urls import reverse
 from rest_framework import status
 
 from cm.models import Bundle, Cluster, Prototype
-from cm.services.cluster import retrieve_clusters_topology
+from cm.services.cluster import retrieve_multiple_clusters_topology
 from cm.tests.utils import gen_component, gen_host, gen_service, generate_hierarchy
 
 
@@ -207,12 +207,12 @@ class TestCluster(BaseTestCase, BusinessLogicMixin):
         )
 
         with self.assertNumQueries(num=5):
-            actual_topology = next(retrieve_clusters_topology(cluster_ids=[cluster.pk]))
+            actual_topology = next(retrieve_multiple_clusters_topology(cluster_ids=[cluster.pk]))
 
         self.assertEqual(actual_topology, expected_topology)
 
         second_cluster = generate_hierarchy()["cluster"]
         with self.assertNumQueries(num=5):
-            result = tuple(retrieve_clusters_topology(cluster_ids=[cluster.pk, second_cluster.pk]))
+            result = tuple(retrieve_multiple_clusters_topology(cluster_ids=[cluster.pk, second_cluster.pk]))
 
         self.assertSetEqual({entry.cluster_id for entry in result}, {cluster.pk, second_cluster.pk})
