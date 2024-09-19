@@ -14,6 +14,8 @@ from dataclasses import dataclass, field
 from functools import partial
 from typing import TypeAlias
 
+from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
+from core.cluster.types import HostComponentEntry
 from core.job.dto import TaskPayloadDTO
 from core.types import ActionTargetDescriptor, CoreObjectDescriptor
 from django.conf import settings
@@ -22,7 +24,7 @@ from rbac.roles import re_apply_policy_for_jobs
 
 from cm.adcm_config.checks import check_attr
 from cm.adcm_config.config import check_config_spec, get_prototype_config, process_config_spec, process_file_type
-from cm.api import get_hc, save_hc
+from cm.api import get_hc
 from cm.converters import model_name_to_core_type, orm_object_to_action_target_type, orm_object_to_core_type
 from cm.errors import AdcmEx
 from cm.models import (
@@ -34,17 +36,23 @@ from cm.models import (
     ConcernType,
     ConfigLog,
     Host,
-    HostComponent,
     HostProvider,
     JobStatus,
     ServiceComponent,
     TaskLog,
 )
+from cm.services.cluster import retrieve_cluster_topology
+from cm.services.concern.repo import retrieve_bundle_restrictions
 from cm.services.config.spec import convert_to_flat_spec_from_proto_flat_spec
-from cm.services.job.checks import check_constraints_for_upgrade, check_hostcomponentmap
+from cm.services.job.checks import (
+    HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE,
+    check_hostcomponentmap,
+    check_mapping_restrictions,
+)
 from cm.services.job.inventory._config import update_configuration_for_inventory_inplace
 from cm.services.job.prepare import prepare_task_for_action
 from cm.services.job.run import run_task
+from cm.services.mapping import change_host_component_mapping, check_no_host_in_mm
 from cm.status_api import send_task_status_update_event
 from cm.variant import process_variant
 
@@ -231,13 +239,26 @@ def _process_hostcomponent(
         # should be handled one level above
         raise AdcmEx(code="TASK_ERROR", msg="Only cluster objects can have action with hostcomponentmap")
 
+    # `check_hostcomponentmap` won't run checks in these conditions, because it's checking actions with `hc_acl`.
+    # But this code checks whether existing hostcomponent satisfies constraints from new bundle.
     if is_upgrade_action and not action.hostcomponentmap:
-        new_hc = [
-            (entry.service, entry.host, entry.component)
-            for entry in HostComponent.objects.select_related("service", "component", "host").filter(cluster=cluster)
-        ]
-
-        check_constraints_for_upgrade(cluster=cluster, upgrade=action.upgrade, host_comp_list=new_hc)
+        topology = retrieve_cluster_topology(cluster_id=cluster.id)
+        bundle_restrictions = retrieve_bundle_restrictions(bundle_id=int(action.upgrade.bundle_id))
+        new_topology = create_topology_with_new_mapping(
+            topology=topology,
+            new_mapping=(
+                HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
+                for entry in new_hostcomponent
+            ),
+        )
+        check_mapping_restrictions(
+            mapping_restrictions=bundle_restrictions.mapping,
+            topology=new_topology,
+            error_message_template=HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE,
+        )
+        host_difference = find_hosts_difference(new_topology=new_topology, old_topology=topology)
+        check_no_host_in_mm(host_difference.mapped.all)
+        return None, [], {}, is_upgrade_action
 
     host_map, post_upgrade_hc, delta = check_hostcomponentmap(cluster=cluster, action=action, new_hc=new_hostcomponent)
 
@@ -248,14 +269,21 @@ def _finish_task_preparation(
     task: TaskLog,
     owner: ObjectWithAction,
     cluster: Cluster | None,
-    host_map: list | None,
+    host_map: list[tuple[ClusterObject, Host, ServiceComponent]] | None,
     is_upgrade_action: bool,
     payload: ActionRunPayload,
     spec: dict,
     flat_spec: dict,
 ):
     if host_map or (is_upgrade_action and host_map is not None):
-        save_hc(cluster=cluster, host_comp_list=host_map)
+        change_host_component_mapping(
+            cluster_id=cluster.id,
+            bundle_id=cluster.prototype.bundle_id,
+            flat_mapping=(
+                HostComponentEntry(host_id=host.id, component_id=component.id) for (_, host, component) in host_map
+            ),
+            skip_checks=True,
+        )
 
     if payload.conf:
         new_conf = update_configuration_for_inventory_inplace(

@@ -24,7 +24,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
-from cm.services.cluster import retrieve_clusters_topology
+from cm.services.cluster import retrieve_cluster_topology
 from cm.services.concern.cases import recalculate_own_concerns_on_add_services
 from cm.services.concern.distribution import redistribute_issues_and_flags
 from cm.services.status.notify import reset_hc_map
@@ -59,7 +59,7 @@ def bulk_add_services_to_cluster(cluster: Cluster, prototypes: QuerySet[Prototyp
             "servicecomponent_set"
         ).all(),  # refresh values from db to update `config` field
     )
-    redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((cluster.pk,))))
+    redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
 
     re_apply_object_policy(apply_object=cluster)
     reset_hc_map()

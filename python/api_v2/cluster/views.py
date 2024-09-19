@@ -44,13 +44,16 @@ from cm.models import (
 )
 from cm.services.cluster import (
     perform_host_to_cluster_map,
+    retrieve_cluster_topology,
     retrieve_clusters_objects_maintenance_mode,
-    retrieve_clusters_topology,
 )
+from cm.services.mapping import change_host_component_mapping
 from cm.services.status import notify
 from core.cluster.errors import HostAlreadyBoundError, HostBelongsToAnotherClusterError, HostDoesNotExistError
-from core.cluster.operations import calculate_maintenance_mode_for_cluster_objects
-from core.cluster.types import MaintenanceModeOfObjects
+from core.cluster.operations import (
+    calculate_maintenance_mode_for_cluster_objects,
+)
+from core.cluster.types import HostComponentEntry, MaintenanceModeOfObjects
 from django.contrib.contenttypes.models import ContentType
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -89,7 +92,6 @@ from api_v2.cluster.serializers import (
     ServicePrototypeSerializer,
     SetMappingSerializer,
 )
-from api_v2.cluster.utils import retrieve_mapping_data, save_mapping
 from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
@@ -426,10 +428,32 @@ class ClusterViewSet(
 
         serializer = SetMappingSerializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
-        mapping_data = retrieve_mapping_data(cluster=cluster, plain_hc=serializer.validated_data)
-        new_mapping = save_mapping(mapping_data=mapping_data)
 
-        return Response(data=self.get_serializer(instance=new_mapping, many=True).data, status=HTTP_201_CREATED)
+        new_mapping_entries = tuple(HostComponentEntry(**entry) for entry in serializer.validated_data)
+        if len(new_mapping_entries) != len(set(new_mapping_entries)):
+            checked = set()
+            duplicates = set()
+
+            for entry in new_mapping_entries:
+                if entry in checked:
+                    duplicates.add(entry)
+                else:
+                    checked.add(entry)
+
+            error_mapping_repr = ", ".join(
+                f"component {entry.component_id} - host {entry.host_id}" for entry in sorted(duplicates)
+            )
+            raise AdcmEx("INVALID_INPUT", msg=f"Mapping entries duplicates found: {error_mapping_repr}.")
+
+        cluster_id = cluster.id
+        bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=cluster.prototype_id)
+
+        change_host_component_mapping(cluster_id=cluster_id, bundle_id=bundle_id, flat_mapping=new_mapping_entries)
+
+        return Response(
+            data=self.get_serializer(instance=HostComponent.objects.filter(cluster_id=cluster_id), many=True).data,
+            status=HTTP_201_CREATED,
+        )
 
     @action(
         methods=["get"],
@@ -462,7 +486,7 @@ class ClusterViewSet(
 
         objects_mm = (
             calculate_maintenance_mode_for_cluster_objects(
-                topology=next(retrieve_clusters_topology(cluster_ids=(cluster.id,))),
+                topology=retrieve_cluster_topology(cluster.id),
                 own_maintenance_mode=retrieve_clusters_objects_maintenance_mode(cluster_ids=(cluster.id,)),
             )
             if is_mm_available

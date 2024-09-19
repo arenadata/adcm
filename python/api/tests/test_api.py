@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Iterable
 from unittest.mock import patch
 from uuid import uuid4
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.api import save_hc
 from cm.hierarchy import Tree
 from cm.issue import lock_affected_objects
 from cm.models import (
@@ -28,6 +28,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.mapping import change_host_component_mapping
 from cm.tests.utils import (
     gen_adcm,
     gen_component,
@@ -39,6 +40,7 @@ from cm.tests.utils import (
     gen_service,
     gen_task_log,
 )
+from core.cluster.types import HostComponentEntry
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.response import Response
@@ -505,13 +507,13 @@ class TestAPI(BaseTestCase):
         adh_bundle_id, cluster_proto = self.get_cluster_proto_id()
         ssh_bundle_id, _, host_id = self.get_host_in_cluster(self.host)
         service_proto_id = self.get_service_proto_id()
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v1:cluster"),
             data={"name": self.cluster, "prototype_id": cluster_proto},
         )
         cluster_id = response.json()["id"]
 
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster_id}),
             data={"prototype_id": service_proto_id},
         )
@@ -521,41 +523,41 @@ class TestAPI(BaseTestCase):
         service_id = response.json()["id"]
 
         hc_url = reverse(viewname="v1:host-component", kwargs={"cluster_id": cluster_id})
-        response: Response = self.client.post(hc_url, {"hc": {}}, content_type=APPLICATION_JSON)
+        response = self.client.post(hc_url, {"hc": {}}, content_type=APPLICATION_JSON)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["code"], "INVALID_INPUT")
         self.assertEqual(response.json()["desc"], "hc field is required")
 
         comp_id = self.get_component_id(cluster_id, service_id, self.component)
-        response: Response = self.client.post(
+        response = self.client.post(
             hc_url,
             {"hc": [{"service_id": service_id, "host_id": 100500, "component_id": comp_id}]},
             content_type=APPLICATION_JSON,
         )
 
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "HOST_NOT_FOUND")
 
-        response: Response = self.client.post(
+        response = self.client.post(
             hc_url,
             {"hc": [{"service_id": service_id, "host_id": host_id, "component_id": 100500}]},
             content_type=APPLICATION_JSON,
         )
 
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "COMPONENT_NOT_FOUND")
 
-        response: Response = self.client.post(
+        response = self.client.post(
             hc_url,
             {"hc": [{"service_id": service_id, "host_id": host_id, "component_id": comp_id}]},
             content_type=APPLICATION_JSON,
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.json()["code"], "FOREIGN_HOST")
+        self.assertEqual(response.json()["code"], "HOST_NOT_FOUND")
 
-        response: Response = self.client.post(
+        response = self.client.post(
             path=reverse(viewname="v1:host", kwargs={"cluster_id": cluster_id}),
             data={"host_id": host_id},
             content_type=APPLICATION_JSON,
@@ -563,7 +565,7 @@ class TestAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        response: Response = self.client.post(
+        response = self.client.post(
             hc_url,
             {"hc": {"host_id": host_id, "component_id": comp_id}},
             content_type=APPLICATION_JSON,
@@ -573,7 +575,7 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.json()["code"], "INVALID_INPUT")
         self.assertEqual(response.json()["desc"], "hc field should be a list")
 
-        response: Response = self.client.post(
+        response = self.client.post(
             hc_url,
             {"hc": [{"component_id": comp_id}]},
             content_type=APPLICATION_JSON,
@@ -582,12 +584,12 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["code"], "INVALID_INPUT")
 
-        response: Response = self.client.post(hc_url, {"hc": [{"host_id": host_id}]}, content_type=APPLICATION_JSON)
+        response = self.client.post(hc_url, {"hc": [{"host_id": host_id}]}, content_type=APPLICATION_JSON)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["code"], "INVALID_INPUT")
 
-        response: Response = self.client.post(
+        response = self.client.post(
             hc_url,
             {
                 "hc": [
@@ -638,8 +640,8 @@ class TestAPI(BaseTestCase):
             content_type=APPLICATION_JSON,
         )
 
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.assertEqual(response.json()["code"], "CLUSTER_SERVICE_NOT_FOUND")
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "COMPONENT_NOT_FOUND")
 
         response: Response = self.client.post(
             path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster_id2}),
@@ -658,7 +660,7 @@ class TestAPI(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.json()["code"], "FOREIGN_HOST")
+        self.assertEqual(response.json()["code"], "HOST_NOT_FOUND")
 
         response: Response = self.client.delete(f"{hc_url}{str(hs_id)}/")
 
@@ -887,7 +889,19 @@ class TestAPI2(BaseTestCase):
             state="installed",
         )
 
-    @patch("cm.api.reset_hc_map")
+    def save_hc(
+        self, cluster: Cluster, hc_list: Iterable[tuple[ClusterObject, Host, ServiceComponent]]
+    ) -> list[HostComponent]:
+        change_host_component_mapping(
+            cluster_id=cluster.id,
+            bundle_id=cluster.bundle_id,
+            flat_mapping=(
+                HostComponentEntry(host_id=host.id, component_id=component.id) for (_, host, component) in hc_list
+            ),
+        )
+        return list(HostComponent.objects.filter(cluster=cluster))
+
+    @patch("cm.services.mapping.reset_hc_map")
     def test_save_hc(self, mock_reset_hc_map):
         cluster_object = ClusterObject.objects.create(prototype=self.service_prototype, cluster=self.cluster)
         host = Host.objects.create(prototype=self.cluster_prototype, cluster=self.cluster)
@@ -911,7 +925,7 @@ class TestAPI2(BaseTestCase):
         )
 
         host_comp_list = [(cluster_object, host, service_component)]
-        hc_list = save_hc(self.cluster, host_comp_list)
+        hc_list = self.save_hc(self.cluster, host_comp_list)
 
         self.assertListEqual(hc_list, [HostComponent.objects.first()])
 
@@ -967,7 +981,7 @@ class TestAPI2(BaseTestCase):
             (service, host_1, component_1),
             (service, host_3, component_2),
         ]
-        save_hc(self.cluster, new_hc_list)
+        self.save_hc(self.cluster, new_hc_list)
 
         # refresh due to new instances were updated in save_hc()
         host_1.refresh_from_db()
@@ -1017,7 +1031,7 @@ class TestAPI2(BaseTestCase):
             (service, host_1, component_1),
             (service, host_3, component_2),
         ]
-        save_hc(self.cluster, new_hc_list)
+        self.save_hc(self.cluster, new_hc_list)
 
         # refresh due to new instances were updated in save_hc()
         host_1.refresh_from_db()

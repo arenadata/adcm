@@ -18,7 +18,7 @@ from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from cm.api import add_host_to_cluster, save_hc
+from cm.api import add_host_to_cluster
 from cm.errors import AdcmEx
 from cm.models import Action, Bundle, ClusterObject, Host, Prototype, ServiceComponent
 from cm.services.job.checks import check_hostcomponentmap
@@ -111,7 +111,13 @@ class TestHC(BaseTestCase, BusinessLogicMixin):
 
         self.assertNotEqual(hc_list, None)
 
-        save_hc(cluster, hc_list)
+        self.set_hostcomponent(
+            cluster=cluster,
+            entries=[
+                (Host.objects.get(id=entry["host_id"]), ServiceComponent.objects.get(id=entry["component_id"]))
+                for entry in hostcomponent
+            ],
+        )
         act_hc = [{"service": "hadoop", "component": "server", "action": "remove"}]
         action = Action(name="run", hostcomponentmap=act_hc)
         hostcomponent = [

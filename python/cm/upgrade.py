@@ -16,6 +16,7 @@ from operator import itemgetter
 import functools
 
 from adcm_version import compare_prototype_versions
+from core.cluster.types import HostComponentEntry
 from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
@@ -33,7 +34,6 @@ from cm.api import (
     add_service_to_cluster,
     check_license,
     is_version_suitable,
-    save_hc,
 )
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
@@ -59,7 +59,7 @@ from cm.models import (
     ServiceComponent,
     Upgrade,
 )
-from cm.services.cluster import retrieve_clusters_topology
+from cm.services.cluster import retrieve_cluster_topology, retrieve_multiple_clusters_topology
 from cm.services.concern import create_issue, retrieve_issue
 from cm.services.concern.cases import (
     recalculate_concerns_on_cluster_upgrade,
@@ -67,6 +67,7 @@ from cm.services.concern.cases import (
 from cm.services.concern.checks import object_configuration_has_issue
 from cm.services.concern.distribution import distribute_concern_on_related_objects, redistribute_issues_and_flags
 from cm.services.job.action import ActionRunPayload, run_action
+from cm.services.mapping import change_host_component_mapping
 from cm.status_api import send_prototype_and_state_update_event
 from cm.utils import obj_ref
 
@@ -244,7 +245,15 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:
             )
             host_comp_list.append((service, host, component))
 
-        save_hc(cluster=obj, host_comp_list=host_comp_list)
+        change_host_component_mapping(
+            cluster_id=obj.id,
+            bundle_id=old_proto.bundle_id,
+            flat_mapping=(
+                HostComponentEntry(host_id=host.id, component_id=component.id)
+                for (_, host, component) in host_comp_list
+            ),
+            skip_checks=True,
+        )
 
     if isinstance(obj, HostProvider):
         for host in Host.objects.filter(provider=obj):
@@ -543,7 +552,7 @@ class _ClusterBundleSwitch(_BundleSwitch):
 
     def _update_concerns(self) -> None:
         recalculate_concerns_on_cluster_upgrade(cluster=self._target)
-        redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((self._target.id,))))
+        redistribute_issues_and_flags(topology=retrieve_cluster_topology(self._target.id))
 
     def _get_objects_map_for_policy_update(self) -> dict[Cluster | ClusterObject | ServiceComponent, ContentType]:
         obj_type_map = {self._target: ContentType.objects.get_for_model(Cluster)}
@@ -601,7 +610,7 @@ class _HostProviderBundleSwitch(_BundleSwitch):
 
         clusters_for_redistribution -= {None}
         if clusters_for_redistribution:
-            for topology in retrieve_clusters_topology(cluster_ids=clusters_for_redistribution):
+            for topology in retrieve_multiple_clusters_topology(cluster_ids=clusters_for_redistribution):
                 redistribute_issues_and_flags(topology=topology)
 
     def _get_objects_map_for_policy_update(self) -> dict[HostProvider | Host, ContentType]:

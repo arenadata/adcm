@@ -40,7 +40,10 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
-from cm.services.cluster import retrieve_clusters_objects_maintenance_mode, retrieve_clusters_topology
+from cm.services.cluster import (
+    retrieve_cluster_topology,
+    retrieve_clusters_objects_maintenance_mode,
+)
 from cm.services.group_config import GroupConfigName, retrieve_group_configs_for_hosts
 from cm.services.job.inventory._before_upgrade import extract_objects_before_upgrade, get_before_upgrades
 from cm.services.job.inventory._config import (
@@ -158,7 +161,7 @@ def _get_inventory_for_action_from_cluster_bundle(
     if target_hosts:
         host_groups["target"] = set(target_hosts)
 
-    cluster_topology = next(retrieve_clusters_topology([cluster_id]))
+    cluster_topology = retrieve_cluster_topology(cluster_id)
 
     hosts_in_maintenance_mode: set[int] = set(
         Host.objects.filter(maintenance_mode=MaintenanceMode.ON).values_list("id", flat=True)

@@ -12,22 +12,37 @@
 
 import copy
 
-from cm.api import check_hc, check_maintenance_mode, check_sub_key, get_hc, make_host_comp_list
+from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
+from core.cluster.types import ClusterTopology, HostComponentEntry
+from rest_framework.status import HTTP_409_CONFLICT
+
 from cm.errors import AdcmEx
-from cm.issue import check_component_constraint, check_service_requires
-from cm.models import Action, Cluster, ClusterObject, ConcernType, Host, Prototype, ServiceComponent
-from cm.services.concern.checks import (
-    extract_data_for_requirements_check,
-    is_bound_to_requirements_unsatisfied,
-    is_requires_requirements_unsatisfied,
+from cm.models import (
+    Action,
+    Cluster,
+    ClusterObject,
+    ConcernType,
+    Host,
+    Prototype,
+    ServiceComponent,
 )
+from cm.services.cluster import retrieve_cluster_topology
+from cm.services.concern.checks import check_mapping_restrictions
+from cm.services.concern.repo import retrieve_bundle_restrictions
 from cm.services.job._utils import cook_delta, get_old_hc
 from cm.services.job.types import HcAclAction
+from cm.services.mapping import check_no_host_in_mm
+
+HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE = (
+    "Host-component map of upgraded cluster should satisfy constraints of new bundle. Now error is: {}"
+)
 
 
 def check_hostcomponentmap(
     cluster: Cluster | None, action: Action, new_hc: list[dict]
 ) -> tuple[list[tuple[ClusterObject, Host, ServiceComponent]] | None, list, dict[str, dict]]:
+    from cm.api import check_sub_key, get_hc, make_host_comp_list
+
     if not action.hostcomponentmap:
         return None, [], {}
 
@@ -47,69 +62,50 @@ def check_hostcomponentmap(
                 raise AdcmEx(code="ISSUE_INTEGRITY_ERROR", msg=f"object {host} has issues")
 
     post_upgrade_hc, clear_hc = _check_upgrade_hc(action=action, new_hc=new_hc)
+    check_sub_key(hc_in=clear_hc)
 
     old_hc = get_old_hc(saved_hostcomponent=get_hc(cluster=cluster))
+    new_entries = tuple(
+        HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"]) for entry in clear_hc
+    )
+
+    # todo most likely this topology should be created somewhere above and passed in here as argument
+    topology = retrieve_cluster_topology(cluster_id=cluster.id)
+    _check_entries_are_related_to_topology(topology=topology, entries=new_entries)
+    new_topology = create_topology_with_new_mapping(
+        topology=topology,
+        new_mapping=(
+            HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"]) for entry in clear_hc
+        ),
+    )
+    host_difference = find_hosts_difference(new_topology=new_topology, old_topology=topology)
+    check_no_host_in_mm(host_difference.mapped.all)
+
     if not hasattr(action, "upgrade"):
-        prepared_hc_list = check_hc(cluster=cluster, hc_in=clear_hc)
+        bundle_restrictions = retrieve_bundle_restrictions(bundle_id=int(cluster.prototype.bundle_id))
+        check_mapping_restrictions(mapping_restrictions=bundle_restrictions.mapping, topology=new_topology)
+
     else:
-        check_sub_key(hc_in=clear_hc)
-        prepared_hc_list = make_host_comp_list(cluster=cluster, hc_in=clear_hc)
-        check_constraints_for_upgrade(cluster=cluster, upgrade=action.upgrade, host_comp_list=prepared_hc_list)
+        bundle_restrictions = retrieve_bundle_restrictions(bundle_id=int(action.upgrade.bundle_id))
+        check_mapping_restrictions(
+            mapping_restrictions=bundle_restrictions.mapping,
+            topology=new_topology,
+            error_message_template=HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE,
+        )
+
+    prepared_hc_list = make_host_comp_list(cluster=cluster, hc_in=clear_hc)
 
     delta = cook_delta(cluster=cluster, new_hc=prepared_hc_list, action_hc=action.hostcomponentmap, old=old_hc)
 
     return prepared_hc_list, post_upgrade_hc, delta
 
 
-def check_constraints_for_upgrade(cluster, upgrade, host_comp_list):
-    try:
-        for service in ClusterObject.objects.filter(cluster=cluster):
-            try:
-                prototype = Prototype.objects.get(name=service.name, type="service", bundle=upgrade.bundle)
-                check_component_constraint(
-                    cluster=cluster,
-                    service_prototype=prototype,
-                    hc_in=[i for i in host_comp_list if i[0] == service],
-                    old_bundle=cluster.prototype.bundle,
-                )
-                check_service_requires(cluster=cluster, proto=prototype)
-            except Prototype.DoesNotExist:
-                pass
+def _check_entries_are_related_to_topology(topology: ClusterTopology, entries: tuple[HostComponentEntry, ...]) -> None:
+    if not {entry.host_id for entry in entries}.issubset(topology.hosts):
+        raise AdcmEx(code="FOREIGN_HOST", http_code=HTTP_409_CONFLICT)
 
-        requirements_data = extract_data_for_requirements_check(
-            cluster=cluster,
-            input_mapping=[
-                {"host_id": host.id, "component_id": component.id, "service_id": service.id}
-                for service, host, component in host_comp_list
-            ],
-        )
-        requires_not_ok, error_message = is_requires_requirements_unsatisfied(
-            topology=requirements_data.topology,
-            component_prototype_map=requirements_data.component_prototype_map,
-            prototype_requirements=requirements_data.prototype_requirements,
-            existing_objects_map=requirements_data.existing_objects_map,
-            existing_objects_by_type=requirements_data.objects_map_by_type,
-        )
-        if requires_not_ok and error_message is not None:
-            raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=error_message)
-
-        bound_not_ok, error_msg = is_bound_to_requirements_unsatisfied(
-            topology=requirements_data.topology,
-            component_prototype_map=requirements_data.component_prototype_map,
-            prototype_requirements=requirements_data.prototype_requirements,
-            existing_objects_map=requirements_data.existing_objects_map,
-        )
-        if bound_not_ok:
-            raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=error_msg)
-        check_maintenance_mode(cluster=cluster, host_comp_list=host_comp_list)
-    except AdcmEx as e:
-        if e.code == "COMPONENT_CONSTRAINT_ERROR":
-            e.msg = (
-                f"Host-component map of upgraded cluster should satisfy "
-                f"constraints of new bundle. Now error is: {e.msg}"
-            )
-
-        raise AdcmEx(code=e.code, msg=e.msg) from e
+    if not {entry.component_id for entry in entries}.issubset(topology.component_ids):
+        raise AdcmEx(code="COMPONENT_NOT_FOUND", http_code=HTTP_409_CONFLICT)
 
 
 def _check_upgrade_hc(action, new_hc):

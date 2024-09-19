@@ -389,7 +389,7 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertDictEqual(
             response.json(),
             {
-                "code": "COMPONENT_CONSTRAINT_ERROR",
+                "code": "SERVICE_CONFLICT",
                 "level": "error",
                 "desc": f'No required service "service_required" for service "{service_requires_service.display_name}"',
             },
@@ -538,18 +538,9 @@ class TestMappingConstraints(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertDictEqual(
-            response.json(),
-            {
-                "code": "COMPONENT_CONSTRAINT_ERROR",
-                "level": "error",
-                "desc": (
-                    f'No component "bound_target_component" of service "bound_target_service" '
-                    f'on host "{self.host_1.fqdn}" for component "{bound_component.display_name}" '
-                    f'of service "{bound_component.service.display_name}"'
-                ),
-            },
-        )
+        data = response.json()
+        self.assertEqual(data["code"], "COMPONENT_CONSTRAINT_ERROR")
+        self.assertIn("Component `bound_to` restriction violated.", data["desc"])
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_bound_on_different_host_fail(self):
@@ -579,19 +570,9 @@ class TestMappingConstraints(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertDictEqual(
-            response.json(),
-            {
-                "code": "COMPONENT_CONSTRAINT_ERROR",
-                "level": "error",
-                "desc": (
-                    f'No component "{bound_component.display_name}" of service '
-                    f'"{bound_component.service.display_name}" on host "{self.host_2.display_name}" for '
-                    f'component "{bound_target_component.display_name}" '
-                    f'of service "{bound_target_component.service.display_name}"'
-                ),
-            },
-        )
+        data = response.json()
+        self.assertEqual(data["code"], "COMPONENT_CONSTRAINT_ERROR")
+        self.assertIn("Component `bound_to` restriction violated.", data["desc"])
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_bound_success(self):
@@ -1097,8 +1078,7 @@ class TestMappingConstraints(BaseAPITestCase):
                 "code": "SERVICE_CONFLICT",
                 "level": "error",
                 "desc": (
-                    f'No required service "service_required" for service '
-                    f'"{service_requires_service.display_name}" {service_requires_service.prototype.version}'
+                    f'No required service "service_required" for service ' f'"{service_requires_service.display_name}"'
                 ),
             },
         )
@@ -1190,11 +1170,9 @@ class TestBoundTo(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertIn(
-            'No component "will_have_bound_to" of service "service_with_bound_to" on host "h1" '
-            'for component "component_1" of service "service_1"',
-            response.json()["desc"],
-        )
+        data = response.json()
+        self.assertEqual(data["code"], "COMPONENT_CONSTRAINT_ERROR")
+        self.assertIn("Component `bound_to` restriction violated.", data["desc"])
 
 
 class GroupConfigRelatedTests(BaseAPITestCase):

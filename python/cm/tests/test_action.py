@@ -21,7 +21,7 @@ from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_409_CONFLICT
 
-from cm.api import add_hc, add_service_to_cluster
+from cm.api import add_service_to_cluster
 from cm.models import Action, MaintenanceMode, Prototype, ServiceComponent
 from cm.services.job.run._target_factories import prepare_ansible_environment
 from cm.services.job.run.repo import JobRepoImpl
@@ -144,7 +144,7 @@ expected_results = {
 }
 
 
-class ActionAllowTest(BaseTestCase):
+class ActionAllowTest(BusinessLogicMixin, BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
@@ -152,7 +152,7 @@ class ActionAllowTest(BaseTestCase):
         _, self.cluster, _ = self.upload_bundle_create_cluster_config_log(
             bundle_path=Path(self.test_files_dir, "cluster_test_host_actions_mm.tar"), cluster_name="test-cluster-1"
         )
-        service = add_service_to_cluster(
+        add_service_to_cluster(
             cluster=self.cluster,
             proto=Prototype.objects.get(name="service_1", display_name="Service 1", type="service"),
         )
@@ -169,13 +169,13 @@ class ActionAllowTest(BaseTestCase):
             cluster=self.cluster, prototype__name="component_2", prototype__display_name="Component 2 from Service 1"
         )
 
-        add_hc(
+        self.set_hostcomponent(
             cluster=self.cluster,
-            hc_in=[
-                {"host_id": self.host_1.pk, "service_id": service.pk, "component_id": component_1.pk},
-                {"host_id": self.host_2.pk, "service_id": service.pk, "component_id": component_1.pk},
-                {"host_id": self.host_2.pk, "service_id": service.pk, "component_id": component_2.pk},
-                {"host_id": self.host_3.pk, "service_id": service.pk, "component_id": component_2.pk},
+            entries=[
+                (self.host_1, component_1),
+                (self.host_2, component_1),
+                (self.host_2, component_2),
+                (self.host_3, component_2),
             ],
         )
 
