@@ -76,7 +76,7 @@ class TestComponent(BaseTestCase):
         )
 
         with self.assertRaisesRegex(
-            AdcmEx, 'No required service "service_2" for component "component_1_1" of service "service_1"'
+            AdcmEx, 'Services required for component "component_1_1" of service "service_1" are missing: service_2'
         ):
             change_host_component_mapping(
                 cluster_id=self.cluster.id,
@@ -88,10 +88,9 @@ class TestComponent(BaseTestCase):
         service_2 = ClusterObject.objects.create(prototype=self.service_proto_2, cluster=self.cluster)
         update_hierarchy_issues(obj=self.cluster)
         concerns = service_2.concerns.all()
-        # todo is it ok that now concern is both on cluster (mapping) and service (requires)?
-        self.assertEqual(len(concerns), 2)
-        requirement_concern = concerns.get(cause=ConcernCause.REQUIREMENT)
+        self.assertEqual(len(concerns), 1)
+        self.assertEqual(concerns.first().cause, ConcernCause.REQUIREMENT)
         self.assertIn(
             "${source} has an issue with requirement. Need to be installed: ${target}",
-            requirement_concern.reason.values(),
+            concerns.first().reason.values(),
         )

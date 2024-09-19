@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from itertools import chain
 from typing import Iterable
 
 from core.types import ADCMCoreType, CoreObjectDescriptor, ObjectID
@@ -109,14 +108,7 @@ def _get_target_and_placeholder_types(
             cluster_id = ClusterObject.objects.values_list("cluster_id", flat=True).get(pk=owner.id)
             placeholder_type_dto = PlaceholderTypeDTO(source="cluster_services", target="prototype")
 
-            required_services_names = {require["service"] for require in owner_prototype["requires"]} | set(
-                chain.from_iterable(
-                    (require["service"] for require in requires if "service" in require and "component" not in require)
-                    for requires in Prototype.objects.filter(parent_id=owner_prototype["id"]).values_list(
-                        "requires", flat=True
-                    )
-                )
-            )
+            required_services_names = {require["service"] for require in owner_prototype["requires"]}
             existing_required_services = set(
                 ClusterObject.objects.values_list("prototype__name", flat=True).filter(
                     cluster_id=cluster_id, prototype__name__in=required_services_names

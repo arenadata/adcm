@@ -32,7 +32,7 @@ from core.types import HostID
 def find_cluster_mapping_issues(
     restrictions: MappingRestrictions, named_mapping: NamedMapping, amount_of_hosts_in_cluster: HostsAmount
 ) -> tuple[MappingRestrictionViolation, ...]:
-    if not (restrictions.constraints or restrictions.required or restrictions.binds):
+    if not (restrictions.constraints or restrictions.required_components or restrictions.binds):
         return ()
 
     unsatisfied_restrictions = deque()
@@ -55,17 +55,24 @@ def find_cluster_mapping_issues(
             unsatisfied_restrictions.append(
                 MappingRestrictionViolation(
                     restriction=MappingRestrictionType.CONSTRAINT,
-                    component=component_key,
+                    owner=component_key,
                     message=f"{str(component_key).capitalize()} has unsatisfied constraint: {constraint.internal}",
                 )
             )
 
-    for dependant_object, required_components in restrictions.required.items():
-        if (
-            isinstance(dependant_object, ComponentRestrictionOwner) and not component_mapping.get(dependant_object)
-        ) or (isinstance(dependant_object, ServiceRestrictionOwner) and dependant_object.name not in named_mapping):
-            # object with restriction isn't added to cluster
+    for dependant_object, required_components in restrictions.required_components.items():
+        if isinstance(dependant_object, ComponentRestrictionOwner) and not component_mapping.get(dependant_object):
+            # restriction from unmapped dependant component shouldn't be checked
             continue
+
+        if isinstance(dependant_object, ServiceRestrictionOwner):
+            # In order for "requires" restriction from service to be performed, following condition should be met:
+            # 1. Service added to cluster
+            # 2. At least one component of this service should be mapped
+
+            at_least_one_mapped = any(named_mapping.get(dependant_object.name, {}).values())
+            if not at_least_one_mapped:
+                continue
 
         unsatisfied_requires = find_first_unmapped_component(
             required_components=required_components, named_mapping=named_mapping
@@ -74,8 +81,23 @@ def find_cluster_mapping_issues(
             unsatisfied_restrictions.append(
                 MappingRestrictionViolation(
                     restriction=MappingRestrictionType.REQUIRES,
-                    component=dependant_object,
+                    owner=dependant_object,
                     message=f"No required {unsatisfied_requires} for {dependant_object}",
+                )
+            )
+
+    for component_key, required_services in restrictions.required_services.items():
+        if not component_mapping.get(component_key):
+            continue
+
+        not_existing_services = required_services.difference(named_mapping)
+        if not_existing_services:
+            unsatisfied_restrictions.append(
+                MappingRestrictionViolation(
+                    restriction=MappingRestrictionType.REQUIRES,
+                    owner=component_key,
+                    message=f"Services required for {component_key} are "
+                    f"missing: {', '.join(sorted(not_existing_services))}",
                 )
             )
 
@@ -95,7 +117,7 @@ def find_cluster_mapping_issues(
             unsatisfied_restrictions.append(
                 MappingRestrictionViolation(
                     restriction=MappingRestrictionType.BOUND_TO,
-                    component=component_key,
+                    owner=component_key,
                     message=message,
                 )
             )

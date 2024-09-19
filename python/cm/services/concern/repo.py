@@ -27,7 +27,9 @@ from cm.models import ObjectType, Prototype
 
 
 def retrieve_bundle_restrictions(bundle_id: BundleID) -> BundleRestrictions:
-    mapping_restrictions = MappingRestrictions(constraints={}, required=defaultdict(deque), binds={})
+    mapping_restrictions = MappingRestrictions(
+        constraints={}, required_components=defaultdict(deque), required_services=defaultdict(set), binds={}
+    )
     service_requires: ServiceDependencies = defaultdict(set)
 
     for component_name, service_name, constraint, requires, bound_to in (
@@ -44,14 +46,16 @@ def retrieve_bundle_restrictions(bundle_id: BundleID) -> BundleRestrictions:
             #     so it's enough to "add" required service.
             #   - ones with `component` key adds restriction on mapping,
             #     because such component should be mapped on at least one host.
+            #
+            # "service" requires from component are relative only to mapping checks,
+            # it doesn't affect service-related concerns.
             required_service_name = requirement["service"]
             if required_component_name := requirement.get("component"):
-                # "service" requirements aren't checked for mapping issue
-                mapping_restrictions.required[key].append(
+                mapping_restrictions.required_components[key].append(
                     ComponentNameKey(component=required_component_name, service=required_service_name)
                 )
             else:
-                service_requires[key].add(required_service_name)
+                mapping_restrictions.required_services[key].add(required_service_name)
 
         constraint = parse_constraint(constraint)
         if constraint.checks:
@@ -72,11 +76,10 @@ def retrieve_bundle_restrictions(bundle_id: BundleID) -> BundleRestrictions:
 
         for requirement in requires:
             required_service_name = requirement["service"]
+            service_requires[key].add(required_service_name)
             if component_name := requirement.get("component"):
-                mapping_restrictions.required[key].append(
+                mapping_restrictions.required_components[key].append(
                     ComponentNameKey(component=component_name, service=required_service_name)
                 )
-            else:
-                service_requires[key].add(required_service_name)
 
     return BundleRestrictions(service_requires=service_requires, mapping=mapping_restrictions)
