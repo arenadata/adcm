@@ -18,7 +18,7 @@ export const useServicesPrimaryConfiguration = () => {
   const accessCheckStatus = useStore(({ adcm }) => adcm.entityConfiguration.accessCheckStatus);
 
   useEffect(() => {
-    if (service) {
+    if (service?.id) {
       // load all configurations for current HostProvider
       dispatch(
         getConfigurationsVersions({
@@ -31,7 +31,7 @@ export const useServicesPrimaryConfiguration = () => {
     return () => {
       dispatch(cleanup());
     };
-  }, [service, dispatch]);
+  }, [service?.id, service?.cluster.id, dispatch]);
 
   const configurationsOptions = useConfigurations({
     configVersions,
@@ -39,7 +39,7 @@ export const useServicesPrimaryConfiguration = () => {
   const { selectedConfigId, onReset } = configurationsOptions;
 
   useEffect(() => {
-    if (service && selectedConfigId) {
+    if (service?.id && selectedConfigId) {
       // load full config for selected configuration
       dispatch(
         getConfiguration({
@@ -52,7 +52,7 @@ export const useServicesPrimaryConfiguration = () => {
         }),
       );
     }
-  }, [dispatch, service, selectedConfigId]);
+  }, [service?.id, service?.cluster.id, dispatch, selectedConfigId]);
 
   const selectedConfiguration = selectedConfigId === 0 ? configurationsOptions.draftConfiguration : loadedConfiguration;
 

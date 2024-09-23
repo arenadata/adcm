@@ -22,7 +22,7 @@ export const useServiceComponentConfigGroupConfiguration = () => {
   const isVersionsLoading = useStore(({ adcm }) => adcm.entityConfiguration.isVersionsLoading);
 
   useEffect(() => {
-    if (cluster && service && component && serviceComponentConfigGroup) {
+    if (cluster?.id && service?.id && component?.id && serviceComponentConfigGroup?.id) {
       // load all configurations for current Cluster
       dispatch(
         getConfigurationsVersions({
@@ -40,7 +40,7 @@ export const useServiceComponentConfigGroupConfiguration = () => {
     return () => {
       dispatch(cleanup());
     };
-  }, [cluster, service, component, serviceComponentConfigGroup, dispatch]);
+  }, [cluster?.id, service?.id, component?.id, serviceComponentConfigGroup?.id, dispatch]);
 
   const configurationsOptions = useConfigurations({
     configVersions,
@@ -48,7 +48,7 @@ export const useServiceComponentConfigGroupConfiguration = () => {
   const { selectedConfigId, onReset } = configurationsOptions;
 
   useEffect(() => {
-    if (cluster && service && component && serviceComponentConfigGroup && selectedConfigId) {
+    if (cluster?.id && service?.id && component?.id && serviceComponentConfigGroup?.id && selectedConfigId) {
       // load full config for selected configuration
       dispatch(
         getConfiguration({
@@ -63,7 +63,7 @@ export const useServiceComponentConfigGroupConfiguration = () => {
         }),
       );
     }
-  }, [dispatch, cluster, service, component, serviceComponentConfigGroup, selectedConfigId]);
+  }, [dispatch, cluster?.id, service?.id, component?.id, serviceComponentConfigGroup?.id, selectedConfigId]);
 
   const selectedConfiguration = selectedConfigId === 0 ? configurationsOptions.draftConfiguration : loadedConfiguration;
 
