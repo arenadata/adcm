@@ -62,7 +62,7 @@ const Popover: React.FC<PopoverProps> = ({
   return (
     <FloatingPortal>
       {isOpen && (
-        <FloatingFocusManager context={context} initialFocus={initialFocus}>
+        <FloatingFocusManager context={context} initialFocus={initialFocus} returnFocus={false}>
           {React.cloneElement(popoverPanel, { ref, ...children.props, style: panelStyle, ...getFloatingProps() })}
         </FloatingFocusManager>
       )}

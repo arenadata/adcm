@@ -42,7 +42,7 @@ const Modal: React.FC<ModalProps> = ({
     <FloatingPortal>
       {isOpen && (
         <FloatingOverlay className={s.modalOverlay} lockScroll>
-          <FloatingFocusManager context={context}>
+          <FloatingFocusManager context={context} returnFocus={false}>
             <div
               ref={refs.setFloating}
               {...getFloatingProps()}
