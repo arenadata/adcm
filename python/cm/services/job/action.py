@@ -14,7 +14,6 @@ from dataclasses import dataclass, field
 from functools import partial
 from typing import TypeAlias
 
-from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.cluster.types import HostComponentEntry
 from core.job.dto import TaskPayloadDTO
 from core.types import ActionTargetDescriptor, CoreObjectDescriptor
@@ -52,7 +51,7 @@ from cm.services.job.checks import (
 from cm.services.job.inventory._config import update_configuration_for_inventory_inplace
 from cm.services.job.prepare import prepare_task_for_action
 from cm.services.job.run import run_task
-from cm.services.mapping import change_host_component_mapping, check_no_host_in_mm
+from cm.services.mapping import change_host_component_mapping
 from cm.status_api import send_task_status_update_event
 from cm.variant import process_variant
 
@@ -244,20 +243,13 @@ def _process_hostcomponent(
     if is_upgrade_action and not action.hostcomponentmap:
         topology = retrieve_cluster_topology(cluster_id=cluster.id)
         bundle_restrictions = retrieve_bundle_restrictions(bundle_id=int(action.upgrade.bundle_id))
-        new_topology = create_topology_with_new_mapping(
-            topology=topology,
-            new_mapping=(
-                HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
-                for entry in new_hostcomponent
-            ),
-        )
+
         check_mapping_restrictions(
             mapping_restrictions=bundle_restrictions.mapping,
-            topology=new_topology,
+            topology=topology,
             error_message_template=HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE,
         )
-        host_difference = find_hosts_difference(new_topology=new_topology, old_topology=topology)
-        check_no_host_in_mm(host_difference.mapped.all)
+
         return None, [], {}, is_upgrade_action
 
     host_map, post_upgrade_hc, delta = check_hostcomponentmap(cluster=cluster, action=action, new_hc=new_hostcomponent)
