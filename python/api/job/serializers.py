@@ -16,6 +16,7 @@ import json
 from ansible_plugin.utils import get_checklogs_data_by_job_id
 from cm.models import JobLog, JobStatus, LogStorage, TaskLog
 from cm.services.job.action import ActionRunPayload, run_action
+from core.cluster.types import HostComponentEntry
 from django.conf import settings
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
@@ -137,7 +138,10 @@ class RunTaskRetrieveSerializer(TaskRetrieveSerializer):
             payload=ActionRunPayload(
                 conf=validated_data.get("config", {}),
                 attr=validated_data.get("attr", {}),
-                hostcomponent=validated_data.get("hc", []),
+                hostcomponent={
+                    HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
+                    for entry in validated_data.get("hc", ())
+                },
                 verbose=validated_data.get("verbose", False),
             ),
         )

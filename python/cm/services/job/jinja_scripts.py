@@ -34,6 +34,7 @@ from cm.services.job.inventory import (
     get_cluster_vars,
 )
 from cm.services.job.inventory._types import HostGroupName
+from cm.services.job.types import TaskMappingDelta
 from cm.services.template import TemplateBuilder
 from cm.utils import get_on_fail_states
 
@@ -56,7 +57,7 @@ class JinjaScriptsEnvironment(TypedDict):
     action: ActionContext
 
 
-def get_env(task: TaskLog, delta: dict | None = None) -> JinjaScriptsEnvironment:
+def get_env(task: TaskLog, delta: TaskMappingDelta | None = None) -> JinjaScriptsEnvironment:
     action_group = None
     target_object = task.task_object
     if isinstance(target_object, ActionHostGroup):
@@ -74,7 +75,9 @@ def get_env(task: TaskLog, delta: dict | None = None) -> JinjaScriptsEnvironment
     )
     host_groups = _get_host_group_names_only(
         host_groups=detect_host_groups_for_cluster_bundle_action(
-            cluster_topology=cluster_topology, hosts_in_maintenance_mode=hosts_in_maintenance_mode, hc_delta=delta
+            cluster_topology=cluster_topology,
+            hosts_in_maintenance_mode=hosts_in_maintenance_mode,
+            hc_delta=delta or TaskMappingDelta(),
         )
     )
     if action_group:
@@ -98,7 +101,7 @@ def get_env(task: TaskLog, delta: dict | None = None) -> JinjaScriptsEnvironment
     )
 
 
-def get_job_specs_from_template(task_id: TaskID, delta: dict | None) -> Generator[JobSpec, None, None]:
+def get_job_specs_from_template(task_id: TaskID, delta: TaskMappingDelta | None) -> Generator[JobSpec, None, None]:
     task = TaskLog.objects.select_related("action", "action__prototype__bundle").get(pk=task_id)
 
     path_resolver = BundlePathResolver(bundle_hash=task.action.prototype.bundle.hash)

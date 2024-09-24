@@ -10,10 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
 from datetime import datetime
 
 from pydantic import BaseModel
 
+from core.cluster.types import HostComponentEntry
 from core.job.types import ExecutionStatus, HostComponentChanges
 
 
@@ -38,13 +40,14 @@ class LogCreateDTO(BaseModel):
     format: str
 
 
-class TaskPayloadDTO(BaseModel):
+@dataclass(slots=True)
+class TaskPayloadDTO:
     verbose: bool = False
 
     conf: dict | None = None
     attr: dict | None = None
 
-    hostcomponent: list[dict] | None = None
+    hostcomponent: list[HostComponentEntry] | None = None
     post_upgrade_hostcomponent: list[dict] | None = None
 
 

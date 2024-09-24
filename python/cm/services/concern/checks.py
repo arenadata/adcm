@@ -16,7 +16,13 @@ from typing import Iterable, Literal, NamedTuple, TypeAlias
 
 from core.cluster.types import ClusterTopology
 from core.concern.checks import find_cluster_mapping_issues, find_unsatisfied_service_requirements
-from core.concern.types import ComponentRestrictionOwner, ServiceDependencies, ServiceRestrictionOwner
+from core.concern.types import (
+    BundleRestrictions,
+    ComponentRestrictionOwner,
+    MappingRestrictions,
+    ServiceDependencies,
+    ServiceRestrictionOwner,
+)
 from core.converters import named_mapping_from_topology
 from core.types import ClusterID, ConfigID, ObjectID
 from django.db.models import Q
@@ -33,12 +39,8 @@ from cm.models import (
     PrototypeImport,
     ServiceComponent,
 )
+from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.cluster import retrieve_cluster_topology
-from cm.services.concern.repo import (
-    BundleRestrictions,
-    MappingRestrictions,
-    retrieve_bundle_restrictions,
-)
 from cm.services.config import retrieve_config_attr_pairs
 from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 

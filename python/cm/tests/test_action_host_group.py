@@ -96,7 +96,7 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
         group_inventory = get_inventory_data(
             target=ActionTargetDescriptor(id=self.action_group.id, type=ExtraActionTargetType.ACTION_HOST_GROUP),
             is_host_action=False,
-            delta={},
+            delta=None,
         )
 
         self.assertIn("target", group_inventory["all"]["children"])
@@ -105,7 +105,9 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
         )
 
         owner_inventory = get_inventory_data(
-            target=ActionTargetDescriptor(id=self.cluster.id, type=ADCMCoreType.CLUSTER), is_host_action=False, delta={}
+            target=ActionTargetDescriptor(id=self.cluster.id, type=ADCMCoreType.CLUSTER),
+            is_host_action=False,
+            delta=None,
         )
 
         group_inventory["all"]["children"].pop("target")

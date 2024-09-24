@@ -11,20 +11,20 @@
 # limitations under the License.
 
 from dataclasses import dataclass, field
-from functools import partial
-from typing import TypeAlias
+from typing import Iterable, TypeAlias
 
-from core.cluster.types import HostComponentEntry
+from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
+from core.cluster.types import ClusterTopology, HostComponentEntry
 from core.job.dto import TaskPayloadDTO
-from core.types import ActionTargetDescriptor, CoreObjectDescriptor
+from core.types import ActionTargetDescriptor, BundleID, CoreObjectDescriptor, HostID
 from django.conf import settings
-from django.db.transaction import atomic, on_commit
+from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
+from rest_framework.status import HTTP_409_CONFLICT
 
 from cm.adcm_config.checks import check_attr
 from cm.adcm_config.config import check_config_spec, get_prototype_config, process_config_spec, process_file_type
-from cm.api import get_hc
-from cm.converters import model_name_to_core_type, orm_object_to_action_target_type, orm_object_to_core_type
+from cm.converters import orm_object_to_action_target_type, orm_object_to_core_type
 from cm.errors import AdcmEx
 from cm.models import (
     ADCM,
@@ -40,18 +40,17 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.cluster import retrieve_cluster_topology
-from cm.services.concern.repo import retrieve_bundle_restrictions
+from cm.services.concern.checks import check_mapping_restrictions
 from cm.services.config.spec import convert_to_flat_spec_from_proto_flat_spec
-from cm.services.job.checks import (
-    HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE,
-    check_hostcomponentmap,
-    check_mapping_restrictions,
-)
+from cm.services.job._utils import check_delta_is_allowed, construct_delta_for_task
+from cm.services.job.constants import HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
 from cm.services.job.inventory._config import update_configuration_for_inventory_inplace
 from cm.services.job.prepare import prepare_task_for_action
 from cm.services.job.run import run_task
-from cm.services.mapping import change_host_component_mapping
+from cm.services.job.types import ActionHCRule, TaskMappingDelta
+from cm.services.mapping import change_host_component_mapping, check_no_host_in_mm, check_nothing
 from cm.status_api import send_task_status_update_event
 from cm.variant import process_variant
 
@@ -63,12 +62,28 @@ ActionTarget: TypeAlias = ObjectWithAction | ActionHostGroup
 class ActionRunPayload:
     conf: dict = field(default_factory=dict)
     attr: dict = field(default_factory=dict)
-    hostcomponent: list[dict] = field(default_factory=list)
+    hostcomponent: set[HostComponentEntry] = field(default_factory=set)
     verbose: bool = False
 
 
-def run_action(action: Action, obj: ActionTarget, payload: ActionRunPayload) -> TaskLog:
+def run_action(
+    action: Action, obj: ActionTarget, payload: ActionRunPayload, post_upgrade_hc: list[dict] | None = None
+) -> TaskLog:
+    task_payload = TaskPayloadDTO(
+        conf=payload.conf,
+        attr=payload.attr,
+        verbose=payload.verbose,
+        hostcomponent=None,
+        post_upgrade_hostcomponent=post_upgrade_hc,
+    )
+
     action_objects = _ActionLaunchObjects(target=obj, action=action)
+
+    is_upgrade_action = hasattr(action, "upgrade")
+    action_has_hc_acl = bool(action.hostcomponentmap)
+
+    if action_has_hc_acl and not action_objects.cluster:
+        raise AdcmEx(code="TASK_ERROR", msg="Only cluster objects can have action with hostcomponentmap")
 
     _check_no_target_conflict(target=action_objects.target, action=action)
     _check_no_blocking_concerns(lock_owner=action_objects.object_to_lock, action_name=action.name)
@@ -77,46 +92,63 @@ def run_action(action: Action, obj: ActionTarget, payload: ActionRunPayload) -> 
     spec, flat_spec = _process_run_config(
         action=action, owner=action_objects.owner, conf=payload.conf, attr=payload.attr
     )
-    host_map, post_upgrade_hc, delta, is_upgrade_action = _process_hostcomponent(
-        cluster=action_objects.cluster, action=action, new_hostcomponent=payload.hostcomponent
-    )
+
+    delta = TaskMappingDelta()
+    if action_objects.cluster and (action_has_hc_acl or is_upgrade_action):
+        topology = retrieve_cluster_topology(cluster_id=action_objects.cluster.id)
+        delta = _check_hostcomponent_and_get_delta(
+            bundle_id=int(action.prototype.bundle_id),
+            topology=topology,
+            hc_payload=payload.hostcomponent,
+            hc_rules=action.hostcomponentmap,
+            mapping_restriction_err_template=HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE if is_upgrade_action else "{}",
+        )
+        if action_has_hc_acl:
+            # current topology should be saved
+            task_payload.hostcomponent = {
+                HostComponentEntry(host_id=host_id, component_id=component_id)
+                for service in topology.services.values()
+                for component_id, component in service.components.items()
+                for host_id in component.hosts
+            }
 
     with atomic():
-        task = prepare_task_for_action(
-            target=ActionTargetDescriptor(
-                id=action_objects.target.id, type=orm_object_to_action_target_type(action_objects.target)
-            ),
-            owner=CoreObjectDescriptor(id=action_objects.owner.id, type=orm_object_to_core_type(action_objects.owner)),
-            action=action.pk,
-            payload=TaskPayloadDTO(
-                conf=payload.conf,
-                attr=payload.attr,
-                verbose=payload.verbose,
-                hostcomponent=get_hc(cluster=action_objects.cluster),
-                post_upgrade_hostcomponent=post_upgrade_hc,
-            ),
-            delta=delta,
+        owner = CoreObjectDescriptor(id=action_objects.owner.id, type=orm_object_to_core_type(action_objects.owner))
+        target = ActionTargetDescriptor(
+            id=action_objects.target.id, type=orm_object_to_action_target_type(action_objects.target)
         )
+        task = prepare_task_for_action(target=target, owner=owner, action=action.id, payload=task_payload, delta=delta)
 
-        on_commit(func=partial(send_task_status_update_event, task_id=task.id, status=JobStatus.CREATED.value))
+        orm_task = TaskLog.objects.get(id=task.id)
 
-        task_ = TaskLog.objects.get(id=task.id)
-        _finish_task_preparation(
-            task=task_,
-            owner=action_objects.owner,
-            cluster=action_objects.cluster,
-            host_map=host_map,
-            is_upgrade_action=is_upgrade_action,
-            payload=payload,
-            spec=spec,
-            flat_spec=flat_spec,
-        )
+        # Original check: `if host_map or (is_upgrade_action and host_map is not None)`.
+        # I believe second condition is the same as "is cluster action with hc"
+        if action_objects.cluster and (payload.hostcomponent or (is_upgrade_action and action_has_hc_acl)):
+            change_host_component_mapping(
+                cluster_id=action_objects.cluster.id,
+                bundle_id=int(action_objects.cluster.prototype.bundle_id),
+                flat_mapping=payload.hostcomponent,
+                checks_func=check_nothing,
+            )
 
-    re_apply_policy_for_jobs(action_object=action_objects.owner, task=task_)
+        if payload.conf:
+            new_conf = update_configuration_for_inventory_inplace(
+                configuration=payload.conf,
+                attributes=payload.attr,
+                specification=convert_to_flat_spec_from_proto_flat_spec(prototypes_flat_spec=flat_spec),
+                config_owner=owner,
+            )
+            process_file_type(obj=orm_task, spec=spec, conf=payload.conf)
+            orm_task.config = new_conf
+            orm_task.save(update_fields=["config"])
 
-    run_task(task_)
+        re_apply_policy_for_jobs(action_object=action_objects.owner, task=orm_task)
 
-    return task_
+    run_task(orm_task)
+
+    send_task_status_update_event(task_id=task.id, status=JobStatus.CREATED.value)
+
+    return orm_task
 
 
 class _ActionLaunchObjects:
@@ -225,67 +257,57 @@ def _process_run_config(action: Action, owner: ObjectWithAction, conf: dict, att
     return spec, flat_spec
 
 
-def _process_hostcomponent(
-    cluster: Cluster | None, action: Action, new_hostcomponent: list[dict]
-) -> tuple[list[tuple[ClusterObject, Host, ServiceComponent]] | None, list, dict[str, dict], bool]:
-    is_upgrade_action = hasattr(action, "upgrade")
+def _check_hostcomponent_and_get_delta(
+    bundle_id: BundleID,
+    topology: ClusterTopology,
+    hc_payload: set[HostComponentEntry],
+    hc_rules: list[ActionHCRule],
+    mapping_restriction_err_template: str,
+) -> TaskMappingDelta | None:
+    existing_hosts = set(topology.hosts)
+    existing_components = set(topology.component_ids)
 
-    if not cluster:
-        if not new_hostcomponent:
-            return None, [], {}, is_upgrade_action
+    for entry in hc_payload:
+        if entry.host_id not in existing_hosts:
+            raise AdcmEx(code="FOREIGN_HOST", http_code=HTTP_409_CONFLICT)
 
-        # Don't think it's even required check on action preparation,
-        # should be handled one level above
-        raise AdcmEx(code="TASK_ERROR", msg="Only cluster objects can have action with hostcomponentmap")
+        if entry.component_id not in existing_components:
+            raise AdcmEx(code="COMPONENT_NOT_FOUND", http_code=HTTP_409_CONFLICT)
 
-    # `check_hostcomponentmap` won't run checks in these conditions, because it's checking actions with `hc_acl`.
-    # But this code checks whether existing hostcomponent satisfies constraints from new bundle.
-    if is_upgrade_action and not action.hostcomponentmap:
-        topology = retrieve_cluster_topology(cluster_id=cluster.id)
-        bundle_restrictions = retrieve_bundle_restrictions(bundle_id=int(action.upgrade.bundle_id))
+    with_hc_acl = bool(hc_rules)
+    # if there aren't hc_acl rules, then `payload.hostcomponent` is irrelevant
+    new_topology = (
+        create_topology_with_new_mapping(topology=topology, new_mapping=hc_payload) if with_hc_acl else topology
+    )
 
-        check_mapping_restrictions(
-            mapping_restrictions=bundle_restrictions.mapping,
-            topology=topology,
-            error_message_template=HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE,
-        )
+    bundle_restrictions = retrieve_bundle_restrictions(bundle_id=bundle_id)
+    check_mapping_restrictions(
+        mapping_restrictions=bundle_restrictions.mapping,
+        topology=new_topology,
+        error_message_template=mapping_restriction_err_template,
+    )
 
-        return None, [], {}, is_upgrade_action
+    host_difference = find_hosts_difference(new_topology=new_topology, old_topology=topology)
+    check_no_host_in_mm(host_difference.mapped.all)
+    # some of newly mapped hosts may have concerns
+    _check_no_blocking_concerns_on_hosts(host_difference.mapped.all)
 
-    host_map, post_upgrade_hc, delta = check_hostcomponentmap(cluster=cluster, action=action, new_hc=new_hostcomponent)
+    if with_hc_acl:
+        delta = construct_delta_for_task(topology=new_topology, host_difference=host_difference)
+        check_delta_is_allowed(delta=delta, rules=hc_rules)
+        return delta
 
-    return host_map, post_upgrade_hc, delta, is_upgrade_action
+    return None
 
 
-def _finish_task_preparation(
-    task: TaskLog,
-    owner: ObjectWithAction,
-    cluster: Cluster | None,
-    host_map: list[tuple[ClusterObject, Host, ServiceComponent]] | None,
-    is_upgrade_action: bool,
-    payload: ActionRunPayload,
-    spec: dict,
-    flat_spec: dict,
-):
-    if host_map or (is_upgrade_action and host_map is not None):
-        change_host_component_mapping(
-            cluster_id=cluster.id,
-            bundle_id=cluster.prototype.bundle_id,
-            flat_mapping=(
-                HostComponentEntry(host_id=host.id, component_id=component.id) for (_, host, component) in host_map
-            ),
-            skip_checks=True,
-        )
-
-    if payload.conf:
-        new_conf = update_configuration_for_inventory_inplace(
-            configuration=payload.conf,
-            attributes=payload.attr,
-            specification=convert_to_flat_spec_from_proto_flat_spec(prototypes_flat_spec=flat_spec),
-            config_owner=CoreObjectDescriptor(
-                id=owner.pk, type=model_name_to_core_type(model_name=owner._meta.model_name)
-            ),
-        )
-        process_file_type(obj=task, spec=spec, conf=payload.conf)
-        task.config = new_conf
-        task.save(update_fields=["config"])
+def _check_no_blocking_concerns_on_hosts(hosts: Iterable[HostID]) -> None:
+    # this function should be a generic function like "retrieve_concerns_from_objects",
+    # but exact use cases (=> API) aren't clear now, so implementation is put out for later.
+    hosts_with_concerns = tuple(
+        Host.concerns.through.objects.filter(host_id__in=hosts, concernitem__blocking=True)
+        .values_list("host_id", flat=True)
+        .distinct()
+    )
+    if hosts_with_concerns:
+        host_names = ",".join(sorted(Host.objects.filter(id__in=hosts_with_concerns).values_list("fqdn", flat=True)))
+        raise AdcmEx(code="ISSUE_INTEGRITY_ERROR", msg=f"Hosts are locked or have issues: {host_names}")

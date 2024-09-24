@@ -68,7 +68,7 @@ def delete_service_from_api(service: ClusterObject) -> Response:
         run_action(
             action=delete_action,
             obj=service,
-            payload=ActionRunPayload(conf={}, attr={}, hostcomponent=[], verbose=False),
+            payload=ActionRunPayload(conf={}, attr={}, hostcomponent=set(), verbose=False),
         )
     else:
         delete_service(service=service)

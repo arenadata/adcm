@@ -16,6 +16,7 @@ from core.job.types import Task
 from core.types import ActionID, ActionTargetDescriptor, CoreObjectDescriptor
 
 from cm.services.job.run.repo import ActionRepoImpl, JobRepoImpl
+from cm.services.job.types import TaskMappingDelta
 
 
 def prepare_task_for_action(
@@ -23,7 +24,7 @@ def prepare_task_for_action(
     owner: CoreObjectDescriptor,
     action: ActionID,
     payload: TaskPayloadDTO,
-    delta: dict | None = None,
+    delta: TaskMappingDelta | None = None,
 ) -> Task:
     return compose_task(
         target=target,

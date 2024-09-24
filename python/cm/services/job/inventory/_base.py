@@ -63,12 +63,13 @@ from cm.services.job.inventory._types import (
     ObjectsInInventoryMap,
     ServiceNode,
 )
+from cm.services.job.types import TaskMappingDelta
 
 
 def get_inventory_data(
     target: ActionTargetDescriptor,
     is_host_action: bool,
-    delta: dict | None = None,
+    delta: TaskMappingDelta | None = None,
     related_objects: RelatedObjects | None = None,
 ) -> dict:
     if target.type == ExtraActionTargetType.ACTION_HOST_GROUP:
@@ -80,7 +81,7 @@ def get_inventory_data(
         # but it's inadequate situation and in "context of action target group" such mutations aren't expected.
         return _get_inventory_for_action_from_cluster_bundle(
             cluster_id=group.object.id if isinstance(group.object, Cluster) else group.object.cluster_id,
-            delta=delta or {},
+            delta=delta or TaskMappingDelta(),
             target_hosts=tuple((host.pk, host.fqdn) for host in group.hosts.all()),
         )
 
@@ -127,7 +128,7 @@ def get_inventory_data(
         raise RuntimeError(message)
 
     return _get_inventory_for_action_from_cluster_bundle(
-        cluster_id=cluster_id, delta=delta or {}, target_hosts=target_hosts
+        cluster_id=cluster_id, delta=delta or TaskMappingDelta(), target_hosts=target_hosts
     )
 
 
@@ -154,7 +155,7 @@ def get_cluster_vars(topology: ClusterTopology) -> ClusterVars:
 
 
 def _get_inventory_for_action_from_cluster_bundle(
-    cluster_id: int, delta: dict, target_hosts: Iterable[tuple[HostID, HostName]]
+    cluster_id: int, delta: TaskMappingDelta, target_hosts: Iterable[tuple[HostID, HostName]]
 ) -> dict:
     host_groups: dict[HostGroupName, set[tuple[HostID, HostName]]] = {}
 
