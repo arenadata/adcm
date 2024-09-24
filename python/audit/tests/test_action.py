@@ -20,10 +20,10 @@ from cm.models import (
     Action,
     Bundle,
     Cluster,
-    ClusterObject,
     ConfigLog,
     Host,
     Prototype,
+    Service,
     ServiceComponent,
     TaskLog,
 )
@@ -63,12 +63,12 @@ class TestActionAudit(BaseTestCase):
         )
         self.action_create_view = "api.action.views.create"
 
-    def get_cluster_service_component(self) -> tuple[Cluster, ClusterObject, ServiceComponent]:
+    def get_cluster_service_component(self) -> tuple[Cluster, Service, ServiceComponent]:
         cluster = Cluster.objects.create(
             prototype=Prototype.objects.create(bundle=self.bundle, type="cluster"),
             name="test_cluster",
         )
-        service = ClusterObject.objects.create(
+        service = Service.objects.create(
             prototype=Prototype.objects.create(
                 bundle=self.bundle,
                 type="service",

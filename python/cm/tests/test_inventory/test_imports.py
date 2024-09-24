@@ -20,8 +20,8 @@ from cm.models import (
     Action,
     ADCMModel,
     Cluster,
-    ClusterObject,
     PrototypeImport,
+    Service,
     ServiceComponent,
 )
 from cm.services.job.inventory import get_imports_for_inventory, get_inventory_data
@@ -108,7 +108,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         )
 
     @staticmethod
-    def bind_objects(*entries: tuple[Cluster | ClusterObject, Iterable[Cluster | ClusterObject]]) -> None:
+    def bind_objects(*entries: tuple[Cluster | Service, Iterable[Cluster | Service]]) -> None:
         for import_object, export_objects in entries:
             multibind_data: list[DataForMultiBind] = []
 

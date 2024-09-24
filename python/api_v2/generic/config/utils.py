@@ -24,13 +24,13 @@ from cm.models import (
     Action,
     ADCMEntity,
     Cluster,
-    ClusterObject,
     ConfigLog,
     GroupConfig,
     Host,
     HostProvider,
     Prototype,
     PrototypeConfig,
+    Service,
     ServiceComponent,
 )
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
@@ -45,7 +45,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_
 
 from api_v2.api_schema import ErrorSerializer
 
-ParentObject: TypeAlias = Cluster, ClusterObject, ServiceComponent, HostProvider, Host, GroupConfig
+ParentObject: TypeAlias = Cluster, Service, ServiceComponent, HostProvider, Host, GroupConfig
 
 
 class Field(ABC):

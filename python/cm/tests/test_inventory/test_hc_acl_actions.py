@@ -11,7 +11,7 @@
 # limitations under the License.
 
 
-from cm.models import Action, ClusterObject, ServiceComponent
+from cm.models import Action, Service, ServiceComponent
 from cm.services.job.types import HcAclAction
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
@@ -31,7 +31,7 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
         self.host_2 = self.add_host(
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
         )
-        self.service: ClusterObject = self.add_services_to_cluster(
+        self.service: Service = self.add_services_to_cluster(
             service_names=["service_two_components"], cluster=self.cluster_1
         ).get()
         self.component_1 = ServiceComponent.objects.get(prototype__name="component_1", service=self.service)

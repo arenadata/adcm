@@ -24,7 +24,7 @@ from adcm.permissions import (
 from audit.alt.api import audit_update
 from audit.alt.hooks import adjust_denied_on_404_result, extract_current_from_response, extract_previous_from_object
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterObject, Host, ServiceComponent
+from cm.models import Cluster, Host, Service, ServiceComponent
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import update_mm_objects
 from django.db.models import F
@@ -168,7 +168,7 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
             user=self.request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, pk=self.kwargs["cluster_pk"]
         )
         service = get_object_for_user(
-            user=self.request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, pk=self.kwargs["service_pk"]
+            user=self.request.user, perms=VIEW_SERVICE_PERM, klass=Service, pk=self.kwargs["service_pk"]
         )
 
         return super().get_queryset(*args, **kwargs).filter(cluster=cluster, service=service)

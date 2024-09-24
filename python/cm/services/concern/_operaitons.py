@@ -17,7 +17,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 
 from cm.converters import core_type_to_model
-from cm.models import ClusterObject, ConcernCause, ConcernItem, ConcernType, ObjectType, Prototype
+from cm.models import ConcernCause, ConcernItem, ConcernType, ObjectType, Prototype, Service
 from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, PlaceholderTypeDTO, build_concern_reason
 
 _issue_template_map = {
@@ -93,9 +93,7 @@ def _get_target_and_placeholder_types(
                     type=ObjectType.SERVICE,
                     required=True,
                 )
-                .exclude(
-                    id__in=ClusterObject.objects.values_list("prototype_id", flat=True).filter(cluster_id=owner.id)
-                )
+                .exclude(id__in=Service.objects.values_list("prototype_id", flat=True).filter(cluster_id=owner.id))
                 .first()
             )
 
@@ -105,12 +103,12 @@ def _get_target_and_placeholder_types(
         case ConcernMessage.UNSATISFIED_REQUIREMENT_ISSUE:
             # owner type = service
 
-            cluster_id = ClusterObject.objects.values_list("cluster_id", flat=True).get(pk=owner.id)
+            cluster_id = Service.objects.values_list("cluster_id", flat=True).get(pk=owner.id)
             placeholder_type_dto = PlaceholderTypeDTO(source="cluster_services", target="prototype")
 
             required_services_names = {require["service"] for require in owner_prototype["requires"]}
             existing_required_services = set(
-                ClusterObject.objects.values_list("prototype__name", flat=True).filter(
+                Service.objects.values_list("prototype__name", flat=True).filter(
                     cluster_id=cluster_id, prototype__name__in=required_services_names
                 )
             )

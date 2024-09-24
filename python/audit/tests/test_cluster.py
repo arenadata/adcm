@@ -20,7 +20,6 @@ from cm.models import (
     Bundle,
     Cluster,
     ClusterBind,
-    ClusterObject,
     ConfigLog,
     Host,
     HostComponent,
@@ -29,6 +28,7 @@ from cm.models import (
     Prototype,
     PrototypeExport,
     PrototypeImport,
+    Service,
     ServiceComponent,
     Upgrade,
 )
@@ -72,7 +72,7 @@ class TestClusterAudit(BaseTestCase):
             type="service",
             display_name="test_service",
         )
-        self.service = ClusterObject.objects.create(
+        self.service = Service.objects.create(
             prototype=self.service_prototype,
             cluster=self.cluster,
         )
@@ -109,7 +109,7 @@ class TestClusterAudit(BaseTestCase):
     def check_log(
         self,
         log: AuditLog,
-        obj: Cluster | Host | HostComponent | ClusterObject | ServiceComponent,
+        obj: Cluster | Host | HostComponent | Service | ServiceComponent,
         obj_name: str,
         obj_type: AuditObjectType,
         operation_name: str,
@@ -204,7 +204,7 @@ class TestClusterAudit(BaseTestCase):
         PrototypeExport.objects.create(prototype=service_prototype, name="service_export")
 
         cluster = Cluster.objects.create(prototype=cluster_prototype, name="Export cluster")
-        service = ClusterObject.objects.create(prototype=service_prototype, cluster=cluster)
+        service = Service.objects.create(prototype=service_prototype, cluster=cluster)
 
         PrototypeImport.objects.create(prototype=self.cluster_prototype, name="Export_cluster")
         PrototypeImport.objects.create(prototype=self.cluster_prototype, name="Export_service")
@@ -348,7 +348,7 @@ class TestClusterAudit(BaseTestCase):
             type="service",
             display_name="new_test_service",
         )
-        service = ClusterObject.objects.create(
+        service = Service.objects.create(
             prototype=service_prototype,
             cluster_id=cluster_1.pk,
         )
@@ -391,7 +391,7 @@ class TestClusterAudit(BaseTestCase):
         self.check_cluster_delete_failed_not_found(log=log)
 
     def test_delete_failed(self):
-        cluster_pks = ClusterObject.objects.all().values_list("pk", flat=True).order_by("-pk")
+        cluster_pks = Service.objects.all().values_list("pk", flat=True).order_by("-pk")
         res = self.client.delete(path=reverse(viewname="v1:cluster-details", kwargs={"cluster_id": cluster_pks[0] + 1}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

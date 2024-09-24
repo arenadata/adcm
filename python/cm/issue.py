@@ -28,13 +28,13 @@ from cm.models import (
     ADCMEntity,
     Bundle,
     Cluster,
-    ClusterObject,
     ConcernCause,
     ConcernItem,
     ConcernType,
     JobLog,
     ObjectType,
     Prototype,
+    Service,
     ServiceComponent,
     TaskLog,
 )
@@ -57,7 +57,7 @@ def check_service_requires(cluster: Cluster, proto: Prototype) -> None:
         return
 
     for require in proto.requires:
-        req_service = ClusterObject.objects.filter(prototype__name=require["service"], cluster=cluster)
+        req_service = Service.objects.filter(prototype__name=require["service"], cluster=cluster)
         obj_prototype = Prototype.objects.filter(name=require["service"], type="service")
 
         if comp_name := require.get("component"):

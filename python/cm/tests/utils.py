@@ -22,7 +22,6 @@ from cm.models import (
     ADCMEntity,
     Bundle,
     Cluster,
-    ClusterObject,
     ConcernItem,
     ConfigLog,
     GroupConfig,
@@ -33,6 +32,7 @@ from cm.models import (
     ObjectConfig,
     Prototype,
     PrototypeConfig,
+    Service,
     ServiceComponent,
     TaskLog,
 )
@@ -95,12 +95,12 @@ def gen_service(
     bundle: Bundle = None,
     prototype: Prototype = None,
     config: ObjectConfig = None,
-) -> ClusterObject:
+) -> Service:
     """Generate service of specified cluster and prototype"""
     if not prototype:
         bundle = bundle or cluster.prototype.bundle or gen_bundle()
         prototype = gen_prototype(bundle, "service")
-    return ClusterObject.objects.create(
+    return Service.objects.create(
         cluster=cluster,
         prototype=prototype,
         config=config,
@@ -108,7 +108,7 @@ def gen_service(
 
 
 def gen_component(
-    service: ClusterObject,
+    service: Service,
     bundle: Bundle = None,
     prototype: Prototype = None,
     config: ObjectConfig = None,

@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from adcm.serializers import EmptySerializer
-from cm.models import Bundle, ClusterObject, Prototype
+from cm.models import Bundle, Prototype, Service
 from cm.schemas import RequiresUISchema
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.serializers import (
@@ -305,10 +305,10 @@ class BundleServiceUIPrototypeSerializer(ServicePrototypeSerializer):
     def get_selected(self, obj):
         cluster = self.context.get("cluster")
         try:
-            ClusterObject.objects.get(cluster=cluster, prototype=obj)
+            Service.objects.get(cluster=cluster, prototype=obj)
 
             return True
-        except ClusterObject.DoesNotExist:
+        except Service.DoesNotExist:
             return False
 
     @staticmethod

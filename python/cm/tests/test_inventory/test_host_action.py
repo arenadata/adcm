@@ -13,7 +13,7 @@
 
 from api_v2.service.utils import bulk_add_services_to_cluster
 
-from cm.models import Action, ClusterObject, ObjectType, Prototype, ServiceComponent
+from cm.models import Action, ObjectType, Prototype, Service, ServiceComponent
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
@@ -33,7 +33,7 @@ class TestHostAction(BaseInventoryTestCase):
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster
         )
 
-        self.service: ClusterObject = bulk_add_services_to_cluster(
+        self.service: Service = bulk_add_services_to_cluster(
             cluster=self.cluster,
             prototypes=Prototype.objects.filter(
                 type=ObjectType.SERVICE, name="service_one_component", bundle=self.cluster.prototype.bundle

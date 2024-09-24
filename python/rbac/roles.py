@@ -15,13 +15,13 @@ from cm.models import (
     Action,
     ActionHostGroup,
     ADCMEntity,
-    ClusterObject,
     ConfigLog,
     GroupConfig,
     Host,
     HostComponent,
     JobLog,
     LogStorage,
+    Service,
     ServiceComponent,
     TaskLog,
 )
@@ -357,7 +357,7 @@ class ParentRole(AbstractRole):
 
             if obj.prototype.type == "cluster":
                 if "service" in parametrized_by or "component" in parametrized_by:
-                    for service in ClusterObject.obj.filter(cluster=obj):
+                    for service in Service.obj.filter(cluster=obj):
                         self.find_and_apply(obj=service, policy=policy, role=role)
                         if "component" in parametrized_by:
                             for comp in ServiceComponent.obj.filter(service=service):
@@ -396,7 +396,7 @@ class ParentRole(AbstractRole):
                 )
                 assign_group_perm(
                     policy=policy,
-                    permission=Permission.objects.get(codename="view_clusterobject"),
+                    permission=Permission.objects.get(codename="view_service"),
                     obj=obj.service,
                 )
             elif obj.prototype.type == "provider":

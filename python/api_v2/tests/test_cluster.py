@@ -18,9 +18,9 @@ from cm.models import (
     ADCMEntityStatus,
     AnsibleConfig,
     Cluster,
-    ClusterObject,
     ObjectType,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from cm.services.status.client import FullStatusMap
@@ -346,7 +346,7 @@ class TestCluster(BaseAPITestCase):
         response = (self.client.v2[self.cluster_1] / "services").post(data=[{"prototype_id": service_prototype.pk}])
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(response.json()[0]["name"], service_prototype.name)
-        self.assertEqual(ClusterObject.objects.get(cluster_id=self.cluster_1.pk).name, "service_1")
+        self.assertEqual(Service.objects.get(cluster_id=self.cluster_1.pk).name, "service_1")
 
     def test_retrieve_ansible_config_success(self):
         expected_response = {"adcmMeta": {}, "config": {"defaults": {"forks": 5}}}
@@ -705,7 +705,7 @@ class TestClusterMM(BaseAPITestCase):
 
             self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="cluster").count(), 1)
             self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="servicecomponent").count(), 2)
-            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="clusterobject").count(), 2)
+            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="service").count(), 2)
             self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="host").count(), 2)
 
     def test_adcm_5051_change_mm_perm_fail(self):
@@ -734,7 +734,7 @@ class TestClusterMM(BaseAPITestCase):
 
             self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="cluster").count(), 0)
             self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="servicecomponent").count(), 0)
-            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="clusterobject").count(), 0)
+            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="service").count(), 0)
             self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="host").count(), 2)
 
     def test_adcm_5051_change_mm_perm_host_only_fail(self):

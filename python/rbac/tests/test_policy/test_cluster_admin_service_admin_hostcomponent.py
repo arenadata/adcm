@@ -12,7 +12,7 @@
 
 
 from adcm.tests.base import APPLICATION_JSON
-from cm.models import ClusterObject, Host, ServiceComponent
+from cm.models import Host, Service, ServiceComponent
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
@@ -29,7 +29,7 @@ class ClusterAdminServiceAdminHostcomponentTestCase(PolicyBaseTestCase):
         self.new_user_2 = self.get_new_user(
             username="new_user_2", password=self.new_user_password, group_pk=self.new_user_group_2.pk
         )
-        self.service = ClusterObject.objects.get(prototype__name="service_1")
+        self.service = Service.objects.get(prototype__name="service_1")
 
         self.create_policy(role_name="Cluster Administrator", obj=self.cluster, group_pk=self.new_user_group.pk)
         self.create_policy(role_name="Service Administrator", obj=self.service, group_pk=self.new_user_group_2.pk)

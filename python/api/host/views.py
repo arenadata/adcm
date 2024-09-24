@@ -22,11 +22,11 @@ from cm.api import add_host_to_cluster, delete_host, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.models import (
     Cluster,
-    ClusterObject,
     GroupConfig,
     Host,
     HostComponent,
     HostProvider,
+    Service,
     ServiceComponent,
 )
 from cm.services.maintenance_mode import get_maintenance_mode_response
@@ -79,7 +79,7 @@ class HostFilter(drf_filters.FilterSet):
         label="GroupConfig",
     )
     hostcomponent__service_id = drf_filters.ModelChoiceFilter(
-        queryset=ClusterObject.objects.order_by("id"),
+        queryset=Service.objects.order_by("id"),
         field_name="hostcomponent__service_id",
         label="HostComponentService",
         distinct=True,

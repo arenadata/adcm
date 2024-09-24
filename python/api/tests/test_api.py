@@ -20,12 +20,12 @@ from cm.issue import lock_affected_objects
 from cm.models import (
     Bundle,
     Cluster,
-    ClusterObject,
     Host,
     HostComponent,
     ObjectConfig,
     ObjectType,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from cm.tests.utils import (
@@ -889,7 +889,7 @@ class TestAPI2(BaseTestCase):
 
     @patch("cm.api.reset_hc_map")
     def test_save_hc(self, mock_reset_hc_map):
-        cluster_object = ClusterObject.objects.create(prototype=self.service_prototype, cluster=self.cluster)
+        cluster_object = Service.objects.create(prototype=self.service_prototype, cluster=self.cluster)
         host = Host.objects.create(prototype=self.cluster_prototype, cluster=self.cluster)
         component = Prototype.objects.create(
             parent=self.component_prototype,

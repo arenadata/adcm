@@ -19,7 +19,7 @@ from adcm.permissions import (
     get_object_for_user,
 )
 from cm.api import multi_bind
-from cm.models import Cluster, ClusterObject, PrototypeImport
+from cm.models import Cluster, PrototypeImport, Service
 from django.db.transaction import atomic
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -43,12 +43,10 @@ class ImportViewSet(ADCMGenericViewSet, ABC):
         ...
 
     @abstractmethod
-    def detect_cluster_service_bind_arguments(
-        self, obj: Cluster | ClusterObject
-    ) -> tuple[Cluster, ClusterObject | None]:
+    def detect_cluster_service_bind_arguments(self, obj: Cluster | Service) -> tuple[Cluster, Service | None]:
         ...
 
-    def get_object_and_check_perm(self, request) -> Cluster | ClusterObject:
+    def get_object_and_check_perm(self, request) -> Cluster | Service:
         kwargs_get, kwargs_check = self.detect_get_check_kwargs()
 
         if self.action == "list":

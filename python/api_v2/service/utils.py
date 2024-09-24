@@ -17,11 +17,11 @@ from cm.errors import AdcmEx
 from cm.models import (
     ADCMEntity,
     Cluster,
-    ClusterObject,
     ConfigLog,
     ObjectConfig,
     ObjectType,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from cm.services.cluster import retrieve_clusters_topology
@@ -34,9 +34,9 @@ from rbac.models import re_apply_object_policy
 
 
 @transaction.atomic
-def bulk_add_services_to_cluster(cluster: Cluster, prototypes: QuerySet[Prototype]) -> QuerySet[ClusterObject]:
-    ClusterObject.objects.bulk_create(objs=[ClusterObject(cluster=cluster, prototype=proto) for proto in prototypes])
-    services = ClusterObject.objects.filter(cluster=cluster, prototype__in=prototypes).select_related("prototype")
+def bulk_add_services_to_cluster(cluster: Cluster, prototypes: QuerySet[Prototype]) -> QuerySet[Service]:
+    Service.objects.bulk_create(objs=[Service(cluster=cluster, prototype=proto) for proto in prototypes])
+    services = Service.objects.filter(cluster=cluster, prototype__in=prototypes).select_related("prototype")
     bulk_init_config(objects=services)
 
     service_proto_service_map = {service.prototype.pk: service for service in services}
@@ -126,7 +126,7 @@ def validate_service_prototypes(
     if "unaccepted" in {proto.license for proto in prototypes}:
         return None, AdcmEx(code="LICENSE_ERROR", msg="All licenses must be accepted")
 
-    if ClusterObject.objects.filter(prototype__in=prototypes, cluster=cluster).exists():
+    if Service.objects.filter(prototype__in=prototypes, cluster=cluster).exists():
         return None, AdcmEx(code="SERVICE_CONFLICT")
 
     if {proto.bundle.pk for proto in prototypes if not proto.shared}.difference({cluster.prototype.bundle.pk}):

@@ -60,11 +60,11 @@ from cm.models import (
     Action,
     ActionHostGroup,
     Cluster,
-    ClusterObject,
     Host,
     HostProvider,
     JobLog,
     LogStorage,
+    Service,
     ServiceComponent,
     SubAction,
     TaskLog,
@@ -78,7 +78,7 @@ class JobRepoImpl:
     _supported_script_types = tuple(entry.value for entry in ScriptType)
     _selector_fields_map = {
         Cluster: {"object_id": F("id"), "object_name": F("name"), "type_name": Value(ADCMCoreType.CLUSTER.value)},
-        ClusterObject: {
+        Service: {
             "object_id": F("id"),
             "object_name": F("prototype__display_name"),
             "type_name": Value(ADCMCoreType.SERVICE.value),
@@ -320,16 +320,14 @@ class JobRepoImpl:
             case (ADCMCoreType.HOST, ADCMCoreType.CLUSTER | ADCMCoreType.SERVICE | ADCMCoreType.COMPONENT):
                 query = query.union(cls._get_host_related_selector(host_id=target.id, action_owner=owner))
             case (ADCMCoreType.SERVICE, _):
-                cluster_id = ClusterObject.objects.values_list("cluster_id", flat=True).get(id=target.id)
+                cluster_id = Service.objects.values_list("cluster_id", flat=True).get(id=target.id)
                 query = query.union(Cluster.objects.values(**cls._selector_fields_map[Cluster]).filter(id=cluster_id))
             case (ADCMCoreType.COMPONENT, _):
                 cluster_id, service_id = ServiceComponent.objects.values_list("cluster_id", "service_id").get(
                     id=target.id
                 )
                 cluster_qs = Cluster.objects.values(**cls._selector_fields_map[Cluster]).filter(id=cluster_id)
-                service_qs = ClusterObject.objects.values(**cls._selector_fields_map[ClusterObject]).filter(
-                    id=service_id
-                )
+                service_qs = Service.objects.values(**cls._selector_fields_map[Service]).filter(id=service_id)
                 query = query.union(cluster_qs).union(service_qs)
 
         return {entry["type_name"]: {"id": entry["object_id"], "name": entry["object_name"]} for entry in query.all()}
@@ -347,7 +345,7 @@ class JobRepoImpl:
 
         if action_owner.type == ADCMCoreType.SERVICE:
             query = query.union(
-                ClusterObject.objects.values(**cls._selector_fields_map[ClusterObject]).filter(
+                Service.objects.values(**cls._selector_fields_map[Service]).filter(
                     prototype_id=action_owner.id, cluster_id=cluster_id
                 )
             )
@@ -355,9 +353,7 @@ class JobRepoImpl:
             service_id, component_id = ServiceComponent.objects.values_list("service_id", "id").get(
                 cluster_id=cluster_id, prototype_id=action_owner.id
             )
-            query = query.union(
-                ClusterObject.objects.values(**cls._selector_fields_map[ClusterObject]).filter(id=service_id)
-            )
+            query = query.union(Service.objects.values(**cls._selector_fields_map[Service]).filter(id=service_id))
             query = query.union(
                 ServiceComponent.objects.values(**cls._selector_fields_map[ServiceComponent]).filter(id=component_id)
             )

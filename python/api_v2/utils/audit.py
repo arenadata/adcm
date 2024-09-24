@@ -26,11 +26,11 @@ from cm.models import (
     ADCMCoreType,
     Bundle,
     Cluster,
-    ClusterObject,
     Host,
     HostProvider,
     JobLog,
     Prototype,
+    Service,
     ServiceComponent,
     TaskLog,
 )
@@ -64,11 +64,11 @@ class ExtractID:
 
 @dataclass(slots=True)
 class ServiceAuditObjectCreator(IDBasedAuditObjectCreator):
-    model = ClusterObject
+    model = Service
     name_field = "prototype__display_name"
 
     def get_name(self, id_: str | int) -> str | None:
-        names = ClusterObject.objects.values_list("cluster__name", "prototype__display_name").filter(id=id_).first()
+        names = Service.objects.values_list("cluster__name", "prototype__display_name").filter(id=id_).first()
         if not names:
             return None
 
@@ -117,7 +117,7 @@ parent_cluster_from_lookup = _extract_cluster_from(extract_id=ExtractID(field="c
 _extract_service_from = partial(
     GeneralAuditObjectRetriever,
     audit_object_type=AuditObjectType.SERVICE,
-    create_new=ServiceAuditObjectCreator(model=ClusterObject),
+    create_new=ServiceAuditObjectCreator(model=Service),
 )
 parent_service_from_lookup = _extract_service_from(extract_id=ExtractID(field="service_pk").from_lookup_kwargs)
 service_from_lookup = _extract_service_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
@@ -370,11 +370,11 @@ def nested_host_does_exist(hook: AuditHook) -> bool:
 
 
 def service_does_exist(hook: AuditHook) -> bool:
-    return object_does_exist(hook=hook, model=ClusterObject)
+    return object_does_exist(hook=hook, model=Service)
 
 
 service_with_parents_specified_in_path_exists = partial(
-    object_does_exist, model=ClusterObject, arg_model_field_map={"cluster_pk": "cluster_id"}
+    object_does_exist, model=Service, arg_model_field_map={"cluster_pk": "cluster_id"}
 )
 
 component_with_parents_specified_in_path_exists = partial(
@@ -518,7 +518,7 @@ def set_service_name_from_object(
     exception: Exception | None,  # noqa: ARG001
 ) -> None:
     service_name = (
-        ClusterObject.objects.filter(pk=call_arguments.get("pk"))
+        Service.objects.filter(pk=call_arguments.get("pk"))
         .select_related("prototype__display_name")
         .only("prototype__display_name")
         .values_list("prototype__display_name", flat=True)
@@ -630,11 +630,7 @@ def get_audit_object_name(object_id: int, model_name: str) -> str:
         case ADCMCoreType.CLUSTER:
             names = Cluster.objects.values_list("name").filter(id=object_id).first()
         case ADCMCoreType.SERVICE:
-            names = (
-                ClusterObject.objects.values_list("cluster__name", "prototype__display_name")
-                .filter(id=object_id)
-                .first()
-            )
+            names = Service.objects.values_list("cluster__name", "prototype__display_name").filter(id=object_id).first()
         case ADCMCoreType.COMPONENT:
             names = (
                 ServiceComponent.objects.values_list(

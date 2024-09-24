@@ -15,7 +15,7 @@ from collections import defaultdict
 from adcm.permissions import DjangoObjectPermissionsAudit
 from adcm.serializers import EmptySerializer
 from api.base_view import GenericUIViewSet
-from cm.models import Cluster, ClusterObject, Host, HostProvider, ObjectType
+from cm.models import Cluster, Host, HostProvider, ObjectType, Service
 from rbac.models import ObjectType as RBACObjectType
 from rbac.models import Role, RoleTypes
 from rest_framework.decorators import action
@@ -87,7 +87,7 @@ class RoleViewSet(ListModelMixin, GenericUIViewSet):
             or RBACObjectType.COMPONENT.value in role.parametrized_by_type
         ):
             _services = defaultdict(list)
-            for service in ClusterObject.objects.all():
+            for service in Service.objects.all():
                 _services[service.display_name].append(
                     {
                         "name": service.cluster.display_name,

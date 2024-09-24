@@ -30,13 +30,13 @@ from cm.models import (
     Action,
     ActionHostGroup,
     Cluster,
-    ClusterObject,
     ConcernType,
     ConfigLog,
     Host,
     HostComponent,
     HostProvider,
     JobStatus,
+    Service,
     ServiceComponent,
     TaskLog,
 )
@@ -48,7 +48,7 @@ from cm.services.job.run import run_task
 from cm.status_api import send_task_status_update_event
 from cm.variant import process_variant
 
-ObjectWithAction: TypeAlias = ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+ObjectWithAction: TypeAlias = ADCM | Cluster | Service | ServiceComponent | HostProvider | Host
 ActionTarget: TypeAlias = ObjectWithAction | ActionHostGroup
 
 
@@ -135,7 +135,7 @@ class _ActionLaunchObjects:
         self.target = target
         self.object_to_lock = self.target
 
-        if isinstance(target, (Cluster, ClusterObject, ServiceComponent)):
+        if isinstance(target, (Cluster, Service, ServiceComponent)):
             self.owner = target
             self.cluster = target if isinstance(target, Cluster) else target.cluster
         elif action.host_action and isinstance(target, Host):
@@ -144,7 +144,7 @@ class _ActionLaunchObjects:
                 case "component":
                     self.owner = ServiceComponent.objects.get(cluster=self.cluster, prototype=action.prototype)
                 case "service":
-                    self.owner = ClusterObject.objects.get(cluster=self.cluster, prototype=action.prototype)
+                    self.owner = Service.objects.get(cluster=self.cluster, prototype=action.prototype)
                 case "cluster":
                     self.owner = self.cluster
                 case _:
@@ -220,7 +220,7 @@ def _process_run_config(action: Action, owner: ObjectWithAction, conf: dict, att
 
 def _process_hostcomponent(
     cluster: Cluster | None, action: Action, new_hostcomponent: list[dict]
-) -> tuple[list[tuple[ClusterObject, Host, ServiceComponent]] | None, list, dict[str, dict], bool]:
+) -> tuple[list[tuple[Service, Host, ServiceComponent]] | None, list, dict[str, dict], bool]:
     is_upgrade_action = hasattr(action, "upgrade")
 
     if not cluster:

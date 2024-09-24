@@ -32,12 +32,12 @@ from cm.converters import core_type_to_model
 from cm.models import (
     ActionHostGroup,
     Cluster,
-    ClusterObject,
     Host,
     HostProvider,
     MaintenanceMode,
     ObjectType,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from cm.services.cluster import retrieve_clusters_objects_maintenance_mode, retrieve_clusters_topology
@@ -365,7 +365,7 @@ def _get_objects_basic_info(
                         CoreObjectDescriptor(type=ADCMCoreType.SERVICE, id=service_info["id"])
                     ],
                 )
-                for service_info in ClusterObject.objects.values(
+                for service_info in Service.objects.values(
                     *basic_fields,
                     **basic_spec_fields,
                     version=F("prototype__version"),

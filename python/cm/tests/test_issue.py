@@ -30,11 +30,11 @@ from cm.models import (
     ADCMEntity,
     Bundle,
     ClusterBind,
-    ClusterObject,
     ConcernCause,
     ObjectType,
     Prototype,
     PrototypeImport,
+    Service,
 )
 from cm.services.cluster import perform_host_to_cluster_map
 from cm.services.concern.checks import object_has_required_services_issue, object_imports_has_issue
@@ -115,7 +115,7 @@ class CreateIssueTest(BaseTestCase):
         issue_type = ConcernCause.CONFIG
         add_issue_on_linked_objects(self.cluster, issue_type)
         cluster_issue = self.cluster.get_own_issue(issue_type)
-        ClusterObject.objects.filter(cluster=self.cluster).delete()
+        Service.objects.filter(cluster=self.cluster).delete()
         Prototype.objects.filter(bundle=self.cluster.prototype.bundle, type="service").update(required=True)
 
         new_service = gen_service(self.cluster, self.cluster.prototype.bundle)

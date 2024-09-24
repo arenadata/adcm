@@ -17,11 +17,11 @@ from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
 
 from cm.models import (
     Action,
-    ClusterObject,
     Host,
     HostComponent,
     MaintenanceMode,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from cm.services.job.action import ActionRunPayload, run_action
@@ -32,7 +32,7 @@ from cm.status_api import send_object_update_event
 def _change_mm_via_action(
     prototype: Prototype,
     action_name: str,
-    obj: Host | ClusterObject | ServiceComponent,
+    obj: Host | Service | ServiceComponent,
     serializer: Serializer,
 ) -> Serializer:
     action = Action.objects.filter(prototype=prototype, name=action_name).first()
@@ -48,7 +48,7 @@ def _change_mm_via_action(
 
 
 def get_maintenance_mode_response(
-    obj: Host | ClusterObject | ServiceComponent,
+    obj: Host | Service | ServiceComponent,
     serializer: Serializer,
 ) -> Response:
     if obj.maintenance_mode_attr == MaintenanceMode.CHANGING:
@@ -81,7 +81,7 @@ def get_maintenance_mode_response(
             )
 
         prototype = obj.cluster.prototype
-    elif isinstance(obj, ClusterObject):
+    elif isinstance(obj, Service):
         obj_name = "service"
     elif isinstance(obj, ServiceComponent):
         obj_name = "component"

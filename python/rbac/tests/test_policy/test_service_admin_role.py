@@ -13,11 +13,11 @@
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase, BusinessLogicMixin
 from cm.models import (
     Cluster,
-    ClusterObject,
     Host,
     ObjectConfig,
     ObjectType,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from django.urls import reverse
@@ -98,7 +98,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase, BusinessLogicMixin):
             data={"prototype_id": Prototype.objects.get(bundle=self.cluster_bundle, type=ObjectType.SERVICE).pk},
             content_type=APPLICATION_JSON,
         )
-        return ClusterObject.objects.get(pk=response.json()["id"])
+        return Service.objects.get(pk=response.json()["id"])
 
     def create_host_component(self):
         response: Response = self.client.post(

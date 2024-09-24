@@ -19,12 +19,12 @@ from cm.models import (
     Bundle,
     Cluster,
     ClusterBind,
-    ClusterObject,
     Host,
     HostComponent,
     HostProvider,
     MaintenanceMode,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from cm.services.job.action import ActionRunPayload
@@ -51,7 +51,7 @@ class TestServiceAPI(BaseTestCase):
             type="service",
             display_name="test_service",
         )
-        self.service = ClusterObject.objects.create(prototype=self.service_prototype, cluster=self.cluster)
+        self.service = Service.objects.create(prototype=self.service_prototype, cluster=self.cluster)
         self.component = ServiceComponent.objects.create(
             prototype=Prototype.objects.create(
                 bundle=self.bundle,
@@ -300,14 +300,14 @@ class TestServiceAPI(BaseTestCase):
             path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_1_prototype.pk},
         )
-        service_1 = ClusterObject.objects.get(pk=service_1_response.data["id"])
+        service_1 = Service.objects.get(pk=service_1_response.data["id"])
 
         service_2_prototype = Prototype.objects.get(name="service_2", type="service")
         service_2_response: Response = self.client.post(
             path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_2_prototype.pk},
         )
-        service_2 = ClusterObject.objects.get(pk=service_2_response.data["id"])
+        service_2 = Service.objects.get(pk=service_2_response.data["id"])
 
         component_2_1 = ServiceComponent.objects.get(service=service_2, prototype__name="component_1")
         component_1_1 = ServiceComponent.objects.get(service=service_1, prototype__name="component_1")
@@ -342,7 +342,7 @@ class TestServiceAPI(BaseTestCase):
 
     def test_delete_export_bind_fail(self):
         cluster_2 = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_2")
-        service_2 = ClusterObject.objects.create(prototype=self.service_prototype, cluster=cluster_2)
+        service_2 = Service.objects.create(prototype=self.service_prototype, cluster=cluster_2)
         ClusterBind.objects.create(
             cluster=cluster_2,
             service=service_2,
@@ -359,7 +359,7 @@ class TestServiceAPI(BaseTestCase):
 
     def test_delete_import_bind_success(self):
         cluster_2 = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_2")
-        service_2 = ClusterObject.objects.create(prototype=self.service_prototype, cluster=cluster_2)
+        service_2 = Service.objects.create(prototype=self.service_prototype, cluster=cluster_2)
         ClusterBind.objects.create(
             cluster=self.cluster,
             service=self.service,
@@ -387,7 +387,7 @@ class TestServiceAPI(BaseTestCase):
             path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_with_component_prototype.pk},
         )
-        service_with_component = ClusterObject.objects.get(pk=service_with_component_response.data["id"])
+        service_with_component = Service.objects.get(pk=service_with_component_response.data["id"])
 
         service_with_dependent_component_prototype = Prototype.objects.get(
             name="with_dependent_component",
@@ -397,7 +397,7 @@ class TestServiceAPI(BaseTestCase):
             path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_with_dependent_component_prototype.pk},
         )
-        service_with_dependent_component = ClusterObject.objects.get(
+        service_with_dependent_component = Service.objects.get(
             pk=service_with_dependent_component_response.data["id"],
         )
 

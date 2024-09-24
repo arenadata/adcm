@@ -263,7 +263,7 @@ class ObjectConfig(ADCMModel):
         object_types = [
             "adcm",
             "cluster",
-            "clusterobject",
+            "service",
             "servicecomponent",
             "hostprovider",
             "host",
@@ -566,9 +566,8 @@ class Host(ADCMEntity):
         return self.maintenance_mode
 
 
-class ClusterObject(ADCMEntity):
-    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
+class Service(ADCMEntity):
+    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE, related_name="services")
     group_config = GenericRelation(
         "GroupConfig",
         object_id_field="object_id",
@@ -669,7 +668,7 @@ class ClusterObject(ADCMEntity):
 
 class ServiceComponent(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
     group_config = GenericRelation(
         "GroupConfig",
@@ -926,7 +925,7 @@ class GroupConfig(ADCMModel):
 
         if isinstance(self.object, (Cluster, HostProvider)):
             hosts = self.object.host_set.order_by("id")
-        elif isinstance(self.object, ClusterObject):
+        elif isinstance(self.object, Service):
             hosts = Host.objects.filter(cluster=self.object.cluster, hostcomponent__service=self.object).distinct()
         elif isinstance(self.object, ServiceComponent):
             hosts = Host.objects.filter(cluster=self.object.cluster, hostcomponent__component=self.object).distinct()
@@ -1145,7 +1144,7 @@ class Action(AbstractAction):
                 if Host.objects.filter(cluster=obj, maintenance_mode=MaintenanceMode.ON).exists():
                     return MANY_HOSTS_IN_MM
 
-                related_services = ClusterObject.objects.filter(cluster=obj)
+                related_services = Service.objects.filter(cluster=obj)
 
                 if any(service.maintenance_mode == MaintenanceMode.ON for service in related_services):
                     return SERVICE_IN_MM
@@ -1218,7 +1217,7 @@ class SubAction(AbstractSubAction):
 class HostComponent(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     host = models.ForeignKey(Host, on_delete=models.CASCADE)
-    service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
     component = models.ForeignKey(ServiceComponent, on_delete=models.CASCADE)
     state = models.CharField(max_length=1000, default="created")
 
@@ -1291,10 +1290,10 @@ class PrototypeImport(ADCMModel):
 
 class ClusterBind(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE, null=True, default=None)
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, null=True, default=None)
     source_cluster = models.ForeignKey(Cluster, related_name="source_cluster", on_delete=models.CASCADE)
     source_service = models.ForeignKey(
-        ClusterObject,
+        Service,
         related_name="source_service",
         on_delete=models.CASCADE,
         null=True,
@@ -1629,7 +1628,7 @@ class ConcernItem(ADCMModel):
         return chain(
             self.adcm_entities.order_by("id"),
             self.cluster_entities.order_by("id"),
-            self.clusterobject_entities.order_by("id"),
+            self.service_entities.order_by("id"),
             self.servicecomponent_entities.order_by("id"),
             self.hostprovider_entities.order_by("id"),
             self.host_entities.order_by("id"),
@@ -1640,7 +1639,7 @@ class ConcernItem(ADCMModel):
         return (
             self.adcm_entities,
             self.cluster_entities,
-            self.clusterobject_entities,
+            self.service_entities,
             self.servicecomponent_entities,
             self.hostprovider_entities,
             self.host_entities,
@@ -1652,7 +1651,7 @@ class ADCMEntityStatus(models.TextChoices):
     DOWN = "down", "down"
 
 
-MainObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+MainObject: TypeAlias = Cluster | Service | ServiceComponent | HostProvider | Host
 
 _CMObjects = ADCM | MainObject | Bundle | Prototype | ConfigLog | GroupConfig | Action | Upgrade | TaskLog | JobLog
 
@@ -1660,8 +1659,8 @@ CM_MODEL_MAP: dict[str, type[_CMObjects]] = {
     "adcm": ADCM,
     "cluster": Cluster,
     "clusters": Cluster,
-    "service": ClusterObject,
-    "services": ClusterObject,
+    "service": Service,
+    "services": Service,
     "component": ServiceComponent,
     "components": ServiceComponent,
     "provider": HostProvider,

@@ -121,10 +121,10 @@ class RBACBaseTestCase(BaseTestCase):
     def create_permissions(self):
         self.add_host_perm = cook_perm("add", "host")
         self.view_cluster_perm = cook_perm("view", "cluster")
-        self.view_service_perm = cook_perm("view", "clusterobject")
+        self.view_service_perm = cook_perm("view", "service")
         self.view_component_perm = cook_perm("view", "servicecomponent")
         self.change_cluster_config_perm = cook_perm("change_config_of", "cluster")
-        self.change_service_config_perm = cook_perm("change_config_of", "clusterobject")
+        self.change_service_config_perm = cook_perm("change_config_of", "service")
         self.change_component_config_perm = cook_perm("change_config_of", "servicecomponent")
         self.change_host_config_perm = cook_perm("change_config_of", "host")
         self.change_provider_config_perm = cook_perm("change_config_of", "hostprovider")

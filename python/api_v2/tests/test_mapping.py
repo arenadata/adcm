@@ -13,7 +13,6 @@
 from cm.models import (
     Bundle,
     Cluster,
-    ClusterObject,
     ConcernCause,
     ConcernItem,
     GroupConfig,
@@ -21,6 +20,7 @@ from cm.models import (
     HostComponent,
     MaintenanceMode,
     Prototype,
+    Service,
     ServiceComponent,
     Upgrade,
 )
@@ -1210,12 +1210,12 @@ class GroupConfigRelatedTests(BaseAPITestCase):
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_2", cluster=self.cluster_1
         )
 
-        self.service_1 = ClusterObject.objects.get(prototype__name="service_1", cluster=self.cluster_1)
+        self.service_1 = Service.objects.get(prototype__name="service_1", cluster=self.cluster_1)
         self.component_1_from_s1 = ServiceComponent.objects.get(prototype__name="component_1", service=self.service_1)
         self.component_2_from_s1 = ServiceComponent.objects.get(prototype__name="component_2", service=self.service_1)
 
     def _prepare_config_group_via_api(
-        self, obj: Cluster | ClusterObject | ServiceComponent, hosts: list[Host], name: str, description: str = ""
+        self, obj: Cluster | Service | ServiceComponent, hosts: list[Host], name: str, description: str = ""
     ) -> GroupConfig:
         response = self.client.v2[obj, "config-groups"].post(data={"name": name, "description": description})
         self.assertEqual(response.status_code, HTTP_201_CREATED)

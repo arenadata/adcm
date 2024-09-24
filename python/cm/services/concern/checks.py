@@ -23,20 +23,20 @@ from typing_extensions import Self
 from cm.models import (
     Cluster,
     ClusterBind,
-    ClusterObject,
     Host,
     HostProvider,
     ObjectConfig,
     ObjectType,
     Prototype,
     PrototypeImport,
+    Service,
     ServiceComponent,
 )
 from cm.services.cluster import retrieve_clusters_topology
 from cm.services.config import retrieve_config_attr_pairs
 from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 
-ObjectWithConfig: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+ObjectWithConfig: TypeAlias = Cluster | Service | ServiceComponent | HostProvider | Host
 HasIssue: TypeAlias = bool
 RequiresEntry: TypeAlias = dict[Literal["service", "component"], str]
 ConstraintDBFormat: TypeAlias = tuple[str] | tuple[int | str, int | str]
@@ -173,7 +173,7 @@ def object_configuration_has_issue(target: ObjectWithConfig) -> HasIssue:
     return target.id in filter_objects_with_configuration_issues(config_spec, target)
 
 
-def object_imports_has_issue(target: Cluster | ClusterObject) -> HasIssue:
+def object_imports_has_issue(target: Cluster | Service) -> HasIssue:
     prototype_id = target.prototype_id
     prototype_imports = PrototypeImport.objects.filter(prototype_id=prototype_id)
     required_import_names = set(prototype_imports.values_list("name", flat=True).filter(required=True))
@@ -203,7 +203,7 @@ def object_has_required_services_issue(cluster: Cluster) -> HasIssue:
     if (required_count := required_protos.count()) == 0:
         return False
 
-    existing_required_objects = ClusterObject.objects.filter(cluster=cluster, prototype__in=required_protos)
+    existing_required_objects = Service.objects.filter(cluster=cluster, prototype__in=required_protos)
     return existing_required_objects.count() != required_count
 
 
@@ -242,7 +242,7 @@ def filter_objects_with_configuration_issues(config_spec: FlatSpec, *objects: Ob
     return objects_with_issues
 
 
-def service_requirements_has_issue(service: ClusterObject) -> HasIssue:
+def service_requirements_has_issue(service: Service) -> HasIssue:
     return bool(find_unsatisfied_requirements(cluster_id=service.cluster_id, requires=service.prototype.requires))
 
 
@@ -267,7 +267,7 @@ def find_unsatisfied_requirements(
 
     if names_of_required_services:
         for missing_service_name in names_of_required_services.difference(
-            ClusterObject.objects.values_list("prototype__name", flat=True).filter(cluster_id=cluster_id)
+            Service.objects.values_list("prototype__name", flat=True).filter(cluster_id=cluster_id)
         ):
             missing_requirements.append(MissingRequirement(type="service", name=missing_service_name))
 
@@ -371,9 +371,7 @@ def extract_data_for_requirements_check(
     component_prototype_map: dict[ComponentID, tuple[PrototypeID, ServiceID, PrototypeID]] = {}
     existing_objects_map: dict[ComponentExternalRequirement | ServiceExternalRequirement, ComponentID | ServiceID] = {
         ServiceExternalRequirement(name=service_name): service_id
-        for service_id, service_name in ClusterObject.objects.values_list("id", "prototype__name")
-        .filter(**query)
-        .distinct()
+        for service_id, service_name in Service.objects.values_list("id", "prototype__name").filter(**query).distinct()
     }
 
     query = {"id__in": topology.component_ids}

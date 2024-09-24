@@ -17,12 +17,12 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import (
     Bundle,
     Cluster,
-    ClusterObject,
     ConfigLog,
     GroupConfig,
     Host,
     ObjectConfig,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from django.conf import settings
@@ -90,7 +90,7 @@ class TestGroupConfigAudit(BaseTestCase):
         )
 
     def get_service(self):
-        return ClusterObject.objects.create(
+        return Service.objects.create(
             prototype=Prototype.objects.create(
                 bundle=self.bundle,
                 type="service",
@@ -108,7 +108,7 @@ class TestGroupConfigAudit(BaseTestCase):
                 display_name="test_component",
             ),
             cluster=self.cluster,
-            service=ClusterObject.objects.create(
+            service=Service.objects.create(
                 prototype=Prototype.objects.create(bundle=self.bundle, type="service"),
                 cluster=self.cluster,
                 config=self.config,

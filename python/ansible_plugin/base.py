@@ -28,7 +28,7 @@ from ansible.errors import AnsibleActionFail
 from ansible.module_utils._text import to_native
 from ansible.plugins.action import ActionBase
 from cm.converters import core_type_to_model
-from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from cm.models import Cluster, Host, HostProvider, Service, ServiceComponent
 from core.types import ADCMCoreType, CoreObjectDescriptor, ObjectID
 from django.conf import settings
 from django.db.models import ObjectDoesNotExist
@@ -55,7 +55,7 @@ class BaseStrictModel(BaseModel):
 
 
 TargetTypeLiteral = Literal["cluster", "service", "component", "provider", "host"]
-ProductORMObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+ProductORMObject: TypeAlias = Cluster | Service | ServiceComponent | HostProvider | Host
 
 
 class VarsContextSection(BaseModel):
@@ -239,7 +239,7 @@ def _from_target_description(
                     raise PluginRuntimeError(message=message)
 
                 return CoreObjectDescriptor(
-                    id=ClusterObject.objects.values_list("id", flat=True).get(
+                    id=Service.objects.values_list("id", flat=True).get(
                         cluster_id=context.cluster_id, prototype__name=target_description.service_name
                     ),
                     type=ADCMCoreType.SERVICE,

@@ -22,10 +22,10 @@ from django.db.models import F, JSONField, Q, Value
 from cm.converters import core_type_to_db_record_type, db_record_type_to_core_type
 from cm.models import (
     Cluster,
-    ClusterObject,
     Host,
     HostProvider,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from cm.services.config import retrieve_config_attr_pairs
@@ -72,7 +72,7 @@ def extract_objects_before_upgrade(
             )
             for orm_type, core_type in (
                 (Cluster, ADCMCoreType.CLUSTER),
-                (ClusterObject, ADCMCoreType.SERVICE),
+                (Service, ADCMCoreType.SERVICE),
                 (ServiceComponent, ADCMCoreType.COMPONENT),
                 (Host, ADCMCoreType.HOST),
                 (HostProvider, ADCMCoreType.HOSTPROVIDER),

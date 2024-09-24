@@ -31,13 +31,13 @@ from cm.issue import (
 )
 from cm.models import (
     Cluster,
-    ClusterObject,
     ConcernCause,
     Host,
     HostComponent,
     MaintenanceMode,
     ObjectType,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from cm.services.action_host_group import ActionHostGroupRepo
@@ -144,11 +144,11 @@ def retrieve_mapping_data(
     }
 
     for service in (
-        ClusterObject.objects.filter(cluster=cluster)
+        Service.objects.filter(cluster=cluster)
         .select_related("prototype")
         .prefetch_related("servicecomponent_set", "servicecomponent_set__prototype")
     ):
-        service: ClusterObject
+        service: Service
 
         mapping_data["existing_services_names"].append(service.prototype.name)
         mapping_data["services"][service.pk] = ServiceData.model_validate(obj=service)
@@ -322,7 +322,7 @@ def _handle_mapping_policies(mapping_data: MappingData) -> None:
     )
     for policy in Policy.objects.filter(
         object__object_id__in=service_ids_in_mappings,
-        object__content_type=ContentType.objects.get_for_model(model=ClusterObject),
+        object__content_type=ContentType.objects.get_for_model(model=Service),
     ):
         policy.apply()
 

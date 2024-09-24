@@ -12,7 +12,7 @@
 
 from adcm.permissions import check_custom_perm, get_object_for_user
 from audit.utils import audit
-from cm.models import Cluster, ClusterObject, HostComponent, ServiceComponent
+from cm.models import Cluster, HostComponent, Service, ServiceComponent
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import update_mm_objects
 from cm.status_api import make_ui_component_status
@@ -39,14 +39,14 @@ def get_component_queryset(queryset, user, kwargs):
         cluster = get_object_for_user(user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"])
         service = get_object_for_user(
             user,
-            "cm.view_clusterobject",
-            ClusterObject,
+            "cm.view_service",
+            Service,
             cluster=cluster,
             id=kwargs["service_id"],
         )
         queryset = queryset.filter(cluster=cluster, service=service)
     elif "service_id" in kwargs:
-        service = get_object_for_user(user, "cm.view_clusterobject", ClusterObject, id=kwargs["service_id"])
+        service = get_object_for_user(user, "cm.view_service", Service, id=kwargs["service_id"])
         queryset = queryset.filter(service=service)
 
     return queryset

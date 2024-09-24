@@ -1,6 +1,6 @@
 ---
 
-version: 13
+version: 14
 
 roles:
   - name: Add host
@@ -193,7 +193,7 @@ roles:
     any_category: true
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: service
     child:
       - Get service object
       - View service config
@@ -317,7 +317,7 @@ roles:
           - name: cluster
             codenames:
               - view
-          - name: clusterobject
+          - name: service
             codenames:
               - view
           - name: servicecomponent
@@ -416,11 +416,11 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: service
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - change_config_of
 
@@ -434,7 +434,7 @@ roles:
     any_category: true
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: service
     child:
       - Get service object
       - View service config
@@ -570,11 +570,11 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: service
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - view_import_of
 
@@ -608,7 +608,7 @@ roles:
           - name: cluster
             codenames:
               - view
-          - name: clusterobject
+          - name: service
             codenames:
               - view
 
@@ -657,11 +657,11 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: service
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - view_import_of
               - change_import_of
@@ -689,7 +689,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - add
 
@@ -733,12 +733,12 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: service
     any_category: true
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - view
               - delete
@@ -879,7 +879,7 @@ roles:
           - name: cluster
             codenames:
               - view
-          - name: clusterobject
+          - name: service
             codenames:
               - view
           - name: servicecomponent
@@ -1371,7 +1371,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - view
 
@@ -1384,11 +1384,11 @@ roles:
       - service
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: service
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - view
 
@@ -1465,7 +1465,7 @@ roles:
       - service
     init_params:
       app_name: cm
-      model: ClusterObject
+      model: service
     module_name: rbac.roles
     class_name: ParentRole
     child:
@@ -1635,7 +1635,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames:
               - view
               - change_maintenance_mode
@@ -1772,7 +1772,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames: *ahg_view_hostnames
 
   - <<: *view_action_host_group_hidden
@@ -1795,7 +1795,7 @@ roles:
         models:
           - name: cluster
             codenames: *ahg_view_hostnames
-          - name: clusterobject
+          - name: service
             codenames: *ahg_view_hostnames
           - name: servicecomponent
             codenames: *ahg_view_hostnames
@@ -1822,7 +1822,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: clusterobject
+          - name: service
             codenames: *ahg_edit_hostnames
 
   - <<: *edit_action_host_group_hidden

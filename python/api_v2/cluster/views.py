@@ -34,12 +34,12 @@ from cm.errors import AdcmEx
 from cm.models import (
     AnsibleConfig,
     Cluster,
-    ClusterObject,
     ConcernType,
     Host,
     HostComponent,
     ObjectType,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from cm.services.cluster import (
@@ -234,7 +234,7 @@ class ClusterViewSet(
 ):
     queryset = (
         Cluster.objects.prefetch_related("prototype", "concerns")
-        .prefetch_related("clusterobject_set__prototype")
+        .prefetch_related("services__prototype")
         .order_by("name")
     )
     permission_required = [VIEW_CLUSTER_PERM]
@@ -330,7 +330,7 @@ class ClusterViewSet(
         cluster = self.get_object()
         prototypes = (
             Prototype.objects.filter(type=ObjectType.SERVICE, bundle=cluster.prototype.bundle)
-            .exclude(id__in=cluster.clusterobject_set.all().values_list("prototype", flat=True))
+            .exclude(id__in=cluster.services.all().values_list("prototype", flat=True))
             .order_by("display_name")
         )
         serializer = self.get_serializer_class()(instance=prototypes, many=True)
@@ -341,7 +341,7 @@ class ClusterViewSet(
         methods=["get"],
         detail=True,
         url_path="statuses/services",
-        queryset=ClusterObject.objects.select_related("prototype").order_by("prototype__display_name"),
+        queryset=Service.objects.select_related("prototype").order_by("prototype__display_name"),
         permission_required=[VIEW_SERVICE_PERM],
         filterset_class=ClusterServiceFilter,
     )

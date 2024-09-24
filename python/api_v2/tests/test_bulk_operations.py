@@ -13,9 +13,9 @@
 from itertools import chain, product
 
 from cm.models import (
-    ClusterObject,
     ConfigLog,
     ObjectConfig,
+    Service,
     ServiceComponent,
 )
 from rest_framework.response import Response
@@ -81,7 +81,7 @@ class TestBulkAddServices(BaseAPITestCase):
             self.client.login(**self.test_user_credentials)
 
             for request_type, obj in product(["object", "config"], chain(services_qs, components_qs)):
-                obj: ClusterObject | ServiceComponent
+                obj: Service | ServiceComponent
                 if request_type == "object":
                     viewname = self.client.v2[obj]
                 elif request_type == "config":

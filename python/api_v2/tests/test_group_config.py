@@ -15,7 +15,7 @@ from typing import Iterable, NamedTuple, TypeAlias
 
 from adcm.tests.client import WithID
 from cm.converters import orm_object_to_core_type
-from cm.models import Cluster, ClusterObject, ConfigLog, GroupConfig, Host, HostProvider, ServiceComponent
+from cm.models import Cluster, ConfigLog, GroupConfig, Host, HostProvider, Service, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -32,7 +32,7 @@ from api_v2.tests.base import BaseAPITestCase
 CONFIG_GROUPS = "config-groups"
 HOST_CANDIDATES = "host-candidates"
 
-ObjectWithConfigHostGroup: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider
+ObjectWithConfigHostGroup: TypeAlias = Cluster | Service | ServiceComponent | HostProvider
 
 
 class BaseClusterGroupConfigTestCase(BaseAPITestCase):

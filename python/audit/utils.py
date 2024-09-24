@@ -44,9 +44,9 @@ from cm.models import (
     AnsibleConfig,
     Cluster,
     ClusterBind,
-    ClusterObject,
     Host,
     HostProvider,
+    Service,
     ServiceComponent,
     TaskLog,
     Upgrade,
@@ -150,7 +150,7 @@ def _get_deleted_obj(
             if "cluster_id" in kwargs:
                 deleted_obj = Cluster.objects.filter(pk=kwargs["cluster_id"]).first()
             elif "service_id" in kwargs:
-                deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
+                deleted_obj = Service.objects.filter(pk=kwargs["service_id"]).first()
             elif "provider_id" in kwargs:
                 deleted_obj = HostProvider.objects.filter(pk=kwargs["provider_id"]).first()
 
@@ -235,7 +235,7 @@ def _get_object_changes(prev_data: dict, current_obj: Model, api_version: int) -
             serializer_class = HostAuditSerializer
         elif api_version == 2:
             serializer_class = HostAuditSerializerV2
-    elif isinstance(current_obj, ClusterObject):
+    elif isinstance(current_obj, Service):
         if api_version == 1:
             serializer_class = ServiceAuditSerializer
         elif api_version == 2:
@@ -376,7 +376,7 @@ def _detect_deleted_object_for_v1(
             deleted_obj = HostProvider.objects.filter(pk=view.kwargs["provider_id"]).first()
 
         if "service_id" in kwargs:
-            deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
+            deleted_obj = Service.objects.filter(pk=kwargs["service_id"]).first()
 
         if "bind_id" in kwargs:
             deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
@@ -500,7 +500,7 @@ def audit(func):
             if "host_id" in kwargs and "maintenance-mode" in request.path:
                 deleted_obj = Host.objects.filter(pk=kwargs["host_id"]).first()
             elif "service_id" in kwargs and "maintenance-mode" in request.path:
-                deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
+                deleted_obj = Service.objects.filter(pk=kwargs["service_id"]).first()
             elif "component_id" in kwargs and "maintenance-mode" in request.path:
                 deleted_obj = ServiceComponent.objects.filter(pk=kwargs["component_id"]).first()
 

@@ -18,11 +18,11 @@ from cm.models import (
     Action,
     Bundle,
     Cluster,
-    ClusterObject,
     Host,
     HostComponent,
     MaintenanceMode,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from cm.services.job.action import ActionRunPayload
@@ -44,7 +44,7 @@ class TestComponentAPI(BaseTestCase):
             type="service",
             display_name="test_service",
         )
-        self.service = ClusterObject.objects.create(prototype=service_prototype, cluster=self.cluster)
+        self.service = Service.objects.create(prototype=service_prototype, cluster=self.cluster)
         self.component = ServiceComponent.objects.create(
             prototype=Prototype.objects.create(
                 bundle=bundle,
@@ -102,7 +102,7 @@ class TestComponentAPI(BaseTestCase):
             path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_prototype.pk},
         )
-        service = ClusterObject.objects.get(pk=service_response.data["id"])
+        service = Service.objects.get(pk=service_response.data["id"])
 
         component_1 = ServiceComponent.objects.get(service=service, prototype__name="first_component")
         component_2 = ServiceComponent.objects.get(service=service, prototype__name="second_component")
