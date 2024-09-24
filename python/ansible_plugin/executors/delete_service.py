@@ -14,7 +14,7 @@ from typing import Collection
 
 from cm.api import delete_service
 from cm.models import ClusterBind, ClusterObject, HostComponent, Prototype
-from cm.services.mapping import change_host_component_mapping
+from cm.services.mapping import change_host_component_mapping, check_nothing
 from core.cluster.types import HostComponentEntry
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
@@ -79,7 +79,7 @@ class ADCMDeleteServicePluginExecutor(ADCMAnsiblePluginExecutor[DeleteServiceArg
                     .filter(cluster=service.cluster)
                     .exclude(service=service)
                 ),
-                skip_checks=True,
+                checks_func=check_nothing,
             )
 
             # remove existing binds

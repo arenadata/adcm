@@ -40,7 +40,7 @@ def _change_mm_via_action(
         run_action(
             action=action,
             obj=obj,
-            payload=ActionRunPayload(conf={}, attr={}, hostcomponent=[], verbose=False),
+            payload=ActionRunPayload(conf={}, attr={}, hostcomponent=set(), verbose=False),
         )
         serializer.validated_data["maintenance_mode"] = MaintenanceMode.CHANGING
 

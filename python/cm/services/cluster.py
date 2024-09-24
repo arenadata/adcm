@@ -21,7 +21,7 @@ from core.cluster.types import (
     MaintenanceModeOfObjects,
     ObjectMaintenanceModeState,
 )
-from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor, HostID, MappingDict, ShortObjectInfo
+from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor, HostID, ShortObjectInfo
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
 
@@ -122,14 +122,19 @@ def perform_host_to_cluster_map(
     return hosts
 
 
+def retrieve_host_component_entries(cluster_id: ClusterID) -> set[HostComponentEntry]:
+    return {
+        HostComponentEntry(**db_entry)
+        for db_entry in HostComponent.objects.values("host_id", "component_id").filter(cluster_id=cluster_id)
+    }
+
+
 def retrieve_cluster_topology(cluster_id: ClusterID) -> ClusterTopology:
     return next(retrieve_multiple_clusters_topology(cluster_ids=(cluster_id,)))
 
 
-def retrieve_multiple_clusters_topology(
-    cluster_ids: Iterable[ClusterID], input_mapping: dict[ClusterID, list[MappingDict]] | None = None
-) -> Generator[ClusterTopology, None, None]:
-    return build_clusters_topology(cluster_ids=cluster_ids, db=ClusterDB, input_mapping=input_mapping)
+def retrieve_multiple_clusters_topology(cluster_ids: Iterable[ClusterID]) -> Generator[ClusterTopology, None, None]:
+    return build_clusters_topology(cluster_ids=cluster_ids, db=ClusterDB)
 
 
 def retrieve_related_cluster_topology(orm_object: Cluster | ClusterObject | ServiceComponent | Host) -> ClusterTopology:

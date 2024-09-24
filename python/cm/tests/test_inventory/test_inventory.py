@@ -14,6 +14,7 @@
 from pathlib import Path
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
+from core.cluster.types import HostComponentEntry
 from core.types import CoreObjectDescriptor
 from init_db import init as init_adcm
 
@@ -287,7 +288,13 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         inventory_data = self.get_children_from_inventory(
             action=self.action_hc_acl,
             object_=self.cluster_hc_acl,
-            payload=ActionRunPayload(hostcomponent=hc_request_data, verbose=False),
+            payload=ActionRunPayload(
+                hostcomponent={
+                    HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
+                    for entry in hc_request_data
+                },
+                verbose=False,
+            ),
         )
 
         target_key_remove = (
@@ -330,7 +337,13 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         inventory_data = self.get_children_from_inventory(
             action=self.action_hc_acl,
             object_=self.cluster_hc_acl,
-            payload=ActionRunPayload(hostcomponent=hc_request_data, verbose=False),
+            payload=ActionRunPayload(
+                hostcomponent={
+                    HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
+                    for entry in hc_request_data
+                },
+                verbose=False,
+            ),
         )
 
         target_key_remove = (

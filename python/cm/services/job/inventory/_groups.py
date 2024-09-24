@@ -11,17 +11,17 @@
 # limitations under the License.
 
 from collections import defaultdict
-from typing import Literal
 
 from core.cluster.types import ClusterTopology
 from core.types import HostID, HostName
 
 from cm.services.job.inventory._constants import MAINTENANCE_MODE_GROUP_SUFFIX
 from cm.services.job.inventory._types import HostGroupName
+from cm.services.job.types import TaskMappingDelta
 
 
 def detect_host_groups_for_cluster_bundle_action(
-    cluster_topology: ClusterTopology, hosts_in_maintenance_mode: set[int], hc_delta: dict
+    cluster_topology: ClusterTopology, hosts_in_maintenance_mode: set[int], hc_delta: TaskMappingDelta
 ) -> dict[HostGroupName, set[tuple[HostID, HostName]]]:
     groups = defaultdict(set)
 
@@ -51,26 +51,23 @@ def detect_host_groups_for_cluster_bundle_action(
                 groups[f"{service_name}.{component_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] = hosts_in_mm
                 groups[f"{service_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] |= hosts_in_mm
 
-    if not hc_delta:
+    if hc_delta.is_empty:
         return groups
 
-    for hc_acl_action, delta_groups in hc_delta.items():
-        hc_acl_action: Literal["add", "remove"]
-        for host_group_prefix, hosts_in_group in delta_groups.items():
-            host_group_prefix: HostGroupName
-            group_full_name = f"{host_group_prefix}.{hc_acl_action}"
+    for component_key, hosts in hc_delta.add.items():
+        group_full_name = f"{component_key}.add"
+        hosts_not_in_mm = {(host.id, host.name) for host in hosts if host.id not in hosts_in_maintenance_mode}
+        if hosts_not_in_mm:
+            groups[group_full_name] = hosts_not_in_mm
 
-            hosts_not_in_mm = {
-                (host.pk, host.fqdn) for host in hosts_in_group.values() if host.pk not in hosts_in_maintenance_mode
-            }
-            if hosts_not_in_mm:
-                groups[group_full_name] = hosts_not_in_mm
+    for component_key, hosts in hc_delta.remove.items():
+        group_full_name = f"{component_key}.remove"
+        hosts_not_in_mm = {(host.id, host.name) for host in hosts if host.id not in hosts_in_maintenance_mode}
+        if hosts_not_in_mm:
+            groups[group_full_name] = hosts_not_in_mm
 
-            if hc_acl_action == "remove":
-                hosts_in_mm = {
-                    (host.pk, host.fqdn) for host in hosts_in_group.values() if host.pk in hosts_in_maintenance_mode
-                }
-                if hosts_in_mm:
-                    groups[f"{group_full_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] = hosts_in_mm
+        hosts_in_mm = {(host.id, host.name) for host in hosts if host.id in hosts_in_maintenance_mode}
+        if hosts_in_mm:
+            groups[f"{group_full_name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"] = hosts_in_mm
 
     return groups

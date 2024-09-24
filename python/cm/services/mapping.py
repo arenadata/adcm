@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable
+from typing import Iterable, Protocol
 
 from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
-from core.cluster.types import ClusterTopology, HostComponentEntry
+from core.cluster.types import ClusterTopology, HostComponentEntry, TopologyHostDiff
+from core.concern.types import BundleRestrictions
 from core.types import ADCMCoreType, BundleID, ClusterID, CoreObjectDescriptor, HostID
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
@@ -23,6 +24,7 @@ from rest_framework.status import HTTP_409_CONFLICT
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, ConcernCause, Host, HostComponent, MaintenanceMode
 from cm.services.action_host_group import ActionHostGroupRepo
+from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.cluster import retrieve_cluster_topology
 from cm.services.concern import create_issue, delete_issue, retrieve_issue
 from cm.services.concern.checks import (
@@ -32,14 +34,51 @@ from cm.services.concern.checks import (
 )
 from cm.services.concern.distribution import lock_objects, redistribute_issues_and_flags, unlock_objects
 from cm.services.concern.locks import retrieve_lock_on_object
-from cm.services.concern.repo import BundleRestrictions, retrieve_bundle_restrictions
 from cm.services.group_config import ConfigHostGroupRepo
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import send_host_component_map_update_event
 
 
+class PerformMappingChecks(Protocol):
+    def __call__(
+        self, bundle_restrictions: BundleRestrictions, new_topology: ClusterTopology, host_difference: TopologyHostDiff
+    ) -> None:
+        ...
+
+
+def check_nothing(
+    bundle_restrictions: BundleRestrictions, new_topology: ClusterTopology, host_difference: TopologyHostDiff
+) -> None:
+    _ = bundle_restrictions, new_topology, host_difference
+
+
+def check_only_mapping(
+    bundle_restrictions: BundleRestrictions,
+    new_topology: ClusterTopology,
+    host_difference: TopologyHostDiff,
+    error_template="{}",
+) -> None:
+    _ = host_difference
+    check_mapping_restrictions(
+        mapping_restrictions=bundle_restrictions.mapping, topology=new_topology, error_message_template=error_template
+    )
+
+
+def check_all(
+    bundle_restrictions: BundleRestrictions, new_topology: ClusterTopology, host_difference: TopologyHostDiff
+) -> None:
+    check_service_requirements(services_restrictions=bundle_restrictions.service_requires, topology=new_topology)
+    check_only_mapping(
+        bundle_restrictions=bundle_restrictions, new_topology=new_topology, host_difference=host_difference
+    )
+    check_no_host_in_mm(host_difference.mapped.all)
+
+
 def change_host_component_mapping(
-    cluster_id: ClusterID, bundle_id: BundleID, flat_mapping: Iterable[HostComponentEntry], *, skip_checks: bool = False
+    cluster_id: ClusterID,
+    bundle_id: BundleID,
+    flat_mapping: Iterable[HostComponentEntry],
+    checks_func: PerformMappingChecks = check_all,
 ) -> ClusterTopology:
     # force remove duplicates
     new_mapping_entries = set(flat_mapping)
@@ -55,13 +94,7 @@ def change_host_component_mapping(
 
         # business checks
 
-        # sometimes it's required to skip checks (e.g. in plugin calls)
-        if not skip_checks:
-            check_service_requirements(
-                services_restrictions=bundle_restrictions.service_requires, topology=new_topology
-            )
-            check_mapping_restrictions(mapping_restrictions=bundle_restrictions.mapping, topology=new_topology)
-            check_no_host_in_mm(host_difference.mapped.all)
+        checks_func(bundle_restrictions=bundle_restrictions, new_topology=new_topology, host_difference=host_difference)
 
         # save
         _recreate_mapping_in_db(topology=new_topology)

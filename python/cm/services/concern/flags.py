@@ -23,8 +23,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 
 from cm.converters import core_type_to_model, model_name_to_core_type
-from cm.hierarchy import Tree
-from cm.issue import add_concern_to_object, remove_concern_from_object
 from cm.models import ADCMEntity, ConcernCause, ConcernItem, ConcernType
 from cm.services.concern.distribution import distribute_concern_on_related_objects
 from cm.services.concern.messages import (
@@ -129,22 +127,6 @@ def update_hierarchy_for_flag(flag: ConcernFlag, on_objects: Collection[CoreObje
     ):
         owner = CoreObjectDescriptor(id=concern.owner_id, type=model_name_to_core_type(concern.owner_type.model))
         distribute_concern_on_related_objects(owner=owner, concern_id=concern.id)
-
-
-def update_hierarchy(concern: ConcernItem) -> None:
-    tree = Tree(obj=concern.owner)
-
-    related = set(concern.related_objects)
-    affected = {node.value for node in tree.get_directly_affected(node=tree.built_from)}
-
-    if related == affected:
-        return
-
-    for object_moved_out_hierarchy in related.difference(affected):
-        remove_concern_from_object(object_=object_moved_out_hierarchy, concern=concern)
-
-    for new_object in affected.difference(related):
-        add_concern_to_object(object_=new_object, concern=concern)
 
 
 def _get_filter_for_flags_of_objects(content_type_id_map: dict[ContentType, set[int]]) -> Q:

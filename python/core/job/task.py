@@ -12,6 +12,7 @@
 
 
 from cm.services.job.jinja_scripts import get_job_specs_from_template
+from cm.services.job.types import TaskMappingDelta
 
 from core.job.dto import LogCreateDTO, TaskPayloadDTO
 from core.job.errors import TaskCreateError
@@ -26,7 +27,7 @@ def compose_task(
     payload: TaskPayloadDTO,
     job_repo: JobRepoInterface,
     action_repo: ActionRepoInterface,
-    delta: dict | None = None,
+    delta: TaskMappingDelta | None = None,
 ):
     """
     Prepare task based on action, target object and task payload.

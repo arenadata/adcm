@@ -67,7 +67,8 @@ from cm.services.concern.cases import (
 from cm.services.concern.checks import object_configuration_has_issue
 from cm.services.concern.distribution import distribute_concern_on_related_objects, redistribute_issues_and_flags
 from cm.services.job.action import ActionRunPayload, run_action
-from cm.services.mapping import change_host_component_mapping
+from cm.services.job.types import HcAclAction
+from cm.services.mapping import change_host_component_mapping, check_nothing
 from cm.status_api import send_prototype_and_state_update_event
 from cm.utils import obj_ref
 
@@ -136,7 +137,7 @@ def do_upgrade(
     upgrade: Upgrade,
     config: dict,
     attr: dict,
-    hostcomponent: list,
+    hostcomponent: list[dict],
     verbose: bool = False,
 ) -> dict:
     check_license(prototype=obj.prototype)
@@ -165,10 +166,40 @@ def do_upgrade(
 
         send_prototype_and_state_update_event(object_=obj)
     else:
+        bundle_id = upgrade.bundle_id
+        add_hc_rules = {
+            (rule["service"], rule["component"])
+            for rule in upgrade.action.hostcomponentmap
+            if rule["action"] == HcAclAction.ADD.value
+        }
+
+        existing_hostcomponent: set[HostComponentEntry] = set()
+        post_upgrade: list[dict] = []
+        for entry in hostcomponent:
+            # alternative to removed `_check_upgrade_hc`
+            if "component_prototype_id" in entry:
+                component_name, service_name = Prototype.obj.values_list("name", "parent__name").get(
+                    type="component",
+                    id=entry["component_prototype_id"],
+                    bundle_id=bundle_id,
+                )
+                if (service_name, component_name) not in add_hc_rules:
+                    raise AdcmEx(
+                        code="WRONG_ACTION_HC",
+                        msg="New components from bundle with upgrade you can only add, not remove",
+                    )
+
+                post_upgrade.append(entry)
+            else:
+                existing_hostcomponent.add(
+                    HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
+                )
+
         task = run_action(
             action=upgrade.action,
             obj=obj,
-            payload=ActionRunPayload(conf=config, attr=attr, hostcomponent=hostcomponent, verbose=verbose),
+            payload=ActionRunPayload(conf=config, attr=attr, hostcomponent=existing_hostcomponent, verbose=verbose),
+            post_upgrade_hc=post_upgrade,
         )
         task_id = task.id
 
@@ -252,7 +283,7 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:
                 HostComponentEntry(host_id=host.id, component_id=component.id)
                 for (_, host, component) in host_comp_list
             ),
-            skip_checks=True,
+            checks_func=check_nothing,
         )
 
     if isinstance(obj, HostProvider):

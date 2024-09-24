@@ -28,7 +28,7 @@ from cm.models import (
     get_object_cluster,
 )
 from cm.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, build_concern_reason
-from cm.services.mapping import change_host_component_mapping
+from cm.services.mapping import change_host_component_mapping, check_nothing
 from cm.status_api import send_object_update_event
 
 # todo "unwrap" these functions to use repo without directly calling ORM,
@@ -73,7 +73,7 @@ def set_hostcomponent(task: Task, logger: Logger):
             HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
             for entry in task.hostcomponent.saved
         ),
-        skip_checks=True,
+        checks_func=check_nothing,
     )
 
 
