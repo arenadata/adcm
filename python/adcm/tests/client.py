@@ -18,13 +18,13 @@ from cm.models import (
     ActionHostGroup,
     Bundle,
     Cluster,
-    ClusterObject,
     GroupConfig,
     Host,
     HostProvider,
     JobLog,
     LogStorage,
     Prototype,
+    Service,
     ServiceComponent,
     TaskLog,
 )
@@ -34,7 +34,7 @@ from rest_framework.response import Response
 from rest_framework.test import APIClient
 
 _RootPathObject = Bundle | Cluster | HostProvider | Host | TaskLog | JobLog | Prototype
-PathObject = _RootPathObject | ClusterObject | ServiceComponent | LogStorage | GroupConfig
+PathObject = _RootPathObject | Service | ServiceComponent | LogStorage | GroupConfig
 
 
 class WithID(Protocol):
@@ -136,7 +136,7 @@ class V2RootNode(RootNode):
                 *self._path, root_endpoint, *object_id_path, *tail, client=self._client, node_class=self._node_class
             )
 
-        if isinstance(path_object, ClusterObject):
+        if isinstance(path_object, Service):
             return self._node_class(
                 *self._path,
                 "clusters",

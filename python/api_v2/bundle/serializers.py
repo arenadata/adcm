@@ -127,7 +127,7 @@ class UpgradeBundleSerializer(ModelSerializer):
         if isinstance(self.context["parent"], HostProvider):
             return []
 
-        added_services = self.context["parent"].clusterobject_set.all().values_list("prototype__name", flat=True)
+        added_services = self.context["parent"].services.all().values_list("prototype__name", flat=True)
         prototypes = bundle.prototype_set.filter(
             type=ObjectType.SERVICE, license="unaccepted", name__in=added_services
         ).order_by("pk")

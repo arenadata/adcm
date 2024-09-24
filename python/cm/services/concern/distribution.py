@@ -34,12 +34,12 @@ from django.db.models import Q
 from cm.converters import core_type_to_model, model_name_to_core_type
 from cm.models import (
     Cluster,
-    ClusterObject,
     ConcernItem,
     ConcernType,
     Host,
     HostComponent,
     HostProvider,
+    Service,
     ServiceComponent,
 )
 
@@ -218,7 +218,7 @@ def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRe
     match owner.type:
         case ADCMCoreType.CLUSTER:
             targets[ADCMCoreType.SERVICE] |= set(
-                ClusterObject.objects.values_list("id", flat=True).filter(cluster_id=owner.id)
+                Service.objects.values_list("id", flat=True).filter(cluster_id=owner.id)
             )
             targets[ADCMCoreType.COMPONENT] |= set(
                 ServiceComponent.objects.values_list("id", flat=True).filter(cluster_id=owner.id)
@@ -234,9 +234,7 @@ def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRe
             targets[ADCMCoreType.COMPONENT] |= set(
                 ServiceComponent.objects.values_list("id", flat=True).filter(service_id=owner.id)
             )
-            targets[ADCMCoreType.CLUSTER].add(
-                ClusterObject.objects.values_list("cluster_id", flat=True).get(id=owner.id)
-            )
+            targets[ADCMCoreType.CLUSTER].add(Service.objects.values_list("cluster_id", flat=True).get(id=owner.id))
 
         case ADCMCoreType.COMPONENT:
             cluster_id, service_id = ServiceComponent.objects.values_list("cluster_id", "service_id").get(id=owner.id)
@@ -306,7 +304,7 @@ def _get_own_concerns_of_objects(
         .filter(
             Q(owner_id__in=clusters, owner_type=ContentType.objects.get_for_model(Cluster))
             | Q(owner_id__in=hosts, owner_type=ContentType.objects.get_for_model(Host))
-            | Q(owner_id__in=services, owner_type=ContentType.objects.get_for_model(ClusterObject))
+            | Q(owner_id__in=services, owner_type=ContentType.objects.get_for_model(Service))
             | Q(owner_id__in=components, owner_type=ContentType.objects.get_for_model(ServiceComponent))
             | Q(owner_id__in=hostproviders, owner_type=ContentType.objects.get_for_model(HostProvider))
         )

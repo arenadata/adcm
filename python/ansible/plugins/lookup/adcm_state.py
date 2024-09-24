@@ -14,7 +14,7 @@ import sys
 
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
-from cm.models import ADCMEntity, Cluster, ClusterObject, Host, HostProvider
+from cm.models import ADCMEntity, Cluster, Host, HostProvider, Service
 from cm.status_api import send_object_update_event
 
 sys.path.append("/adcm/python")
@@ -118,7 +118,7 @@ def set_service_state_by_name(cluster_id, service_name, state):
 
 
 def set_service_state(cluster_id, service_id, state):
-    obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type="service")
+    obj = Service.obj.get(id=service_id, cluster__id=cluster_id, prototype__type="service")
     return _set_object_state(obj, state)
 
 

@@ -16,10 +16,10 @@ from cm.errors import AdcmEx
 from cm.models import (
     AnsibleConfig,
     Cluster,
-    ClusterObject,
     Host,
     HostComponent,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from cm.upgrade import get_upgrade
@@ -180,7 +180,7 @@ class RelatedServicesStatusesSerializer(WithStatusSerializer):
     components = RelatedComponentStatusSerializer(many=True, source="servicecomponent_set")
 
     class Meta:
-        model = ClusterObject
+        model = Service
         fields = ["id", "name", "display_name", "status", "components"]
 
 

@@ -54,7 +54,7 @@ def type_to_model(object_type):
         object_type = "hostprovider"
 
     if object_type == "service":
-        object_type = "clusterobject"
+        object_type = "service"
 
     if object_type == "component":
         object_type = "servicecomponent"

@@ -16,11 +16,11 @@ from django.urls import reverse
 from cm.models import (
     Bundle,
     Cluster,
-    ClusterObject,
     Host,
     HostComponent,
     MaintenanceMode,
     Prototype,
+    Service,
     ServiceComponent,
 )
 
@@ -34,7 +34,7 @@ class TestComponent(BaseTestCase):
             prototype=Prototype.objects.create(bundle=self.bundle, type="cluster"),
             name="test_cluster",
         )
-        self.service = ClusterObject.objects.create(
+        self.service = Service.objects.create(
             prototype=Prototype.objects.create(
                 bundle=self.bundle,
                 type="service",

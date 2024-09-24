@@ -16,7 +16,7 @@ from itertools import chain
 from operator import itemgetter
 
 from cm.converters import model_to_core_type, orm_object_to_core_type
-from cm.models import Action, ActionHostGroup, Cluster, ClusterObject, ConcernItem, Host, ServiceComponent, TaskLog
+from cm.models import Action, ActionHostGroup, Cluster, ConcernItem, Host, Service, ServiceComponent, TaskLog
 from cm.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
 from cm.tests.mocks.task_runner import RunTaskMock
 from core.types import CoreObjectDescriptor
@@ -42,7 +42,7 @@ class CommonActionHostGroupTest(BaseAPITestCase):
     action_host_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
 
     def create_action_host_group(
-        self, name: str, owner: Cluster | ClusterObject | ServiceComponent, description: str = ""
+        self, name: str, owner: Cluster | Service | ServiceComponent, description: str = ""
     ) -> ActionHostGroup:
         return ActionHostGroup.objects.get(
             id=self.action_host_group_service.create(
@@ -125,7 +125,7 @@ class TestActionHostGroup(CommonActionHostGroupTest):
             self.assertListEqual(groups, ["best-1", "best-2"])
 
         with self.subTest("[SERVICE] Different Objects + Same Name SUCCESS"):
-            second_service = ClusterObject.objects.exclude(id=self.service.id).first()
+            second_service = Service.objects.exclude(id=self.service.id).first()
             data = {"name": "cool", "description": ""}
 
             response = self.client.v2[self.service, ACTION_HOST_GROUPS].post(data=data)
@@ -135,7 +135,7 @@ class TestActionHostGroup(CommonActionHostGroupTest):
 
             groups = sorted(
                 ActionHostGroup.objects.values_list("object_id", flat=True).filter(
-                    name=data["name"], object_type=ClusterObject.class_content_type
+                    name=data["name"], object_type=Service.class_content_type
                 )
             )
             self.assertListEqual(groups, sorted((self.service.id, second_service.id)))
@@ -643,7 +643,7 @@ class TestHostsInActionHostGroup(CommonActionHostGroupTest):
         )
 
         objects = (self.cluster, self.service, self.component, self.service_2, self.component_2, self.component_3)
-        self.group_map: dict[Cluster | ClusterObject | ServiceComponent, ActionHostGroup] = {
+        self.group_map: dict[Cluster | Service | ServiceComponent, ActionHostGroup] = {
             object_: self.create_action_host_group(owner=object_, name=f"Group for {object_.name}")
             for object_ in objects
         }
@@ -864,7 +864,7 @@ class TestActionsOnActionHostGroup(CommonActionHostGroupTest):
         self.component = self.service.servicecomponent_set.first()
 
         objects = (self.cluster, self.service, self.component)
-        self.group_map: dict[Cluster | ClusterObject | ServiceComponent, ActionHostGroup] = {
+        self.group_map: dict[Cluster | Service | ServiceComponent, ActionHostGroup] = {
             object_: self.create_action_host_group(
                 name=f"Group for {object_.name}", owner=object_, description="wait for action"
             )
@@ -1053,14 +1053,14 @@ class TestActionHostGroupRBAC(CommonActionHostGroupTest):
             entries=[(self.host_3, self.control_component), (self.host_4, self.control_component)],
         )
 
-        self.group_map: dict[Cluster | ClusterObject | ServiceComponent, ActionHostGroup] = {
+        self.group_map: dict[Cluster | Service | ServiceComponent, ActionHostGroup] = {
             object_: self.create_action_host_group(name=f"Group for {object_.name}", owner=object_)
             for object_ in (self.cluster, self.service, self.component)
         }
         for group in self.group_map.values():
             self.action_host_group_service.add_hosts_to_group(group_id=group.id, hosts=[self.host_2.id])
 
-        self.control_group_map: dict[Cluster | ClusterObject | ServiceComponent, ActionHostGroup] = {
+        self.control_group_map: dict[Cluster | Service | ServiceComponent, ActionHostGroup] = {
             object_: self.create_action_host_group(name=f"Group for {object_.name}", owner=object_)
             for object_ in (self.control_cluster, self.control_service, self.control_component)
         }

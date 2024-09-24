@@ -45,7 +45,7 @@ class ConfigLogViewSet(
 ):
     queryset = ConfigLog.objects.select_related(
         "obj_ref__cluster__prototype",
-        "obj_ref__clusterobject__prototype",
+        "obj_ref__service__prototype",
         "obj_ref__servicecomponent__prototype",
         "obj_ref__hostprovider__prototype",
         "obj_ref__host__prototype",

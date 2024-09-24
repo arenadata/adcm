@@ -12,7 +12,7 @@
 
 from typing import TypeAlias
 
-from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from cm.models import Cluster, Host, HostProvider, Service, ServiceComponent
 from cm.services.job.run.repo import JobRepoImpl
 
 from ansible_plugin.base import ADCMAnsiblePluginExecutor
@@ -21,7 +21,7 @@ from ansible_plugin.executors.multi_state_unset import ADCMMultiStateUnsetPlugin
 from ansible_plugin.executors.state import ADCMStatePluginExecutor
 from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
-ADCMObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+ADCMObject: TypeAlias = Cluster | Service | ServiceComponent | HostProvider | Host
 
 
 class TestADCMStatePluginExecutors(BaseTestEffectsOfADCMAnsiblePlugins):

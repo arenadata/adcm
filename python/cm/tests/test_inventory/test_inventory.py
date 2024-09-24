@@ -21,12 +21,12 @@ from cm.api import add_hc, add_service_to_cluster, update_obj_config
 from cm.converters import model_name_to_core_type
 from cm.models import (
     Action,
-    ClusterObject,
     Host,
     HostComponent,
     JobLog,
     MaintenanceMode,
     Prototype,
+    Service,
     ServiceComponent,
     TaskLog,
 )
@@ -296,16 +296,15 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         )
 
         target_key_remove = (
-            f"{ClusterObject.objects.get(pk=self.hc_c1_h2['service_id']).prototype.name}"
+            f"{Service.objects.get(pk=self.hc_c1_h2['service_id']).prototype.name}"
             f".{ServiceComponent.objects.get(pk=self.hc_c1_h2['component_id']).prototype.name}"
             f".{HcAclAction.REMOVE.value}"
         )
         target_key_mm_service = (
-            f"{ClusterObject.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}."
-            f"{MAINTENANCE_MODE_GROUP_SUFFIX}"
+            f"{Service.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}." f"{MAINTENANCE_MODE_GROUP_SUFFIX}"
         )
         target_key_mm_service_component = (
-            f"{ClusterObject.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
+            f"{Service.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
             f".{ServiceComponent.objects.get(pk=self.hc_c1_h3['component_id']).prototype.name}"
             f".{MAINTENANCE_MODE_GROUP_SUFFIX}"
         )
@@ -339,7 +338,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         )
 
         target_key_remove = (
-            f"{ClusterObject.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
+            f"{Service.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
             f".{ServiceComponent.objects.get(pk=self.hc_c1_h3['component_id']).prototype.name}"
             f".{HcAclAction.REMOVE.value}"
             f".maintenance_mode"
@@ -364,7 +363,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
 
         groups = [
             gen_group(name="cluster", object_id=self.cluster_target_group.id, model_name="cluster"),
-            gen_group(name="service_1", object_id=self.service_target_group.id, model_name="clusterobject"),
+            gen_group(name="service_1", object_id=self.service_target_group.id, model_name="service"),
         ]
 
         for group in groups:

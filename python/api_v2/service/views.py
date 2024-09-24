@@ -27,7 +27,7 @@ from audit.alt.hooks import (
     extract_previous_from_object,
 )
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterObject
+from cm.models import Cluster, Service
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.service import delete_service_from_api
 from cm.services.status.notify import update_mm_objects
@@ -181,12 +181,12 @@ class ServiceViewSet(
     ObjectWithStatusViewMixin,
     ADCMGenericViewSet,
 ):
-    queryset = ClusterObject.objects.select_related("cluster").order_by("pk")
+    queryset = Service.objects.select_related("cluster").order_by("pk")
     filterset_class = ServiceFilter
     filter_backends = (DjangoFilterBackend,)
     permission_required = [VIEW_SERVICE_PERM]
     permission_classes = [ServicePermissions]
-    audit_model_hint = ClusterObject
+    audit_model_hint = Service
     retrieve_status_map_actions = ("list", "statuses")
 
     def get_queryset(self, *args, **kwargs):
@@ -249,15 +249,15 @@ class ServiceViewSet(
         audit_update(name="Service updated", object_=service_from_lookup)
         .attach_hooks(on_collect=adjust_denied_on_404_result(service_with_parents_specified_in_path_exists))
         .track_changes(
-            before=extract_previous_from_object(model=ClusterObject, maintenance_mode=F("_maintenance_mode")),
+            before=extract_previous_from_object(model=Service, maintenance_mode=F("_maintenance_mode")),
             after=extract_current_from_response("maintenance_mode"),
         )
     )
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        service: ClusterObject = get_object_for_user(
-            user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, pk=kwargs["pk"]
+        service: Service = get_object_for_user(
+            user=request.user, perms=VIEW_SERVICE_PERM, klass=Service, pk=kwargs["pk"]
         )
 
         if not service.is_maintenance_mode_available:
@@ -278,7 +278,7 @@ class ServiceViewSet(
 
     @action(methods=["get"], detail=True, url_path="statuses")
     def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        service = get_object_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=ClusterObject, id=kwargs["pk"])
+        service = get_object_for_user(user=request.user, perms=VIEW_SERVICE_PERM, klass=Service, id=kwargs["pk"])
 
         return Response(data=ServiceStatusSerializer(instance=service, context=self.get_serializer_context()).data)
 
@@ -305,11 +305,11 @@ class ServiceViewSet(
 class ServiceImportViewSet(ImportViewSet):
     def detect_get_check_kwargs(self) -> tuple[dict, dict]:
         return (
-            {"perms": VIEW_SERVICE_PERM, "klass": ClusterObject, "id": self.kwargs["service_pk"]},
-            {"action_type": VIEW_IMPORT_PERM, "model": ClusterObject.__name__.lower()},
+            {"perms": VIEW_SERVICE_PERM, "klass": Service, "id": self.kwargs["service_pk"]},
+            {"action_type": VIEW_IMPORT_PERM, "model": Service.__name__.lower()},
         )
 
-    def detect_cluster_service_bind_arguments(self, obj: Cluster | ClusterObject) -> tuple[Cluster, ClusterObject]:
+    def detect_cluster_service_bind_arguments(self, obj: Cluster | Service) -> tuple[Cluster, Service]:
         return obj.cluster, obj
 
 

@@ -18,12 +18,12 @@ from cm.models import (
     ADCM,
     Action,
     Cluster,
-    ClusterObject,
     ConcernItem,
     ConfigLog,
     GroupConfig,
     Host,
     HostProvider,
+    Service,
     ServiceComponent,
     Upgrade,
 )
@@ -788,7 +788,7 @@ class TestServiceConfig(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_adcm_5756_500_on_non_required_field(self):
-        service: ClusterObject = self.add_services_to_cluster(["adcm_5756"], cluster=self.cluster_1).get()
+        service: Service = self.add_services_to_cluster(["adcm_5756"], cluster=self.cluster_1).get()
 
         config = self.client.v2[service, "configs", service.config.current].get().json()
 
@@ -2763,19 +2763,19 @@ class TestPatternInConfig(BaseAPITestCase):
         self.service = self.add_services_to_cluster(["with_patterns"], cluster=self.cluster).get()
         self.component = ServiceComponent.objects.get(service=self.service, prototype__name="cwp")
 
-    def get_object_path(self, target: Cluster | ClusterObject | ServiceComponent) -> str:
+    def get_object_path(self, target: Cluster | Service | ServiceComponent) -> str:
         prefix = "/api/v2/clusters"
         if isinstance(target, Cluster):
             return f"{prefix}/{target.id}/"
 
-        if isinstance(target, ClusterObject):
+        if isinstance(target, Service):
             return f"{prefix}/{target.cluster_id}/services/{target.id}/"
 
         if isinstance(target, ServiceComponent):
             return f"{prefix}/{target.cluster_id}/services/{target.service_id}/components/{target.id}/"
 
     def change_one_field(
-        self, target: Cluster | ClusterObject | ServiceComponent, field_name: str, new_value: str
+        self, target: Cluster | Service | ServiceComponent, field_name: str, new_value: str
     ) -> Response:
         path = f"{self.get_object_path(target)}configs/"
         target.refresh_from_db(fields=["config"])
@@ -2796,7 +2796,7 @@ class TestPatternInConfig(BaseAPITestCase):
             },
         )
 
-    def run_action(self, target: Cluster | ClusterObject | ServiceComponent, action: Action, config: dict) -> Response:
+    def run_action(self, target: Cluster | Service | ServiceComponent, action: Action, config: dict) -> Response:
         path = f"{self.get_object_path(target)}actions/{action.id}/run/"
         return self.client.post(path=path, data={"configuration": {"config": config, "adcmMeta": {}}})
 

@@ -33,7 +33,6 @@ from cm.errors import AdcmEx
 from cm.models import (
     Bundle,
     Cluster,
-    ClusterObject,
     ConfigLog,
     GroupConfig,
     Host,
@@ -42,6 +41,7 @@ from cm.models import (
     ObjectConfig,
     Prototype,
     PrototypeConfig,
+    Service,
     ServiceComponent,
 )
 
@@ -259,12 +259,12 @@ def create_service(service, cluster):
     """
     Creating Service object
 
-    :param service: ClusterObject object in dictionary format
+    :param service: Service object in dictionary format
     :type service: dict
     :param cluster: Cluster object
     :type cluster: models.Cluster
-    :return: ClusterObject object
-    :rtype: models.ClusterObject
+    :return: Service object
+    :rtype: models.Service
     """
     prototype = get_prototype(
         bundle_hash=service.pop("bundle_hash"),
@@ -273,7 +273,7 @@ def create_service(service, cluster):
     )
     ex_id = service.pop("id")
     config = service.pop("config")
-    service = ClusterObject.objects.create(
+    service = Service.objects.create(
         prototype=prototype,
         cluster=cluster,
         config=create_config(config, prototype),
@@ -292,7 +292,7 @@ def create_component(component, cluster, service):
     :param cluster: Cluster object
     :type cluster: models.Cluster
     :param service: Service object
-    :type service: models.ClusterObject
+    :type service: models.Service
     :return: Component object
     :rtype: models.ServiceComponent
     """
@@ -326,7 +326,7 @@ def create_host_component(host_component, cluster, host, service, component):
     :param host: Host object
     :type host: models.Host
     :param service: Service object
-    :type service: models.ClusterObject
+    :type service: models.Service
     :param component: Component object
     :type component: models.ServiceComponent
     :return: HostComponent object
@@ -444,7 +444,7 @@ def load(file_path):
     for group_data in data["groups"]:
         if group_data["model_name"] == "cluster":
             obj = cluster
-        elif group_data["model_name"] == "clusterobject":
+        elif group_data["model_name"] == "service":
             obj = ex_service_ids[group_data["object_id"]]
         elif group_data["model_name"] == "servicecomponent":
             obj = ex_component_ids[group_data["object_id"]]

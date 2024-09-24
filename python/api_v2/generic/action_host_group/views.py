@@ -25,7 +25,7 @@ from audit.alt.hooks import adjust_denied_on_404_result
 from audit.utils import audit
 from cm.converters import core_type_to_model
 from cm.errors import AdcmEx
-from cm.models import Action, ActionHostGroup, ADCMEntity, Cluster, ClusterObject, Host, ServiceComponent
+from cm.models import Action, ActionHostGroup, ADCMEntity, Cluster, Host, Service, ServiceComponent
 from cm.services.action_host_group import (
     ActionHostGroupRepo,
     ActionHostGroupService,
@@ -73,7 +73,7 @@ from api_v2.views import ADCMGenericViewSet, with_group_object, with_parent_obje
 
 _PARENT_PERMISSION_MAP: dict[ADCMCoreType, tuple[str, type[Model]]] = {
     ADCMCoreType.CLUSTER: (VIEW_CLUSTER_PERM, Cluster),
-    ADCMCoreType.SERVICE: (VIEW_SERVICE_PERM, ClusterObject),
+    ADCMCoreType.SERVICE: (VIEW_SERVICE_PERM, Service),
     ADCMCoreType.COMPONENT: (VIEW_COMPONENT_PERM, ServiceComponent),
 }
 
@@ -90,7 +90,7 @@ REQUIRE_EDIT_PERMISSION_DENIED = PermissionCheckDTO(require_edit=True, no_group_
 
 
 def check_has_group_permissions_for_object(
-    user: User, parent_object: Cluster | ClusterObject | ServiceComponent, dto: PermissionCheckDTO
+    user: User, parent_object: Cluster | Service | ServiceComponent, dto: PermissionCheckDTO
 ) -> None:
     """
     If user hasn't got enough permissions on group, an error will be raised.

@@ -28,7 +28,7 @@ from rest_framework.permissions import (
 
 VIEW_CLUSTER_PERM = "cm.view_cluster"
 VIEW_CLUSTER_UPGRADE_PERM = "cm.view_upgrade_of_cluster"
-VIEW_SERVICE_PERM = "cm.view_clusterobject"
+VIEW_SERVICE_PERM = "cm.view_service"
 VIEW_ACTION_PERM = "cm.view_action"
 CHANGE_MM_PERM = "change_maintenance_mode"
 VIEW_ACTION_HOST_GROUPS = "view_action_host_group"

@@ -18,11 +18,11 @@ from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_409_CONFLICT
 from cm.models import (
     Bundle,
     Cluster,
-    ClusterObject,
     Host,
     HostComponent,
     MaintenanceMode,
     Prototype,
+    Service,
     ServiceComponent,
 )
 
@@ -35,7 +35,7 @@ class TestService(BaseTestCase):
         self.prototype = Prototype.objects.create(name="test_prototype_name", type="cluster", bundle=self.bundle)
         self.prototype_service = Prototype.objects.create(type="service", bundle=self.bundle)
         self.cluster = Cluster.objects.create(name="test_cluster_name", prototype=self.prototype)
-        self.service = ClusterObject.objects.create(cluster=self.cluster, prototype=self.prototype_service)
+        self.service = Service.objects.create(cluster=self.cluster, prototype=self.prototype_service)
 
     def test_delete(self):
         self.service.state = "updated"

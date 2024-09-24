@@ -26,7 +26,6 @@ from django.core.management.base import BaseCommand
 from cm.models import (
     Bundle,
     Cluster,
-    ClusterObject,
     ConfigLog,
     GroupConfig,
     Host,
@@ -34,6 +33,7 @@ from cm.models import (
     HostProvider,
     ObjectConfig,
     Prototype,
+    Service,
     ServiceComponent,
 )
 
@@ -245,7 +245,7 @@ def get_service(service_id):
         "state",
         "_multi_state",
     )
-    service = get_object(ClusterObject, service_id, fields)
+    service = get_object(Service, service_id, fields)
     service["config"] = get_config(service["config"])
     service["bundle_hash"] = get_bundle_hash(service.pop("prototype"))
     return service
@@ -349,9 +349,9 @@ def dump(cluster_id, output):
         data["groups"].extend(get_groups(provider_obj.id, "hostprovider"))
         data["bundles"][bundle["hash"]] = bundle
 
-    for service_obj in ClusterObject.objects.filter(cluster_id=cluster["id"]):
+    for service_obj in Service.objects.filter(cluster_id=cluster["id"]):
         service = get_service(service_obj.id)
-        data["groups"].extend(get_groups(service_obj.id, "clusterobject"))
+        data["groups"].extend(get_groups(service_obj.id, "service"))
         data["services"].append(service)
 
     service_ids = [service["id"] for service in data["services"]]

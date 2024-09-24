@@ -15,7 +15,7 @@ import copy
 from cm.api import check_hc, check_maintenance_mode, check_sub_key, get_hc, make_host_comp_list
 from cm.errors import AdcmEx
 from cm.issue import check_component_constraint, check_service_requires
-from cm.models import Action, Cluster, ClusterObject, ConcernType, Host, Prototype, ServiceComponent
+from cm.models import Action, Cluster, ConcernType, Host, Prototype, Service, ServiceComponent
 from cm.services.concern.checks import (
     extract_data_for_requirements_check,
     is_bound_to_requirements_unsatisfied,
@@ -27,7 +27,7 @@ from cm.services.job.types import HcAclAction
 
 def check_hostcomponentmap(
     cluster: Cluster | None, action: Action, new_hc: list[dict]
-) -> tuple[list[tuple[ClusterObject, Host, ServiceComponent]] | None, list, dict[str, dict]]:
+) -> tuple[list[tuple[Service, Host, ServiceComponent]] | None, list, dict[str, dict]]:
     if not action.hostcomponentmap:
         return None, [], {}
 
@@ -63,7 +63,7 @@ def check_hostcomponentmap(
 
 def check_constraints_for_upgrade(cluster, upgrade, host_comp_list):
     try:
-        for service in ClusterObject.objects.filter(cluster=cluster):
+        for service in Service.objects.filter(cluster=cluster):
             try:
                 prototype = Prototype.objects.get(name=service.name, type="service", bundle=upgrade.bundle)
                 check_component_constraint(

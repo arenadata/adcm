@@ -18,12 +18,12 @@ import json
 from cm.models import (
     Action,
     Cluster,
-    ClusterObject,
     Host,
     HostComponent,
     HostProvider,
     JobLog,
     MaintenanceMode,
+    Service,
     ServiceComponent,
 )
 from cm.services.job.jinja_scripts import get_action_info
@@ -36,7 +36,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT
 
 from api_v2.tests.base import BaseAPITestCase
 
-ObjectWithActions: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+ObjectWithActions: TypeAlias = Cluster | Service | ServiceComponent | HostProvider | Host
 
 
 class TestActionsFiltering(BaseAPITestCase):
@@ -130,7 +130,7 @@ class TestActionsFiltering(BaseAPITestCase):
         service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
         self.cluster_1.set_state("upgrading")
         self.cluster_1.before_upgrade["services"] = [
-            service.prototype.name for service in ClusterObject.objects.filter(cluster=self.cluster_1)
+            service.prototype.name for service in Service.objects.filter(cluster=self.cluster_1)
         ]
         self.cluster_1.save()
 
@@ -157,7 +157,7 @@ class TestActionsFiltering(BaseAPITestCase):
     def test_upgrading_status_foreign_service_remove_fail(self) -> None:
         self.cluster_1.set_state("upgrading")
         self.cluster_1.before_upgrade["services"] = [
-            service.prototype.name for service in ClusterObject.objects.filter(cluster=self.cluster_1)
+            service.prototype.name for service in Service.objects.filter(cluster=self.cluster_1)
         ]
 
         response = self.client.v2[self.cluster_1, "services", self.service_1].delete()
@@ -445,7 +445,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def check_object_action_list(
-        self, object_: Cluster | ClusterObject | ServiceComponent | HostProvider | Host, expected_actions: list[str]
+        self, object_: Cluster | Service | ServiceComponent | HostProvider | Host, expected_actions: list[str]
     ) -> None:
         response = self.client.v2[object_, "actions"].get()
 

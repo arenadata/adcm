@@ -16,7 +16,7 @@ from api_v2.service.utils import bulk_add_services_to_cluster
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 
-from cm.models import Action, ClusterObject, ObjectType, Prototype, ServiceComponent, Upgrade
+from cm.models import Action, ObjectType, Prototype, Service, ServiceComponent, Upgrade
 from cm.services.job.inventory import get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 from cm.upgrade import _update_before_upgrade, bundle_switch
@@ -142,7 +142,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.service_two_components: ClusterObject = bulk_add_services_to_cluster(
+        self.service_two_components: Service = bulk_add_services_to_cluster(
             cluster=self.cluster_1,
             prototypes=Prototype.objects.filter(
                 type=ObjectType.SERVICE, name="service_two_components", bundle=self.cluster_1.prototype.bundle
@@ -268,7 +268,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.service_two_components: ClusterObject = bulk_add_services_to_cluster(
+        self.service_two_components: Service = bulk_add_services_to_cluster(
             cluster=self.cluster_1,
             prototypes=Prototype.objects.filter(
                 type=ObjectType.SERVICE, name="service_two_components", bundle=self.cluster_1.prototype.bundle

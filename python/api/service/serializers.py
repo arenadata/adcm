@@ -18,8 +18,8 @@ from cm.models import (
     MAINTENANCE_MODE_BOTH_CASES_CHOICES,
     Action,
     Cluster,
-    ClusterObject,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from cm.status_api import get_service_status
@@ -57,7 +57,7 @@ class ServiceSerializer(EmptySerializer):
     maintenance_mode = CharField(read_only=True)
     is_maintenance_mode_available = BooleanField(read_only=True)
 
-    def to_representation(self, instance: ClusterObject) -> dict:
+    def to_representation(self, instance: Service) -> dict:
         data = super().to_representation(instance=instance)
         data["maintenance_mode"] = data["maintenance_mode"].upper()
 
@@ -90,11 +90,11 @@ class ServiceUISerializer(ServiceSerializer):
     )
 
     @staticmethod
-    def get_version(obj: ClusterObject) -> str:
+    def get_version(obj: Service) -> str:
         return obj.prototype.version
 
     @staticmethod
-    def get_status(obj: ClusterObject) -> int:
+    def get_status(obj: Service) -> int:
         return get_service_status(obj)
 
 
@@ -133,7 +133,7 @@ class ServiceDetailSerializer(ServiceSerializer):
     group_config = GroupConfigsHyperlinkedIdentityField(view_name="v1:group-config-list")
 
     @staticmethod
-    def get_status(obj: ClusterObject) -> int:
+    def get_status(obj: Service) -> int:
         return get_service_status(obj)
 
 
@@ -163,11 +163,11 @@ class ServiceDetailUISerializer(ServiceDetailSerializer):
         return ComponentUISerializer(comps, many=True, context=self.context).data
 
     @staticmethod
-    def get_version(obj: ClusterObject) -> str:
+    def get_version(obj: Service) -> str:
         return obj.prototype.version
 
     @staticmethod
-    def get_main_info(obj: ClusterObject) -> str | None:
+    def get_main_info(obj: Service) -> str | None:
         return get_main_info(obj)
 
 
@@ -226,14 +226,14 @@ class ServiceChangeMaintenanceModeSerializer(ModelSerializer):
     maintenance_mode = ChoiceField(choices=MAINTENANCE_MODE_BOTH_CASES_CHOICES)
 
     class Meta:
-        model = ClusterObject
+        model = Service
         fields = ("maintenance_mode",)
 
     @staticmethod
     def validate_maintenance_mode(value: str) -> str:
         return value.lower()
 
-    def to_representation(self, instance: ClusterObject) -> dict:
+    def to_representation(self, instance: Service) -> dict:
         data = super().to_representation(instance=instance)
         data["maintenance_mode"] = data["maintenance_mode"].upper()
 
@@ -242,7 +242,7 @@ class ServiceChangeMaintenanceModeSerializer(ModelSerializer):
 
 class ServiceAuditSerializer(ModelSerializer):
     class Meta:
-        model = ClusterObject
+        model = Service
         fields = ("maintenance_mode",)
 
     def to_representation(self, instance) -> dict:

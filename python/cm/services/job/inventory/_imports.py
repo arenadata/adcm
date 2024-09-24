@@ -19,7 +19,7 @@ from core.types import ADCMCoreType, CoreObjectDescriptor, PrototypeID
 from django.db.models import Value
 
 from cm.converters import db_record_type_to_core_type
-from cm.models import Cluster, ClusterBind, ClusterObject, PrototypeExport, PrototypeImport
+from cm.models import Cluster, ClusterBind, PrototypeExport, PrototypeImport, Service
 from cm.services.config import retrieve_config_attr_pairs
 from cm.services.config.spec import retrieve_flat_spec_for_objects
 from cm.services.job.inventory._config import update_configuration_for_inventory_inplace
@@ -44,7 +44,7 @@ def get_imports_for_inventory(cluster_id: int) -> dict:
     existing_objects_prototypes = set(
         Cluster.objects.values_list("prototype_id", flat=True)
         .filter(id=cluster_id)
-        .union(ClusterObject.objects.filter(cluster_id=cluster_id).values_list("prototype_id", flat=True))
+        .union(Service.objects.filter(cluster_id=cluster_id).values_list("prototype_id", flat=True))
     )
     targets = {
         core_type: target for core_type, target in targets.items() if target.prototype_id in existing_objects_prototypes
@@ -198,7 +198,7 @@ def _fill_imports_with_defaults_inplace(
         )
         .filter(prototype_id__in=required_prototypes)
         .union(
-            ClusterObject.objects.values(
+            Service.objects.values(
                 "id", "config__current", "prototype_id", type=Value(ADCMCoreType.SERVICE.value)
             ).filter(prototype_id__in=required_prototypes)
         )

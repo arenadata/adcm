@@ -16,9 +16,9 @@ from audit.models import AuditObjectType
 from core.types import ADCMCoreType, ADCMHostGroupType, ExtraActionTargetType
 from django.db.models import Model
 
-from cm.models import ADCM, ActionHostGroup, Cluster, ClusterObject, GroupConfig, Host, HostProvider, ServiceComponent
+from cm.models import ADCM, ActionHostGroup, Cluster, GroupConfig, Host, HostProvider, Service, ServiceComponent
 
-CoreObject: TypeAlias = Cluster | ClusterObject | ServiceComponent | HostProvider | Host
+CoreObject: TypeAlias = Cluster | Service | ServiceComponent | HostProvider | Host
 GroupObject: TypeAlias = GroupConfig | ActionHostGroup
 
 
@@ -27,7 +27,7 @@ def core_type_to_model(core_type: ADCMCoreType) -> type[CoreObject | ADCM]:
         case ADCMCoreType.CLUSTER:
             return Cluster
         case ADCMCoreType.SERVICE:
-            return ClusterObject
+            return Service
         case ADCMCoreType.COMPONENT:
             return ServiceComponent
         case ADCMCoreType.HOSTPROVIDER:
@@ -83,9 +83,6 @@ def model_name_to_core_type(model_name: str) -> ADCMCoreType:
     try:
         return ADCMCoreType(name_)
     except ValueError:
-        if name_ == "clusterobject":
-            return ADCMCoreType.SERVICE
-
         if name_ == "servicecomponent":
             return ADCMCoreType.COMPONENT
 
@@ -123,7 +120,7 @@ def model_name_to_audit_object_type(model_name: str) -> AuditObjectType:
 
 _model_name_to_audit_object_type_map = {
     "cluster": AuditObjectType.CLUSTER,
-    "clusterobject": AuditObjectType.SERVICE,
+    "service": AuditObjectType.SERVICE,
     "servicecomponent": AuditObjectType.COMPONENT,
     "host": AuditObjectType.HOST,
     "hostprovider": AuditObjectType.PROVIDER,

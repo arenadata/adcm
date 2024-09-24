@@ -17,9 +17,9 @@ from cm.errors import AdcmEx
 from cm.models import (
     Bundle,
     Cluster,
-    ClusterObject,
     HostComponent,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from cm.variant import VARIANT_HOST_FUNC, get_variant, var_host_solver, variant_host
@@ -44,7 +44,7 @@ def cook_provider():
 def cook_service(cluster, name="UBER"):
     proto = Prototype.objects.create(type="service", name=name, bundle=cluster.prototype.bundle)
 
-    return ClusterObject.objects.create(cluster=cluster, prototype=proto)
+    return Service.objects.create(cluster=cluster, prototype=proto)
 
 
 def cook_component(cluster, service, name):

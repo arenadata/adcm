@@ -20,7 +20,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 from cm.api import add_host_to_cluster, save_hc
 from cm.errors import AdcmEx
-from cm.models import Action, Bundle, ClusterObject, Host, Prototype, ServiceComponent
+from cm.models import Action, Bundle, Host, Prototype, Service, ServiceComponent
 from cm.services.job.checks import check_hostcomponentmap
 from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.test_upgrade import (
@@ -49,7 +49,7 @@ class TestHC(BaseTestCase, BusinessLogicMixin):
         self.assertEqual(e.exception.code, "TASK_ERROR")
         self.assertEqual(e.exception.msg, "hc is required")
 
-        service = ClusterObject.objects.get(cluster=cluster, prototype__name="hadoop")
+        service = Service.objects.get(cluster=cluster, prototype__name="hadoop")
         sc1 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="server")
         with self.assertRaises(AdcmEx) as e:
             action = Action(name="run", hostcomponentmap=["qwe"])
@@ -84,7 +84,7 @@ class TestHC(BaseTestCase, BusinessLogicMixin):
 
         host_1 = Host.objects.get(provider=provider, fqdn="server01.inter.net")
         host_2 = Host.objects.get(provider=provider, fqdn="server02.inter.net")
-        service = ClusterObject.objects.get(cluster=cluster, prototype__name="hadoop")
+        service = Service.objects.get(cluster=cluster, prototype__name="hadoop")
         sc1 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="server")
 
         add_host_to_cluster(cluster, host_1)

@@ -21,10 +21,10 @@ from cm.models import (
     ActionType,
     Bundle,
     Cluster,
-    ClusterObject,
     HostProvider,
     ProductCategory,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from django.conf import settings
@@ -261,7 +261,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "init_params": {
                     "action_id": self.service1_action.id,
                     "app_name": "cm",
-                    "model": "ClusterObject",
+                    "model": "Service",
                     "filter": {
                         "prototype__name": "service_1",
                         "prototype__type": "service",
@@ -330,7 +330,7 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "init_params": {
                     "action_id": self.service2_action.id,
                     "app_name": "cm",
-                    "model": "ClusterObject",
+                    "model": "Service",
                     "filter": {
                         "prototype__name": "service_2",
                         "prototype__type": "service",
@@ -477,12 +477,12 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
                 "name": f"Can run {cluster_action_name} actions",
             },
             {
-                "content_type": ContentType.objects.get_for_model(ClusterObject),
+                "content_type": ContentType.objects.get_for_model(Service),
                 "codename": f"run_action_{service_1_action_name}",
                 "name": f"Can run {service_1_action_name} actions",
             },
             {
-                "content_type": ContentType.objects.get_for_model(ClusterObject),
+                "content_type": ContentType.objects.get_for_model(Service),
                 "codename": f"run_action_{service_2_action_name}",
                 "name": f"Can run {service_2_action_name} actions",
             },
@@ -567,7 +567,7 @@ class TestMMRoles(RBACBaseTestCase, BusinessLogicMixin):
             prototype=self.provider_prototype,
         )
         self.host = self.add_host(provider=self.provider, fqdn="testhost", cluster=self.cluster)
-        self.service = ClusterObject.objects.create(cluster=self.cluster, prototype=self.sp_1)
+        self.service = Service.objects.create(cluster=self.cluster, prototype=self.sp_1)
         self.component = ServiceComponent.objects.create(
             cluster=self.cluster,
             service=self.service,

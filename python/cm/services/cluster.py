@@ -25,7 +25,7 @@ from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor, HostID, Ma
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
 
-from cm.models import Cluster, ClusterObject, ConcernCause, Host, HostComponent, ServiceComponent
+from cm.models import Cluster, ConcernCause, Host, HostComponent, Service, ServiceComponent
 from cm.services.concern import create_issue, delete_issue
 
 
@@ -58,7 +58,7 @@ class ClusterDB:
         cluster_ids: Iterable[ClusterID],
     ) -> dict[ClusterID, list[tuple[ShortObjectInfo, Collection[ShortObjectInfo]]]]:
         services = (
-            ClusterObject.objects.select_related("prototype")
+            Service.objects.select_related("prototype")
             .prefetch_related("servicecomponent_set__prototype")
             .filter(cluster_id__in=cluster_ids)
         )
@@ -128,10 +128,10 @@ def retrieve_clusters_topology(
     return build_clusters_topology(cluster_ids=cluster_ids, db=ClusterDB, input_mapping=input_mapping)
 
 
-def retrieve_related_cluster_topology(orm_object: Cluster | ClusterObject | ServiceComponent | Host) -> ClusterTopology:
+def retrieve_related_cluster_topology(orm_object: Cluster | Service | ServiceComponent | Host) -> ClusterTopology:
     if isinstance(orm_object, Cluster):
         cluster_id = orm_object.id
-    elif isinstance(orm_object, (ClusterObject, ServiceComponent, Host)) and orm_object.cluster_id:
+    elif isinstance(orm_object, (Service, ServiceComponent, Host)) and orm_object.cluster_id:
         cluster_id = orm_object.cluster_id
     else:
         message = f"Can't detect cluster variables for {orm_object}"
@@ -148,7 +148,7 @@ def retrieve_clusters_objects_maintenance_mode(cluster_ids: Iterable[ClusterID])
         },
         services={
             service_id: ObjectMaintenanceModeState(mm)
-            for service_id, mm in ClusterObject.objects.values_list("id", "_maintenance_mode").filter(
+            for service_id, mm in Service.objects.values_list("id", "_maintenance_mode").filter(
                 cluster_id__in=cluster_ids
             )
         },

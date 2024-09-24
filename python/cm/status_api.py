@@ -26,9 +26,9 @@ from cm.logger import logger
 from cm.models import (
     ADCMEntity,
     Cluster,
-    ClusterObject,
     Host,
     HostComponent,
+    Service,
     ServiceComponent,
 )
 
@@ -179,7 +179,7 @@ def get_cluster_status(cluster: Cluster) -> int:
     return get_raw_status(url=f"cluster/{cluster.id}/")
 
 
-def get_service_status(service: ClusterObject) -> int:
+def get_service_status(service: Service) -> int:
     return get_status(obj=service, url=f"cluster/{service.cluster.id}/service/{service.id}/")
 
 
@@ -241,7 +241,7 @@ def make_ui_component_status(component: ServiceComponent, host_components: Itera
     }
 
 
-def make_ui_service_status(service: ClusterObject, host_components: Iterable[HostComponent]) -> dict:
+def make_ui_service_status(service: Service, host_components: Iterable[HostComponent]) -> dict:
     component_hc_map = defaultdict(list)
     for hostcomponent in host_components:
         component_hc_map[hostcomponent.component].append(hostcomponent)

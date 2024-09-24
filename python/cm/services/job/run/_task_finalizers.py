@@ -23,10 +23,10 @@ from cm.converters import core_type_to_model
 from cm.issue import unlock_affected_objects, update_hierarchy_issues
 from cm.models import (
     ActionHostGroup,
-    ClusterObject,
     Host,
     JobLog,
     MaintenanceMode,
+    Service,
     ServiceComponent,
     TaskLog,
     get_object_cluster,
@@ -73,7 +73,7 @@ def set_hostcomponent(task: Task, logger: Logger):
     }
     services = {
         entry.pk: entry
-        for entry in ClusterObject.objects.filter(id__in=set(map(itemgetter("service_id"), new_hostcomponent)))
+        for entry in Service.objects.filter(id__in=set(map(itemgetter("service_id"), new_hostcomponent)))
     }
     components = {
         entry.pk: entry

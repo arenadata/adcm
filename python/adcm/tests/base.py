@@ -33,7 +33,6 @@ from cm.models import (
     ADCMModel,
     Bundle,
     Cluster,
-    ClusterObject,
     ConfigLog,
     GroupConfig,
     Host,
@@ -42,6 +41,7 @@ from cm.models import (
     ObjectConfig,
     ObjectType,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from cm.services.job.prepare import prepare_task_for_action
@@ -359,7 +359,7 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
 
         return Cluster.objects.get(pk=response.json()["id"])
 
-    def create_service(self, cluster_pk: int, name: str) -> ClusterObject:
+    def create_service(self, cluster_pk: int, name: str) -> Service:
         response = self.client.post(
             path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster_pk}),
             data={"prototype_id": Prototype.objects.get(name=name).pk},
@@ -368,7 +368,7 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        return ClusterObject.objects.get(pk=response.json()["id"])
+        return Service.objects.get(pk=response.json()["id"])
 
     def upload_bundle_create_cluster_config_log(
         self, bundle_path: Path, cluster_name: str = "test-cluster"
@@ -480,7 +480,7 @@ class BusinessLogicMixin(BundleLogicMixin):
         return add_host_to_cluster(cluster=cluster, host=host)
 
     @staticmethod
-    def add_services_to_cluster(service_names: list[str], cluster: Cluster) -> QuerySet[ClusterObject]:
+    def add_services_to_cluster(service_names: list[str], cluster: Cluster) -> QuerySet[Service]:
         service_prototypes = Prototype.objects.filter(
             type=ObjectType.SERVICE, name__in=service_names, bundle=cluster.prototype.bundle
         )
@@ -573,7 +573,7 @@ class BusinessLogicMixin(BundleLogicMixin):
 class TaskTestMixin:
     def prepare_task(
         self,
-        owner: ADCM | Cluster | ClusterObject | ServiceComponent | HostProvider | Host,
+        owner: ADCM | Cluster | Service | ServiceComponent | HostProvider | Host,
         payload: TaskPayloadDTO | None = None,
         host: Host | None = None,
         **action_search_kwargs,

@@ -27,11 +27,11 @@ from cm.logger import logger
 from cm.models import (
     ADCMEntity,
     Cluster,
-    ClusterObject,
     ConfigLog,
     Host,
     HostProvider,
     PrototypeConfig,
+    Service,
 )
 from cm.status_api import send_config_creation_event
 
@@ -195,6 +195,6 @@ def set_service_config_by_name(cluster_id: int, service_name: str, config: dict)
 
 
 def set_service_config(cluster_id: int, service_id: int, config: dict) -> PluginResult:
-    obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type="service")
+    obj = Service.obj.get(id=service_id, cluster__id=cluster_id, prototype__type="service")
 
     return update_config(obj=obj, conf=config)

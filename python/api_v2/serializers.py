@@ -18,9 +18,9 @@ from cm.models import (
     ADCMEntityStatus,
     ADCMModel,
     Cluster,
-    ClusterObject,
     Host,
     HostComponent,
+    Service,
     ServiceComponent,
 )
 from cm.services.status.client import FullStatusMap
@@ -38,7 +38,7 @@ T = TypeVar("T")
 
 _MODEL_RETRIEVAL_FUNC_MAP: dict[type[T], Callable[[FullStatusMap, T], ADCMEntityStatus]] = {
     Cluster: lambda status_map, cluster: status_map.get_for_cluster(cluster_id=cluster.pk),
-    ClusterObject: lambda status_map, service: status_map.get_for_service(
+    Service: lambda status_map, service: status_map.get_for_service(
         cluster_id=service.cluster_id, service_id=service.pk
     ),
     ServiceComponent: lambda status_map, component: status_map.get_for_component(
@@ -69,7 +69,7 @@ class WithStatusSerializer(ModelSerializer):
                 message = f"Don't know how to retrieve status for {instance.__class__} from status map"
                 raise KeyError(message) from err
 
-        if isinstance(instance, ClusterObject):
+        if isinstance(instance, Service):
             return convert_to_service_status(raw_status=status, monitoring=instance.monitoring)
 
         if isinstance(instance, ServiceComponent):

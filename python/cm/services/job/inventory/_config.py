@@ -20,7 +20,7 @@ from core.types import ADCMCoreType, ConfigID, CoreObjectDescriptor, GeneralEnti
 from django.conf import settings
 from django.db.models import F, QuerySet, Value
 
-from cm.models import ADCM, Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from cm.models import ADCM, Cluster, Host, HostProvider, Service, ServiceComponent
 from cm.services.config import retrieve_config_attr_pairs
 from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 from cm.services.config.types import AttrDict, ConfigDict
@@ -209,7 +209,7 @@ def _get_config_info(objects: ObjectsInInventoryMap) -> dict[CoreObjectDescripto
             )
             for orm_type, core_type in (
                 (Cluster, ADCMCoreType.CLUSTER),
-                (ClusterObject, ADCMCoreType.SERVICE),
+                (Service, ADCMCoreType.SERVICE),
                 (ServiceComponent, ADCMCoreType.COMPONENT),
                 (HostProvider, ADCMCoreType.HOSTPROVIDER),
                 (Host, ADCMCoreType.HOST),

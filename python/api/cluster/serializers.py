@@ -44,8 +44,8 @@ from api.utils import CommonAPIURL, ObjectURL, UrlField, check_obj, filter_actio
 
 
 def get_cluster_id(obj):
-    if hasattr(obj.obj_ref, "clusterobject"):
-        return obj.obj_ref.clusterobject.cluster.id
+    if hasattr(obj.obj_ref, "service"):
+        return obj.obj_ref.service.cluster.id
     else:
         return obj.obj_ref.cluster.id
 

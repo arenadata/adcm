@@ -13,7 +13,7 @@
 from typing import Collection
 
 from cm.api import delete_service, save_hc
-from cm.models import ClusterBind, ClusterObject, HostComponent
+from cm.models import ClusterBind, HostComponent, Service
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
 
@@ -60,8 +60,8 @@ class ADCMDeleteServicePluginExecutor(ADCMAnsiblePluginExecutor[DeleteServiceArg
             raise PluginRuntimeError(message)
 
         try:
-            service = ClusterObject.objects.select_related("cluster").get(**search_kwargs)
-        except ClusterObject.DoesNotExist:
+            service = Service.objects.select_related("cluster").get(**search_kwargs)
+        except Service.DoesNotExist:
             return CallResult(
                 value=None, changed=False, error=PluginTargetDetectionError("Failed to locate service to be deleted")
             )

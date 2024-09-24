@@ -15,16 +15,16 @@ from typing import TypeAlias
 
 from cm.models import (
     Cluster,
-    ClusterObject,
     GroupConfig,
     Host,
     HostProvider,
+    Service,
     ServiceComponent,
 )
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import ObjectDoesNotExist
 
-ParentObject: TypeAlias = GroupConfig | Cluster | ClusterObject | ServiceComponent | HostProvider | Host | None
+ParentObject: TypeAlias = GroupConfig | Cluster | Service | ServiceComponent | HostProvider | Host | None
 
 
 class GetParentObjectMixin:
@@ -44,7 +44,7 @@ class GetParentObjectMixin:
                 )
 
             elif "cluster_pk" in self.kwargs and "service_pk" in self.kwargs:
-                parent_object = ClusterObject.objects.select_related("prototype", "cluster__prototype").get(
+                parent_object = Service.objects.select_related("prototype", "cluster__prototype").get(
                     pk=self.kwargs["service_pk"], cluster_id=self.kwargs["cluster_pk"]
                 )
 

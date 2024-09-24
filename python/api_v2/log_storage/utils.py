@@ -18,10 +18,10 @@ import tarfile
 from adcm import settings
 from cm.models import (
     ActionType,
-    ClusterObject,
     Host,
     JobLog,
     LogStorage,
+    Service,
     ServiceComponent,
     TaskLog,
 )
@@ -43,7 +43,7 @@ def get_task_download_archive_name(task: TaskLog) -> str:
         action_name = str_remove_non_alnum(value=task.action.prototype.display_name or task.action.prototype.name)
         archive_name = f"{action_name}_{archive_name}"
 
-    if isinstance(task.task_object, (ClusterObject, ServiceComponent)):
+    if isinstance(task.task_object, (Service, ServiceComponent)):
         object_name = task.task_object.cluster.display_name
     else:
         object_name = task.task_object.display_name

@@ -13,7 +13,7 @@
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from adcm.permissions import VIEW_GROUP_CONFIG_PERM, VIEW_HOST_PERM, check_config_perm
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterObject, GroupConfig, Host, HostProvider, ServiceComponent
+from cm.models import Cluster, GroupConfig, Host, HostProvider, Service, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -102,7 +102,7 @@ class GroupConfigViewSet(
         # taken from GroupConfig.host_candidate
         if isinstance(parent_object, (Cluster, HostProvider)):
             hosts_qs = parent_object.host_set
-        elif isinstance(parent_object, ClusterObject):
+        elif isinstance(parent_object, Service):
             hosts_qs = Host.objects.filter(
                 cluster_id=parent_object.cluster_id, hostcomponent__service=parent_object
             ).distinct()

@@ -18,10 +18,10 @@ from cm.models import (
     Action,
     Bundle,
     Cluster,
-    ClusterObject,
     ConfigLog,
     ObjectConfig,
     Prototype,
+    Service,
     ServiceComponent,
 )
 from django.urls import reverse
@@ -49,7 +49,7 @@ class TestComponentAudit(BaseTestCase):
             type="service",
             display_name="test_service",
         )
-        self.service = ClusterObject.objects.create(prototype=service_prototype, cluster=self.cluster)
+        self.service = Service.objects.create(prototype=service_prototype, cluster=self.cluster)
         self.component_prototype = Prototype.objects.create(
             bundle=bundle,
             type="component",

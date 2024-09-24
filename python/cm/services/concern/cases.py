@@ -17,7 +17,7 @@ from typing import Iterable
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 
-from cm.models import Cluster, ClusterObject, ConcernCause, ConcernItem, ConcernType, Host, ServiceComponent
+from cm.models import Cluster, ConcernCause, ConcernItem, ConcernType, Host, Service, ServiceComponent
 from cm.services.concern import create_issue, delete_issue, retrieve_issue
 from cm.services.concern.checks import (
     cluster_mapping_has_issue,
@@ -48,9 +48,7 @@ def recalculate_own_concerns_on_add_clusters(cluster: Cluster) -> OwnObjectConce
     return new_concerns
 
 
-def recalculate_own_concerns_on_add_services(
-    cluster: Cluster, services: Iterable[ClusterObject]
-) -> OwnObjectConcernMap:
+def recalculate_own_concerns_on_add_services(cluster: Cluster, services: Iterable[Service]) -> OwnObjectConcernMap:
     new_concerns: OwnObjectConcernMap = defaultdict(lambda: defaultdict(set))
     cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
 
@@ -83,7 +81,7 @@ def recalculate_own_concerns_on_add_services(
     if not object_has_required_services_issue(cluster=cluster):
         delete_issue(owner=CoreObjectDescriptor(type=ADCMCoreType.CLUSTER, id=cluster.pk), cause=ConcernCause.SERVICE)
 
-    for service in cluster.clusterobject_set.exclude(pk__in=(service.pk for service in services)):
+    for service in cluster.services.exclude(pk__in=(service.pk for service in services)):
         if not service_requirements_has_issue(service=service):
             delete_issue(
                 owner=CoreObjectDescriptor(type=ADCMCoreType.SERVICE, id=service.pk), cause=ConcernCause.REQUIREMENT
@@ -131,11 +129,11 @@ def recalculate_concerns_on_cluster_upgrade(cluster: Cluster) -> None:
         (ConcernCause.REQUIREMENT, service_requirements_has_issue),
     )
 
-    services = tuple(ClusterObject.objects.select_related("prototype").filter(cluster=cluster))
+    services = tuple(Service.objects.select_related("prototype").filter(cluster=cluster))
     existing_service_concern_causes = set(
         ConcernItem.objects.values_list("owner_id", "cause").filter(
             owner_id__in=map(attrgetter("id"), services),
-            owner_type=ContentType.objects.get_for_model(ClusterObject),
+            owner_type=ContentType.objects.get_for_model(Service),
             type=ConcernType.ISSUE,
             cause__in=map(itemgetter(0), service_checks),
         )

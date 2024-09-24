@@ -18,11 +18,11 @@ from cm.models import (
     ActionType,
     Bundle,
     Cluster,
-    ClusterObject,
     Host,
     HostProvider,
     MaintenanceMode,
     Prototype,
+    Service,
     ServiceComponent,
     SubAction,
 )
@@ -270,7 +270,7 @@ class TestHostAPI(BaseTestCase):
             path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": service_prototype.pk},
         )
-        service = ClusterObject.objects.get(pk=service_response.data["id"])
+        service = Service.objects.get(pk=service_response.data["id"])
 
         component = ServiceComponent.objects.get(service=service, prototype__name="first_component")
 

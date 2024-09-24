@@ -19,7 +19,6 @@ from cm.models import (
     ADCMEntity,
     Bundle,
     Cluster,
-    ClusterObject,
     ConcernCause,
     ConcernItem,
     ConcernType,
@@ -29,6 +28,7 @@ from cm.models import (
     ObjectType,
     Prototype,
     PrototypeImport,
+    Service,
     ServiceComponent,
 )
 from cm.services.concern.flags import BuiltInFlag, lower_flag
@@ -254,7 +254,7 @@ class TestConcernsLogic(BaseAPITestCase):
         bundle_dir = self.test_bundles_dir / "provider_no_config"
         self.provider_no_config_bundle = self.add_bundle(source_dir=bundle_dir)
 
-    def _check_concerns(self, object_: Cluster | ClusterObject | ServiceComponent, expected_concerns: list[dict]):
+    def _check_concerns(self, object_: Cluster | Service | ServiceComponent, expected_concerns: list[dict]):
         object_concerns = object_.concerns.all()
         self.assertEqual(object_concerns.count(), len(expected_concerns))
 
@@ -552,7 +552,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    def change_mm_via_api(self, mm_value: MM, *objects: ClusterObject | ServiceComponent | Host) -> None:
+    def change_mm_via_api(self, mm_value: MM, *objects: Service | ServiceComponent | Host) -> None:
         for object_ in objects:
             object_endpoint = (
                 self.client.v2[object_]
@@ -570,7 +570,7 @@ class TestConcernRedistribution(BaseAPITestCase):
             HTTP_201_CREATED,
         )
 
-    def change_imports_via_api(self, target: Cluster | ClusterObject, imports: list[dict]) -> None:
+    def change_imports_via_api(self, target: Cluster | Service, imports: list[dict]) -> None:
         self.assertEqual(
             self.client.v2[target, "imports"].post(data=imports).status_code,
             HTTP_201_CREATED,
@@ -895,7 +895,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         Host.objects.all().update(state="something")
         HostProvider.objects.all().update(state="something")
         Cluster.objects.all().update(state="something")
-        ClusterObject.objects.all().update(state="something")
+        Service.objects.all().update(state="something")
         ServiceComponent.objects.all().update(state="something")
 
         expected_concerns = {}
@@ -1330,7 +1330,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         response = self.client.v2[self.cluster, "services"].post(data={"prototypeId": require_dummy_proto_id})
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        require_dummy_s = ClusterObject.objects.get(id=response.json()["id"])
+        require_dummy_s = Service.objects.get(id=response.json()["id"])
         sir_c = require_dummy_s.servicecomponent_set.get(prototype__name="sir")
         silent_c = require_dummy_s.servicecomponent_set.get(prototype__name="silent")
 
@@ -1375,7 +1375,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         response = self.client.v2[self.cluster, "services"].post(data={"prototypeId": dummy_proto_id})
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        dummy_s = ClusterObject.objects.get(id=response.json()["id"])
+        dummy_s = Service.objects.get(id=response.json()["id"])
 
         with self.subTest("Disappeared On Required Service Add"):
             self.assertIsNone(require_dummy_s.get_own_issue(ConcernCause.REQUIREMENT))
