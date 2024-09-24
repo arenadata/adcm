@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.errors import AdcmEx
 from cm.models import GroupConfig, Host
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.exceptions import ValidationError
@@ -34,8 +35,9 @@ class GroupConfigSerializer(ModelSerializer):
         parent_content_type = ContentType.objects.get_for_model(model=object_)
         queryset = GroupConfig.objects.filter(name=value, object_type=parent_content_type, object_id=object_.pk)
         if queryset.exists():
-            raise ValidationError(
-                f"Group config with name {value} already exists for {parent_content_type} {object_.name}"
+            raise AdcmEx(
+                code="CREATE_CONFLICT",
+                msg=f"Group config with name {value} already exists for {parent_content_type} {object_.name}",
             )
         return value
 
