@@ -1,4 +1,7 @@
 FROM python:3.10-alpine
+ENV PATH="/root/.local/bin:$PATH"
+COPY pyproject.toml poetry.lock /adcm/
+
 RUN apk update && \
     apk upgrade && \
     apk add --virtual .build-deps \
@@ -21,18 +24,21 @@ RUN apk update && \
         openssl \
         rsync \
         runit \
-        sshpass && \
-    curl -sSL https://install.python-poetry.org | python -
-ENV PATH="/root/.local/bin:$PATH"
-COPY pyproject.toml poetry.lock /adcm/
-RUN python -m venv /adcm/venv/2.9 && \
-    poetry config virtualenvs.create false && \
-    poetry -C /adcm install --no-root && \
-    cp -r /usr/local/lib/python3.10/site-packages /adcm/venv/2.9/lib/python3.10 && \
+        sshpass \
+        libffi-dev && \
+    curl -sSL https://install.python-poetry.org | POETRY_HOME=/tmp/poetry python - && \
+    /tmp/poetry/bin/poetry config virtualenvs.create false && \
+    /tmp/poetry/bin/poetry --directory=/adcm install --no-root && \
+    python -m venv /adcm/venv/2.9 --system-site-packages && \
     . /adcm/venv/2.9/bin/activate && \
     pip install git+https://github.com/arenadata/ansible.git@v2.9.27-p1 && \
-    deactivate
-RUN apk del .build-deps
+    deactivate && \
+    apk del .build-deps && \
+    /tmp/poetry/bin/poetry cache clear pypi --all && \
+    rm -rf /root/.cache && \
+    rm -rf /var/cache/apk/* && \
+    rm -rf /tmp/poetry
+
 COPY . /adcm
 RUN mkdir -p /adcm/data/log && \
     mkdir -p /usr/share/ansible/plugins/modules && \
