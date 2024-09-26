@@ -18,7 +18,7 @@ from core.cluster.types import MovedHosts
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model, Q
 
-from cm.models import Service, ServiceComponent
+from cm.models import Component, Service
 
 
 class HostGroupRepoMixin:
@@ -38,7 +38,7 @@ class HostGroupRepoMixin:
         )
 
         hosts_in_component_groups = Q(
-            Q(**{f"{self.group_hosts_field_name}__object_type": ContentType.objects.get_for_model(ServiceComponent)}),
+            Q(**{f"{self.group_hosts_field_name}__object_type": ContentType.objects.get_for_model(Component)}),
             self._combine_with_or(
                 Q(host_id__in=hosts, **{f"{self.group_hosts_field_name}__object_id": component_id})
                 for component_id, hosts in unmapped_hosts.components.items()

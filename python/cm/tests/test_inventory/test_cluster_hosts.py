@@ -199,7 +199,7 @@ class TestClusterHosts(BaseInventoryTestCase):
     def test_adcm_5747_delete_service(self) -> None:
         service = self.add_services_to_cluster(["service_one_component"], cluster=self.cluster_1).get()
         host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
-        self.set_hostcomponent(cluster=self.cluster_1, entries=[(host, service.servicecomponent_set.first())])
+        self.set_hostcomponent(cluster=self.cluster_1, entries=[(host, service.components.first())])
 
         action = Action.objects.get(prototype=service.prototype, name="action_on_service")
         target = owner_descriptor = CoreObjectDescriptor(id=service.id, type=ADCMCoreType.SERVICE)

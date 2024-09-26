@@ -17,12 +17,12 @@ from cm.errors import AdcmEx
 from cm.models import (
     ADCMEntity,
     Cluster,
+    Component,
     ConfigLog,
     ObjectConfig,
     ObjectType,
     Prototype,
     Service,
-    ServiceComponent,
 )
 from cm.services.cluster import retrieve_clusters_topology
 from cm.services.concern.cases import recalculate_own_concerns_on_add_services
@@ -40,24 +40,20 @@ def bulk_add_services_to_cluster(cluster: Cluster, prototypes: QuerySet[Prototyp
     bulk_init_config(objects=services)
 
     service_proto_service_map = {service.prototype.pk: service for service in services}
-    ServiceComponent.objects.bulk_create(
+    Component.objects.bulk_create(
         objs=[
-            ServiceComponent(
-                cluster=cluster, service=service_proto_service_map[prototype.parent.pk], prototype=prototype
-            )
+            Component(cluster=cluster, service=service_proto_service_map[prototype.parent.pk], prototype=prototype)
             for prototype in Prototype.objects.filter(type=ObjectType.COMPONENT, parent__in=prototypes).select_related(
                 "parent"
             )
         ]
     )
-    components = ServiceComponent.objects.filter(cluster=cluster, service__in=services).select_related("prototype")
+    components = Component.objects.filter(cluster=cluster, service__in=services).select_related("prototype")
     bulk_init_config(objects=components)
 
     recalculate_own_concerns_on_add_services(
         cluster=cluster,
-        services=services.prefetch_related(
-            "servicecomponent_set"
-        ).all(),  # refresh values from db to update `config` field
+        services=services.prefetch_related("components").all(),  # refresh values from db to update `config` field
     )
     redistribute_issues_and_flags(topology=next(retrieve_clusters_topology((cluster.pk,))))
 

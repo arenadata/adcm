@@ -47,7 +47,6 @@ def check_object_type(type_name):
 
 
 MODEL_NAME_TRANSLATIONS = {
-    "servicecomponent": "component",
     "hostprovider": "provider",
 }
 

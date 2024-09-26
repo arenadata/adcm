@@ -13,11 +13,11 @@
 from cm.api import add_hc, add_host_to_cluster, add_service_to_cluster
 from cm.models import (
     Cluster,
+    Component,
     Host,
     HostProvider,
     Prototype,
     Service,
-    ServiceComponent,
 )
 
 from rbac.models import Group, Policy, User
@@ -37,17 +37,17 @@ class PolicyRBACTestCase(RBACBaseTestCase):
         self.cluster = Cluster.objects.create(name="Cluster_1", prototype=self.clp)
         self.service_1 = Service.objects.create(cluster=self.cluster, prototype=self.sp_1)
         self.service_2 = Service.objects.create(cluster=self.cluster, prototype=self.sp_2)
-        self.component_11 = ServiceComponent.objects.create(
+        self.component_11 = Component.objects.create(
             cluster=self.cluster,
             service=self.service_1,
             prototype=self.cop_11,
         )
-        self.component_12 = ServiceComponent.objects.create(
+        self.component_12 = Component.objects.create(
             cluster=self.cluster,
             service=self.service_1,
             prototype=self.cop_12,
         )
-        self.component_21 = ServiceComponent.objects.create(
+        self.component_21 = Component.objects.create(
             cluster=self.cluster,
             service=self.service_2,
             prototype=self.cop_21,
@@ -131,16 +131,16 @@ class PolicyRBACTestCase(RBACBaseTestCase):
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_2))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_21))
 
         policy.apply()
 
         self.assertTrue(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_service", self.service_1))
         self.assertTrue(self.user.has_perm("cm.change_config_of_service", self.service_2))
-        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
-        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_component", self.component_11))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_component", self.component_21))
 
     def test_parent_policy4service(self):
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component())
@@ -150,8 +150,8 @@ class PolicyRBACTestCase(RBACBaseTestCase):
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_2))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_21))
 
         policy.apply()
 
@@ -159,8 +159,8 @@ class PolicyRBACTestCase(RBACBaseTestCase):
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_service", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_2))
-        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_component", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_21))
 
     def test_parent_policy4service2(self):
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component())
@@ -171,8 +171,8 @@ class PolicyRBACTestCase(RBACBaseTestCase):
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_2))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_21))
 
         policy.apply()
 
@@ -180,8 +180,8 @@ class PolicyRBACTestCase(RBACBaseTestCase):
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_1))
         self.assertTrue(self.user.has_perm("cm.change_config_of_service", self.service_2))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
-        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_11))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_component", self.component_21))
 
     def test_parent_policy4component(self):
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component())
@@ -193,8 +193,8 @@ class PolicyRBACTestCase(RBACBaseTestCase):
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_2))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_21))
 
         policy.apply()
 
@@ -203,8 +203,8 @@ class PolicyRBACTestCase(RBACBaseTestCase):
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_2))
-        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_component", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_21))
 
     def test_parent_policy4host_in_cluster(self):
         provider, host1, host2 = self.get_hosts_and_provider()
@@ -253,8 +253,8 @@ class PolicyRBACTestCase(RBACBaseTestCase):
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_2))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_21))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
@@ -263,8 +263,8 @@ class PolicyRBACTestCase(RBACBaseTestCase):
         self.assertFalse(self.user.has_perm("cm.change_confing_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_service", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_2))
-        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_component", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_21))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
@@ -302,8 +302,8 @@ class PolicyRBACTestCase(RBACBaseTestCase):
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_2))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_21))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host3))
@@ -313,8 +313,8 @@ class PolicyRBACTestCase(RBACBaseTestCase):
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_2))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
-        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_21))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_11))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_component", self.component_21))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host2))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host3))
@@ -341,14 +341,14 @@ class PolicyRBACTestCase(RBACBaseTestCase):
 
         self.assertFalse(self.user.has_perm("cm.view_cluster"))
         self.assertFalse(self.user.has_perm("cm.view_service"))
-        self.assertFalse(self.user.has_perm("cm.view_servicecomponent"))
+        self.assertFalse(self.user.has_perm("cm.view_component"))
 
         self.clear_perm_cache(self.user)
         policy.apply()
 
         self.assertTrue(self.user.has_perm("cm.view_cluster"))
         self.assertTrue(self.user.has_perm("cm.view_service"))
-        self.assertTrue(self.user.has_perm("cm.view_servicecomponent"))
+        self.assertTrue(self.user.has_perm("cm.view_component"))
 
     def test_add_service(self):
         sp_3 = Prototype.obj.create(bundle=self.bundle_1, type="service", name="service_3")
@@ -391,7 +391,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_1))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_11))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
@@ -399,7 +399,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):
 
         self.assertTrue(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_service", self.service_1))
-        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_component", self.component_11))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
@@ -407,7 +407,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):
 
         self.assertTrue(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_service", self.service_1))
-        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_component", self.component_11))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host2))
 
@@ -430,8 +430,8 @@ class PolicyRBACTestCase(RBACBaseTestCase):
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertFalse(self.user.has_perm("cm.change_config_of_service", self.service_1))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
-        self.assertFalse(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_12))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_11))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_component", self.component_12))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
@@ -439,8 +439,8 @@ class PolicyRBACTestCase(RBACBaseTestCase):
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_service", self.service_1))
-        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
-        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_12))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_component", self.component_11))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_component", self.component_12))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
@@ -463,7 +463,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_service", self.service_1))
-        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_11))
-        self.assertTrue(self.user.has_perm("cm.change_config_of_servicecomponent", self.component_12))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_component", self.component_11))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_component", self.component_12))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host2))

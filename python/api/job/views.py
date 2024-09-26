@@ -72,7 +72,7 @@ def get_task_download_archive_name(task: TaskLog) -> str:
         "adcm",
         "cluster",
         "service",
-        "service component",
+        "component",
         "host provider",
     }:
         action_prototype_display_name = str_remove_non_alnum(
@@ -87,7 +87,7 @@ def get_task_download_archive_name(task: TaskLog) -> str:
     obj_name = None
     if task.object_type.name == "cluster":
         obj_name = task.task_object.name
-    elif task.object_type.name == "service" or task.object_type.name == "service component":
+    elif task.object_type.name == "service" or task.object_type.name == "component":
         obj_name = task.task_object.cluster.name
     elif task.object_type.name == "host provider":
         obj_name = task.task_object.name

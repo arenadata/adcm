@@ -13,7 +13,7 @@
 
 from api_v2.service.utils import bulk_add_services_to_cluster
 
-from cm.models import Action, MaintenanceMode, ObjectType, Prototype, Service, ServiceComponent
+from cm.models import Action, Component, MaintenanceMode, ObjectType, Prototype, Service
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
@@ -40,7 +40,7 @@ class TestHostActionWithMaintenanceMode(BaseInventoryTestCase):
             ),
         ).first()
 
-        self.component = ServiceComponent.objects.get(service=self.service, prototype__name="component_1")
+        self.component = Component.objects.get(service=self.service, prototype__name="component_1")
 
         self.set_hostcomponent(
             cluster=self.cluster,

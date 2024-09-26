@@ -26,12 +26,12 @@ from cm.models import (
     Action,
     ADCMEntity,
     ADCMModel,
+    Component,
     GroupConfig,
     Host,
     HostComponent,
     MaintenanceMode,
     Service,
-    ServiceComponent,
 )
 from cm.services.job.inventory import get_inventory_data
 from cm.services.job.types import HcAclAction
@@ -127,7 +127,7 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
         for host_id, component_id, service_id in new_mapping_ids.difference(existing_mapping_ids):
             host = Host.objects.get(pk=host_id, cluster=cluster)
             service = Service.objects.get(pk=service_id, cluster=cluster)
-            component = ServiceComponent.objects.get(pk=component_id, cluster=cluster, service=service)
+            component = Component.objects.get(pk=component_id, cluster=cluster, service=service)
 
             added.setdefault(f"{service.name}.{component.name}", {}).setdefault(host.fqdn, host)
 
@@ -135,7 +135,7 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
         for host_id, component_id, service_id in existing_mapping_ids.difference(new_mapping_ids):
             host = Host.objects.get(pk=host_id, cluster=cluster)
             service = Service.objects.get(pk=service_id, cluster=cluster)
-            component = ServiceComponent.objects.get(pk=component_id, cluster=cluster, service=service)
+            component = Component.objects.get(pk=component_id, cluster=cluster, service=service)
 
             removed.setdefault(f"{service.name}.{component.name}", {}).setdefault(host.fqdn, host)
 

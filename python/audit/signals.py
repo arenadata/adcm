@@ -14,11 +14,11 @@ from cm.models import (
     ADCM,
     Bundle,
     Cluster,
+    Component,
     Host,
     HostProvider,
     Prototype,
     Service,
-    ServiceComponent,
 )
 from django.contrib.auth.models import User as AuthUser
 from django.db.models.signals import post_delete, post_save
@@ -32,7 +32,7 @@ from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP, AuditObject, AuditUser
 
 @receiver(signal=post_delete, sender=Cluster)
 @receiver(signal=post_delete, sender=Service)
-@receiver(signal=post_delete, sender=ServiceComponent)
+@receiver(signal=post_delete, sender=Component)
 @receiver(signal=post_delete, sender=Host)
 @receiver(signal=post_delete, sender=HostProvider)
 @receiver(signal=post_delete, sender=Bundle)

@@ -264,7 +264,7 @@ class ObjectConfig(ADCMModel):
             "adcm",
             "cluster",
             "service",
-            "servicecomponent",
+            "component",
             "hostprovider",
             "host",
             "group_config",
@@ -383,7 +383,7 @@ class ADCMEntity(ADCMModel):
             concern.delete()
 
         super().delete(using, keep_parents)
-        if self.config is not None and not isinstance(self, ServiceComponent):
+        if self.config is not None and not isinstance(self, Component):
             self.config.delete()
 
 
@@ -629,7 +629,7 @@ class Service(ADCMEntity):
         if self._maintenance_mode != MaintenanceMode.OFF:
             return self._maintenance_mode
 
-        service_components = ServiceComponent.objects.filter(service=self)
+        service_components = Component.objects.filter(service=self)
         if service_components:
             if all(
                 service_component.maintenance_mode_attr == MaintenanceMode.ON
@@ -666,10 +666,12 @@ class Service(ADCMEntity):
         unique_together = (("cluster", "prototype"),)
 
 
-class ServiceComponent(ADCMEntity):
-    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    service = models.ForeignKey(Service, on_delete=models.CASCADE)
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
+class Component(ADCMEntity):
+    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE, related_name="components")
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="components")
+    prototype = models.ForeignKey(
+        Prototype, on_delete=models.CASCADE, null=True, default=None, related_name="components"
+    )
     group_config = GenericRelation(
         "GroupConfig",
         object_id_field="object_id",
@@ -756,8 +758,8 @@ class ServiceComponent(ADCMEntity):
         unique_together = (("cluster", "service", "prototype"),)
 
 
-@receiver(post_delete, sender=ServiceComponent)
-def auto_delete_config_with_servicecomponent(sender, instance, **kwargs):  # noqa: ARG001
+@receiver(post_delete, sender=Component)
+def auto_delete_config_with_component(sender, instance, **kwargs):  # noqa: ARG001
     if instance.config is not None:
         instance.config.delete()
 
@@ -927,7 +929,7 @@ class GroupConfig(ADCMModel):
             hosts = self.object.host_set.order_by("id")
         elif isinstance(self.object, Service):
             hosts = Host.objects.filter(cluster=self.object.cluster, hostcomponent__service=self.object).distinct()
-        elif isinstance(self.object, ServiceComponent):
+        elif isinstance(self.object, Component):
             hosts = Host.objects.filter(cluster=self.object.cluster, hostcomponent__component=self.object).distinct()
         else:
             raise AdcmEx("GROUP_CONFIG_TYPE_ERROR")
@@ -1151,7 +1153,7 @@ class Action(AbstractAction):
 
                 if any(
                     component.maintenance_mode == MaintenanceMode.ON
-                    for component in ServiceComponent.objects.filter(service__in=related_services)
+                    for component in Component.objects.filter(service__in=related_services)
                 ):
                     return COMPONENT_IN_MM
 
@@ -1162,7 +1164,7 @@ class Action(AbstractAction):
 
                 if any(
                     component.maintenance_mode == MaintenanceMode.ON
-                    for component in ServiceComponent.objects.filter(service=obj)
+                    for component in Component.objects.filter(service=obj)
                 ):
                     return COMPONENT_IN_MM
 
@@ -1218,7 +1220,7 @@ class HostComponent(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     host = models.ForeignKey(Host, on_delete=models.CASCADE)
     service = models.ForeignKey(Service, on_delete=models.CASCADE)
-    component = models.ForeignKey(ServiceComponent, on_delete=models.CASCADE)
+    component = models.ForeignKey(Component, on_delete=models.CASCADE)
     state = models.CharField(max_length=1000, default="created")
 
     class Meta:
@@ -1629,7 +1631,7 @@ class ConcernItem(ADCMModel):
             self.adcm_entities.order_by("id"),
             self.cluster_entities.order_by("id"),
             self.service_entities.order_by("id"),
-            self.servicecomponent_entities.order_by("id"),
+            self.component_entities.order_by("id"),
             self.hostprovider_entities.order_by("id"),
             self.host_entities.order_by("id"),
         )
@@ -1640,7 +1642,7 @@ class ConcernItem(ADCMModel):
             self.adcm_entities,
             self.cluster_entities,
             self.service_entities,
-            self.servicecomponent_entities,
+            self.component_entities,
             self.hostprovider_entities,
             self.host_entities,
         )
@@ -1651,7 +1653,7 @@ class ADCMEntityStatus(models.TextChoices):
     DOWN = "down", "down"
 
 
-MainObject: TypeAlias = Cluster | Service | ServiceComponent | HostProvider | Host
+MainObject: TypeAlias = Cluster | Service | Component | HostProvider | Host
 
 _CMObjects = ADCM | MainObject | Bundle | Prototype | ConfigLog | GroupConfig | Action | Upgrade | TaskLog | JobLog
 
@@ -1661,8 +1663,8 @@ CM_MODEL_MAP: dict[str, type[_CMObjects]] = {
     "clusters": Cluster,
     "service": Service,
     "services": Service,
-    "component": ServiceComponent,
-    "components": ServiceComponent,
+    "component": Component,
+    "components": Component,
     "provider": HostProvider,
     "providers": HostProvider,
     "hostprovider": HostProvider,

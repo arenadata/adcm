@@ -12,7 +12,7 @@
 
 from adcm.permissions import check_custom_perm, get_object_for_user
 from audit.utils import audit
-from cm.models import Cluster, HostComponent, Service, ServiceComponent
+from cm.models import Cluster, Component, HostComponent, Service
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import update_mm_objects
 from cm.status_api import make_ui_component_status
@@ -53,12 +53,12 @@ def get_component_queryset(queryset, user, kwargs):
 
 
 class ComponentListView(PermissionListMixin, PaginatedView):
-    queryset = ServiceComponent.objects.all()
+    queryset = Component.objects.all()
     serializer_class = ComponentSerializer
     serializer_class_ui = ComponentUISerializer
     filterset_fields = ("cluster_id", "service_id")
     ordering_fields = ("state", "prototype__display_name", "prototype__version_order")
-    permission_required = ["cm.view_servicecomponent"]
+    permission_required = ["cm.view_component"]
     ordering = ["id"]
 
     def get_queryset(self, *args, **kwargs):
@@ -68,13 +68,13 @@ class ComponentListView(PermissionListMixin, PaginatedView):
 
 
 class ComponentDetailView(PermissionListMixin, DetailView):
-    queryset = ServiceComponent.objects.all()
+    queryset = Component.objects.all()
     serializer_class = ComponentDetailSerializer
     serializer_class_ui = ComponentDetailUISerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
-    permission_required = ["cm.view_servicecomponent"]
+    permission_required = ["cm.view_component"]
     lookup_url_kwarg = "component_id"
-    error_code = ServiceComponent.__error_code__
+    error_code = Component.__error_code__
     ordering = ["id"]
 
     def get_queryset(self, *args, **kwargs):
@@ -84,7 +84,7 @@ class ComponentDetailView(PermissionListMixin, DetailView):
 
 
 class ComponentMaintenanceModeView(GenericUIView):
-    queryset = ServiceComponent.objects.all()
+    queryset = Component.objects.all()
     permission_classes = (DjangoOnlyObjectPermissions,)
     serializer_class = ComponentChangeMaintenanceModeSerializer
     lookup_field = "id"
@@ -96,8 +96,8 @@ class ComponentMaintenanceModeView(GenericUIView):
     def post(self, request: Request, **kwargs) -> Response:
         component = get_object_for_user(
             request.user,
-            "cm.view_servicecomponent",
-            ServiceComponent,
+            "cm.view_component",
+            Component,
             id=kwargs["component_id"],
         )
         check_custom_perm(request.user, "change_maintenance_mode", component._meta.model_name, component)
@@ -118,8 +118,8 @@ class StatusList(GenericUIView):
     ordering = ["id"]
 
     def get(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
-        queryset = get_component_queryset(ServiceComponent.objects.order_by("id"), request.user, kwargs)
-        component = get_object_for_user(request.user, "cm.view_servicecomponent", queryset, id=kwargs["component_id"])
+        queryset = get_component_queryset(Component.objects.order_by("id"), request.user, kwargs)
+        component = get_object_for_user(request.user, "cm.view_component", queryset, id=kwargs["component_id"])
         if self._is_for_ui():
             host_components = self.get_queryset().filter(component=component)
 

@@ -13,12 +13,12 @@
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase, BusinessLogicMixin
 from cm.models import (
     Cluster,
+    Component,
     Host,
     ObjectConfig,
     ObjectType,
     Prototype,
     Service,
-    ServiceComponent,
 )
 from django.urls import reverse
 from rest_framework.response import Response
@@ -107,7 +107,7 @@ class PolicyWithServiceAdminRoleTestCase(BaseTestCase, BusinessLogicMixin):
                 "cluster_id": self.cluster_pk,
                 "hc": [
                     {
-                        "component_id": ServiceComponent.objects.first().pk,
+                        "component_id": Component.objects.first().pk,
                         "host_id": self.host_pk,
                         "service_id": self.service.pk,
                     }

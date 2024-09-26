@@ -38,7 +38,7 @@ from cm.collect_statistics.errors import RetriesExceededError, SenderConnectionE
 from cm.collect_statistics.gather_hardware_info import get_inventory
 from cm.collect_statistics.senders import SenderSettings, StatisticSender
 from cm.collect_statistics.storages import JSONFile, StorageError, TarFileWithJSONFileStorage
-from cm.models import ADCM, Bundle, HostInfo, ServiceComponent
+from cm.models import ADCM, Bundle, Component, HostInfo
 from cm.services.job.inventory import get_objects_configurations
 from cm.tests.utils import gen_cluster, gen_provider
 
@@ -171,8 +171,8 @@ class TestBundleCollector(BaseTestCase, BusinessLogicMixin):
         service_2 = self.add_services_to_cluster(["service_two_components"], cluster=cluster_reg_1).get()
         service_3 = self.add_services_to_cluster(["service_two_components"], cluster=cluster_reg_2).get()
 
-        component_1, component_2 = service_2.servicecomponent_set.order_by("id").all()
-        component_3 = service_3.servicecomponent_set.order_by("id").first()
+        component_1, component_2 = service_2.components.order_by("id").all()
+        component_3 = service_3.components.order_by("id").first()
         self.set_hostcomponent(cluster=cluster_reg_1, entries=((host_1, component_1), (host_1, component_2)))
 
         self.set_hostcomponent(cluster=cluster_reg_2, entries=((host_2, component_3),))
@@ -461,12 +461,8 @@ class TestStorage(BaseAPITestCase):
             self.add_host_to_cluster(cluster=self.cluster_1, host=host)
 
         service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        component_1 = ServiceComponent.objects.get(
-            cluster=self.cluster_1, service=service, prototype__name="component_1"
-        )
-        component_2 = ServiceComponent.objects.get(
-            cluster=self.cluster_1, service=service, prototype__name="component_2"
-        )
+        component_1 = Component.objects.get(cluster=self.cluster_1, service=service, prototype__name="component_1")
+        component_2 = Component.objects.get(cluster=self.cluster_1, service=service, prototype__name="component_2")
 
         self.set_hostcomponent(
             cluster=self.cluster_1, entries=[(host_1, component_1), (host_2, component_1), (host_3, component_2)]

@@ -26,10 +26,10 @@ from cm.logger import logger
 from cm.models import (
     ADCMEntity,
     Cluster,
+    Component,
     Host,
     HostComponent,
     Service,
-    ServiceComponent,
 )
 
 
@@ -194,11 +194,11 @@ def get_hc_status(hostcomponent: HostComponent) -> int:
     )
 
 
-def get_host_comp_status(host: Host, component: ServiceComponent) -> int:
+def get_host_comp_status(host: Host, component: Component) -> int:
     return get_status(obj=component, url=f"host/{host.id}/component/{component.id}/")
 
 
-def get_component_status(component: ServiceComponent) -> int:
+def get_component_status(component: Component) -> int:
     return get_status(obj=component, url=f"component/{component.id}/")
 
 
@@ -222,7 +222,7 @@ def make_ui_single_host_status(host: Host) -> dict:
     }
 
 
-def make_ui_component_status(component: ServiceComponent, host_components: Iterable[HostComponent]) -> dict:
+def make_ui_component_status(component: Component, host_components: Iterable[HostComponent]) -> dict:
     host_list = []
     for hostcomponent in host_components:
         host_list.append(

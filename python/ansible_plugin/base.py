@@ -28,7 +28,7 @@ from ansible.errors import AnsibleActionFail
 from ansible.module_utils._text import to_native
 from ansible.plugins.action import ActionBase
 from cm.converters import core_type_to_model
-from cm.models import Cluster, Host, HostProvider, Service, ServiceComponent
+from cm.models import Cluster, Component, Host, HostProvider, Service
 from core.types import ADCMCoreType, CoreObjectDescriptor, ObjectID
 from django.conf import settings
 from django.db.models import ObjectDoesNotExist
@@ -55,7 +55,7 @@ class BaseStrictModel(BaseModel):
 
 
 TargetTypeLiteral = Literal["cluster", "service", "component", "provider", "host"]
-ProductORMObject: TypeAlias = Cluster | Service | ServiceComponent | HostProvider | Host
+ProductORMObject: TypeAlias = Cluster | Service | Component | HostProvider | Host
 
 
 class VarsContextSection(BaseModel):
@@ -257,7 +257,7 @@ def _from_target_description(
                     message = "Can't identify component by name without `cluster_id` in context"
                     raise PluginRuntimeError(message=message)
 
-                component_id_qs = ServiceComponent.objects.values_list("id", flat=True)
+                component_id_qs = Component.objects.values_list("id", flat=True)
                 kwargs = {"cluster_id": context.cluster_id, "prototype__name": target_description.component_name}
                 if target_description.service_name:
                     return CoreObjectDescriptor(

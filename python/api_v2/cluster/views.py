@@ -34,13 +34,13 @@ from cm.errors import AdcmEx
 from cm.models import (
     AnsibleConfig,
     Cluster,
+    Component,
     ConcernType,
     Host,
     HostComponent,
     ObjectType,
     Prototype,
     Service,
-    ServiceComponent,
 )
 from cm.services.cluster import (
     perform_host_to_cluster_map,
@@ -471,7 +471,7 @@ class ClusterViewSet(
 
         serializer = self.get_serializer(
             instance=(
-                ServiceComponent.objects.filter(cluster=cluster)
+                Component.objects.filter(cluster=cluster)
                 .select_related("prototype", "service__prototype")
                 .order_by("pk")
             ),

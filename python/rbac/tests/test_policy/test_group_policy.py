@@ -13,7 +13,7 @@
 from pathlib import Path
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
-from cm.models import Action, ConfigLog, ObjectType, ServiceComponent
+from cm.models import Action, Component, ConfigLog, ObjectType
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
@@ -198,7 +198,7 @@ class ActionsPolicyTestCase(BaseTestCase):
 
         cluster = self.get_cluster()
         action_service = self.create_service(cluster_pk=cluster.pk, name="actions_service")
-        component = ServiceComponent.objects.get(prototype__name="single_component")
+        component = Component.objects.get(prototype__name="single_component")
 
         provider = self.create_provider(
             bundle_path=self.base_dir / "python" / "rbac" / "tests" / "files" / "provider.tar",

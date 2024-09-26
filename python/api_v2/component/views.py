@@ -24,7 +24,7 @@ from adcm.permissions import (
 from audit.alt.api import audit_update
 from audit.alt.hooks import adjust_denied_on_404_result, extract_current_from_response, extract_previous_from_object
 from cm.errors import AdcmEx
-from cm.models import Cluster, Host, Service, ServiceComponent
+from cm.models import Cluster, Component, Host, Service
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import update_mm_objects
 from django.db.models import F
@@ -125,15 +125,15 @@ from api_v2.views import (
         ],
     ),
     retrieve=extend_schema(
-        operation_id="getServiceComponent",
-        description="Get information about a specific service component.",
-        summary="GET service components",
+        operation_id="getComponent",
+        description="Get information about a specific component.",
+        summary="GET components",
         responses={HTTP_200_OK: ComponentSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
     ),
     list=extend_schema(
-        operation_id="getServiceComponents",
+        operation_id="getComponents",
         description="Get a list of all components of a particular service with information on them.",
-        summary="GET service components",
+        summary="GET components",
         parameters=[
             DefaultParams.LIMIT,
             DefaultParams.OFFSET,
@@ -155,13 +155,13 @@ from api_v2.views import (
     ),
 )
 class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusViewMixin, ADCMReadOnlyModelViewSet):
-    queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("pk")
+    queryset = Component.objects.select_related("cluster", "service").order_by("pk")
     permission_classes = [DjangoModelPermissions]
     permission_required = [VIEW_COMPONENT_PERM]
     filterset_class = ComponentFilter
     retrieve_status_map_actions = ("statuses", "list")
 
-    audit_model_hint = ServiceComponent
+    audit_model_hint = Component
 
     def get_queryset(self, *args, **kwargs):
         cluster = get_object_for_user(
@@ -184,15 +184,15 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
         audit_update(name="Component updated", object_=component_from_lookup)
         .attach_hooks(on_collect=adjust_denied_on_404_result(component_with_parents_specified_in_path_exists))
         .track_changes(
-            before=extract_previous_from_object(model=ServiceComponent, maintenance_mode=F("_maintenance_mode")),
+            before=extract_previous_from_object(model=Component, maintenance_mode=F("_maintenance_mode")),
             after=extract_current_from_response("maintenance_mode"),
         )
     )
     @update_mm_objects
     @action(methods=["post"], detail=True, url_path="maintenance-mode", permission_classes=[ChangeMMPermissions])
     def maintenance_mode(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        component: ServiceComponent = get_object_for_user(
-            user=request.user, perms=VIEW_COMPONENT_PERM, klass=ServiceComponent, pk=kwargs["pk"]
+        component: Component = get_object_for_user(
+            user=request.user, perms=VIEW_COMPONENT_PERM, klass=Component, pk=kwargs["pk"]
         )
 
         if not component.is_maintenance_mode_available:
@@ -213,9 +213,7 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
 
     @action(methods=["get"], detail=True, url_path="statuses")
     def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
-        component = get_object_for_user(
-            user=request.user, perms=VIEW_COMPONENT_PERM, klass=ServiceComponent, id=kwargs["pk"]
-        )
+        component = get_object_for_user(user=request.user, perms=VIEW_COMPONENT_PERM, klass=Component, id=kwargs["pk"])
 
         return Response(data=ComponentStatusSerializer(instance=component, context=self.get_serializer_context()).data)
 
@@ -226,7 +224,7 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
     )
 )
 class HostComponentViewSet(PermissionListMixin, ListModelMixin, ObjectWithStatusViewMixin, ADCMGenericViewSet):
-    queryset = ServiceComponent.objects.select_related("cluster", "service").order_by("prototype__name")
+    queryset = Component.objects.select_related("cluster", "service").order_by("prototype__name")
     serializer_class = HostComponentSerializer
     permission_classes = [DjangoModelPermissionsAudit]
     permission_required = [VIEW_COMPONENT_PERM]

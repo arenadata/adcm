@@ -47,6 +47,7 @@ from cm.models import (
     AnsibleConfig,
     Cluster,
     ClusterBind,
+    Component,
     ConcernCause,
     ConcernItem,
     ConcernType,
@@ -62,7 +63,6 @@ from cm.models import (
     PrototypeExport,
     PrototypeImport,
     Service,
-    ServiceComponent,
     TaskLog,
 )
 from cm.services.action_host_group import ActionHostGroupRepo
@@ -258,9 +258,7 @@ def delete_service(service: Service) -> None:
     delete_concerns_of_removed_objects(
         objects={
             ADCMCoreType.SERVICE: (service_pk,),
-            ADCMCoreType.COMPONENT: tuple(
-                ServiceComponent.objects.values_list("id", flat=True).filter(service_id=service_pk)
-            ),
+            ADCMCoreType.COMPONENT: tuple(Component.objects.values_list("id", flat=True).filter(service_id=service_pk)),
         }
     )
 
@@ -313,9 +311,7 @@ def delete_cluster(cluster: Cluster) -> None:
         objects={
             ADCMCoreType.CLUSTER: (cluster.id,),
             ADCMCoreType.SERVICE: tuple(Service.objects.values_list("id", flat=True).filter(cluster_id=cluster.id)),
-            ADCMCoreType.COMPONENT: tuple(
-                ServiceComponent.objects.values_list("id", flat=True).filter(cluster_id=cluster.id)
-            ),
+            ADCMCoreType.COMPONENT: tuple(Component.objects.values_list("id", flat=True).filter(cluster_id=cluster.id)),
         }
     )
 
@@ -411,7 +407,7 @@ def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> Service:
 
 def add_components_to_service(cluster: Cluster, service: Service) -> None:
     for comp in Prototype.objects.filter(type="component", parent=service.prototype):
-        service_component = ServiceComponent.objects.create(cluster=cluster, service=service, prototype=comp)
+        service_component = Component.objects.create(cluster=cluster, service=service, prototype=comp)
         obj_conf = init_object_config(proto=comp, obj=service_component)
         service_component.config = obj_conf
         service_component.save(update_fields=["config"])
@@ -542,12 +538,12 @@ def check_sub_key(hc_in):
             raise_adcm_ex("INVALID_INPUT", f"duplicate ({item}) in host service list")
 
 
-def make_host_comp_list(cluster: Cluster, hc_in: list[dict]) -> list[tuple[Service, Host, ServiceComponent]]:
+def make_host_comp_list(cluster: Cluster, hc_in: list[dict]) -> list[tuple[Service, Host, Component]]:
     host_comp_list = []
     for item in hc_in:
         host = Host.obj.get(pk=item["host_id"])
         service = Service.obj.get(pk=item["service_id"], cluster=cluster)
-        comp = ServiceComponent.obj.get(pk=item["component_id"], cluster=cluster, service=service)
+        comp = Component.obj.get(pk=item["component_id"], cluster=cluster, service=service)
         if not host.cluster:
             raise_adcm_ex("FOREIGN_HOST", f"host #{host.pk} {host.fqdn} does not belong to any cluster")
 
@@ -562,7 +558,7 @@ def make_host_comp_list(cluster: Cluster, hc_in: list[dict]) -> list[tuple[Servi
     return host_comp_list
 
 
-def check_hc(cluster: Cluster, hc_in: list[dict]) -> list[tuple[Service, Host, ServiceComponent]]:
+def check_hc(cluster: Cluster, hc_in: list[dict]) -> list[tuple[Service, Host, Component]]:
     check_sub_key(hc_in=hc_in)
     host_comp_list = make_host_comp_list(cluster=cluster, hc_in=hc_in)
 
@@ -601,7 +597,7 @@ def check_hc(cluster: Cluster, hc_in: list[dict]) -> list[tuple[Service, Host, S
     return host_comp_list
 
 
-def check_maintenance_mode(cluster: Cluster, host_comp_list: list[tuple[Service, Host, ServiceComponent]]) -> None:
+def check_maintenance_mode(cluster: Cluster, host_comp_list: list[tuple[Service, Host, Component]]) -> None:
     for service, host, comp in host_comp_list:
         try:
             HostComponent.objects.get(cluster=cluster, service=service, host=host, component=comp)
@@ -610,7 +606,7 @@ def check_maintenance_mode(cluster: Cluster, host_comp_list: list[tuple[Service,
                 raise_adcm_ex("INVALID_HC_HOST_IN_MM")
 
 
-def still_existed_hc(cluster: Cluster, host_comp_list: list[tuple[Service, Host, ServiceComponent]]) -> list:
+def still_existed_hc(cluster: Cluster, host_comp_list: list[tuple[Service, Host, Component]]) -> list:
     result = []
     for service, host, comp in host_comp_list:
         try:
@@ -622,7 +618,7 @@ def still_existed_hc(cluster: Cluster, host_comp_list: list[tuple[Service, Host,
     return result
 
 
-def save_hc(cluster: Cluster, host_comp_list: list[tuple[Service, Host, ServiceComponent]]) -> list[HostComponent]:
+def save_hc(cluster: Cluster, host_comp_list: list[tuple[Service, Host, Component]]) -> list[HostComponent]:
     hc_queryset = HostComponent.objects.filter(cluster=cluster).order_by("id")
     service_set = {hc.service for hc in hc_queryset.select_related("service")}
     old_hosts = {i.host for i in hc_queryset.select_related("host")}

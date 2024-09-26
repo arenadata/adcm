@@ -12,7 +12,7 @@
 
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
-from cm.models import MaintenanceMode, Service, ServiceComponent
+from cm.models import Component, MaintenanceMode, Service
 from rest_framework.serializers import (
     ChoiceField,
     IntegerField,
@@ -83,12 +83,12 @@ class ServiceNameSerializer(ModelSerializer):
 
 class RelatedComponentsStatusesSerializer(WithStatusSerializer):
     class Meta:
-        model = ServiceComponent
+        model = Component
         fields = ["id", "name", "display_name", "status"]
 
 
 class ServiceStatusSerializer(ModelSerializer):
-    components = RelatedComponentsStatusesSerializer(many=True, source="servicecomponent_set")
+    components = RelatedComponentsStatusesSerializer(many=True)
 
     class Meta:
         model = Service

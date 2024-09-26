@@ -26,6 +26,7 @@ from cm.errors import AdcmEx
 from cm.issue import add_issue_on_linked_objects
 from cm.models import (
     Bundle,
+    Component,
     ConcernCause,
     ConfigLog,
     Host,
@@ -33,7 +34,6 @@ from cm.models import (
     Prototype,
     PrototypeConfig,
     Service,
-    ServiceComponent,
     Upgrade,
 )
 from cm.tests.utils import gen_cluster
@@ -473,8 +473,8 @@ class TestUpgrade(BaseTestCase):
         provider = cook_provider(bundle_3, "DF01")
 
         service = Service.objects.get(cluster=cluster, prototype__name="hadoop")
-        service_component_1 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="server")
-        service_component_2 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="node")
+        service_component_1 = Component.objects.get(cluster=cluster, service=service, prototype__name="server")
+        service_component_2 = Component.objects.get(cluster=cluster, service=service, prototype__name="node")
         host_1 = Host.objects.get(provider=provider, fqdn="server01.inter.net")
         host_2 = Host.objects.get(provider=provider, fqdn="server02.inter.net")
         add_host_to_cluster(cluster, host_1)
@@ -511,11 +511,11 @@ class TestUpgrade(BaseTestCase):
         cluster = cook_cluster(bundle_1, "Test1")
 
         service = Service.objects.get(cluster=cluster, prototype__name="hadoop")
-        service_component_11 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="server")
+        service_component_11 = Component.objects.get(cluster=cluster, service=service, prototype__name="server")
 
         self.assertEqual(service_component_11.prototype.parent, service.prototype)
 
-        service_component_12 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="node")
+        service_component_12 = Component.objects.get(cluster=cluster, service=service, prototype__name="node")
 
         self.assertEqual(service_component_12.prototype.parent, service.prototype)
 
@@ -523,19 +523,19 @@ class TestUpgrade(BaseTestCase):
         _switch_components(cluster, service, new_service_proto)
 
         new_component_prototype_1 = Prototype.objects.get(name="server", type="component", parent=new_service_proto)
-        service_component_21 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="server")
+        service_component_21 = Component.objects.get(cluster=cluster, service=service, prototype__name="server")
 
         self.assertEqual(service_component_11.id, service_component_21.id)
         self.assertEqual(service_component_21.prototype, new_component_prototype_1)
 
         new_component_prototype_2 = Prototype.objects.get(name="node", type="component", parent=new_service_proto)
-        service_component_22 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="node")
+        service_component_22 = Component.objects.get(cluster=cluster, service=service, prototype__name="node")
 
         self.assertEqual(service_component_12.id, service_component_22.id)
         self.assertEqual(service_component_22.prototype, new_component_prototype_2)
 
         new_component_prototype_3 = Prototype.objects.get(name="data", type="component", parent=new_service_proto)
-        service_component_23 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="data")
+        service_component_23 = Component.objects.get(cluster=cluster, service=service, prototype__name="data")
 
         self.assertEqual(service_component_23.prototype, new_component_prototype_3)
 
@@ -621,9 +621,9 @@ class TestRevertUpgrade(BaseTestCase):
 
         service_1 = Service.objects.get(cluster=cluster, prototype__name="hadoop")
         service_2 = Service.objects.get(cluster=cluster, prototype__name="hive")
-        comp_11 = ServiceComponent.objects.get(cluster=cluster, service=service_1, prototype__name="server")
-        comp_12 = ServiceComponent.objects.get(cluster=cluster, service=service_1, prototype__name="node")
-        comp_21 = ServiceComponent.objects.get(cluster=cluster, service=service_2, prototype__name="server")
+        comp_11 = Component.objects.get(cluster=cluster, service=service_1, prototype__name="server")
+        comp_12 = Component.objects.get(cluster=cluster, service=service_1, prototype__name="node")
+        comp_21 = Component.objects.get(cluster=cluster, service=service_2, prototype__name="server")
 
         self.assertEqual(service_1.prototype, service1_proto1)
         self.assertEqual(service_2.prototype, service2_proto1)

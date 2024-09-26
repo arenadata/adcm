@@ -12,7 +12,7 @@
 
 from adcm import settings
 from adcm.serializers import EmptySerializer
-from cm.models import Cluster, Host, HostProvider, MaintenanceMode, ServiceComponent
+from cm.models import Cluster, Component, Host, HostProvider, MaintenanceMode
 from cm.validators import HostUniqueValidator, StartMidEndValidator
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import (
@@ -42,7 +42,7 @@ class HostClusterSerializer(ModelSerializer):
 
 class HCComponentNameSerializer(ModelSerializer):
     class Meta:
-        model = ServiceComponent
+        model = Component
         fields = ["id", "name", "display_name"]
 
 

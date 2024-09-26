@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action, Host, HostComponent, HostProvider, ServiceComponent
+from cm.models import Action, Component, Host, HostComponent, HostProvider
 from cm.tests.mocks.task_runner import RunTaskMock
 from core.types import ADCMCoreType
 from rest_framework.status import (
@@ -600,8 +600,8 @@ class TestClusterHost(BaseAPITestCase):
 
     def test_adcm_5687_filtering_by_component_id(self):
         service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        component_1 = service.servicecomponent_set.get(prototype__name="component_1")
-        component_2 = service.servicecomponent_set.get(prototype__name="component_2")
+        component_1 = service.components.get(prototype__name="component_1")
+        component_2 = service.components.get(prototype__name="component_2")
 
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
@@ -615,7 +615,7 @@ class TestClusterHost(BaseAPITestCase):
             ({"componentId": component_1.pk}, {self.host.pk}),
             ({"componentId": component_2.pk}, {self.host_2.pk}),
             (None, {self.host.pk, self.host_2.pk, self.control_host_same_cluster.pk}),
-            ({"componentId": self.get_non_existent_pk(model=ServiceComponent)}, set()),
+            ({"componentId": self.get_non_existent_pk(model=Component)}, set()),
         ):
             with self.subTest(query=query, expected_ids=expected_ids):
                 response = self.client.v2[self.cluster_1, "hosts"].get(query=query)
@@ -634,7 +634,7 @@ class TestHostActions(BaseAPITestCase):
         self.action = Action.objects.get(name="host_action", prototype=self.host.prototype)
 
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = ServiceComponent.objects.get(prototype__name="component_1", service=self.service_1)
+        self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service_1)
 
     def test_host_cluster_list_success(self):
         response = self.client.v2[self.cluster_1, "hosts", self.host, "actions"].get()
@@ -805,10 +805,10 @@ class TestClusterHostComponent(BaseAPITestCase):
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = ServiceComponent.objects.get(
+        self.component_1 = Component.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )
-        self.component_2 = ServiceComponent.objects.get(
+        self.component_2 = Component.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
         )
         self.set_hostcomponent(

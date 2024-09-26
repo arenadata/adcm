@@ -17,13 +17,13 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from cm.models import (
     Bundle,
     Cluster,
+    Component,
     ConfigLog,
     GroupConfig,
     Host,
     ObjectConfig,
     Prototype,
     Service,
-    ServiceComponent,
 )
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -101,7 +101,7 @@ class TestGroupConfigAudit(BaseTestCase):
         )
 
     def get_component(self):
-        return ServiceComponent.objects.create(
+        return Component.objects.create(
             prototype=Prototype.objects.create(
                 bundle=self.bundle,
                 type="component",

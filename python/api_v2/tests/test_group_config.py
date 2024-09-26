@@ -15,7 +15,7 @@ from typing import Iterable, NamedTuple, TypeAlias
 
 from adcm.tests.client import WithID
 from cm.converters import orm_object_to_core_type
-from cm.models import Cluster, ConfigLog, GroupConfig, Host, HostProvider, Service, ServiceComponent
+from cm.models import Cluster, Component, ConfigLog, GroupConfig, Host, HostProvider, Service
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -32,7 +32,7 @@ from api_v2.tests.base import BaseAPITestCase
 CONFIG_GROUPS = "config-groups"
 HOST_CANDIDATES = "host-candidates"
 
-ObjectWithConfigHostGroup: TypeAlias = Cluster | Service | ServiceComponent | HostProvider
+ObjectWithConfigHostGroup: TypeAlias = Cluster | Service | Component | HostProvider
 
 
 class BaseClusterGroupConfigTestCase(BaseAPITestCase):
@@ -81,10 +81,10 @@ class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_in_cluster", cluster=self.cluster_1
         )
 
-        self.component_1 = ServiceComponent.objects.get(
+        self.component_1 = Component.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )
-        self.component_2 = ServiceComponent.objects.get(
+        self.component_2 = Component.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
         )
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_for_service, self.component_1)])
@@ -93,7 +93,7 @@ class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):
 class TestGroupConfigNaming(BaseServiceGroupConfigTestCase):
     def test_create_group_with_same_name_for_different_entities_of_same_type_success(self) -> None:
         service_2 = self.add_services_to_cluster(service_names=["service_1_clone"], cluster=self.cluster_1).get()
-        component_of_service_2 = ServiceComponent.objects.get(service=service_2, prototype__name=self.component_1.name)
+        component_of_service_2 = Component.objects.get(service=service_2, prototype__name=self.component_1.name)
 
         with self.subTest("Cluster"):
             self.assertEqual(GroupConfig.objects.filter(name=self.cluster_1_group_config.name).count(), 1)
@@ -1079,8 +1079,8 @@ class TestHostCandidateForConfigHostsGroups(BaseAPITestCase):
 
         self.cluster = self.cluster_1
         self.service = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = self.service.servicecomponent_set.get(prototype__name="component_1")
-        self.component_2 = self.service.servicecomponent_set.get(prototype__name="component_2")
+        self.component_1 = self.service.components.get(prototype__name="component_1")
+        self.component_2 = self.service.components.get(prototype__name="component_2")
 
         self.hostprovider = self.provider
         self.hosts = tuple(self.add_host(provider=self.hostprovider, fqdn=f"host-{i}") for i in range(4))

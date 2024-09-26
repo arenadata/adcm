@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Cluster, GroupConfig, Host, HostProvider, Service, ServiceComponent
+from cm.models import Cluster, Component, GroupConfig, Host, HostProvider, Service
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import (
     HTTP_200_OK,
@@ -53,7 +53,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         )
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_for_service)
 
-        self.component_1 = ServiceComponent.objects.get(
+        self.component_1 = Component.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )
         self.component_1_group_config = GroupConfig.objects.create(
@@ -309,7 +309,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
 
     def test_component_create_fail(self):
         response = self.client.v2[
-            self.service_1, "components", self.get_non_existent_pk(model=ServiceComponent), "config-groups"
+            self.service_1, "components", self.get_non_existent_pk(model=Component), "config-groups"
         ].post(
             data={"name": "group-config-new", "description": "group-config-new"},
         )
@@ -1288,7 +1288,7 @@ class TestGroupConfigAudit(BaseAPITestCase):
         response = self.client.v2[
             self.service_1,
             "components",
-            self.get_non_existent_pk(model=ServiceComponent),
+            self.get_non_existent_pk(model=Component),
             "config-groups",
             self.component_1_group_config,
             "hosts",

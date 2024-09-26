@@ -25,13 +25,13 @@ from cm.models import (
     ActionHostGroup,
     Bundle,
     Cluster,
+    Component,
     ConfigLog,
     Host,
     HostProvider,
     JobLog,
     JobStatus,
     Service,
-    ServiceComponent,
     TaskLog,
 )
 from cm.tests.mocks.task_runner import RunTaskMock
@@ -43,7 +43,7 @@ from rbac.upgrade.role import init_roles
 from rest_framework.test import APITestCase
 
 AuditTarget: TypeAlias = (
-    Bundle | Cluster | Service | ServiceComponent | ActionHostGroup | HostProvider | Host | User | Group | Role | Policy
+    Bundle | Cluster | Service | Component | ActionHostGroup | HostProvider | Host | User | Group | Role | Policy
 )
 
 
@@ -150,7 +150,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
             ]
             name = f"{owner_name}/{expected_object.name}"
             type_ = AuditObjectType.ACTION_HOST_GROUP
-        elif isinstance(expected_object, ServiceComponent):
+        elif isinstance(expected_object, Component):
             name = (
                 f"{expected_object.cluster.name}/{expected_object.service.display_name}/{expected_object.display_name}"
             )
@@ -205,9 +205,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
         logout(request)
         self.cookies = SimpleCookie()
 
-    def simulate_finished_task(
-        self, object_: Cluster | Service | ServiceComponent, action: Action
-    ) -> (TaskLog, JobLog):
+    def simulate_finished_task(self, object_: Cluster | Service | Component, action: Action) -> (TaskLog, JobLog):
         with RunTaskMock() as run_task:
             (self.client.v2[object_] / "actions" / action / "run").post(
                 data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
@@ -218,7 +216,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
 
         return run_task.target_task, run_task.target_task.joblog_set.last()
 
-    def simulate_running_task(self, object_: Cluster | Service | ServiceComponent, action: Action) -> (TaskLog, JobLog):
+    def simulate_running_task(self, object_: Cluster | Service | Component, action: Action) -> (TaskLog, JobLog):
         with RunTaskMock() as run_task:
             (self.client.v2[object_] / "actions" / action / "run").post(
                 data={"configuration": None, "isVerbose": True, "hostComponentMap": []}

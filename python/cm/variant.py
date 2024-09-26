@@ -20,12 +20,12 @@ from cm.errors import raise_adcm_ex as err
 from cm.logger import logger
 from cm.models import (
     Cluster,
+    Component,
     GroupConfig,
     Host,
     HostComponent,
     Prototype,
     Service,
-    ServiceComponent,
 )
 
 
@@ -124,7 +124,7 @@ def var_host_get_component(cluster, args, service, func):
     if "component" not in args:
         err("CONFIG_VARIANT_ERROR", f'no "component" argument for predicate "{func}"')
 
-    return ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name=args["component"])
+    return Component.objects.get(cluster=cluster, service=service, prototype__name=args["component"])
 
 
 @return_empty_on_not_found
@@ -289,12 +289,12 @@ def variant_host_in_cluster(**kwargs):
 
         if "component" in args:
             try:
-                comp = ServiceComponent.objects.get(
+                comp = Component.objects.get(
                     cluster=cluster,
                     service=service,
                     prototype__name=args["component"],
                 )
-            except ServiceComponent.DoesNotExist:
+            except Component.DoesNotExist:
                 return []
 
             for hostcomponent in HostComponent.objects.filter(

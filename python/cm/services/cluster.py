@@ -25,7 +25,7 @@ from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor, HostID, Ma
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
 
-from cm.models import Cluster, ConcernCause, Host, HostComponent, Service, ServiceComponent
+from cm.models import Cluster, Component, ConcernCause, Host, HostComponent, Service
 from cm.services.concern import create_issue, delete_issue
 
 
@@ -59,7 +59,7 @@ class ClusterDB:
     ) -> dict[ClusterID, list[tuple[ShortObjectInfo, Collection[ShortObjectInfo]]]]:
         services = (
             Service.objects.select_related("prototype")
-            .prefetch_related("servicecomponent_set__prototype")
+            .prefetch_related("components__prototype")
             .filter(cluster_id__in=cluster_ids)
         )
 
@@ -69,8 +69,7 @@ class ClusterDB:
                 (
                     ShortObjectInfo(id=service.pk, name=service.name),
                     tuple(
-                        ShortObjectInfo(id=component.pk, name=component.name)
-                        for component in service.servicecomponent_set.all()
+                        ShortObjectInfo(id=component.pk, name=component.name) for component in service.components.all()
                     ),
                 )
             )
@@ -128,10 +127,10 @@ def retrieve_clusters_topology(
     return build_clusters_topology(cluster_ids=cluster_ids, db=ClusterDB, input_mapping=input_mapping)
 
 
-def retrieve_related_cluster_topology(orm_object: Cluster | Service | ServiceComponent | Host) -> ClusterTopology:
+def retrieve_related_cluster_topology(orm_object: Cluster | Service | Component | Host) -> ClusterTopology:
     if isinstance(orm_object, Cluster):
         cluster_id = orm_object.id
-    elif isinstance(orm_object, (Service, ServiceComponent, Host)) and orm_object.cluster_id:
+    elif isinstance(orm_object, (Service, Component, Host)) and orm_object.cluster_id:
         cluster_id = orm_object.cluster_id
     else:
         message = f"Can't detect cluster variables for {orm_object}"
@@ -154,7 +153,7 @@ def retrieve_clusters_objects_maintenance_mode(cluster_ids: Iterable[ClusterID])
         },
         components={
             component_id: ObjectMaintenanceModeState(mm)
-            for component_id, mm in ServiceComponent.objects.values_list("id", "_maintenance_mode").filter(
+            for component_id, mm in Component.objects.values_list("id", "_maintenance_mode").filter(
                 cluster_id__in=cluster_ids
             )
         },

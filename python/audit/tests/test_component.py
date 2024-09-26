@@ -18,11 +18,11 @@ from cm.models import (
     Action,
     Bundle,
     Cluster,
+    Component,
     ConfigLog,
     ObjectConfig,
     Prototype,
     Service,
-    ServiceComponent,
 )
 from django.urls import reverse
 from rbac.models import User
@@ -60,7 +60,7 @@ class TestComponentAudit(BaseTestCase):
         config.current = self.config_log.pk
         config.save(update_fields=["current"])
 
-        self.component = ServiceComponent.objects.create(
+        self.component = Component.objects.create(
             prototype=self.component_prototype,
             cluster=self.cluster,
             service=self.service,

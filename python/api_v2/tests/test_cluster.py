@@ -18,10 +18,10 @@ from cm.models import (
     ADCMEntityStatus,
     AnsibleConfig,
     Cluster,
+    Component,
     ObjectType,
     Prototype,
     Service,
-    ServiceComponent,
 )
 from cm.services.status.client import FullStatusMap
 from cm.tests.mocks.task_runner import RunTaskMock
@@ -645,7 +645,7 @@ class TestClusterMM(BaseAPITestCase):
             service_names=["service_3_manual_add"], cluster=self.cluster_1
         ).last()
         self.service_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).last()
-        self.component_1 = ServiceComponent.objects.create(
+        self.component_1 = Component.objects.create(
             prototype=Prototype.objects.create(
                 bundle=self.bundle_1,
                 type="component",
@@ -654,7 +654,7 @@ class TestClusterMM(BaseAPITestCase):
             cluster=self.cluster_1,
             service=self.service_1,
         )
-        self.component_2 = ServiceComponent.objects.create(
+        self.component_2 = Component.objects.create(
             prototype=Prototype.objects.create(
                 bundle=self.bundle_2,
                 type="component",
@@ -704,7 +704,7 @@ class TestClusterMM(BaseAPITestCase):
             self.assertEqual(permissions_view.count(), 4)
 
             self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="cluster").count(), 1)
-            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="servicecomponent").count(), 2)
+            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="component").count(), 2)
             self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="service").count(), 2)
             self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="host").count(), 2)
 
@@ -733,7 +733,7 @@ class TestClusterMM(BaseAPITestCase):
             self.assertEqual(permissions_view.count(), 1)
 
             self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="cluster").count(), 0)
-            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="servicecomponent").count(), 0)
+            self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="component").count(), 0)
             self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="service").count(), 0)
             self.assertEqual(GroupObjectPermission.objects.filter(content_type__model="host").count(), 2)
 

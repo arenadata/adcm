@@ -12,7 +12,7 @@
 
 
 from adcm.tests.base import APPLICATION_JSON
-from cm.models import Host, Service, ServiceComponent
+from cm.models import Component, Host, Service
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
@@ -56,7 +56,7 @@ class ClusterAdminServiceAdminHostcomponentTestCase(PolicyBaseTestCase):
             {f"{perm.content_type.app_label}.{perm.codename}" for perm in self.new_user_group.permissions.all()},
         )
 
-        component = ServiceComponent.objects.get(prototype__name="component_1_1")
+        component = Component.objects.get(prototype__name="component_1_1")
         response: Response = self.client.post(
             path=reverse(viewname="v1:host-component", kwargs={"cluster_id": self.cluster.pk}),
             data={

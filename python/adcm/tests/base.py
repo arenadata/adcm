@@ -33,6 +33,7 @@ from cm.models import (
     ADCMModel,
     Bundle,
     Cluster,
+    Component,
     ConfigLog,
     GroupConfig,
     Host,
@@ -42,7 +43,6 @@ from cm.models import (
     ObjectType,
     Prototype,
     Service,
-    ServiceComponent,
 )
 from cm.services.job.prepare import prepare_task_for_action
 from cm.utils import deep_merge
@@ -427,7 +427,7 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
     @staticmethod
     def get_hostcomponent_data(service_pk: int, host_pk: int) -> list[dict[str, int]]:
         hostcomponent_data = []
-        for component in ServiceComponent.objects.filter(service_id=service_pk):
+        for component in Component.objects.filter(service_id=service_pk):
             hostcomponent_data.append({"component_id": component.pk, "host_id": host_pk, "service_id": service_pk})
 
         return hostcomponent_data
@@ -487,7 +487,7 @@ class BusinessLogicMixin(BundleLogicMixin):
         return bulk_add_services_to_cluster(cluster=cluster, prototypes=service_prototypes)
 
     @staticmethod
-    def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, ServiceComponent]]) -> list[HostComponent]:
+    def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, Component]]) -> list[HostComponent]:
         return add_hc(
             cluster=cluster,
             hc_in=[
@@ -573,7 +573,7 @@ class BusinessLogicMixin(BundleLogicMixin):
 class TaskTestMixin:
     def prepare_task(
         self,
-        owner: ADCM | Cluster | Service | ServiceComponent | HostProvider | Host,
+        owner: ADCM | Cluster | Service | Component | HostProvider | Host,
         payload: TaskPayloadDTO | None = None,
         host: Host | None = None,
         **action_search_kwargs,

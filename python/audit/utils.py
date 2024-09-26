@@ -44,10 +44,10 @@ from cm.models import (
     AnsibleConfig,
     Cluster,
     ClusterBind,
+    Component,
     Host,
     HostProvider,
     Service,
-    ServiceComponent,
     TaskLog,
     Upgrade,
     get_cm_model_by_type,
@@ -240,7 +240,7 @@ def _get_object_changes(prev_data: dict, current_obj: Model, api_version: int) -
             serializer_class = ServiceAuditSerializer
         elif api_version == 2:
             serializer_class = ServiceAuditSerializerV2
-    elif isinstance(current_obj, ServiceComponent):
+    elif isinstance(current_obj, Component):
         if api_version == 1:
             serializer_class = ComponentAuditSerializer
         elif api_version == 2:
@@ -502,7 +502,7 @@ def audit(func):
             elif "service_id" in kwargs and "maintenance-mode" in request.path:
                 deleted_obj = Service.objects.filter(pk=kwargs["service_id"]).first()
             elif "component_id" in kwargs and "maintenance-mode" in request.path:
-                deleted_obj = ServiceComponent.objects.filter(pk=kwargs["component_id"]).first()
+                deleted_obj = Component.objects.filter(pk=kwargs["component_id"]).first()
 
         prev_data, current_obj = _get_obj_changes_data(view=view)
 

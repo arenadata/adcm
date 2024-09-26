@@ -164,9 +164,9 @@ from api_v2.views import ADCMGenericViewSet, ObjectWithStatusViewMixin
         ),
     ),
     statuses=extend_schema(
-        operation_id="getServiceComponentStatuses",
-        summary="GET service component statuses",
-        description="Get information about service component statuses.",
+        operation_id="getComponentStatuses",
+        summary="GET component statuses",
+        description="Get information about component statuses.",
         responses=responses(success=ServiceStatusSerializer, errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)),
         parameters=[DefaultParams.STATUS_REQUIRED],
     ),

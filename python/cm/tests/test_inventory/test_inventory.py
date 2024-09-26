@@ -21,13 +21,13 @@ from cm.api import add_hc, add_service_to_cluster, update_obj_config
 from cm.converters import model_name_to_core_type
 from cm.models import (
     Action,
+    Component,
     Host,
     HostComponent,
     JobLog,
     MaintenanceMode,
     Prototype,
     Service,
-    ServiceComponent,
     TaskLog,
 )
 from cm.services.job.action import ActionRunPayload, ObjectWithAction, run_action
@@ -174,12 +174,8 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
             proto=Prototype.objects.get(name="service_1", type="service"),
         )
 
-        self.component_hc_acl_1 = ServiceComponent.objects.get(
-            cluster=self.cluster_hc_acl, prototype__name="component_1"
-        )
-        self.component_hc_acl_2 = ServiceComponent.objects.get(
-            cluster=self.cluster_hc_acl, prototype__name="component_2"
-        )
+        self.component_hc_acl_1 = Component.objects.get(cluster=self.cluster_hc_acl, prototype__name="component_1")
+        self.component_hc_acl_2 = Component.objects.get(cluster=self.cluster_hc_acl, prototype__name="component_2")
 
         self.hc_c1_h1 = {
             "host_id": self.host_hc_acl_1.pk,
@@ -236,7 +232,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
             cluster=self.cluster_target_group,
             proto=Prototype.objects.get(name="service_1_target_group", type="service"),
         )
-        self.component_target_group = ServiceComponent.objects.get(
+        self.component_target_group = Component.objects.get(
             cluster=self.cluster_target_group, prototype__name="component_1_target_group"
         )
 
@@ -297,7 +293,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
 
         target_key_remove = (
             f"{Service.objects.get(pk=self.hc_c1_h2['service_id']).prototype.name}"
-            f".{ServiceComponent.objects.get(pk=self.hc_c1_h2['component_id']).prototype.name}"
+            f".{Component.objects.get(pk=self.hc_c1_h2['component_id']).prototype.name}"
             f".{HcAclAction.REMOVE.value}"
         )
         target_key_mm_service = (
@@ -305,7 +301,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
         )
         target_key_mm_service_component = (
             f"{Service.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
-            f".{ServiceComponent.objects.get(pk=self.hc_c1_h3['component_id']).prototype.name}"
+            f".{Component.objects.get(pk=self.hc_c1_h3['component_id']).prototype.name}"
             f".{MAINTENANCE_MODE_GROUP_SUFFIX}"
         )
 
@@ -339,7 +335,7 @@ class TestInventoryAndMaintenanceMode(BaseTestCase):
 
         target_key_remove = (
             f"{Service.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"
-            f".{ServiceComponent.objects.get(pk=self.hc_c1_h3['component_id']).prototype.name}"
+            f".{Component.objects.get(pk=self.hc_c1_h3['component_id']).prototype.name}"
             f".{HcAclAction.REMOVE.value}"
             f".maintenance_mode"
         )

@@ -104,7 +104,7 @@ def get_obj_type(obj_type: str) -> str:
         "adcm": "adcm",
         "cluster": "cluster",
         "service": "service",
-        "service component": "component",
+        "component": "component",
         "host provider": "provider",
         "host": "host",
     }

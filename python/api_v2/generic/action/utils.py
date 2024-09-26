@@ -22,11 +22,11 @@ from cm.models import (
     Action,
     ADCMEntity,
     Cluster,
+    Component,
     Host,
     HostProvider,
     PrototypeConfig,
     Service,
-    ServiceComponent,
 )
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver
 from cm.services.config.jinja import get_jinja_config
@@ -68,7 +68,7 @@ def insert_service_ids(
 ) -> List[dict[Literal["host_id", "component_id", "service_id"], int]]:
     component_ids = {single_hc["component_id"] for single_hc in hc_create_data}
     component_service_map = {
-        component.pk: component.service_id for component in ServiceComponent.objects.filter(pk__in=component_ids)
+        component.pk: component.service_id for component in Component.objects.filter(pk__in=component_ids)
     }
 
     for single_hc in hc_create_data:
@@ -78,7 +78,7 @@ def insert_service_ids(
 
 
 def get_action_configuration(
-    action_: Action, object_: Cluster | Service | ServiceComponent | HostProvider | Host
+    action_: Action, object_: Cluster | Service | Component | HostProvider | Host
 ) -> tuple[dict | None, dict | None, dict | None]:
     if action_.config_jinja:
         prototype_configs, _ = get_jinja_config(action=action_, cluster_relative_object=object_)

@@ -11,7 +11,7 @@
 # limitations under the License.
 
 
-from cm.models import Action, Cluster, MaintenanceMode, Service, ServiceComponent
+from cm.models import Action, Cluster, Component, MaintenanceMode, Service
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -33,7 +33,7 @@ class TestComponentAudit(BaseAPITestCase):
 
         self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1)
         self.service_1 = Service.objects.get(cluster=self.cluster_1, prototype__name="service_1")
-        self.component_1 = ServiceComponent.objects.get(prototype__name="component_1", service=self.service_1)
+        self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service_1)
         self.component_action = Action.objects.get(name="action_1_comp_1", prototype=self.component_1.prototype)
         self.config_post_data = {
             "config": {
@@ -143,7 +143,7 @@ class TestComponentAudit(BaseAPITestCase):
 
     def test_update_config_not_exists_fail(self):
         response = self.client.v2[
-            self.service_1, "components", self.get_non_existent_pk(model=ServiceComponent), "configs"
+            self.service_1, "components", self.get_non_existent_pk(model=Component), "configs"
         ].post(
             data=self.config_post_data,
         )
@@ -263,7 +263,7 @@ class TestComponentAudit(BaseAPITestCase):
                 / "services"
                 / self.service_1.pk
                 / "components"
-                / self.get_non_existent_pk(model=ServiceComponent)
+                / self.get_non_existent_pk(model=Component)
                 / "maintenance-mode",
                 audit_object_none_kwargs,
             ),

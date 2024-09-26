@@ -16,9 +16,9 @@ from core.types import CoreObjectDescriptor
 from cm.converters import model_name_to_core_type
 from cm.models import (
     Action,
+    Component,
     ObjectType,
     Prototype,
-    ServiceComponent,
 )
 from cm.services.job.inventory import get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
@@ -49,16 +49,16 @@ class TestGroupConfigsInInventory(BaseInventoryTestCase):
             cluster=self.cluster,
             prototypes=Prototype.objects.filter(type=ObjectType.SERVICE, name__in=["not_simple", "thesame"]),
         )
-        self.component_not_simple = ServiceComponent.objects.get(
+        self.component_not_simple = Component.objects.get(
             service=self.service_not_simple, prototype__name="not_simple_component"
         )
-        self.component_another_not_simple = ServiceComponent.objects.get(
+        self.component_another_not_simple = Component.objects.get(
             service=self.service_not_simple, prototype__name="another_not_simple_component"
         )
-        self.component_thesame = ServiceComponent.objects.get(
+        self.component_thesame = Component.objects.get(
             service=self.service_thesame, prototype__name="thesame_component"
         )
-        self.component_another_thesame = ServiceComponent.objects.get(
+        self.component_another_thesame = Component.objects.get(
             service=self.service_thesame, prototype__name="another_thesame_component"
         )
 

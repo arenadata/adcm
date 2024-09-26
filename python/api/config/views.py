@@ -56,9 +56,6 @@ def type_to_model(object_type):
     if object_type == "service":
         object_type = "service"
 
-    if object_type == "component":
-        object_type = "servicecomponent"
-
     return object_type
 
 

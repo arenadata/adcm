@@ -18,13 +18,13 @@ from cm.models import (
     ADCM,
     Action,
     Cluster,
+    Component,
     ConcernItem,
     ConfigLog,
     GroupConfig,
     Host,
     HostProvider,
     Service,
-    ServiceComponent,
     Upgrade,
 )
 from cm.tests.mocks.task_runner import RunTaskMock
@@ -1098,7 +1098,7 @@ class TestComponentConfig(BaseAPITestCase):
         super().setUp()
 
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = ServiceComponent.objects.get(
+        self.component_1 = Component.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )
         self.component_1_initial_config = ConfigLog.objects.get(pk=self.component_1.config.current)
@@ -1106,7 +1106,7 @@ class TestComponentConfig(BaseAPITestCase):
         self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
         self.service_2_config = ConfigLog.objects.get(pk=self.service_2.config.current)
 
-        self.component_2 = ServiceComponent.objects.get(
+        self.component_2 = Component.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
         )
         self.component_2_initial_config = ConfigLog.objects.get(pk=self.component_2.config.current)
@@ -1282,7 +1282,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
         super().setUp()
 
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1 = ServiceComponent.objects.get(
+        self.component_1 = Component.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )
 
@@ -2489,7 +2489,7 @@ class TestGroupConfigUpgrade(BaseAPITestCase):
 
         self.cluster = self.add_cluster(bundle=self.bundle_1, name="cluster_group_config")
         self.service = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster).get()
-        self.component = ServiceComponent.objects.filter(cluster=self.cluster, service=self.service).first()
+        self.component = Component.objects.filter(cluster=self.cluster, service=self.service).first()
 
         self.cluster_group_config = GroupConfig.objects.create(
             name="cluster_group_config", object_type=self.cluster.content_type, object_id=self.cluster.pk
@@ -2761,9 +2761,9 @@ class TestPatternInConfig(BaseAPITestCase):
         bundle = self.add_bundle(self.api_v2_bundles_dir / "cluster_with_patterns")
         self.cluster = self.add_cluster(bundle=bundle, name="With Patterns")
         self.service = self.add_services_to_cluster(["with_patterns"], cluster=self.cluster).get()
-        self.component = ServiceComponent.objects.get(service=self.service, prototype__name="cwp")
+        self.component = Component.objects.get(service=self.service, prototype__name="cwp")
 
-    def get_object_path(self, target: Cluster | Service | ServiceComponent) -> str:
+    def get_object_path(self, target: Cluster | Service | Component) -> str:
         prefix = "/api/v2/clusters"
         if isinstance(target, Cluster):
             return f"{prefix}/{target.id}/"
@@ -2771,12 +2771,10 @@ class TestPatternInConfig(BaseAPITestCase):
         if isinstance(target, Service):
             return f"{prefix}/{target.cluster_id}/services/{target.id}/"
 
-        if isinstance(target, ServiceComponent):
+        if isinstance(target, Component):
             return f"{prefix}/{target.cluster_id}/services/{target.service_id}/components/{target.id}/"
 
-    def change_one_field(
-        self, target: Cluster | Service | ServiceComponent, field_name: str, new_value: str
-    ) -> Response:
+    def change_one_field(self, target: Cluster | Service | Component, field_name: str, new_value: str) -> Response:
         path = f"{self.get_object_path(target)}configs/"
         target.refresh_from_db(fields=["config"])
         current_data = self.client.get(f"{path}{target.config.current}/").json()["config"]
@@ -2796,7 +2794,7 @@ class TestPatternInConfig(BaseAPITestCase):
             },
         )
 
-    def run_action(self, target: Cluster | Service | ServiceComponent, action: Action, config: dict) -> Response:
+    def run_action(self, target: Cluster | Service | Component, action: Action, config: dict) -> Response:
         path = f"{self.get_object_path(target)}actions/{action.id}/run/"
         return self.client.post(path=path, data={"configuration": {"config": config, "adcmMeta": {}}})
 

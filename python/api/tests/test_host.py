@@ -18,12 +18,12 @@ from cm.models import (
     ActionType,
     Bundle,
     Cluster,
+    Component,
     Host,
     HostProvider,
     MaintenanceMode,
     Prototype,
     Service,
-    ServiceComponent,
     SubAction,
 )
 from cm.tests.mocks.task_runner import RunTaskMock
@@ -272,7 +272,7 @@ class TestHostAPI(BaseTestCase):
         )
         service = Service.objects.get(pk=service_response.data["id"])
 
-        component = ServiceComponent.objects.get(service=service, prototype__name="first_component")
+        component = Component.objects.get(service=service, prototype__name="first_component")
 
         self.assertFalse(cluster.concerns.exists())
 

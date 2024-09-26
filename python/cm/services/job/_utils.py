@@ -13,7 +13,7 @@
 from typing import Any, Hashable
 
 from cm.errors import AdcmEx
-from cm.models import Action, Cluster, Host, HostComponent, Service, ServiceComponent
+from cm.models import Action, Cluster, Component, Host, HostComponent, Service
 from cm.services.job.types import HcAclAction
 
 
@@ -24,7 +24,7 @@ def get_old_hc(saved_hostcomponent: list[dict]):
     old_hostcomponent = {}
     for hostcomponent in saved_hostcomponent:
         service = Service.objects.get(id=hostcomponent["service_id"])
-        comp = ServiceComponent.objects.get(id=hostcomponent["component_id"])
+        comp = Component.objects.get(id=hostcomponent["component_id"])
         host = Host.objects.get(id=hostcomponent["host_id"])
         key = _cook_comp_key(service.prototype.name, comp.prototype.name)
         _add_to_dict(old_hostcomponent, key, host.fqdn, host)
@@ -34,7 +34,7 @@ def get_old_hc(saved_hostcomponent: list[dict]):
 
 def cook_delta(
     cluster: Cluster,
-    new_hc: list[tuple[Service, Host, ServiceComponent]],
+    new_hc: list[tuple[Service, Host, Component]],
     action_hc: list[dict],
     old: dict = None,
 ) -> dict:
@@ -95,7 +95,7 @@ def _cook_comp_key(name, subname):
 def _check_action_hc(
     action_hc: list[dict],
     service: Service,
-    component: ServiceComponent,
+    component: Component,
     action: Action,
 ) -> bool:
     for item in action_hc:

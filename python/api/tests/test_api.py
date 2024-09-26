@@ -20,13 +20,13 @@ from cm.issue import lock_affected_objects
 from cm.models import (
     Bundle,
     Cluster,
+    Component,
     Host,
     HostComponent,
     ObjectConfig,
     ObjectType,
     Prototype,
     Service,
-    ServiceComponent,
 )
 from cm.tests.utils import (
     gen_adcm,
@@ -897,7 +897,7 @@ class TestAPI2(BaseTestCase):
             bundle_id=self.bundle.id,
             name="node",
         )
-        service_component = ServiceComponent.objects.create(
+        service_component = Component.objects.create(
             cluster=self.cluster,
             service=cluster_object,
             prototype=component,

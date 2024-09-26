@@ -20,7 +20,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 from cm.api import add_host_to_cluster, save_hc
 from cm.errors import AdcmEx
-from cm.models import Action, Bundle, Host, Prototype, Service, ServiceComponent
+from cm.models import Action, Bundle, Component, Host, Prototype, Service
 from cm.services.job.checks import check_hostcomponentmap
 from cm.tests.mocks.task_runner import RunTaskMock
 from cm.tests.test_upgrade import (
@@ -50,7 +50,7 @@ class TestHC(BaseTestCase, BusinessLogicMixin):
         self.assertEqual(e.exception.msg, "hc is required")
 
         service = Service.objects.get(cluster=cluster, prototype__name="hadoop")
-        sc1 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="server")
+        sc1 = Component.objects.get(cluster=cluster, service=service, prototype__name="server")
         with self.assertRaises(AdcmEx) as e:
             action = Action(name="run", hostcomponentmap=["qwe"])
             hostcomponent = [{"service_id": service.id, "component_id": sc1.id, "host_id": 500}]
@@ -85,7 +85,7 @@ class TestHC(BaseTestCase, BusinessLogicMixin):
         host_1 = Host.objects.get(provider=provider, fqdn="server01.inter.net")
         host_2 = Host.objects.get(provider=provider, fqdn="server02.inter.net")
         service = Service.objects.get(cluster=cluster, prototype__name="hadoop")
-        sc1 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="server")
+        sc1 = Component.objects.get(cluster=cluster, service=service, prototype__name="server")
 
         add_host_to_cluster(cluster, host_1)
         add_host_to_cluster(cluster, host_2)
@@ -192,9 +192,9 @@ class TestHC(BaseTestCase, BusinessLogicMixin):
         self.add_host_to_cluster(cluster, host_1)
         self.add_host_to_cluster(cluster, host_2)
 
-        component_1_1 = ServiceComponent.objects.get(service=service_1, prototype__name="component_1")
-        component_2_1 = ServiceComponent.objects.get(service=service_2, prototype__name="component_1")
-        component_2_2 = ServiceComponent.objects.get(service=service_2, prototype__name="component_2")
+        component_1_1 = Component.objects.get(service=service_1, prototype__name="component_1")
+        component_2_1 = Component.objects.get(service=service_2, prototype__name="component_1")
+        component_2_2 = Component.objects.get(service=service_2, prototype__name="component_2")
         hc = self.set_hostcomponent(
             cluster=cluster,
             entries=(

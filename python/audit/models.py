@@ -17,11 +17,11 @@ from cm.models import (
     ActionHostGroup,
     Bundle,
     Cluster,
+    Component,
     Host,
     HostProvider,
     Prototype,
     Service,
-    ServiceComponent,
 )
 from django.conf import settings
 from django.db.models import (
@@ -118,7 +118,7 @@ class AuditOperation:
 MODEL_TO_AUDIT_OBJECT_TYPE_MAP = {
     Cluster: AuditObjectType.CLUSTER,
     Service: AuditObjectType.SERVICE,
-    ServiceComponent: AuditObjectType.COMPONENT,
+    Component: AuditObjectType.COMPONENT,
     Host: AuditObjectType.HOST,
     HostProvider: AuditObjectType.PROVIDER,
     Bundle: AuditObjectType.BUNDLE,
@@ -137,8 +137,8 @@ PATH_STR_TO_OBJ_CLASS_MAP = {
     "adcm": ADCM,
     "service": Service,
     "services": Service,
-    "component": ServiceComponent,
-    "components": ServiceComponent,
+    "component": Component,
+    "components": Component,
     "provider": HostProvider,
     "hostproviders": HostProvider,
     "host": Host,

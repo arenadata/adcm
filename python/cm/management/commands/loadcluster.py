@@ -33,6 +33,7 @@ from cm.errors import AdcmEx
 from cm.models import (
     Bundle,
     Cluster,
+    Component,
     ConfigLog,
     GroupConfig,
     Host,
@@ -42,7 +43,6 @@ from cm.models import (
     Prototype,
     PrototypeConfig,
     Service,
-    ServiceComponent,
 )
 
 OLD_ADCM_PASSWORD = None
@@ -287,14 +287,14 @@ def create_component(component, cluster, service):
     """
     Creating Component object
 
-    :param component: ServiceComponent object in dictionary format
+    :param component: Component object in dictionary format
     :type component: dict
     :param cluster: Cluster object
     :type cluster: models.Cluster
     :param service: Service object
     :type service: models.Service
     :return: Component object
-    :rtype: models.ServiceComponent
+    :rtype: models.Component
     """
     prototype = get_prototype(
         bundle_hash=component.pop("bundle_hash"),
@@ -304,7 +304,7 @@ def create_component(component, cluster, service):
     )
     ex_id = component.pop("id")
     config = component.pop("config")
-    component = ServiceComponent.objects.create(
+    component = Component.objects.create(
         prototype=prototype,
         cluster=cluster,
         service=service,
@@ -328,7 +328,7 @@ def create_host_component(host_component, cluster, host, service, component):
     :param service: Service object
     :type service: models.Service
     :param component: Component object
-    :type component: models.ServiceComponent
+    :type component: models.Component
     :return: HostComponent object
     :rtype: models.HostComponent
     """
@@ -446,7 +446,7 @@ def load(file_path):
             obj = cluster
         elif group_data["model_name"] == "service":
             obj = ex_service_ids[group_data["object_id"]]
-        elif group_data["model_name"] == "servicecomponent":
+        elif group_data["model_name"] == "component":
             obj = ex_component_ids[group_data["object_id"]]
         elif group_data["model_name"] == "hostprovider":
             obj = ex_provider_ids[group_data["object_id"]]

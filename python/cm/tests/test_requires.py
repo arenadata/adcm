@@ -18,11 +18,11 @@ from cm.issue import update_hierarchy_issues
 from cm.models import (
     Bundle,
     Cluster,
+    Component,
     ConcernCause,
     Host,
     Prototype,
     Service,
-    ServiceComponent,
 )
 
 
@@ -68,7 +68,7 @@ class TestComponent(BaseTestCase):
 
     def test_requires_hc(self):
         service_1 = add_service_to_cluster(cluster=self.cluster, proto=self.service_proto_1)
-        component_1 = ServiceComponent.objects.get(prototype=self.component_1_1_proto, service=service_1)
+        component_1 = Component.objects.get(prototype=self.component_1_1_proto, service=service_1)
         host = Host.objects.create(
             prototype=Prototype.objects.create(type="host", bundle=self.bundle), cluster=self.cluster
         )

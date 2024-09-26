@@ -20,11 +20,11 @@ from cm.models import (
     Action,
     Bundle,
     Cluster,
+    Component,
     ConfigLog,
     Host,
     Prototype,
     Service,
-    ServiceComponent,
     TaskLog,
 )
 from django.contrib.contenttypes.models import ContentType
@@ -63,7 +63,7 @@ class TestActionAudit(BaseTestCase):
         )
         self.action_create_view = "api.action.views.create"
 
-    def get_cluster_service_component(self) -> tuple[Cluster, Service, ServiceComponent]:
+    def get_cluster_service_component(self) -> tuple[Cluster, Service, Component]:
         cluster = Cluster.objects.create(
             prototype=Prototype.objects.create(bundle=self.bundle, type="cluster"),
             name="test_cluster",
@@ -76,7 +76,7 @@ class TestActionAudit(BaseTestCase):
             ),
             cluster=cluster,
         )
-        component = ServiceComponent.objects.create(
+        component = Component.objects.create(
             prototype=Prototype.objects.create(
                 bundle=self.bundle,
                 type="component",

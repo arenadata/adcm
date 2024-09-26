@@ -272,7 +272,7 @@ class ServicePrototypeSerializer(PrototypeSerializer):
 
 class ServiceDetailPrototypeSerializer(ServicePrototypeSerializer):
     actions = StackActionDetailSerializer(many=True, read_only=True)
-    components = ComponentPrototypeSerializer(many=True, read_only=True)
+    components = ComponentPrototypeSerializer(many=True, read_only=True, source="component_prototypes")
     config = ConfigSerializer(many=True, read_only=True)
     exports = ExportSerializer(many=True, read_only=True)
     imports = ImportSerializer(many=True, read_only=True)
