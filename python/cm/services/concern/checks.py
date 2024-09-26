@@ -23,6 +23,7 @@ from typing_extensions import Self
 from cm.models import (
     Cluster,
     ClusterBind,
+    Component,
     Host,
     HostProvider,
     ObjectConfig,
@@ -30,13 +31,12 @@ from cm.models import (
     Prototype,
     PrototypeImport,
     Service,
-    ServiceComponent,
 )
 from cm.services.cluster import retrieve_clusters_topology
 from cm.services.config import retrieve_config_attr_pairs
 from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 
-ObjectWithConfig: TypeAlias = Cluster | Service | ServiceComponent | HostProvider | Host
+ObjectWithConfig: TypeAlias = Cluster | Service | Component | HostProvider | Host
 HasIssue: TypeAlias = bool
 RequiresEntry: TypeAlias = dict[Literal["service", "component"], str]
 ConstraintDBFormat: TypeAlias = tuple[str] | tuple[int | str, int | str]
@@ -273,9 +273,7 @@ def find_unsatisfied_requirements(
 
     if required_components:
         for _, missing_component_name in required_components.difference(
-            ServiceComponent.objects.values_list("service__prototype__name", "prototype__name").filter(
-                cluster_id=cluster_id
-            )
+            Component.objects.values_list("service__prototype__name", "prototype__name").filter(cluster_id=cluster_id)
         ):
             missing_requirements.append(MissingRequirement(type="component", name=missing_component_name))
 
@@ -366,7 +364,7 @@ def extract_data_for_requirements_check(
 
     query = {"cluster": cluster}
     if target_component_prototypes is not None:
-        query.update({"servicecomponent__prototype_id__in": target_component_prototypes})
+        query.update({"components__prototype_id__in": target_component_prototypes})
 
     component_prototype_map: dict[ComponentID, tuple[PrototypeID, ServiceID, PrototypeID]] = {}
     existing_objects_map: dict[ComponentExternalRequirement | ServiceExternalRequirement, ComponentID | ServiceID] = {
@@ -385,7 +383,7 @@ def extract_data_for_requirements_check(
         service_prototype_id,
         component_name,
         service_name,
-    ) in ServiceComponent.objects.values_list(
+    ) in Component.objects.values_list(
         "id", "prototype_id", "service_id", "service__prototype_id", "prototype__name", "service__prototype__name"
     ).filter(**query):
         component_prototype_map[component_id] = (prototype_id, service_id, service_prototype_id)

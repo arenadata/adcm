@@ -14,7 +14,7 @@ from functools import wraps
 from typing import Callable, Collection
 
 from cm.converters import core_type_to_model, host_group_type_to_model
-from cm.models import Cluster, Host, Service, ServiceComponent
+from cm.models import Cluster, Component, Host, Service
 from cm.services.status.client import retrieve_status_map
 from cm.status_api import get_raw_status
 from core.types import ADCMCoreType, ADCMHostGroupType, CoreObjectDescriptor, HostGroupDescriptor
@@ -107,7 +107,7 @@ class ObjectWithStatusViewMixin:
                 url = f"{view_model.__name__.lower()}/{self.kwargs['pk']}/"
             elif view_model == Service:
                 url = f"cluster/{self.kwargs['cluster_pk']}/service/{self.kwargs['pk']}/"
-            elif view_model == ServiceComponent:
+            elif view_model == Component:
                 url = (
                     f"cluster/{self.kwargs['cluster_pk']}/service/{self.kwargs['service_pk']}"
                     f"/component/{self.kwargs['pk']}/"

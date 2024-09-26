@@ -16,11 +16,11 @@ from cm.errors import AdcmEx
 from cm.models import (
     AnsibleConfig,
     Cluster,
+    Component,
     Host,
     HostComponent,
     Prototype,
     Service,
-    ServiceComponent,
 )
 from cm.upgrade import get_upgrade
 from cm.validators import ClusterUniqueValidator, StartMidEndValidator
@@ -172,12 +172,12 @@ class MappingSerializer(ModelSerializer):
 
 class RelatedComponentStatusSerializer(WithStatusSerializer):
     class Meta:
-        model = ServiceComponent
+        model = Component
         fields = ["id", "name", "display_name", "status"]
 
 
 class RelatedServicesStatusesSerializer(WithStatusSerializer):
-    components = RelatedComponentStatusSerializer(many=True, source="servicecomponent_set")
+    components = RelatedComponentStatusSerializer(many=True)
 
     class Meta:
         model = Service

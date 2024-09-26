@@ -29,10 +29,10 @@ from cm.api import get_hc, save_hc
 from cm.models import (
     AnsibleConfig,
     Cluster,
+    Component,
     HostComponent,
     LogStorage,
     Prototype,
-    ServiceComponent,
     TaskLog,
 )
 from cm.services.job._utils import cook_delta, get_old_hc
@@ -183,7 +183,7 @@ def _switch_hc_if_required(task: TaskLog):
     for hostcomponent in new_hc:
         if "component_prototype_id" in hostcomponent:
             proto = Prototype.objects.get(type="component", id=hostcomponent.pop("component_prototype_id"))
-            comp = ServiceComponent.objects.get(cluster=cluster, prototype=proto)
+            comp = Component.objects.get(cluster=cluster, prototype=proto)
             hostcomponent["component_id"] = comp.id
             hostcomponent["service_id"] = comp.service.id
 

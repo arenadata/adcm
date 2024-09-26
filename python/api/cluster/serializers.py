@@ -15,7 +15,7 @@ from cm.adcm_config.config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues
-from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
+from cm.models import Action, Cluster, Component, Host, Prototype
 from cm.schemas import RequiresUISchema
 from cm.status_api import get_cluster_status, get_hc_status
 from cm.upgrade import get_upgrade
@@ -294,7 +294,7 @@ class HostComponentUISerializer(EmptySerializer):
         return HostSerializer(hosts, many=True, context=self.context).data
 
     def get_component(self, obj):  # noqa: ARG001, ARG002
-        comps = ServiceComponent.objects.filter(cluster=self.context.get("cluster"))
+        comps = Component.objects.filter(cluster=self.context.get("cluster"))
 
         return HCComponentSerializer(comps, many=True, context=self.context).data
 
@@ -333,19 +333,19 @@ class HCComponentSerializer(ComponentShortSerializer):
     requires = SerializerMethodField()
 
     @staticmethod
-    def get_service_state(obj: ServiceComponent) -> str:
+    def get_service_state(obj: Component) -> str:
         return obj.service.state
 
     @staticmethod
-    def get_service_name(obj: ServiceComponent) -> str:
+    def get_service_name(obj: Component) -> str:
         return obj.service.prototype.name
 
     @staticmethod
-    def get_service_display_name(obj: ServiceComponent) -> str:
+    def get_service_display_name(obj: Component) -> str:
         return obj.service.prototype.display_name
 
     @staticmethod
-    def get_requires(obj: ServiceComponent) -> list[RequiresUISchema] | None:
+    def get_requires(obj: Component) -> list[RequiresUISchema] | None:
         return get_requires(prototype=obj.prototype)
 
 

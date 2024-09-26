@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from cm.converters import orm_object_to_core_type
-from cm.models import HostComponent, Service, ServiceComponent
+from cm.models import Component, HostComponent, Service
 from cm.services.job.run.repo import JobRepoImpl
 
 from ansible_plugin.errors import PluginContextError, PluginIncorrectCallError, PluginTargetDetectionError
@@ -27,7 +27,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
 
         self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster).first()
         self.service_2 = self.add_services_to_cluster(["service_2"], cluster=self.cluster).first()
-        self.component_1 = ServiceComponent.objects.filter(service=self.service_1).first()
+        self.component_1 = Component.objects.filter(service=self.service_1).first()
 
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
 

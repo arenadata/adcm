@@ -18,13 +18,13 @@ import json
 from cm.models import (
     Action,
     Cluster,
+    Component,
     Host,
     HostComponent,
     HostProvider,
     JobLog,
     MaintenanceMode,
     Service,
-    ServiceComponent,
 )
 from cm.services.job.jinja_scripts import get_action_info
 from cm.tests.mocks.task_runner import RunTaskMock
@@ -36,7 +36,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT
 
 from api_v2.tests.base import BaseAPITestCase
 
-ObjectWithActions: TypeAlias = Cluster | Service | ServiceComponent | HostProvider | Host
+ObjectWithActions: TypeAlias = Cluster | Service | Component | HostProvider | Host
 
 
 class TestActionsFiltering(BaseAPITestCase):
@@ -46,12 +46,8 @@ class TestActionsFiltering(BaseAPITestCase):
         self.cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions")
         self.cluster = self.add_cluster(self.cluster_bundle, "Cluster with Actions")
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster).get()
-        self.component_1: ServiceComponent = ServiceComponent.objects.get(
-            service=self.service_1, prototype__name="component_1"
-        )
-        self.component_2: ServiceComponent = ServiceComponent.objects.get(
-            service=self.service_1, prototype__name="component_2"
-        )
+        self.component_1: Component = Component.objects.get(service=self.service_1, prototype__name="component_1")
+        self.component_2: Component = Component.objects.get(service=self.service_1, prototype__name="component_2")
         self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster)
 
         provider_bundle = self.add_bundle(self.test_bundles_dir / "provider_actions")
@@ -445,7 +441,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def check_object_action_list(
-        self, object_: Cluster | Service | ServiceComponent | HostProvider | Host, expected_actions: list[str]
+        self, object_: Cluster | Service | Component | HostProvider | Host, expected_actions: list[str]
     ) -> None:
         response = self.client.v2[object_, "actions"].get()
 
@@ -465,9 +461,7 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
         cluster_bundle = self.add_bundle(self.test_bundles_dir / "cluster_actions_jinja")
         self.cluster = self.add_cluster(cluster_bundle, "Cluster with Jinja Actions")
         self.service_1 = self.add_services_to_cluster(service_names=["first_service"], cluster=self.cluster).get()
-        self.component_1: ServiceComponent = ServiceComponent.objects.get(
-            service=self.service_1, prototype__name="first_component"
-        )
+        self.component_1: Component = Component.objects.get(service=self.service_1, prototype__name="first_component")
 
     def test_retrieve_jinja_config(self):
         action = Action.objects.filter(name="check_state", prototype=self.cluster.prototype).first()

@@ -31,6 +31,7 @@ from cm.issue import (
 )
 from cm.models import (
     Cluster,
+    Component,
     ConcernCause,
     Host,
     HostComponent,
@@ -38,7 +39,6 @@ from cm.models import (
     ObjectType,
     Prototype,
     Service,
-    ServiceComponent,
 )
 from cm.services.action_host_group import ActionHostGroupRepo
 from cm.services.cluster import retrieve_clusters_topology
@@ -146,15 +146,15 @@ def retrieve_mapping_data(
     for service in (
         Service.objects.filter(cluster=cluster)
         .select_related("prototype")
-        .prefetch_related("servicecomponent_set", "servicecomponent_set__prototype")
+        .prefetch_related("components", "components__prototype")
     ):
         service: Service
 
         mapping_data["existing_services_names"].append(service.prototype.name)
         mapping_data["services"][service.pk] = ServiceData.model_validate(obj=service)
         mapping_data["prototypes"][service.prototype.pk] = PrototypeData.model_validate(obj=service.prototype)
-        for component in service.servicecomponent_set.all():
-            component: ServiceComponent
+        for component in service.components.all():
+            component: Component
             mapping_data["components"][component.pk] = ComponentData.model_validate(obj=component)
             mapping_data["prototypes"][component.prototype.pk] = PrototypeData.model_validate(obj=component.prototype)
 

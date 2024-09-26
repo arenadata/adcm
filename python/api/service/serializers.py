@@ -18,9 +18,9 @@ from cm.models import (
     MAINTENANCE_MODE_BOTH_CASES_CHOICES,
     Action,
     Cluster,
+    Component,
     Prototype,
     Service,
-    ServiceComponent,
 )
 from cm.status_api import get_service_status
 from django.db.utils import IntegrityError
@@ -158,7 +158,7 @@ class ServiceDetailUISerializer(ServiceDetailSerializer):
         return acts.data
 
     def get_components(self, obj):
-        comps = ServiceComponent.objects.filter(service=obj, cluster=obj.cluster)
+        comps = Component.objects.filter(service=obj, cluster=obj.cluster)
 
         return ComponentUISerializer(comps, many=True, context=self.context).data
 

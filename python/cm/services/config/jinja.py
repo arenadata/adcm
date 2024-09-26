@@ -19,10 +19,10 @@ from yaml import safe_load
 from cm.models import (
     Action,
     Cluster,
+    Component,
     Host,
     PrototypeConfig,
     Service,
-    ServiceComponent,
 )
 from cm.services.bundle import BundlePathResolver, detect_relative_path_to_bundle_root
 from cm.services.cluster import retrieve_related_cluster_topology
@@ -35,7 +35,7 @@ _TEMPLATE_CONFIG_DELETE_FIELDS = {"yspec", "option", "activatable", "active", "r
 
 
 def get_jinja_config(
-    action: Action, cluster_relative_object: Cluster | Service | ServiceComponent | Host
+    action: Action, cluster_relative_object: Cluster | Service | Component | Host
 ) -> tuple[list[PrototypeConfig], dict[str, Any]]:
     resolver = BundlePathResolver(bundle_hash=action.prototype.bundle.hash)
     jinja_conf_file = resolver.resolve(action.config_jinja)

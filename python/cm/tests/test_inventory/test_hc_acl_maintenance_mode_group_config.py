@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action, MaintenanceMode, ServiceComponent
+from cm.models import Action, Component, MaintenanceMode
 from cm.tests.test_inventory.base import BaseInventoryTestCase, MappingEntry
 
 
@@ -33,8 +33,8 @@ class TestInventoryHcAclMaintenanceModeGroupConfig(BaseInventoryTestCase):
             service_names=["service_two_components"], cluster=self.cluster
         ).get()
 
-        self.component_1 = ServiceComponent.objects.get(prototype__name="component_1", service=self.service)
-        self.component_2 = ServiceComponent.objects.get(prototype__name="component_2", service=self.service)
+        self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service)
+        self.component_2 = Component.objects.get(prototype__name="component_2", service=self.service)
 
         self.set_hostcomponent(
             cluster=self.cluster, entries=[(self.host_1, self.component_1), (self.host_2, self.component_2)]

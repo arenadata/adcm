@@ -17,7 +17,7 @@ from adcm.tests.ansible import ADCMAnsiblePluginTestMixin
 from adcm.tests.base import BusinessLogicMixin, ParallelReadyTestCase, TestCaseWithCommonSetUpTearDown
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
 
-from cm.models import Action, ServiceComponent
+from cm.models import Action, Component
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.tests.mocks.task_runner import ETFMockWithEnvPreparation, JobImitator, RunTaskMock
 
@@ -41,7 +41,7 @@ class TestEffectsOfADCMAnsiblePlugins(
 
     def test_adcm_hc_should_not_cause_hc_acl_effect(self) -> None:
         service = self.add_services_to_cluster(["simple"], cluster=self.cluster).first()
-        component_1, component_2 = ServiceComponent.objects.filter(service=service).all()
+        component_1, component_2 = Component.objects.filter(service=service).all()
 
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_2)

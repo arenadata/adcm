@@ -19,7 +19,7 @@ from django.conf import settings
 
 from cm.adcm_config.ansible import ansible_decrypt
 from cm.converters import model_name_to_core_type
-from cm.models import Action, ServiceComponent
+from cm.models import Action, Component
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.job.prepare import prepare_task_for_action
 from cm.services.job.run._target_factories import prepare_ansible_job_config
@@ -81,7 +81,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             bundle=self.add_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
         )
         self.service = self.add_services_to_cluster(service_names=["all_params"], cluster=self.cluster).first()
-        self.component = ServiceComponent.objects.get(service=self.service)
+        self.component = Component.objects.get(service=self.service)
 
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_2)

@@ -320,7 +320,7 @@ roles:
           - name: service
             codenames:
               - view
-          - name: servicecomponent
+          - name: component
             codenames:
               - view
           - name: host
@@ -454,7 +454,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: servicecomponent
+          - name: component
             codenames:
               - change_config_of
 
@@ -882,7 +882,7 @@ roles:
           - name: service
             codenames:
               - view
-          - name: servicecomponent
+          - name: component
             codenames:
               - view
           - name: host
@@ -1401,7 +1401,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: servicecomponent
+          - name: component
             codenames:
               - view
 
@@ -1418,7 +1418,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: servicecomponent
+          - name: component
             codenames:
               - view
 
@@ -1650,7 +1650,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: servicecomponent
+          - name: component
             codenames:
               - view
               - change_maintenance_mode
@@ -1782,7 +1782,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: servicecomponent
+          - name: component
             codenames: *ahg_view_hostnames
 
   - name: View any object action host groups
@@ -1797,7 +1797,7 @@ roles:
             codenames: *ahg_view_hostnames
           - name: service
             codenames: *ahg_view_hostnames
-          - name: servicecomponent
+          - name: component
             codenames: *ahg_view_hostnames
 
   - &edit_action_host_group_hidden
@@ -1832,7 +1832,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: servicecomponent
+          - name: component
             codenames: *ahg_edit_hostnames
 
   - &action_host_group_business

@@ -17,7 +17,7 @@ from typing import Iterable
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 
-from cm.models import Cluster, ConcernCause, ConcernItem, ConcernType, Host, Service, ServiceComponent
+from cm.models import Cluster, Component, ConcernCause, ConcernItem, ConcernType, Host, Service
 from cm.services.concern import create_issue, delete_issue, retrieve_issue
 from cm.services.concern.checks import (
     cluster_mapping_has_issue,
@@ -70,7 +70,7 @@ def recalculate_own_concerns_on_add_services(cluster: Cluster, services: Iterabl
                 issue = create_issue(owner=service_cod, cause=concern_cause)
                 new_concerns[ADCMCoreType.SERVICE][service.pk].add(issue.pk)
 
-    for component in ServiceComponent.objects.filter(service__in=services):
+    for component in Component.objects.filter(service__in=services):
         if object_configuration_has_issue(component):
             issue = create_issue(
                 owner=CoreObjectDescriptor(id=component.id, type=ADCMCoreType.COMPONENT), cause=ConcernCause.CONFIG
@@ -149,14 +149,14 @@ def recalculate_concerns_on_cluster_upgrade(cluster: Cluster) -> None:
 
     components_with_config_concerns = set(
         ConcernItem.objects.values_list("owner_id", flat=True).filter(
-            owner_id__in=ServiceComponent.objects.values_list("id", flat=True).filter(service__in=services),
-            owner_type=ContentType.objects.get_for_model(ServiceComponent),
+            owner_id__in=Component.objects.values_list("id", flat=True).filter(service__in=services),
+            owner_type=ContentType.objects.get_for_model(Component),
             type=ConcernType.ISSUE,
             cause=ConcernCause.CONFIG,
         )
     )
     for component in (
-        ServiceComponent.objects.select_related("prototype")
+        Component.objects.select_related("prototype")
         .filter(service__in=services)
         .exclude(id__in=components_with_config_concerns)
     ):

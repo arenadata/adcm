@@ -17,6 +17,7 @@ from cm.models import (
     Action,
     ADCMEntityStatus,
     Cluster,
+    Component,
     ConcernType,
     HostComponent,
     JobLog,
@@ -24,7 +25,6 @@ from cm.models import (
     ObjectType,
     Prototype,
     Service,
-    ServiceComponent,
     TaskLog,
 )
 from cm.services.job.action import ActionRunPayload, run_action
@@ -221,7 +221,7 @@ class TestServiceDeleteAction(BaseAPITestCase):
         HostComponent.objects.create(
             cluster=self.cluster_1,
             service=self.service_to_delete,
-            component=ServiceComponent.objects.get(service=self.service_to_delete, prototype__name="component"),
+            component=Component.objects.get(service=self.service_to_delete, prototype__name="component"),
             host=self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter"),
         )
 
@@ -272,7 +272,7 @@ class TestServiceMaintenanceMode(BaseAPITestCase):
         super().setUp()
 
         self.service_1_cl_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.component_1_s_1_cl1 = ServiceComponent.objects.filter(
+        self.component_1_s_1_cl1 = Component.objects.filter(
             cluster_id=self.cluster_1.pk, service_id=self.service_1_cl_1.pk
         ).last()
         self.service_cl_2 = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
@@ -336,7 +336,7 @@ class TestServicePermissions(BaseAPITestCase):
         self.host_with_component = self.add_host(
             bundle=self.provider_bundle, provider=self.provider, fqdn="doesntmatter_2", cluster=self.cluster_1
         )
-        component = ServiceComponent.objects.filter(cluster_id=self.cluster_1.pk, service_id=self.service.pk).last()
+        component = Component.objects.filter(cluster_id=self.cluster_1.pk, service_id=self.service.pk).last()
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_with_component, component)])
 
     def test_adcm_5278_cluster_hosts_restriction_by_service_administrator_ownership_success(self):

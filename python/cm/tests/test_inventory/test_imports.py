@@ -20,9 +20,9 @@ from cm.models import (
     Action,
     ADCMModel,
     Cluster,
+    Component,
     PrototypeImport,
     Service,
-    ServiceComponent,
 )
 from cm.services.job.inventory import get_imports_for_inventory, get_inventory_data
 from cm.tests.test_inventory.base import BaseInventoryTestCase, decrypt_secrets
@@ -70,7 +70,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             bundle=self.add_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
         )
         self.service = self.add_services_to_cluster(service_names=["all_params"], cluster=self.cluster).first()
-        self.component = ServiceComponent.objects.get(service=self.service)
+        self.component = Component.objects.get(service=self.service)
 
         self.export_cluster_1 = self.add_cluster(
             bundle=self.add_bundle(self.bundles_dir / "cluster_group_config"), name="Cluster With Export 1"
@@ -356,7 +356,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
 
         self.add_host_to_cluster(cluster=self.cluster_with_defaults, host=host_3)
         self.add_host_to_cluster(cluster=self.cluster_with_defaults, host=host_4)
-        component = ServiceComponent.objects.filter(service=self.service_with_defaults).get()
+        component = Component.objects.filter(service=self.service_with_defaults).get()
         self.set_hostcomponent(cluster=self.cluster_with_defaults, entries=[(host_3, component), (host_4, component)])
         group = self.add_group_config(parent=self.service_with_defaults, hosts=[host_3])
         self.change_configuration(

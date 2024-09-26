@@ -18,6 +18,7 @@ from cm.models import (
     ActionHostGroup,
     Bundle,
     Cluster,
+    Component,
     GroupConfig,
     Host,
     HostProvider,
@@ -25,7 +26,6 @@ from cm.models import (
     LogStorage,
     Prototype,
     Service,
-    ServiceComponent,
     TaskLog,
 )
 from django.test.client import AsyncClient
@@ -34,7 +34,7 @@ from rest_framework.response import Response
 from rest_framework.test import APIClient
 
 _RootPathObject = Bundle | Cluster | HostProvider | Host | TaskLog | JobLog | Prototype
-PathObject = _RootPathObject | Service | ServiceComponent | LogStorage | GroupConfig
+PathObject = _RootPathObject | Service | Component | LogStorage | GroupConfig
 
 
 class WithID(Protocol):
@@ -148,7 +148,7 @@ class V2RootNode(RootNode):
                 node_class=self._node_class,
             )
 
-        if isinstance(path_object, ServiceComponent):
+        if isinstance(path_object, Component):
             return self._node_class(
                 *self._path,
                 "clusters",

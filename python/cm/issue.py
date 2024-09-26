@@ -28,6 +28,7 @@ from cm.models import (
     ADCMEntity,
     Bundle,
     Cluster,
+    Component,
     ConcernCause,
     ConcernItem,
     ConcernType,
@@ -35,7 +36,6 @@ from cm.models import (
     ObjectType,
     Prototype,
     Service,
-    ServiceComponent,
     TaskLog,
 )
 from cm.services.concern import create_issue, retrieve_issue
@@ -61,9 +61,7 @@ def check_service_requires(cluster: Cluster, proto: Prototype) -> None:
         obj_prototype = Prototype.objects.filter(name=require["service"], type="service")
 
         if comp_name := require.get("component"):
-            req_obj = ServiceComponent.objects.filter(
-                prototype__name=comp_name, service=req_service.first(), cluster=cluster
-            )
+            req_obj = Component.objects.filter(prototype__name=comp_name, service=req_service.first(), cluster=cluster)
             obj_prototype = Prototype.objects.filter(name=comp_name, type="component", parent=obj_prototype.first())
         else:
             req_obj = req_service

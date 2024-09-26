@@ -12,7 +12,7 @@
 
 from typing import TypeAlias
 
-from cm.models import Cluster, Host, HostProvider, Service, ServiceComponent
+from cm.models import Cluster, Component, Host, HostProvider, Service
 from cm.services.job.run.repo import JobRepoImpl
 
 from ansible_plugin.base import ADCMAnsiblePluginExecutor
@@ -21,7 +21,7 @@ from ansible_plugin.executors.multi_state_unset import ADCMMultiStateUnsetPlugin
 from ansible_plugin.executors.state import ADCMStatePluginExecutor
 from ansible_plugin.tests.base import BaseTestEffectsOfADCMAnsiblePlugins
 
-ADCMObject: TypeAlias = Cluster | Service | ServiceComponent | HostProvider | Host
+ADCMObject: TypeAlias = Cluster | Service | Component | HostProvider | Host
 
 
 class TestADCMStatePluginExecutors(BaseTestEffectsOfADCMAnsiblePlugins):
@@ -30,7 +30,7 @@ class TestADCMStatePluginExecutors(BaseTestEffectsOfADCMAnsiblePlugins):
 
         services = self.add_services_to_cluster(service_names=["service_1", "service_2"], cluster=self.cluster)
         self.service = services.get(prototype__name="service_1")
-        self.component = self.service.servicecomponent_set.first()
+        self.component = self.service.components.first()
 
         self.target_state = "brand new object's (multi)state"
         self.default_multi_state = "default multi-state"
@@ -40,7 +40,7 @@ class TestADCMStatePluginExecutors(BaseTestEffectsOfADCMAnsiblePlugins):
         provider = self.add_provider(bundle=self.provider_bundle, name="Control provider")
         cluster = self.add_cluster(bundle=self.cluster_bundle, name="Control cluster")
         service_2 = services.get(prototype__name="service_2")
-        other_components = ServiceComponent.objects.filter(cluster=self.cluster).exclude(pk=self.component.pk)
+        other_components = Component.objects.filter(cluster=self.cluster).exclude(pk=self.component.pk)
         self.control_objects = [cluster, service_2, *list(other_components), provider, self.host_2]
 
         self.allowed_owner_target_args = (

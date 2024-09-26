@@ -26,12 +26,12 @@ from cm.models import (
     ADCMCoreType,
     Bundle,
     Cluster,
+    Component,
     Host,
     HostProvider,
     JobLog,
     Prototype,
     Service,
-    ServiceComponent,
     TaskLog,
 )
 from cm.utils import get_obj_type
@@ -77,12 +77,12 @@ class ServiceAuditObjectCreator(IDBasedAuditObjectCreator):
 
 @dataclass(slots=True)
 class ComponentAuditObjectCreator(IDBasedAuditObjectCreator):
-    model = ServiceComponent
+    model = Component
     name_field = "prototype__display_name"
 
     def get_name(self, id_: str | int) -> str | None:
         names = (
-            ServiceComponent.objects.values_list(
+            Component.objects.values_list(
                 "cluster__name", "service__prototype__display_name", "prototype__display_name"
             )
             .filter(id=id_)
@@ -125,7 +125,7 @@ service_from_lookup = _extract_service_from(extract_id=ExtractID(field="pk").fro
 _extract_component_from = partial(
     GeneralAuditObjectRetriever,
     audit_object_type=AuditObjectType.COMPONENT,
-    create_new=ComponentAuditObjectCreator(model=ServiceComponent),
+    create_new=ComponentAuditObjectCreator(model=Component),
 )
 parent_component_from_lookup = _extract_component_from(extract_id=ExtractID(field="component_pk").from_lookup_kwargs)
 component_from_lookup = _extract_component_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
@@ -379,7 +379,7 @@ service_with_parents_specified_in_path_exists = partial(
 
 component_with_parents_specified_in_path_exists = partial(
     object_does_exist,
-    model=ServiceComponent,
+    model=Component,
     arg_model_field_map={"cluster_pk": "cluster_id", "service_pk": "service_id"},
 )
 
@@ -633,7 +633,7 @@ def get_audit_object_name(object_id: int, model_name: str) -> str:
             names = Service.objects.values_list("cluster__name", "prototype__display_name").filter(id=object_id).first()
         case ADCMCoreType.COMPONENT:
             names = (
-                ServiceComponent.objects.values_list(
+                Component.objects.values_list(
                     "cluster__name", "service__prototype__display_name", "prototype__display_name"
                 )
                 .filter(id=object_id)

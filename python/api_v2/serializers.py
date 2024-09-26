@@ -18,10 +18,10 @@ from cm.models import (
     ADCMEntityStatus,
     ADCMModel,
     Cluster,
+    Component,
     Host,
     HostComponent,
     Service,
-    ServiceComponent,
 )
 from cm.services.status.client import FullStatusMap
 from cm.services.status.convert import (
@@ -41,7 +41,7 @@ _MODEL_RETRIEVAL_FUNC_MAP: dict[type[T], Callable[[FullStatusMap, T], ADCMEntity
     Service: lambda status_map, service: status_map.get_for_service(
         cluster_id=service.cluster_id, service_id=service.pk
     ),
-    ServiceComponent: lambda status_map, component: status_map.get_for_component(
+    Component: lambda status_map, component: status_map.get_for_component(
         cluster_id=component.cluster_id, service_id=component.service_id, component_id=component.pk
     ),
     Host: lambda status_map, host: status_map.get_for_host(host_id=host.pk),
@@ -72,7 +72,7 @@ class WithStatusSerializer(ModelSerializer):
         if isinstance(instance, Service):
             return convert_to_service_status(raw_status=status, monitoring=instance.monitoring)
 
-        if isinstance(instance, ServiceComponent):
+        if isinstance(instance, Component):
             return convert_to_component_status(raw_status=status, monitoring=instance.monitoring)
 
         if isinstance(instance, HostComponent):

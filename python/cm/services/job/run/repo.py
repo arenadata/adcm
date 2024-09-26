@@ -60,12 +60,12 @@ from cm.models import (
     Action,
     ActionHostGroup,
     Cluster,
+    Component,
     Host,
     HostProvider,
     JobLog,
     LogStorage,
     Service,
-    ServiceComponent,
     SubAction,
     TaskLog,
     Upgrade,
@@ -83,7 +83,7 @@ class JobRepoImpl:
             "object_name": F("prototype__display_name"),
             "type_name": Value(ADCMCoreType.SERVICE.value),
         },
-        ServiceComponent: {
+        Component: {
             "object_id": F("id"),
             "object_name": F("prototype__display_name"),
             "type_name": Value(ADCMCoreType.COMPONENT.value),
@@ -323,9 +323,7 @@ class JobRepoImpl:
                 cluster_id = Service.objects.values_list("cluster_id", flat=True).get(id=target.id)
                 query = query.union(Cluster.objects.values(**cls._selector_fields_map[Cluster]).filter(id=cluster_id))
             case (ADCMCoreType.COMPONENT, _):
-                cluster_id, service_id = ServiceComponent.objects.values_list("cluster_id", "service_id").get(
-                    id=target.id
-                )
+                cluster_id, service_id = Component.objects.values_list("cluster_id", "service_id").get(id=target.id)
                 cluster_qs = Cluster.objects.values(**cls._selector_fields_map[Cluster]).filter(id=cluster_id)
                 service_qs = Service.objects.values(**cls._selector_fields_map[Service]).filter(id=service_id)
                 query = query.union(cluster_qs).union(service_qs)
@@ -350,13 +348,11 @@ class JobRepoImpl:
                 )
             )
         elif action_owner.type == ADCMCoreType.COMPONENT:
-            service_id, component_id = ServiceComponent.objects.values_list("service_id", "id").get(
+            service_id, component_id = Component.objects.values_list("service_id", "id").get(
                 cluster_id=cluster_id, prototype_id=action_owner.id
             )
             query = query.union(Service.objects.values(**cls._selector_fields_map[Service]).filter(id=service_id))
-            query = query.union(
-                ServiceComponent.objects.values(**cls._selector_fields_map[ServiceComponent]).filter(id=component_id)
-            )
+            query = query.union(Component.objects.values(**cls._selector_fields_map[Component]).filter(id=component_id))
 
         return query
 

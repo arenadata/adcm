@@ -12,11 +12,11 @@
 
 from cm.models import (
     Cluster,
+    Component,
     Host,
     HostProvider,
     JobStatus,
     Service,
-    ServiceComponent,
     TaskLog,
 )
 from django.contrib.contenttypes.models import ContentType
@@ -47,14 +47,14 @@ class TaskFilter(FilterSet):
     def filter_object_name(self, queryset: QuerySet, _: str, value: str) -> QuerySet:
         clusters = Cluster.objects.filter(name__icontains=value).values_list("id")
         services = Service.objects.filter(prototype__display_name__icontains=value).values_list("id")
-        components = ServiceComponent.objects.filter(prototype__display_name__icontains=value).values_list("id")
+        components = Component.objects.filter(prototype__display_name__icontains=value).values_list("id")
         providers = HostProvider.objects.filter(name__icontains=value).values_list("id")
         hosts = Host.objects.filter(fqdn__icontains=value).values_list("id")
 
         return (
             queryset.filter(object_type=ContentType.objects.get_for_model(Cluster), object_id__in=clusters)
             | queryset.filter(object_type=ContentType.objects.get_for_model(Service), object_id__in=services)
-            | queryset.filter(object_type=ContentType.objects.get_for_model(ServiceComponent), object_id__in=components)
+            | queryset.filter(object_type=ContentType.objects.get_for_model(Component), object_id__in=components)
             | queryset.filter(object_type=ContentType.objects.get_for_model(HostProvider), object_id__in=providers)
             | queryset.filter(object_type=ContentType.objects.get_for_model(Host), object_id__in=hosts)
         )

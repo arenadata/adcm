@@ -13,7 +13,7 @@
 from unittest.mock import patch
 
 from cm.converters import orm_object_to_core_type
-from cm.models import Host, Prototype, ServiceComponent
+from cm.models import Component, Host, Prototype
 from cm.services.job.run.repo import JobRepoImpl
 
 from ansible_plugin.errors import PluginContextError, PluginRuntimeError, PluginValidationError
@@ -35,7 +35,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
         self.tp_host = self.add_host(provider=self.target_provider, fqdn="of-target-provider")
 
         self.service_1 = self.add_services_to_cluster(["service_1"], cluster=self.cluster).first()
-        self.component_1 = ServiceComponent.objects.filter(service=self.service_1).first()
+        self.component_1 = Component.objects.filter(service=self.service_1).first()
 
         self.add_host_to_cluster(cluster=self.cluster, host=self.tp_host)
 

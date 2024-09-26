@@ -15,6 +15,7 @@ from cm.models import (
     Action,
     ActionHostGroup,
     ADCMEntity,
+    Component,
     ConfigLog,
     GroupConfig,
     Host,
@@ -22,7 +23,6 @@ from cm.models import (
     JobLog,
     LogStorage,
     Service,
-    ServiceComponent,
     TaskLog,
 )
 from django.apps import apps
@@ -360,7 +360,7 @@ class ParentRole(AbstractRole):
                     for service in Service.obj.filter(cluster=obj):
                         self.find_and_apply(obj=service, policy=policy, role=role)
                         if "component" in parametrized_by:
-                            for comp in ServiceComponent.obj.filter(service=service):
+                            for comp in Component.obj.filter(service=service):
                                 self.find_and_apply(obj=comp, policy=policy, role=role)
 
                 if "host" in parametrized_by:
@@ -368,7 +368,7 @@ class ParentRole(AbstractRole):
                         self.find_and_apply(obj=host, policy=policy, role=role)
             elif obj.prototype.type == "service":
                 if "component" in parametrized_by:
-                    for comp in ServiceComponent.obj.filter(service=obj):
+                    for comp in Component.obj.filter(service=obj):
                         self.find_and_apply(obj=comp, policy=policy, role=role)
 
                 if "host" in parametrized_by:

@@ -21,6 +21,7 @@ from cm.issue import create_lock
 from cm.models import (
     ADCM,
     Cluster,
+    Component,
     ConcernCause,
     ConcernItem,
     ConcernType,
@@ -28,7 +29,6 @@ from cm.models import (
     HostProvider,
     JobLog,
     Service,
-    ServiceComponent,
     TaskLog,
 )
 from cm.services.concern import create_issue
@@ -61,7 +61,7 @@ class TestFlag(BaseTestCase, BusinessLogicMixin):
         expected_name = BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name
         expected_message = "${source} has a flag: " + BuiltInFlag.ADCM_OUTDATED_CONFIG.value.message
 
-        for object_model in (Cluster, Service, ServiceComponent, HostProvider, Host):
+        for object_model in (Cluster, Service, Component, HostProvider, Host):
             target = object_model.objects.all()[1]
             self.assertEqual(ConcernItem.objects.count(), 0)
 
@@ -88,7 +88,7 @@ class TestFlag(BaseTestCase, BusinessLogicMixin):
 
         clusters = random.sample(tuple(Cluster.objects.all()), k=1)
         services = random.sample(tuple(Service.objects.all()), k=2)
-        components = random.sample(tuple(ServiceComponent.objects.all()), k=3)
+        components = random.sample(tuple(Component.objects.all()), k=3)
         providers = random.sample(tuple(HostProvider.objects.all()), k=2)
         hosts = random.sample(tuple(Host.objects.all()), k=1)
 
@@ -130,7 +130,7 @@ class TestFlag(BaseTestCase, BusinessLogicMixin):
 
         clusters = cluster_1, cluster_2 = random.sample(tuple(Cluster.objects.all()), k=2)
         services = service_1, service_2 = random.sample(tuple(Service.objects.all()), k=2)
-        components = component_1, component_2 = random.sample(tuple(ServiceComponent.objects.all()), k=2)
+        components = component_1, component_2 = random.sample(tuple(Component.objects.all()), k=2)
         providers = provider_1, provider_2 = random.sample(tuple(HostProvider.objects.all()), k=2)
         hosts = host_1, host_2 = random.sample(tuple(Host.objects.all()), k=2)
 
@@ -162,7 +162,7 @@ class TestFlag(BaseTestCase, BusinessLogicMixin):
 
     def test_lower_flag_does_not_interfere_with_other_concerns_success(self) -> None:
         clusters = cluster_1, cluster_2 = random.sample(tuple(Cluster.objects.all()), k=2)
-        components = component_1, component_2 = random.sample(tuple(ServiceComponent.objects.all()), k=2)
+        components = component_1, component_2 = random.sample(tuple(Component.objects.all()), k=2)
         hosts = host_1, host_2 = random.sample(tuple(Host.objects.all()), k=2)
 
         dummy_job = JobLog(name="cool", task=TaskLog(id=10))

@@ -26,6 +26,7 @@ from django.utils import timezone
 from cm.models import (
     ADCM,
     Cluster,
+    Component,
     ConfigLog,
     GroupConfig,
     Host,
@@ -33,7 +34,6 @@ from cm.models import (
     JobLog,
     ObjectConfig,
     Service,
-    ServiceComponent,
     TaskLog,
 )
 
@@ -142,7 +142,7 @@ class Command(BaseCommand):
                     Service.objects.filter(config=obj_conf).count(),
                     Host.objects.filter(config=obj_conf).count(),
                     HostProvider.objects.filter(config=obj_conf).count(),
-                    ServiceComponent.objects.filter(config=obj_conf).count(),
+                    Component.objects.filter(config=obj_conf).count(),
                     GroupConfig.objects.filter(config=obj_conf).count(),
                 ],
             )

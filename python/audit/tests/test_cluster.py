@@ -20,6 +20,7 @@ from cm.models import (
     Bundle,
     Cluster,
     ClusterBind,
+    Component,
     ConfigLog,
     Host,
     HostComponent,
@@ -29,7 +30,6 @@ from cm.models import (
     PrototypeExport,
     PrototypeImport,
     Service,
-    ServiceComponent,
     Upgrade,
 )
 from django.conf import settings
@@ -109,7 +109,7 @@ class TestClusterAudit(BaseTestCase):
     def check_log(
         self,
         log: AuditLog,
-        obj: Cluster | Host | HostComponent | Service | ServiceComponent,
+        obj: Cluster | Host | HostComponent | Service | Component,
         obj_name: str,
         obj_type: AuditObjectType,
         operation_name: str,
@@ -182,10 +182,10 @@ class TestClusterAudit(BaseTestCase):
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.object_changes, {})
 
-    def get_sc(self) -> ServiceComponent:
+    def get_sc(self) -> Component:
         service_component_prototype = Prototype.objects.create(bundle=self.bundle, type="component")
 
-        return ServiceComponent.objects.create(
+        return Component.objects.create(
             cluster=self.cluster,
             service=self.service,
             prototype=service_component_prototype,
@@ -213,7 +213,7 @@ class TestClusterAudit(BaseTestCase):
 
         return cluster, service
 
-    def get_component(self) -> tuple[ServiceComponent, ConfigLog]:
+    def get_component(self) -> tuple[Component, ConfigLog]:
         config = ObjectConfig.objects.create(current=0, previous=0)
         config_log = ConfigLog.objects.create(obj_ref=config, config="{}")
         config.current = config_log.pk
@@ -222,7 +222,7 @@ class TestClusterAudit(BaseTestCase):
         prototype = Prototype.objects.create(bundle=self.bundle, type="component")
 
         return (
-            ServiceComponent.objects.create(
+            Component.objects.create(
                 cluster=self.cluster,
                 service=self.service,
                 prototype=prototype,
