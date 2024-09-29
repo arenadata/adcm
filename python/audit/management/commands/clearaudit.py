@@ -175,7 +175,7 @@ class Command(BaseCommand):
         header = None
         if Path(path).is_file():
             with open(path, encoding=settings.ENCODING_UTF_8) as csv_file:
-                header = csv_file.readline().strip().split(",")
+                header = csv_file.readline(5_000_000).strip().split(",")
         return header
 
     def __log(self, msg, method="info"):
