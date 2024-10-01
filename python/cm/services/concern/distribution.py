@@ -52,7 +52,14 @@ AffectedObjectConcernMap: TypeAlias = OwnObjectConcernMap
 ProviderHostMap: TypeAlias = dict[HostProviderID, set[HostID]]
 
 
-def redistribute_issues_and_flags(topology: ClusterTopology) -> None:
+def redistribute_issues_and_flags(
+    topology: ClusterTopology,
+) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]:
+    """
+    Calculate state of concern-object links and update state in database accordingly.
+
+    Returns added and removed concerns.
+    """
     topology_objects: TopologyObjectMap = {
         ADCMCoreType.CLUSTER: (topology.cluster_id,),
         ADCMCoreType.SERVICE: tuple(topology.services),
@@ -73,19 +80,30 @@ def redistribute_issues_and_flags(topology: ClusterTopology) -> None:
 
     if not objects_concerns:
         # nothing to redistribute, expected that no links will be found too
-        return
+        return {}, {}
 
-    # Step #2. Calculate new concern relations
-    concern_links: AffectedObjectConcernMap = _calculate_concerns_distribution_for_topology(
+    # Step #2. Find difference before-after in concern relations state
+
+    # For difference, we exclude concerns that came from host/hostprovider on hosts
+    # to ensure they aren't deleted/added
+    hostprovider_hierarchy_concerns = objects_concerns.get(ADCMCoreType.HOST, {})
+    full_distribution = _calculate_concerns_distribution_for_topology(
         topology=topology, objects_concerns=objects_concerns
+    )
+    added, removed = _find_distribution_difference(
+        old=_retrieve_current_concerns_distribution(
+            topology_objects=topology_objects,
+            hosts_existing_concerns=hostprovider_hierarchy_concerns,
+        ),
+        new=_remove_host_hierarchy_links_from_hosts(
+            concerns=full_distribution, hosts_existing_concerns=hostprovider_hierarchy_concerns
+        ),
     )
 
     # Step #3. Link objects to concerns
-    _relink_concerns_to_objects_in_db(
-        concern_links=concern_links,
-        topology_objects=topology_objects,
-        hosts_existing_concerns=objects_concerns.get(ADCMCoreType.HOST, {}),
-    )
+    _update_db_concerns_state(added=added, removed=removed)
+
+    return added, removed
 
 
 def _retrieve_concerns_of_objects_in_topology(
@@ -151,50 +169,99 @@ def _calculate_concerns_distribution_for_topology(
     return concern_links
 
 
-def _relink_concerns_to_objects_in_db(
-    concern_links: dict[ADCMCoreType, dict[ObjectID, set[int]]],
-    topology_objects: TopologyObjectMap,
-    hosts_existing_concerns: dict[ObjectID, set[int]],
-) -> None:
-    # ADCMCoreType.HOST is a special case, because we really don't want to delete host/provider-related concerns
+def _remove_host_hierarchy_links_from_hosts(
+    concerns: AffectedObjectConcernMap, hosts_existing_concerns: dict[HostID, set[ConcernID]]
+) -> AffectedObjectConcernMap:
+    for host_id, linked_concerns in concerns.get(ADCMCoreType.HOST, {}).items():
+        host_concerns = hosts_existing_concerns.get(host_id)
+        if host_concerns:
+            linked_concerns.difference_update(host_concerns)
+
+    return concerns
+
+
+def _retrieve_current_concerns_distribution(
+    topology_objects: TopologyObjectMap, hosts_existing_concerns: dict[ObjectID, set[ConcernID]]
+) -> AffectedObjectConcernMap:
+    concern_links: AffectedObjectConcernMap = {
+        type_: {id_: set() for id_ in ids} for type_, ids in topology_objects.items()
+    }
+
+    # ADCMCoreType.HOST is a special case,
+    # because we really don't want to work with own host / hostprovider concerns here
     for core_type in (ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT):
+        orm_model = core_type_to_model(core_type)
+        id_field = f"{orm_model.__name__.lower()}_id"
+
+        for object_id, concern_id in (
+            orm_model.concerns.through.objects.filter(**{f"{id_field}__in": topology_objects[core_type]})
+            .exclude(concernitem__type=ConcernType.LOCK)
+            .values_list(id_field, "concernitem_id")
+        ):
+            concern_links[core_type][object_id].add(concern_id)
+
+    # handle hosts links
+    hostprovider_hierarchy_concerns = set(chain.from_iterable(hosts_existing_concerns.values()))
+    for object_id, concern_id in (
+        Host.concerns.through.objects.filter(host_id__in=topology_objects[ADCMCoreType.HOST])
+        .exclude(Q(concernitem_id__in=hostprovider_hierarchy_concerns) | Q(concernitem__type=ConcernType.LOCK))
+        .values_list("host_id", "concernitem_id")
+    ):
+        concern_links[ADCMCoreType.HOST][object_id].add(concern_id)
+
+    return concern_links
+
+
+def _find_distribution_difference(
+    old: AffectedObjectConcernMap, new: AffectedObjectConcernMap
+) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]:
+    """
+    Based on old (current DB state) and new (concerns dist based on topology) concern relations
+    find which "links" (relations) are "appeared" (should be added) and "gone" (should be removed).
+
+    Returns added and removed maps.
+    """
+    added = defaultdict(lambda: defaultdict(set))
+    removed = defaultdict(lambda: defaultdict(set))
+
+    for core_type in (ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT, ADCMCoreType.HOST):
+        for object_id, concern_in_old in old[core_type].items():
+            concerns_in_new = new[core_type].get(object_id, set())
+            added[core_type][object_id] = concerns_in_new - concern_in_old
+            removed[core_type][object_id] = concern_in_old - concerns_in_new
+
+        # handle absolutely new entries
+        for object_id in set(new[core_type].keys()).difference(old[core_type]):
+            added[core_type][object_id] = new[core_type][object_id]
+
+    return added, removed
+
+
+def _update_db_concerns_state(added: AffectedObjectConcernMap, removed: AffectedObjectConcernMap):
+    for core_type in (ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT, ADCMCoreType.HOST):
         orm_model = core_type_to_model(core_type)
         id_field = f"{orm_model.__name__.lower()}_id"
         m2m_model = orm_model.concerns.through
 
-        # Delete all concern relations for objects in question
-        m2m_model.objects.filter(**{f"{id_field}__in": topology_objects[core_type]}).exclude(
-            concernitem__type=ConcernType.LOCK
-        ).delete()
+        to_delete = removed.get(core_type)
+        if to_delete:
+            query = Q()
+            for object_id, concern_ids in to_delete.items():
+                query |= Q(concernitem_id__in=concern_ids, **{id_field: object_id})
 
-        # ... and create them again
-        m2m_model.objects.bulk_create(
-            (
-                m2m_model(concernitem_id=concern_id, **{id_field: object_id})
-                for object_id, concerns in concern_links[core_type].items()
-                for concern_id in concerns
+            # Delete all concern relations for objects in question
+            m2m_model.objects.filter(query).exclude(concernitem__type=ConcernType.LOCK).delete()
+
+        to_create = added.get(core_type)
+        if to_create:
+            # ... and create them again
+            m2m_model.objects.bulk_create(
+                (
+                    m2m_model(concernitem_id=concern_id, **{id_field: object_id})
+                    for object_id, concerns in to_create.items()
+                    for concern_id in concerns
+                )
             )
-        )
-
-    # handle hosts links
-    m2m_model = Host.concerns.through
-    hostprovider_hierarchy_concerns = set(chain.from_iterable(hosts_existing_concerns.values()))
-    # Delete all cluster/service/component related concern links, but keep host/hostprovider ones:
-    # thou we could recreate those concerns too, but it doesn't make much sense.
-    (
-        m2m_model.objects.filter(host_id__in=topology_objects[ADCMCoreType.HOST])
-        .exclude(Q(concernitem_id__in=hostprovider_hierarchy_concerns) | Q(concernitem__type=ConcernType.LOCK))
-        .delete()
-    )
-
-    # create only cluster/service/component related concern links
-    m2m_model.objects.bulk_create(
-        (
-            m2m_model(concernitem_id=concern_id, host_id=host_id)
-            for host_id, concerns in concern_links[ADCMCoreType.HOST].items()
-            for concern_id in (concerns - hostprovider_hierarchy_concerns)
-        )
-    )
 
 
 # PUBLIC distribute_concern_on_related_objects
@@ -202,9 +269,10 @@ def _relink_concerns_to_objects_in_db(
 ConcernRelatedObjects: TypeAlias = dict[ADCMCoreType, set[ObjectID]]
 
 
-def distribute_concern_on_related_objects(owner: CoreObjectDescriptor, concern_id: ConcernID):
+def distribute_concern_on_related_objects(owner: CoreObjectDescriptor, concern_id: ConcernID) -> ConcernRelatedObjects:
     distribution_targets = _find_concern_distribution_targets(owner=owner)
     _add_concern_links_to_objects_in_db(targets=distribution_targets, concern_id=concern_id)
+    return distribution_targets
 
 
 def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRelatedObjects:

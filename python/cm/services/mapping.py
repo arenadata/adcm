@@ -32,11 +32,16 @@ from cm.services.concern.checks import (
     check_service_requirements,
     cluster_mapping_has_issue,
 )
-from cm.services.concern.distribution import lock_objects, redistribute_issues_and_flags, unlock_objects
+from cm.services.concern.distribution import (
+    AffectedObjectConcernMap,
+    lock_objects,
+    redistribute_issues_and_flags,
+    unlock_objects,
+)
 from cm.services.concern.locks import retrieve_lock_on_object
 from cm.services.group_config import ConfigHostGroupRepo
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
-from cm.status_api import send_host_component_map_update_event
+from cm.status_api import notify_about_redistributed_concerns_from_maps, send_host_component_map_update_event
 
 
 class PerformMappingChecks(Protocol):
@@ -100,7 +105,7 @@ def change_host_component_mapping(
         _recreate_mapping_in_db(topology=new_topology)
 
         # updates of related entities
-        _update_concerns(
+        added, removed = _update_concerns(
             old_topology=current_topology, new_topology=new_topology, bundle_restrictions=bundle_restrictions
         )
         ActionHostGroupRepo().remove_unmapped_hosts_from_groups(host_difference.unmapped)
@@ -111,6 +116,7 @@ def change_host_component_mapping(
     reset_hc_map()
     reset_objects_in_mm()
     send_host_component_map_update_event(cluster_id=cluster_id)
+    notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 
     return new_topology
 
@@ -163,7 +169,7 @@ def _recreate_mapping_in_db(topology: ClusterTopology) -> None:
 
 def _update_concerns(
     old_topology: ClusterTopology, new_topology: ClusterTopology, bundle_restrictions: BundleRestrictions
-) -> None:
+) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]:
     # todo HC may break (?)
     #  We can't be sure this method is called after some sort of "check"
     cluster = CoreObjectDescriptor(id=old_topology.cluster_id, type=ADCMCoreType.CLUSTER)
@@ -172,7 +178,7 @@ def _update_concerns(
     elif retrieve_issue(owner=cluster, cause=ConcernCause.HOSTCOMPONENT) is None:
         create_issue(owner=cluster, cause=ConcernCause.HOSTCOMPONENT)
 
-    redistribute_issues_and_flags(topology=new_topology)
+    added, removed = redistribute_issues_and_flags(topology=new_topology)
 
     lock = retrieve_lock_on_object(object_=cluster)
     if lock:
@@ -194,6 +200,10 @@ def _update_concerns(
                 targets=(CoreObjectDescriptor(id=host_id, type=ADCMCoreType.HOST) for host_id in mapped),
                 lock_id=lock.id,
             )
+
+    # since mechanism for locks redistribution is different from the one for flags/issues,
+    # there's no need in considering them in concern update events
+    return added, removed
 
 
 def _update_policies(topology: ClusterTopology) -> None:

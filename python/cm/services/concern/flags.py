@@ -24,7 +24,7 @@ from django.db.models import Q
 
 from cm.converters import core_type_to_model, model_name_to_core_type
 from cm.models import ADCMEntity, ConcernCause, ConcernItem, ConcernType
-from cm.services.concern.distribution import distribute_concern_on_related_objects
+from cm.services.concern.distribution import AffectedObjectConcernMap, distribute_concern_on_related_objects
 from cm.services.concern.messages import (
     ADCM_ENTITY_AS_PLACEHOLDERS,
     ConcernMessage,
@@ -118,15 +118,25 @@ def lower_all_flags(on_objects: Collection[CoreObjectDescriptor]) -> bool:
     return bool(deleted_count)
 
 
-def update_hierarchy_for_flag(flag: ConcernFlag, on_objects: Collection[CoreObjectDescriptor]) -> None:
+def update_hierarchy_for_flag(
+    flag: ConcernFlag, on_objects: Collection[CoreObjectDescriptor]
+) -> AffectedObjectConcernMap:
+    # not all of these can be considered "affected", but there's little way to know the difference
+    processed: AffectedObjectConcernMap = defaultdict(lambda: defaultdict(set))
     for concern in ConcernItem.objects.select_related("owner_type").filter(
         Q(name=flag.name, cause=flag.cause, type=ConcernType.FLAG)
         & _get_filter_for_flags_of_objects(
             content_type_id_map=_get_owner_ids_grouped_by_content_type(objects=on_objects)
         )
     ):
+        concern_id = concern.id
         owner = CoreObjectDescriptor(id=concern.owner_id, type=model_name_to_core_type(concern.owner_type.model))
-        distribute_concern_on_related_objects(owner=owner, concern_id=concern.id)
+        related_objects = distribute_concern_on_related_objects(owner=owner, concern_id=concern.id)
+        for core_type, object_ids in related_objects.items():
+            for object_id in object_ids:
+                processed[core_type][object_id].add(concern_id)
+
+    return processed
 
 
 def _get_filter_for_flags_of_objects(content_type_id_map: dict[ContentType, set[int]]) -> Q:

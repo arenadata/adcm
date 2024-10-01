@@ -21,6 +21,7 @@ from cm.services.concern.flags import (
     raise_flag,
     update_hierarchy_for_flag,
 )
+from cm.status_api import notify_about_redistributed_concerns_from_maps
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
 from pydantic import field_validator
@@ -119,7 +120,9 @@ class ADCMChangeFlagPluginExecutor(ADCMAnsiblePluginExecutor[ChangeFlagArguments
                     flag = ConcernFlag(name=arguments.name.lower(), message=arguments.msg, cause=None)
 
                 changed = raise_flag(flag=flag, on_objects=targets)
-                update_hierarchy_for_flag(flag=flag, on_objects=targets)
+                if changed:
+                    added = update_hierarchy_for_flag(flag=flag, on_objects=targets)
+                    notify_about_redistributed_concerns_from_maps(added=added, removed={})
             case ChangeFlagOperation.DOWN:
                 if arguments.name:
                     changed = lower_flag(name=arguments.name.lower(), on_objects=targets)

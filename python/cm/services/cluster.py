@@ -27,6 +27,7 @@ from rbac.models import re_apply_object_policy
 
 from cm.models import Cluster, ClusterObject, ConcernCause, Host, HostComponent, ServiceComponent
 from cm.services.concern import create_issue, delete_issue
+from cm.status_api import notify_about_new_concern
 
 
 class ClusterDB:
@@ -109,15 +110,20 @@ def perform_host_to_cluster_map(
         cluster = Cluster.objects.get(id=cluster_id)
         cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
 
+        concern_id = None
+        related_objects = {}
         if not cluster_mapping_has_issue_orm_version(cluster=cluster):
             delete_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
         elif not cluster.get_own_issue(cause=ConcernCause.HOSTCOMPONENT):
             concern = create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
-            distribute_concern_on_related_objects(owner=cluster_cod, concern_id=concern.id)
+            concern_id = concern.id
+            related_objects = distribute_concern_on_related_objects(owner=cluster_cod, concern_id=concern.id)
 
         re_apply_object_policy(apply_object=cluster)
 
     status_service.reset_hc_map()
+    if concern_id:
+        notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
     return hosts
 
