@@ -34,20 +34,16 @@ from django.db.models import QuerySet
 from rbac.models import re_apply_object_policy
 
 
-def bulk_add_services_to_cluster(cluster: Cluster, prototypes: QuerySet[Prototype]) -> QuerySet[ClusterObject]:
+def bulk_add_services_to_cluster(cluster: Cluster, prototypes: QuerySet[Prototype]) -> QuerySet[Service]:
     with transaction.atomic():
-        Service.objects.bulk_create(
-            objs=[Service(cluster=cluster, prototype=proto) for proto in prototypes]
-        )
+        Service.objects.bulk_create(objs=[Service(cluster=cluster, prototype=proto) for proto in prototypes])
         services = Service.objects.filter(cluster=cluster, prototype__in=prototypes).select_related("prototype")
         bulk_init_config(objects=services)
 
         service_proto_service_map = {service.prototype.pk: service for service in services}
         Component.objects.bulk_create(
             objs=[
-                Component(
-                    cluster=cluster, service=service_proto_service_map[prototype.parent.pk], prototype=prototype
-                )
+                Component(cluster=cluster, service=service_proto_service_map[prototype.parent.pk], prototype=prototype)
                 for prototype in Prototype.objects.filter(
                     type=ObjectType.COMPONENT, parent__in=prototypes
                 ).select_related("parent")

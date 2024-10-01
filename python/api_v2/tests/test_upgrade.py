@@ -590,7 +590,7 @@ class TestUpgrade(BaseAPITestCase):
 
         cluster = self.add_cluster(bundle=bundle, name="Cluster For Upgrade")
         service = self.add_services_to_cluster(["service_with_constraints"], cluster=cluster).get()
-        component = ServiceComponent.objects.get(prototype__name="dummy", service=service)
+        component = Component.objects.get(prototype__name="dummy", service=service)
 
         host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=cluster)
 

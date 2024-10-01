@@ -889,9 +889,7 @@ class TestAPI2(BaseTestCase):
             state="installed",
         )
 
-    def save_hc(
-        self, cluster: Cluster, hc_list: Iterable[tuple[ClusterObject, Host, ServiceComponent]]
-    ) -> list[HostComponent]:
+    def save_hc(self, cluster: Cluster, hc_list: Iterable[tuple[Service, Host, Component]]) -> list[HostComponent]:
         change_host_component_mapping(
             cluster_id=cluster.id,
             bundle_id=cluster.bundle_id,

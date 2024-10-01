@@ -581,9 +581,7 @@ def make_host_comp_list(cluster: Cluster, hc_in: list[dict]) -> list[tuple[Servi
     return host_comp_list
 
 
-def get_bind(
-    cluster: Cluster, service: Service | None, source_cluster: Cluster, source_service: Service | None
-):
+def get_bind(cluster: Cluster, service: Service | None, source_cluster: Cluster, source_service: Service | None):
     try:
         return ClusterBind.objects.get(
             cluster=cluster,

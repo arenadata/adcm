@@ -13,7 +13,7 @@
 from typing import Any, Collection, Literal
 
 from cm.api import get_hc
-from cm.models import Cluster, Host, JobLog, Component
+from cm.models import Cluster, Component, Host, JobLog
 from cm.services.mapping import change_host_component_mapping
 from core.cluster.types import HostComponentEntry
 from core.types import ADCMCoreType, CoreObjectDescriptor

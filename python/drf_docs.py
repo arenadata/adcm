@@ -23,7 +23,7 @@ def fix_ordering(field, view):
     if view.__name__ == "ClusterServiceList":
         if "display_name" in fix:
             fix = fix.replace("prototype_display_name", "display_name")
-    elif view.__name__ == "ServiceComponentList" and "display_name" in fix:
+    elif view.__name__ == "ComponentListView" and "display_name" in fix:
         fix = fix.replace("component__display_name", "display_name")
     return fix
 

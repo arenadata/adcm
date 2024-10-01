@@ -207,7 +207,7 @@ class TestInventoryAndMaintenanceMode(BusinessLogicMixin, BaseTestCase):
         self.set_hostcomponent(
             cluster=self.cluster_hc_acl,
             entries=(
-                (Host.objects.get(id=entry["host_id"]), ServiceComponent.objects.get(id=entry["component_id"]))
+                (Host.objects.get(id=entry["host_id"]), Component.objects.get(id=entry["component_id"]))
                 for entry in (self.hc_c1_h1, self.hc_c1_h2, self.hc_c1_h3, self.hc_c2_h1, self.hc_c2_h2)
             ),
         )

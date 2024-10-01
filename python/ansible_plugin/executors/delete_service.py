@@ -13,7 +13,7 @@
 from typing import Collection
 
 from cm.api import delete_service
-from cm.models import ClusterBind, Service, HostComponent, Prototype
+from cm.models import ClusterBind, HostComponent, Prototype, Service
 from cm.services.mapping import change_host_component_mapping, check_nothing
 from core.cluster.types import HostComponentEntry
 from core.types import ADCMCoreType, CoreObjectDescriptor
