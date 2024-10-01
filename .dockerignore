@@ -1,6 +1,8 @@
 **/*.git*
-**/.*
+.*
+go/**/.*
+python/**/.*
 **/tests/
 data
+dev
 venv
-adcm-web
