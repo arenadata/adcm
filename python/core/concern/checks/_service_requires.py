@@ -12,13 +12,13 @@
 
 from collections import deque
 
-from core.cluster.types import NamedMapping
-from core.concern.types import (
+from core.bundle.types import (
     ComponentRestrictionOwner,
     MissingServiceRequiresViolation,
     ServiceDependencies,
     ServiceRestrictionOwner,
 )
+from core.cluster.types import NamedMapping
 
 
 def find_unsatisfied_service_requirements(
@@ -36,7 +36,9 @@ def find_unsatisfied_service_requirements(
         if (
             isinstance(dependant_object, ComponentRestrictionOwner)
             and dependant_object.component not in named_mapping.get(dependant_object.service, ())
-        ) or (isinstance(dependant_object, ServiceRestrictionOwner) and dependant_object.name not in existing_services):
+        ) or (
+            isinstance(dependant_object, ServiceRestrictionOwner) and dependant_object.service not in existing_services
+        ):
             continue
 
         if not_found_services := requires - existing_services:

@@ -15,25 +15,10 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, NamedTuple, TypeAlias
 
-from core.types import ComponentName, ServiceName
+from core.types import ComponentNameKey, ServiceName, ServiceNameKey
 
-
-class ComponentNameKey(NamedTuple):
-    service: ServiceName
-    component: ComponentName
-
-    def __str__(self) -> str:
-        return f'component "{self.component}" of service "{self.service}"'
-
-
+ServiceRestrictionOwner: TypeAlias = ServiceNameKey
 ComponentRestrictionOwner: TypeAlias = ComponentNameKey
-
-
-class ServiceRestrictionOwner(NamedTuple):
-    name: ServiceName
-
-    def __str__(self) -> str:
-        return f'service "{self.name}"'
 
 
 class MappingRestrictionType(Enum):

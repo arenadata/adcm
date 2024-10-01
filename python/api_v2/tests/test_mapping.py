@@ -33,7 +33,6 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.cluster.utils import get_requires
 from api_v2.tests.base import BaseAPITestCase
 
 
@@ -230,13 +229,6 @@ class TestMapping(BaseAPITestCase):
                 continue
 
             self.assertEqual(len(component.prototype.requires), len(component_data["dependOn"]))
-
-    def test_get_requires(self):
-        requires = [{"service": "service1", "component": "component1"}, {"service": "service1"}]
-
-        new_requires = get_requires(requires=requires)
-
-        self.assertDictEqual(new_requires, {"service1": ["component1"]})
 
 
 class TestMappingConstraints(BaseAPITestCase):

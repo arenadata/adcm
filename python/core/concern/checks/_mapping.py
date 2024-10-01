@@ -14,9 +14,7 @@ from collections import deque
 from functools import partial
 from typing import Iterable
 
-from core.cluster.types import NamedMapping
-from core.concern.types import (
-    ComponentNameKey,
+from core.bundle.types import (
     ComponentRestrictionOwner,
     Constraint,
     HostsAmount,
@@ -26,7 +24,8 @@ from core.concern.types import (
     ServiceRestrictionOwner,
     SupportedConstraintFormat,
 )
-from core.types import HostID
+from core.cluster.types import NamedMapping
+from core.types import ComponentNameKey, HostID
 
 
 def find_cluster_mapping_issues(
@@ -70,7 +69,7 @@ def find_cluster_mapping_issues(
             # 1. Service added to cluster
             # 2. At least one component of this service should be mapped
 
-            at_least_one_mapped = any(named_mapping.get(dependant_object.name, {}).values())
+            at_least_one_mapped = any(named_mapping.get(dependant_object.service, {}).values())
             if not at_least_one_mapped:
                 continue
 
