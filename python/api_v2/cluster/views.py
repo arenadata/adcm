@@ -33,6 +33,7 @@ from cm.api import add_cluster, delete_cluster, remove_host_from_cluster
 from cm.errors import AdcmEx
 from cm.models import (
     AnsibleConfig,
+    Bundle,
     Cluster,
     ClusterObject,
     ConcernType,
@@ -42,6 +43,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.bundle import retrieve_bundle_restrictions
 from cm.services.cluster import (
     perform_host_to_cluster_map,
     retrieve_cluster_topology,
@@ -49,12 +51,15 @@ from cm.services.cluster import (
 )
 from cm.services.mapping import change_host_component_mapping
 from cm.services.status import notify
+from core.bundle.operations import build_requires_dependencies_map
 from core.cluster.errors import HostAlreadyBoundError, HostBelongsToAnotherClusterError, HostDoesNotExistError
 from core.cluster.operations import (
     calculate_maintenance_mode_for_cluster_objects,
 )
 from core.cluster.types import HostComponentEntry, MaintenanceModeOfObjects
+from core.types import ComponentNameKey, ServiceNameKey
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
@@ -73,6 +78,7 @@ from rest_framework.status import (
 )
 
 from api_v2.api_schema import DefaultParams, responses
+from api_v2.cluster.depend_on import prepare_depend_on_hierarchy, retrieve_serialized_depend_on_hierarchy
 from api_v2.cluster.filters import (
     ClusterFilter,
     ClusterHostFilter,
@@ -86,13 +92,13 @@ from api_v2.cluster.serializers import (
     ClusterHostStatusSerializer,
     ClusterSerializer,
     ClusterUpdateSerializer,
+    ComponentMappingSerializer,
     MappingSerializer,
     RelatedHostsStatusesSerializer,
     RelatedServicesStatusesSerializer,
     ServicePrototypeSerializer,
     SetMappingSerializer,
 )
-from api_v2.component.serializers import ComponentMappingSerializer
 from api_v2.generic.action.api_schema import document_action_viewset
 from api_v2.generic.action.audit import audit_action_viewset
 from api_v2.generic.action.views import ActionViewSet
@@ -320,22 +326,43 @@ class ClusterViewSet(
     @action(methods=["get"], detail=True, url_path="service-prototypes", pagination_class=None)
     def service_prototypes(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = self.get_object()
-        prototypes = Prototype.objects.filter(type=ObjectType.SERVICE, bundle=cluster.prototype.bundle).order_by(
-            "display_name"
-        )
-        serializer = self.get_serializer_class()(instance=prototypes, many=True)
-
-        return Response(data=serializer.data)
+        return self._respond_with_prototypes(cluster_prototype_id=cluster.prototype_id)
 
     @action(methods=["get"], detail=True, url_path="service-candidates", pagination_class=None)
     def service_candidates(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
         cluster = self.get_object()
-        prototypes = (
-            Prototype.objects.filter(type=ObjectType.SERVICE, bundle=cluster.prototype.bundle)
-            .exclude(id__in=cluster.clusterobject_set.all().values_list("prototype", flat=True))
+        exclude_added_service_prototypes = Q(
+            id__in=ClusterObject.objects.values_list("prototype_id", flat=True).filter(cluster_id=cluster.id)
+        )
+        return self._respond_with_prototypes(
+            cluster_prototype_id=cluster.prototype_id, exclude_clause=exclude_added_service_prototypes
+        )
+
+    def _respond_with_prototypes(self, cluster_prototype_id: int, exclude_clause: Q | None = None) -> Response:
+        exclude_clause = exclude_clause or Q()
+        bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=cluster_prototype_id)
+
+        prototypes = tuple(
+            Prototype.objects.filter(type=ObjectType.SERVICE, bundle_id=bundle_id)
+            .exclude(exclude_clause)
             .order_by("display_name")
         )
-        serializer = self.get_serializer_class()(instance=prototypes, many=True)
+
+        context = {"depend_on": {}}
+
+        if any(proto.requires for proto in prototypes):
+            requires_dependencies = build_requires_dependencies_map(retrieve_bundle_restrictions(bundle_id))
+            bundle_hash = Bundle.objects.values_list("hash", flat=True).get(id=bundle_id)
+            context["depend_on"] = retrieve_serialized_depend_on_hierarchy(
+                hierarchy=prepare_depend_on_hierarchy(
+                    dependencies=requires_dependencies,
+                    targets=((proto.id, ServiceNameKey(service=proto.name)) for proto in prototypes),
+                ),
+                bundle_id=bundle_id,
+                bundle_hash=bundle_hash,
+            )
+
+        serializer = self.get_serializer_class()(instance=prototypes, many=True, context=context)
 
         return Response(data=serializer.data)
 
@@ -480,7 +507,7 @@ class ClusterViewSet(
     def mapping_components(self, request: Request, *args, **kwargs):  # noqa: ARG002
         cluster = self.get_object()
 
-        is_mm_available = Prototype.objects.values_list("allow_maintenance_mode", flat=True).get(
+        bundle_id, is_mm_available = Prototype.objects.values_list("bundle_id", "allow_maintenance_mode").get(
             id=cluster.prototype_id
         )
 
@@ -493,15 +520,35 @@ class ClusterViewSet(
             else MaintenanceModeOfObjects(services={}, components={}, hosts={})
         )
 
-        serializer = self.get_serializer(
-            instance=(
-                ServiceComponent.objects.filter(cluster=cluster)
-                .select_related("prototype", "service__prototype")
-                .order_by("pk")
-            ),
-            many=True,
-            context={"mm": objects_mm, "is_mm_available": is_mm_available},
+        components = tuple(
+            ServiceComponent.objects.filter(cluster=cluster)
+            .select_related("prototype", "prototype__parent", "service__prototype")
+            .order_by("pk")
         )
+
+        context = {"mm": objects_mm, "is_mm_available": is_mm_available, "depend_on": {}}
+
+        if any(component.prototype.requires for component in components):
+            requires_dependencies = build_requires_dependencies_map(retrieve_bundle_restrictions(bundle_id))
+            bundle_hash = Bundle.objects.values_list("hash", flat=True).get(id=bundle_id)
+            context["depend_on"] = retrieve_serialized_depend_on_hierarchy(
+                hierarchy=prepare_depend_on_hierarchy(
+                    dependencies=requires_dependencies,
+                    targets=(
+                        (
+                            component.id,
+                            ComponentNameKey(
+                                service=component.prototype.parent.name, component=component.prototype.name
+                            ),
+                        )
+                        for component in components
+                    ),
+                ),
+                bundle_id=bundle_id,
+                bundle_hash=bundle_hash,
+            )
+
+        serializer = self.get_serializer(instance=components, many=True, context=context)
 
         return Response(status=HTTP_200_OK, data=serializer.data)
 

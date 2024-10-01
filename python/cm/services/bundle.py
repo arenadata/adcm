@@ -14,16 +14,15 @@ from abc import ABC
 from collections import defaultdict, deque
 from pathlib import Path
 
-from core.concern.checks import parse_constraint
-from core.concern.types import (
+from core.bundle.types import (
     BundleRestrictions,
-    ComponentNameKey,
     ComponentRestrictionOwner,
     MappingRestrictions,
     ServiceDependencies,
     ServiceRestrictionOwner,
 )
-from core.types import BundleID
+from core.concern.checks import parse_constraint
+from core.types import BundleID, ComponentNameKey
 from django.conf import settings
 
 from cm.models import ObjectType, Prototype
@@ -147,7 +146,7 @@ def retrieve_bundle_restrictions(bundle_id: BundleID) -> BundleRestrictions:
         if not requires:
             continue
 
-        key = ServiceRestrictionOwner(name=service_name)
+        key = ServiceRestrictionOwner(service=service_name)
 
         for requirement in requires:
             required_service_name = requirement["service"]

@@ -115,3 +115,18 @@ class NamedCoreObjectWithPrototype(NamedTuple):
     prototype_id: PrototypeID
     type: ADCMCoreType
     name: str
+
+
+class ServiceNameKey(NamedTuple):
+    service: ServiceName
+
+    def __str__(self) -> str:
+        return f'service "{self.service}"'
+
+
+class ComponentNameKey(NamedTuple):
+    service: ServiceName
+    component: ComponentName
+
+    def __str__(self) -> str:
+        return f'component "{self.component}" of service "{self.service}"'

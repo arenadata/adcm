@@ -1,0 +1,52 @@
+- type: cluster
+  name: cluster_dep
+  version: 1.0
+
+  config: &config
+    - name: string_param
+      type: string
+      default: some_default_value
+
+    - name: int_param
+      type: integer
+      display_name: Some Int
+      default: 12
+
+- type: service
+  name: first_service
+  flag_autogeneration:
+    enable_outdated_config: True
+  version: 1.5
+  config: *config
+
+  components:
+    first_component:
+      flag_autogeneration:
+        enable_outdated_config: True
+      config: *config
+
+    second_component:
+      flag_autogeneration:
+        enable_outdated_config: False
+      config: *config
+
+- type: service
+  name: second_service
+  requires:
+    - service: first_service
+      component: first_component
+  flag_autogeneration:
+    enable_outdated_config: False
+  version: 1.2
+  config: *config
+
+  components:
+    first_component:
+      flag_autogeneration:
+        enable_outdated_config: False
+      config: *config
+
+    second_component:
+      flag_autogeneration:
+        enable_outdated_config: False
+      config: *config

@@ -14,15 +14,9 @@ from collections import deque
 from operator import attrgetter
 from typing import Iterable, Literal, NamedTuple, TypeAlias
 
+from core.bundle.types import BundleRestrictions, MappingRestrictions, ServiceDependencies
 from core.cluster.types import ClusterTopology
 from core.concern.checks import find_cluster_mapping_issues, find_unsatisfied_service_requirements
-from core.concern.types import (
-    BundleRestrictions,
-    ComponentRestrictionOwner,
-    MappingRestrictions,
-    ServiceDependencies,
-    ServiceRestrictionOwner,
-)
 from core.converters import named_mapping_from_topology
 from core.types import ClusterID, ConfigID, ObjectID
 from django.db.models import Q
@@ -136,9 +130,7 @@ def service_requirements_has_issue(service: ClusterObject) -> HasIssue:
     service_name = service.prototype.name
     service_related_restrictions = {}
     for key, required_services in bundle_restrictions.service_requires.items():
-        if (isinstance(key, ServiceRestrictionOwner) and key.name == service_name) or (
-            isinstance(key, ComponentRestrictionOwner) and key.service == service_name
-        ):
+        if key.service == service_name:
             service_related_restrictions[key] = required_services
 
     return bool(

@@ -12,9 +12,9 @@
 
 from typing import Iterable, Protocol
 
+from core.bundle.types import BundleRestrictions
 from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.cluster.types import ClusterTopology, HostComponentEntry, TopologyHostDiff
-from core.concern.types import BundleRestrictions
 from core.types import ADCMCoreType, BundleID, ClusterID, CoreObjectDescriptor, HostID
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
