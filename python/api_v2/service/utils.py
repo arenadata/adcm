@@ -28,41 +28,46 @@ from cm.services.cluster import retrieve_cluster_topology
 from cm.services.concern.cases import recalculate_own_concerns_on_add_services
 from cm.services.concern.distribution import redistribute_issues_and_flags
 from cm.services.status.notify import reset_hc_map
+from cm.status_api import notify_about_redistributed_concerns_from_maps
 from django.db import connection, transaction
 from django.db.models import QuerySet
 from rbac.models import re_apply_object_policy
 
 
-@transaction.atomic
 def bulk_add_services_to_cluster(cluster: Cluster, prototypes: QuerySet[Prototype]) -> QuerySet[ClusterObject]:
-    ClusterObject.objects.bulk_create(objs=[ClusterObject(cluster=cluster, prototype=proto) for proto in prototypes])
-    services = ClusterObject.objects.filter(cluster=cluster, prototype__in=prototypes).select_related("prototype")
-    bulk_init_config(objects=services)
+    with transaction.atomic():
+        ClusterObject.objects.bulk_create(
+            objs=[ClusterObject(cluster=cluster, prototype=proto) for proto in prototypes]
+        )
+        services = ClusterObject.objects.filter(cluster=cluster, prototype__in=prototypes).select_related("prototype")
+        bulk_init_config(objects=services)
 
-    service_proto_service_map = {service.prototype.pk: service for service in services}
-    ServiceComponent.objects.bulk_create(
-        objs=[
-            ServiceComponent(
-                cluster=cluster, service=service_proto_service_map[prototype.parent.pk], prototype=prototype
-            )
-            for prototype in Prototype.objects.filter(type=ObjectType.COMPONENT, parent__in=prototypes).select_related(
-                "parent"
-            )
-        ]
-    )
-    components = ServiceComponent.objects.filter(cluster=cluster, service__in=services).select_related("prototype")
-    bulk_init_config(objects=components)
+        service_proto_service_map = {service.prototype.pk: service for service in services}
+        ServiceComponent.objects.bulk_create(
+            objs=[
+                ServiceComponent(
+                    cluster=cluster, service=service_proto_service_map[prototype.parent.pk], prototype=prototype
+                )
+                for prototype in Prototype.objects.filter(
+                    type=ObjectType.COMPONENT, parent__in=prototypes
+                ).select_related("parent")
+            ]
+        )
+        components = ServiceComponent.objects.filter(cluster=cluster, service__in=services).select_related("prototype")
+        bulk_init_config(objects=components)
 
-    recalculate_own_concerns_on_add_services(
-        cluster=cluster,
-        services=services.prefetch_related(
-            "servicecomponent_set"
-        ).all(),  # refresh values from db to update `config` field
-    )
-    redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
+        recalculate_own_concerns_on_add_services(
+            cluster=cluster,
+            services=services.prefetch_related(
+                "servicecomponent_set"
+            ).all(),  # refresh values from db to update `config` field
+        )
+        added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
 
-    re_apply_object_policy(apply_object=cluster)
+        re_apply_object_policy(apply_object=cluster)
+
     reset_hc_map()
+    notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 
     return services
 

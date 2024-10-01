@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from collections import deque
+from collections import defaultdict, deque
 from operator import itemgetter
 import functools
 
@@ -65,7 +65,11 @@ from cm.services.concern.cases import (
     recalculate_concerns_on_cluster_upgrade,
 )
 from cm.services.concern.checks import object_configuration_has_issue
-from cm.services.concern.distribution import distribute_concern_on_related_objects, redistribute_issues_and_flags
+from cm.services.concern.distribution import (
+    AffectedObjectConcernMap,
+    distribute_concern_on_related_objects,
+    redistribute_issues_and_flags,
+)
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.job.types import HcAclAction
 from cm.services.mapping import change_host_component_mapping, check_nothing
@@ -500,7 +504,7 @@ class _BundleSwitch(ABC):
             self._target.refresh_from_db()
 
             self._upgrade_children(old_prototype=old_prototype, new_prototype=new_prototype)
-            self._update_concerns()
+            added, removed = self._update_concerns()
 
             for policy_object, content_type in self._get_objects_map_for_policy_update().items():
                 for policy in Policy.objects.filter(
@@ -515,7 +519,7 @@ class _BundleSwitch(ABC):
         ...
 
     @abstractmethod
-    def _update_concerns(self) -> None:
+    def _update_concerns(self) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]:
         ...
 
     @abstractmethod
@@ -581,9 +585,9 @@ class _ClusterBundleSwitch(_BundleSwitch):
                 if not ServiceComponent.objects.filter(cluster=self._target, service=service).exists():
                     add_components_to_service(cluster=self._target, service=service)
 
-    def _update_concerns(self) -> None:
+    def _update_concerns(self) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]:
         recalculate_concerns_on_cluster_upgrade(cluster=self._target)
-        redistribute_issues_and_flags(topology=retrieve_cluster_topology(self._target.id))
+        return redistribute_issues_and_flags(topology=retrieve_cluster_topology(self._target.id))
 
     def _get_objects_map_for_policy_update(self) -> dict[Cluster | ClusterObject | ServiceComponent, ContentType]:
         obj_type_map = {self._target: ContentType.objects.get_for_model(Cluster)}
@@ -608,12 +612,16 @@ class _HostProviderBundleSwitch(_BundleSwitch):
             for host in Host.objects.filter(provider=self._target, prototype__name=prototype.name):
                 _switch_object(host, prototype)
 
-    def _update_concerns(self) -> None:
+    def _update_concerns(self) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]:
+        added, removed = defaultdict(lambda: defaultdict(set)), {}
         target_cod = CoreObjectDescriptor(id=self._target.id, type=orm_object_to_core_type(self._target))
         target_own_config_issue = retrieve_issue(owner=target_cod, cause=ConcernCause.CONFIG)
         if target_own_config_issue is None and object_configuration_has_issue(self._target):
             concern = create_issue(owner=target_cod, cause=ConcernCause.CONFIG)
-            distribute_concern_on_related_objects(owner=target_cod, concern_id=concern.id)
+            related_objects = distribute_concern_on_related_objects(owner=target_cod, concern_id=concern.id)
+            for core_type, object_ids in related_objects.items():
+                for object_id in object_ids:
+                    added[core_type][object_id].add(concern.id)
 
         clusters_for_redistribution: set[ClusterID] = set()
         m2m_model = Host.concerns.through
@@ -636,13 +644,24 @@ class _HostProviderBundleSwitch(_BundleSwitch):
                 )
                 clusters_for_redistribution.add(host.cluster_id)
                 host_own_concerns_to_link.append(m2m_model(host_id=host.id, concernitem_id=concern.id))
+                added[ADCMCoreType.HOST][host.id].add(concern.id)
 
         m2m_model.objects.bulk_create(objs=host_own_concerns_to_link)
 
         clusters_for_redistribution -= {None}
         if clusters_for_redistribution:
             for topology in retrieve_multiple_clusters_topology(cluster_ids=clusters_for_redistribution):
-                redistribute_issues_and_flags(topology=topology)
+                added_, removed_ = redistribute_issues_and_flags(topology=topology)
+
+                for core_type, added_entries in added_.items():
+                    for object_id, concern_ids in added_entries.items():
+                        added[core_type][object_id].update(concern_ids)
+
+                for core_type, removed_entries in removed_.items():
+                    for object_id, concern_ids in removed_entries.items():
+                        removed[core_type][object_id].update(concern_ids)
+
+        return added, removed
 
     def _get_objects_map_for_policy_update(self) -> dict[HostProvider | Host, ContentType]:
         obj_type_map = {self._target: ContentType.objects.get_for_model(HostProvider)}

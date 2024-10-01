@@ -15,8 +15,10 @@ from collections.abc import Iterable
 from urllib.parse import urljoin
 import json
 
-from core.types import ClusterID, CoreObjectDescriptor
+from api_v2.concern.serializers import ConcernSerializer
+from core.types import ADCMCoreType, ClusterID, ConcernID, CoreObjectDescriptor, ObjectID
 from django.conf import settings
+from djangorestframework_camel_case.util import camelize
 from requests import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 import requests
@@ -27,10 +29,12 @@ from cm.models import (
     ADCMEntity,
     Cluster,
     ClusterObject,
+    ConcernItem,
     Host,
     HostComponent,
     ServiceComponent,
 )
+from cm.services.concern.distribution import AffectedObjectConcernMap, ConcernRelatedObjects
 
 
 class EventTypes:
@@ -305,3 +309,57 @@ def make_ui_host_status(host: Host, host_components: Iterable[HostComponent]) ->
         "status": 32 if host_map is None else host_map.get("status", 0),
         "hc": comp_list,
     }
+
+
+def notify_about_redistributed_concerns(
+    added: Iterable[tuple[ADCMCoreType, ObjectID, ConcernID]],
+    removed: Iterable[tuple[ADCMCoreType, ObjectID, ConcernID]],
+) -> None:
+    added_concerns = tuple(added)
+    serialized_concerns = {
+        concern.id: camelize(data=ConcernSerializer(instance=concern).data)
+        for concern in ConcernItem.objects.filter(id__in=(id_ for _, _, id_ in added_concerns)).prefetch_related(
+            "owner"
+        )
+    }
+
+    for core_type, object_id, concern_id in removed:
+        post_event(event=f"delete_{core_type.value}_concern", object_id=object_id, changes={"id": concern_id})
+
+    for core_type, object_id, concern_id in added_concerns:
+        concern = serialized_concerns.get(concern_id)
+        if concern:
+            post_event(event=f"create_{core_type.value}_concern", object_id=object_id, changes=concern)
+
+
+def notify_about_new_concern(concern_id: ConcernID, related_objects: ConcernRelatedObjects) -> None:
+    notify_about_redistributed_concerns(
+        added=(
+            (core_type, object_id, concern_id)
+            for core_type, object_ids in related_objects.items()
+            for object_id in object_ids
+        ),
+        removed=(),
+    )
+
+
+def notify_about_redistributed_concerns_from_maps(
+    added: AffectedObjectConcernMap,
+    removed: AffectedObjectConcernMap,
+):
+    """
+    Convenience function to call `notify_about_redistributed_concerns` based on input of `redistribute_issues_and_flags`
+    """
+    return notify_about_redistributed_concerns(
+        added=_flatten_concerns_map(added),
+        removed=_flatten_concerns_map(removed),
+    )
+
+
+def _flatten_concerns_map(concerns_map: AffectedObjectConcernMap) -> Iterable[tuple[ADCMCoreType, ObjectID, ConcernID]]:
+    return (
+        (core_type, object_id, concern_id)
+        for core_type, objects in concerns_map.items()
+        for object_id, concerns in objects.items()
+        for concern_id in concerns
+    )

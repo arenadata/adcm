@@ -16,7 +16,7 @@ from typing import Literal, TypedDict
 import json
 
 from adcm_version import compare_prototype_versions
-from core.types import ADCMCoreType, CoreObjectDescriptor
+from core.types import ADCMCoreType, ConcernID, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
@@ -77,11 +77,17 @@ from cm.services.concern.checks import (
     object_configuration_has_issue,
     object_imports_has_issue,
 )
-from cm.services.concern.distribution import distribute_concern_on_related_objects, redistribute_issues_and_flags
+from cm.services.concern.distribution import (
+    ConcernRelatedObjects,
+    distribute_concern_on_related_objects,
+    redistribute_issues_and_flags,
+)
 from cm.services.concern.flags import BuiltInFlag, raise_flag
 from cm.services.concern.locks import get_lock_on_object
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import (
+    notify_about_new_concern,
+    notify_about_redistributed_concerns_from_maps,
     send_config_creation_event,
     send_delete_service_event,
 )
@@ -139,10 +145,12 @@ def add_cluster(prototype: Prototype, name: str, description: str = "") -> Clust
             object_type=ContentType.objects.get_for_model(Cluster),
         )
 
-        if recalculate_own_concerns_on_add_clusters(cluster):  # TODO: redistribute only new issues. See ADCM-5798
-            redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
+        added, removed = {}, {}
+        if recalculate_own_concerns_on_add_clusters(cluster):
+            added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
 
     reset_hc_map()
+    notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 
     logger.info("cluster #%s %s is added", cluster.pk, cluster.name)
 
@@ -168,10 +176,12 @@ def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, descriptio
         host.save()
         add_concern_to_object(object_=host, concern=get_lock_on_object(object_=provider))
 
-        if concerns := recalculate_own_concerns_on_add_hosts(host):  # TODO: redistribute only new issues. See ADCM-5798
-            distribute_concern_on_related_objects(
-                owner=CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST),
-                concern_id=next(iter(concerns[ADCMCoreType.HOST][host.id])),
+        related_objects = {}
+        concern_id = None
+        if concerns := recalculate_own_concerns_on_add_hosts(host):
+            concern_id = next(iter(concerns[ADCMCoreType.HOST][host.id]))
+            related_objects = distribute_concern_on_related_objects(
+                owner=CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST), concern_id=concern_id
             )
         if concern := retrieve_issue(
             owner=CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.HOSTPROVIDER), cause=ConcernCause.CONFIG
@@ -181,6 +191,10 @@ def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, descriptio
         re_apply_object_policy(provider)
 
     reset_hc_map()
+
+    if concern_id:
+        notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
+
     logger.info("host #%s %s is added", host.pk, host.fqdn)
 
     return host
@@ -198,9 +212,14 @@ def add_host_provider(prototype: Prototype, name: str, description: str = ""):
         provider.save()
 
         provider_cod = CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.HOSTPROVIDER)
+        concern_id = None
         if object_configuration_has_issue(provider):
             concern = create_issue(owner=provider_cod, cause=ConcernCause.CONFIG)
-            distribute_concern_on_related_objects(owner=provider_cod, concern_id=concern.id)
+            concern_id = concern.id
+            related_objects = distribute_concern_on_related_objects(owner=provider_cod, concern_id=concern_id)
+
+    if concern_id:
+        notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
     logger.info("host provider #%s %s is added", provider.pk, provider.name)
 
@@ -260,13 +279,16 @@ def delete_service(service: ClusterObject) -> None:
 
     cluster = service.cluster
     cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
+    concern_id = None
+    related_objects = {}
     if not cluster_mapping_has_issue_orm_version(cluster=cluster):
         delete_issue(
             owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=ConcernCause.HOSTCOMPONENT
         )
     elif retrieve_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT) is None:
         concern = create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
-        distribute_concern_on_related_objects(owner=cluster_cod, concern_id=concern.id)
+        concern_id = concern.id
+        related_objects = distribute_concern_on_related_objects(owner=cluster_cod, concern_id=concern_id)
 
     keep_objects = defaultdict(set)
     for task in TaskLog.objects.filter(
@@ -282,6 +304,8 @@ def delete_service(service: ClusterObject) -> None:
 
     reset_hc_map()
     on_commit(func=partial(send_delete_service_event, service_id=service_pk))
+    if concern_id:
+        on_commit(func=partial(notify_about_new_concern, concern_id=concern_id, related_objects=related_objects))
     logger.info("service #%s is deleted", service_pk)
 
 
@@ -387,11 +411,12 @@ def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
         add_components_to_service(cluster=cluster, service=service)
 
         recalculate_own_concerns_on_add_services(cluster=cluster, services=(service,))
-        redistribute_issues_and_flags(retrieve_cluster_topology(cluster.id))
+        added, removed = redistribute_issues_and_flags(retrieve_cluster_topology(cluster.id))
 
         re_apply_object_policy(apply_object=cluster)
 
     reset_hc_map()
+    notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
     logger.info(
         "service #%s %s is added to cluster #%s %s",
         service.pk,
@@ -459,6 +484,8 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
         current_attr=old_conf.attr,
     )
 
+    concern_id, related_objects = None, {}
+
     with atomic():
         config_log = save_object_config(object_config=obj_conf, config=new_conf, attr=attr, description=description)
 
@@ -468,17 +495,19 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
         )
         # flag on ADCM can't be raised (only objects of `ADCMCoreType` are supported)
         if not isinstance(obj, ADCM):
-            raise_outdated_config_flag_if_required(object_=obj)
+            concern_id, related_objects = raise_outdated_config_flag_if_required(object_=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     send_config_creation_event(object_=obj)
+    if concern_id:
+        notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
     return config_log
 
 
-def raise_outdated_config_flag_if_required(object_: MainObject):
+def raise_outdated_config_flag_if_required(object_: MainObject) -> tuple[ConcernID | None, ConcernRelatedObjects]:
     if object_.state == "created" or not object_.prototype.flag_autogeneration.get("enable_outdated_config", False):
-        return
+        return None, {}
 
     flag = BuiltInFlag.ADCM_OUTDATED_CONFIG.value
     flag_exists = object_.concerns.filter(
@@ -491,7 +520,9 @@ def raise_outdated_config_flag_if_required(object_: MainObject):
         concern_id = ConcernItem.objects.values_list("id", flat=True).get(
             name=flag.name, type=ConcernType.FLAG, owner_id=object_.id, owner_type=object_.content_type
         )
-        distribute_concern_on_related_objects(owner=owner, concern_id=concern_id)
+        return concern_id, distribute_concern_on_related_objects(owner=owner, concern_id=concern_id)
+
+    return None, {}
 
 
 def set_object_config_with_plugin(obj: ADCMEntity, config: dict, attr: dict) -> ConfigLog:
@@ -792,7 +823,8 @@ def multi_bind(cluster: Cluster, service: ClusterObject | None, bind_list: list[
         delete_issue(owner=import_target, cause=ConcernCause.IMPORT)
     elif retrieve_issue(owner=import_target, cause=ConcernCause.IMPORT) is None:
         concern = create_issue(owner=import_target, cause=ConcernCause.IMPORT)
-        distribute_concern_on_related_objects(owner=import_target, concern_id=concern.id)
+        related_objects = distribute_concern_on_related_objects(owner=import_target, concern_id=concern.id)
+        on_commit(func=partial(notify_about_new_concern, concern_id=concern.id, related_objects=related_objects))
 
     return get_import(cluster=cluster, service=service)
 
