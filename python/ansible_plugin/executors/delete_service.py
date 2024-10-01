@@ -12,8 +12,10 @@
 
 from typing import Collection
 
-from cm.api import delete_service, save_hc
-from cm.models import ClusterBind, HostComponent, Service
+from cm.api import delete_service
+from cm.models import ClusterBind, Service, HostComponent, Prototype
+from cm.services.mapping import change_host_component_mapping, check_nothing
+from core.cluster.types import HostComponentEntry
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
 
@@ -67,15 +69,18 @@ class ADCMDeleteServicePluginExecutor(ADCMAnsiblePluginExecutor[DeleteServiceArg
             )
 
         with atomic():
-            # clean up hc
-            new_hc_list = [
-                (hostcomponent.service, hostcomponent.host, hostcomponent.component)
-                for hostcomponent in HostComponent.objects.filter(cluster=service.cluster)
-                .exclude(service=service)
-                .select_related("host", "service", "component")
-                .order_by("id")
-            ]
-            save_hc(service.cluster, new_hc_list)
+            bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=service.prototype_id)
+            change_host_component_mapping(
+                cluster_id=service.cluster_id,
+                bundle_id=bundle_id,
+                flat_mapping=(
+                    HostComponentEntry(**entry)
+                    for entry in HostComponent.objects.values("host_id", "component_id")
+                    .filter(cluster=service.cluster)
+                    .exclude(service=service)
+                ),
+                checks_func=check_nothing,
+            )
 
             # remove existing binds
             ClusterBind.objects.filter(source_service=service).delete()

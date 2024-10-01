@@ -73,14 +73,6 @@ class ServiceMaintenanceModeSerializer(ModelSerializer):
         fields = ["maintenance_mode"]
 
 
-class ServiceNameSerializer(ModelSerializer):
-    prototype = PrototypeRelatedSerializer(read_only=True)
-
-    class Meta:
-        model = Service
-        fields = ["id", "name", "display_name", "state", "prototype"]
-
-
 class RelatedComponentsStatusesSerializer(WithStatusSerializer):
     class Meta:
         model = Component

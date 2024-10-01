@@ -3,25 +3,13 @@ APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
 SELENOID_HOST ?= 10.92.2.65
 SELENOID_PORT ?= 4444
-ADCM_VERSION = "2.3.0-dev"
+ADCM_VERSION = "2.4.0-dev"
 PY_FILES = python dev/linters conf/adcm/python_scripts
 
-.PHONY: help
+.PHONY: build unittests_sqlite unittests_postgresql pretty lint version
 
-help:
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
-
-buildss:
-	@docker run -i --rm -v $(CURDIR)/go:/code -w /code golang sh -c "make"
-
-buildjs:
-	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/adcm-web/app:/code -e ADCM_VERSION=$(ADCM_VERSION) -w /code node:18.16-alpine ./build.sh
-
-build_base:
+build:
 	@docker build . -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
-
-# build ADCM_v2
-build: buildss buildjs build_base
 
 unittests_sqlite:
 	poetry install --no-root --with unittests

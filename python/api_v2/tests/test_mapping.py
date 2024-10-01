@@ -24,7 +24,6 @@ from cm.models import (
     Service,
     Upgrade,
 )
-from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -34,7 +33,6 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.cluster.utils import get_requires
 from api_v2.tests.base import BaseAPITestCase
 
 
@@ -232,13 +230,6 @@ class TestMapping(BaseAPITestCase):
 
             self.assertEqual(len(component.prototype.requires), len(component_data["dependOn"]))
 
-    def test_get_requires(self):
-        requires = [{"service": "service1", "component": "component1"}, {"service": "service1"}]
-
-        new_requires = get_requires(requires=requires)
-
-        self.assertDictEqual(new_requires, {"service1": ["component1"]})
-
 
 class TestMappingConstraints(BaseAPITestCase):
     def setUp(self) -> None:
@@ -268,7 +259,7 @@ class TestMappingConstraints(BaseAPITestCase):
             prototype__name="component_1", service=service_no_requires, cluster=self.cluster
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": component_1.pk},
                 {"hostId": self.host_not_in_cluster.pk, "componentId": component_1.pk},
@@ -295,7 +286,7 @@ class TestMappingConstraints(BaseAPITestCase):
             prototype__name="component_1", service=service_no_requires, cluster=self.cluster
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": component_1.pk},
                 {"hostId": self.foreign_host.pk, "componentId": component_1.pk},
@@ -322,7 +313,7 @@ class TestMappingConstraints(BaseAPITestCase):
         )
         non_existent_host_pk = self.get_non_existent_pk(model=Host)
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": component_1.pk},
                 {"hostId": non_existent_host_pk, "componentId": component_1.pk},
@@ -351,7 +342,7 @@ class TestMappingConstraints(BaseAPITestCase):
         )
         non_existent_component_pk = self.get_non_existent_pk(model=Component)
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": component_1.pk},
                 {"hostId": self.host_1.pk, "componentId": non_existent_component_pk},
@@ -379,7 +370,7 @@ class TestMappingConstraints(BaseAPITestCase):
             prototype__name="component_1", service=service_requires_service, cluster=self.cluster
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": component_1.pk},
             ],
@@ -389,7 +380,7 @@ class TestMappingConstraints(BaseAPITestCase):
         self.assertDictEqual(
             response.json(),
             {
-                "code": "COMPONENT_CONSTRAINT_ERROR",
+                "code": "SERVICE_CONFLICT",
                 "level": "error",
                 "desc": f'No required service "service_required" for service "{service_requires_service.display_name}"',
             },
@@ -406,7 +397,7 @@ class TestMappingConstraints(BaseAPITestCase):
         # required service must be added (not exactly mapped) on mapping save
         self.add_services_to_cluster(service_names=["service_required"], cluster=self.cluster).get()
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[{"hostId": self.host_1.pk, "componentId": component_1.pk}],
         )
 
@@ -431,7 +422,7 @@ class TestMappingConstraints(BaseAPITestCase):
             cluster=self.cluster,
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": component_1.pk},
                 {"hostId": self.host_1.pk, "componentId": not_required_component.pk},
@@ -471,7 +462,7 @@ class TestMappingConstraints(BaseAPITestCase):
             cluster=self.cluster,
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": component_1.pk},
                 {"hostId": self.host_1.pk, "componentId": not_required_component.pk},
@@ -511,7 +502,7 @@ class TestMappingConstraints(BaseAPITestCase):
             cluster=self.cluster,
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": component_1.pk},
                 {"hostId": self.host_1.pk, "componentId": required_component.pk},
@@ -531,25 +522,16 @@ class TestMappingConstraints(BaseAPITestCase):
             cluster=self.cluster,
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": bound_component.pk},
             ],
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertDictEqual(
-            response.json(),
-            {
-                "code": "COMPONENT_CONSTRAINT_ERROR",
-                "level": "error",
-                "desc": (
-                    f'No component "bound_target_component" of service "bound_target_service" '
-                    f'on host "{self.host_1.fqdn}" for component "{bound_component.display_name}" '
-                    f'of service "{bound_component.service.display_name}"'
-                ),
-            },
-        )
+        data = response.json()
+        self.assertEqual(data["code"], "COMPONENT_CONSTRAINT_ERROR")
+        self.assertIn("Component `bound_to` restriction violated.", data["desc"])
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_bound_on_different_host_fail(self):
@@ -571,7 +553,7 @@ class TestMappingConstraints(BaseAPITestCase):
             cluster=self.cluster,
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": bound_component.pk},
                 {"hostId": self.host_2.pk, "componentId": bound_target_component.pk},
@@ -579,19 +561,9 @@ class TestMappingConstraints(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertDictEqual(
-            response.json(),
-            {
-                "code": "COMPONENT_CONSTRAINT_ERROR",
-                "level": "error",
-                "desc": (
-                    f'No component "{bound_component.display_name}" of service '
-                    f'"{bound_component.service.display_name}" on host "{self.host_2.display_name}" for '
-                    f'component "{bound_target_component.display_name}" '
-                    f'of service "{bound_target_component.service.display_name}"'
-                ),
-            },
-        )
+        data = response.json()
+        self.assertEqual(data["code"], "COMPONENT_CONSTRAINT_ERROR")
+        self.assertIn("Component `bound_to` restriction violated.", data["desc"])
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_bound_success(self):
@@ -613,7 +585,7 @@ class TestMappingConstraints(BaseAPITestCase):
             cluster=self.cluster,
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": bound_component.pk},
                 {"hostId": self.host_1.pk, "componentId": bound_target_component.pk},
@@ -633,7 +605,7 @@ class TestMappingConstraints(BaseAPITestCase):
             cluster=self.cluster,
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(data=[])
+        response = self.client.v2[self.cluster, "mapping"].post(data=[])
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertDictEqual(
@@ -659,7 +631,7 @@ class TestMappingConstraints(BaseAPITestCase):
             cluster=self.cluster,
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": component.pk},
                 {"hostId": self.host_2.pk, "componentId": component.pk},
@@ -690,7 +662,7 @@ class TestMappingConstraints(BaseAPITestCase):
             cluster=self.cluster,
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[{"hostId": self.host_1.pk, "componentId": component.pk}],
         )
 
@@ -707,7 +679,7 @@ class TestMappingConstraints(BaseAPITestCase):
             cluster=self.cluster,
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": component.pk},
                 {"hostId": self.host_2.pk, "componentId": component.pk},
@@ -740,7 +712,7 @@ class TestMappingConstraints(BaseAPITestCase):
 
         for data in ([], [{"hostId": self.host_1.pk, "componentId": component.pk}]):
             with self.subTest(f"[0,1] constraint, data: {data}"):
-                response: Response = self.client.v2[self.cluster, "mapping"].post(data=data)
+                response = self.client.v2[self.cluster, "mapping"].post(data=data)
 
                 self.assertEqual(response.status_code, HTTP_201_CREATED)
                 self.assertEqual(HostComponent.objects.count(), len(data))
@@ -768,7 +740,7 @@ class TestMappingConstraints(BaseAPITestCase):
             ],
         ):
             with self.subTest(f"[1,2] constraint, data: {data}"):
-                response: Response = self.client.v2[self.cluster, "mapping"].post(data=data)
+                response = self.client.v2[self.cluster, "mapping"].post(data=data)
 
                 self.assertEqual(response.status_code, HTTP_409_CONFLICT)
                 self.assertDictEqual(
@@ -799,7 +771,7 @@ class TestMappingConstraints(BaseAPITestCase):
             ],
         ):
             with self.subTest(f"[1,2] constraint, data: {data}"):
-                response: Response = self.client.v2[self.cluster, "mapping"].post(data=data)
+                response = self.client.v2[self.cluster, "mapping"].post(data=data)
 
                 self.assertEqual(response.status_code, HTTP_201_CREATED)
                 self.assertEqual(HostComponent.objects.count(), len(data))
@@ -826,7 +798,7 @@ class TestMappingConstraints(BaseAPITestCase):
             ],
         ):
             with self.subTest(f"[1,odd] constraint, data: {data}"):
-                response: Response = self.client.v2[self.cluster, "mapping"].post(data=data)
+                response = self.client.v2[self.cluster, "mapping"].post(data=data)
 
                 self.assertEqual(response.status_code, HTTP_409_CONFLICT)
                 self.assertDictEqual(
@@ -858,7 +830,7 @@ class TestMappingConstraints(BaseAPITestCase):
             ],
         ):
             with self.subTest(f"[1,odd] constraint, data: {data}"):
-                response: Response = self.client.v2[self.cluster, "mapping"].post(data=data)
+                response = self.client.v2[self.cluster, "mapping"].post(data=data)
 
                 self.assertEqual(response.status_code, HTTP_201_CREATED)
                 self.assertEqual(HostComponent.objects.count(), len(data))
@@ -884,7 +856,7 @@ class TestMappingConstraints(BaseAPITestCase):
             ],
         ):
             with self.subTest(f"[odd] constraint, data: {data}"):
-                response: Response = self.client.v2[self.cluster, "mapping"].post(data=data)
+                response = self.client.v2[self.cluster, "mapping"].post(data=data)
 
                 self.assertEqual(response.status_code, HTTP_409_CONFLICT)
                 self.assertDictEqual(
@@ -916,7 +888,7 @@ class TestMappingConstraints(BaseAPITestCase):
             ],
         ):
             with self.subTest(f"[odd] constraint, data: {data}"):
-                response: Response = self.client.v2[self.cluster, "mapping"].post(data=data)
+                response = self.client.v2[self.cluster, "mapping"].post(data=data)
 
                 self.assertEqual(response.status_code, HTTP_201_CREATED)
                 self.assertEqual(HostComponent.objects.count(), len(data))
@@ -931,7 +903,7 @@ class TestMappingConstraints(BaseAPITestCase):
             cluster=self.cluster,
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": component.pk},
                 {"hostId": self.host_2.pk, "componentId": component.pk},
@@ -970,7 +942,7 @@ class TestMappingConstraints(BaseAPITestCase):
             ],
         ):
             with self.subTest(f"[0,odd], data: {data}"):
-                response: Response = self.client.v2[self.cluster, "mapping"].post(data=data)
+                response = self.client.v2[self.cluster, "mapping"].post(data=data)
 
                 self.assertEqual(response.status_code, HTTP_201_CREATED)
                 self.assertEqual(HostComponent.objects.count(), len(data))
@@ -985,7 +957,7 @@ class TestMappingConstraints(BaseAPITestCase):
             cluster=self.cluster,
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(data=[])
+        response = self.client.v2[self.cluster, "mapping"].post(data=[])
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertDictEqual(
@@ -1022,7 +994,7 @@ class TestMappingConstraints(BaseAPITestCase):
             ],
         ):
             with self.subTest(f"[1,+], data: {data}"):
-                response: Response = self.client.v2[self.cluster, "mapping"].post(data=data)
+                response = self.client.v2[self.cluster, "mapping"].post(data=data)
 
                 self.assertEqual(response.status_code, HTTP_201_CREATED)
                 self.assertEqual(HostComponent.objects.count(), len(data))
@@ -1037,7 +1009,7 @@ class TestMappingConstraints(BaseAPITestCase):
             cluster=self.cluster,
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": component.pk},
                 {"hostId": self.host_2.pk, "componentId": component.pk},
@@ -1067,7 +1039,7 @@ class TestMappingConstraints(BaseAPITestCase):
         )
 
         data = [{"hostId": host.pk, "componentId": component.pk} for host in self.cluster.host_set.all()]
-        response: Response = self.client.v2[self.cluster, "mapping"].post(data=data)
+        response = self.client.v2[self.cluster, "mapping"].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(HostComponent.objects.count(), len(data))
@@ -1086,7 +1058,7 @@ class TestMappingConstraints(BaseAPITestCase):
             prototype__name="component_1", service=service_no_requires, cluster=self.cluster
         )
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[{"hostId": self.host_1.pk, "componentId": component_1.pk}],
         )
 
@@ -1097,8 +1069,7 @@ class TestMappingConstraints(BaseAPITestCase):
                 "code": "SERVICE_CONFLICT",
                 "level": "error",
                 "desc": (
-                    f'No required service "service_required" for service '
-                    f'"{service_requires_service.display_name}" {service_requires_service.prototype.version}'
+                    f'No required service "service_required" for service ' f'"{service_requires_service.display_name}"'
                 ),
             },
         )
@@ -1115,7 +1086,7 @@ class TestMappingConstraints(BaseAPITestCase):
         self.host_1.maintenance_mode = MaintenanceMode.ON
         self.host_1.save(update_fields=["maintenance_mode"])
 
-        response: Response = self.client.v2[self.cluster, "mapping"].post(
+        response = self.client.v2[self.cluster, "mapping"].post(
             data=[
                 {"hostId": self.host_1.pk, "componentId": component_1.pk},
                 {"hostId": self.host_2.pk, "componentId": component_1.pk},
@@ -1190,11 +1161,9 @@ class TestBoundTo(BaseAPITestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertIn(
-            'No component "will_have_bound_to" of service "service_with_bound_to" on host "h1" '
-            'for component "component_1" of service "service_1"',
-            response.json()["desc"],
-        )
+        data = response.json()
+        self.assertEqual(data["code"], "COMPONENT_CONSTRAINT_ERROR")
+        self.assertIn("Component `bound_to` restriction violated.", data["desc"])
 
 
 class GroupConfigRelatedTests(BaseAPITestCase):
@@ -1234,7 +1203,7 @@ class GroupConfigRelatedTests(BaseAPITestCase):
     def test_host_removed_from_component_group_config_on_mapping_change(self):
         mapping_data = [{"hostId": self.host_1.pk, "componentId": self.component_1_from_s1.pk}]
 
-        response: Response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
+        response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         group_config = self._prepare_config_group_via_api(
@@ -1242,7 +1211,7 @@ class GroupConfigRelatedTests(BaseAPITestCase):
         )
 
         mapping_data[0].update({"componentId": self.component_2_from_s1.pk})
-        response: Response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
+        response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         group_config.refresh_from_db()
@@ -1252,7 +1221,7 @@ class GroupConfigRelatedTests(BaseAPITestCase):
         endpoint = self.client.v2[self.cluster_1, "mapping"]
         mapping_data = [{"hostId": self.host_1.pk, "componentId": self.component_1_from_s1.pk}]
 
-        response: Response = endpoint.post(data=mapping_data)
+        response = endpoint.post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         group_config = self._prepare_config_group_via_api(
@@ -1260,34 +1229,16 @@ class GroupConfigRelatedTests(BaseAPITestCase):
         )
 
         mapping_data.append({"hostId": self.host_2.pk, "componentId": self.component_2_from_s1.pk})
-        response: Response = endpoint.post(data=mapping_data)
+        response = endpoint.post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         group_config.refresh_from_db()
         self.assertSetEqual(set(group_config.hosts.values_list("pk", flat=True)), {self.host_1.pk})
 
-    def test_host_removed_from_service_group_config_on_mapping_change(self):
-        endpoint = self.client.v2[self.cluster_1] / "mapping"
-        mapping_data = [{"hostId": self.host_1.pk, "componentId": self.component_1_from_s1.pk}]
-
-        response: Response = endpoint.post(data=mapping_data)
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        group_config = self._prepare_config_group_via_api(
-            obj=self.service_1, hosts=[self.host_1], name="service config group"
-        )
-
-        mapping_data[0].update({"componentId": self.component_2_from_s1.pk})
-        response: Response = endpoint.post(data=mapping_data)
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        group_config.refresh_from_db()
-        self.assertEqual(group_config.hosts.count(), 0)
-
     def test_host_not_removed_from_service_group_config_on_mapping_remain(self):
         mapping_data = [{"hostId": self.host_1.pk, "componentId": self.component_1_from_s1.pk}]
 
-        response: Response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
+        response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         group_config = self._prepare_config_group_via_api(
@@ -1295,7 +1246,7 @@ class GroupConfigRelatedTests(BaseAPITestCase):
         )
 
         mapping_data.insert(0, {"hostId": self.host_2.pk, "componentId": self.component_2_from_s1.pk})
-        response: Response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
+        response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         group_config.refresh_from_db()
@@ -1304,7 +1255,7 @@ class GroupConfigRelatedTests(BaseAPITestCase):
     def test_host_not_removed_from_cluster_group_config_on_mapping_change(self):
         mapping_data = [{"hostId": self.host_1.pk, "componentId": self.component_1_from_s1.pk}]
 
-        response: Response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
+        response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         group_config = self._prepare_config_group_via_api(
@@ -1312,7 +1263,7 @@ class GroupConfigRelatedTests(BaseAPITestCase):
         )
 
         mapping_data[0].update({"componentId": self.component_2_from_s1.pk})
-        response: Response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
+        response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         group_config.refresh_from_db()

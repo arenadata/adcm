@@ -341,6 +341,43 @@ class TestCluster(BaseAPITestCase):
             ],
         )
 
+    def test_depends_on_in_service_candidates(self) -> None:
+        self.maxDiff = None
+
+        bundle = self.add_bundle(self.test_bundles_dir / "complex_dependencies")
+        cluster = self.add_cluster(bundle=bundle, name="With Deps")
+        service_proto = Prototype.objects.get(name="first_service", type="service")
+        component_proto = Prototype.objects.get(name="first_component", type="component", parent=service_proto)
+
+        candidates = self.client.v2[cluster, "service-candidates"].get().json()
+        depend_on = {entry["name"]: entry["dependOn"] for entry in candidates}
+
+        self.assertDictEqual(
+            depend_on,
+            {
+                "first_service": None,
+                "second_service": [
+                    {
+                        "servicePrototype": {
+                            "id": service_proto.id,
+                            "name": "first_service",
+                            "displayName": "first_service",
+                            "version": "1.5",
+                            "license": {"status": "absent", "text": None},
+                            "componentPrototypes": [
+                                {
+                                    "id": component_proto.id,
+                                    "name": "first_component",
+                                    "displayName": "first_component",
+                                    "version": "1.5",
+                                }
+                            ],
+                        }
+                    }
+                ],
+            },
+        )
+
     def test_service_create_success(self):
         service_prototype = Prototype.objects.filter(type="service").first()
         response = (self.client.v2[self.cluster_1] / "services").post(data=[{"prototype_id": service_prototype.pk}])

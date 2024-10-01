@@ -21,12 +21,13 @@ from core.cluster.types import (
     MaintenanceModeOfObjects,
     ObjectMaintenanceModeState,
 )
-from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor, HostID, MappingDict, ShortObjectInfo
+from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor, HostID, ShortObjectInfo
 from django.db.transaction import atomic
 from rbac.models import re_apply_object_policy
 
 from cm.models import Cluster, Component, ConcernCause, Host, HostComponent, Service
 from cm.services.concern import create_issue, delete_issue
+from cm.status_api import notify_about_new_concern
 
 
 class ClusterDB:
@@ -100,7 +101,7 @@ def perform_host_to_cluster_map(
     # this import should be resolved later:
     # concerns management should be passed in here the same way as `status_service`,
     # because it's a dependency that shouldn't be directly set
-    from cm.services.concern.checks import cluster_mapping_has_issue
+    from cm.services.concern.checks import cluster_mapping_has_issue_orm_version
     from cm.services.concern.distribution import distribute_concern_on_related_objects
 
     with atomic():
@@ -108,23 +109,37 @@ def perform_host_to_cluster_map(
         cluster = Cluster.objects.get(id=cluster_id)
         cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
 
-        if not cluster_mapping_has_issue(cluster=cluster):
+        concern_id = None
+        related_objects = {}
+        if not cluster_mapping_has_issue_orm_version(cluster=cluster):
             delete_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
         elif not cluster.get_own_issue(cause=ConcernCause.HOSTCOMPONENT):
             concern = create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
-            distribute_concern_on_related_objects(owner=cluster_cod, concern_id=concern.id)
+            concern_id = concern.id
+            related_objects = distribute_concern_on_related_objects(owner=cluster_cod, concern_id=concern.id)
 
         re_apply_object_policy(apply_object=cluster)
 
     status_service.reset_hc_map()
+    if concern_id:
+        notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
     return hosts
 
 
-def retrieve_clusters_topology(
-    cluster_ids: Iterable[ClusterID], input_mapping: dict[ClusterID, list[MappingDict]] | None = None
-) -> Generator[ClusterTopology, None, None]:
-    return build_clusters_topology(cluster_ids=cluster_ids, db=ClusterDB, input_mapping=input_mapping)
+def retrieve_host_component_entries(cluster_id: ClusterID) -> set[HostComponentEntry]:
+    return {
+        HostComponentEntry(**db_entry)
+        for db_entry in HostComponent.objects.values("host_id", "component_id").filter(cluster_id=cluster_id)
+    }
+
+
+def retrieve_cluster_topology(cluster_id: ClusterID) -> ClusterTopology:
+    return next(retrieve_multiple_clusters_topology(cluster_ids=(cluster_id,)))
+
+
+def retrieve_multiple_clusters_topology(cluster_ids: Iterable[ClusterID]) -> Generator[ClusterTopology, None, None]:
+    return build_clusters_topology(cluster_ids=cluster_ids, db=ClusterDB)
 
 
 def retrieve_related_cluster_topology(orm_object: Cluster | Service | Component | Host) -> ClusterTopology:
@@ -136,7 +151,7 @@ def retrieve_related_cluster_topology(orm_object: Cluster | Service | Component 
         message = f"Can't detect cluster variables for {orm_object}"
         raise RuntimeError(message)
 
-    return next(retrieve_clusters_topology([cluster_id]))
+    return next(retrieve_multiple_clusters_topology([cluster_id]))
 
 
 def retrieve_clusters_objects_maintenance_mode(cluster_ids: Iterable[ClusterID]) -> MaintenanceModeOfObjects:

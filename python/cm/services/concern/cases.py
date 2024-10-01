@@ -20,7 +20,7 @@ from django.contrib.contenttypes.models import ContentType
 from cm.models import Cluster, Component, ConcernCause, ConcernItem, ConcernType, Host, Service
 from cm.services.concern import create_issue, delete_issue, retrieve_issue
 from cm.services.concern.checks import (
-    cluster_mapping_has_issue,
+    cluster_mapping_has_issue_orm_version,
     object_configuration_has_issue,
     object_has_required_services_issue,
     object_imports_has_issue,
@@ -35,7 +35,7 @@ def recalculate_own_concerns_on_add_clusters(cluster: Cluster) -> OwnObjectConce
     cluster_checks = (
         (ConcernCause.CONFIG, object_configuration_has_issue),
         (ConcernCause.IMPORT, object_imports_has_issue),
-        (ConcernCause.HOSTCOMPONENT, cluster_mapping_has_issue),
+        (ConcernCause.HOSTCOMPONENT, cluster_mapping_has_issue_orm_version),
         (ConcernCause.SERVICE, object_has_required_services_issue),
     )
 
@@ -54,7 +54,7 @@ def recalculate_own_concerns_on_add_services(cluster: Cluster, services: Iterabl
 
     # create new concerns
     cluster_own_hc_issue = retrieve_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
-    if cluster_own_hc_issue is None and cluster_mapping_has_issue(cluster=cluster):
+    if cluster_own_hc_issue is None and cluster_mapping_has_issue_orm_version(cluster=cluster):
         issue = create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
         new_concerns[ADCMCoreType.CLUSTER][cluster.pk].add(issue.pk)
 
@@ -102,7 +102,7 @@ def recalculate_concerns_on_cluster_upgrade(cluster: Cluster) -> None:
     cluster_checks = (
         (ConcernCause.CONFIG, object_configuration_has_issue),
         (ConcernCause.IMPORT, object_imports_has_issue),
-        (ConcernCause.HOSTCOMPONENT, cluster_mapping_has_issue),
+        (ConcernCause.HOSTCOMPONENT, cluster_mapping_has_issue_orm_version),
         (ConcernCause.SERVICE, object_has_required_services_issue),
     )
 

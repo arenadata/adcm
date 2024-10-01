@@ -25,6 +25,7 @@ from cm.models import (
 from cm.services.config.jinja import get_jinja_config
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.stack import check_hostcomponents_objects_exist
+from core.cluster.types import HostComponentEntry
 from django.conf import settings
 from django.db.models import Q
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -47,8 +48,6 @@ from api_v2.generic.action.utils import (
     filter_actions_by_user_perm,
     get_action_configuration,
     has_run_perms,
-    insert_service_ids,
-    unique_hc_entries,
 )
 from api_v2.generic.config.utils import convert_adcm_meta_to_attr, represent_string_as_json_type
 from api_v2.task.serializers import TaskListSerializer
@@ -191,9 +190,10 @@ class ActionViewSet(ListModelMixin, RetrieveModelMixin, GetParentObjectMixin, AD
             payload=ActionRunPayload(
                 conf=config,
                 attr=attr,
-                hostcomponent=insert_service_ids(
-                    hc_create_data=unique_hc_entries(serializer.validated_data["host_component_map"])
-                ),
+                hostcomponent={
+                    HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
+                    for entry in serializer.validated_data["host_component_map"]
+                },
                 verbose=serializer.validated_data["is_verbose"],
             ),
         )

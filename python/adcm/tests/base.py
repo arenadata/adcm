@@ -23,7 +23,7 @@ import tarfile
 from api_v2.generic.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from api_v2.prototype.utils import accept_license
 from api_v2.service.utils import bulk_add_services_to_cluster
-from cm.api import add_cluster, add_hc, add_host, add_host_provider, add_host_to_cluster, update_obj_config
+from cm.api import add_cluster, add_host, add_host_provider, add_host_to_cluster, update_obj_config
 from cm.bundle import prepare_bundle, process_file
 from cm.converters import orm_object_to_core_type
 from cm.models import (
@@ -45,7 +45,9 @@ from cm.models import (
     Service,
 )
 from cm.services.job.prepare import prepare_task_for_action
+from cm.services.mapping import change_host_component_mapping
 from cm.utils import deep_merge
+from core.cluster.types import HostComponentEntry
 from core.job.dto import TaskPayloadDTO
 from core.job.types import Task
 from core.rbac.dto import UserCreateDTO
@@ -488,13 +490,14 @@ class BusinessLogicMixin(BundleLogicMixin):
 
     @staticmethod
     def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, Component]]) -> list[HostComponent]:
-        return add_hc(
-            cluster=cluster,
-            hc_in=[
-                {"host_id": host.pk, "component_id": component.pk, "service_id": component.service_id}
-                for host, component in entries
-            ],
+        change_host_component_mapping(
+            cluster_id=cluster.id,
+            bundle_id=cluster.bundle_id,
+            flat_mapping=(
+                HostComponentEntry(host_id=host.id, component_id=component.id) for host, component in entries
+            ),
         )
+        return list(HostComponent.objects.filter(cluster_id=cluster.id))
 
     @staticmethod
     def get_non_existent_pk(model: type[ADCMEntity | ADCMModel | User | Role | Group | Policy]):

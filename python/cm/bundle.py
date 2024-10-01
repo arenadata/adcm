@@ -103,6 +103,7 @@ def prepare_bundle(
 
     except Exception as error:
         shutil.rmtree(path, ignore_errors=True)
+        (settings.DOWNLOAD_DIR / Path(bundle_file).name).unlink()
         raise error
 
 

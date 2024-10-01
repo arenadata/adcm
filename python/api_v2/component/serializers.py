@@ -13,62 +13,20 @@
 from cm.adcm_config.config import get_main_info
 from cm.models import Component, Host, HostComponent, MaintenanceMode
 from drf_spectacular.utils import extend_schema_field
-from rest_framework.fields import BooleanField
 from rest_framework.serializers import (
     CharField,
     ChoiceField,
     IntegerField,
-    ListField,
     ModelSerializer,
     SerializerMethodField,
 )
 
 from api_v2.cluster.serializers import ClusterRelatedSerializer
-from api_v2.cluster.utils import get_depend_on
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.host.serializers import HostShortSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
-from api_v2.serializers import DependOnSerializer, WithStatusSerializer
-from api_v2.service.serializers import ServiceNameSerializer, ServiceRelatedSerializer
-
-
-class ComponentMappingSerializer(ModelSerializer):
-    service = ServiceNameSerializer(read_only=True)
-    depend_on = SerializerMethodField()
-    constraints = ListField(source="constraint")
-    prototype = PrototypeRelatedSerializer(read_only=True)
-    maintenance_mode = SerializerMethodField()
-    is_maintenance_mode_available = SerializerMethodField()
-
-    class Meta:
-        model = Component
-        fields = [
-            "id",
-            "name",
-            "display_name",
-            "is_maintenance_mode_available",
-            "maintenance_mode",
-            "constraints",
-            "prototype",
-            "depend_on",
-            "service",
-        ]
-
-    @staticmethod
-    @extend_schema_field(field=DependOnSerializer(many=True))
-    def get_depend_on(instance: Component) -> list[dict] | None:
-        if instance.prototype.requires:
-            return get_depend_on(prototype=instance.prototype)
-
-        return None
-
-    @extend_schema_field(field=ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value)))
-    def get_maintenance_mode(self, instance: Component):
-        return self.context["mm"].components.get(instance.id, MaintenanceMode.OFF).value
-
-    @extend_schema_field(field=BooleanField())
-    def get_is_maintenance_mode_available(self, _instance: Component):
-        return self.context["is_mm_available"]
+from api_v2.serializers import WithStatusSerializer
+from api_v2.service.serializers import ServiceRelatedSerializer
 
 
 class ComponentSerializer(WithStatusSerializer):

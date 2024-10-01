@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.api import add_hc, add_host_to_cluster, add_service_to_cluster
+from adcm.tests.base import BusinessLogicMixin
+from cm.api import add_host_to_cluster, add_service_to_cluster
 from cm.models import (
     Cluster,
     Component,
@@ -24,7 +25,7 @@ from rbac.models import Group, Policy, User
 from rbac.tests.test_base import RBACBaseTestCase
 
 
-class PolicyRBACTestCase(RBACBaseTestCase):
+class PolicyRBACTestCase(BusinessLogicMixin, RBACBaseTestCase):
     """Tests for applying policy with different combination of roles and object"""
 
     def setUp(self) -> None:
@@ -231,21 +232,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):
         _, host1, host2 = self.get_hosts_and_provider()
         add_host_to_cluster(self.cluster, host1)
         add_host_to_cluster(self.cluster, host2)
-        add_hc(
-            self.cluster,
-            [
-                {
-                    "service_id": self.service_1.id,
-                    "component_id": self.component_11.id,
-                    "host_id": host1.id,
-                },
-                {
-                    "service_id": self.service_2.id,
-                    "component_id": self.component_21.id,
-                    "host_id": host2.id,
-                },
-            ],
-        )
+        self.set_hostcomponent(cluster=self.cluster, entries=[(host1, self.component_11), (host2, self.component_21)])
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component_host())
         policy.group.add(self.group)
         policy.add_object(self.service_1)
@@ -274,25 +261,9 @@ class PolicyRBACTestCase(RBACBaseTestCase):
         add_host_to_cluster(self.cluster, host1)
         add_host_to_cluster(self.cluster, host2)
         add_host_to_cluster(self.cluster, host3)
-        add_hc(
-            self.cluster,
-            [
-                {
-                    "service_id": self.service_2.id,
-                    "component_id": self.component_21.id,
-                    "host_id": host1.id,
-                },
-                {
-                    "service_id": self.service_2.id,
-                    "component_id": self.component_21.id,
-                    "host_id": host2.id,
-                },
-                {
-                    "service_id": self.service_1.id,
-                    "component_id": self.component_11.id,
-                    "host_id": host3.id,
-                },
-            ],
+        self.set_hostcomponent(
+            cluster=self.cluster,
+            entries=[(host1, self.component_21), (host2, self.component_21), (host3, self.component_11)],
         )
 
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component_host())
@@ -374,16 +345,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):
     def test_add_host(self):
         _, host1, host2 = self.get_hosts_and_provider()
         add_host_to_cluster(self.cluster, host1)
-        add_hc(
-            self.cluster,
-            [
-                {
-                    "service_id": self.service_1.id,
-                    "component_id": self.component_11.id,
-                    "host_id": host1.id,
-                },
-            ],
-        )
+        self.set_hostcomponent(cluster=self.cluster, entries=[(host1, self.component_11)])
 
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component_host())
         policy.group.add(self.group)
@@ -414,16 +376,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):
     def test_add_hc(self):
         _, host1, host2 = self.get_hosts_and_provider()
         add_host_to_cluster(self.cluster, host1)
-        add_hc(
-            self.cluster,
-            [
-                {
-                    "service_id": self.service_1.id,
-                    "component_id": self.component_11.id,
-                    "host_id": host1.id,
-                },
-            ],
-        )
+        self.set_hostcomponent(cluster=self.cluster, entries=[(host1, self.component_11)])
         policy = Policy.objects.create(role=self.object_role_custom_perm_service_component_host())
         policy.group.add(self.group)
         policy.add_object(self.service_1)
@@ -445,21 +398,7 @@ class PolicyRBACTestCase(RBACBaseTestCase):
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
         add_host_to_cluster(self.cluster, host2)
-        add_hc(
-            self.cluster,
-            [
-                {
-                    "service_id": self.service_1.id,
-                    "component_id": self.component_11.id,
-                    "host_id": host1.id,
-                },
-                {
-                    "service_id": self.service_1.id,
-                    "component_id": self.component_12.id,
-                    "host_id": host2.id,
-                },
-            ],
-        )
+        self.set_hostcomponent(cluster=self.cluster, entries=[(host1, self.component_11), (host2, self.component_12)])
 
         self.assertFalse(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_service", self.service_1))

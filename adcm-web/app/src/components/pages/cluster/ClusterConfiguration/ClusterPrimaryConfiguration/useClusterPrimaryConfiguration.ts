@@ -18,7 +18,7 @@ export const useClusterPrimaryConfiguration = () => {
   const accessCheckStatus = useStore(({ adcm }) => adcm.entityConfiguration.accessCheckStatus);
 
   useEffect(() => {
-    if (cluster) {
+    if (cluster?.id) {
       // load all configurations for current Cluster
       dispatch(getConfigurationsVersions({ entityType: 'cluster', args: { clusterId: cluster.id } }));
     }
@@ -26,7 +26,7 @@ export const useClusterPrimaryConfiguration = () => {
     return () => {
       dispatch(cleanup());
     };
-  }, [cluster, dispatch]);
+  }, [cluster?.id, dispatch]);
 
   const configurationsOptions = useConfigurations({
     configVersions,
@@ -34,13 +34,13 @@ export const useClusterPrimaryConfiguration = () => {
   const { selectedConfigId, onReset } = configurationsOptions;
 
   useEffect(() => {
-    if (cluster && selectedConfigId) {
+    if (cluster?.id && selectedConfigId) {
       // load full config for selected configuration
       dispatch(
         getConfiguration({ entityType: 'cluster', args: { clusterId: cluster.id, configId: selectedConfigId } }),
       );
     }
-  }, [dispatch, cluster, selectedConfigId]);
+  }, [dispatch, cluster?.id, selectedConfigId]);
 
   const selectedConfiguration = selectedConfigId === 0 ? configurationsOptions.draftConfiguration : loadedConfiguration;
 

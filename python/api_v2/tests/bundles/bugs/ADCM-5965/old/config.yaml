@@ -1,0 +1,12 @@
+- name: cluster_with_constraints
+  type: cluster
+  version: '1.0'
+- components:
+    component:
+      constraint:
+      - 0
+      - 1
+    dummy: {}
+  name: service_with_constraints
+  type: service
+  version: '1.0'

@@ -72,7 +72,6 @@ class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):
             object_type=ContentType.objects.get_for_model(self.service_2),
             object_id=self.service_2.pk,
         )
-        self.service_1_group_config.hosts.add(self.host)
         self.host_for_service = self.add_host(
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_for_service"
         )
@@ -87,7 +86,10 @@ class BaseServiceGroupConfigTestCase(BaseClusterGroupConfigTestCase):
         self.component_2 = Component.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_2"
         )
-        self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_for_service, self.component_1)])
+        self.set_hostcomponent(
+            cluster=self.cluster_1, entries=[(self.host, self.component_1), (self.host_for_service, self.component_1)]
+        )
+        self.service_1_group_config.hosts.add(self.host)
 
 
 class TestGroupConfigNaming(BaseServiceGroupConfigTestCase):
@@ -639,13 +641,15 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):
             object_type=ContentType.objects.get_for_model(self.component_2),
             object_id=self.component_2.pk,
         )
-        self.component_1_group_config.hosts.add(self.host)
 
         self.host_for_component = self.add_host(
             bundle=self.provider_bundle, provider=self.provider, fqdn="host_for_component"
         )
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_for_component)
-        self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_for_component, self.component_1)])
+        self.set_hostcomponent(
+            cluster=self.cluster_1, entries=[(self.host, self.component_1), (self.host_for_component, self.component_1)]
+        )
+        self.component_1_group_config.hosts.add(self.host)
 
     def test_list_success(self):
         response = self.client.v2[self.component_1, CONFIG_GROUPS].get()
@@ -855,6 +859,30 @@ class TestComponentGroupConfig(BaseServiceGroupConfigTestCase):
                 response = self.client.v2[self.component_2, CONFIG_GROUPS].get()
 
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+    def test_adcm_5967_move_host_in_context_of_one_service(self):
+        self.assertEqual(self.component_1_group_config.hosts.count(), 1)
+        self.assertEqual(self.service_1_group_config.hosts.count(), 1)
+
+        self.set_hostcomponent(
+            cluster=self.cluster_1, entries=[(self.host_for_component, self.component_1), (self.host, self.component_2)]
+        )
+
+        self.assertEqual(self.component_1_group_config.hosts.count(), 0)
+        self.assertEqual(self.service_1_group_config.hosts.count(), 1)
+        self.assertListEqual(list(self.service_1_group_config.hosts.all()), [self.host])
+
+    def test_adcm_5967_remove_host_from_service(self):
+        self.assertEqual(self.component_1_group_config.hosts.count(), 1)
+        self.assertEqual(self.service_1_group_config.hosts.count(), 1)
+
+        self.set_hostcomponent(
+            cluster=self.cluster_1,
+            entries=[(self.host_for_component, self.component_1), (self.host_for_component, self.component_2)],
+        )
+
+        self.assertEqual(self.component_1_group_config.hosts.count(), 0)
+        self.assertEqual(self.service_1_group_config.hosts.count(), 0)
 
 
 class TestHostProviderGroupConfig(BaseAPITestCase):

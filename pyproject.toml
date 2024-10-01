@@ -161,7 +161,8 @@ pythonVersion = "3.10"
 pythonPlatform = "Linux"
 
 executionEnvironments = [
-    { root = "conf/adcm/python_scripts", extraPaths = [ "python" ]},
+    { root = "python" },
+    { root = "conf/adcm/python_scripts", extraPaths = [ "python" ] },
 ]
 
 # TODO: Remove. Temporarily disable type issue checks

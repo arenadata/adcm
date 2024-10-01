@@ -201,7 +201,11 @@ class JobRepoImpl:
             owner_type=owner.type.value,
             config=payload.conf,
             attr=payload.attr or {},
-            hostcomponentmap=payload.hostcomponent,
+            hostcomponentmap=[
+                {"host_id": entry.host_id, "component_id": entry.component_id} for entry in payload.hostcomponent
+            ]
+            if payload.hostcomponent is not None
+            else None,
             post_upgrade_hc_map=payload.post_upgrade_hostcomponent,
             verbose=payload.verbose,
             status=ExecutionStatus.CREATED.value,

@@ -374,6 +374,7 @@ class TestActionsFiltering(BaseAPITestCase):
 
     def test_adcm_4856_action_with_several_entries_hc_success(self) -> None:
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
+        self.add_host_to_cluster(cluster=self.cluster, host=self.host_2)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
         with RunTaskMock() as run_task:

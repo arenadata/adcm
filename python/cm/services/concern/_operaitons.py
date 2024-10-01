@@ -71,7 +71,7 @@ def create_issue(owner: CoreObjectDescriptor, cause: ConcernCause) -> ConcernIte
 def _get_target_and_placeholder_types(
     concern_message: ConcernMessage, owner: CoreObjectDescriptor
 ) -> tuple[Prototype | None, PlaceholderTypeDTO]:
-    owner_prototype = Prototype.objects.values("type", "bundle_id", "requires").get(
+    owner_prototype = Prototype.objects.values("id", "type", "bundle_id", "requires").get(
         pk=core_type_to_model(owner.type).objects.values_list("prototype_id", flat=True).get(pk=owner.id)
     )
     target = None
@@ -116,5 +116,9 @@ def _get_target_and_placeholder_types(
                 target = Prototype.objects.filter(
                     name__in=absent_services_names, type=ObjectType.SERVICE, bundle_id=owner_prototype["bundle_id"]
                 ).first()
+
+        case _:
+            message = f"Can't detect target and placeholder for {concern_message}"
+            raise RuntimeError(message)
 
     return target, placeholder_type_dto

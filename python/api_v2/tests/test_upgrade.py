@@ -24,7 +24,7 @@ from cm.models import (
 from cm.tests.mocks.task_runner import RunTaskMock
 from init_db import init
 from rbac.upgrade.role import init_roles
-from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 from rest_framework.test import APITestCase
 
 from api_v2.prototype.utils import accept_license
@@ -583,6 +583,35 @@ class TestUpgrade(BaseAPITestCase):
         response = (self.client.v2 / "jobs").get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 4)
+
+    def test_adcm_5965_no_constraints_check(self) -> None:
+        bundle = self.add_bundle(self.test_bundles_dir / "bugs" / "ADCM-5965" / "old")
+        new_bundle = self.add_bundle(self.test_bundles_dir / "bugs" / "ADCM-5965" / "new")
+
+        cluster = self.add_cluster(bundle=bundle, name="Cluster For Upgrade")
+        service = self.add_services_to_cluster(["service_with_constraints"], cluster=cluster).get()
+        component = ServiceComponent.objects.get(prototype__name="dummy", service=service)
+
+        host_1 = self.add_host(provider=self.provider, fqdn="host-1", cluster=cluster)
+
+        self.set_hostcomponent(cluster=cluster, entries=((host_1, component),))
+
+        with self.subTest("No HC"):
+            upgrade = Upgrade.objects.get(name="Simple upgrade", bundle=new_bundle)
+            response = self.client.v2[cluster, "upgrades", upgrade, "run"].post()
+
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            self.assertIn("COMPONENT_CONSTRAINT_ERROR", response.json()["code"])
+
+        with self.subTest("With HC"):
+            upgrade = Upgrade.objects.get(name="With HC", bundle=new_bundle)
+            # Passing the same HC unchanged, expect it to first be checked against upgrade restrictions
+            response = self.client.v2[cluster, "upgrades", upgrade, "run"].post(
+                data={"hostComponentMap": [{"hostId": host_1.id, "componentId": component.id}]}
+            )
+
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            self.assertIn("COMPONENT_CONSTRAINT_ERROR", response.json()["code"])
 
 
 class TestAdcmUpgrade(APITestCase):

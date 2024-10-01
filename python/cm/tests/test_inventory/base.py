@@ -16,6 +16,8 @@ from typing import Any, Iterable, Literal, Mapping, TypeAlias
 import json
 
 from adcm.tests.base import BaseTestCase, BusinessLogicMixin
+from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
+from core.cluster.types import HostComponentEntry
 from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
@@ -26,15 +28,14 @@ from cm.models import (
     Action,
     ADCMEntity,
     ADCMModel,
-    Component,
     GroupConfig,
     Host,
-    HostComponent,
     MaintenanceMode,
-    Service,
 )
+from cm.services.cluster import retrieve_cluster_topology
+from cm.services.job._utils import construct_delta_for_task
 from cm.services.job.inventory import get_inventory_data
-from cm.services.job.types import HcAclAction
+from cm.services.job.types import TaskMappingDelta
 
 TemplatesData: TypeAlias = Mapping[tuple[str, ...], tuple[Path, Mapping[str, Any]]]
 MappingEntry: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], int]
@@ -96,7 +97,12 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
             self.assertDictEqual(actual_data, expected_data)
 
     def assert_inventory(
-        self, obj: ADCMEntity, action: Action, expected_topology: dict, expected_data: dict, delta: Delta | None = None
+        self,
+        obj: ADCMEntity,
+        action: Action,
+        expected_topology: dict,
+        expected_data: dict,
+        delta: TaskMappingDelta | None = None,
     ) -> None:
         target = CoreObjectDescriptor(id=obj.id, type=model_name_to_core_type(obj.__class__.__name__))
         actual_inventory = decrypt_secrets(
@@ -117,32 +123,20 @@ class BaseInventoryTestCase(BusinessLogicMixin, BaseTestCase):
         return group_config
 
     @staticmethod
-    def get_mapping_delta_for_hc_acl(cluster, new_mapping: list[MappingEntry]) -> Delta:
-        existing_mapping_ids = set(
-            HostComponent.objects.values_list("host_id", "component_id", "service_id").filter(cluster=cluster)
+    def get_mapping_delta_for_hc_acl(cluster, new_mapping: list[MappingEntry]) -> TaskMappingDelta:
+        topology = retrieve_cluster_topology(cluster_id=cluster.id)
+        new_topology = create_topology_with_new_mapping(
+            topology=topology,
+            new_mapping=(
+                HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
+                for entry in new_mapping
+            ),
         )
-        new_mapping_ids = {(hc["host_id"], hc["component_id"], hc["service_id"]) for hc in new_mapping}
 
-        added = {}
-        for host_id, component_id, service_id in new_mapping_ids.difference(existing_mapping_ids):
-            host = Host.objects.get(pk=host_id, cluster=cluster)
-            service = Service.objects.get(pk=service_id, cluster=cluster)
-            component = Component.objects.get(pk=component_id, cluster=cluster, service=service)
-
-            added.setdefault(f"{service.name}.{component.name}", {}).setdefault(host.fqdn, host)
-
-        removed = {}
-        for host_id, component_id, service_id in existing_mapping_ids.difference(new_mapping_ids):
-            host = Host.objects.get(pk=host_id, cluster=cluster)
-            service = Service.objects.get(pk=service_id, cluster=cluster)
-            component = Component.objects.get(pk=component_id, cluster=cluster, service=service)
-
-            removed.setdefault(f"{service.name}.{component.name}", {}).setdefault(host.fqdn, host)
-
-        return {
-            HcAclAction.ADD.value: added,
-            HcAclAction.REMOVE.value: removed,
-        }
+        return construct_delta_for_task(
+            topology=new_topology,
+            host_difference=find_hosts_difference(new_topology=new_topology, old_topology=topology),
+        )
 
     @staticmethod
     def get_maintenance_mode_for_render(maintenance_mode: MaintenanceMode) -> str:

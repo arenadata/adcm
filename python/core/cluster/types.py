@@ -14,9 +14,9 @@ from collections import UserDict
 from dataclasses import dataclass, field
 from enum import Enum
 from itertools import chain
-from typing import Generator, NamedTuple
+from typing import Generator, NamedTuple, TypeAlias
 
-from core.types import ClusterID, ComponentID, HostID, ServiceID, ShortObjectInfo
+from core.types import ClusterID, ComponentID, ComponentName, HostID, ServiceID, ServiceName, ShortObjectInfo
 
 
 class HostClusterPair(NamedTuple):
@@ -27,6 +27,11 @@ class HostClusterPair(NamedTuple):
 class HostComponentEntry(NamedTuple):
     host_id: HostID
     component_id: ComponentID
+
+
+# Topology
+
+NamedMapping: TypeAlias = dict[ServiceName, dict[ComponentName, set[HostID]]]
 
 
 class ComponentTopology(NamedTuple):
@@ -77,6 +82,10 @@ class NoEmptyValuesDict(UserDict):
 class MovedHosts:
     services: NoEmptyValuesDict[ServiceID, set[HostID]] = field(default_factory=NoEmptyValuesDict)
     components: NoEmptyValuesDict[ComponentID, set[HostID]] = field(default_factory=NoEmptyValuesDict)
+
+    @property
+    def all(self) -> set[HostID]:
+        return set(chain.from_iterable(chain(self.services.values(), self.components.values())))
 
 
 @dataclass(slots=True)

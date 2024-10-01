@@ -162,14 +162,17 @@ def process_config(proto, config):
 
 
 def create_file_from_config(obj, config):
-    if config is not None:
-        conf = config["current"]["config"]
-        proto = obj.prototype
-        for pconf in PrototypeConfig.objects.filter(prototype=proto, type="file"):
-            if pconf.subname and conf[pconf.name].get(pconf.subname):
+    if config is None:
+        return
+
+    conf = config["current"]["config"]
+
+    for pconf in PrototypeConfig.objects.filter(prototype=obj.prototype, type="file"):
+        if pconf.subname:
+            if pconf.subname in conf.get(pconf.name, {}):
                 save_file_type(obj, pconf.name, pconf.subname, conf[pconf.name][pconf.subname])
-            elif conf.get(pconf.name):
-                save_file_type(obj, pconf.name, "", conf[pconf.name])
+        elif pconf.name in conf:
+            save_file_type(obj, pconf.name, "", conf[pconf.name])
 
 
 def create_cluster(cluster):

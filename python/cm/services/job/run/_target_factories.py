@@ -17,6 +17,8 @@ from typing import Any, Generator, Iterable, Literal
 import json
 
 from ansible_plugin.utils import finish_check
+from core.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
+from core.cluster.types import HostComponentEntry
 from core.job.executors import BundleExecutorConfig, ExecutorConfig
 from core.job.runners import ExecutionTarget, ExternalSettings
 from core.job.types import Job, ScriptType, Task
@@ -25,18 +27,16 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
-from cm.api import get_hc, save_hc
 from cm.models import (
     AnsibleConfig,
     Cluster,
     Component,
-    HostComponent,
     LogStorage,
-    Prototype,
     TaskLog,
 )
-from cm.services.job._utils import cook_delta, get_old_hc
-from cm.services.job.checks import check_hostcomponentmap
+from cm.services.cluster import retrieve_cluster_topology, retrieve_host_component_entries
+from cm.services.job._utils import construct_delta_for_task
+from cm.services.job.constants import HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
 from cm.services.job.inventory import get_adcm_configuration, get_inventory_data
 from cm.services.job.run.executors import (
     AnsibleExecutorConfig,
@@ -54,6 +54,7 @@ from cm.services.job.types import (
     JobEnv,
     ServiceActionType,
 )
+from cm.services.mapping import change_host_component_mapping, check_only_mapping
 from cm.status_api import send_prototype_and_state_update_event
 from cm.utils import deep_merge
 
@@ -170,26 +171,34 @@ def _switch_hc_if_required(task: TaskLog):
         return
 
     cluster = task.task_object
-    old_hc = get_hc(cluster)
-    new_hc = []
-    for hostcomponent in [*(task.post_upgrade_hc_map or ()), *(old_hc or ())]:
-        if hostcomponent not in new_hc:
-            new_hc.append(hostcomponent)
 
-    task.hostcomponentmap = old_hc
+    # `post_upgrade_hc_map` contains records with "component_prototype_id" which are "extra" to regular hc
+    newly_added_entries = set()
+    for new_entry in task.post_upgrade_hc_map or ():
+        if "component_prototype_id" in new_entry:
+            # if optimized to 1 request, it's probably good to filter by prototype__type="component"
+            component_id = Component.objects.values_list("id", flat=True).get(
+                cluster=cluster, prototype_id=new_entry["component_prototype_id"]
+            )
+            newly_added_entries.add(HostComponentEntry(component_id=component_id, host_id=new_entry["host_id"]))
+
+    current_topology_entries = retrieve_host_component_entries(cluster_id=cluster.id)
+
+    task.hostcomponentmap = [
+        {"host_id": entry.host_id, "component_id": entry.component_id} for entry in current_topology_entries
+    ]
     task.post_upgrade_hc_map = None
-    task.save()
+    task.save(update_fields=["hostcomponentmap", "post_upgrade_hc_map"])
 
-    for hostcomponent in new_hc:
-        if "component_prototype_id" in hostcomponent:
-            proto = Prototype.objects.get(type="component", id=hostcomponent.pop("component_prototype_id"))
-            comp = Component.objects.get(cluster=cluster, prototype=proto)
-            hostcomponent["component_id"] = comp.id
-            hostcomponent["service_id"] = comp.service.id
+    after_upgrade_hostcomponent = current_topology_entries | newly_added_entries
 
-    host_map, *_ = check_hostcomponentmap(cluster, task.action, new_hc)
-    if host_map is not None:
-        save_hc(cluster, host_map)
+    if task.action.hostcomponentmap:
+        change_host_component_mapping(
+            cluster_id=cluster.id,
+            bundle_id=cluster.bundle_id,
+            flat_mapping=after_upgrade_hostcomponent,
+            checks_func=partial(check_only_mapping, error_template=HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE),
+        )
 
 
 # ENVIRONMENT BUILDERS
@@ -211,7 +220,7 @@ def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSet
 
 
 def prepare_ansible_inventory(task: Task) -> dict[str, Any]:
-    delta = {}
+    delta = None
     if task.action.hc_acl:
         cluster_id = None
         if task.owner:
@@ -224,18 +233,19 @@ def prepare_ansible_inventory(task: Task) -> dict[str, Any]:
             message = f"Can't detect cluster id for {task.id} {task.action.name} based on: {task.owner=}"
             raise RuntimeError(message)
 
-        new_hc = []
-        for hostcomponent in HostComponent.objects.select_related("service", "host", "component").filter(
-            cluster_id=cluster_id
-        ):
-            new_hc.append((hostcomponent.service, hostcomponent.host, hostcomponent.component))
-
-        delta = cook_delta(
-            cluster=Cluster.objects.get(id=cluster_id),
-            new_hc=new_hc,
-            action_hc=task.action.hc_acl,
-            old=get_old_hc(saved_hostcomponent=task.hostcomponent.saved),
+        current_topology = retrieve_cluster_topology(cluster_id=cluster_id)
+        previous_topology = create_topology_with_new_mapping(
+            topology=current_topology,
+            new_mapping=(
+                HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
+                for entry in task.hostcomponent.saved
+            ),
         )
+        delta = construct_delta_for_task(
+            topology=current_topology,
+            host_difference=find_hosts_difference(new_topology=current_topology, old_topology=previous_topology),
+        )
+        # todo need check_delta_is_allowed?
 
     return get_inventory_data(
         target=task.target,

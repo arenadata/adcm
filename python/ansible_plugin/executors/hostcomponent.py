@@ -12,8 +12,10 @@
 
 from typing import Any, Collection, Literal
 
-from cm.api import add_hc, get_hc
-from cm.models import Cluster, Component, Host, JobLog
+from cm.api import get_hc
+from cm.models import Cluster, Host, JobLog, Component
+from cm.services.mapping import change_host_component_mapping
+from core.cluster.types import HostComponentEntry
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from pydantic import field_validator
 
@@ -121,6 +123,13 @@ class ADCMHostComponentPluginExecutor(ADCMAnsiblePluginExecutor[ChangeHostCompon
 
                 hostcomponent.remove(item)
 
-        add_hc(cluster, hostcomponent)
+        change_host_component_mapping(
+            cluster_id=cluster.id,
+            bundle_id=cluster.prototype.bundle_id,
+            flat_mapping=(
+                HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
+                for entry in hostcomponent
+            ),
+        )
 
         return CallResult(value=None, changed=True, error=None)

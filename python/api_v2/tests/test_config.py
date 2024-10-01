@@ -529,13 +529,13 @@ class TestClusterGroupConfig(BaseAPITestCase):
         response = self.client.v2[self.cluster_1, "config-groups"].post(
             data={"name": "group-config-new", "description": "group-config-new"}
         )
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertDictEqual(
             response.json(),
             {
-                "code": "BAD_REQUEST",
-                "desc": f"name - Group config with name group-config-new "
-                f"already exists for cm | cluster {self.cluster_1.name};",
+                "code": "CREATE_CONFLICT",
+                "desc": f"Group config with name group-config-new "
+                f"already exists for cm | cluster {self.cluster_1.name}",
                 "level": "error",
             },
         )

@@ -10,12 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.tests.base import BaseTestCase
+from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 
 from cm.adcm_config.config import save_object_config, switch_config
 from cm.api import (
     add_cluster,
-    add_hc,
     add_host,
     add_host_provider,
     add_host_to_cluster,
@@ -406,7 +405,7 @@ class TestConfigUpgrade(BaseTestCase):
         self.assertEqual(new_attr, {"advance": {"active": False}})
 
 
-class TestUpgrade(BaseTestCase):
+class TestUpgrade(BusinessLogicMixin, BaseTestCase):
     def test_upgrade_with_license(self):
         bundle_1 = cook_cluster_bundle("1.0")
         bundle_2 = cook_cluster_bundle("2.0")
@@ -480,11 +479,7 @@ class TestUpgrade(BaseTestCase):
         add_host_to_cluster(cluster, host_1)
         add_host_to_cluster(cluster, host_2)
 
-        host_component = [
-            {"service_id": service.id, "host_id": host_1.id, "component_id": service_component_1.id},
-            {"service_id": service.id, "host_id": host_2.id, "component_id": service_component_2.id},
-        ]
-        add_hc(cluster, host_component)
+        self.set_hostcomponent(cluster=cluster, entries=[(host_1, service_component_1), (host_2, service_component_2)])
         host_component_1 = HostComponent.objects.get(cluster=cluster, service=service, component=service_component_2)
 
         self.assertEqual(host_component_1.component.id, service_component_2.id)

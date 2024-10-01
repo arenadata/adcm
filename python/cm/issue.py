@@ -14,7 +14,7 @@ from functools import partial
 from typing import Iterable
 
 from api_v2.concern.serializers import ConcernSerializer
-from core.types import CoreObjectDescriptor, PrototypeID
+from core.types import CoreObjectDescriptor
 from django.conf import settings
 from django.db.transaction import on_commit
 from djangorestframework_camel_case.util import camelize
@@ -26,7 +26,6 @@ from cm.hierarchy import Tree
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
-    Bundle,
     Cluster,
     Component,
     ConcernCause,
@@ -40,9 +39,7 @@ from cm.models import (
 )
 from cm.services.concern import create_issue, retrieve_issue
 from cm.services.concern.checks import (
-    cluster_mapping_has_issue,
-    extract_data_for_requirements_check,
-    is_constraint_requirements_unsatisfied,
+    cluster_mapping_has_issue_orm_version,
     object_configuration_has_issue,
     object_has_required_services_issue,
     object_imports_has_issue,
@@ -73,53 +70,11 @@ def check_service_requires(cluster: Cluster, proto: Prototype) -> None:
             )
 
 
-def check_component_constraint(
-    cluster: Cluster, service_prototype: Prototype, hc_in: list, old_bundle: Bundle | None = None
-) -> None:
-    target_prototypes: set[PrototypeID] = set()
-
-    for component_prototype in Prototype.objects.filter(parent=service_prototype, type="component"):
-        if old_bundle:
-            try:
-                old_service_proto = Prototype.objects.get(
-                    name=service_prototype.name,
-                    type="service",
-                    bundle=old_bundle,
-                )
-                Prototype.objects.get(
-                    parent=old_service_proto,
-                    bundle=old_bundle,
-                    type="component",
-                    name=component_prototype.name,
-                )
-            except Prototype.DoesNotExist:
-                continue
-
-        target_prototypes.add(component_prototype.pk)
-
-    requirements_data = extract_data_for_requirements_check(
-        cluster=cluster,
-        input_mapping=[
-            {"host_id": host.id, "component_id": component.id, "service_id": service.id}
-            for service, host, component in hc_in
-        ],
-        target_component_prototypes=target_prototypes,
-    )
-    constraint_not_ok, error_message = is_constraint_requirements_unsatisfied(
-        topology=requirements_data.topology,
-        component_prototype_map=requirements_data.component_prototype_map,
-        prototype_requirements=requirements_data.prototype_requirements,
-        components_map=requirements_data.objects_map_by_type["component"],
-    )
-    if constraint_not_ok and error_message is not None:
-        raise AdcmEx(code="COMPONENT_CONSTRAINT_ERROR", msg=error_message)
-
-
 _issue_check_map = {
     ConcernCause.CONFIG: object_configuration_has_issue,
     ConcernCause.IMPORT: object_imports_has_issue,
     ConcernCause.SERVICE: object_has_required_services_issue,
-    ConcernCause.HOSTCOMPONENT: cluster_mapping_has_issue,
+    ConcernCause.HOSTCOMPONENT: cluster_mapping_has_issue_orm_version,
     ConcernCause.REQUIREMENT: service_requirements_has_issue,
 }
 _prototype_issue_map = {

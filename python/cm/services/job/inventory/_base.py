@@ -40,7 +40,10 @@ from cm.models import (
     Prototype,
     Service,
 )
-from cm.services.cluster import retrieve_clusters_objects_maintenance_mode, retrieve_clusters_topology
+from cm.services.cluster import (
+    retrieve_cluster_topology,
+    retrieve_clusters_objects_maintenance_mode,
+)
 from cm.services.group_config import GroupConfigName, retrieve_group_configs_for_hosts
 from cm.services.job.inventory._before_upgrade import extract_objects_before_upgrade, get_before_upgrades
 from cm.services.job.inventory._config import (
@@ -60,12 +63,13 @@ from cm.services.job.inventory._types import (
     ObjectsInInventoryMap,
     ServiceNode,
 )
+from cm.services.job.types import TaskMappingDelta
 
 
 def get_inventory_data(
     target: ActionTargetDescriptor,
     is_host_action: bool,
-    delta: dict | None = None,
+    delta: TaskMappingDelta | None = None,
     related_objects: RelatedObjects | None = None,
 ) -> dict:
     if target.type == ExtraActionTargetType.ACTION_HOST_GROUP:
@@ -77,7 +81,7 @@ def get_inventory_data(
         # but it's inadequate situation and in "context of action target group" such mutations aren't expected.
         return _get_inventory_for_action_from_cluster_bundle(
             cluster_id=group.object.id if isinstance(group.object, Cluster) else group.object.cluster_id,
-            delta=delta or {},
+            delta=delta or TaskMappingDelta(),
             target_hosts=tuple((host.pk, host.fqdn) for host in group.hosts.all()),
         )
 
@@ -124,7 +128,7 @@ def get_inventory_data(
         raise RuntimeError(message)
 
     return _get_inventory_for_action_from_cluster_bundle(
-        cluster_id=cluster_id, delta=delta or {}, target_hosts=target_hosts
+        cluster_id=cluster_id, delta=delta or TaskMappingDelta(), target_hosts=target_hosts
     )
 
 
@@ -151,14 +155,14 @@ def get_cluster_vars(topology: ClusterTopology) -> ClusterVars:
 
 
 def _get_inventory_for_action_from_cluster_bundle(
-    cluster_id: int, delta: dict, target_hosts: Iterable[tuple[HostID, HostName]]
+    cluster_id: int, delta: TaskMappingDelta, target_hosts: Iterable[tuple[HostID, HostName]]
 ) -> dict:
     host_groups: dict[HostGroupName, set[tuple[HostID, HostName]]] = {}
 
     if target_hosts:
         host_groups["target"] = set(target_hosts)
 
-    cluster_topology = next(retrieve_clusters_topology([cluster_id]))
+    cluster_topology = retrieve_cluster_topology(cluster_id)
 
     hosts_in_maintenance_mode: set[int] = set(
         Host.objects.filter(maintenance_mode=MaintenanceMode.ON).values_list("id", flat=True)
