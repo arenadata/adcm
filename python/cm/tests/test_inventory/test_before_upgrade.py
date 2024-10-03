@@ -260,7 +260,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         ]:
             self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
-    def test_group_config_effect_on_before_upgrade(self) -> None:
+    def test_config_host_group_effect_on_before_upgrade(self) -> None:
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
@@ -283,9 +283,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             ],
         )
 
-        cluster_group = self.add_group_config(parent=self.cluster_1, hosts=[self.host_1, self.host_2])
-        service_group = self.add_group_config(parent=self.service_two_components, hosts=[self.host_2])
-        component_1_group = self.add_group_config(parent=self.component_1, hosts=[self.host_1])
+        cluster_group = self.add_config_host_group(parent=self.cluster_1, hosts=[self.host_1, self.host_2])
+        service_group = self.add_config_host_group(parent=self.service_two_components, hosts=[self.host_2])
+        component_1_group = self.add_config_host_group(parent=self.component_1, hosts=[self.host_1])
 
         changed_integer = 40
         changed_string = "woohoo"
@@ -317,8 +317,8 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         service_group.object.refresh_from_db()
         component_1_group.object.refresh_from_db()
 
-        cluster_file = self.templates_dir / "group_config_before_upgrade" / "cluster_section.json.j2"
-        services_file = self.templates_dir / "group_config_before_upgrade" / "services_section.json.j2"
+        cluster_file = self.templates_dir / "config_host_group_before_upgrade" / "cluster_section.json.j2"
+        services_file = self.templates_dir / "config_host_group_before_upgrade" / "services_section.json.j2"
 
         expected_hosts_cluster = (
             cluster_file,
@@ -436,7 +436,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             ],
         )
 
-        component_group = self.add_group_config(parent=problem_component, hosts=[self.host_1])
+        component_group = self.add_config_host_group(parent=problem_component, hosts=[self.host_1])
 
         self.change_configuration(
             target=component_group,

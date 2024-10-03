@@ -44,11 +44,11 @@ from cm.services.cluster import (
     retrieve_cluster_topology,
     retrieve_clusters_objects_maintenance_mode,
 )
-from cm.services.group_config import GroupConfigName, retrieve_group_configs_for_hosts
+from cm.services.config_host_group import ConfigHostGroupName, retrieve_config_host_groups_for_hosts
 from cm.services.job.inventory._before_upgrade import extract_objects_before_upgrade, get_before_upgrades
 from cm.services.job.inventory._config import (
-    get_group_config_alternatives_for_hosts_in_cluster_groups,
-    get_group_config_alternatives_for_hosts_in_hostprovider_groups,
+    get_config_host_group_alternatives_for_hosts_in_cluster_groups,
+    get_config_host_group_alternatives_for_hosts_in_hostprovider_groups,
     get_objects_configurations,
 )
 from cm.services.job.inventory._groups import detect_host_groups_for_cluster_bundle_action
@@ -146,8 +146,8 @@ def get_cluster_vars(topology: ClusterTopology) -> ClusterVars:
             objects_configuration=get_objects_configurations(objects_required_for_vars),
             objects_before_upgrade=get_before_upgrades(
                 before_upgrades=extract_objects_before_upgrade(objects=objects_required_for_vars),
-                # group configs aren't important for vars, so they can be just ignored
-                group_configs=(),
+                # config host groups aren't important for vars, so they can be just ignored
+                config_host_groups=(),
             ),
             objects_maintenance_mode=retrieve_clusters_objects_maintenance_mode(cluster_ids=[topology.cluster_id]),
         ),
@@ -184,13 +184,13 @@ def _get_inventory_for_action_from_cluster_bundle(
         own_maintenance_mode=retrieve_clusters_objects_maintenance_mode(cluster_ids=[cluster_topology.cluster_id]),
     )
 
-    group_configs = retrieve_group_configs_for_hosts(
+    config_host_groups = retrieve_config_host_groups_for_hosts(
         hosts=objects_in_inventory[ADCMCoreType.HOST],
         restrict_by_owner_type=(ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT),
     )
     objects_before_upgrades = get_before_upgrades(
         before_upgrades=extract_objects_before_upgrade(objects=objects_in_inventory),
-        group_configs=group_configs.values(),
+        config_host_groups=config_host_groups.values(),
     )
 
     basic_nodes = _get_objects_basic_info(
@@ -204,8 +204,8 @@ def _get_inventory_for_action_from_cluster_bundle(
         by_alias=True, exclude_defaults=True
     )
 
-    alternative_host_nodes = get_group_config_alternatives_for_hosts_in_cluster_groups(
-        group_configs=group_configs.values(),
+    alternative_host_nodes = get_config_host_group_alternatives_for_hosts_in_cluster_groups(
+        config_host_groups=config_host_groups.values(),
         cluster_vars=cluster_vars_dict,
         objects_before_upgrade=objects_before_upgrades,
         topology=cluster_topology,
@@ -243,13 +243,13 @@ def _get_inventory_for_action_from_hostprovider_bundle(object_: HostProvider | H
         ADCMCoreType.HOST: set(map(itemgetter(0), hosts_group)),
     }
 
-    group_configs = retrieve_group_configs_for_hosts(
+    host_groups = retrieve_config_host_groups_for_hosts(
         hosts=objects_in_inventory[ADCMCoreType.HOST], restrict_by_owner_type=[ADCMCoreType.HOSTPROVIDER]
     )
 
     objects_before_upgrades = get_before_upgrades(
         before_upgrades=extract_objects_before_upgrade(objects=objects_in_inventory),
-        group_configs=group_configs.values(),
+        config_host_groups=host_groups.values(),
     )
 
     nodes_info = _get_objects_basic_info(
@@ -263,8 +263,8 @@ def _get_inventory_for_action_from_hostprovider_bundle(object_: HostProvider | H
         "provider": nodes_info[ADCMCoreType.HOSTPROVIDER, hostprovider_id].dict(by_alias=True, exclude_defaults=True)
     }
 
-    alternative_host_nodes = get_group_config_alternatives_for_hosts_in_hostprovider_groups(
-        group_configs=group_configs.values(),
+    alternative_host_nodes = get_config_host_group_alternatives_for_hosts_in_hostprovider_groups(
+        config_host_groups=host_groups.values(),
         hostprovider_vars=hostprovider_vars,
         objects_before_upgrade=objects_before_upgrades,
     )
@@ -303,7 +303,7 @@ def _prepare_cluster_vars(
 def _get_objects_basic_info(
     objects_in_inventory: ObjectsInInventoryMap,
     objects_configuration: dict[tuple[ADCMCoreType, ObjectID], dict],
-    objects_before_upgrade: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, GroupConfigName], dict],
+    objects_before_upgrade: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], dict],
     objects_maintenance_mode: MaintenanceModeOfObjects,
 ) -> dict[
     tuple[ADCMCoreType, ObjectID],

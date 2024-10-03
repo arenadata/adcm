@@ -34,8 +34,8 @@ from cm.models import (
     Bundle,
     Cluster,
     Component,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
     Host,
     HostComponent,
     HostProvider,
@@ -550,7 +550,7 @@ class BusinessLogicMixin(BundleLogicMixin):
 
     @staticmethod
     def change_configuration(
-        target: ADCMModel | GroupConfig,
+        target: ADCMModel | ConfigHostGroup,
         config_diff: dict,
         meta_diff: dict | None = None,
         preprocess_config: Callable[[dict], dict] = lambda x: x,

@@ -27,8 +27,8 @@ from cm.models import (
     ADCM,
     Cluster,
     Component,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
     Host,
     HostProvider,
     JobLog,
@@ -105,10 +105,10 @@ class Command(BaseCommand):
                 for cl_pk in (config_log.obj_ref.current, config_log.obj_ref.previous):
                     exclude_pks.add(cl_pk)
 
-            for group_config in GroupConfig.objects.order_by("id"):
-                if group_config.config:
-                    exclude_pks.add(group_config.config.previous)
-                    exclude_pks.add(group_config.config.current)
+            for host_group in ConfigHostGroup.objects.order_by("id"):
+                if host_group.config:
+                    exclude_pks.add(host_group.config.previous)
+                    exclude_pks.add(host_group.config.current)
 
             target_configlogs = target_configlogs.exclude(pk__in=exclude_pks)
             target_configlog_ids = {i[0] for i in target_configlogs.values_list("id")}
@@ -143,7 +143,7 @@ class Command(BaseCommand):
                     Host.objects.filter(config=obj_conf).count(),
                     HostProvider.objects.filter(config=obj_conf).count(),
                     Component.objects.filter(config=obj_conf).count(),
-                    GroupConfig.objects.filter(config=obj_conf).count(),
+                    ConfigHostGroup.objects.filter(config=obj_conf).count(),
                 ],
             )
             > 0

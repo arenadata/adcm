@@ -50,8 +50,8 @@ from cm.models import (
     ConcernCause,
     ConcernItem,
     ConcernType,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
     Host,
     HostComponent,
     HostProvider,
@@ -356,7 +356,7 @@ def remove_host_from_cluster(host: Host) -> Host:
         host.cluster = None
         host.save()
 
-        for group in cluster.group_config.order_by("id"):
+        for group in cluster.config_host_group.order_by("id"):
             group.hosts.remove(host)
 
         # if there's no lock on cluster, nothing should be removed
@@ -462,7 +462,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
         raise ValueError(message)
 
     group = None
-    if isinstance(obj, GroupConfig):
+    if isinstance(obj, ConfigHostGroup):
         group = obj
         obj: MainObject = group.object
         proto = obj.prototype

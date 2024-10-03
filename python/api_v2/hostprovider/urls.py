@@ -16,13 +16,13 @@ import itertools
 from rest_framework.routers import SimpleRouter
 from rest_framework_nested.routers import NestedSimpleRouter
 
-from api_v2.generic.group_config.urls_helpers import add_group_config_routers
+from api_v2.generic.config_host_group.urls_helpers import add_config_host_group_routers
 from api_v2.hostprovider.views import (
     HostProviderActionViewSet,
-    HostProviderConfigHostGroupViewSet,
+    HostProviderCHGViewSet,
+    HostProviderConfigCHGViewSet,
     HostProviderConfigViewSet,
-    HostProviderGroupConfigViewSet,
-    HostProviderHostGroupConfigViewSet,
+    HostProviderHostCHGViewSet,
     HostProviderUpgradeViewSet,
     HostProviderViewSet,
 )
@@ -47,10 +47,10 @@ upgrade_router = NestedSimpleRouter(parent_router=router, parent_prefix="", look
 upgrade_router.register(prefix="upgrades", viewset=HostProviderUpgradeViewSet)
 
 
-group_config_routers = add_group_config_routers(
-    group_config_viewset=HostProviderGroupConfigViewSet,
-    host_group_config_viewset=HostProviderHostGroupConfigViewSet,
-    config_group_config_viewset=HostProviderConfigHostGroupViewSet,
+config_host_group_routers = add_config_host_group_routers(
+    chg_viewset=HostProviderCHGViewSet,
+    host_chg_viewset=HostProviderHostCHGViewSet,
+    config_chg_viewset=HostProviderConfigCHGViewSet,
     parent_router=router,
     parent_prefix="",
     lookup="hostprovider",
@@ -61,5 +61,5 @@ urlpatterns = [
     *action_router.urls,
     *config_router.urls,
     *upgrade_router.urls,
-    *extract_urls_from_routers(group_config_routers),
+    *extract_urls_from_routers(config_host_group_routers),
 ]

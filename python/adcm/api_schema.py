@@ -22,6 +22,7 @@ _ID_REPLACE_MAP = {
     "{login_id}": "{audit_login_id}",
     "{operation_id}": "{audit_operation_id}",
     "{group_config_id}": "{config_group_id}",
+    "{config_host_group_id}": "{config_group_id}",
 }
 
 

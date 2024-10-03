@@ -34,8 +34,8 @@ from cm.models import (
     Bundle,
     Cluster,
     Component,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
     Host,
     HostComponent,
     HostProvider,
@@ -108,9 +108,9 @@ def create_config(config, prototype=None):
 
 def create_group(group, ex_hosts_list, obj):
     """
-    Creating GroupConfig object
+    Creating ConfigHostGroup object
 
-    :param group: GroupConfig object in dictionary format
+    :param group: ConfigHostGroup object in dictionary format
     :type group: dict
     :param ex_hosts_list: Map of ex_host_ids and new hosts
     :type ex_hosts_list: dict
@@ -126,15 +126,15 @@ def create_group(group, ex_hosts_list, obj):
     for host in group.pop("hosts"):
         hosts.append(ex_hosts_list[host])
 
-    group_config = GroupConfig.objects.create(
+    host_group = ConfigHostGroup.objects.create(
         object_id=obj.id,
         config=config,
         object_type=ContentType.objects.get(model=model_name),
         **group,
     )
-    group_config.hosts.set(hosts)
+    host_group.hosts.set(hosts)
 
-    return ex_object_id, group_config
+    return ex_object_id, host_group
 
 
 def switch_encoding(msg):

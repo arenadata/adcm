@@ -31,13 +31,16 @@ from api_v2.generic.config.api_schema import document_config_viewset
 from api_v2.generic.config.audit import audit_config_viewset
 from api_v2.generic.config.utils import ConfigSchemaMixin
 from api_v2.generic.config.views import ConfigLogViewSet
-from api_v2.generic.group_config.api_schema import document_group_config_viewset, document_host_group_config_viewset
-from api_v2.generic.group_config.audit import (
-    audit_config_group_config_viewset,
-    audit_group_config_viewset,
-    audit_host_group_config_viewset,
+from api_v2.generic.config_host_group.api_schema import (
+    document_config_host_group_viewset,
+    document_host_config_host_group_viewset,
 )
-from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
+from api_v2.generic.config_host_group.audit import (
+    audit_config_config_host_group_viewset,
+    audit_config_host_group_viewset,
+    audit_host_config_host_group_viewset,
+)
+from api_v2.generic.config_host_group.views import CHGViewSet, HostCHGViewSet
 from api_v2.generic.upgrade.api_schema import document_upgrade_viewset
 from api_v2.generic.upgrade.audit import audit_upgrade_viewset
 from api_v2.generic.upgrade.views import UpgradeViewSet
@@ -166,21 +169,21 @@ class HostProviderViewSet(
         return Response(status=HTTP_204_NO_CONTENT)
 
 
-@document_group_config_viewset(object_type="hostprovider")
-@audit_group_config_viewset(retrieve_owner=parent_hostprovider_from_lookup)
-class HostProviderGroupConfigViewSet(GroupConfigViewSet):
+@document_config_host_group_viewset(object_type="hostprovider")
+@audit_config_host_group_viewset(retrieve_owner=parent_hostprovider_from_lookup)
+class HostProviderCHGViewSet(CHGViewSet):
     ...
 
 
-@document_host_group_config_viewset(object_type="hostprovider")
-@audit_host_group_config_viewset(retrieve_owner=parent_hostprovider_from_lookup)
-class HostProviderHostGroupConfigViewSet(HostGroupConfigViewSet):
+@document_host_config_host_group_viewset(object_type="hostprovider")
+@audit_host_config_host_group_viewset(retrieve_owner=parent_hostprovider_from_lookup)
+class HostProviderHostCHGViewSet(HostCHGViewSet):
     ...
 
 
 @document_config_viewset(object_type="hostprovider config group", operation_id_variant="HostProviderConfigGroup")
-@audit_config_group_config_viewset(retrieve_owner=parent_hostprovider_from_lookup)
-class HostProviderConfigHostGroupViewSet(ConfigLogViewSet):
+@audit_config_config_host_group_viewset(retrieve_owner=parent_hostprovider_from_lookup)
+class HostProviderConfigCHGViewSet(ConfigLogViewSet):
     ...
 
 

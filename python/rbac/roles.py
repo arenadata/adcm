@@ -16,8 +16,8 @@ from cm.models import (
     ActionHostGroup,
     ADCMEntity,
     Component,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
     Host,
     HostComponent,
     JobLog,
@@ -303,7 +303,7 @@ class ConfigRole(AbstractRole):
                 continue
 
             object_type = ContentType.objects.get_for_model(obj)
-            config_groups = GroupConfig.objects.filter(object_type=object_type, object_id=obj.id)
+            config_groups = ConfigHostGroup.objects.filter(object_type=object_type, object_id=obj.id)
 
             for perm in role.get_permissions():
                 if perm.content_type.model == "objectconfig":
@@ -322,7 +322,7 @@ class ConfigRole(AbstractRole):
                         for config in config_group.config.configlog_set.all():
                             assign_group_perm(policy=policy, permission=perm, obj=config)
 
-                if perm.content_type.model == "groupconfig":
+                if perm.content_type.model == "confighostgroup":
                     for config_group in config_groups:
                         assign_group_perm(policy=policy, permission=perm, obj=config_group)
 

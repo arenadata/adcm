@@ -27,8 +27,8 @@ from cm.models import (
     Bundle,
     Cluster,
     Component,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
     Host,
     HostComponent,
     HostProvider,
@@ -142,11 +142,11 @@ def get_groups(object_id, model_name):
 
     fields = ("object_id", "name", "description", "config", "object_type")
     groups = []
-    for group_config in GroupConfig.objects.filter(object_id=object_id, object_type__model=model_name):
-        group = get_object(GroupConfig, group_config.id, fields)
+    for host_group in ConfigHostGroup.objects.filter(object_id=object_id, object_type__model=model_name):
+        group = get_object(ConfigHostGroup, host_group.id, fields)
         group["config"] = get_config(group["config"])
         group["model_name"] = model_name
-        group["hosts"] = [host.id for host in group_config.hosts.order_by("id")]
+        group["hosts"] = [host.id for host in host_group.hosts.order_by("id")]
         groups.append(group)
 
     return groups

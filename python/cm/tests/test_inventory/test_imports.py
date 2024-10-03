@@ -73,7 +73,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.component = Component.objects.get(service=self.service)
 
         self.export_cluster_1 = self.add_cluster(
-            bundle=self.add_bundle(self.bundles_dir / "cluster_group_config"), name="Cluster With Export 1"
+            bundle=self.add_bundle(self.bundles_dir / "cluster_config_host_group"), name="Cluster With Export 1"
         )
         self.export_cluster_2 = self.add_cluster(
             bundle=self.export_cluster_1.prototype.bundle, name="Cluster With Export 2"
@@ -350,7 +350,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         result = decrypt_secrets(get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk))
         self.assertDictEqual(result, expected)
 
-    def test_group_config_effect_on_import_with_default(self) -> None:
+    def test_config_host_group_effect_on_import_with_default(self) -> None:
         host_3 = self.add_host(bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-3")
         host_4 = self.add_host(bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-4")
 
@@ -358,7 +358,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.add_host_to_cluster(cluster=self.cluster_with_defaults, host=host_4)
         component = Component.objects.filter(service=self.service_with_defaults).get()
         self.set_hostcomponent(cluster=self.cluster_with_defaults, entries=[(host_3, component), (host_4, component)])
-        group = self.add_group_config(parent=self.service_with_defaults, hosts=[host_3])
+        group = self.add_config_host_group(parent=self.service_with_defaults, hosts=[host_3])
         self.change_configuration(
             target=self.service_with_defaults,
             config_diff={"another_stuff": {"hehe": 500.5}, "plain_group": {"listofstuff": ["204"]}},

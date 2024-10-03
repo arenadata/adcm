@@ -19,7 +19,7 @@ from cm.models import (
     Bundle,
     Cluster,
     Component,
-    GroupConfig,
+    ConfigHostGroup,
     Host,
     HostProvider,
     JobLog,
@@ -34,7 +34,7 @@ from rest_framework.response import Response
 from rest_framework.test import APIClient
 
 _RootPathObject = Bundle | Cluster | HostProvider | Host | TaskLog | JobLog | Prototype
-PathObject = _RootPathObject | Service | Component | LogStorage | GroupConfig
+PathObject = _RootPathObject | Service | Component | LogStorage | ConfigHostGroup
 
 
 class WithID(Protocol):
@@ -162,7 +162,7 @@ class V2RootNode(RootNode):
                 node_class=self._node_class,
             )
 
-        if isinstance(path_object, GroupConfig):
+        if isinstance(path_object, ConfigHostGroup):
             # generally it's move clean and obvious when multiple `/` is used, but in here it looks like an overkill
             return self[path_object.object] / "/".join(("config-groups", str(path_object.id), *tail))
 

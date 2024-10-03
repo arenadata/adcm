@@ -16,7 +16,7 @@ from typing import TypeAlias
 from cm.models import (
     Cluster,
     Component,
-    GroupConfig,
+    ConfigHostGroup,
     Host,
     HostProvider,
     Service,
@@ -24,7 +24,7 @@ from cm.models import (
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import ObjectDoesNotExist
 
-ParentObject: TypeAlias = GroupConfig | Cluster | Service | Component | HostProvider | Host | None
+ParentObject: TypeAlias = ConfigHostGroup | Cluster | Service | Component | HostProvider | Host | None
 
 
 class GetParentObjectMixin:
@@ -64,9 +64,9 @@ class GetParentObjectMixin:
             elif "hostprovider_pk" in self.kwargs:
                 parent_object = HostProvider.objects.select_related("prototype").get(pk=self.kwargs["hostprovider_pk"])
 
-            if "group_config_pk" in self.kwargs and parent_object:
-                parent_object = GroupConfig.objects.get(
-                    pk=self.kwargs["group_config_pk"],
+            if "config_host_group_pk" in self.kwargs and parent_object:
+                parent_object = ConfigHostGroup.objects.get(
+                    pk=self.kwargs["config_host_group_pk"],
                     object_id=parent_object.pk,
                     object_type=ContentType.objects.get_for_model(model=parent_object.__class__),
                 )

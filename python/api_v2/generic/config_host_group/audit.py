@@ -16,49 +16,55 @@ import json
 from audit.alt.api import audit_create, audit_delete, audit_update, audit_view
 from audit.alt.core import AuditedCallArguments, OperationAuditContext, Result, RetrieveAuditObjectFunc
 from audit.alt.hooks import AuditHook, adjust_denied_on_404_result
-from cm.models import GroupConfig, Host
+from cm.models import ConfigHostGroup, Host
 from rest_framework.response import Response
 
 from api_v2.utils.audit import object_does_exist
 
 
-def audit_group_config_viewset(retrieve_owner: RetrieveAuditObjectFunc):
+def audit_config_host_group_viewset(retrieve_owner: RetrieveAuditObjectFunc):
     return audit_view(
         create=audit_create(name="{group_name} configuration group created", object_=retrieve_owner).attach_hooks(
-            on_collect=set_group_name_from_response
+            on_collect=set_config_host_group_name_from_response
         ),
         destroy=audit_delete(name="{group_name} configuration group deleted", object_=retrieve_owner).attach_hooks(
-            pre_call=set_group_name, on_collect=adjust_denied_on_404_result(objects_exist=group_config_exists)
+            pre_call=set_config_host_group_name,
+            on_collect=adjust_denied_on_404_result(objects_exist=config_host_group_exists),
         ),
         partial_update=audit_update(
             name="{group_name} configuration group updated", object_=retrieve_owner
-        ).attach_hooks(on_collect=(set_group_name, adjust_denied_on_404_result(objects_exist=group_config_exists))),
+        ).attach_hooks(
+            on_collect=(set_config_host_group_name, adjust_denied_on_404_result(objects_exist=config_host_group_exists))
+        ),
     )
 
 
-def audit_host_group_config_viewset(retrieve_owner: RetrieveAuditObjectFunc):
+def audit_host_config_host_group_viewset(retrieve_owner: RetrieveAuditObjectFunc):
     return audit_view(
         create=audit_update(
             name="{host_name} host added to {group_name} configuration group", object_=retrieve_owner
         ).attach_hooks(
-            pre_call=set_group_and_host_names_from_response,
-            on_collect=adjust_denied_on_404_result(objects_exist=nested_group_config_exists),
+            pre_call=set_config_host_group_and_host_names_from_response,
+            on_collect=adjust_denied_on_404_result(objects_exist=nested_config_host_group_exists),
         ),
         destroy=audit_update(
             name="{host_name} host removed from {group_name} configuration group", object_=retrieve_owner
         ).attach_hooks(
             on_collect=[
-                set_group_and_host_names,
-                adjust_denied_on_404_result(objects_exist=host_in_group_exists),
+                set_config_host_group_and_host_names,
+                adjust_denied_on_404_result(objects_exist=host_in_config_host_group_exists),
             ]
         ),
     )
 
 
-def audit_config_group_config_viewset(retrieve_owner: RetrieveAuditObjectFunc):
+def audit_config_config_host_group_viewset(retrieve_owner: RetrieveAuditObjectFunc):
     return audit_view(
         create=audit_update(name="{group_name} configuration group updated", object_=retrieve_owner).attach_hooks(
-            on_collect=(set_nested_group_name, adjust_denied_on_404_result(objects_exist=nested_group_config_exists))
+            on_collect=(
+                set_nested_config_host_group_name,
+                adjust_denied_on_404_result(objects_exist=nested_config_host_group_exists),
+            )
         )
     )
 
@@ -66,22 +72,22 @@ def audit_config_group_config_viewset(retrieve_owner: RetrieveAuditObjectFunc):
 # hooks
 
 
-def group_config_exists(hook: AuditHook) -> bool:
-    return object_does_exist(hook=hook, model=GroupConfig)
+def config_host_group_exists(hook: AuditHook) -> bool:
+    return object_does_exist(hook=hook, model=ConfigHostGroup)
 
 
-def nested_group_config_exists(hook: AuditHook) -> bool:
-    return object_does_exist(hook=hook, model=GroupConfig, id_field="group_config_pk")
+def nested_config_host_group_exists(hook: AuditHook) -> bool:
+    return object_does_exist(hook=hook, model=ConfigHostGroup, id_field="config_host_group_pk")
 
 
-def host_in_group_exists(hook: AuditHook) -> bool:
-    m2m = GroupConfig.hosts.through
+def host_in_config_host_group_exists(hook: AuditHook) -> bool:
+    m2m = ConfigHostGroup.hosts.through
     return m2m.objects.filter(
-        host_id=hook.call_arguments.get("pk"), groupconfig_id=hook.call_arguments.get("group_config_pk")
+        host_id=hook.call_arguments.get("pk"), confighostgroup_id=hook.call_arguments.get("config_host_group_pk")
     ).exists()
 
 
-def set_group_name_from_response(
+def set_config_host_group_name_from_response(
     context: OperationAuditContext,
     call_arguments: AuditedCallArguments,  # noqa: ARG001
     result: Result | None,
@@ -94,38 +100,42 @@ def set_group_name_from_response(
     context.name = context.name.format(group_name=group_name).strip()
 
 
-def set_group_name(
+def set_config_host_group_name(
     context: OperationAuditContext,
     call_arguments: AuditedCallArguments,
     result: Result | None,  # noqa: ARG001
     exception: Exception | None,  # noqa: ARG001
 ):
-    group_name = GroupConfig.objects.values_list("name", flat=True).filter(id=call_arguments.get("pk")).first()
+    group_name = ConfigHostGroup.objects.values_list("name", flat=True).filter(id=call_arguments.get("pk")).first()
 
     context.name = context.name.format(group_name=group_name or "").strip()
 
 
-def set_nested_group_name(
+def set_nested_config_host_group_name(
     context: OperationAuditContext,
     call_arguments: AuditedCallArguments,
     result: Result | None,  # noqa: ARG001
     exception: Exception | None,  # noqa: ARG001
 ):
     group_name = (
-        GroupConfig.objects.values_list("name", flat=True).filter(id=call_arguments.get("group_config_pk")).first()
+        ConfigHostGroup.objects.values_list("name", flat=True)
+        .filter(id=call_arguments.get("config_host_group_pk"))
+        .first()
     )
 
     context.name = context.name.format(group_name=group_name or "").strip()
 
 
-def set_group_and_host_names(
+def set_config_host_group_and_host_names(
     context: OperationAuditContext,
     call_arguments: AuditedCallArguments,
     result: Result | None,  # noqa: ARG001
     exception: Exception | None,  # noqa: ARG001
 ):
     group_name = (
-        GroupConfig.objects.values_list("name", flat=True).filter(id=call_arguments.get("group_config_pk")).first()
+        ConfigHostGroup.objects.values_list("name", flat=True)
+        .filter(id=call_arguments.get("config_host_group_pk"))
+        .first()
     )
     host_name = Host.objects.values_list("fqdn", flat=True).filter(id=call_arguments.get("pk")).first()
 
@@ -134,7 +144,7 @@ def set_group_and_host_names(
     )
 
 
-def set_group_and_host_names_from_response(
+def set_config_host_group_and_host_names_from_response(
     context: OperationAuditContext,
     call_arguments: AuditedCallArguments,
     result: Result | None,  # noqa: ARG001
@@ -142,7 +152,9 @@ def set_group_and_host_names_from_response(
 ):
     host_name = ""
     group_name = (
-        GroupConfig.objects.values_list("name", flat=True).filter(id=call_arguments.get("group_config_pk")).first()
+        ConfigHostGroup.objects.values_list("name", flat=True)
+        .filter(id=call_arguments.get("config_host_group_pk"))
+        .first()
     )
 
     if request := call_arguments.get("request"):

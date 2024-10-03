@@ -39,7 +39,7 @@ from cm.services.concern.distribution import (
     unlock_objects,
 )
 from cm.services.concern.locks import retrieve_lock_on_object
-from cm.services.group_config import ConfigHostGroupRepo
+from cm.services.config_host_group import ConfigHostGroupRepo
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import notify_about_redistributed_concerns_from_maps, send_host_component_map_update_event
 

@@ -14,7 +14,7 @@ from cm.models import Action, Component, MaintenanceMode
 from cm.tests.test_inventory.base import BaseInventoryTestCase, MappingEntry
 
 
-class TestInventoryHcAclMaintenanceModeGroupConfig(BaseInventoryTestCase):
+class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -40,9 +40,9 @@ class TestInventoryHcAclMaintenanceModeGroupConfig(BaseInventoryTestCase):
             cluster=self.cluster, entries=[(self.host_1, self.component_1), (self.host_2, self.component_2)]
         )
 
-        self.cluster_group = self.add_group_config(parent=self.cluster, hosts=[self.host_1, self.host_2])
-        self.service_group = self.add_group_config(parent=self.service, hosts=[self.host_1, self.host_2])
-        self.component_1_group = self.add_group_config(parent=self.component_1, hosts=[self.host_1])
+        self.cluster_group = self.add_config_host_group(parent=self.cluster, hosts=[self.host_1, self.host_2])
+        self.service_group = self.add_config_host_group(parent=self.service, hosts=[self.host_1, self.host_2])
+        self.component_1_group = self.add_config_host_group(parent=self.component_1, hosts=[self.host_1])
 
         self.change_configuration(
             target=self.cluster_group, config_diff={"integer": 101}, meta_diff={"/integer": {"isSynchronized": False}}
@@ -69,7 +69,7 @@ class TestInventoryHcAclMaintenanceModeGroupConfig(BaseInventoryTestCase):
             name="hc_acl_action_on_component_2", prototype=self.component_2.prototype
         )
 
-    def test_hc_acl_maintenance_mode_group_config(self):
+    def test_hc_acl_maintenance_mode_config_host_group(self):
         self.host_1.maintenance_mode = MaintenanceMode.ON
         self.host_1.save(update_fields=["maintenance_mode"])
 
