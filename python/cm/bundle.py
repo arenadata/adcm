@@ -1331,6 +1331,7 @@ def delete_bundle(bundle):
                 bundle.version,
             )
 
+    bundle_hash = bundle.hash
     bundle.delete()
 
     for role in Role.objects.filter(class_name="ParentRole"):
@@ -1338,6 +1339,9 @@ def delete_bundle(bundle):
             role.delete()
 
     ProductCategory.re_collect()
+
+    if bundle_archive := _get_file_hashes(path=settings.DOWNLOAD_DIR).get(bundle_hash):
+        bundle_archive.unlink()
 
 
 def check_services():
