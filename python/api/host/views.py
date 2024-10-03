@@ -23,7 +23,7 @@ from cm.errors import AdcmEx
 from cm.models import (
     Cluster,
     Component,
-    GroupConfig,
+    ConfigHostGroup,
     Host,
     HostComponent,
     HostProvider,
@@ -74,8 +74,8 @@ class HostFilter(drf_filters.FilterSet):
     cluster_is_null = drf_filters.BooleanFilter(field_name="cluster_id", lookup_expr="isnull")
     provider_is_null = drf_filters.BooleanFilter(field_name="provider_id", lookup_expr="isnull")
     group_config = drf_filters.ModelChoiceFilter(
-        queryset=GroupConfig.objects.order_by("id"),
-        field_name="group_config",
+        queryset=ConfigHostGroup.objects.order_by("id"),
+        field_name="config_host_group",
         label="GroupConfig",
     )
     hostcomponent__service_id = drf_filters.ModelChoiceFilter(
@@ -92,7 +92,7 @@ class HostFilter(drf_filters.FilterSet):
     )
 
     exclude_group_config__in = NumberInFilter(
-        field_name="group_config",
+        field_name="config_host_group",
         lookup_expr="in",
         label="ExcludeGroupConfigIn",
         exclude=True,

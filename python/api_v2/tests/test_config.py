@@ -20,8 +20,8 @@ from cm.models import (
     Cluster,
     Component,
     ConcernItem,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
     Host,
     HostProvider,
     Service,
@@ -304,22 +304,22 @@ class TestSaveConfigWithoutRequiredField(BaseAPITestCase):
         )
 
 
-class TestClusterGroupConfig(BaseAPITestCase):
+class TestClusterCHG(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.group_config = GroupConfig.objects.create(
-            name="group_config",
+        self.host_group = ConfigHostGroup.objects.create(
+            name="config_host_group",
             object_type=ContentType.objects.get_for_model(self.cluster_1),
             object_id=self.cluster_1.pk,
         )
-        self.group_config_config = ConfigLog.objects.get(pk=self.group_config.config.current)
+        self.config_of_host_group = ConfigLog.objects.get(pk=self.host_group.config.current)
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
-        response = self.client.v2[self.group_config, CONFIGS].get()
+        response = self.client.v2[self.host_group, CONFIGS].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
@@ -328,12 +328,12 @@ class TestClusterGroupConfig(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
+        response = self.client.v2[self.host_group, CONFIGS, self.config_of_host_group].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = {
-            "id": self.group_config_config.pk,
+            "id": self.config_of_host_group.pk,
             "isCurrent": True,
-            "creationTime": self.group_config_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.config_of_host_group.date.isoformat().replace("+00:00", "Z"),
             "config": {
                 "activatable_group": {"integer": 10},
                 "boolean": True,
@@ -373,7 +373,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+        response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -404,7 +404,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
                 "description": "new config",
             }
 
-            response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+            response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
             self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -436,10 +436,10 @@ class TestClusterGroupConfig(BaseAPITestCase):
         ):
             self.client.login(username=user_with_view_rights.username, password=user_password)
 
-            response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
+            response = self.client.v2[self.host_group, CONFIGS, self.config_of_host_group].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
-            response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+            response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertSetEqual(initial_configlog_ids, set(ConfigLog.objects.values_list("id", flat=True)))
@@ -453,8 +453,8 @@ class TestClusterGroupConfig(BaseAPITestCase):
             "variant_not_strict": "value5",
         }
 
-        self.group_config_config.config = config
-        self.group_config_config.attr.update(
+        self.config_of_host_group.config = config
+        self.config_of_host_group.attr.update(
             {
                 "group_keys": {
                     "activatable_group": {"fields": {"integer": True}, "value": True},
@@ -466,7 +466,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
             }
         )
 
-        self.group_config_config.save(update_fields=["config", "attr"])
+        self.config_of_host_group.save(update_fields=["config", "attr"])
 
         data = {
             "config": config,
@@ -481,7 +481,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+        response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -516,8 +516,8 @@ class TestClusterGroupConfig(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.group_config.refresh_from_db()
-        config_log = ConfigLog.objects.get(id=self.group_config.config.current)
+        self.host_group.refresh_from_db()
+        config_log = ConfigLog.objects.get(id=self.host_group.config.current)
 
         self.assertDictEqual(config_log.config, data["config"])
         self.assertFalse(config_log.attr["activatable_group"]["active"])
@@ -555,7 +555,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+        response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -588,7 +588,7 @@ class TestClusterGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+        response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -597,10 +597,10 @@ class TestClusterGroupConfig(BaseAPITestCase):
         )
 
     def test_schema(self):
-        response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
+        response = self.client.v2[self.host_group, CONFIG_SCHEMA].get()
 
         expected_data = json.loads(
-            (self.test_files_dir / "responses" / "config_schemas" / "for_cluster_group_config.json").read_text(
+            (self.test_files_dir / "responses" / "config_schemas" / "for_cluster_config_host_group.json").read_text(
                 encoding="utf-8"
             )
         )
@@ -611,19 +611,19 @@ class TestClusterGroupConfig(BaseAPITestCase):
     def test_schema_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
+            response = self.client.v2[self.host_group, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
+            response = self.client.v2[self.host_group, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.v2[self.group_config, CONFIGS].get()
+            response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
 
@@ -813,23 +813,23 @@ class TestServiceConfig(BaseAPITestCase):
             self.assertEqual(record.config["json"], {})
 
 
-class TestServiceGroupConfig(BaseAPITestCase):
+class TestServiceCHG(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
         self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
 
-        self.group_config = GroupConfig.objects.create(
-            name="group_config",
+        self.host_group = ConfigHostGroup.objects.create(
+            name="config_host_group",
             object_type=ContentType.objects.get_for_model(self.service_1),
             object_id=self.service_1.pk,
         )
-        self.group_config_config = ConfigLog.objects.get(pk=self.group_config.config.current)
+        self.config_of_host_group = ConfigLog.objects.get(pk=self.host_group.config.current)
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
-        response = self.client.v2[self.group_config, CONFIGS].get()
+        response = self.client.v2[self.host_group, CONFIGS].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
@@ -838,12 +838,12 @@ class TestServiceGroupConfig(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
+        response = self.client.v2[self.host_group, CONFIGS, self.config_of_host_group].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         expected_data = {
-            "id": self.group_config_config.pk,
+            "id": self.config_of_host_group.pk,
             "isCurrent": True,
-            "creationTime": self.group_config_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.config_of_host_group.date.isoformat().replace("+00:00", "Z"),
             "config": {
                 "group": {"password": "password"},
                 "activatable_group": {"text": "text"},
@@ -877,7 +877,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+        response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -913,10 +913,10 @@ class TestServiceGroupConfig(BaseAPITestCase):
         ):
             self.client.login(username=user_with_view_rights.username, password=user_password)
 
-            response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
+            response = self.client.v2[self.host_group, CONFIGS, self.config_of_host_group].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
-            response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+            response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertSetEqual(initial_configlog_ids, set(ConfigLog.objects.values_list("id", flat=True)))
@@ -928,8 +928,8 @@ class TestServiceGroupConfig(BaseAPITestCase):
             "string": "new string",
         }
 
-        self.group_config_config.config = config
-        self.group_config_config.attr.update(
+        self.config_of_host_group.config = config
+        self.config_of_host_group.attr.update(
             {
                 "activatable_group": {"active": False},
                 "group_keys": {
@@ -940,7 +940,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
             }
         )
 
-        self.group_config_config.save(update_fields=["config", "attr"])
+        self.config_of_host_group.save(update_fields=["config", "attr"])
 
         data = {
             "config": config,
@@ -953,7 +953,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+        response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -988,8 +988,8 @@ class TestServiceGroupConfig(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.group_config.refresh_from_db()
-        config_log = ConfigLog.objects.get(id=self.group_config.config.current)
+        self.host_group.refresh_from_db()
+        config_log = ConfigLog.objects.get(id=self.host_group.config.current)
         config_log.config["group"]["password"] = ansible_decrypt(msg=config_log.config["group"]["password"])
         data["config"]["group"]["password"] = ansible_decrypt(msg=data["config"]["group"]["password"])
 
@@ -1009,7 +1009,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+        response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -1038,7 +1038,7 @@ class TestServiceGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+        response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -1047,11 +1047,11 @@ class TestServiceGroupConfig(BaseAPITestCase):
         )
 
     def test_schema(self):
-        response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
+        response = self.client.v2[self.host_group, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = json.loads(
-            (self.test_files_dir / "responses" / "config_schemas" / "for_service_group_config.json").read_text(
+            (self.test_files_dir / "responses" / "config_schemas" / "for_service_config_host_group.json").read_text(
                 encoding="utf-8"
             )
         )
@@ -1065,31 +1065,31 @@ class TestServiceGroupConfig(BaseAPITestCase):
     def test_schema_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.v2[self.group_config, CONFIGS].get()
+            response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.v2[self.group_config, CONFIGS].get()
+            response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_model_role_list_fail(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_2, role_name="View cluster configurations"):
-            response = self.client.v2[self.group_config, CONFIGS].get()
+            response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.v2[self.group_config, CONFIGS].get()
+            response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.v2[self.group_config, CONFIGS].get()
+            response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
 
@@ -1277,7 +1277,7 @@ class TestComponentConfig(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
 
-class TestComponentGroupConfig(BaseAPITestCase):
+class TestComponentCHG(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -1286,17 +1286,17 @@ class TestComponentGroupConfig(BaseAPITestCase):
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )
 
-        self.group_config = GroupConfig.objects.create(
-            name="group_config",
+        self.host_group = ConfigHostGroup.objects.create(
+            name="config_host_group",
             object_type=ContentType.objects.get_for_model(self.component_1),
             object_id=self.component_1.pk,
         )
-        self.group_config_config = ConfigLog.objects.get(pk=self.group_config.config.current)
+        self.config_of_host_group = ConfigLog.objects.get(pk=self.host_group.config.current)
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
-        response = self.client.v2[self.group_config, CONFIGS].get()
+        response = self.client.v2[self.host_group, CONFIGS].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
         self.assertListEqual(
@@ -1305,12 +1305,12 @@ class TestComponentGroupConfig(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
+        response = self.client.v2[self.host_group, CONFIGS, self.config_of_host_group].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         expected_data = {
-            "id": self.group_config_config.pk,
+            "id": self.config_of_host_group.pk,
             "isCurrent": True,
-            "creationTime": self.group_config_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.config_of_host_group.date.isoformat().replace("+00:00", "Z"),
             "config": {
                 "group": {"file": "content"},
                 "activatable_group": {"secretfile": "content"},
@@ -1347,7 +1347,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+        response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -1386,10 +1386,10 @@ class TestComponentGroupConfig(BaseAPITestCase):
         ):
             self.client.login(username=user_with_view_rights.username, password=user_password)
 
-            response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
+            response = self.client.v2[self.host_group, CONFIGS, self.config_of_host_group].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
-            response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+            response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertSetEqual(initial_configlog_ids, set(ConfigLog.objects.values_list("id", flat=True)))
@@ -1401,8 +1401,8 @@ class TestComponentGroupConfig(BaseAPITestCase):
             "secrettext": "new secrettext",
         }
 
-        self.group_config_config.config = config
-        self.group_config_config.attr.update(
+        self.config_of_host_group.config = config
+        self.config_of_host_group.attr.update(
             {
                 "group_keys": {
                     "activatable_group": {"fields": {"secretfile": True}, "value": True},
@@ -1412,7 +1412,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
             }
         )
 
-        self.group_config_config.save(update_fields=["config", "attr"])
+        self.config_of_host_group.save(update_fields=["config", "attr"])
 
         data = {
             "config": config,
@@ -1425,7 +1425,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+        response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -1450,14 +1450,14 @@ class TestComponentGroupConfig(BaseAPITestCase):
 
         self.assertEqual(
             Path(
-                settings.FILE_DIR / f"component.{self.component_1.pk}.group.{self.group_config.pk}.group.file"
+                settings.FILE_DIR / f"component.{self.component_1.pk}.group.{self.host_group.pk}.group.file"
             ).read_text(encoding="UTF-8"),
             "new content",
         )
         self.assertEqual(
             Path(
                 settings.FILE_DIR
-                / f"component.{self.component_1.pk}.group.{self.group_config.pk}.activatable_group.secretfile"
+                / f"component.{self.component_1.pk}.group.{self.host_group.pk}.activatable_group.secretfile"
             ).read_text(encoding="UTF-8"),
             "content",
         )
@@ -1477,8 +1477,8 @@ class TestComponentGroupConfig(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.group_config.refresh_from_db()
-        config_log = ConfigLog.objects.get(id=self.group_config.config.current)
+        self.host_group.refresh_from_db()
+        config_log = ConfigLog.objects.get(id=self.host_group.config.current)
         config_log.config["activatable_group"]["secretfile"] = ansible_decrypt(
             msg=config_log.config["activatable_group"]["secretfile"]
         )
@@ -1493,14 +1493,14 @@ class TestComponentGroupConfig(BaseAPITestCase):
 
         self.assertEqual(
             Path(
-                settings.FILE_DIR / f"component.{self.component_1.pk}.group.{self.group_config.pk}.group.file"
+                settings.FILE_DIR / f"component.{self.component_1.pk}.group.{self.host_group.pk}.group.file"
             ).read_text(encoding="UTF-8"),
             "new content",
         )
         self.assertEqual(
             Path(
                 settings.FILE_DIR
-                / f"component.{self.component_1.pk}.group.{self.group_config.pk}.activatable_group.secretfile"
+                / f"component.{self.component_1.pk}.group.{self.host_group.pk}.activatable_group.secretfile"
             ).read_text(encoding="UTF-8"),
             "new content",
         )
@@ -1518,7 +1518,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+        response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -1547,7 +1547,7 @@ class TestComponentGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+        response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -1556,11 +1556,11 @@ class TestComponentGroupConfig(BaseAPITestCase):
         )
 
     def test_schema(self):
-        response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
+        response = self.client.v2[self.host_group, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = json.loads(
-            (self.test_files_dir / "responses" / "config_schemas" / "for_component_group_config.json").read_text(
+            (self.test_files_dir / "responses" / "config_schemas" / "for_component_config_host_group.json").read_text(
                 encoding="utf-8"
             )
         )
@@ -1576,31 +1576,31 @@ class TestComponentGroupConfig(BaseAPITestCase):
     def test_schema_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.v2[self.group_config, CONFIGS].get()
+            response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.v2[self.group_config, CONFIGS].get()
+            response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_object_role_list_fail(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_2, role_name="View cluster configurations"):
-            response = self.client.v2[self.group_config, CONFIGS].get()
+            response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.v2[self.group_config, CONFIGS].get()
+            response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Cluster Administrator"):
-            response = self.client.v2[self.group_config, CONFIGS].get()
+            response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
 
@@ -1812,21 +1812,21 @@ class TestProviderConfig(BaseAPITestCase):
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
 
-class TestProviderGroupConfig(BaseAPITestCase):
+class TestProviderCHG(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.group_config = GroupConfig.objects.create(
-            name="group_config",
+        self.host_group = ConfigHostGroup.objects.create(
+            name="config_host_group",
             object_type=ContentType.objects.get_for_model(self.provider),
             object_id=self.provider.pk,
         )
-        self.group_config_config = ConfigLog.objects.get(pk=self.group_config.config.current)
+        self.config_of_host_group = ConfigLog.objects.get(pk=self.host_group.config.current)
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)
 
     def test_list_success(self):
-        response = self.client.v2[self.group_config, CONFIGS].get()
+        response = self.client.v2[self.host_group, CONFIGS].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
@@ -1836,7 +1836,7 @@ class TestProviderGroupConfig(BaseAPITestCase):
         )
 
     def test_retrieve_success(self):
-        response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
+        response = self.client.v2[self.host_group, CONFIGS, self.config_of_host_group].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = {
@@ -1856,9 +1856,9 @@ class TestProviderGroupConfig(BaseAPITestCase):
                 },
                 "json": '{"key": "value"}',
             },
-            "creationTime": self.group_config_config.date.isoformat().replace("+00:00", "Z"),
+            "creationTime": self.config_of_host_group.date.isoformat().replace("+00:00", "Z"),
             "description": "init",
-            "id": self.group_config_config.pk,
+            "id": self.config_of_host_group.pk,
             "isCurrent": True,
         }
         actual_data = response.json()
@@ -1871,7 +1871,7 @@ class TestProviderGroupConfig(BaseAPITestCase):
         self.assertDictEqual(actual_data, expected_data)
 
     def test_retrieve_wrong_pk_fail(self):
-        response = self.client.v2[self.group_config, CONFIGS, self.get_non_existent_pk(model=ConfigLog)].get()
+        response = self.client.v2[self.host_group, CONFIGS, self.get_non_existent_pk(model=ConfigLog)].get()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_retrieve_wrong_provider_pk_fail(self):
@@ -1904,7 +1904,7 @@ class TestProviderGroupConfig(BaseAPITestCase):
             },
             "description": "new config",
         }
-        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+        response = self.client.v2[self.host_group, CONFIGS].post(data=data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         response_data = response.json()
@@ -1948,10 +1948,10 @@ class TestProviderGroupConfig(BaseAPITestCase):
         ):
             self.client.login(username=user_with_view_rights.username, password=user_password)
 
-            response = self.client.v2[self.group_config, CONFIGS, self.group_config_config].get()
+            response = self.client.v2[self.host_group, CONFIGS, self.config_of_host_group].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
-            response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+            response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertSetEqual(initial_configlog_ids, set(ConfigLog.objects.values_list("id", flat=True)))
@@ -1968,8 +1968,8 @@ class TestProviderGroupConfig(BaseAPITestCase):
             "json": '{"key": "value", "new key": "new value"}',
         }
 
-        self.group_config_config.config = config
-        self.group_config_config.attr.update(
+        self.config_of_host_group.config = config
+        self.config_of_host_group.attr.update(
             {
                 "group_keys": {
                     "activatable_group": {"fields": {"secretmap": True}, "value": True},
@@ -1979,7 +1979,7 @@ class TestProviderGroupConfig(BaseAPITestCase):
             }
         )
 
-        self.group_config_config.save(update_fields=["config", "attr"])
+        self.config_of_host_group.save(update_fields=["config", "attr"])
 
         data = {
             "config": config,
@@ -1992,7 +1992,7 @@ class TestProviderGroupConfig(BaseAPITestCase):
             "description": "new config",
         }
 
-        response = self.client.v2[self.group_config, CONFIGS].post(data=data)
+        response = self.client.v2[self.host_group, CONFIGS].post(data=data)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
@@ -2043,8 +2043,8 @@ class TestProviderGroupConfig(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        self.group_config.refresh_from_db()
-        config_log = ConfigLog.objects.get(id=self.group_config.config.current)
+        self.host_group.refresh_from_db()
+        config_log = ConfigLog.objects.get(id=self.host_group.config.current)
         config_log.config["activatable_group"]["secretmap"]["integer_key"] = ansible_decrypt(
             msg=config_log.config["activatable_group"]["secretmap"]["integer_key"]
         )
@@ -2065,13 +2065,13 @@ class TestProviderGroupConfig(BaseAPITestCase):
         self.assertFalse(config_log.attr["activatable_group"]["active"])
 
     def test_schema(self):
-        response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
+        response = self.client.v2[self.host_group, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = json.loads(
-            (self.test_files_dir / "responses" / "config_schemas" / "for_hostprovider_group_config.json").read_text(
-                encoding="utf-8"
-            )
+            (
+                self.test_files_dir / "responses" / "config_schemas" / "for_hostprovider_config_host_group.json"
+            ).read_text(encoding="utf-8")
         )
         actual_data = response.json()
 
@@ -2097,30 +2097,30 @@ class TestProviderGroupConfig(BaseAPITestCase):
     def test_provider_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
+            response = self.client.v2[self.host_group, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.provider, role_name="Provider Administrator"):
-            response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
+            response = self.client.v2[self.host_group, CONFIG_SCHEMA].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_schema_permissions_list_fail(self):
         self.client.login(**self.test_user_credentials)
-        response = self.client.v2[self.group_config, CONFIG_SCHEMA].get()
+        response = self.client.v2[self.host_group, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_schema_permissions_model_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[], role_name="View any object configuration"):
-            response = self.client.v2[self.group_config, CONFIGS].get()
+            response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_permissions_object_role_list_success(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.provider, role_name="Provider Administrator"):
-            response = self.client.v2[self.group_config, CONFIGS].get()
+            response = self.client.v2[self.host_group, CONFIGS].get()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
 
@@ -2476,25 +2476,25 @@ class TestConfigSchemaEnumWithoutValues(BaseAPITestCase):
         )
 
 
-class TestGroupConfigUpgrade(BaseAPITestCase):
+class TestCHGUpgrade(BaseAPITestCase):
     def setUp(self) -> None:
         self.client.login(username="admin", password="admin")
 
-        cluster_bundle_1_path = self.test_bundles_dir / "cluster_group_config"
-        cluster_bundle_2_path = self.test_bundles_dir / "cluster_group_config_upgrade"
+        cluster_bundle_1_path = self.test_bundles_dir / "cluster_config_host_group"
+        cluster_bundle_2_path = self.test_bundles_dir / "cluster_config_host_group_upgrade"
 
         self.bundle_1 = self.add_bundle(source_dir=cluster_bundle_1_path)
         self.bundle_2 = self.add_bundle(source_dir=cluster_bundle_2_path)
         self.upgrade = Upgrade.objects.get(name="upgrade", bundle=self.bundle_2)
 
-        self.cluster = self.add_cluster(bundle=self.bundle_1, name="cluster_group_config")
+        self.cluster = self.add_cluster(bundle=self.bundle_1, name="cluster_config_host_group")
         self.service = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster).get()
         self.component = Component.objects.filter(cluster=self.cluster, service=self.service).first()
 
-        self.cluster_group_config = GroupConfig.objects.create(
-            name="cluster_group_config", object_type=self.cluster.content_type, object_id=self.cluster.pk
+        self.cluster_host_group = ConfigHostGroup.objects.create(
+            name="cluster_config_host_group", object_type=self.cluster.content_type, object_id=self.cluster.pk
         )
-        config = ConfigLog.objects.get(pk=self.cluster_group_config.config.current)
+        config = ConfigLog.objects.get(pk=self.cluster_host_group.config.current)
         config.config.update({"activatable_group": {"integer": 100}, "boolean": True, "group": {"float": 0.1}})
         config.attr.update(
             {
@@ -2507,10 +2507,10 @@ class TestGroupConfigUpgrade(BaseAPITestCase):
         )
         config.save(update_fields=["config", "attr"])
 
-        self.service_group_config = GroupConfig.objects.create(
-            name="service_group_config", object_type=self.service.content_type, object_id=self.service.pk
+        self.service_host_group = ConfigHostGroup.objects.create(
+            name="service_config_host_group", object_type=self.service.content_type, object_id=self.service.pk
         )
-        config = ConfigLog.objects.get(pk=self.service_group_config.config.current)
+        config = ConfigLog.objects.get(pk=self.service_host_group.config.current)
         config.config.update(
             {
                 "group": {"password": ansible_encrypt_and_format(msg="new password")},
@@ -2530,10 +2530,10 @@ class TestGroupConfigUpgrade(BaseAPITestCase):
         )
         config.save(update_fields=["config", "attr"])
 
-        self.component_group_config = GroupConfig.objects.create(
-            name="component_group_config", object_type=self.component.content_type, object_id=self.component.pk
+        self.component_host_group = ConfigHostGroup.objects.create(
+            name="component_config_host_group", object_type=self.component.content_type, object_id=self.component.pk
         )
-        config = ConfigLog.objects.get(pk=self.component_group_config.config.current)
+        config = ConfigLog.objects.get(pk=self.component_host_group.config.current)
         config.config.update(
             {
                 "group": {"file": "content"},
@@ -2553,7 +2553,7 @@ class TestGroupConfigUpgrade(BaseAPITestCase):
         config.save(update_fields=["config", "attr"])
 
     def test_upgrade(self):
-        config_of_cluster_group = ConfigLog.objects.get(id=self.cluster_group_config.config.current)
+        config_of_cluster_group = ConfigLog.objects.get(id=self.cluster_host_group.config.current)
         self.assertDictEqual(
             config_of_cluster_group.config,
             {"activatable_group": {"integer": 100}, "boolean": True, "group": {"float": 0.1}},
@@ -2575,7 +2575,7 @@ class TestGroupConfigUpgrade(BaseAPITestCase):
             },
         )
 
-        config_of_service_group = ConfigLog.objects.get(id=self.service_group_config.config.current)
+        config_of_service_group = ConfigLog.objects.get(id=self.service_host_group.config.current)
         config_of_service_group.config["group"]["password"] = ansible_decrypt(
             msg=config_of_service_group.config["group"]["password"]
         )
@@ -2604,7 +2604,7 @@ class TestGroupConfigUpgrade(BaseAPITestCase):
             },
         )
 
-        config_of_component_group = ConfigLog.objects.get(id=self.component_group_config.config.current)
+        config_of_component_group = ConfigLog.objects.get(id=self.component_host_group.config.current)
         config_of_component_group.config["activatable_group"]["secretfile"] = ansible_decrypt(
             msg=config_of_component_group.config["activatable_group"]["secretfile"]
         )
@@ -2640,11 +2640,11 @@ class TestGroupConfigUpgrade(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        self.cluster_group_config.refresh_from_db()
-        self.service_group_config.refresh_from_db()
-        self.component_group_config.refresh_from_db()
+        self.cluster_host_group.refresh_from_db()
+        self.service_host_group.refresh_from_db()
+        self.component_host_group.refresh_from_db()
 
-        config_of_cluster_group = ConfigLog.objects.get(id=self.cluster_group_config.config.current)
+        config_of_cluster_group = ConfigLog.objects.get(id=self.cluster_host_group.config.current)
         self.assertDictEqual(
             config_of_cluster_group.config,
             {"activatable_group": {"integer": 100}, "boolean": False, "json": {"key": "value"}},
@@ -2666,7 +2666,7 @@ class TestGroupConfigUpgrade(BaseAPITestCase):
             },
         )
 
-        config_of_service_group = ConfigLog.objects.get(id=self.service_group_config.config.current)
+        config_of_service_group = ConfigLog.objects.get(id=self.service_host_group.config.current)
         self.assertDictEqual(
             config_of_service_group.config,
             {
@@ -2687,7 +2687,7 @@ class TestGroupConfigUpgrade(BaseAPITestCase):
             },
         )
 
-        config_of_component_group = ConfigLog.objects.get(id=self.component_group_config.config.current)
+        config_of_component_group = ConfigLog.objects.get(id=self.component_host_group.config.current)
         config_of_component_group.config["secrettext"] = ansible_decrypt(config_of_component_group.config["secrettext"])
         self.assertDictEqual(
             config_of_component_group.config,
@@ -2781,7 +2781,7 @@ class TestPatternInConfig(BaseAPITestCase):
 
         return self.client.post(path=path, data={"config": current_data | {field_name: new_value}, "adcmMeta": {}})
 
-    def change_one_field_in_group(self, group: GroupConfig, field_name: str, new_value: str) -> Response:
+    def change_one_field_in_group(self, group: ConfigHostGroup, field_name: str, new_value: str) -> Response:
         path = f"{self.get_object_path(group.object)}config-groups/{group.id}/configs/"
         group.refresh_from_db(fields=["config"])
         current_data = self.client.get(f"{path}{group.config.current}/").json()
@@ -2852,19 +2852,19 @@ class TestPatternInConfig(BaseAPITestCase):
                         f"The value of {field}/ config parameter does not match pattern: {expected_pattern}",
                     )
 
-    def test_change_config_of_group_config(self) -> None:
+    def test_change_config_of_config_host_group(self) -> None:
         groups = (
-            GroupConfig.objects.create(
+            ConfigHostGroup.objects.create(
                 object_type=ContentType.objects.get_for_model(model=self.cluster),
                 object_id=self.cluster.pk,
                 name="cluster group",
             ),
-            GroupConfig.objects.create(
+            ConfigHostGroup.objects.create(
                 object_type=ContentType.objects.get_for_model(model=self.service),
                 object_id=self.service.pk,
                 name="service group",
             ),
-            GroupConfig.objects.create(
+            ConfigHostGroup.objects.create(
                 object_type=ContentType.objects.get_for_model(model=self.component),
                 object_id=self.component.pk,
                 name="component group",

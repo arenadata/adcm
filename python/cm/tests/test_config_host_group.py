@@ -17,7 +17,7 @@ from cm.models import ConfigLog
 from cm.tests.utils import gen_cluster, gen_config, gen_group, gen_prototype_config
 
 
-class GroupConfigTest(BaseTestCase):
+class ConfigHostGroupTest(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 

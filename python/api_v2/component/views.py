@@ -68,13 +68,16 @@ from api_v2.generic.config.api_schema import document_config_viewset
 from api_v2.generic.config.audit import audit_config_viewset
 from api_v2.generic.config.utils import ConfigSchemaMixin
 from api_v2.generic.config.views import ConfigLogViewSet
-from api_v2.generic.group_config.api_schema import document_group_config_viewset, document_host_group_config_viewset
-from api_v2.generic.group_config.audit import (
-    audit_config_group_config_viewset,
-    audit_group_config_viewset,
-    audit_host_group_config_viewset,
+from api_v2.generic.config_host_group.api_schema import (
+    document_config_host_group_viewset,
+    document_host_config_host_group_viewset,
 )
-from api_v2.generic.group_config.views import GroupConfigViewSet, HostGroupConfigViewSet
+from api_v2.generic.config_host_group.audit import (
+    audit_config_config_host_group_viewset,
+    audit_config_host_group_viewset,
+    audit_host_config_host_group_viewset,
+)
+from api_v2.generic.config_host_group.views import CHGViewSet, HostCHGViewSet
 from api_v2.utils.audit import (
     component_from_lookup,
     component_with_parents_specified_in_path_exists,
@@ -243,21 +246,21 @@ class HostComponentViewSet(PermissionListMixin, ListModelMixin, ObjectWithStatus
         )
 
 
-@document_group_config_viewset(object_type="component")
-@audit_group_config_viewset(retrieve_owner=parent_component_from_lookup)
-class ComponentGroupConfigViewSet(GroupConfigViewSet):
+@document_config_host_group_viewset(object_type="component")
+@audit_config_host_group_viewset(retrieve_owner=parent_component_from_lookup)
+class ComponentCHGViewSet(CHGViewSet):
     ...
 
 
-@document_host_group_config_viewset(object_type="component")
-@audit_host_group_config_viewset(retrieve_owner=parent_component_from_lookup)
-class ComponentHostGroupConfigViewSet(HostGroupConfigViewSet):
+@document_host_config_host_group_viewset(object_type="component")
+@audit_host_config_host_group_viewset(retrieve_owner=parent_component_from_lookup)
+class ComponentHostCHGViewSet(HostCHGViewSet):
     ...
 
 
 @document_config_viewset(object_type="component config group", operation_id_variant="ComponentConfigGroup")
-@audit_config_group_config_viewset(retrieve_owner=parent_component_from_lookup)
-class ComponentConfigHostGroupViewSet(ConfigLogViewSet):
+@audit_config_config_host_group_viewset(retrieve_owner=parent_component_from_lookup)
+class ComponentConfigCHGViewSet(ConfigLogViewSet):
     ...
 
 

@@ -47,8 +47,8 @@ from cm.models import (
     ConcernCause,
     ConcernItem,
     ConcernType,
+    ConfigHostGroup,
     ConfigLog,
-    GroupConfig,
     Host,
     HostComponent,
     HostProvider,
@@ -447,7 +447,7 @@ def _set_before_upgrade(obj: ADCMEntity) -> None:
     if obj.config:
         obj.before_upgrade["config_id"] = obj.config.current
 
-    if groups := GroupConfig.objects.filter(object_id=obj.id, object_type=ContentType.objects.get_for_model(obj)):
+    if groups := ConfigHostGroup.objects.filter(object_id=obj.id, object_type=ContentType.objects.get_for_model(obj)):
         obj.before_upgrade["groups"] = {}
 
         for group in groups:

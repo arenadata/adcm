@@ -19,7 +19,7 @@ from cm.errors import raise_adcm_ex
 from cm.models import (
     Action,
     ADCMEntity,
-    GroupConfig,
+    ConfigHostGroup,
     Prototype,
     PrototypeConfig,
     StagePrototype,
@@ -81,10 +81,10 @@ def to_flat_dict(config: dict, spec: dict) -> dict:
     return flat
 
 
-def cook_file_type_name(obj: Union["ADCMEntity", "GroupConfig"], key: str, sub_key: str) -> str:
+def cook_file_type_name(obj: Union["ADCMEntity", "ConfigHostGroup"], key: str, sub_key: str) -> str:
     if isinstance(obj, ADCMEntity):
         filename = [obj.prototype.type, str(obj.id), key, sub_key]
-    elif isinstance(obj, GroupConfig):
+    elif isinstance(obj, ConfigHostGroup):
         filename = [
             obj.object.prototype.type,
             str(obj.object.id),

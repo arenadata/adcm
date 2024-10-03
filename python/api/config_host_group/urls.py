@@ -13,39 +13,39 @@
 
 from rest_framework_extensions.routers import ExtendedSimpleRouter as SimpleRouter
 
-from api.group_config.views import (
-    GroupConfigConfigLogViewSet,
-    GroupConfigConfigViewSet,
-    GroupConfigHostCandidateViewSet,
-    GroupConfigHostViewSet,
-    GroupConfigViewSet,
+from api.config_host_group.views import (
+    CHGConfigLogViewSet,
+    CHGConfigViewSet,
+    CHGHostCandidateViewSet,
+    CHGHostViewSet,
+    CHGViewSet,
 )
 
 router = SimpleRouter()
 
-root = router.register(r"", GroupConfigViewSet, basename="group-config")
+root = router.register(r"", CHGViewSet, basename="group-config")
 root.register(
     r"host",
-    GroupConfigHostViewSet,
+    CHGHostViewSet,
     basename="group-config-host",
-    parents_query_lookups=["group_config"],
+    parents_query_lookups=["config_host_group"],
 )
 root.register(
     r"host-candidate",
-    GroupConfigHostCandidateViewSet,
+    CHGHostCandidateViewSet,
     basename="group-config-host-candidate",
-    parents_query_lookups=["group_config"],
+    parents_query_lookups=["config_host_group"],
 )
 config = root.register(
     r"config",
-    GroupConfigConfigViewSet,
+    CHGConfigViewSet,
     basename="group-config-config",
-    parents_query_lookups=["group_config"],
+    parents_query_lookups=["config_host_group"],
 )
 config.register(
     r"config-log",
-    GroupConfigConfigLogViewSet,
+    CHGConfigLogViewSet,
     basename="group-config-config-log",
-    parents_query_lookups=["obj_ref__group_config", "obj_ref"],
+    parents_query_lookups=["obj_ref__config_host_group", "obj_ref"],
 )
 urlpatterns = router.urls

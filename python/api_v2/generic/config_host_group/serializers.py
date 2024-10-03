@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from cm.errors import AdcmEx
-from cm.models import GroupConfig, Host
+from cm.models import ConfigHostGroup, Host
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.exceptions import ValidationError
 from rest_framework.relations import PrimaryKeyRelatedField
@@ -20,11 +20,11 @@ from rest_framework.serializers import ModelSerializer
 from api_v2.host.serializers import HostShortSerializer
 
 
-class GroupConfigSerializer(ModelSerializer):
+class CHGSerializer(ModelSerializer):
     hosts = HostShortSerializer(many=True, read_only=True)
 
     class Meta:
-        model = GroupConfig
+        model = ConfigHostGroup
         fields = ["id", "name", "description", "hosts"]
 
     def validate_name(self, value):
@@ -33,7 +33,7 @@ class GroupConfigSerializer(ModelSerializer):
 
         object_ = self.context["view"].get_parent_object()
         parent_content_type = ContentType.objects.get_for_model(model=object_)
-        queryset = GroupConfig.objects.filter(name=value, object_type=parent_content_type, object_id=object_.pk)
+        queryset = ConfigHostGroup.objects.filter(name=value, object_type=parent_content_type, object_id=object_.pk)
         if queryset.exists():
             raise AdcmEx(
                 code="CREATE_CONFLICT",
@@ -42,7 +42,7 @@ class GroupConfigSerializer(ModelSerializer):
         return value
 
 
-class HostGroupConfigSerializer(ModelSerializer):
+class HostCHGSerializer(ModelSerializer):
     id = PrimaryKeyRelatedField(queryset=Host.objects.all())
 
     class Meta:

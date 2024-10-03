@@ -16,7 +16,7 @@ from cm.models import (
     Component,
     ConcernCause,
     ConcernItem,
-    GroupConfig,
+    ConfigHostGroup,
     Host,
     HostComponent,
     MaintenanceMode,
@@ -1166,7 +1166,7 @@ class TestBoundTo(BaseAPITestCase):
         self.assertIn("Component `bound_to` restriction violated.", data["desc"])
 
 
-class GroupConfigRelatedTests(BaseAPITestCase):
+class ConfigHostGroupRelatedTests(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -1183,30 +1183,30 @@ class GroupConfigRelatedTests(BaseAPITestCase):
         self.component_1_from_s1 = Component.objects.get(prototype__name="component_1", service=self.service_1)
         self.component_2_from_s1 = Component.objects.get(prototype__name="component_2", service=self.service_1)
 
-    def _prepare_config_group_via_api(
+    def _prepare_config_host_group_via_api(
         self, obj: Cluster | Service | Component, hosts: list[Host], name: str, description: str = ""
-    ) -> GroupConfig:
+    ) -> ConfigHostGroup:
         response = self.client.v2[obj, "config-groups"].post(data={"name": name, "description": description})
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        group_config = GroupConfig.objects.get(pk=response.json()["id"])
+        host_group = ConfigHostGroup.objects.get(pk=response.json()["id"])
 
         for host in hosts:
-            response = self.client.v2[group_config, "hosts"].post(data={"hostId": host.pk})
+            response = self.client.v2[host_group, "hosts"].post(data={"hostId": host.pk})
             self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        group_config.refresh_from_db()
-        self.assertEqual(group_config.hosts.count(), len(hosts))
+        host_group.refresh_from_db()
+        self.assertEqual(host_group.hosts.count(), len(hosts))
 
-        return group_config
+        return host_group
 
-    def test_host_removed_from_component_group_config_on_mapping_change(self):
+    def test_host_removed_from_component_config_host_group_on_mapping_change(self):
         mapping_data = [{"hostId": self.host_1.pk, "componentId": self.component_1_from_s1.pk}]
 
         response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        group_config = self._prepare_config_group_via_api(
+        host_group = self._prepare_config_host_group_via_api(
             obj=self.component_1_from_s1, hosts=[self.host_1], name="component config group"
         )
 
@@ -1214,17 +1214,17 @@ class GroupConfigRelatedTests(BaseAPITestCase):
         response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        group_config.refresh_from_db()
-        self.assertEqual(group_config.hosts.count(), 0)
+        host_group.refresh_from_db()
+        self.assertEqual(host_group.hosts.count(), 0)
 
-    def test_host_not_removed_from_component_group_config_on_mapping_remain(self):
+    def test_host_not_removed_from_component_config_host_group_on_mapping_remain(self):
         endpoint = self.client.v2[self.cluster_1, "mapping"]
         mapping_data = [{"hostId": self.host_1.pk, "componentId": self.component_1_from_s1.pk}]
 
         response = endpoint.post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        group_config = self._prepare_config_group_via_api(
+        host_group = self._prepare_config_host_group_via_api(
             obj=self.component_1_from_s1, hosts=[self.host_1], name="component config group"
         )
 
@@ -1232,16 +1232,16 @@ class GroupConfigRelatedTests(BaseAPITestCase):
         response = endpoint.post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        group_config.refresh_from_db()
-        self.assertSetEqual(set(group_config.hosts.values_list("pk", flat=True)), {self.host_1.pk})
+        host_group.refresh_from_db()
+        self.assertSetEqual(set(host_group.hosts.values_list("pk", flat=True)), {self.host_1.pk})
 
-    def test_host_not_removed_from_service_group_config_on_mapping_remain(self):
+    def test_host_not_removed_from_service_config_host_group_on_mapping_remain(self):
         mapping_data = [{"hostId": self.host_1.pk, "componentId": self.component_1_from_s1.pk}]
 
         response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        group_config = self._prepare_config_group_via_api(
+        host_group = self._prepare_config_host_group_via_api(
             obj=self.service_1, hosts=[self.host_1], name="service config group"
         )
 
@@ -1249,16 +1249,16 @@ class GroupConfigRelatedTests(BaseAPITestCase):
         response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        group_config.refresh_from_db()
-        self.assertSetEqual(set(group_config.hosts.values_list("pk", flat=True)), {self.host_1.pk})
+        host_group.refresh_from_db()
+        self.assertSetEqual(set(host_group.hosts.values_list("pk", flat=True)), {self.host_1.pk})
 
-    def test_host_not_removed_from_cluster_group_config_on_mapping_change(self):
+    def test_host_not_removed_from_cluster_config_host_group_on_mapping_change(self):
         mapping_data = [{"hostId": self.host_1.pk, "componentId": self.component_1_from_s1.pk}]
 
         response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        group_config = self._prepare_config_group_via_api(
+        host_group = self._prepare_config_host_group_via_api(
             obj=self.cluster_1, hosts=[self.host_1], name="cluster config group"
         )
 
@@ -1266,5 +1266,5 @@ class GroupConfigRelatedTests(BaseAPITestCase):
         response = self.client.v2[self.cluster_1, "mapping"].post(data=mapping_data)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        group_config.refresh_from_db()
-        self.assertSetEqual(set(group_config.hosts.values_list("pk", flat=True)), {self.host_1.pk})
+        host_group.refresh_from_db()
+        self.assertSetEqual(set(host_group.hosts.values_list("pk", flat=True)), {self.host_1.pk})

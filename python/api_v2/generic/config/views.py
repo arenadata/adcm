@@ -14,7 +14,7 @@ from adcm.mixins import GetParentObjectMixin, ParentObject
 from adcm.permissions import VIEW_CONFIG_PERM, check_config_perm
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
-from cm.models import ConfigLog, GroupConfig, PrototypeConfig
+from cm.models import ConfigHostGroup, ConfigLog, PrototypeConfig
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -110,7 +110,7 @@ class ConfigLogViewSet(
         return super().list(request, *args, **kwargs)
 
     def _check_create_permissions(self, request: Request, parent_object: ParentObject) -> None:
-        owner_object = parent_object.object if isinstance(parent_object, GroupConfig) else parent_object
+        owner_object = parent_object.object if isinstance(parent_object, ConfigHostGroup) else parent_object
 
         owner_view_perm = f"cm.view_{owner_object.__class__.__name__.lower()}"
         if owner_object is None or not (

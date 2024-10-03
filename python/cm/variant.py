@@ -21,7 +21,7 @@ from cm.logger import logger
 from cm.models import (
     Cluster,
     Component,
-    GroupConfig,
+    ConfigHostGroup,
     Host,
     HostComponent,
     Prototype,
@@ -51,7 +51,7 @@ def return_empty_on_not_found(func: Callable) -> Callable:
 
 
 def get_cluster(obj) -> Cluster | None:
-    if isinstance(obj, GroupConfig):
+    if isinstance(obj, ConfigHostGroup):
         obj = obj.object
 
     match obj.prototype.type:

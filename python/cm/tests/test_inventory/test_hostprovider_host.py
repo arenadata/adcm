@@ -90,10 +90,10 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
             expected_data=expected_data,
         )
 
-    def test_action_on_hostprovider_with_group_config(self):
-        host_provider_group_config = self.add_group_config(parent=self.hostprovider, hosts=[self.host_1])
+    def test_action_on_hostprovider_with_config_host_group(self):
+        hostprovider_host_group = self.add_config_host_group(parent=self.hostprovider, hosts=[self.host_1])
         self.change_configuration(
-            target=host_provider_group_config,
+            target=hostprovider_host_group,
             config_diff={"integer": 101},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
@@ -133,10 +133,10 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
             expected_data=expected_data,
         )
 
-    def test_action_on_host_with_group_config(self):
-        host_provider_group_config = self.add_group_config(parent=self.hostprovider, hosts=[self.host_1])
+    def test_action_on_host_with_config_host_group(self):
+        hostprovider_host_group = self.add_config_host_group(parent=self.hostprovider, hosts=[self.host_1])
         self.change_configuration(
-            target=host_provider_group_config,
+            target=hostprovider_host_group,
             config_diff={"integer": 101},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
@@ -170,10 +170,10 @@ class TestInventoryHostproviderHost(BaseInventoryTestCase):
             expected_topology=expected_topology,
         )
 
-    def test_action_on_host_without_group_config(self):
-        host_provider_group_config = self.add_group_config(parent=self.hostprovider, hosts=[self.host_1])
+    def test_action_on_host_without_config_host_group(self):
+        hostprovider_host_group = self.add_config_host_group(parent=self.hostprovider, hosts=[self.host_1])
         self.change_configuration(
-            target=host_provider_group_config,
+            target=hostprovider_host_group,
             config_diff={"integer": 101},
             meta_diff={"/integer": {"isSynchronized": False}},
         )

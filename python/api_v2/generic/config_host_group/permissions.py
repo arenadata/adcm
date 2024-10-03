@@ -13,7 +13,7 @@
 from rest_framework.permissions import DjangoObjectPermissions
 
 
-class GroupConfigPermissions(DjangoObjectPermissions):
+class CHGPermissions(DjangoObjectPermissions):
     perms_map = {
         "GET": [],
         "OPTIONS": [],
@@ -31,7 +31,7 @@ class GroupConfigPermissions(DjangoObjectPermissions):
         return super().has_permission(request=request, view=view)
 
 
-class GroupConfigHostsPermissions(DjangoObjectPermissions):
+class CHGHostsPermissions(DjangoObjectPermissions):
     perms_map = {
         "GET": [],
         "OPTIONS": [],

@@ -13,7 +13,7 @@
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_action_variant, get_prototype_config, ui_config
 from cm.errors import raise_adcm_ex
-from cm.models import Cluster, GroupConfig, HostProvider, PrototypeConfig, Upgrade
+from cm.models import Cluster, ConfigHostGroup, HostProvider, PrototypeConfig, Upgrade
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
     BooleanField,
@@ -124,7 +124,7 @@ class UIConfigField(JSONField):
         obj = value.obj_ref.object
         if obj is None:
             raise_adcm_ex("INVALID_CONFIG_UPDATE", f'unknown object type "{value.obj_ref}"')
-        if isinstance(obj, GroupConfig):
+        if isinstance(obj, ConfigHostGroup):
             obj = obj.object
         return ui_config(obj, value)
 

@@ -180,8 +180,8 @@ def extract_core_object_from_lookup_kwargs(**kwargs) -> CoreObjectDescriptor:
 
 
 def extract_host_group_from_lookup_kwargs_and_parent(parent: CoreObjectDescriptor, **kwargs) -> HostGroupDescriptor:
-    if "group_config_pk" in kwargs:
-        host_group = HostGroupDescriptor(id=int(kwargs["group_config_pk"]), type=ADCMHostGroupType.CONFIG)
+    if "config_host_group_pk" in kwargs:
+        host_group = HostGroupDescriptor(id=int(kwargs["config_host_group_pk"]), type=ADCMHostGroupType.CONFIG)
     elif "action_host_group_pk" in kwargs:
         host_group = HostGroupDescriptor(id=int(kwargs["action_host_group_pk"]), type=ADCMHostGroupType.ACTION)
     else:

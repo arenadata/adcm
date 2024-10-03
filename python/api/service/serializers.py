@@ -41,7 +41,7 @@ from api.action.serializers import ActionShort
 from api.cluster.serializers import BindSerializer
 from api.component.serializers import ComponentUISerializer
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.config_host_group.serializers import CHGsHyperlinkedIdentityField
 from api.serializers import StringListSerializer
 from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions
 
@@ -130,7 +130,7 @@ class ServiceDetailSerializer(ServiceSerializer):
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
-    group_config = GroupConfigsHyperlinkedIdentityField(view_name="v1:group-config-list")
+    group_config = CHGsHyperlinkedIdentityField(view_name="v1:group-config-list")
 
     @staticmethod
     def get_status(obj: Service) -> int:

@@ -267,7 +267,7 @@ class ObjectConfig(ADCMModel):
             "component",
             "hostprovider",
             "host",
-            "group_config",
+            "config_host_group",
         ]
         for object_type in object_types:
             if hasattr(self, object_type):
@@ -440,8 +440,8 @@ class ADCM(ADCMEntity):
 class Cluster(ADCMEntity):
     name = models.CharField(max_length=1000, unique=True)
     description = models.TextField(blank=True)
-    group_config = GenericRelation(
-        "GroupConfig",
+    config_host_group = GenericRelation(
+        "ConfigHostGroup",
         object_id_field="object_id",
         content_type_field="object_type",
         on_delete=models.CASCADE,
@@ -479,8 +479,8 @@ class Cluster(ADCMEntity):
 class HostProvider(ADCMEntity):
     name = models.CharField(max_length=1000, unique=True)
     description = models.TextField(blank=True)
-    group_config = GenericRelation(
-        "GroupConfig",
+    config_host_group = GenericRelation(
+        "ConfigHostGroup",
         object_id_field="object_id",
         content_type_field="object_type",
         on_delete=models.CASCADE,
@@ -568,8 +568,8 @@ class Host(ADCMEntity):
 
 class Service(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE, related_name="services")
-    group_config = GenericRelation(
-        "GroupConfig",
+    config_host_group = GenericRelation(
+        "ConfigHostGroup",
         object_id_field="object_id",
         content_type_field="object_type",
         on_delete=models.CASCADE,
@@ -672,8 +672,8 @@ class Component(ADCMEntity):
     prototype = models.ForeignKey(
         Prototype, on_delete=models.CASCADE, null=True, default=None, related_name="components"
     )
-    group_config = GenericRelation(
-        "GroupConfig",
+    config_host_group = GenericRelation(
+        "ConfigHostGroup",
         object_id_field="object_id",
         content_type_field="object_type",
         on_delete=models.CASCADE,
@@ -776,14 +776,20 @@ class ActionHostGroup(models.Model):
         unique_together = ["object_id", "object_type", "name"]
 
 
-class GroupConfig(ADCMModel):
+class ConfigHostGroup(ADCMModel):
+    """
+    Configuration Host Group is a type of host group that connects hosts of some object with a different configuraiton.
+    It's mainly named ConfigHostGroup, but is also known as CHG,
+    and may be referenced as host_group in code where no contextual collision with other host group types occurs.
+    """
+
     object_id = models.PositiveIntegerField()
     object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object = GenericForeignKey("object_type", "object_id")
     name = models.CharField(max_length=1000)
     description = models.TextField(blank=True)
-    hosts = models.ManyToManyField(Host, blank=True, related_name="group_config")
-    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True, related_name="group_config")
+    hosts = models.ManyToManyField(Host, blank=True, related_name="config_host_group")
+    config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True, related_name="config_host_group")
 
     __error_code__ = "GROUP_CONFIG_NOT_FOUND"
 
@@ -860,7 +866,7 @@ class GroupConfig(ADCMModel):
 
         return config_log.attr.get("group_keys", {})
 
-    def merge_config(self, object_config: dict, group_config: dict, group_keys: dict, config=None):
+    def merge_config(self, object_config: dict, config_host_group: dict, group_keys: dict, config=None):
         """Merge object config with group config based group_keys"""
 
         if config is None:
@@ -871,13 +877,13 @@ class GroupConfig(ADCMModel):
                 config.setdefault(group_key, {})
                 self.merge_config(
                     object_config[group_key],
-                    group_config[group_key],
+                    config_host_group[group_key],
                     group_keys[group_key]["fields"],
                     config[group_key],
                 )
             else:
-                if group_value and group_key in group_config:
-                    config[group_key] = group_config[group_key]
+                if group_value and group_key in config_host_group:
+                    config[group_key] = config_host_group[group_key]
                 else:
                     if group_key in object_config:
                         config[group_key] = object_config[group_key]
@@ -913,10 +919,10 @@ class GroupConfig(ADCMModel):
         object_config = object_cl.config
         object_attr = object_cl.attr
         group_cl = ConfigLog.objects.get(id=self.config.current)
-        group_config = group_cl.config
+        host_group = group_cl.config
         group_keys = group_cl.attr.get("group_keys", {})
         group_attr = self.get_config_attr()
-        config = self.merge_config(object_config, group_config, group_keys)
+        config = self.merge_config(object_config, host_group, group_keys)
         attr = self.merge_attr(object_attr, group_attr, group_keys)
         self.prepare_files_for_config(config)
 
@@ -934,7 +940,7 @@ class GroupConfig(ADCMModel):
         else:
             raise AdcmEx("GROUP_CONFIG_TYPE_ERROR")
 
-        return hosts.exclude(group_config__in=self.object.group_config.all())
+        return hosts.exclude(config_host_group__in=self.object.config_host_group.all())
 
     def check_host_candidate(self, host_ids: list[int]):
         if self.hosts.filter(pk__in=host_ids).exists():
@@ -1655,7 +1661,7 @@ class ADCMEntityStatus(models.TextChoices):
 
 MainObject: TypeAlias = Cluster | Service | Component | HostProvider | Host
 
-_CMObjects = ADCM | MainObject | Bundle | Prototype | ConfigLog | GroupConfig | Action | Upgrade | TaskLog | JobLog
+_CMObjects = ADCM | MainObject | Bundle | Prototype | ConfigLog | ConfigHostGroup | Action | Upgrade | TaskLog | JobLog
 
 CM_MODEL_MAP: dict[str, type[_CMObjects]] = {
     "adcm": ADCM,
@@ -1676,9 +1682,10 @@ CM_MODEL_MAP: dict[str, type[_CMObjects]] = {
     "upgrade": Upgrade,
     "task": TaskLog,
     "job": JobLog,
-    "group_config": GroupConfig,
-    "config-group": GroupConfig,
-    "config-groups": GroupConfig,
+    "group_config": ConfigHostGroup,
+    "config_host_group": ConfigHostGroup,
+    "config-group": ConfigHostGroup,
+    "config-groups": ConfigHostGroup,
     "prototype": Prototype,
     "prototypes": Prototype,
     "bundle": Bundle,

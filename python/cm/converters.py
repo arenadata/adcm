@@ -16,10 +16,10 @@ from audit.models import AuditObjectType
 from core.types import ADCMCoreType, ADCMHostGroupType, ExtraActionTargetType
 from django.db.models import Model
 
-from cm.models import ADCM, ActionHostGroup, Cluster, Component, GroupConfig, Host, HostProvider, Service
+from cm.models import ADCM, ActionHostGroup, Cluster, Component, ConfigHostGroup, Host, HostProvider, Service
 
 CoreObject: TypeAlias = Cluster | Service | Component | HostProvider | Host
-GroupObject: TypeAlias = GroupConfig | ActionHostGroup
+GroupObject: TypeAlias = ConfigHostGroup | ActionHostGroup
 
 
 def core_type_to_model(core_type: ADCMCoreType) -> type[CoreObject | ADCM]:
@@ -42,7 +42,7 @@ def core_type_to_model(core_type: ADCMCoreType) -> type[CoreObject | ADCM]:
 
 def host_group_type_to_model(host_group_type: ADCMHostGroupType) -> type[GroupObject]:
     if host_group_type == ADCMHostGroupType.CONFIG:
-        return GroupConfig
+        return ConfigHostGroup
 
     if host_group_type == ADCMHostGroupType.ACTION:
         return ActionHostGroup

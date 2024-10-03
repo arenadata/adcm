@@ -52,21 +52,21 @@ class TestHostAction(BaseInventoryTestCase):
             name="host_action_on_component", prototype=self.component.prototype
         )
 
-        self.cluster_group_config = self.add_group_config(parent=self.cluster, hosts=[self.host_1])
+        self.cluster_host_group = self.add_config_host_group(parent=self.cluster, hosts=[self.host_1])
         self.change_configuration(
-            target=self.cluster_group_config,
+            target=self.cluster_host_group,
             config_diff={"integer": 101},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
-        self.service_group_config = self.add_group_config(parent=self.service, hosts=[self.host_1])
+        self.service_host_group = self.add_config_host_group(parent=self.service, hosts=[self.host_1])
         self.change_configuration(
-            target=self.service_group_config,
+            target=self.service_host_group,
             config_diff={"integer": 102},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
-        self.component_group_config = self.add_group_config(parent=self.component, hosts=[self.host_1])
+        self.component_host_group = self.add_config_host_group(parent=self.component, hosts=[self.host_1])
         self.change_configuration(
-            target=self.component_group_config,
+            target=self.component_host_group,
             config_diff={"integer": 103},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
