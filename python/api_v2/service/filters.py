@@ -12,8 +12,8 @@
 
 from cm.models import ADCMEntityStatus, Cluster, ClusterObject, MaintenanceMode, ObjectType
 from cm.services.cluster import (
+    retrieve_cluster_topology,
     retrieve_clusters_objects_maintenance_mode,
-    retrieve_clusters_topology,
 )
 from core.cluster.operations import calculate_maintenance_mode_for_cluster_objects
 from django.db.models import QuerySet
@@ -67,7 +67,7 @@ class ServiceFilter(FilterSet):
                 return ClusterObject.objects.none()
             return queryset
 
-        topology = next(retrieve_clusters_topology([cluster_id]))
+        topology = retrieve_cluster_topology(cluster_id)
 
         objects_mm = calculate_maintenance_mode_for_cluster_objects(
             topology=topology,

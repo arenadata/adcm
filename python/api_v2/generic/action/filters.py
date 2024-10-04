@@ -10,11 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cm.models import Action
+from django_filters import NumberFilter
 from django_filters.rest_framework import (
     BooleanFilter,
     CharFilter,
     FilterSet,
-    NumberFilter,
     OrderingFilter,
 )
 
@@ -26,7 +27,21 @@ class ActionFilter(FilterSet):
         label="Is Host Own Action", field_name="host_action", method="filter_is_host_own_action"
     )
     prototype_id = NumberFilter(field_name="prototype", label="Prototype ID")
-    ordering = OrderingFilter(fields={"id": "id"}, field_labels={"id": "ID"}, label="ordering")
+
+    ordering = OrderingFilter(
+        fields={"id": "id", "name": "name", "display_name": "displayName", "is_host_own_action": "isHostOwnAction"},
+        field_labels={
+            "id": "ID",
+            "name": "Name",
+            "display_name": "Display Name",
+            "is_host_own_action": "Is Host Own Action",
+        },
+        label="ordering",
+    )
+
+    class Meta:
+        model = Action
+        fields = ["id", "name", "display_name", "is_host_own_action", "prototype_id"]
 
     def filter_is_host_own_action(self, queryset, name, value):
         return queryset.filter(**{name: not value})

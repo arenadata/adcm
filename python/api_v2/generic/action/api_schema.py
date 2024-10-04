@@ -55,6 +55,20 @@ def document_action_viewset(object_type: str, operation_id_variant: str | None =
             parameters=[
                 DefaultParams.ordering_by("id"),
                 OpenApiParameter(
+                    name="name",
+                    required=False,
+                    location=OpenApiParameter.QUERY,
+                    description="Case insensitive and partial filter by name.",
+                    type=str,
+                ),
+                OpenApiParameter(
+                    name="displayName",
+                    required=False,
+                    location=OpenApiParameter.QUERY,
+                    description="Case insensitive and partial filter by display name.",
+                    type=str,
+                ),
+                OpenApiParameter(
                     name="isHostOwnAction",
                     required=False,
                     location=OpenApiParameter.QUERY,
