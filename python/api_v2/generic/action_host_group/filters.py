@@ -11,13 +11,28 @@
 # limitations under the License.
 
 from cm.models import ActionHostGroup
-from django_filters.rest_framework import CharFilter, FilterSet
+from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
 
 
 class ActionHostGroupFilter(FilterSet):
     name = CharFilter(field_name="name", label="Name", lookup_expr="icontains")
     has_host = CharFilter(field_name="hosts", label="Group Has Host", lookup_expr="fqdn__icontains", distinct=True)
+    description = CharFilter(field_name="description", label="Description", lookup_expr="icontains")
+
+    ordering = OrderingFilter(
+        fields={
+            "id": "id",
+            "name": "name",
+            "description": "description",
+        },
+        field_labels={
+            "id": "ID",
+            "name": "Name",
+            "description": "Description",
+        },
+        label="ordering",
+    )
 
     class Meta:
         model = ActionHostGroup
-        fields = ["name", "has_host"]
+        fields = ["name", "has_host", "description"]
