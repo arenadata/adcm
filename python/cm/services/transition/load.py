@@ -59,16 +59,16 @@ HostProviderNameIDsMap: TypeAlias = dict[HostProviderName, tuple[HostProviderID,
 HostNameIDMap: TypeAlias = dict[HostName, HostID]
 
 
-def load(data: TransitionPayload, report: Callable[[str], None] = print) -> None:
+def load(data: TransitionPayload, report: Callable[[str], None] = print) -> ClusterID:
     report("Load started...")
 
     report("Bundles discovery")
-    bundles = discover_bundles(data.bundles)
+    bundles = discover_bundles(data.bundles.keys())
     if len(bundles) != len(data.bundles):
-        missing_bundles = [
+        missing_bundles = "\n".join(
             str(data.bundles[missing_bundle_hash]) for missing_bundle_hash in set(data.bundles).difference(bundles)
-        ]
-        report(f"Not all bundles are installed.\nMissing:\n{'\n'.join(missing_bundles)}")
+        )
+        report(f"Not all bundles are installed.\nMissing:\n{missing_bundles}")
         message = "Bundles are missing in this ADCM"
         raise RuntimeError(message)
 
@@ -78,20 +78,19 @@ def load(data: TransitionPayload, report: Callable[[str], None] = print) -> None
         report(f"Some Host Providers exist, they will be used to create hosts from them: {', '.join(hostproviders)}")
 
     if len(hostproviders) != len(data.hostproviders):
-        report(f"Host Provider will be created: {', '.join(hp.name for hp in data.hostproviders)}")
+        missing_hostproviders = tuple(entry for entry in data.hostproviders if entry.name not in hostproviders)
+        report(f"Host Providers will be created: {', '.join(hp.name for hp in missing_hostproviders)}")
 
-        hostproviders |= create_new_hostproviders(
-            hostproviders=(entry for entry in data.hostproviders if entry.name not in hostproviders), bundles=bundles
-        )
+        hostproviders |= create_new_hostproviders(hostproviders=missing_hostproviders, bundles=bundles)
 
     report("Hosts creation")
     hosts = create_new_hosts(hosts=data.hosts, hostproviders=hostproviders)
 
     report("Cluster creation")
-    create_cluster(cluster=data.cluster, bundles=bundles, hosts=hosts)
+    return create_cluster(cluster=data.cluster, bundles=bundles, hosts=hosts)
 
 
-def discover_bundles(required_bundles: BundleHash) -> BundleHashIDMap:
+def discover_bundles(required_bundles: Iterable[BundleHash]) -> BundleHashIDMap:
     return dict(Bundle.objects.values_list("hash", "id").filter(hash__in=required_bundles))
 
 
@@ -99,7 +98,7 @@ def discover_hostproviders(hostproviders: dict[HostProviderName, BundleHash]) ->
     result = {}
 
     for id_, name, bundle_id, bundle_hash in HostProvider.objects.values_list(
-        "id", "name", "bundle_id", "bundle__hash"
+        "id", "name", "prototype__bundle_id", "prototype__bundle__hash"
     ).filter(name__in=hostproviders):
         if bundle_hash == hostproviders[name]:
             result[name] = (id_, bundle_id)
@@ -121,10 +120,12 @@ def create_new_hostproviders(
     for provider_info in hostproviders:
         bundle_id = bundles[provider_info.bundle]
         new_provider = add_host_provider(
-            prototype=provider_protos[bundle_id], name=provider_info.name, description=provider_info.description
+            prototype=provider_protos[provider_info.bundle],
+            name=provider_info.name,
+            description=provider_info.description,
         )
         result[provider_info.name] = (new_provider.id, bundle_id)
-        _restore_state(target=new_provider, condition=provider_info.state)
+        _restore_state(target=new_provider, condition=provider_info.condition)
 
     return result
 
@@ -154,12 +155,12 @@ def create_cluster(cluster: ClusterInfo, bundles: BundleHashIDMap, hosts: HostNa
 
     cluster_object = add_cluster(prototype=cluster_prototype, name=cluster.name, description=cluster.description)
     services_to_add = Prototype.objects.filter(
-        bundle_id=bundle_id, type=ObjectType.SERVICE, name__in=(service.name for service in cluster.services)
+        bundle_id=bundle_id, type=ObjectType.SERVICE, name__in=(service.name for service in cluster.services.values())
     )
     bulk_add_services_to_cluster(cluster=cluster_object, prototypes=services_to_add)
-    perform_host_to_cluster_map(cluster_id=cluster.pk, hosts=hosts.values(), status_service=notify)
+    perform_host_to_cluster_map(cluster_id=cluster_object.id, hosts=hosts.values(), status_service=notify)
 
-    _restore_state(target=cluster, condition=cluster.condition)
+    _restore_state(target=cluster_object, condition=cluster.condition)
 
     config_host_groups: deque[tuple[Cluster | ClusterObject | ServiceComponent, ConfigHostGroupInfo]] = deque(
         (cluster_object, group) for group in cluster.host_groups
@@ -188,7 +189,7 @@ def create_cluster(cluster: ClusterInfo, bundles: BundleHashIDMap, hosts: HostNa
             services_in_mm.append(service_object.id)
 
         for component_info in service_info.components.values():
-            component_object = component_object_mapping[component.name]
+            component_object = component_object_mapping[component_info.name]
             _restore_state(target=component_object, condition=component_info.condition)
             config_host_groups.extend((component_object, group) for group in component_info.host_groups)
             if component_info.maintenance_mode == "on":
@@ -219,7 +220,9 @@ def create_cluster(cluster: ClusterInfo, bundles: BundleHashIDMap, hosts: HostNa
 
     if config_host_groups:
         for owner, group in config_host_groups:
-            _create_group_config(owner=owner, group=group)
+            _create_group_config(owner=owner, group=group, hosts=hosts)
+
+    return cluster_object.id
 
 
 def _restore_state(
@@ -231,7 +234,8 @@ def _restore_state(
         )
 
     target.set_state(condition.state)
-    target.set_multi_state(condition.multi_state)
+    for multi_state in condition.multi_state:
+        target.set_multi_state(multi_state)
 
 
 def _create_group_config(
