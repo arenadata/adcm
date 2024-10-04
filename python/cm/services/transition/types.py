@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal, TypeAlias
 
 from core.types import ComponentName, HostName, HostProviderName, ServiceName
@@ -36,8 +36,8 @@ class BundleExtraInfo:
 class RestorableCondition:
     state: str
     multi_state: list[str]
-    config: ConfigurationDict | None
-    attr: ConfigurationDict | None
+    config: ConfigurationDict | None = None
+    attr: ConfigurationDict | None = None
 
 
 @dataclass(slots=True)
@@ -45,14 +45,14 @@ class HostProviderInfo:
     bundle: BundleHash
     name: HostProviderName
     description: str
-    state: RestorableCondition
+    condition: RestorableCondition
 
 
 @dataclass(slots=True)
 class HostInfo:
     hostprovider: HostProviderName
     name: HostName
-    state: RestorableCondition
+    condition: RestorableCondition
     maintenance_mode: LiteralMM
 
 
@@ -60,26 +60,26 @@ class HostInfo:
 class ConfigHostGroupInfo:
     name: str
     description: str
-    config: ConfigurationDict
-    attr: ConfigurationDict
-    hosts: list[HostName]
+    config: ConfigurationDict = field(default_factory=dict)
+    attr: ConfigurationDict = field(default_factory=dict)
+    hosts: list[HostName] = field(default_factory=list)
 
 
 @dataclass(slots=True)
 class ComponentInfo:
     name: ComponentName
-    state: RestorableCondition
+    condition: RestorableCondition
     maintenance_mode: LiteralMM
-    host_groups: list[ConfigHostGroupInfo]
+    host_groups: list[ConfigHostGroupInfo] = field(default_factory=list)
 
 
 @dataclass(slots=True)
 class ServiceInfo:
     name: ServiceName
-    state: RestorableCondition
-    components: list[ComponentInfo]
+    condition: RestorableCondition
     maintenance_mode: LiteralMM
-    host_groups: list[ConfigHostGroupInfo]
+    components: dict[ComponentName, ComponentInfo] = field(default_factory=dict)
+    host_groups: list[ConfigHostGroupInfo] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -94,10 +94,10 @@ class ClusterInfo:
     bundle: BundleHash
     name: str
     description: str
-    state: RestorableCondition
-    services: list[ServiceInfo]
-    mapping: list[NamedMappingEntry]
-    host_groups: list[ConfigHostGroupInfo]
+    condition: RestorableCondition
+    services: dict[ServiceName, ServiceInfo] = field(default_factory=dict)
+    mapping: list[NamedMappingEntry] = field(default_factory=list)
+    host_groups: list[ConfigHostGroupInfo] = field(default_factory=list)
 
 
 class TransitionPayload(BaseModel):

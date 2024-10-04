@@ -138,7 +138,7 @@ def create_new_hosts(hosts: Iterable[HostInfo], hostproviders: HostProviderNameI
         provider_id, bundle_id = hostproviders[host_info.hostprovider]
         host = create_host(bundle_id=bundle_id, provider_id=provider_id, fqdn=host_info.name, cluster=None)
         result[host_info.name] = host.id
-        _restore_state(target=host, condition=host_info.state)
+        _restore_state(target=host, condition=host_info.condition)
         if host_info.maintenance_mode == "on":
             hosts_in_mm.append(host.id)
 
@@ -159,7 +159,7 @@ def create_cluster(cluster: ClusterInfo, bundles: BundleHashIDMap, hosts: HostNa
     bulk_add_services_to_cluster(cluster=cluster_object, prototypes=services_to_add)
     perform_host_to_cluster_map(cluster_id=cluster.pk, hosts=hosts.values(), status_service=notify)
 
-    _restore_state(target=cluster, condition=cluster.state)
+    _restore_state(target=cluster, condition=cluster.condition)
 
     config_host_groups: deque[tuple[Cluster | ClusterObject | ServiceComponent, ConfigHostGroupInfo]] = deque(
         (cluster_object, group) for group in cluster.host_groups
@@ -180,16 +180,16 @@ def create_cluster(cluster: ClusterInfo, bundles: BundleHashIDMap, hosts: HostNa
     services_in_mm = deque()
     components_in_mm = deque()
 
-    for service_info in cluster.services:
+    for service_info in cluster.services.values():
         service_object, component_object_mapping = orm_objects[service_info.name]
-        _restore_state(target=service_object, condition=service_info.state)
+        _restore_state(target=service_object, condition=service_info.condition)
         config_host_groups.extend((service_object, group) for group in service_info.host_groups)
         if service_info.maintenance_mode == "on":
             services_in_mm.append(service_object.id)
 
-        for component_info in service_info.components:
+        for component_info in service_info.components.values():
             component_object = component_object_mapping[component.name]
-            _restore_state(target=component_object, condition=component_info.state)
+            _restore_state(target=component_object, condition=component_info.condition)
             config_host_groups.extend((component_object, group) for group in component_info.host_groups)
             if component_info.maintenance_mode == "on":
                 components_in_mm.append(component_object.id)
