@@ -37,7 +37,6 @@ from cm.models import (
     GroupConfig,
     Host,
     HostComponent,
-    HostInfo,
     HostProvider,
     MaintenanceMode,
     ServiceComponent,
@@ -49,6 +48,7 @@ from cm.services.transition.types import (
     ClusterInfo,
     ComponentInfo,
     ConfigHostGroupInfo,
+    HostInfo,
     HostProviderInfo,
     NamedMappingEntry,
     RestorableCondition,
@@ -224,7 +224,7 @@ def retrieve_cluster(
             | Q(object_type=service_ct, object_id__in=service_id_name_map)
             | Q(object_type=component_ct, object_id__in=component_id_name_map)
         )
-        .annotate(current_config_id=F("config__current_id"))
+        .annotate(current_config_id=F("config__current"))
         .select_related("object_type")
     ):
         group_info = ConfigHostGroupInfo(name=group.name, description=group.description)
@@ -260,9 +260,7 @@ def retrieve_bundles_info(ids: set[BundleID]) -> dict[BundleHash, BundleExtraInf
 def fill_configurations(config_acc: ConfigUpdateAcc) -> None:
     secrets = AnsibleSecrets()
 
-    for config_id, config, attr in (
-        ConfigLog.objects.filter(id__in=config_acc).values_list("id", "config", "attr").iterator(chunk_size=20)
-    ):
+    for config_id, config, attr in ConfigLog.objects.filter(id__in=config_acc).values_list("id", "config", "attr"):
         target = config_acc[config_id]
         target.config = secrets.reveal_secrets(config)
         target.attr = attr

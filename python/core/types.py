@@ -29,7 +29,9 @@ TaskID: TypeAlias = int
 ConfigID: TypeAlias = int
 ConcernID: TypeAlias = int
 
+HostProviderName: TypeAlias = str
 HostName: TypeAlias = str
+ClusterName: TypeAlias = str
 ServiceName: TypeAlias = str
 ComponentName: TypeAlias = str
 
