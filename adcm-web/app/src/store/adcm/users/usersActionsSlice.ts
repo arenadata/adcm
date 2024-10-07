@@ -1,4 +1,3 @@
-import { createSlice } from '@reduxjs/toolkit';
 import { AdcmGroupsApi, AdcmUsersApi, RequestError } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showSuccess } from '@store/notificationsSlice';
@@ -7,11 +6,10 @@ import { arePromisesResolved } from '@utils/promiseUtils';
 import { getUsers, refreshUsers } from './usersSlice';
 import { AdcmCreateUserPayload, AdcmGroup, AdcmUser, UpdateAdcmUserPayload } from '@models/adcm';
 import { PaginationParams, SortParams } from '@models/table';
+import { ModalState } from '@models/modal';
+import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 
-interface AdcmUsersActionState {
-  deleteDialog: {
-    id: number | null;
-  };
+interface AdcmUsersActionState extends ModalState<AdcmUser, 'user'> {
   createDialog: {
     isOpen: boolean;
     isCreating: boolean;
@@ -92,7 +90,7 @@ const openUserCreateDialog = createAsyncThunk('adcm/usersActions/openUserCreateD
 
 const openUserUpdateDialog = createAsyncThunk(
   'adcm/usersActions/openUserUpdateDialog',
-  async (user: AdcmUser, thunkAPI) => {
+  async (_user: AdcmUser, thunkAPI) => {
     try {
       thunkAPI.dispatch(loadGroups());
     } catch (error) {
@@ -153,7 +151,7 @@ const loadGroups = createAsyncThunk('adcm/usersActions/loadGroups', async (arg, 
 
 const createInitialState = (): AdcmUsersActionState => ({
   deleteDialog: {
-    id: null,
+    user: null,
   },
   createDialog: {
     isOpen: false,
@@ -175,27 +173,16 @@ const createInitialState = (): AdcmUsersActionState => ({
   selectedItemsIds: [],
 });
 
-const usersActionsSlice = createSlice({
+const usersActionsSlice = createCrudSlice({
   name: 'adcm/usersActions',
-  initialState: createInitialState(),
+  entityName: 'user',
+  createInitialState,
   reducers: {
     cleanupActions() {
       return createInitialState();
     },
-    openDeleteDialog(state, action) {
-      state.deleteDialog.id = action.payload;
-    },
-    closeDeleteDialog(state) {
-      state.deleteDialog.id = null;
-    },
     setSelectedItemsIds(state, action) {
       state.selectedItemsIds = action.payload;
-    },
-    closeUserCreateDialog(state) {
-      state.createDialog = createInitialState().createDialog;
-    },
-    closeUserUpdateDialog(state) {
-      state.updateDialog = createInitialState().updateDialog;
     },
     openUnblockDialog(state, action) {
       state.unblockDialog.ids = action.payload;
@@ -213,6 +200,7 @@ const usersActionsSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(deleteUsersWithUpdate.pending, (state) => {
+        state.selectedItemsIds = [];
         usersActionsSlice.caseReducers.closeDeleteDialog(state);
       })
       .addCase(blockUsers.fulfilled, (state) => {
@@ -245,7 +233,7 @@ const usersActionsSlice = createSlice({
         state.createDialog.isCreating = true;
       })
       .addCase(createUser.fulfilled, (state) => {
-        usersActionsSlice.caseReducers.closeUserCreateDialog(state);
+        usersActionsSlice.caseReducers.closeCreateDialog(state);
       })
       .addCase(createUser.rejected, (state) => {
         state.createDialog.isCreating = false;
@@ -254,7 +242,7 @@ const usersActionsSlice = createSlice({
         state.updateDialog.isUpdating = true;
       })
       .addCase(updateUser.fulfilled, (state) => {
-        usersActionsSlice.caseReducers.closeUserUpdateDialog(state);
+        usersActionsSlice.caseReducers.closeUpdateDialog(state);
       })
       .addCase(updateUser.rejected, (state) => {
         state.updateDialog.isUpdating = false;
@@ -266,8 +254,8 @@ export const {
   setSelectedItemsIds,
   openDeleteDialog,
   closeDeleteDialog,
-  closeUserCreateDialog,
-  closeUserUpdateDialog,
+  closeUpdateDialog: closeUserUpdateDialog,
+  closeCreateDialog: closeUserCreateDialog,
   openUnblockDialog,
   closeUnblockDialog,
   openBlockDialog,

@@ -1,4 +1,5 @@
 import { useDispatch, useStore } from '@hooks';
+import { AdcmUser } from '@models/adcm';
 import { closeDeleteDialog, deleteUsersWithUpdate } from '@store/adcm/users/usersActionsSlice';
 import { Dialog } from '@uikit';
 import React from 'react';
@@ -11,12 +12,13 @@ const AccessManagerUsersDeleteDialog: React.FC = () => {
       adcm: {
         users: { users },
         usersActions: {
-          deleteDialog: { id: deletableId },
+          deleteDialog: { user },
         },
       },
     }) => {
-      if (!deletableId) return null;
-      return users.find(({ id }) => id === deletableId) ?? null;
+      const deletableUserId = user as AdcmUser['id'];
+      if (!deletableUserId) return null;
+      return users.find(({ id }) => id === deletableUserId) ?? null;
     },
   );
 
