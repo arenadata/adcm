@@ -12,11 +12,12 @@ import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 interface AdcmUsersActionState extends ModalState<AdcmUser, 'user'> {
   createDialog: {
     isOpen: boolean;
-    isCreating: boolean;
   };
   updateDialog: {
     user: AdcmUser | null;
-    isUpdating: boolean;
+  };
+  deleteDialog: {
+    user: number | null;
   };
   unblockDialog: {
     ids: number[];
@@ -155,11 +156,9 @@ const createInitialState = (): AdcmUsersActionState => ({
   },
   createDialog: {
     isOpen: false,
-    isCreating: false,
   },
   updateDialog: {
     user: null,
-    isUpdating: false,
   },
   unblockDialog: {
     ids: [],
@@ -230,22 +229,22 @@ const usersActionsSlice = createCrudSlice({
         state.relatedData.groups = [];
       })
       .addCase(createUser.pending, (state) => {
-        state.createDialog.isCreating = true;
+        state.isActionInProgress = true;
       })
       .addCase(createUser.fulfilled, (state) => {
         usersActionsSlice.caseReducers.closeCreateDialog(state);
       })
       .addCase(createUser.rejected, (state) => {
-        state.createDialog.isCreating = false;
+        state.isActionInProgress = false;
       })
       .addCase(updateUser.pending, (state) => {
-        state.updateDialog.isUpdating = true;
+        state.isActionInProgress = true;
       })
       .addCase(updateUser.fulfilled, (state) => {
         usersActionsSlice.caseReducers.closeUpdateDialog(state);
       })
       .addCase(updateUser.rejected, (state) => {
-        state.updateDialog.isUpdating = false;
+        state.isActionInProgress = false;
       });
   },
 });

@@ -19,7 +19,7 @@ export const useRbacUserCreateDialog = () => {
   const dispatch = useDispatch();
   const users = useStore((s) => s.adcm.users.users);
   const isOpen = useStore((s) => s.adcm.usersActions.createDialog.isOpen);
-  const isCreating = useStore((s) => s.adcm.usersActions.createDialog.isCreating);
+  const isCreating = useStore((s) => s.adcm.usersActions.isActionInProgress);
   const groups = useStore((s) => s.adcm.usersActions.relatedData.groups);
   const authSettings = useStore((s) => s.auth.profile.authSettings);
   const isCurrentUserSuperUser = useStore((s) => s.auth.profile.isSuperUser);

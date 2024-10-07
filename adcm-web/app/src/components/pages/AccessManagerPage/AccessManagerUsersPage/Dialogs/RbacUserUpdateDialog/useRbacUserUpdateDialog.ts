@@ -18,7 +18,7 @@ const initialFormData: RbacUserFormData = {
 export const useRbacUserUpdateDialog = () => {
   const dispatch = useDispatch();
   const user = useStore((s) => s.adcm.usersActions.updateDialog.user);
-  const isUpdating = useStore((s) => s.adcm.usersActions.updateDialog.isUpdating);
+  const isUpdating = useStore((s) => s.adcm.usersActions.isActionInProgress);
   const groups = useStore((s) => s.adcm.usersActions.relatedData.groups);
   const isCurrentUserSuperUser = useStore((s) => s.auth.profile.isSuperUser);
   const authSettings = useStore((s) => s.auth.profile.authSettings);
