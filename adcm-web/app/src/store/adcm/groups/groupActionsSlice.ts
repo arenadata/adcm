@@ -1,5 +1,4 @@
 import { AdcmGroupsApi, AdcmUsersApi, RequestError } from '@api';
-import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
@@ -7,6 +6,8 @@ import { getGroups } from './groupsSlice';
 import { AdcmGroup, AdcmUpdateGroupPayload, AdcmCreateGroupPayload, AdcmUser } from '@models/adcm';
 import { PaginationParams, SortParams } from '@models/table';
 import { rejectedFilter } from '@utils/promiseUtils';
+import { ModalState } from '@models/modal';
+import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 
 const createGroup = createAsyncThunk(
   'adcm/groupActions/createGroup',
@@ -72,23 +73,23 @@ const deleteGroupsWithUpdate = createAsyncThunk('adcm/groupActions/deleteGroups'
     }
 
     await thunkAPI.dispatch(getGroups());
-    thunkAPI.dispatch(showSuccess({ message: 'Groups have been deleted' }));
+    const message = ids.length > 1 ? 'Groups have been deleted' : 'Group has been deleted';
+    thunkAPI.dispatch(showSuccess({ message }));
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
     return error;
   }
 });
 
-interface AdcmGroupsActionsState {
+interface AdcmGroupsActionsState extends ModalState<AdcmGroup, 'group'> {
   createDialog: {
     isOpen: boolean;
   };
   updateDialog: {
     group: AdcmGroup | null;
-    isUpdating: boolean;
   };
   deleteDialog: {
-    id: number | null;
+    group: number | null;
   };
   selectedItemsIds: number[];
   relatedData: {
@@ -102,10 +103,9 @@ const createInitialState = (): AdcmGroupsActionsState => ({
   },
   updateDialog: {
     group: null,
-    isUpdating: false,
   },
   deleteDialog: {
-    id: null,
+    group: null,
   },
   selectedItemsIds: [],
   relatedData: {
@@ -113,34 +113,16 @@ const createInitialState = (): AdcmGroupsActionsState => ({
   },
 });
 
-const groupsActionsSlice = createSlice({
+const groupsActionsSlice = createCrudSlice({
   name: 'adcm/groupsActions',
-  initialState: createInitialState(),
+  entityName: 'group',
+  createInitialState,
   reducers: {
     cleanupGroups() {
       return createInitialState();
     },
-    openCreateDialog(state) {
-      state.createDialog.isOpen = true;
-    },
-    closeCreateDialog(state) {
-      state.createDialog.isOpen = false;
-    },
-    openUpdateDialog(state, action) {
-      state.updateDialog.group = action.payload;
-    },
-    closeUpdateDialog(state) {
-      state.updateDialog.group = null;
-      state.updateDialog.isUpdating = false;
-    },
     cleanupItemsForActions(state) {
       state.selectedItemsIds = createInitialState().selectedItemsIds;
-    },
-    openDeleteDialog(state, action) {
-      state.deleteDialog.id = action.payload;
-    },
-    closeDeleteDialog(state) {
-      state.deleteDialog.id = null;
     },
     setSelectedItemsIds(state, action) {
       state.selectedItemsIds = action.payload;
@@ -152,13 +134,13 @@ const groupsActionsSlice = createSlice({
         groupsActionsSlice.caseReducers.closeCreateDialog(state);
       })
       .addCase(updateGroup.pending, (state) => {
-        state.updateDialog.isUpdating = true;
+        state.isActionInProgress = true;
       })
       .addCase(updateGroup.fulfilled, (state) => {
         groupsActionsSlice.caseReducers.closeUpdateDialog(state);
       })
       .addCase(updateGroup.rejected, (state) => {
-        state.updateDialog.isUpdating = false;
+        state.isActionInProgress = false;
       })
       .addCase(loadUsers.fulfilled, (state, action) => {
         state.relatedData.users = action.payload.results;
@@ -167,7 +149,7 @@ const groupsActionsSlice = createSlice({
         state.relatedData.users = [];
       })
       .addCase(deleteGroupsWithUpdate.pending, (state) => {
-        state.deleteDialog.id = null;
+        state.deleteDialog.group = null;
       })
       .addCase(getGroups.pending, (state) => {
         state.selectedItemsIds = [];

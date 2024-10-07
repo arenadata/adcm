@@ -6,7 +6,7 @@ import React from 'react';
 const AccessManagerGroupsDeleteDialog: React.FC = () => {
   const dispatch = useDispatch();
 
-  const deletableId = useStore(({ adcm }) => adcm.groupsActions.deleteDialog.id);
+  const deletableId = useStore(({ adcm }) => adcm.groupsActions.deleteDialog.group);
   const groups = useStore(({ adcm }) => adcm.groups.groups);
 
   const isOpen = deletableId !== null;
