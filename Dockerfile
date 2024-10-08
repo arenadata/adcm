@@ -4,7 +4,7 @@ WORKDIR /code
 RUN sh -c "make"
 
 
-FROM node:18.16-alpine AS ui_builder
+FROM node:20.9.0-alpine AS ui_builder
 ARG ADCM_VERSION
 ENV ADCM_VERSION=$ADCM_VERSION
 COPY ./adcm-web/app /code
