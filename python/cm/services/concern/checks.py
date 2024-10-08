@@ -111,7 +111,7 @@ def filter_objects_with_configuration_issues(config_spec: FlatSpec, *objects: Ob
                 group_name = None
 
             if group_name:
-                if not attr.get(group_name, {}).get("active", False):
+                if not attr.get(group_name, {}).get("active", True):
                     continue
 
                 if config[group_name][field_name] is None:

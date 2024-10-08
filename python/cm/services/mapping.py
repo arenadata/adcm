@@ -170,8 +170,6 @@ def _recreate_mapping_in_db(topology: ClusterTopology) -> None:
 def _update_concerns(
     old_topology: ClusterTopology, new_topology: ClusterTopology, bundle_restrictions: BundleRestrictions
 ) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]:
-    # todo HC may break (?)
-    #  We can't be sure this method is called after some sort of "check"
     cluster = CoreObjectDescriptor(id=old_topology.cluster_id, type=ADCMCoreType.CLUSTER)
     if not cluster_mapping_has_issue(cluster_id=cluster.id, bundle_restrictions=bundle_restrictions):
         delete_issue(owner=cluster, cause=ConcernCause.HOSTCOMPONENT)
@@ -193,6 +191,15 @@ def _update_concerns(
                 targets=(CoreObjectDescriptor(id=host_id, type=ADCMCoreType.HOST) for host_id in unmapped),
                 lock_id=lock.id,
             )
+            if ADCMCoreType.HOST not in removed:
+                removed[ADCMCoreType.HOST] = {host_id: {lock.id} for host_id in unmapped}
+            else:
+                hosts_node = removed[ADCMCoreType.HOST]
+                for host_id in unmapped:
+                    if host_id in hosts_node:
+                        hosts_node[host_id].add(lock.id)
+                    else:
+                        hosts_node[host_id] = {lock.id}
 
         mapped = unmapped_in_previous_topology - unmapped_in_new_topology
         if mapped:
@@ -200,9 +207,16 @@ def _update_concerns(
                 targets=(CoreObjectDescriptor(id=host_id, type=ADCMCoreType.HOST) for host_id in mapped),
                 lock_id=lock.id,
             )
+            if ADCMCoreType.HOST not in added:
+                added[ADCMCoreType.HOST] = {host_id: {lock.id} for host_id in mapped}
+            else:
+                hosts_node = added[ADCMCoreType.HOST]
+                for host_id in mapped:
+                    if host_id in hosts_node:
+                        hosts_node[host_id].add(lock.id)
+                    else:
+                        hosts_node[host_id] = {lock.id}
 
-    # since mechanism for locks redistribution is different from the one for flags/issues,
-    # there's no need in considering them in concern update events
     return added, removed
 
 
