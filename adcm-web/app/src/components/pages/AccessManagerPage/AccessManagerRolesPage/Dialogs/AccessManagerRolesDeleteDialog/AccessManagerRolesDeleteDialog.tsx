@@ -11,7 +11,7 @@ const AccessManagerRolesDeleteDialog: React.FC = () => {
       adcm: {
         roles: { roles },
         rolesActions: {
-          deleteDialog: { id: deletableId },
+          deleteDialog: { role: deletableId },
         },
       },
     }) => {

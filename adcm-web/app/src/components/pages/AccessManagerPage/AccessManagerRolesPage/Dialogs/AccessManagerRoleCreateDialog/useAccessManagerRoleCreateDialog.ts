@@ -16,7 +16,7 @@ const initialFormData: AdcmCreateRoleFormData = {
 
 export const useAccessManagerRoleCreateDialog = () => {
   const dispatch = useDispatch();
-  const isOpen = useStore((s) => s.adcm.rolesActions.isCreateDialogOpened);
+  const isOpen = useStore((s) => s.adcm.rolesActions.createDialog.isOpen);
   const roles = useStore((s) => s.adcm.roles.roles);
 
   const { formData, handleChangeFormData, setFormData, errors, setErrors, isValid } =

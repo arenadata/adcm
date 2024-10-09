@@ -1,4 +1,3 @@
-import { createSlice } from '@reduxjs/toolkit';
 import { RequestError, AdcmRolesApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showSuccess } from '@store/notificationsSlice';
@@ -6,12 +5,13 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { getRoles } from './rolesSlice';
 import { AdcmCreateRolePayload, AdcmRole, AdcmRoleType, UpdateRolePayload } from '@models/adcm';
 import { SortParams } from '@models/table';
+import { ModalState } from '@models/modal';
+import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 
-interface AdcmRolesActionState {
+interface AdcmRolesActionState extends ModalState<AdcmRole, 'role'> {
   deleteDialog: {
-    id: number | null;
+    role: number | null;
   };
-  isCreateDialogOpened: boolean;
   updateDialog: {
     role: AdcmRole | null;
   };
@@ -23,10 +23,12 @@ interface AdcmRolesActionState {
 }
 
 const createInitialState = (): AdcmRolesActionState => ({
-  deleteDialog: {
-    id: null,
+  createDialog: {
+    isOpen: false,
   },
-  isCreateDialogOpened: false,
+  deleteDialog: {
+    role: null,
+  },
   updateDialog: {
     role: null,
   },
@@ -131,18 +133,13 @@ const openUpdateDialog = createAsyncThunk('adcm/role/editRoleDialog/open', async
   }
 });
 
-const rolesActionsSlice = createSlice({
+const rolesActionsSlice = createCrudSlice({
   name: 'adcm/rolesActions',
-  initialState: createInitialState(),
+  entityName: 'role',
+  createInitialState,
   reducers: {
     cleanupActions() {
       return createInitialState();
-    },
-    openDeleteDialog(state, action) {
-      state.deleteDialog.id = action.payload;
-    },
-    closeDeleteDialog(state) {
-      state.deleteDialog.id = null;
     },
     closeCreateDialog() {
       return createInitialState();
@@ -156,7 +153,7 @@ const rolesActionsSlice = createSlice({
       rolesActionsSlice.caseReducers.closeDeleteDialog(state);
     });
     builder.addCase(openCreateDialog.fulfilled, (state) => {
-      state.isCreateDialogOpened = true;
+      state.createDialog.isOpen = true;
     });
     builder.addCase(openUpdateDialog.fulfilled, (state, action) => {
       state.updateDialog.role = action.meta.arg;
