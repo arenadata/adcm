@@ -3,10 +3,10 @@ import { createAsyncThunk } from '@store/redux';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { getGroups } from './groupsSlice';
-import { AdcmGroup, AdcmUpdateGroupPayload, AdcmCreateGroupPayload, AdcmUser } from '@models/adcm';
-import { PaginationParams, SortParams } from '@models/table';
+import type { AdcmGroup, AdcmUpdateGroupPayload, AdcmCreateGroupPayload, AdcmUser } from '@models/adcm';
+import type { PaginationParams, SortParams } from '@models/table';
 import { rejectedFilter } from '@utils/promiseUtils';
-import { ModalState } from '@models/modal';
+import type { ModalState } from '@models/modal';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 
 const createGroup = createAsyncThunk(

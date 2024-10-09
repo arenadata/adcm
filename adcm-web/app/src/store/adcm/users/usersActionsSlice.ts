@@ -4,9 +4,9 @@ import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { arePromisesResolved } from '@utils/promiseUtils';
 import { getUsers, refreshUsers } from './usersSlice';
-import { AdcmCreateUserPayload, AdcmGroup, AdcmUser, UpdateAdcmUserPayload } from '@models/adcm';
-import { PaginationParams, SortParams } from '@models/table';
-import { ModalState } from '@models/modal';
+import type { AdcmCreateUserPayload, AdcmGroup, AdcmUser, UpdateAdcmUserPayload } from '@models/adcm';
+import type { PaginationParams, SortParams } from '@models/table';
+import type { ModalState } from '@models/modal';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 
 interface AdcmUsersActionState extends ModalState<AdcmUser, 'user'> {

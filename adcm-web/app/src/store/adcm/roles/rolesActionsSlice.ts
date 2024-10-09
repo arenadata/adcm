@@ -3,9 +3,9 @@ import { createAsyncThunk } from '@store/redux';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { getRoles } from './rolesSlice';
-import { AdcmCreateRolePayload, AdcmRole, AdcmRoleType, UpdateRolePayload } from '@models/adcm';
+import { type AdcmCreateRolePayload, type AdcmRole, AdcmRoleType, type UpdateRolePayload } from '@models/adcm';
 import { SortParams } from '@models/table';
-import { ModalState } from '@models/modal';
+import type { ModalState } from '@models/modal';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 
 interface AdcmRolesActionState extends ModalState<AdcmRole, 'role'> {
