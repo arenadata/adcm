@@ -24,8 +24,8 @@ from cm.models import (
     Cluster,
     Component,
     Host,
-    HostProvider,
     PrototypeConfig,
+    Provider,
     Service,
 )
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver
@@ -78,7 +78,7 @@ def insert_service_ids(
 
 
 def get_action_configuration(
-    action_: Action, object_: Cluster | Service | Component | HostProvider | Host
+    action_: Action, object_: Cluster | Service | Component | Provider | Host
 ) -> tuple[dict | None, dict | None, dict | None]:
     if action_.config_jinja:
         prototype_configs, _ = get_jinja_config(action=action_, cluster_relative_object=object_)

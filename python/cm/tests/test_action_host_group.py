@@ -34,15 +34,11 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
 
         self.bundles_dir = Path(__file__).parent / "bundles"
 
-        self.hostprovider = self.add_provider(
+        self.provider = self.add_provider(
             bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
         )
-        self.host_1 = self.add_host(
-            bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-1"
-        )
-        self.host_2 = self.add_host(
-            bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-2"
-        )
+        self.host_1 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-2")
 
         self.cluster = self.add_cluster(
             bundle=self.add_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
@@ -57,7 +53,7 @@ class TestActionHostGroup(BusinessLogicMixin, BaseTestCase):
         )
 
         self.context = {
-            "hostprovider_bundle": self.hostprovider.prototype.bundle,
+            "hostprovider_bundle": self.provider.prototype.bundle,
             "cluster_bundle": self.cluster.prototype.bundle,
             "datadir": self.directories["DATA_DIR"],
             "stackdir": self.directories["STACK_DIR"],

@@ -158,8 +158,8 @@ def extract_core_object_from_lookup_kwargs(**kwargs) -> CoreObjectDescriptor:
         parent = CoreObjectDescriptor(id=int(kwargs["service_pk"]), type=ADCMCoreType.SERVICE)
         extra_filter = {"cluster_id": kwargs["cluster_pk"]}
 
-    elif lookup_keys.issuperset({"hostprovider_pk"}):
-        parent = CoreObjectDescriptor(id=int(kwargs["hostprovider_pk"]), type=ADCMCoreType.HOSTPROVIDER)
+    elif lookup_keys.issuperset({"provider_pk"}):
+        parent = CoreObjectDescriptor(id=int(kwargs["provider_pk"]), type=ADCMCoreType.PROVIDER)
 
     elif lookup_keys.issuperset({"host_pk"}):
         parent = CoreObjectDescriptor(id=int(kwargs["host_pk"]), type=ADCMCoreType.HOST)

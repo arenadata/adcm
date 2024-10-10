@@ -31,9 +31,9 @@ from cm.models import (
     ConfigLog,
     Host,
     HostComponent,
-    HostProvider,
     ObjectConfig,
     Prototype,
+    Provider,
     Service,
 )
 
@@ -195,7 +195,7 @@ def get_provider(provider_id):
         "state",
         "_multi_state",
     )
-    provider = get_object(HostProvider, provider_id, fields)
+    provider = get_object(Provider, provider_id, fields)
     provider["config"] = get_config(provider["config"])
     bundle = get_bundle(provider.pop("prototype"))
     provider["bundle_hash"] = bundle["hash"]
@@ -343,10 +343,10 @@ def dump(cluster_id, output):
 
     host_ids = [host["id"] for host in data["hosts"]]
 
-    for provider_obj in HostProvider.objects.filter(id__in=provider_ids):
+    for provider_obj in Provider.objects.filter(id__in=provider_ids):
         provider, bundle = get_provider(provider_obj.id)
         data["providers"].append(provider)
-        data["groups"].extend(get_groups(provider_obj.id, "hostprovider"))
+        data["groups"].extend(get_groups(provider_obj.id, "provider"))
         data["bundles"][bundle["hash"]] = bundle
 
     for service_obj in Service.objects.filter(cluster_id=cluster["id"]):

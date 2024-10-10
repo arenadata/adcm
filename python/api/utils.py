@@ -26,8 +26,8 @@ OBJECT_TYPES_DICT = {
     "cluster": "cluster",
     "service": "service",
     "component": "component",
-    "provider": "hostprovider",
-    "host provider": "hostprovider",
+    "provider": "provider",
+    "host provider": "provider",
     "host": "host",
 }
 

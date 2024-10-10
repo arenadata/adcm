@@ -12,7 +12,7 @@
 
 
 from audit.models import AuditObject
-from cm.models import Action, HostProvider, Prototype, Upgrade
+from cm.models import Action, Prototype, Provider, Upgrade
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -26,7 +26,7 @@ from rest_framework.status import (
 from api_v2.tests.base import BaseAPITestCase
 
 
-class TestHostProviderAudit(BaseAPITestCase):
+class TestProviderAudit(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -62,7 +62,7 @@ class TestHostProviderAudit(BaseAPITestCase):
             operation_name="Provider created",
             operation_type="create",
             operation_result="success",
-            **self.prepare_audit_object_arguments(expected_object=HostProvider.objects.get(pk=response.json()["id"])),
+            **self.prepare_audit_object_arguments(expected_object=Provider.objects.get(pk=response.json()["id"])),
         )
 
     def test_create_no_perms_denied(self):
@@ -155,7 +155,7 @@ class TestHostProviderAudit(BaseAPITestCase):
         )
 
     def test_delete_non_existent_fail(self):
-        response = (self.client.v2 / "hostproviders" / self.get_non_existent_pk(model=HostProvider)).delete()
+        response = (self.client.v2 / "hostproviders" / self.get_non_existent_pk(model=Provider)).delete()
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
@@ -228,7 +228,7 @@ class TestHostProviderAudit(BaseAPITestCase):
         )
 
     def test_update_config_not_exists_fail(self):
-        response = (self.client.v2 / "hostproviders" / self.get_non_existent_pk(model=HostProvider) / "configs").post(
+        response = (self.client.v2 / "hostproviders" / self.get_non_existent_pk(model=Provider) / "configs").post(
             data=self.config_post_data,
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)

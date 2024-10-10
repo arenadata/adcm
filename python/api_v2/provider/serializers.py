@@ -13,7 +13,7 @@
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
 from cm.errors import AdcmEx
-from cm.models import HostProvider, ObjectType, Prototype
+from cm.models import ObjectType, Prototype, Provider
 from cm.upgrade import get_upgrade
 from rest_framework.serializers import (
     CharField,
@@ -26,7 +26,7 @@ from api_v2.concern.serializers import ConcernSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
 
 
-class HostProviderSerializer(ModelSerializer):
+class ProviderSerializer(ModelSerializer):
     state = CharField(read_only=True)
     prototype = PrototypeRelatedSerializer(read_only=True)
     description = CharField(required=False)
@@ -35,7 +35,7 @@ class HostProviderSerializer(ModelSerializer):
     concerns = ConcernSerializer(read_only=True, many=True)
 
     class Meta:
-        model = HostProvider
+        model = Provider
         fields = [
             "id",
             "name",
@@ -49,15 +49,15 @@ class HostProviderSerializer(ModelSerializer):
         ]
 
     @staticmethod
-    def get_is_upgradable(host_provider: HostProvider) -> bool:
+    def get_is_upgradable(host_provider: Provider) -> bool:
         return bool(get_upgrade(obj=host_provider))
 
     @staticmethod
-    def get_main_info(host_provider: HostProvider) -> str | None:
+    def get_main_info(host_provider: Provider) -> str | None:
         return get_main_info(obj=host_provider)
 
 
-class HostProviderCreateSerializer(EmptySerializer):
+class ProviderCreateSerializer(EmptySerializer):
     prototype_id = IntegerField()
     name = CharField()
     description = CharField(required=False, allow_blank=True)
@@ -68,9 +68,3 @@ class HostProviderCreateSerializer(EmptySerializer):
             raise AdcmEx(code="HOSTPROVIDER_CREATE_ERROR", msg=f"Can't find hostprovider prototype with id `{value}`")
 
         return value
-
-
-class HostProviderSerializerForHosts(ModelSerializer):
-    class Meta:
-        model = HostProvider
-        fields = ["id", "name", "display_name"]

@@ -29,8 +29,8 @@ from cm.models import (
     Cluster,
     ConfigLog,
     Host,
-    HostProvider,
     PrototypeConfig,
+    Provider,
     Service,
 )
 from cm.status_api import send_config_creation_event
@@ -183,7 +183,7 @@ def set_host_config(host_id: int, config: dict) -> PluginResult:
 
 
 def set_provider_config(provider_id: int, config: dict) -> PluginResult:
-    obj = HostProvider.obj.get(id=provider_id)
+    obj = Provider.obj.get(id=provider_id)
 
     return update_config(obj=obj, conf=config)
 

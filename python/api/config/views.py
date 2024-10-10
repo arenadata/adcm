@@ -49,20 +49,10 @@ def get_config_version(queryset, objconf, version) -> ConfigLog:
     return config_log
 
 
-def type_to_model(object_type):
-    if object_type == "provider":
-        object_type = "hostprovider"
-
-    if object_type == "service":
-        object_type = "service"
-
-    return object_type
-
-
 def get_obj(object_type, object_id):
     model = get_model_by_type(object_type)
     obj = model.obj.get(id=object_id)
-    object_config = check_obj(ObjectConfig, {type_to_model(object_type): obj}, "CONFIG_NOT_FOUND")
+    object_config = check_obj(ObjectConfig, {object_type: obj}, "CONFIG_NOT_FOUND")
 
     return obj, object_config
 
@@ -112,7 +102,7 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
     def post(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         obj, object_config = get_obj(object_type, object_id)
-        check_config_perm(user=request.user, action_type="change", model=type_to_model(object_type), obj=obj)
+        check_config_perm(user=request.user, action_type="change", model=object_type, obj=obj)
         try:
             config_log = self.get_queryset().get(obj_ref=object_config, id=object_config.current)
         except ConfigLog.DoesNotExist:
@@ -175,7 +165,7 @@ class ConfigHistoryRestoreView(PermissionListMixin, GenericUIView):
     def patch(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         object_type, object_id, version = get_object_type_id_version(**kwargs)
         obj, object_config = get_obj(object_type, object_id)
-        check_config_perm(user=request.user, action_type="change", model=type_to_model(object_type), obj=obj)
+        check_config_perm(user=request.user, action_type="change", model=object_type, obj=obj)
         config_log = get_config_version(self.get_queryset(), object_config, version)
         serializer = self.get_serializer(config_log, data=request.data)
 

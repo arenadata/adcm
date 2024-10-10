@@ -16,8 +16,8 @@ from cm.models import (
     Cluster,
     Component,
     Host,
-    HostProvider,
     Prototype,
+    Provider,
     Service,
 )
 from django.contrib.auth.models import User as AuthUser
@@ -34,7 +34,7 @@ from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP, AuditObject, AuditUser
 @receiver(signal=post_delete, sender=Service)
 @receiver(signal=post_delete, sender=Component)
 @receiver(signal=post_delete, sender=Host)
-@receiver(signal=post_delete, sender=HostProvider)
+@receiver(signal=post_delete, sender=Provider)
 @receiver(signal=post_delete, sender=Bundle)
 @receiver(signal=post_delete, sender=ADCM)
 @receiver(signal=post_delete, sender=Prototype)

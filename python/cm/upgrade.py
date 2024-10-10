@@ -51,11 +51,11 @@ from cm.models import (
     ConfigLog,
     Host,
     HostComponent,
-    HostProvider,
     MaintenanceMode,
     ObjectType,
     Prototype,
     PrototypeImport,
+    Provider,
     Service,
     Upgrade,
 )
@@ -77,7 +77,7 @@ from cm.status_api import send_prototype_and_state_update_event
 from cm.utils import obj_ref
 
 
-def check_upgrade(obj: Cluster | HostProvider, upgrade: Upgrade) -> tuple[bool, str]:
+def check_upgrade(obj: Cluster | Provider, upgrade: Upgrade) -> tuple[bool, str]:
     if obj.locked:
         concerns = [concern.name or "Action lock" for concern in obj.concerns.order_by("id")]
 
@@ -102,7 +102,7 @@ def check_upgrade(obj: Cluster | HostProvider, upgrade: Upgrade) -> tuple[bool, 
     return True, ""
 
 
-def get_upgrade(obj: Cluster | HostProvider, order=None) -> list[Upgrade]:
+def get_upgrade(obj: Cluster | Provider, order=None) -> list[Upgrade]:
     res = []
     for upgrade in Upgrade.objects.filter(bundle__name=obj.prototype.bundle.name):
         success, _ = _check_upgrade_version(prototype=obj.prototype, upgrade=upgrade)
@@ -137,7 +137,7 @@ def get_upgrade(obj: Cluster | HostProvider, order=None) -> list[Upgrade]:
 
 
 def do_upgrade(
-    obj: Cluster | HostProvider,
+    obj: Cluster | Provider,
     upgrade: Upgrade,
     config: dict,
     attr: dict,
@@ -212,18 +212,18 @@ def do_upgrade(
     return {"id": obj.id, "upgradable": bool(get_upgrade(obj=obj)), "task_id": task_id}
 
 
-def bundle_switch(obj: Cluster | HostProvider, upgrade: Upgrade) -> None:
+def bundle_switch(obj: Cluster | Provider, upgrade: Upgrade) -> None:
     if isinstance(obj, Cluster):
         switch = _ClusterBundleSwitch(target=obj, upgrade=upgrade)
-    elif isinstance(obj, HostProvider):
-        switch = _HostProviderBundleSwitch(target=obj, upgrade=upgrade)
+    elif isinstance(obj, Provider):
+        switch = _ProviderBundleSwitch(target=obj, upgrade=upgrade)
     else:
         raise AdcmEx(code="UPGRADE_ERROR", msg="can upgrade only cluster or host provider")
 
     switch.perform()
 
 
-def bundle_revert(obj: Cluster | HostProvider) -> None:
+def bundle_revert(obj: Cluster | Provider) -> None:
     upgraded_bundle = obj.prototype.bundle
     old_bundle = Bundle.objects.get(pk=obj.before_upgrade["bundle_id"])
     old_proto = Prototype.objects.filter(bundle=old_bundle, name=old_bundle.name).first()
@@ -290,7 +290,7 @@ def bundle_revert(obj: Cluster | HostProvider) -> None:
             checks_func=check_nothing,
         )
 
-    if isinstance(obj, HostProvider):
+    if isinstance(obj, Provider):
         for host in Host.objects.filter(provider=obj):
             old_host_proto = Prototype.objects.get(bundle=old_bundle, type="host", name=host.prototype.name)
             _revert_object(obj=host, old_proto=old_host_proto)
@@ -470,7 +470,7 @@ def _set_before_upgrade(obj: ADCMEntity) -> None:
     obj.save(update_fields=["before_upgrade"])
 
 
-def _update_before_upgrade(obj: Cluster | HostProvider) -> None:
+def _update_before_upgrade(obj: Cluster | Provider) -> None:
     _set_before_upgrade(obj=obj)
 
     if isinstance(obj, Cluster):
@@ -479,13 +479,13 @@ def _update_before_upgrade(obj: Cluster | HostProvider) -> None:
             for component in Component.objects.filter(service=service, cluster=obj):
                 _set_before_upgrade(obj=component)
 
-    if isinstance(obj, HostProvider):
+    if isinstance(obj, Provider):
         for host in Host.objects.filter(provider=obj):
             _set_before_upgrade(obj=host)
 
 
 class _BundleSwitch(ABC):
-    def __init__(self, target: Cluster | HostProvider, upgrade: Upgrade):
+    def __init__(self, target: Cluster | Provider, upgrade: Upgrade):
         self._target = target
         self._upgrade = upgrade
 
@@ -601,8 +601,8 @@ class _ClusterBundleSwitch(_BundleSwitch):
         return obj_type_map
 
 
-class _HostProviderBundleSwitch(_BundleSwitch):
-    def __init__(self, target: HostProvider, upgrade: Upgrade):
+class _ProviderBundleSwitch(_BundleSwitch):
+    def __init__(self, target: Provider, upgrade: Upgrade):
         super().__init__(target, upgrade)
 
     def _upgrade_children(self, old_prototype: Prototype, new_prototype: Prototype) -> None:  # noqa: ARG002
@@ -661,8 +661,8 @@ class _HostProviderBundleSwitch(_BundleSwitch):
 
         return added, removed
 
-    def _get_objects_map_for_policy_update(self) -> dict[HostProvider | Host, ContentType]:
-        obj_type_map = {self._target: ContentType.objects.get_for_model(HostProvider)}
+    def _get_objects_map_for_policy_update(self) -> dict[Provider | Host, ContentType]:
+        obj_type_map = {self._target: ContentType.objects.get_for_model(Provider)}
 
         host_content_type = ContentType.objects.get_for_model(Host)
         for host in Host.objects.filter(provider=self._target):

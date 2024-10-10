@@ -36,7 +36,7 @@ def audit_task_finish(task: Task, task_result: ExecutionStatus) -> None:
     audit_context.object = AuditObject.objects.filter(
         object_id=str(task.target.id),
         object_type=AuditObjectType(task.target.type.value)
-        if task.target.type != ADCMCoreType.HOSTPROVIDER
+        if task.target.type != ADCMCoreType.PROVIDER
         else AuditObjectType.PROVIDER,
     ).first()
     audit_context.save()

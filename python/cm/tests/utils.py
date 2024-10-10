@@ -28,11 +28,11 @@ from cm.models import (
     ConfigLog,
     Host,
     HostComponent,
-    HostProvider,
     JobLog,
     ObjectConfig,
     Prototype,
     PrototypeConfig,
+    Provider,
     Service,
     TaskLog,
 )
@@ -125,12 +125,12 @@ def gen_component(
     )
 
 
-def gen_provider(name: str | None = None, bundle=None, prototype=None) -> HostProvider:
+def gen_provider(name: str | None = None, bundle=None, prototype=None) -> Provider:
     """Generate host provider for specified prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
         prototype = gen_prototype(bundle, "provider")
-    return HostProvider.objects.create(
+    return Provider.objects.create(
         name=name or gen_name("provider_"),
         prototype=prototype,
     )

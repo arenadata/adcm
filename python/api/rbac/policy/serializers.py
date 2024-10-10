@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Cluster, Component, Host, HostProvider, Service
+from cm.models import Cluster, Component, Host, Provider, Service
 from cm.utils import get_obj_type
 from rbac.models import Group, Policy, Role, RoleTypes
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
@@ -63,7 +63,7 @@ class ObjectField(JSONField):
             "cluster": Cluster,
             "service": Service,
             "component": Component,
-            "provider": HostProvider,
+            "provider": Provider,
             "host": Host,
         }
 

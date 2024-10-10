@@ -364,7 +364,7 @@ class TestConcernsRedistribution(BaseTestCase):
         self.cluster = self.hierarchy["cluster"]
         self.service = self.hierarchy["service"]
         self.component = self.hierarchy["component"]
-        self.hostprovider = self.hierarchy["provider"]
+        self.provider = self.hierarchy["provider"]
         self.host = self.hierarchy["host"]
 
         for object_ in self.hierarchy.values():
@@ -387,7 +387,7 @@ class TestConcernsRedistribution(BaseTestCase):
         self.assertEqual(len(concerns_before), 4)
         self.assertEqual(
             set(map(attrgetter("owner_type"), concerns_before)),
-            {self.hostprovider.content_type, self.host.content_type},
+            {self.provider.content_type, self.host.content_type},
         )
 
         with patch("cm.issue._issue_check_map", self.MOCK_ISSUE_CHECK_MAP_FOR_HOST_TO_CLUSTER_MAPPING):
@@ -397,5 +397,5 @@ class TestConcernsRedistribution(BaseTestCase):
         concerns_after = self.host.concerns.all()
         self.assertEqual(len(concerns_after), 4)
         self.assertEqual(
-            set(map(attrgetter("owner_type"), concerns_after)), {self.hostprovider.content_type, self.host.content_type}
+            set(map(attrgetter("owner_type"), concerns_after)), {self.provider.content_type, self.host.content_type}
         )

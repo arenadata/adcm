@@ -142,7 +142,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
                 operation: up
                 name: adcm_outdated_config
             """,
-            targets=(CoreObjectDescriptor(id=self.provider.id, type=ADCMCoreType.HOSTPROVIDER),),
+            targets=(CoreObjectDescriptor(id=self.provider.id, type=ADCMCoreType.PROVIDER),),
         )
 
     def test_raise_default_flag_changed_message_on_component_from_context_success(self) -> None:

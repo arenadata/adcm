@@ -18,9 +18,9 @@ from cm.models import (
     MAINTENANCE_MODE_BOTH_CASES_CHOICES,
     Action,
     Host,
-    HostProvider,
     MaintenanceMode,
     Prototype,
+    Provider,
 )
 from cm.status_api import get_host_status
 from cm.validators import HostUniqueValidator, StartMidEndValidator
@@ -76,7 +76,7 @@ class HostSerializer(EmptySerializer):
 
     @staticmethod
     def validate_provider_id(provider_id):
-        return check_obj(HostProvider, provider_id)
+        return check_obj(Provider, provider_id)
 
     def create(self, validated_data):
         return add_host(
@@ -174,7 +174,7 @@ class ProvideHostSerializer(HostSerializer):
     provider_id = IntegerField(read_only=True)
 
     def create(self, validated_data):
-        provider = check_obj(HostProvider, self.context.get("provider_id"))
+        provider = check_obj(Provider, self.context.get("provider_id"))
         proto = Prototype.obj.get(bundle=provider.prototype.bundle, type="host")
 
         return add_host(proto, provider, validated_data.get("fqdn"), validated_data.get("description", ""))

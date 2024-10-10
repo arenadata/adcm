@@ -24,8 +24,8 @@ from cm.models import (
     Cluster,
     Component,
     Host,
-    HostProvider,
     Prototype,
+    Provider,
     Service,
 )
 from cm.services.config import retrieve_config_attr_pairs
@@ -75,7 +75,7 @@ def extract_objects_before_upgrade(
                 (Service, ADCMCoreType.SERVICE),
                 (Component, ADCMCoreType.COMPONENT),
                 (Host, ADCMCoreType.HOST),
-                (HostProvider, ADCMCoreType.HOSTPROVIDER),
+                (Provider, ADCMCoreType.PROVIDER),
             )
         ),
     )

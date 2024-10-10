@@ -38,10 +38,10 @@ from cm.models import (
     ConfigLog,
     Host,
     HostComponent,
-    HostProvider,
     ObjectConfig,
     ObjectType,
     Prototype,
+    Provider,
     Service,
 )
 from cm.services.job.prepare import prepare_task_for_action
@@ -380,7 +380,7 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
 
         return bundle, cluster, ConfigLog.objects.get(obj_ref=cluster.config)
 
-    def create_provider(self, bundle_path: Path, name: str) -> HostProvider:
+    def create_provider(self, bundle_path: Path, name: str) -> Provider:
         bundle = self.upload_and_load_bundle(path=bundle_path)
 
         response: Response = self.client.post(
@@ -396,7 +396,7 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        return HostProvider.objects.get(pk=response.json()["id"])
+        return Provider.objects.get(pk=response.json()["id"])
 
     def create_host_in_cluster(self, provider_pk: int, name: str, cluster_pk: int) -> Host:
         response: Response = self.client.post(
@@ -458,13 +458,13 @@ class BusinessLogicMixin(BundleLogicMixin):
         return add_cluster(prototype=prototype, name=name, description=description)
 
     @staticmethod
-    def add_provider(bundle: Bundle, name: str, description: str = "") -> HostProvider:
+    def add_provider(bundle: Bundle, name: str, description: str = "") -> Provider:
         prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.PROVIDER).first()
         return add_host_provider(prototype=prototype, name=name, description=description)
 
     def add_host(
         self,
-        provider: HostProvider,
+        provider: Provider,
         fqdn: str,
         description: str = "",
         cluster: Cluster | None = None,
@@ -576,7 +576,7 @@ class BusinessLogicMixin(BundleLogicMixin):
 class TaskTestMixin:
     def prepare_task(
         self,
-        owner: ADCM | Cluster | Service | Component | HostProvider | Host,
+        owner: ADCM | Cluster | Service | Component | Provider | Host,
         payload: TaskPayloadDTO | None = None,
         host: Host | None = None,
         **action_search_kwargs,

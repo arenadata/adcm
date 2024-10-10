@@ -15,7 +15,7 @@ from typing import Iterable, NamedTuple, TypeAlias
 
 from adcm.tests.client import WithID
 from cm.converters import orm_object_to_core_type
-from cm.models import Cluster, Component, ConfigHostGroup, ConfigLog, Host, HostProvider, Service
+from cm.models import Cluster, Component, ConfigHostGroup, ConfigLog, Host, Provider, Service
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -32,7 +32,7 @@ from api_v2.tests.base import BaseAPITestCase
 CONFIG_GROUPS = "config-groups"
 HOST_CANDIDATES = "host-candidates"
 
-ObjectWithCHG: TypeAlias = Cluster | Service | Component | HostProvider
+ObjectWithCHG: TypeAlias = Cluster | Service | Component | Provider
 
 
 class BaseClusterCHGTestCase(BaseAPITestCase):
@@ -886,7 +886,7 @@ class TestComponentCHG(BaseServiceCHGTestCase):
         self.assertEqual(self.service_1_host_group.hosts.count(), 0)
 
 
-class TestHostProviderCHG(BaseAPITestCase):
+class TestProviderCHG(BaseAPITestCase):
     def setUp(self) -> None:
         super().setUp()
         self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn="host")
@@ -1112,8 +1112,7 @@ class TestHostCandidateForConfigHostsGroups(BaseAPITestCase):
         self.component_1 = self.service.components.get(prototype__name="component_1")
         self.component_2 = self.service.components.get(prototype__name="component_2")
 
-        self.hostprovider = self.provider
-        self.hosts = tuple(self.add_host(provider=self.hostprovider, fqdn=f"host-{i}") for i in range(4))
+        self.hosts = tuple(self.add_host(provider=self.provider, fqdn=f"host-{i}") for i in range(4))
 
     class Case(NamedTuple):
         target: ObjectWithCHG
@@ -1206,7 +1205,7 @@ class TestHostCandidateForConfigHostsGroups(BaseAPITestCase):
                 after_second_added=(host_1, host_3),
             ),
             self.Case(
-                target=self.hostprovider,
+                target=self.provider,
                 at_start=self.hosts,
                 add_to_first=(host_1, host_3, host_4),
                 after_one_added=(host_2,),

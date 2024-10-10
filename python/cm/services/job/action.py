@@ -35,8 +35,8 @@ from cm.models import (
     ConcernType,
     ConfigLog,
     Host,
-    HostProvider,
     JobStatus,
+    Provider,
     Service,
     TaskLog,
 )
@@ -54,7 +54,7 @@ from cm.services.mapping import change_host_component_mapping, check_no_host_in_
 from cm.status_api import send_task_status_update_event
 from cm.variant import process_variant
 
-ObjectWithAction: TypeAlias = ADCM | Cluster | Service | Component | HostProvider | Host
+ObjectWithAction: TypeAlias = ADCM | Cluster | Service | Component | Provider | Host
 ActionTarget: TypeAlias = ObjectWithAction | ActionHostGroup
 
 
@@ -168,7 +168,7 @@ class _ActionLaunchObjects:
     """Object owner of locks/issues and which will be locked on action launch"""
 
     cluster: Cluster | None
-    """Related cluster, is None for own HostProvider/Host actions"""
+    """Related cluster, is None for own Provider/Host actions"""
 
     def __init__(self, target: ActionTarget, action: Action) -> None:
         self.target = target

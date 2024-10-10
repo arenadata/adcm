@@ -23,7 +23,7 @@ from cm.models import (
     Component,
     Host,
     HostComponent,
-    HostProvider,
+    Provider,
     Service,
     TaskLog,
 )
@@ -308,7 +308,7 @@ class TestTaskObjects(BaseAPITestCase):
 
     @staticmethod
     def create_task(
-        object_: Cluster | Service | Component | HostProvider | Host | ADCM,
+        object_: Cluster | Service | Component | Provider | Host | ADCM,
         action_name: str,
         *,
         host: Host | None = None,

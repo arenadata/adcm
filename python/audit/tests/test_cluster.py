@@ -24,11 +24,11 @@ from cm.models import (
     ConfigLog,
     Host,
     HostComponent,
-    HostProvider,
     ObjectConfig,
     Prototype,
     PrototypeExport,
     PrototypeImport,
+    Provider,
     Service,
     Upgrade,
 )
@@ -78,7 +78,7 @@ class TestClusterAudit(BaseTestCase):
         )
 
         provider_prototype = Prototype.objects.create(bundle=self.bundle, type="provider")
-        provider = HostProvider.objects.create(
+        provider = Provider.objects.create(
             name="test_provider",
             prototype=provider_prototype,
         )

@@ -21,9 +21,9 @@ from cm.models import (
     Component,
     Host,
     HostComponent,
-    HostProvider,
     JobLog,
     MaintenanceMode,
+    Provider,
     Service,
 )
 from cm.services.job.jinja_scripts import get_action_info
@@ -36,7 +36,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT
 
 from api_v2.tests.base import BaseAPITestCase
 
-ObjectWithActions: TypeAlias = Cluster | Service | Component | HostProvider | Host
+ObjectWithActions: TypeAlias = Cluster | Service | Component | Provider | Host
 
 
 class TestActionsFiltering(BaseAPITestCase):
@@ -51,9 +51,9 @@ class TestActionsFiltering(BaseAPITestCase):
         self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster)
 
         provider_bundle = self.add_bundle(self.test_bundles_dir / "provider_actions")
-        self.hostprovider = self.add_provider(provider_bundle, "Provider with Actions")
-        self.host_1 = self.add_host(provider=self.hostprovider, fqdn="host-1")
-        self.host_2 = self.add_host(provider=self.hostprovider, fqdn="host-2")
+        self.provider = self.add_provider(provider_bundle, "Provider with Actions")
+        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
 
         self.available_at_any = ["state_any"]
         common_at_created = [*self.available_at_any, "state_created", "state_created_masking"]
@@ -161,7 +161,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_filter_object_own_actions_success(self) -> None:
-        for object_ in (self.cluster, self.service_1, self.component_1, self.hostprovider, self.host_1):
+        for object_ in (self.cluster, self.service_1, self.component_1, self.provider, self.host_1):
             with self.subTest(msg=f"{object_.__class__.__name__} at different states"):
                 self.check_object_action_list(object_=object_, expected_actions=self.available_at_created_no_multi)
 
@@ -442,7 +442,7 @@ class TestActionsFiltering(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def check_object_action_list(
-        self, object_: Cluster | Service | Component | HostProvider | Host, expected_actions: list[str]
+        self, object_: Cluster | Service | Component | Provider | Host, expected_actions: list[str]
     ) -> None:
         response = self.client.v2[object_, "actions"].get()
 

@@ -39,7 +39,7 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         component = service.components.get(prototype__name="component_1")
         self.component_task_id = self.prepare_task(owner=component, name="action_on_component").id
 
-        provider = self.add_provider(bundle=provider_bundle, name="test_hostprovider")
+        provider = self.add_provider(bundle=provider_bundle, name="test_provider")
         host = self.add_host(provider=provider, fqdn="test_host", cluster=cluster)
         self.set_hostcomponent(cluster=cluster, entries=((host, component),))
 
@@ -129,7 +129,7 @@ class TestJinjaScriptsJobs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
         service = self.add_services_to_cluster(service_names=["service_one_component"], cluster=self.cluster).get()
         self.component = Component.objects.get(service=service)
 
-        provider = self.add_provider(bundle=provider_bundle, name="test_hostprovider")
+        provider = self.add_provider(bundle=provider_bundle, name="test_provider")
         self.host = self.add_host(provider=provider, fqdn="test_host", cluster=self.cluster)
 
     def test_jobs_generation(self):

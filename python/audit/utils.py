@@ -46,7 +46,7 @@ from cm.models import (
     ClusterBind,
     Component,
     Host,
-    HostProvider,
+    Provider,
     Service,
     TaskLog,
     Upgrade,
@@ -152,7 +152,7 @@ def _get_deleted_obj(
             elif "service_id" in kwargs:
                 deleted_obj = Service.objects.filter(pk=kwargs["service_id"]).first()
             elif "provider_id" in kwargs:
-                deleted_obj = HostProvider.objects.filter(pk=kwargs["provider_id"]).first()
+                deleted_obj = Provider.objects.filter(pk=kwargs["provider_id"]).first()
 
         elif api_version == 2:
             deleted_obj = get_target_object_by_path(path=path)
@@ -373,7 +373,7 @@ def _detect_deleted_object_for_v1(
         if "provider_id" in kwargs and "host_id" in kwargs:
             deleted_obj = Host.objects.filter(pk=kwargs["host_id"]).first()
         elif "provider_id" in view.kwargs:
-            deleted_obj = HostProvider.objects.filter(pk=view.kwargs["provider_id"]).first()
+            deleted_obj = Provider.objects.filter(pk=view.kwargs["provider_id"]).first()
 
         if "service_id" in kwargs:
             deleted_obj = Service.objects.filter(pk=kwargs["service_id"]).first()

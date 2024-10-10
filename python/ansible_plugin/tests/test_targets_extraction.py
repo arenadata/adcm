@@ -192,7 +192,7 @@ class TestObjectsTargetsExtraction(BaseTestCase, BusinessLogicMixin, ADCMAnsible
             task=self.prepare_task(owner=host, name="dummy"),
             expected_targets=[
                 CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST),
-                CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.HOSTPROVIDER),
+                CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.PROVIDER),
             ],
         )
 

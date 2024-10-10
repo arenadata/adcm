@@ -478,7 +478,7 @@ class TestUpgrade(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-    def test_hostprovider_upgrade_retrieve_not_found_fail(self):
+    def test_provider_upgrade_retrieve_not_found_fail(self):
         response = self.client.v2[self.provider, "upgrades", self.get_non_existent_pk(Upgrade)].get()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -501,12 +501,12 @@ class TestUpgrade(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-    def test_hostprovider_list_unauthorized_fail(self) -> None:
+    def test_provider_list_unauthorized_fail(self) -> None:
         response = self.unauthorized_client.v2[self.provider, "upgrades"].get()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-    def test_hostprovider_retrieve_unauthorized_fail(self):
+    def test_provider_retrieve_unauthorized_fail(self):
         response = self.unauthorized_client.v2[self.provider, "upgrades", self.provider_upgrade].get()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)

@@ -26,7 +26,7 @@ from cm.models import (
     ConfigHostGroup,
     Host,
     HostComponent,
-    HostProvider,
+    Provider,
     Service,
 )
 from cm.services.maintenance_mode import get_maintenance_mode_response
@@ -119,7 +119,7 @@ def get_host_queryset(queryset, user, kwargs):
         cluster = get_object_for_user(user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
         queryset = queryset.filter(cluster=cluster)
     if "provider_id" in kwargs:
-        provider = get_object_for_user(user, VIEW_PROVIDER_PERM, HostProvider, id=kwargs["provider_id"])
+        provider = get_object_for_user(user, VIEW_PROVIDER_PERM, Provider, id=kwargs["provider_id"])
         queryset = queryset.filter(provider=provider)
 
     return queryset
@@ -172,12 +172,12 @@ class HostList(PermissionListMixin, PaginatedView):
         )
         if serializer.is_valid():
             if "provider_id" in kwargs:  # List provider hosts
-                provider = get_object_for_user(request.user, VIEW_PROVIDER_PERM, HostProvider, id=kwargs["provider_id"])
+                provider = get_object_for_user(request.user, VIEW_PROVIDER_PERM, Provider, id=kwargs["provider_id"])
             else:
                 provider = serializer.validated_data.get("provider_id")
-                provider = get_object_for_user(request.user, VIEW_PROVIDER_PERM, HostProvider, id=provider.id)
+                provider = get_object_for_user(request.user, VIEW_PROVIDER_PERM, Provider, id=provider.id)
 
-            check_custom_perm(request.user, "add_host_to", "hostprovider", provider)
+            check_custom_perm(request.user, "add_host_to", "provider", provider)
 
             return create(serializer)
 
@@ -330,7 +330,7 @@ class StatusList(GenericUIView):
             cluster = get_object_for_user(request.user, VIEW_CLUSTER_PERM, Cluster, id=kwargs["cluster_id"])
 
         if "provider_id" in kwargs:
-            provider = get_object_for_user(request.user, VIEW_PROVIDER_PERM, HostProvider, id=kwargs["provider_id"])
+            provider = get_object_for_user(request.user, VIEW_PROVIDER_PERM, Provider, id=kwargs["provider_id"])
             host = get_object_for_user(
                 request.user,
                 VIEW_HOST_PERM,

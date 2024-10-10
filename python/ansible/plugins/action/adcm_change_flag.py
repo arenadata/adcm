@@ -13,9 +13,9 @@
 
 DOCUMENTATION = """
 module: adcm_change_flag
-short_description: Raise or Lower flags on Cluster, Service, Component, Hostprovider or Host
+short_description: Raise or Lower flags on Cluster, Service, Component, Provider or Host
 description:
-    - The C(adcm_change_flag) module is intended to raise or lower on Cluster, Service, Component, Hostprovider or Host.
+    - The C(adcm_change_flag) module is intended to raise or lower on Cluster, Service, Component, Provider or Host.
 options:
   operation:
     description: Operation over flag.

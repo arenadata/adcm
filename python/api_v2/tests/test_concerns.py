@@ -24,11 +24,11 @@ from cm.models import (
     ConcernItem,
     ConcernType,
     Host,
-    HostProvider,
     JobLog,
     ObjectType,
     Prototype,
     PrototypeImport,
+    Provider,
     Service,
 )
 from cm.services.concern.flags import BuiltInFlag, lower_flag
@@ -893,7 +893,7 @@ class TestConcernRedistribution(BaseAPITestCase):
 
         # update states, so flag autogeneration will work as expected
         Host.objects.all().update(state="something")
-        HostProvider.objects.all().update(state="something")
+        Provider.objects.all().update(state="something")
         Cluster.objects.all().update(state="something")
         Service.objects.all().update(state="something")
         Component.objects.all().update(state="something")
@@ -970,7 +970,7 @@ class TestConcernRedistribution(BaseAPITestCase):
             _update_expected_concerns()
             check_concerns()
 
-        with self.subTest("Change HostProvider Config"):
+        with self.subTest("Change Provider Config"):
             self.change_config_via_api(another_provider)
 
             another_provider_concern = self.get_config_flags_of(another_provider)[0]
@@ -1167,11 +1167,9 @@ class TestConcernRedistribution(BaseAPITestCase):
 
         self.assertFalse(ConcernItem.objects.filter(owner_id=host_1_pk, owner_type=Host.class_content_type))
         self.assertFalse(ConcernItem.objects.filter(owner_id=host_2_pk, owner_type=Host.class_content_type))
-        self.assertFalse(ConcernItem.objects.filter(owner_id=provider_pk, owner_type=HostProvider.class_content_type))
+        self.assertFalse(ConcernItem.objects.filter(owner_id=provider_pk, owner_type=Provider.class_content_type))
         self.assertEqual(
-            ConcernItem.objects.filter(
-                owner_id=another_provider.pk, owner_type=HostProvider.class_content_type
-            ).count(),
+            ConcernItem.objects.filter(owner_id=another_provider.pk, owner_type=Provider.class_content_type).count(),
             1,
         )
 
@@ -1193,7 +1191,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         self.assertEqual(self.provider.concerns.count(), 1)
         self.assertEqual(another_provider.concerns.count(), 1)
 
-    def add_host_via_api(self, provider: HostProvider, fqdn: str) -> Host:
+    def add_host_via_api(self, provider: Provider, fqdn: str) -> Host:
         response = (self.client.v2 / "hosts").post(data={"hostprovider_id": provider.pk, "name": fqdn})
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         return Host.objects.get(fqdn=fqdn)
@@ -1256,7 +1254,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         self.check_concerns(host_1, concerns=(provider_config_issue, host_1_flag))
         self.check_concerns(host_2, concerns=(provider_config_issue, host_2.get_own_issue(ConcernCause.CONFIG)))
 
-    def test_host_config_issue_from_hostprovider(self):
+    def test_host_config_issue_from_provider(self):
         host_1 = self.add_host_via_api(self.provider, fqdn="host1")
 
         host_config_issue = host_1.get_own_issue(ConcernCause.CONFIG)
@@ -1265,7 +1263,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         self.assertIsNotNone(host_config_issue)
         self.assertIsNotNone(provider_config_issue)
 
-        #  hostprovider config issue resolved
+        #  provider config issue resolved
         self.change_config_via_api(self.provider)
 
         host_2 = self.add_host(self.provider, fqdn="host2")
@@ -1293,7 +1291,7 @@ class TestConcernRedistribution(BaseAPITestCase):
             concerns=(host_2.get_own_issue(ConcernCause.CONFIG),),
         )
 
-    def test_two_hosts_config_issue_from_hostprovider_resolved(self):
+    def test_two_hosts_config_issue_from_provider_resolved(self):
         host_1 = self.add_host_via_api(self.provider, fqdn="host1")
         host_2 = self.add_host_via_api(self.provider, fqdn="host2")
 
@@ -1305,7 +1303,7 @@ class TestConcernRedistribution(BaseAPITestCase):
         self.assertIsNotNone(host_2_config_issue)
         self.assertIsNotNone(provider_config_issue)
 
-        #  hostprovider config issue resolved
+        #  provider config issue resolved
         self.change_config_via_api(self.provider)
 
         self.assertIsNone(self.provider.get_own_issue(ConcernCause.CONFIG))

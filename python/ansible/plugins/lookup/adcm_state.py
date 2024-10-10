@@ -14,7 +14,7 @@ import sys
 
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
-from cm.models import ADCMEntity, Cluster, Host, HostProvider, Service
+from cm.models import ADCMEntity, Cluster, Host, Provider, Service
 from cm.status_api import send_object_update_event
 
 sys.path.append("/adcm/python")
@@ -108,7 +108,7 @@ def set_host_state(host_id, state):
 
 
 def set_provider_state(provider_id, state):
-    obj = HostProvider.obj.get(id=provider_id)
+    obj = Provider.obj.get(id=provider_id)
     return _set_object_state(obj, state)
 
 

@@ -21,10 +21,10 @@ from cm.models import (
     Component,
     ConfigHostGroup,
     Host,
-    HostProvider,
     JobLog,
     LogStorage,
     Prototype,
+    Provider,
     Service,
     TaskLog,
 )
@@ -33,7 +33,7 @@ from rbac.models import Group, Policy, Role, User
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 
-_RootPathObject = Bundle | Cluster | HostProvider | Host | TaskLog | JobLog | Prototype
+_RootPathObject = Bundle | Cluster | Provider | Host | TaskLog | JobLog | Prototype
 PathObject = _RootPathObject | Service | Component | LogStorage | ConfigHostGroup
 
 
@@ -101,7 +101,7 @@ class V2RootNode(RootNode):
     _CLASS_ROOT_EP_MAP = {
         Bundle: "bundles",
         Cluster: "clusters",
-        HostProvider: "hostproviders",
+        Provider: "hostproviders",
         Host: "hosts",
         TaskLog: "tasks",
         JobLog: "jobs",

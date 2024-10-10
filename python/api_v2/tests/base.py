@@ -28,9 +28,9 @@ from cm.models import (
     Component,
     ConfigLog,
     Host,
-    HostProvider,
     JobLog,
     JobStatus,
+    Provider,
     Service,
     TaskLog,
 )
@@ -43,7 +43,7 @@ from rbac.upgrade.role import init_roles
 from rest_framework.test import APITestCase
 
 AuditTarget: TypeAlias = (
-    Bundle | Cluster | Service | Component | ActionHostGroup | HostProvider | Host | User | Group | Role | Policy
+    Bundle | Cluster | Service | Component | ActionHostGroup | Provider | Host | User | Group | Role | Policy
 )
 
 
@@ -169,8 +169,7 @@ class BaseAPITestCase(APITestCase, ParallelReadyTestCase, BusinessLogicMixin):
             type_ = "role"
         else:
             name = getattr(expected_object, "display_name", expected_object.name)
-            # replace for hostprovider
-            type_ = expected_object.__class__.__name__.lower().replace("hostp", "p")
+            type_ = expected_object.__class__.__name__.lower()
 
         return {
             "audit_object__object_id": expected_object.pk,

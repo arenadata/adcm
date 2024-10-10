@@ -43,10 +43,10 @@ from cm.models import (
     Component,
     ConfigHostGroup,
     ConfigLog,
-    HostProvider,
     ObjectConfig,
     Prototype,
     PrototypeConfig,
+    Provider,
     Service,
 )
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
@@ -312,9 +312,7 @@ def merge_config_of_group_with_primary_config(
     return ConfigLog.objects.create(obj_ref=group.config, config=config, attr=attr, description=description)
 
 
-def update_host_groups_by_primary_object(
-    object_: Cluster | Service | Component | HostProvider, config: ConfigLog
-) -> None:
+def update_host_groups_by_primary_object(object_: Cluster | Service | Component | Provider, config: ConfigLog) -> None:
     for host_group in object_.config_host_group.order_by("id"):
         current_config_of_host_group = ConfigLog.objects.get(id=host_group.config.current)
 
@@ -353,7 +351,7 @@ def save_object_config(object_config: ObjectConfig, config: dict, attr: dict, de
         config_log = update_host_group(host_group=obj, config=config_log)
         config_log.save()
         obj.prepare_files_for_config(config=config_log.config)
-    elif isinstance(obj, (Cluster, Service, Component, HostProvider)):
+    elif isinstance(obj, (Cluster, Service, Component, Provider)):
         config_log.save()
         update_host_groups_by_primary_object(object_=obj, config=config_log)
     else:
