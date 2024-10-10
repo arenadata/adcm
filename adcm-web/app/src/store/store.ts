@@ -65,7 +65,7 @@ import jobsTableSlice from './adcm/jobs/jobsTableSlice';
 import jobsActionsSlice from './adcm/jobs/jobsActionsSlice';
 import groupsSlice from './adcm/groups/groupsSlice';
 import groupsTableSlice from './adcm/groups/groupsTableSlice';
-import groupsActionsSlice from './adcm/groups/groupActionsSlice';
+import groupsActionsSlice from './adcm/groups/groupsActionsSlice';
 import policiesTableSlice from './adcm/policies/policiesTableSlice';
 import policiesSlice from './adcm/policies/policiesSlice';
 import policiesActionsSlice from './adcm/policies/policiesActionsSlice';

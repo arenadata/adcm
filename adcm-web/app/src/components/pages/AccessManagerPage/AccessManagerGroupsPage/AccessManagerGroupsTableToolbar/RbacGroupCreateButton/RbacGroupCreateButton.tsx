@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@uikit';
 import { useDispatch } from '@hooks';
-import { openCreateDialog } from '@store/adcm/groups/groupActionsSlice';
+import { openCreateDialog } from '@store/adcm/groups/groupsActionsSlice';
 
 const RbacGroupCreateButton: React.FC = () => {
   const dispatch = useDispatch();

@@ -63,23 +63,26 @@ const loadUsers = createAsyncThunk('adcm/groupActions/loadUsers', async (arg, th
   }
 });
 
-const deleteGroupsWithUpdate = createAsyncThunk('adcm/groupActions/deleteGroups', async (ids: number[], thunkAPI) => {
-  try {
-    const deletePromises = await Promise.allSettled(ids.map((id) => AdcmGroupsApi.deleteGroup(id)));
-    const responsesList = rejectedFilter(deletePromises);
+const deleteGroupsWithUpdate = createAsyncThunk(
+  'adcm/groupActions/deleteGroups',
+  async (groups: AdcmGroup[], thunkAPI) => {
+    try {
+      const deletePromises = await Promise.allSettled(groups.map(({ id }) => AdcmGroupsApi.deleteGroup(id)));
+      const responsesList = rejectedFilter(deletePromises);
 
-    if (responsesList.length > 0) {
-      throw responsesList[0];
+      if (responsesList.length > 0) {
+        throw responsesList[0];
+      }
+
+      await thunkAPI.dispatch(getGroups());
+      const message = groups.length > 1 ? 'Groups have been deleted' : 'Group has been deleted';
+      thunkAPI.dispatch(showSuccess({ message }));
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return error;
     }
-
-    await thunkAPI.dispatch(getGroups());
-    const message = ids.length > 1 ? 'Groups have been deleted' : 'Group has been deleted';
-    thunkAPI.dispatch(showSuccess({ message }));
-  } catch (error) {
-    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-    return error;
-  }
-});
+  },
+);
 
 interface AdcmGroupsActionsState extends ModalState<AdcmGroup, 'group'> {
   createDialog: {
@@ -89,9 +92,9 @@ interface AdcmGroupsActionsState extends ModalState<AdcmGroup, 'group'> {
     group: AdcmGroup | null;
   };
   deleteDialog: {
-    group: number | null;
+    group: AdcmGroup | null;
   };
-  selectedItemsIds: number[];
+  selectedGroups: AdcmGroup[];
   relatedData: {
     users: AdcmUser[];
   };
@@ -107,7 +110,7 @@ const createInitialState = (): AdcmGroupsActionsState => ({
   deleteDialog: {
     group: null,
   },
-  selectedItemsIds: [],
+  selectedGroups: [],
   relatedData: {
     users: [],
   },
@@ -121,11 +124,11 @@ const groupsActionsSlice = createCrudSlice({
     cleanupGroups() {
       return createInitialState();
     },
-    cleanupItemsForActions(state) {
-      state.selectedItemsIds = createInitialState().selectedItemsIds;
+    setSelectedGroups(state, action) {
+      state.selectedGroups = action.payload;
     },
-    setSelectedItemsIds(state, action) {
-      state.selectedItemsIds = action.payload;
+    cleanupItemsForActions(state) {
+      state.selectedGroups = createInitialState().selectedGroups;
     },
   },
   extraReducers: (builder) => {
@@ -152,7 +155,7 @@ const groupsActionsSlice = createCrudSlice({
         state.deleteDialog.group = null;
       })
       .addCase(getGroups.pending, (state) => {
-        state.selectedItemsIds = [];
+        state.selectedGroups = [];
       });
   },
 });
@@ -165,7 +168,7 @@ export const {
   closeUpdateDialog,
   openDeleteDialog,
   closeDeleteDialog,
-  setSelectedItemsIds,
+  setSelectedGroups,
 } = groupsActionsSlice.actions;
 export { createGroup, updateGroup, loadUsers, deleteGroupsWithUpdate };
 

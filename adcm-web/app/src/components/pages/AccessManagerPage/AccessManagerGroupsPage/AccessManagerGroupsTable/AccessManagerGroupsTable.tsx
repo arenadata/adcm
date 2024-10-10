@@ -5,38 +5,38 @@ import { columns } from './AccessManagerGroupsTable.constants';
 import {
   openUpdateDialog,
   openDeleteDialog,
-  setSelectedItemsIds as setSelectedIds,
-} from '@store/adcm/groups/groupActionsSlice';
+  setSelectedGroups as setSelectedGroupsFromStore,
+} from '@store/adcm/groups/groupsActionsSlice';
 import { setSortParams } from '@store/adcm/groups/groupsTableSlice';
-import { SortParams } from '@uikit/types/list.types';
-import { AdcmGroup } from '@models/adcm';
+import type { SortParams } from '@uikit/types/list.types';
+import type { AdcmGroup } from '@models/adcm';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const AccessManagerGroupsTable = () => {
   const dispatch = useDispatch();
   const groups = useStore((s) => s.adcm.groups.groups);
-  const selectedItemsIds = useStore((s) => s.adcm.groupsActions.selectedItemsIds);
+  const selectedGroups = useStore((s) => s.adcm.groupsActions.selectedGroups);
   const isLoading = useStore((s) => isShowSpinner(s.adcm.groups.loadState));
   const sortParams = useStore((s) => s.adcm.groupsTable.sortParams);
 
-  const setSelectedItemsIds = useCallback<Dispatch<SetStateAction<number[]>>>(
+  const setSelectedGroups = useCallback<Dispatch<SetStateAction<AdcmGroup[]>>>(
     (arg) => {
-      const value = typeof arg === 'function' ? arg(selectedItemsIds) : arg;
-      dispatch(setSelectedIds(value));
+      const value = typeof arg === 'function' ? arg(selectedGroups) : arg;
+      dispatch(setSelectedGroupsFromStore(value));
     },
-    [dispatch, selectedItemsIds],
+    [dispatch, selectedGroups],
   );
 
-  const getUniqKey = ({ id }: AdcmGroup) => id;
+  const getUniqKey = (group: AdcmGroup) => group;
   const { isAllItemsSelected, toggleSelectedAllItems, getHandlerSelectedItem, isItemSelected } = useSelectedItems(
     groups,
     getUniqKey,
-    selectedItemsIds,
-    setSelectedItemsIds,
+    selectedGroups,
+    setSelectedGroups,
   );
 
-  const getHandleDeleteClick = (id: number) => () => {
-    dispatch(openDeleteDialog(id));
+  const getHandleDeleteClick = (group: AdcmGroup) => () => {
+    dispatch(openDeleteDialog(group));
   };
 
   const handleSorting = (sortParams: SortParams) => {
@@ -69,7 +69,7 @@ const AccessManagerGroupsTable = () => {
             <TableCell>{group.type}</TableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-edit" size={32} title="Edit" onClick={handleOpenUpdateDialog(group)} />
-              <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(group.id)} title="Delete" />
+              <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(group)} title="Delete" />
             </TableCell>
           </TableRow>
         );
