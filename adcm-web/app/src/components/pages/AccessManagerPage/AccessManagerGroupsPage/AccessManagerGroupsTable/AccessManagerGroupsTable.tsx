@@ -5,7 +5,7 @@ import { columns } from './AccessManagerGroupsTable.constants';
 import {
   openUpdateDialog,
   openDeleteDialog,
-  setSelectedGroups as setSelectedGroupsFromStore,
+  setSelectedGroupsIds as setSelectedGroupsIdsFromStore,
 } from '@store/adcm/groups/groupsActionsSlice';
 import { setSortParams } from '@store/adcm/groups/groupsTableSlice';
 import type { SortParams } from '@uikit/types/list.types';
@@ -15,27 +15,27 @@ import { isShowSpinner } from '@uikit/Table/Table.utils';
 const AccessManagerGroupsTable = () => {
   const dispatch = useDispatch();
   const groups = useStore((s) => s.adcm.groups.groups);
-  const selectedGroups = useStore((s) => s.adcm.groupsActions.selectedGroups);
+  const selectedGroupIds = useStore((s) => s.adcm.groupsActions.selectedGroupsIds);
   const isLoading = useStore((s) => isShowSpinner(s.adcm.groups.loadState));
   const sortParams = useStore((s) => s.adcm.groupsTable.sortParams);
 
-  const setSelectedGroups = useCallback<Dispatch<SetStateAction<AdcmGroup[]>>>(
+  const setSelectedGroups = useCallback<Dispatch<SetStateAction<number[]>>>(
     (arg) => {
-      const value = typeof arg === 'function' ? arg(selectedGroups) : arg;
-      dispatch(setSelectedGroupsFromStore(value));
+      const value = typeof arg === 'function' ? arg(selectedGroupIds) : arg;
+      dispatch(setSelectedGroupsIdsFromStore(value));
     },
-    [dispatch, selectedGroups],
+    [dispatch, selectedGroupIds],
   );
 
-  const getUniqKey = (group: AdcmGroup) => group;
+  const getUniqKey = ({ id }: AdcmGroup) => id;
   const { isAllItemsSelected, toggleSelectedAllItems, getHandlerSelectedItem, isItemSelected } = useSelectedItems(
     groups,
     getUniqKey,
-    selectedGroups,
+    selectedGroupIds,
     setSelectedGroups,
   );
 
-  const getHandleDeleteClick = (group: AdcmGroup) => () => {
+  const handleDeleteClick = (group: AdcmGroup) => () => {
     dispatch(openDeleteDialog(group));
   };
 
@@ -69,7 +69,7 @@ const AccessManagerGroupsTable = () => {
             <TableCell>{group.type}</TableCell>
             <TableCell hasIconOnly align="center">
               <IconButton icon="g1-edit" size={32} title="Edit" onClick={handleOpenUpdateDialog(group)} />
-              <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(group)} title="Delete" />
+              <IconButton icon="g1-delete" size={32} onClick={handleDeleteClick(group)} title="Delete" />
             </TableCell>
           </TableRow>
         );

@@ -6,8 +6,8 @@ import { deleteGroupsWithUpdate } from '@store/adcm/groups/groupsActionsSlice';
 const AccessManagerGroupsDeleteButton: React.FC = () => {
   const dispatch = useDispatch();
 
-  const selectedGroups = useStore(({ adcm }) => adcm.groupsActions.selectedGroups);
-  const areSomeRowsSelected = selectedGroups.length > 0;
+  const selectedGroupsIds = useStore(({ adcm }) => adcm.groupsActions.selectedGroupsIds);
+  const areSomeRowsSelected = selectedGroupsIds.length > 0;
 
   const [isOpenDeleteConfirm, setIsOpenDeleteConfirm] = useState(false);
 
@@ -17,7 +17,7 @@ const AccessManagerGroupsDeleteButton: React.FC = () => {
 
   const handleConfirmDialog = () => {
     setIsOpenDeleteConfirm(false);
-    dispatch(deleteGroupsWithUpdate(selectedGroups));
+    dispatch(deleteGroupsWithUpdate(selectedGroupsIds));
   };
 
   const handleClick = () => {

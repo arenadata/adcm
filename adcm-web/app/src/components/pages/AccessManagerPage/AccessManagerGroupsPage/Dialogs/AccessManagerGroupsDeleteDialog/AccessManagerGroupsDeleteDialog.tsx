@@ -17,7 +17,7 @@ const AccessManagerGroupsDeleteDialog: React.FC = () => {
   const handleConfirmDialog = () => {
     if (group === null) return;
 
-    dispatch(deleteGroupsWithUpdate([group]));
+    dispatch(deleteGroupsWithUpdate([group.id]));
   };
 
   return (
