@@ -6,30 +6,18 @@ import React from 'react';
 const AccessManagerUsersDeleteDialog: React.FC = () => {
   const dispatch = useDispatch();
 
-  const deletableUser = useStore(
-    ({
-      adcm: {
-        users: { users },
-        usersActions: {
-          deleteDialog: { user },
-        },
-      },
-    }) => {
-      if (!user) return null;
-      return users.find(({ id }) => id === user.id) ?? null;
-    },
-  );
+  const user = useStore(({ adcm }) => adcm.usersActions.deleteDialog.user);
 
-  const isOpenDeleteDialog = !!deletableUser;
+  const isOpenDeleteDialog = !!user;
 
   const handleCloseConfirm = () => {
     dispatch(closeDeleteDialog());
   };
 
   const handleConfirmDialog = () => {
-    if (!deletableUser) return;
+    if (!user) return;
 
-    dispatch(deleteUsersWithUpdate([deletableUser]));
+    dispatch(deleteUsersWithUpdate([user]));
   };
 
   return (
