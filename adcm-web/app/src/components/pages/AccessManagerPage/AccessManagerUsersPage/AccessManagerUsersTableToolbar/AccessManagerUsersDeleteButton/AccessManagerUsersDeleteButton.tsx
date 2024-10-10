@@ -6,8 +6,8 @@ import { deleteUsersWithUpdate } from '@store/adcm/users/usersActionsSlice';
 const AccessManagerUsersDeleteButton: React.FC = () => {
   const dispatch = useDispatch();
 
-  const selectedItemsIds = useStore(({ adcm }) => adcm.usersActions.selectedItemsIds);
-  const isSelectedSomeRows = selectedItemsIds.length > 0;
+  const selectedUsers = useStore(({ adcm }) => adcm.usersActions.selectedUsers);
+  const areSomeRowsSelected = selectedUsers.length > 0;
 
   const [isOpenDeleteConfirm, setIsOpenDeleteConfirm] = useState(false);
 
@@ -17,7 +17,7 @@ const AccessManagerUsersDeleteButton: React.FC = () => {
 
   const handleConfirmDialog = () => {
     setIsOpenDeleteConfirm(false);
-    dispatch(deleteUsersWithUpdate(selectedItemsIds));
+    dispatch(deleteUsersWithUpdate(selectedUsers));
   };
 
   const handleClick = () => {
@@ -26,7 +26,7 @@ const AccessManagerUsersDeleteButton: React.FC = () => {
 
   return (
     <>
-      <Button variant="secondary" disabled={!isSelectedSomeRows} onClick={handleClick}>
+      <Button variant="secondary" disabled={!areSomeRowsSelected} onClick={handleClick}>
         Delete
       </Button>
       <Dialog

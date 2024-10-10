@@ -11,12 +11,12 @@ const AccessManagerUsersDeleteDialog: React.FC = () => {
       adcm: {
         users: { users },
         usersActions: {
-          deleteDialog: { user: deletableUserId },
+          deleteDialog: { user },
         },
       },
     }) => {
-      if (!deletableUserId) return null;
-      return users.find(({ id }) => id === deletableUserId) ?? null;
+      if (!user) return null;
+      return users.find(({ id }) => id === user.id) ?? null;
     },
   );
 
@@ -27,9 +27,9 @@ const AccessManagerUsersDeleteDialog: React.FC = () => {
   };
 
   const handleConfirmDialog = () => {
-    if (!deletableUser?.id) return;
+    if (!deletableUser) return;
 
-    dispatch(deleteUsersWithUpdate([deletableUser.id]));
+    dispatch(deleteUsersWithUpdate([deletableUser]));
   };
 
   return (

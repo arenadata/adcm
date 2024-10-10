@@ -7,19 +7,22 @@ const AccessManagerUsersBlockDialog: React.FC = () => {
   const dispatch = useDispatch();
 
   const users = useStore((s) => s.adcm.users.users);
-  const selectedIds = useStore((s) => s.adcm.usersActions.blockDialog.ids);
-  const selectedUsers = useMemo(() => users.filter(({ id }) => selectedIds.includes(id)), [users, selectedIds]);
+  const blockUsersList = useStore((s) => s.adcm.usersActions.blockDialog.blockUsersList);
+  const selectedUsersToBlock = useMemo(
+    () => users.filter((user) => blockUsersList.includes(user)),
+    [users, blockUsersList],
+  );
 
-  const isOpenDialog = !!selectedUsers?.length;
+  const isOpenDialog = !!selectedUsersToBlock?.length;
 
   const handleCloseConfirm = () => {
     dispatch(closeBlockDialog());
   };
 
   const handleConfirmDialog = () => {
-    if (!selectedUsers?.length) return;
+    if (!selectedUsersToBlock?.length) return;
 
-    dispatch(blockUsers(selectedUsers.map((user) => user.id)));
+    dispatch(blockUsers(selectedUsersToBlock));
   };
 
   return (

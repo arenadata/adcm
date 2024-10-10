@@ -17,26 +17,26 @@ interface AdcmUsersActionState extends ModalState<AdcmUser, 'user'> {
     user: AdcmUser | null;
   };
   deleteDialog: {
-    user: number | null;
+    user: AdcmUser | null;
   };
   unblockDialog: {
-    ids: number[];
+    unblockUsersList: AdcmUser[];
   };
   blockDialog: {
-    ids: number[];
+    blockUsersList: AdcmUser[];
   };
   relatedData: {
     groups: AdcmGroup[];
   };
-  selectedItemsIds: number[];
+  selectedUsers: AdcmUser[];
 }
 
-const blockUsers = createAsyncThunk('adcm/usersActions/blockUsers', async (ids: number[], thunkAPI) => {
+const blockUsers = createAsyncThunk('adcm/usersActions/blockUsers', async (users: AdcmUser[], thunkAPI) => {
   try {
-    if (arePromisesResolved(await Promise.allSettled(ids.map((id) => AdcmUsersApi.blockUser(id))))) {
+    if (arePromisesResolved(await Promise.allSettled(users.map(({ id }) => AdcmUsersApi.blockUser(id))))) {
       thunkAPI.dispatch(
         showSuccess({
-          message: ids.length === 1 ? 'User was blocked successfully' : 'Users were blocked successfully',
+          message: users.length === 1 ? 'User was blocked successfully' : 'Users were blocked successfully',
         }),
       );
     }
@@ -48,12 +48,12 @@ const blockUsers = createAsyncThunk('adcm/usersActions/blockUsers', async (ids: 
   }
 });
 
-const unblockUsers = createAsyncThunk('adcm/usersActions/unblockUsers', async (ids: number[], thunkAPI) => {
+const unblockUsers = createAsyncThunk('adcm/usersActions/unblockUsers', async (users: AdcmUser[], thunkAPI) => {
   try {
-    if (arePromisesResolved(await Promise.allSettled(ids.map((id) => AdcmUsersApi.unblockUser(id))))) {
+    if (arePromisesResolved(await Promise.allSettled(users.map(({ id }) => AdcmUsersApi.unblockUser(id))))) {
       thunkAPI.dispatch(
         showSuccess({
-          message: ids.length === 1 ? 'User was unblocked successfully' : 'Users were unblocked successfully',
+          message: users.length === 1 ? 'User was unblocked successfully' : 'Users were unblocked successfully',
         }),
       );
     }
@@ -65,11 +65,11 @@ const unblockUsers = createAsyncThunk('adcm/usersActions/unblockUsers', async (i
   }
 });
 
-const deleteUsersWithUpdate = createAsyncThunk('adcm/usersActions/deleteUsers', async (ids: number[], thunkAPI) => {
+const deleteUsersWithUpdate = createAsyncThunk('adcm/usersActions/deleteUsers', async (users: AdcmUser[], thunkAPI) => {
   try {
-    if (arePromisesResolved(await Promise.allSettled(ids.map((id) => AdcmUsersApi.deleteUser(id))))) {
+    if (arePromisesResolved(await Promise.allSettled(users.map(({ id }) => AdcmUsersApi.deleteUser(id))))) {
       thunkAPI.dispatch(
-        showSuccess({ message: ids.length === 1 ? 'User has been deleted' : 'Users have been deleted' }),
+        showSuccess({ message: users.length === 1 ? 'User has been deleted' : 'Users have been deleted' }),
       );
     }
   } catch (error) {
@@ -161,15 +161,15 @@ const createInitialState = (): AdcmUsersActionState => ({
     user: null,
   },
   unblockDialog: {
-    ids: [],
+    unblockUsersList: [],
   },
   blockDialog: {
-    ids: [],
+    blockUsersList: [],
   },
   relatedData: {
     groups: [],
   },
-  selectedItemsIds: [],
+  selectedUsers: [],
 });
 
 const usersActionsSlice = createCrudSlice({
@@ -180,37 +180,37 @@ const usersActionsSlice = createCrudSlice({
     cleanupActions() {
       return createInitialState();
     },
-    setSelectedItemsIds(state, action) {
-      state.selectedItemsIds = action.payload;
+    setSelectedUsers(state, action) {
+      state.selectedUsers = action.payload;
     },
     openUnblockDialog(state, action) {
-      state.unblockDialog.ids = action.payload;
+      state.unblockDialog.unblockUsersList = action.payload;
     },
     closeUnblockDialog(state) {
-      state.unblockDialog.ids = [];
+      state.unblockDialog.unblockUsersList = [];
     },
     openBlockDialog(state, action) {
-      state.blockDialog.ids = action.payload;
+      state.blockDialog.blockUsersList = action.payload;
     },
     closeBlockDialog(state) {
-      state.blockDialog.ids = [];
+      state.blockDialog.blockUsersList = [];
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(deleteUsersWithUpdate.pending, (state) => {
-        state.selectedItemsIds = [];
+        state.selectedUsers = [];
         usersActionsSlice.caseReducers.closeDeleteDialog(state);
       })
       .addCase(blockUsers.fulfilled, (state) => {
-        state.selectedItemsIds = [];
+        state.selectedUsers = [];
         usersActionsSlice.caseReducers.closeBlockDialog(state);
       })
       .addCase(blockUsers.rejected, (state) => {
         usersActionsSlice.caseReducers.closeBlockDialog(state);
       })
       .addCase(unblockUsers.fulfilled, (state) => {
-        state.selectedItemsIds = [];
+        state.selectedUsers = [];
         usersActionsSlice.caseReducers.closeUnblockDialog(state);
       })
       .addCase(unblockUsers.rejected, (state) => {
@@ -250,7 +250,7 @@ const usersActionsSlice = createCrudSlice({
 });
 
 export const {
-  setSelectedItemsIds,
+  setSelectedUsers,
   openDeleteDialog,
   closeDeleteDialog,
   closeUpdateDialog: closeUserUpdateDialog,

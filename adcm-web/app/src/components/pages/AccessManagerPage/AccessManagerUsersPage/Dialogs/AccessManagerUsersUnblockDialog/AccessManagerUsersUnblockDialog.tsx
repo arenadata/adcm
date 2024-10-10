@@ -7,19 +7,22 @@ const AccessManagerUsersUnblockDialog: React.FC = () => {
   const dispatch = useDispatch();
 
   const users = useStore((s) => s.adcm.users.users);
-  const selectedIds = useStore((s) => s.adcm.usersActions.unblockDialog.ids);
-  const selectedUsers = useMemo(() => users.filter(({ id }) => selectedIds.includes(id)), [users, selectedIds]);
+  const unblockUsersList = useStore((s) => s.adcm.usersActions.unblockDialog.unblockUsersList);
+  const selectedUsersToUnblock = useMemo(
+    () => users.filter((user) => unblockUsersList.includes(user)),
+    [users, unblockUsersList],
+  );
 
-  const isOpenDialog = !!selectedUsers?.length;
+  const isOpenDialog = !!selectedUsersToUnblock?.length;
 
   const handleCloseConfirm = () => {
     dispatch(closeUnblockDialog());
   };
 
   const handleConfirmDialog = () => {
-    if (!selectedUsers?.length) return;
+    if (!selectedUsersToUnblock?.length) return;
 
-    dispatch(unblockUsers(selectedUsers.map((user) => user.id)));
+    dispatch(unblockUsers(selectedUsersToUnblock));
   };
 
   return (
