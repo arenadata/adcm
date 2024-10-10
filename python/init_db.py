@@ -60,14 +60,42 @@ def prepare_secrets_json(status_user_username: str, status_user_password: str | 
         logger.info("Secret file %s is not updated", settings.SECRETS_FILE)
 
 
-def create_status_user() -> tuple[str, str | None]:
+def _create_admin_user() -> None:
+    username = "admin"
+    email = f"{username}@example.com"
+
+    if not User.objects.filter(username=username).exists():
+        User.objects.create_superuser(username=username, email=email, password=username, built_in=False)
+
+
+def _create_status_user() -> tuple[str, str | None]:
     username = "status"
-    if User.objects.filter(username=username).exists():
+    email = f"{username}@example.com"
+
+    status_user = User.objects.filter(username=username).only("email").first()
+    if status_user is not None:
+        if status_user.email != email:
+            status_user.email = email
+            status_user.save(update_fields=["email"])
+
         return username, None
 
     password = token_hex(TOKEN_LENGTH)
-    User.objects.create_superuser(username, "", password, built_in=True)
+    User.objects.create_superuser(username=username, email=email, password=password, built_in=True)
+
     return username, password
+
+
+def _create_system_user() -> None:
+    username = "system"
+    email = f"{username}@example.com"
+
+    system_user = User.objects.filter(username=username).only("email").first()
+    if system_user is None:
+        User.objects.create_superuser(username=username, email=email, password=None, built_in=True)
+    elif system_user.email != email:
+        system_user.email = email
+        system_user.save(update_fields=["email"])
 
 
 def clear_temp_tables():
@@ -105,15 +133,10 @@ def abort_all():
 def init(adcm_conf_file: Path = Path(settings.BASE_DIR, "conf", "adcm", "config.yaml")):
     logger.info("Start initializing ADCM DB...")
 
-    if not User.objects.filter(username="admin").exists():
-        User.objects.create_superuser("admin", "admin@example.com", "admin", built_in=False)
-
-    status_user_username, status_user_password = create_status_user()
+    _create_admin_user()
+    status_user_username, status_user_password = _create_status_user()
     prepare_secrets_json(status_user_username, status_user_password)
-
-    if not User.objects.filter(username="system").exists():
-        User.objects.create_superuser("system", "", None, built_in=True)
-        logger.info("Create system user")
+    _create_system_user()
 
     abort_all()
     clear_temp_tables()

@@ -73,7 +73,7 @@ from cm.services.concern.distribution import (
 from cm.services.job.action import ActionRunPayload, run_action
 from cm.services.job.types import HcAclAction
 from cm.services.mapping import change_host_component_mapping, check_nothing
-from cm.status_api import send_prototype_and_state_update_event
+from cm.status_api import notify_about_redistributed_concerns_from_maps, send_prototype_and_state_update_event
 from cm.utils import obj_ref
 
 
@@ -509,6 +509,9 @@ class _BundleSwitch(ABC):
                     object__object_id=policy_object.id, object__content_type=content_type
                 ):
                     policy.apply()
+
+        if added or removed:
+            notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 
         logger.info("upgrade %s OK to version %s", obj_ref(obj=self._target), new_prototype.version)
 

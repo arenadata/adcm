@@ -4,7 +4,7 @@ WORKDIR /code
 RUN sh -c "make"
 
 
-FROM node:18.16-alpine AS ui_builder
+FROM node:20.9.0-alpine AS ui_builder
 ARG ADCM_VERSION
 ENV ADCM_VERSION=$ADCM_VERSION
 COPY ./adcm-web/app /code
@@ -50,6 +50,10 @@ RUN apk add --no-cache --virtual .build-deps \
         build-base \
         linux-headers \
         libffi-dev && \
+    # remove python links (3.12) from /usr/bin and link python to local one (3.10)
+    rm /usr/bin/python /usr/bin/python3 && \
+    ln -s /usr/local/bin/python3 /usr/bin/python3 && \
+    ln -s /usr/bin/python3 /usr/bin/python && \
     python -m venv $POETRY_VENV && \
     $POETRY_VENV/bin/pip install --no-cache-dir -U pip setuptools && \
     $POETRY_VENV/bin/pip install --no-cache-dir poetry==$POETRY_VERSION && \
