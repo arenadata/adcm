@@ -10,7 +10,7 @@ import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 
 interface AdcmRolesActionState extends ModalState<AdcmRole, 'role'> {
   deleteDialog: {
-    role: number | null;
+    role: AdcmRole | null;
   };
   updateDialog: {
     role: AdcmRole | null;
@@ -39,9 +39,9 @@ const createInitialState = (): AdcmRolesActionState => ({
   },
 });
 
-const deleteRoleWithUpdate = createAsyncThunk('adcm/rolesActions/deleteRoles', async (id: number, thunkAPI) => {
+const deleteRoleWithUpdate = createAsyncThunk('adcm/rolesActions/deleteRoles', async (role: AdcmRole, thunkAPI) => {
   try {
-    await AdcmRolesApi.deleteRole(id);
+    await AdcmRolesApi.deleteRole(role.id);
     thunkAPI.dispatch(showSuccess({ message: 'Role has been deleted' }));
     await thunkAPI.dispatch(getRoles());
   } catch (error) {
