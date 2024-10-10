@@ -17,7 +17,7 @@ const AccessManagerUsersDeleteDialog: React.FC = () => {
   const handleConfirmDialog = () => {
     if (!user) return;
 
-    dispatch(deleteUsersWithUpdate([user]));
+    dispatch(deleteUsersWithUpdate([user.id]));
   };
 
   return (

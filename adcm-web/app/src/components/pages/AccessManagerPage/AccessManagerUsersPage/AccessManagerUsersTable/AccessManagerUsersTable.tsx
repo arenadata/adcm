@@ -7,7 +7,7 @@ import {
   openDeleteDialog,
   openUnblockDialog,
   openUserUpdateDialog,
-  setSelectedUsers as setSelectedUsersFromSlice,
+  setSelectedUsersIds as setSelectedUsersIdsFromSlice,
 } from '@store/adcm/users/usersActionsSlice';
 import { setSortParams } from '@store/adcm/users/usersTableSlice';
 import { SortParams } from '@uikit/types/list.types';
@@ -20,21 +20,21 @@ const AccessManagerUsersTable = () => {
   const users = useStore((s) => s.adcm.users.users);
   const isLoading = useStore((s) => isShowSpinner(s.adcm.users.loadState));
   const sortParams = useStore((s) => s.adcm.usersTable.sortParams);
-  const selectedUsers = useStore(({ adcm }) => adcm.usersActions.selectedUsers);
+  const selectedUsersIds = useStore(({ adcm }) => adcm.usersActions.selectedUsersIds);
 
-  const setSelectedUsers = useCallback<Dispatch<SetStateAction<AdcmUser[]>>>(
+  const setSelectedUsers = useCallback<Dispatch<SetStateAction<number[]>>>(
     (arg) => {
-      const value = typeof arg === 'function' ? arg(selectedUsers) : arg;
-      dispatch(setSelectedUsersFromSlice(value));
+      const value = typeof arg === 'function' ? arg(selectedUsersIds) : arg;
+      dispatch(setSelectedUsersIdsFromSlice(value));
     },
-    [dispatch, selectedUsers],
+    [dispatch, selectedUsersIds],
   );
 
-  const getUniqKey = (user: AdcmUser) => user;
+  const getUniqKey = ({ id }: AdcmUser) => id;
   const { isAllItemsSelected, toggleSelectedAllItems, getHandlerSelectedItem, isItemSelected } = useSelectedItems(
     users,
     getUniqKey,
-    selectedUsers,
+    selectedUsersIds,
     setSelectedUsers,
   );
 
@@ -47,11 +47,11 @@ const AccessManagerUsersTable = () => {
   };
 
   const handleUnblockClick = (user: AdcmUser) => () => {
-    dispatch(openUnblockDialog([user]));
+    dispatch(openUnblockDialog(user));
   };
 
   const handleBlockClick = (user: AdcmUser) => () => {
-    dispatch(openBlockDialog([user]));
+    dispatch(openBlockDialog(user));
   };
 
   const handleEditUserClick = (user: AdcmUser) => () => {

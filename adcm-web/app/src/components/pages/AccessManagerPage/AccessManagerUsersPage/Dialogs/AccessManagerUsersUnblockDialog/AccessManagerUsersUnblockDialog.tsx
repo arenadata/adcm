@@ -1,28 +1,23 @@
 import { useDispatch, useStore } from '@hooks';
 import { closeUnblockDialog, unblockUsers } from '@store/adcm/users/usersActionsSlice';
 import { Dialog } from '@uikit';
-import React, { useMemo } from 'react';
+import React from 'react';
 
 const AccessManagerUsersUnblockDialog: React.FC = () => {
   const dispatch = useDispatch();
 
-  const users = useStore((s) => s.adcm.users.users);
-  const unblockUsersList = useStore((s) => s.adcm.usersActions.unblockDialog.unblockUsersList);
-  const selectedUsersToUnblock = useMemo(
-    () => users.filter((user) => unblockUsersList.includes(user)),
-    [users, unblockUsersList],
-  );
+  const userToUnblock = useStore((s) => s.adcm.usersActions.unblockDialog.user);
 
-  const isOpenDialog = !!selectedUsersToUnblock?.length;
+  const isOpenDialog = !!userToUnblock;
 
   const handleCloseConfirm = () => {
     dispatch(closeUnblockDialog());
   };
 
   const handleConfirmDialog = () => {
-    if (!selectedUsersToUnblock?.length) return;
+    if (!userToUnblock) return;
 
-    dispatch(unblockUsers(selectedUsersToUnblock));
+    dispatch(unblockUsers([userToUnblock.id]));
   };
 
   return (
