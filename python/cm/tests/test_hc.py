@@ -28,9 +28,9 @@ class TestHC(BaseTestCase, BusinessLogicMixin):
         service_2 = self.add_services_to_cluster(["service_two_components"], cluster=cluster).get()
         service_with_action = self.add_services_to_cluster(["with_hc_acl_actions"], cluster=cluster).get()
 
-        hostprovider = self.add_provider(bundle=self.add_bundle(bundles_dir / "provider"), name="prov")
-        host_1 = self.add_host(provider=hostprovider, fqdn="host-1")
-        host_2 = self.add_host(provider=hostprovider, fqdn="host-2")
+        provider = self.add_provider(bundle=self.add_bundle(bundles_dir / "provider"), name="prov")
+        host_1 = self.add_host(provider=provider, fqdn="host-1")
+        host_2 = self.add_host(provider=provider, fqdn="host-2")
 
         self.add_host_to_cluster(cluster, host_1)
         self.add_host_to_cluster(cluster, host_2)

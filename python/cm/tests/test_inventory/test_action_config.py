@@ -67,15 +67,11 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.hostprovider = self.add_provider(
+        self.provider = self.add_provider(
             bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
         )
-        self.host_1 = self.add_host(
-            bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-1"
-        )
-        self.host_2 = self.add_host(
-            bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-2"
-        )
+        self.host_1 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-2")
 
         self.cluster = self.add_cluster(
             bundle=self.add_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
@@ -90,7 +86,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         )
 
         self.context = {
-            "hostprovider_bundle": self.hostprovider.prototype.bundle,
+            "hostprovider_bundle": self.provider.prototype.bundle,
             "cluster_bundle": self.cluster.prototype.bundle,
             "datadir": self.directories["DATA_DIR"],
             "stackdir": self.directories["STACK_DIR"],
@@ -113,7 +109,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             (self.cluster, None, "cluster"),
             (self.service, self.FULL_CONFIG, "service"),
             (self.component, self.CONFIG_WITH_NONES, "component"),
-            (self.hostprovider, self.FULL_CONFIG, "hostprovider"),
+            (self.provider, self.FULL_CONFIG, "provider"),
             (self.host_1, self.CONFIG_WITH_NONES, "host"),
         ):
             action = Action.objects.filter(prototype=object_.prototype, name="with_config").first()

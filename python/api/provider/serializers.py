@@ -14,7 +14,7 @@ from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
 from cm.api import add_host_provider
 from cm.errors import AdcmEx
-from cm.models import Action, HostProvider, Prototype, Upgrade
+from cm.models import Action, Prototype, Provider, Upgrade
 from cm.upgrade import do_upgrade, get_upgrade
 from django.db import IntegrityError
 from rest_framework.serializers import (
@@ -92,19 +92,19 @@ class ProviderUISerializer(ProviderSerializer):
     concerns = ConcernItemUISerializer(many=True, read_only=True)
 
     @staticmethod
-    def get_upgradable(obj: HostProvider) -> bool:
+    def get_upgradable(obj: Provider) -> bool:
         return bool(get_upgrade(obj))
 
     @staticmethod
-    def get_prototype_version(obj: HostProvider) -> str:
+    def get_prototype_version(obj: Provider) -> str:
         return obj.prototype.version
 
     @staticmethod
-    def get_prototype_name(obj: HostProvider) -> str:
+    def get_prototype_name(obj: Provider) -> str:
         return obj.prototype.name
 
     @staticmethod
-    def get_prototype_display_name(obj: HostProvider) -> str | None:
+    def get_prototype_display_name(obj: Provider) -> str | None:
         return obj.prototype.display_name
 
 
@@ -125,23 +125,23 @@ class ProviderDetailUISerializer(ProviderDetailSerializer):
         return actions.data
 
     @staticmethod
-    def get_upgradable(obj: HostProvider) -> bool:
+    def get_upgradable(obj: Provider) -> bool:
         return bool(get_upgrade(obj))
 
     @staticmethod
-    def get_prototype_version(obj: HostProvider) -> str:
+    def get_prototype_version(obj: Provider) -> str:
         return obj.prototype.version
 
     @staticmethod
-    def get_prototype_name(obj: HostProvider) -> str:
+    def get_prototype_name(obj: Provider) -> str:
         return obj.prototype.name
 
     @staticmethod
-    def get_prototype_display_name(obj: HostProvider) -> str | None:
+    def get_prototype_display_name(obj: Provider) -> str | None:
         return obj.prototype.display_name
 
     @staticmethod
-    def get_main_info(obj: HostProvider) -> str | None:
+    def get_main_info(obj: Provider) -> str | None:
         return get_main_info(obj)
 
 

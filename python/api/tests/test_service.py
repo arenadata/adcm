@@ -22,9 +22,9 @@ from cm.models import (
     Component,
     Host,
     HostComponent,
-    HostProvider,
     MaintenanceMode,
     Prototype,
+    Provider,
     Service,
 )
 from cm.services.job.action import ActionRunPayload
@@ -71,7 +71,7 @@ class TestServiceAPI(BaseTestCase):
             path=reverse(viewname="v1:provider"),
             data={"name": "test_provider", "prototype_id": provider_prototype.pk},
         )
-        provider = HostProvider.objects.get(pk=provider_response.data["id"])
+        provider = Provider.objects.get(pk=provider_response.data["id"])
 
         host_response: Response = self.client.post(
             path=reverse(viewname="v1:host", kwargs={"provider_id": provider.pk}),
@@ -243,7 +243,7 @@ class TestServiceAPI(BaseTestCase):
         host = Host.objects.create(
             fqdn="test-fqdn",
             prototype=Prototype.objects.create(bundle=self.bundle, type="host"),
-            provider=HostProvider.objects.create(
+            provider=Provider.objects.create(
                 name="test_provider",
                 prototype=Prototype.objects.create(bundle=self.bundle, type="provider"),
             ),

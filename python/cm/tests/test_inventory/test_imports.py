@@ -56,15 +56,11 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.hostprovider = self.add_provider(
+        self.provider = self.add_provider(
             bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
         )
-        self.host_1 = self.add_host(
-            bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-1"
-        )
-        self.host_2 = self.add_host(
-            bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-2"
-        )
+        self.host_1 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-1")
+        self.host_2 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-2")
 
         self.cluster = self.add_cluster(
             bundle=self.add_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
@@ -91,7 +87,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             "component": self.component,
             "host_1": self.host_1,
             "host_2": self.host_2,
-            "hostprovider": self.hostprovider,
+            "hostprovider": self.provider,
             "filedir": self.directories["FILE_DIR"],
         }
 
@@ -155,13 +151,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             },
         )
 
-    def test_hostprovider_objects_success(self) -> None:
+    def test_provider_objects_success(self) -> None:
         self.change_config_partial(target=self.host_1)
         self.change_config_full(target=self.host_2)
-        self.change_config_partial(target=self.hostprovider)
+        self.change_config_partial(target=self.provider)
 
         for object_, template in (
-            (self.hostprovider, "hostprovider_full.json.j2"),
+            (self.provider, "provider_full.json.j2"),
             (self.host_1, "host_1_full.json.j2"),
             (self.host_2, "host_2_full.json.j2"),
         ):
@@ -351,8 +347,8 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.assertDictEqual(result, expected)
 
     def test_config_host_group_effect_on_import_with_default(self) -> None:
-        host_3 = self.add_host(bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-3")
-        host_4 = self.add_host(bundle=self.hostprovider.prototype.bundle, provider=self.hostprovider, fqdn="host-4")
+        host_3 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-3")
+        host_4 = self.add_host(bundle=self.provider.prototype.bundle, provider=self.provider, fqdn="host-4")
 
         self.add_host_to_cluster(cluster=self.cluster_with_defaults, host=host_3)
         self.add_host_to_cluster(cluster=self.cluster_with_defaults, host=host_4)

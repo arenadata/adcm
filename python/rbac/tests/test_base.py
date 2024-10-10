@@ -127,7 +127,7 @@ class RBACBaseTestCase(BaseTestCase):
         self.change_service_config_perm = cook_perm("change_config_of", "service")
         self.change_component_config_perm = cook_perm("change_config_of", "component")
         self.change_host_config_perm = cook_perm("change_config_of", "host")
-        self.change_provider_config_perm = cook_perm("change_config_of", "hostprovider")
+        self.change_provider_config_perm = cook_perm("change_config_of", "provider")
 
     def object_role(self):
         object_role = cook_role("object role", "ObjectRole")

@@ -38,10 +38,10 @@ from cm.models import (
     ConfigLog,
     Host,
     HostComponent,
-    HostProvider,
     ObjectConfig,
     Prototype,
     PrototypeConfig,
+    Provider,
     Service,
 )
 
@@ -198,25 +198,25 @@ def create_cluster(cluster):
 
 def create_provider(provider):
     """
-    Creating HostProvider object
+    Creating Provider object
 
-    :param provider: HostProvider object in dictionary format
+    :param provider: Provider object in dictionary format
     :type provider: dict
-    :return: HostProvider object
-    :rtype: models.HostProvider
+    :return: Provider object
+    :rtype: models.Provider
     """
     bundle_hash = provider.pop("bundle_hash")
     ex_id = provider.pop("id")
     try:
-        same_name_provider = HostProvider.objects.get(name=provider["name"])
+        same_name_provider = Provider.objects.get(name=provider["name"])
         if same_name_provider.prototype.bundle.hash != bundle_hash:
             raise IntegrityError("Name of provider already in use in another bundle")
         create_file_from_config(same_name_provider, provider["config"])  # noqa: TRY300
         return ex_id, same_name_provider
-    except HostProvider.DoesNotExist:
+    except Provider.DoesNotExist:
         prototype = get_prototype(bundle_hash=bundle_hash, type="provider")
         config = provider.pop("config")
-        provider = HostProvider.objects.create(
+        provider = Provider.objects.create(
             prototype=prototype,
             config=create_config(config, prototype),
             **provider,
@@ -237,7 +237,7 @@ def create_host(host, cluster):
     :rtype: models.Host
     """
     host.pop("provider")
-    provider = HostProvider.objects.get(name=host.pop("provider__name"))
+    provider = Provider.objects.get(name=host.pop("provider__name"))
     try:
         Host.objects.get(fqdn=host["fqdn"])
         provider.delete()
@@ -451,7 +451,7 @@ def load(file_path):
             obj = ex_service_ids[group_data["object_id"]]
         elif group_data["model_name"] == "component":
             obj = ex_component_ids[group_data["object_id"]]
-        elif group_data["model_name"] == "hostprovider":
+        elif group_data["model_name"] == "provider":
             obj = ex_provider_ids[group_data["object_id"]]
         create_group(group_data, ex_host_ids, obj)
     sys.stdout.write(f"Load successfully ended, cluster {cluster.display_name} created\n")

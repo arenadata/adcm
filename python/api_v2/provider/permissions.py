@@ -13,7 +13,7 @@
 from rest_framework.permissions import DjangoObjectPermissions
 
 
-class HostProviderPermissions(DjangoObjectPermissions):
+class ProviderPermissions(DjangoObjectPermissions):
     perms_map = {
         "GET": [],
         "OPTIONS": [],

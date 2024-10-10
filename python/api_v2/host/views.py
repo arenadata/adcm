@@ -23,7 +23,7 @@ from audit.alt.api import audit_create, audit_delete, audit_update
 from audit.alt.hooks import extract_current_from_response, extract_previous_from_object, only_on_success
 from cm.api import delete_host
 from cm.errors import AdcmEx
-from cm.models import Cluster, ConcernType, Host, HostProvider
+from cm.models import Cluster, ConcernType, Host, Provider
 from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -203,10 +203,10 @@ class HostViewSet(
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        request_hostprovider = get_object_for_user(
+        request_provider = get_object_for_user(
             user=request.user,
             perms=VIEW_PROVIDER_PERM,
-            klass=HostProvider,
+            klass=Provider,
             id=serializer.validated_data["hostprovider_id"],
         )
 
@@ -218,7 +218,7 @@ class HostViewSet(
 
         with atomic():
             host = create_host(
-                provider=request_hostprovider, fqdn=serializer.validated_data["fqdn"], cluster=request_cluster
+                provider=request_provider, fqdn=serializer.validated_data["fqdn"], cluster=request_cluster
             )
             process_config_issues_policies_hc(host=host)
 

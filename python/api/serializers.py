@@ -13,7 +13,7 @@
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_action_variant, get_prototype_config, ui_config
 from cm.errors import raise_adcm_ex
-from cm.models import Cluster, ConfigHostGroup, HostProvider, PrototypeConfig, Upgrade
+from cm.models import Cluster, ConfigHostGroup, PrototypeConfig, Provider, Upgrade
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
     BooleanField,
@@ -63,7 +63,7 @@ class UpgradeSerializer(EmptySerializer):
         if "cluster_id" in self.context:
             obj = check_obj(Cluster, self.context["cluster_id"])
         elif "provider_id" in self.context:
-            obj = check_obj(HostProvider, self.context["provider_id"])
+            obj = check_obj(Provider, self.context["provider_id"])
         else:
             obj = None
 

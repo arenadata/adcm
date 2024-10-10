@@ -16,8 +16,8 @@ from cm.models import (
     Cluster,
     Component,
     Host,
-    HostProvider,
     Prototype,
+    Provider,
     Service,
 )
 
@@ -55,7 +55,7 @@ class PolicyRBACTestCase(BusinessLogicMixin, RBACBaseTestCase):
         )
 
     def get_hosts_and_provider(self):
-        provider, _ = HostProvider.objects.get_or_create(name="provider", prototype=self.provider_prototype)
+        provider, _ = Provider.objects.get_or_create(name="provider", prototype=self.provider_prototype)
         host1 = Host.objects.create(prototype=self.host_prototype, provider=provider, fqdn="host_1")
         host2 = Host.objects.create(prototype=self.host_prototype, provider=provider, fqdn="host_2")
 
@@ -296,13 +296,13 @@ class PolicyRBACTestCase(BusinessLogicMixin, RBACBaseTestCase):
         policy.group.add(self.group)
         policy.add_object(provider)
 
-        self.assertFalse(self.user.has_perm("cm.change_config_of_hostprovider", provider))
+        self.assertFalse(self.user.has_perm("cm.change_config_of_provider", provider))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
         policy.apply()
 
-        self.assertTrue(self.user.has_perm("cm.change_config_of_hostprovider", provider))
+        self.assertTrue(self.user.has_perm("cm.change_config_of_provider", provider))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host2))
 

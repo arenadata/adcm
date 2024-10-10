@@ -23,7 +23,7 @@ from cm.models import (
     ConfigHostGroup,
     ConfigLog,
     Host,
-    HostProvider,
+    Provider,
     Service,
     Upgrade,
 )
@@ -250,8 +250,8 @@ class TestClusterConfig(BaseAPITestCase):
 
     def test_schema_cluster_permissions_another_object_role_denied(self):
         provider_bundle = self.add_bundle(self.test_bundles_dir / "provider_actions")
-        hostprovider = self.add_provider(bundle=provider_bundle, name="Provider with Actions")
-        host_1 = self.add_host(provider=hostprovider, fqdn="host-1")
+        provider = self.add_provider(bundle=provider_bundle, name="Provider with Actions")
+        host_1 = self.add_host(provider=provider, fqdn="host-1")
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Map hosts"):
             with self.grant_permissions(to=self.test_user, on=host_1, role_name="Manage Maintenance mode"):
@@ -1663,7 +1663,7 @@ class TestProviderConfig(BaseAPITestCase):
         response = (
             self.client.v2
             / "hostproviders"
-            / self.get_non_existent_pk(model=HostProvider)
+            / self.get_non_existent_pk(model=Provider)
             / CONFIGS
             / self.provider_initial_config
         ).get()
@@ -1704,7 +1704,7 @@ class TestProviderConfig(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = json.loads(
-            (self.test_files_dir / "responses" / "config_schemas" / "for_hostprovider.json").read_text(encoding="utf-8")
+            (self.test_files_dir / "responses" / "config_schemas" / "for_provider.json").read_text(encoding="utf-8")
         )
         actual_data = response.json()
 
@@ -1878,7 +1878,7 @@ class TestProviderCHG(BaseAPITestCase):
         response = (
             self.client.v2
             / "hostproviders"
-            / self.get_non_existent_pk(model=HostProvider)
+            / self.get_non_existent_pk(model=Provider)
             / CONFIGS
             / self.provider.config.current
         ).get()
@@ -2069,9 +2069,9 @@ class TestProviderCHG(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         expected_data = json.loads(
-            (
-                self.test_files_dir / "responses" / "config_schemas" / "for_hostprovider_config_host_group.json"
-            ).read_text(encoding="utf-8")
+            (self.test_files_dir / "responses" / "config_schemas" / "for_provider_config_host_group.json").read_text(
+                encoding="utf-8"
+            )
         )
         actual_data = response.json()
 

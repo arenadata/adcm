@@ -19,7 +19,7 @@ ClusterID: TypeAlias = ObjectID
 ServiceID: TypeAlias = ObjectID
 ComponentID: TypeAlias = ObjectID
 HostID: TypeAlias = ObjectID
-HostProviderID: TypeAlias = ObjectID
+ProviderID: TypeAlias = ObjectID
 
 BundleID: TypeAlias = int
 PrototypeID: TypeAlias = int
@@ -52,7 +52,7 @@ class ADCMCoreType(Enum):
     CLUSTER = "cluster"
     SERVICE = "service"
     COMPONENT = "component"
-    HOSTPROVIDER = "hostprovider"
+    PROVIDER = "provider"
     HOST = "host"
 
 

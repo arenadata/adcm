@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Cluster, Component, ConfigHostGroup, Host, HostProvider, Service
+from cm.models import Cluster, Component, ConfigHostGroup, Host, Provider, Service
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import (
     HTTP_200_OK,
@@ -954,7 +954,7 @@ class TestCHGAudit(BaseAPITestCase):
             user__username=self.test_user.username,
         )
 
-    def test_hostprovider_config_create_success(self):
+    def test_provider_config_create_success(self):
         response = self.client.v2[self.provider_host_group, "configs"].post(
             data=self.provider_config_data,
         )
@@ -968,7 +968,7 @@ class TestCHGAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-    def test_hostprovider_config_create_incorrect_data_fail(self):
+    def test_provider_config_create_incorrect_data_fail(self):
         response = self.client.v2[self.provider_host_group, "configs"].post(
             data={},
         )
@@ -982,11 +982,11 @@ class TestCHGAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-    def test_hostprovider_config_create_fail(self):
+    def test_provider_config_create_fail(self):
         response = (
             self.client.v2
             / "hostproviders"
-            / self.get_non_existent_pk(model=HostProvider)
+            / self.get_non_existent_pk(model=Provider)
             / "config-groups"
             / self.provider_host_group.pk
             / "configs"
@@ -1003,7 +1003,7 @@ class TestCHGAudit(BaseAPITestCase):
             user__username="admin",
         )
 
-    def test_hostprovider_config_create_view_perms_denied(self):
+    def test_provider_config_create_view_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=[self.provider], role_name="View provider configurations"):
             response = self.client.v2[self.provider_host_group, "configs"].post(
@@ -1019,7 +1019,7 @@ class TestCHGAudit(BaseAPITestCase):
             user__username=self.test_user.username,
         )
 
-    def test_hostprovider_config_create_no_perms_denied(self):
+    def test_provider_config_create_no_perms_denied(self):
         self.client.login(**self.test_user_credentials)
         response = self.client.v2[self.provider_host_group, "configs"].post(
             data=self.provider_config_data,

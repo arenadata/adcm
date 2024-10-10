@@ -22,9 +22,9 @@ from cm.models import (
     Bundle,
     Cluster,
     Component,
-    HostProvider,
     ProductCategory,
     Prototype,
+    Provider,
     Service,
 )
 from django.conf import settings
@@ -562,7 +562,7 @@ class TestMMRoles(RBACBaseTestCase, BusinessLogicMixin):
         init_adcm()
 
         self.cluster = Cluster.objects.create(name="testcluster", prototype=self.clp)
-        self.provider = HostProvider.objects.create(
+        self.provider = Provider.objects.create(
             name="test_provider",
             prototype=self.provider_prototype,
         )

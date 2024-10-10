@@ -12,7 +12,7 @@
 
 from typing import Any
 
-from core.types import ClusterID, ComponentID, HostID, HostProviderID, ObjectID, PrototypeID, ServiceID
+from core.types import ClusterID, ComponentID, HostID, ObjectID, PrototypeID, ProviderID, ServiceID
 from pydantic import BaseModel, ConfigDict
 
 
@@ -70,7 +70,7 @@ class HostData(DBModel):
     fqdn: str
     cluster_id: ClusterID
     prototype_id: PrototypeID
-    provider_id: HostProviderID
+    provider_id: ProviderID
     maintenance_mode: str
 
 

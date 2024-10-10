@@ -28,9 +28,9 @@ from cm.models import (
     Cluster,
     Component,
     Host,
-    HostProvider,
     JobLog,
     Prototype,
+    Provider,
     Service,
     TaskLog,
 )
@@ -130,16 +130,14 @@ _extract_component_from = partial(
 parent_component_from_lookup = _extract_component_from(extract_id=ExtractID(field="component_pk").from_lookup_kwargs)
 component_from_lookup = _extract_component_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
 
-_extract_hostprovider_from = partial(
+_extract_provider_from = partial(
     GeneralAuditObjectRetriever,
     audit_object_type=AuditObjectType.PROVIDER,
-    create_new=IDBasedAuditObjectCreator(model=HostProvider),
+    create_new=IDBasedAuditObjectCreator(model=Provider),
 )
-parent_hostprovider_from_lookup = _extract_hostprovider_from(
-    extract_id=ExtractID(field="hostprovider_pk").from_lookup_kwargs
-)
-hostprovider_from_lookup = _extract_hostprovider_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
-hostprovider_from_response = _extract_hostprovider_from(extract_id=ExtractID(field="id").from_response)
+parent_provider_from_lookup = _extract_provider_from(extract_id=ExtractID(field="provider_pk").from_lookup_kwargs)
+provider_from_lookup = _extract_provider_from(extract_id=ExtractID(field="pk").from_lookup_kwargs)
+provider_from_response = _extract_provider_from(extract_id=ExtractID(field="id").from_response)
 
 _extract_host_from = partial(
     GeneralAuditObjectRetriever, audit_object_type=AuditObjectType.HOST, create_new=create_audit_host_object
@@ -639,8 +637,8 @@ def get_audit_object_name(object_id: int, model_name: str) -> str:
                 .filter(id=object_id)
                 .first()
             )
-        case ADCMCoreType.HOSTPROVIDER:
-            names = HostProvider.objects.values_list("name").filter(id=object_id).first()
+        case ADCMCoreType.PROVIDER:
+            names = Provider.objects.values_list("name").filter(id=object_id).first()
         case ADCMCoreType.HOST:
             names = Host.objects.values_list("fqdn").filter(id=object_id).first()
         case _:

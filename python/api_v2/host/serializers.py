@@ -12,7 +12,7 @@
 
 from adcm import settings
 from adcm.serializers import EmptySerializer
-from cm.models import Cluster, Component, Host, HostProvider, MaintenanceMode
+from cm.models import Cluster, Component, Host, MaintenanceMode, Provider
 from cm.validators import HostUniqueValidator, StartMidEndValidator
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import (
@@ -28,9 +28,9 @@ from api_v2.prototype.serializers import PrototypeRelatedSerializer
 from api_v2.serializers import WithStatusSerializer
 
 
-class HostProviderSerializer(ModelSerializer):
+class ProviderSerializer(ModelSerializer):
     class Meta:
-        model = HostProvider
+        model = Provider
         fields = ["id", "name", "display_name"]
 
 
@@ -47,7 +47,7 @@ class HCComponentNameSerializer(ModelSerializer):
 
 
 class HostSerializer(WithStatusSerializer):
-    hostprovider = HostProviderSerializer(source="provider")
+    hostprovider = ProviderSerializer(source="provider")
     prototype = PrototypeRelatedSerializer()
     concerns = ConcernSerializer(many=True)
     name = CharField(

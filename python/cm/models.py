@@ -265,7 +265,7 @@ class ObjectConfig(ADCMModel):
             "cluster",
             "service",
             "component",
-            "hostprovider",
+            "provider",
             "host",
             "config_host_group",
         ]
@@ -476,7 +476,7 @@ class Cluster(ADCMEntity):
         return result if result["issue"] else {}
 
 
-class HostProvider(ADCMEntity):
+class Provider(ADCMEntity):
     name = models.CharField(max_length=1000, unique=True)
     description = models.TextField(blank=True)
     config_host_group = GenericRelation(
@@ -518,7 +518,7 @@ class HostProvider(ADCMEntity):
 class Host(ADCMEntity):
     fqdn = models.CharField(max_length=1000, unique=True)
     description = models.TextField(blank=True)
-    provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
     maintenance_mode = models.CharField(
         max_length=1000,
@@ -931,7 +931,7 @@ class ConfigHostGroup(ADCMModel):
     def host_candidate(self):
         """Returns candidate hosts valid to add to the group"""
 
-        if isinstance(self.object, (Cluster, HostProvider)):
+        if isinstance(self.object, (Cluster, Provider)):
             hosts = self.object.host_set.order_by("id")
         elif isinstance(self.object, Service):
             hosts = Host.objects.filter(cluster=self.object.cluster, hostcomponent__service=self.object).distinct()
@@ -1638,7 +1638,7 @@ class ConcernItem(ADCMModel):
             self.cluster_entities.order_by("id"),
             self.service_entities.order_by("id"),
             self.component_entities.order_by("id"),
-            self.hostprovider_entities.order_by("id"),
+            self.provider_entities.order_by("id"),
             self.host_entities.order_by("id"),
         )
 
@@ -1649,7 +1649,7 @@ class ConcernItem(ADCMModel):
             self.cluster_entities,
             self.service_entities,
             self.component_entities,
-            self.hostprovider_entities,
+            self.provider_entities,
             self.host_entities,
         )
 
@@ -1659,7 +1659,7 @@ class ADCMEntityStatus(models.TextChoices):
     DOWN = "down", "down"
 
 
-MainObject: TypeAlias = Cluster | Service | Component | HostProvider | Host
+MainObject: TypeAlias = Cluster | Service | Component | Provider | Host
 
 _CMObjects = ADCM | MainObject | Bundle | Prototype | ConfigLog | ConfigHostGroup | Action | Upgrade | TaskLog | JobLog
 
@@ -1671,10 +1671,10 @@ CM_MODEL_MAP: dict[str, type[_CMObjects]] = {
     "services": Service,
     "component": Component,
     "components": Component,
-    "provider": HostProvider,
-    "providers": HostProvider,
-    "hostprovider": HostProvider,
-    "hostproviders": HostProvider,
+    "provider": Provider,
+    "providers": Provider,
+    "hostprovider": Provider,
+    "hostproviders": Provider,
     "host": Host,
     "hosts": Host,
     "config": ConfigLog,

@@ -14,7 +14,7 @@ from adcm.permissions import VIEW_PROVIDER_PERM
 from audit.alt.api import audit_create, audit_delete
 from cm.api import add_host_provider, delete_host_provider
 from cm.errors import AdcmEx
-from cm.models import HostProvider, ObjectType, Prototype
+from cm.models import ObjectType, Prototype, Provider
 from django.db.utils import IntegrityError
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
@@ -44,13 +44,13 @@ from api_v2.generic.config_host_group.views import CHGViewSet, HostCHGViewSet
 from api_v2.generic.upgrade.api_schema import document_upgrade_viewset
 from api_v2.generic.upgrade.audit import audit_upgrade_viewset
 from api_v2.generic.upgrade.views import UpgradeViewSet
-from api_v2.hostprovider.filters import HostProviderFilter
-from api_v2.hostprovider.permissions import HostProviderPermissions
-from api_v2.hostprovider.serializers import (
-    HostProviderCreateSerializer,
-    HostProviderSerializer,
+from api_v2.provider.filters import ProviderFilter
+from api_v2.provider.permissions import ProviderPermissions
+from api_v2.provider.serializers import (
+    ProviderCreateSerializer,
+    ProviderSerializer,
 )
-from api_v2.utils.audit import hostprovider_from_lookup, hostprovider_from_response, parent_hostprovider_from_lookup
+from api_v2.utils.audit import parent_provider_from_lookup, provider_from_lookup, provider_from_response
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -88,7 +88,7 @@ from api_v2.views import ADCMGenericViewSet
         summary="POST hostproviders",
         description="Creation of a new ADCM hostprovider.",
         responses={
-            201: HostProviderSerializer,
+            201: ProviderSerializer,
             403: ErrorSerializer,
             409: ErrorSerializer,
         },
@@ -106,7 +106,7 @@ from api_v2.views import ADCMGenericViewSet
                 type=int,
             ),
         ],
-        responses={200: HostProviderSerializer, 404: ErrorSerializer},
+        responses={200: ProviderSerializer, 404: ErrorSerializer},
     ),
     destroy=extend_schema(
         operation_id="deleteHostprovider",
@@ -129,23 +129,21 @@ from api_v2.views import ADCMGenericViewSet
         },
     ),
 )
-class HostProviderViewSet(
-    PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin, ListModelMixin, ADCMGenericViewSet
-):
-    queryset = HostProvider.objects.select_related("prototype").order_by("name")
-    serializer_class = HostProviderSerializer
-    permission_classes = [HostProviderPermissions]
+class ProviderViewSet(PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin, ListModelMixin, ADCMGenericViewSet):
+    queryset = Provider.objects.select_related("prototype").order_by("name")
+    serializer_class = ProviderSerializer
+    permission_classes = [ProviderPermissions]
     permission_required = [VIEW_PROVIDER_PERM]
-    filterset_class = HostProviderFilter
+    filterset_class = ProviderFilter
     filter_backends = (DjangoFilterBackend,)
 
     def get_serializer_class(self):
         if self.action == "create":
-            return HostProviderCreateSerializer
+            return ProviderCreateSerializer
 
         return self.serializer_class
 
-    @audit_create(name="Provider created", object_=hostprovider_from_response)
+    @audit_create(name="Provider created", object_=provider_from_response)
     def create(self, request, *args, **kwargs):  # noqa: ARG001, ARG002
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
@@ -160,9 +158,9 @@ class HostProviderViewSet(
         except IntegrityError as e:
             raise AdcmEx(code="PROVIDER_CONFLICT") from e
 
-        return Response(data=HostProviderSerializer(host_provider).data, status=HTTP_201_CREATED)
+        return Response(data=ProviderSerializer(host_provider).data, status=HTTP_201_CREATED)
 
-    @audit_delete(name="Provider deleted", object_=hostprovider_from_lookup, removed_on_success=True)
+    @audit_delete(name="Provider deleted", object_=provider_from_lookup, removed_on_success=True)
     def destroy(self, request, *args, **kwargs):  # noqa: ARG002
         host_provider = self.get_object()
         delete_host_provider(host_provider)
@@ -170,36 +168,36 @@ class HostProviderViewSet(
 
 
 @document_config_host_group_viewset(object_type="hostprovider")
-@audit_config_host_group_viewset(retrieve_owner=parent_hostprovider_from_lookup)
-class HostProviderCHGViewSet(CHGViewSet):
+@audit_config_host_group_viewset(retrieve_owner=parent_provider_from_lookup)
+class ProviderCHGViewSet(CHGViewSet):
     ...
 
 
 @document_host_config_host_group_viewset(object_type="hostprovider")
-@audit_host_config_host_group_viewset(retrieve_owner=parent_hostprovider_from_lookup)
-class HostProviderHostCHGViewSet(HostCHGViewSet):
+@audit_host_config_host_group_viewset(retrieve_owner=parent_provider_from_lookup)
+class ProviderHostCHGViewSet(HostCHGViewSet):
     ...
 
 
 @document_config_viewset(object_type="hostprovider config group", operation_id_variant="HostProviderConfigGroup")
-@audit_config_config_host_group_viewset(retrieve_owner=parent_hostprovider_from_lookup)
-class HostProviderConfigCHGViewSet(ConfigLogViewSet):
+@audit_config_config_host_group_viewset(retrieve_owner=parent_provider_from_lookup)
+class ProviderConfigCHGViewSet(ConfigLogViewSet):
     ...
 
 
 @document_action_viewset(object_type="hostprovider")
-@audit_action_viewset(retrieve_owner=parent_hostprovider_from_lookup)
-class HostProviderActionViewSet(ActionViewSet):
+@audit_action_viewset(retrieve_owner=parent_provider_from_lookup)
+class ProviderActionViewSet(ActionViewSet):
     ...
 
 
 @document_config_viewset(object_type="hostprovider")
-@audit_config_viewset(type_in_name="Provider", retrieve_owner=parent_hostprovider_from_lookup)
-class HostProviderConfigViewSet(ConfigLogViewSet):
+@audit_config_viewset(type_in_name="Provider", retrieve_owner=parent_provider_from_lookup)
+class ProviderConfigViewSet(ConfigLogViewSet):
     ...
 
 
 @document_upgrade_viewset(object_type="hostprovider")
-@audit_upgrade_viewset(retrieve_owner=parent_hostprovider_from_lookup)
-class HostProviderUpgradeViewSet(UpgradeViewSet):
+@audit_upgrade_viewset(retrieve_owner=parent_provider_from_lookup)
+class ProviderUpgradeViewSet(UpgradeViewSet):
     ...

@@ -148,7 +148,7 @@ class TestEffectsOfADCMAnsiblePlugins(BaseTestEffectsOfADCMAnsiblePlugins):
 
                 self.assertIsInstance(result.error, PluginContextError)
                 self.assertIn(
-                    "Plugin should be called only in context of hostprovider, "
+                    "Plugin should be called only in context of provider, "
                     f"not {orm_object_to_core_type(object_).value}",
                     result.error.message,
                 )

@@ -13,10 +13,10 @@
 from core.types import CoreObjectDescriptor
 
 from cm.converters import core_type_to_model
-from cm.models import Cluster, Component, ConcernItem, ConcernType, Host, HostProvider, Service
+from cm.models import Cluster, Component, ConcernItem, ConcernType, Host, Provider, Service
 
 
-def get_lock_on_object(object_: Cluster | Service | Component | HostProvider | Host) -> ConcernItem | None:
+def get_lock_on_object(object_: Cluster | Service | Component | Provider | Host) -> ConcernItem | None:
     return object_.concerns.filter(type=ConcernType.LOCK).first()
 
 

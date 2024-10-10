@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models import Action, Component, Host, HostComponent, HostProvider
+from cm.models import Action, Component, Host, HostComponent, Provider
 from cm.tests.mocks.task_runner import RunTaskMock
 from core.types import ADCMCoreType
 from rest_framework.status import (
@@ -94,7 +94,7 @@ class TestHost(BaseAPITestCase):
 
     def test_create_failed_wrong_provider(self):
         response = (self.client.v2 / "hosts").post(
-            data={"hostprovider_id": self.get_non_existent_pk(model=HostProvider), "name": "woohoo"}
+            data={"hostprovider_id": self.get_non_existent_pk(model=Provider), "name": "woohoo"}
         )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -254,7 +254,7 @@ class TestHost(BaseAPITestCase):
         self.assertEqual(response.json()["results"][0]["id"], self.host.pk)
         self.assertEqual(response.json()["results"][0]["cluster"], None)
 
-    def test_hostprovider_filter(self):
+    def test_provider_filter(self):
         second_provider = self.add_provider(bundle=self.provider_bundle, name="second_provider", description="provider")
         host2 = self.add_host(
             bundle=self.provider_bundle, description="description", provider=second_provider, fqdn="test_host_2"

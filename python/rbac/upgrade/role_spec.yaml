@@ -38,11 +38,11 @@ roles:
       - provider
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     apps:
       - label: cm
         models:
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
               - add_host_to
@@ -69,7 +69,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
               - add
@@ -265,7 +265,7 @@ roles:
     any_category: false
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     child:
       - Get provider object
       - View provider config
@@ -326,7 +326,7 @@ roles:
           - name: host
             codenames:
               - view
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
           - name: objectconfig
@@ -485,11 +485,11 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     apps:
       - label: cm
         models:
-          - name: hostprovider
+          - name: provider
             codenames:
               - change_config_of
 
@@ -503,7 +503,7 @@ roles:
     any_category: false
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     child:
       - Get provider object
       - View provider config
@@ -625,7 +625,7 @@ roles:
             codenames:
               - view
               - view_upgrade_of
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
               - view_upgrade_of
@@ -961,11 +961,11 @@ roles:
     any_category: false
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     apps:
       - label: cm
         models:
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
               - view_upgrade_of
@@ -1009,12 +1009,12 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     any_category: false
     apps:
       - label: cm
         models:
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
               - delete
@@ -1281,7 +1281,7 @@ roles:
     apps:
       - label: cm
         models:
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
 
@@ -1294,11 +1294,11 @@ roles:
       - provider
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     apps:
       - label: cm
         models:
-          - name: hostprovider
+          - name: provider
             codenames:
               - view
 
@@ -1560,7 +1560,7 @@ roles:
       - provider
     init_params:
       app_name: cm
-      model: HostProvider
+      model: Provider
     module_name: rbac.roles
     class_name: ParentRole
     child:

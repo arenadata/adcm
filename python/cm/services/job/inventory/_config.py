@@ -20,7 +20,7 @@ from core.types import ADCMCoreType, ConfigID, CoreObjectDescriptor, GeneralEnti
 from django.conf import settings
 from django.db.models import F, QuerySet, Value
 
-from cm.models import ADCM, Cluster, Component, Host, HostProvider, Service
+from cm.models import ADCM, Cluster, Component, Host, Provider, Service
 from cm.services.config import retrieve_config_attr_pairs
 from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 from cm.services.config.types import AttrDict, ConfigDict
@@ -99,24 +99,24 @@ def get_config_host_group_alternatives_for_hosts_in_cluster_groups(
     return result
 
 
-def get_config_host_group_alternatives_for_hosts_in_hostprovider_groups(
+def get_config_host_group_alternatives_for_hosts_in_provider_groups(
     config_host_groups: Iterable[ConfigHostGroupInfo],
-    hostprovider_vars: dict,
+    provider_vars: dict,
     objects_before_upgrade: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], dict],
 ) -> dict[str, dict]:
-    groups_of_hostprovider_with_hosts = tuple(
-        group for group in config_host_groups if group.hosts and group.owner.type == ADCMCoreType.HOSTPROVIDER
+    groups_of_provider_with_hosts = tuple(
+        group for group in config_host_groups if group.hosts and group.owner.type == ADCMCoreType.PROVIDER
     )
 
-    if not groups_of_hostprovider_with_hosts:
+    if not groups_of_provider_with_hosts:
         return {}
 
     configurations = retrieve_config_attr_pairs(
-        configurations=(group.current_config_id for group in groups_of_hostprovider_with_hosts)
+        configurations=(group.current_config_id for group in groups_of_provider_with_hosts)
     )
 
     objects_with_groups = defaultdict(set)
-    for group in groups_of_hostprovider_with_hosts:
+    for group in groups_of_provider_with_hosts:
         objects_with_groups[group.owner.type].add(group.owner.id)
 
     objects_config_info = _get_config_info(objects=objects_with_groups)
@@ -125,9 +125,9 @@ def get_config_host_group_alternatives_for_hosts_in_hostprovider_groups(
         prototypes=(entry.prototype_id for entry in objects_config_info.values())
     )
 
-    result = defaultdict(lambda: deepcopy(hostprovider_vars))
+    result = defaultdict(lambda: deepcopy(provider_vars))
 
-    for group in groups_of_hostprovider_with_hosts:
+    for group in groups_of_provider_with_hosts:
         configuration, attributes = configurations[group.current_config_id]
         specification = specifications_for_prototypes[objects_config_info[group.owner].prototype_id]
         updated_config = update_configuration_for_inventory_inplace(
@@ -211,7 +211,7 @@ def _get_config_info(objects: ObjectsInInventoryMap) -> dict[CoreObjectDescripto
                 (Cluster, ADCMCoreType.CLUSTER),
                 (Service, ADCMCoreType.SERVICE),
                 (Component, ADCMCoreType.COMPONENT),
-                (HostProvider, ADCMCoreType.HOSTPROVIDER),
+                (Provider, ADCMCoreType.PROVIDER),
                 (Host, ADCMCoreType.HOST),
             )
         ),
@@ -304,7 +304,7 @@ def _build_string_path_for_file(
     """
     if not isinstance(object_itself, CoreObjectDescriptor):
         type_as_string = object_itself.type
-    elif object_itself.type == ADCMCoreType.HOSTPROVIDER:
+    elif object_itself.type == ADCMCoreType.PROVIDER:
         type_as_string = "provider"
     else:
         type_as_string = object_itself.type.value

@@ -16,9 +16,9 @@ from audit.models import AuditObjectType
 from core.types import ADCMCoreType, ADCMHostGroupType, ExtraActionTargetType
 from django.db.models import Model
 
-from cm.models import ADCM, ActionHostGroup, Cluster, Component, ConfigHostGroup, Host, HostProvider, Service
+from cm.models import ADCM, ActionHostGroup, Cluster, Component, ConfigHostGroup, Host, Provider, Service
 
-CoreObject: TypeAlias = Cluster | Service | Component | HostProvider | Host
+CoreObject: TypeAlias = Cluster | Service | Component | Provider | Host
 GroupObject: TypeAlias = ConfigHostGroup | ActionHostGroup
 
 
@@ -30,8 +30,8 @@ def core_type_to_model(core_type: ADCMCoreType) -> type[CoreObject | ADCM]:
             return Service
         case ADCMCoreType.COMPONENT:
             return Component
-        case ADCMCoreType.HOSTPROVIDER:
-            return HostProvider
+        case ADCMCoreType.PROVIDER:
+            return Provider
         case ADCMCoreType.HOST:
             return Host
         case ADCMCoreType.ADCM:
@@ -58,7 +58,7 @@ def core_type_to_db_record_type(core_type: ADCMCoreType) -> str:
             return "service"
         case ADCMCoreType.COMPONENT:
             return "component"
-        case ADCMCoreType.HOSTPROVIDER:
+        case ADCMCoreType.PROVIDER:
             return "provider"
         case ADCMCoreType.HOST:
             return "host"
@@ -73,7 +73,7 @@ def db_record_type_to_core_type(db_record_type: str) -> ADCMCoreType:
         return ADCMCoreType(db_record_type)
     except ValueError:
         if db_record_type == "provider":
-            return ADCMCoreType.HOSTPROVIDER
+            return ADCMCoreType.PROVIDER
 
         raise
 
@@ -116,7 +116,7 @@ _model_name_to_audit_object_type_map = {
     "service": AuditObjectType.SERVICE,
     "component": AuditObjectType.COMPONENT,
     "host": AuditObjectType.HOST,
-    "hostprovider": AuditObjectType.PROVIDER,
+    "provider": AuditObjectType.PROVIDER,
     "bundle": AuditObjectType.BUNDLE,
     "prototype": AuditObjectType.PROTOTYPE,
     "adcm": AuditObjectType.ADCM,

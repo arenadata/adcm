@@ -54,13 +54,13 @@ from cm.models import (
     ConfigLog,
     Host,
     HostComponent,
-    HostProvider,
     MainObject,
     MaintenanceMode,
     ObjectConfig,
     Prototype,
     PrototypeExport,
     PrototypeImport,
+    Provider,
     Service,
     TaskLog,
 )
@@ -157,7 +157,7 @@ def add_cluster(prototype: Prototype, name: str, description: str = "") -> Clust
     return cluster
 
 
-def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, description: str = ""):
+def add_host(prototype: Prototype, provider: Provider, fqdn: str, description: str = ""):
     if prototype.type != "host":
         raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be host, not {prototype.type}")
 
@@ -184,7 +184,7 @@ def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, descriptio
                 owner=CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST), concern_id=concern_id
             )
         if concern := retrieve_issue(
-            owner=CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.HOSTPROVIDER), cause=ConcernCause.CONFIG
+            owner=CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.PROVIDER), cause=ConcernCause.CONFIG
         ):
             host.concerns.add(concern)
 
@@ -206,12 +206,12 @@ def add_host_provider(prototype: Prototype, name: str, description: str = ""):
 
     check_license(prototype)
     with atomic():
-        provider = HostProvider.objects.create(prototype=prototype, name=name, description=description)
+        provider = Provider.objects.create(prototype=prototype, name=name, description=description)
         obj_conf = init_object_config(prototype, provider)
         provider.config = obj_conf
         provider.save()
 
-        provider_cod = CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.HOSTPROVIDER)
+        provider_cod = CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.PROVIDER)
         concern_id = None
         if object_configuration_has_issue(provider):
             concern = create_issue(owner=provider_cod, cause=ConcernCause.CONFIG)

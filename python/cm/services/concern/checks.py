@@ -27,10 +27,10 @@ from cm.models import (
     ClusterBind,
     Component,
     Host,
-    HostProvider,
     ObjectConfig,
     Prototype,
     PrototypeImport,
+    Provider,
     Service,
 )
 from cm.services.bundle import retrieve_bundle_restrictions
@@ -38,7 +38,7 @@ from cm.services.cluster import retrieve_cluster_topology
 from cm.services.config import retrieve_config_attr_pairs
 from cm.services.config.spec import FlatSpec, retrieve_flat_spec_for_objects
 
-ObjectWithConfig: TypeAlias = Cluster | Service | Component | HostProvider | Host
+ObjectWithConfig: TypeAlias = Cluster | Service | Component | Provider | Host
 HasIssue: TypeAlias = bool
 RequiresEntry: TypeAlias = dict[Literal["service", "component"], str]
 

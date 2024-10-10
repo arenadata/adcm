@@ -62,9 +62,9 @@ from cm.models import (
     Cluster,
     Component,
     Host,
-    HostProvider,
     JobLog,
     LogStorage,
+    Provider,
     Service,
     SubAction,
     TaskLog,
@@ -89,7 +89,7 @@ class JobRepoImpl:
             "type_name": Value(ADCMCoreType.COMPONENT.value),
         },
         Host: {"object_id": F("id"), "object_name": F("fqdn"), "type_name": Value(ADCMCoreType.HOST.value)},
-        HostProvider: {"object_id": F("id"), "object_name": F("name"), "type_name": Value("provider")},
+        Provider: {"object_id": F("id"), "object_name": F("name"), "type_name": Value("provider")},
     }
 
     @classmethod
@@ -317,9 +317,9 @@ class JobRepoImpl:
 
         match target.type, owner.type:
             case (ADCMCoreType.HOST, ADCMCoreType.HOST):
-                hostprovider_id = Host.objects.values_list("provider_id", flat=True).get(id=target.id)
+                provider_id = Host.objects.values_list("provider_id", flat=True).get(id=target.id)
                 query = query.union(
-                    HostProvider.objects.values(**cls._selector_fields_map[HostProvider]).filter(id=hostprovider_id)
+                    Provider.objects.values(**cls._selector_fields_map[Provider]).filter(id=provider_id)
                 )
             case (ADCMCoreType.HOST, ADCMCoreType.CLUSTER | ADCMCoreType.SERVICE | ADCMCoreType.COMPONENT):
                 query = query.union(cls._get_host_related_selector(host_id=target.id, action_owner=owner))
@@ -375,10 +375,10 @@ class JobRepoImpl:
 
         related_cluster_values = ("cluster_id", "cluster__prototype_id", "cluster__name")
         related_service_values = ("service_id", "service__prototype_id", "service__prototype__name")
-        related_hostprovider_values = ("provider_id", "provider__prototype_id", "provider__name")
+        related_provider_values = ("provider_id", "provider__prototype_id", "provider__name")
 
         match owner_type:
-            case ADCMCoreType.ADCM | ADCMCoreType.CLUSTER | ADCMCoreType.HOSTPROVIDER:
+            case ADCMCoreType.ADCM | ADCMCoreType.CLUSTER | ADCMCoreType.PROVIDER:
                 return TaskOwner(
                     id=owner_id,
                     type=owner_type,
@@ -429,7 +429,7 @@ class JobRepoImpl:
                 data = owner_model.objects.values(
                     "prototype_id",
                     *related_cluster_values,
-                    *related_hostprovider_values,
+                    *related_provider_values,
                     name=F("fqdn"),
                 ).get(id=owner_id)
                 cluster = (
@@ -442,10 +442,10 @@ class JobRepoImpl:
                     if data["cluster_id"]
                     else None
                 )
-                hostprovider = NamedCoreObjectWithPrototype(
+                provider = NamedCoreObjectWithPrototype(
                     id=data["provider_id"],
                     prototype_id=data["provider__prototype_id"],
-                    type=ADCMCoreType.HOSTPROVIDER,
+                    type=ADCMCoreType.PROVIDER,
                     name=data["provider__name"],
                 )
                 return TaskOwner(
@@ -453,7 +453,7 @@ class JobRepoImpl:
                     type=ADCMCoreType.HOST,
                     prototype_id=data["prototype_id"],
                     name=data["name"],
-                    related_objects=RelatedObjects(cluster=cluster, hostprovider=hostprovider),
+                    related_objects=RelatedObjects(cluster=cluster, provider=provider),
                 )
             case _:
                 message = f"Can't detect owner of type {owner_type}"

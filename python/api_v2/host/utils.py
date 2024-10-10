@@ -19,7 +19,7 @@ from cm.issue import (
     recheck_issues,
 )
 from cm.logger import logger
-from cm.models import Cluster, Host, HostProvider, ObjectType, Prototype
+from cm.models import Cluster, Host, ObjectType, Prototype, Provider
 from cm.services.concern import retrieve_issue
 from cm.services.concern.locks import get_lock_on_object
 from cm.services.maintenance_mode import get_maintenance_mode_response
@@ -33,7 +33,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
 
 
-def create_host(provider: HostProvider, fqdn: str, cluster: Cluster | None) -> Host:
+def create_host(provider: Provider, fqdn: str, cluster: Cluster | None) -> Host:
     host_prototype = Prototype.objects.get(type=ObjectType.HOST, bundle=provider.prototype.bundle)
     check_license(prototype=host_prototype)
 
@@ -49,9 +49,9 @@ def _recheck_new_host_issues(host: Host):
     recheck_issues(obj=host)  # only host itself is directly affected
 
     # propagate issues from provider only to this host
-    hostprovider = CoreObjectDescriptor(id=host.provider_id, type=ADCMCoreType.HOSTPROVIDER)
+    provider = CoreObjectDescriptor(id=host.provider_id, type=ADCMCoreType.PROVIDER)
     for issue_cause in _prototype_issue_map.get(ObjectType.PROVIDER, []):
-        add_concern_to_object(object_=host, concern=retrieve_issue(owner=hostprovider, cause=issue_cause))
+        add_concern_to_object(object_=host, concern=retrieve_issue(owner=provider, cause=issue_cause))
 
 
 def process_config_issues_policies_hc(host: Host) -> None:
