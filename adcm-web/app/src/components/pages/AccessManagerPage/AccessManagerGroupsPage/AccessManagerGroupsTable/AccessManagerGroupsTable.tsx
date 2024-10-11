@@ -35,7 +35,7 @@ const AccessManagerGroupsTable = () => {
     setSelectedGroups,
   );
 
-  const handleDeleteClick = (group: AdcmGroup) => () => {
+  const getHandleDeleteClick = (group: AdcmGroup) => () => {
     dispatch(openDeleteDialog(group));
   };
 
@@ -43,7 +43,7 @@ const AccessManagerGroupsTable = () => {
     dispatch(setSortParams(sortParams));
   };
 
-  const handleOpenUpdateDialog = (group: AdcmGroup) => () => {
+  const getHandleOpenUpdateDialog = (group: AdcmGroup) => () => {
     dispatch(openUpdateDialog(group));
   };
 
@@ -68,8 +68,8 @@ const AccessManagerGroupsTable = () => {
             <TableCell>{group.users.map((user) => user.username).join(', ')}</TableCell>
             <TableCell>{group.type}</TableCell>
             <TableCell hasIconOnly align="center">
-              <IconButton icon="g1-edit" size={32} title="Edit" onClick={handleOpenUpdateDialog(group)} />
-              <IconButton icon="g1-delete" size={32} onClick={handleDeleteClick(group)} title="Delete" />
+              <IconButton icon="g1-edit" size={32} title="Edit" onClick={getHandleOpenUpdateDialog(group)} />
+              <IconButton icon="g1-delete" size={32} onClick={getHandleDeleteClick(group)} title="Delete" />
             </TableCell>
           </TableRow>
         );

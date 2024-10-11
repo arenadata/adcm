@@ -16,7 +16,6 @@ const AccessManagerUsersBlockDialog: React.FC = () => {
 
   const handleConfirmDialog = () => {
     if (!userToBlock?.id) return;
-    console.info(userToBlock);
 
     dispatch(blockUsers([userToBlock.id]));
   };

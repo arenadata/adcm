@@ -40,7 +40,7 @@ const AccessManagerUsersUnblockButton: React.FC = () => {
         onAction={handleConfirmDialog}
         actionButtonLabel="Unblock"
       >
-        All selected users will be unblocked and unable to access their account.
+        All selected users will be unblocked and able to access their account.
       </Dialog>
     </>
   );
