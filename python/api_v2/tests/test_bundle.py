@@ -10,10 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
 
 from cm.bundle import _get_file_hashes
-from cm.models import Action, Bundle
+from cm.models import Action, Bundle, ObjectType, Prototype
 from django.conf import settings
+from django.db.models import F
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -22,6 +24,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+import pytz
 
 from api_v2.tests.base import BaseAPITestCase
 
@@ -103,17 +106,70 @@ class TestBundle(BaseAPITestCase):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-    def test_filter_by_display_name_success(self):
-        response = (self.client.v2 / "bundles").get(query={"displayName": "product"})
+    def test_filtering_success(self):
+        bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_two")
+        prototype_name = bundle.name
+        bundle.name = "unique_name_of_cluster"
+        bundle.edition = "unique_edition_of_cluster"
+        bundle.save()
+        prototype = Prototype.objects.get(name=prototype_name)
+        filters = {
+            "id": (bundle.pk, None, 0),
+            "display_name": (prototype.display_name, prototype.display_name[2:-1].upper(), "wrong"),
+            "product": (prototype.display_name, None, "wrong"),
+            "edition": (bundle.edition, bundle.edition[1:-3].upper(), "wrong"),
+        }
+        exact_items_found, partial_items_found = 1, 1
+        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
+            with self.subTest(filter_name=filter_name):
+                response = (self.client.v2 / "bundles").get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], exact_items_found)
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
+                response = (self.client.v2 / "bundles").get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
 
-    def test_filter_by_product_success(self):
-        response = (self.client.v2 / "bundles").get(query={"product": "product"})
+                if partial_value:
+                    response = (self.client.v2 / "bundles").get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(response.json()["count"], partial_items_found)
 
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["count"], 1)
+    def test_ordering_success(self):
+        ordering_fields = {
+            "id": "id",
+            "prototype__display_name": "displayName",
+            "edition": "edition",
+            "date": "uploadTime",
+        }
+
+        def get_response_results(response, ordering_field):
+            if ordering_field == "uploadTime":
+                return [
+                    datetime.fromisoformat(item["uploadTime"][:-1]).replace(tzinfo=pytz.UTC)
+                    for item in response.json()["results"]
+                ]
+            return [item[ordering_field] for item in response.json()["results"]]
+
+        queryset = Bundle.objects.annotate(type=F("prototype__type"), display_name=F("prototype__display_name")).filter(
+            type__in=[ObjectType.CLUSTER, ObjectType.PROVIDER]
+        )
+
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = (self.client.v2 / "bundles").get(query={"ordering": ordering_field})
+                ordered_result = get_response_results(response, ordering_field)
+                self.assertListEqual(
+                    ordered_result,
+                    list(queryset.order_by(model_field).values_list(model_field, flat=True)),
+                )
+
+                response = (self.client.v2 / "bundles").get(query={"ordering": f"-{ordering_field}"})
+                ordered_result = get_response_results(response, ordering_field)
+                self.assertListEqual(
+                    ordered_result,
+                    list(queryset.order_by(f"-{model_field}").values_list(model_field, flat=True)),
+                )
 
     def test_ordering_asc_success(self):
         response = (self.client.v2 / "bundles").get()
