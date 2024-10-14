@@ -27,7 +27,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from cm.services.job.prepare import prepare_task_for_action
+from cm.services.job.action import prepare_task_for_action
 from cm.tests.mocks.task_runner import RunTaskMock
 from core.job.dto import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
@@ -55,7 +55,7 @@ class TestTask(BaseAPITestCase):
         self.cluster_task = TaskLog.objects.get(
             id=prepare_task_for_action(
                 target=cluster_object,
-                owner=cluster_object,
+                orm_owner=self.cluster_1,
                 action=self.cluster_action.pk,
                 payload=TaskPayloadDTO(),
             ).id
@@ -64,7 +64,7 @@ class TestTask(BaseAPITestCase):
         self.service_task = TaskLog.objects.get(
             id=prepare_task_for_action(
                 target=service_object,
-                owner=service_object,
+                orm_owner=self.service_1,
                 action=self.service_1_action.pk,
                 payload=TaskPayloadDTO(),
             ).id
@@ -73,7 +73,7 @@ class TestTask(BaseAPITestCase):
         self.component_task = TaskLog.objects.get(
             id=prepare_task_for_action(
                 target=component_object,
-                owner=component_object,
+                orm_owner=component_1,
                 action=component_1_action.pk,
                 payload=TaskPayloadDTO(),
             ).id
@@ -320,6 +320,6 @@ class TestTaskObjects(BaseAPITestCase):
         )
         target = CoreObjectDescriptor(id=host.pk, type=ADCMCoreType.HOST) if host else owner
 
-        launch = prepare_task_for_action(target=target, owner=owner, action=action.pk, payload=TaskPayloadDTO())
+        launch = prepare_task_for_action(target=target, orm_owner=object_, action=action.pk, payload=TaskPayloadDTO())
 
         return TaskLog.objects.get(id=launch.id)

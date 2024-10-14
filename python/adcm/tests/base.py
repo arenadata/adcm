@@ -44,7 +44,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
-from cm.services.job.prepare import prepare_task_for_action
+from cm.services.job.action import prepare_task_for_action
 from cm.services.mapping import change_host_component_mapping
 from cm.utils import deep_merge
 from core.cluster.types import HostComponentEntry
@@ -585,5 +585,5 @@ class TaskTestMixin:
         action = Action.objects.get(prototype_id=owner.prototype_id, **action_search_kwargs)
         target = owner_descriptor if not host else CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST)
         return prepare_task_for_action(
-            target=target, owner=owner_descriptor, action=action.id, payload=payload or TaskPayloadDTO()
+            target=target, orm_owner=owner, action=action.id, payload=payload or TaskPayloadDTO()
         )

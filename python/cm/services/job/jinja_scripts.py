@@ -90,9 +90,9 @@ def get_env(task: TaskLog, delta: TaskMappingDelta | None = None) -> JinjaScript
         }
 
     return JinjaScriptsEnvironment(
-        cluster=cluster_vars.cluster.dict(by_alias=True),
+        cluster=cluster_vars.cluster.model_dump(by_alias=True),
         services={
-            service_name: service_data.dict(by_alias=True)
+            service_name: service_data.model_dump(by_alias=True)
             for service_name, service_data in cluster_vars.services.items()
         },
         groups=host_groups,
