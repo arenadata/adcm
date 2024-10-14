@@ -33,7 +33,6 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
 )
 from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
-from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from api.base_view import GenericUIViewSet
 from api.config_host_group.serializers import (
@@ -43,7 +42,6 @@ from api.config_host_group.serializers import (
     CHGHostSerializer,
     CHGSerializer,
     UICHGConfigLogSerializer,
-    revert_model_name,
 )
 
 
@@ -52,7 +50,6 @@ class CHGFilterSet(FilterSet):
 
     @staticmethod
     def filter_object_type(queryset, name, value):
-        value = revert_model_name(value)
         object_type = ContentType.objects.get(app_label="cm", model=value)
         return queryset.filter(**{name: object_type})
 
@@ -63,14 +60,12 @@ class CHGFilterSet(FilterSet):
 
 class CHGHostViewSet(
     PermissionListMixin,
-    NestedViewSetMixin,
     ListModelMixin,
     CreateModelMixin,
     RetrieveModelMixin,
     DestroyModelMixin,
     GenericViewSet,
 ):
-    queryset = Host.objects.all()
     serializer_class = CHGHostSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
     permission_required = ["view_host"]
@@ -78,12 +73,20 @@ class CHGHostViewSet(
     schema = AutoSchema()
     ordering = ["id"]
 
+    def get_queryset(self, *args, **kwargs):  # noqa: ARG002
+        host_group_id = self.kwargs.get("parent_lookup_group_config")
+
+        if host_group_id is None:
+            return Host.objects.none()
+
+        return Host.objects.filter(config_host_group=host_group_id)
+
     @audit
     def create(self, request, *args, **kwargs):  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
 
         if serializer.is_valid(raise_exception=True):
-            host_group = ConfigHostGroup.obj.get(id=self.kwargs.get("parent_lookup_config_host_group"))
+            host_group = ConfigHostGroup.obj.get(id=self.kwargs.get("parent_lookup_group_config"))
             host = serializer.validated_data["id"]
             host_group.check_host_candidate(host_ids=[host.pk])
             host_group.hosts.add(host)
@@ -95,7 +98,7 @@ class CHGHostViewSet(
 
     @audit
     def destroy(self, request, *args, **kwargs):  # noqa: ARG002
-        host_group = ConfigHostGroup.obj.get(id=self.kwargs.get("parent_lookup_config_host_group"))
+        host_group = ConfigHostGroup.obj.get(id=self.kwargs.get("parent_lookup_group_config"))
         host = self.get_object()
         host_group.hosts.remove(host)
 
@@ -106,17 +109,16 @@ class CHGHostViewSet(
         if hasattr(context["view"], "response"):
             return context
 
-        host_group_id = self.kwargs.get("parent_lookup_config_host_group")
+        host_group_id = self.kwargs.get("parent_lookup_group_config")
         if host_group_id is not None:
             host_group = ConfigHostGroup.obj.get(id=host_group_id)
-            context.update({"config_host_group": host_group})
+            context.update({"group_config": host_group})
 
         return context
 
 
 class CHGHostCandidateViewSet(
     PermissionListMixin,
-    NestedViewSetMixin,
     ReadOnlyModelViewSet,
 ):
     serializer_class = CHGHostCandidateSerializer
@@ -126,7 +128,7 @@ class CHGHostCandidateViewSet(
     schema = AutoSchema()
 
     def get_queryset(self, *args, **kwargs):  # noqa: ARG002
-        host_group_id = self.kwargs.get("parent_lookup_config_host_group")
+        host_group_id = self.kwargs.get("parent_lookup_group_config")
         if host_group_id is None:
             return Host.objects.none()
 
@@ -139,37 +141,43 @@ class CHGHostCandidateViewSet(
         if hasattr(context["view"], "response"):
             return context
 
-        host_group_id = self.kwargs.get("parent_lookup_config_host_group")
+        host_group_id = self.kwargs.get("parent_lookup_group_config")
         if host_group_id is not None:
             host_group = ConfigHostGroup.obj.get(id=host_group_id)
-            context.update({"config_host_group": host_group})
+            context.update({"group_config": host_group})
 
         return context
 
 
 class CHGConfigViewSet(
     PermissionListMixin,
-    NestedViewSetMixin,
     RetrieveModelMixin,
     GenericViewSet,
 ):
-    queryset = ObjectConfig.objects.all()
     serializer_class = CHGConfigSerializer
     permission_classes = (DjangoObjectPermissionsAudit,)
     permission_required = ["view_objectconfig"]
     schema = AutoSchema()
     ordering = ["id"]
 
+    def get_queryset(self, *args, **kwargs):  # noqa: ARG002
+        host_group_id = self.kwargs.get("parent_lookup_group_config")
+
+        if host_group_id is None:
+            return ObjectConfig.objects.none()
+
+        return ObjectConfig.objects.filter(config_host_group=host_group_id)
+
     def get_serializer_context(self):
         context = super().get_serializer_context()
         if hasattr(context["view"], "response"):
             return context
 
-        host_group_id = self.kwargs.get("parent_lookup_config_host_group")
+        host_group_id = self.kwargs.get("parent_lookup_group_config")
         if host_group_id is not None:
             host_group = ConfigHostGroup.obj.get(id=host_group_id)
-            context.update({"config_host_group": host_group})
-            context.update({"obj_ref__config_host_group": host_group})
+            context.update({"group_config": host_group})
+            context.update({"obj_ref__group_config": host_group})
 
         obj_ref_id = self.kwargs.get("pk")
         if obj_ref_id is not None:
@@ -181,7 +189,6 @@ class CHGConfigViewSet(
 
 class CHGConfigLogViewSet(
     PermissionListMixin,
-    NestedViewSetMixin,
     RetrieveModelMixin,
     ListModelMixin,
     CreateModelMixin,
@@ -200,7 +207,7 @@ class CHGConfigLogViewSet(
 
     def get_queryset(self, *args, **kwargs):  # noqa: ARG002
         kwargs = {
-            "obj_ref__config_host_group": self.kwargs.get("parent_lookup_obj_ref__config_host_group"),
+            "obj_ref__config_host_group": self.kwargs.get("parent_lookup_obj_ref__group_config"),
             "obj_ref": self.kwargs.get("parent_lookup_obj_ref"),
         }
         return ConfigLog.objects.filter(**kwargs).order_by("-id")
@@ -210,10 +217,10 @@ class CHGConfigLogViewSet(
         if hasattr(context["view"], "response"):
             return context
 
-        host_group_id = self.kwargs.get("parent_lookup_obj_ref__config_host_group")
+        host_group_id = self.kwargs.get("parent_lookup_obj_ref__group_config")
         if host_group_id is not None:
             host_group = ConfigHostGroup.obj.get(id=host_group_id)
-            context.update({"obj_ref__config_host_group": host_group})
+            context.update({"obj_ref__group_config": host_group})
 
         obj_ref_id = self.kwargs.get("parent_lookup_obj_ref")
         if obj_ref_id is not None:
@@ -232,7 +239,7 @@ class CHGConfigLogViewSet(
         return super().create(request, *args, **kwargs)
 
 
-class CHGViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
+class CHGViewSet(PermissionListMixin, ModelViewSet):
     queryset = ConfigHostGroup.objects.all()
     serializer_class = CHGSerializer
     filterset_class = CHGFilterSet
@@ -294,6 +301,6 @@ class CHGViewSet(PermissionListMixin, NestedViewSetMixin, ModelViewSet):
 
         if self.kwargs:
             host_group = self.get_object()
-            context.update({"config_host_group": host_group})
+            context.update({"group_config": host_group})
 
         return context

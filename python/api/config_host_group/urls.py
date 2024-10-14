@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-from rest_framework_extensions.routers import ExtendedSimpleRouter as SimpleRouter
+from rest_framework.urls import path
 
 from api.config_host_group.views import (
     CHGConfigLogViewSet,
@@ -21,31 +20,46 @@ from api.config_host_group.views import (
     CHGViewSet,
 )
 
-router = SimpleRouter()
-
-root = router.register(r"", CHGViewSet, basename="group-config")
-root.register(
-    r"host",
-    CHGHostViewSet,
-    basename="group-config-host",
-    parents_query_lookups=["config_host_group"],
-)
-root.register(
-    r"host-candidate",
-    CHGHostCandidateViewSet,
-    basename="group-config-host-candidate",
-    parents_query_lookups=["config_host_group"],
-)
-config = root.register(
-    r"config",
-    CHGConfigViewSet,
-    basename="group-config-config",
-    parents_query_lookups=["config_host_group"],
-)
-config.register(
-    r"config-log",
-    CHGConfigLogViewSet,
-    basename="group-config-config-log",
-    parents_query_lookups=["obj_ref__config_host_group", "obj_ref"],
-)
-urlpatterns = router.urls
+urlpatterns = [
+    path(r"", CHGViewSet.as_view({"get": "list", "post": "create"}), name="group-config-list"),
+    path(
+        r"<int:pk>/",
+        CHGViewSet.as_view({"get": "retrieve", "put": "update", "patch": "partial_update", "delete": "destroy"}),
+        name="group-config-detail",
+    ),
+    path(
+        r"<int:parent_lookup_group_config>/host/",
+        CHGHostViewSet.as_view({"get": "list", "post": "create"}),
+        name="group-config-host-list",
+    ),
+    path(
+        r"<int:parent_lookup_group_config>/host/<int:host_id>/",
+        CHGHostViewSet.as_view({"get": "retrieve", "delete": "destroy"}),
+        name="group-config-host-detail",
+    ),
+    path(
+        r"<int:parent_lookup_group_config>/host-candidate/",
+        CHGHostCandidateViewSet.as_view({"get": "list"}),
+        name="group-config-host-candidate-list",
+    ),
+    path(
+        r"<int:parent_lookup_group_config>/host-candidate/<int:host_id>/",
+        CHGHostCandidateViewSet.as_view({"get": "retrieve"}),
+        name="group-config-host-candidate-detail",
+    ),
+    path(
+        r"<int:parent_lookup_group_config>/config/<int:pk>/",
+        CHGConfigViewSet.as_view({"get": "retrieve"}),
+        name="group-config-config-detail",
+    ),
+    path(
+        r"<int:parent_lookup_obj_ref__group_config>/config/<int:parent_lookup_obj_ref>/config-log/",
+        CHGConfigLogViewSet.as_view({"get": "list", "post": "create"}),
+        name="group-config-config-log-list",
+    ),
+    path(
+        r"<int:parent_lookup_obj_ref__group_config>/config/<int:parent_lookup_obj_ref>/config-log/<int:pk>/",
+        CHGConfigLogViewSet.as_view({"get": "retrieve"}),
+        name="group-config-config-log-detail",
+    ),
+]

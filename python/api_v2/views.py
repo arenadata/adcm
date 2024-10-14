@@ -46,7 +46,7 @@ class APIRoot(APIRootView):
         "audit": "audit:root",
         "bundles": "bundle-list",
         "hosts": "host-list",
-        "hostproviders": "hostprovider-list",
+        "hostproviders": "provider-list",
         "prototypes": "prototype-list",
         "jobs": "joblog-list",
         "tasks": "tasklog-list",
