@@ -66,6 +66,17 @@
       scripts_jinja: "./unprocessable_scripts.j2"
       states:
         available: any
+    with_activatable_group_jinja:
+      type: task
+      scripts_jinja: "./with_group.j2"
+      masking: {}
+      config:
+        - name: group
+          activatable: true
+          type: group
+          subs:
+            - name: x
+              type: integer
 
 - name: service_one_component
   type: service

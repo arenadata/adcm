@@ -66,7 +66,7 @@
       ],
       "variant_inline": "f",
       "plain_group": {
-        "file": "contente\t\n\n\n\tbest\n\t   ",
+        "file": "{{ filedir }}/task.{{ task_id }}.plain_group.file",
         "map": {
           "k": "v",
           "key": "val"
@@ -86,8 +86,8 @@
         "me": "you"
       },
       "json": "{\"hey\": [\"yooo\", 1]}",
-      "file": "filecontent",
-      "secretfile": "somesecrethere",
+      "file": "{{ filedir }}/task.{{ task_id }}.file.",
+      "secretfile": "{{ filedir }}/task.{{ task_id }}.secretfile.",
       "variant_builtin": "host-1",
       "activatable_group": {
         "simple": "inactive",
@@ -95,7 +95,8 @@
           "one",
           "two"
         ]
-      }
+      },
+      "source_list": ["ok", "fail"]
     }
   }
 }

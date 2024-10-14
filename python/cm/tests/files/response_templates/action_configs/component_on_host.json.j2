@@ -48,9 +48,9 @@
   },
   "job": {
     "id": {{ job_id }},
-    "action": "with_config_on_host",
-    "job_name": "with_config_on_host",
-    "command": "with_config_on_host",
+    "action": "without_config_on_host",
+    "job_name": "without_config_on_host",
+    "command": "without_config_on_host",
     "script": "playbook.yaml",
     "verbose": true,
     "playbook": "{{ stackdir }}/data/bundle/{{ cluster_bundle.hash }}/playbook.yaml",
