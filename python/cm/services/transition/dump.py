@@ -30,6 +30,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Q
 
 from cm.models import (
+    AnsibleConfig,
     Bundle,
     Cluster,
     ClusterObject,
@@ -157,6 +158,10 @@ def retrieve_cluster(
 
     cluster_info = ClusterInfo(
         bundle=cluster.bundle_hash, name=cluster.name, description=cluster.description, condition=current_condition
+    )
+
+    cluster_info.ansible_config = AnsibleConfig.objects.values_list("value", flat=True).get(
+        object_id=cluster.id, object_type=ContentType.objects.get_for_model(Cluster)
     )
 
     service_id_name_map: dict[ServiceID, ServiceNameKey] = {}

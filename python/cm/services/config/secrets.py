@@ -42,20 +42,14 @@ class AnsibleSecrets:
         result = {}
 
         for key, value in source.items():
-            if not isinstance(value, dict):
-                if isinstance(value, list):
-                    result[key] = [
-                        entry if not isinstance(entry, dict) else self.reveal_secrets(entry) for entry in value
-                    ]
-                else:
-                    result[key] = value
-
-                continue
-
-            if "__ansible_vault" in value:
-                result[key] = self.decrypt(value["__ansible_vault"])
-            else:
+            if isinstance(value, dict):
                 result[key] = self.reveal_secrets(value)
+            elif isinstance(value, list):
+                result[key] = [entry if not isinstance(entry, dict) else self.reveal_secrets(entry) for entry in value]
+            elif isinstance(value, str):
+                result[key] = self.decrypt(value)
+            else:
+                result[key] = value
 
         return result
 
