@@ -2370,6 +2370,64 @@ class TestADCMConfig(BaseAPITestCase):
 
         self.assertDictEqual(actual_data, expected_data)
 
+    def test_filtering_success(self):
+        ConfigLog.objects.create(
+            obj_ref=self.adcm.config,
+            config={"global": {"adcm_url": "http://127.0.0.1:8000", "verification_public_key": "\n"}},
+            description="filtering test config",
+        )
+        filter_name = "description"
+        with self.subTest(filter_name=filter_name):
+            response = (self.client.v2 / "adcm" / CONFIGS).get(query={filter_name: "filtering test config"})
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(response.json()["count"], 1)
+
+            response = (self.client.v2 / "adcm" / CONFIGS).get(query={filter_name: "wrong"})
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(response.json()["count"], 0)
+
+            response = (self.client.v2 / "adcm" / CONFIGS).get(query={filter_name: "st conf"})
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self.assertEqual(response.json()["count"], 1)
+
+    def test_ordering_success(self):
+        ordering_fields = {
+            "id": "id",
+            "description": "description",
+        }
+        ConfigLog.objects.create(
+            obj_ref=self.adcm.config,
+            config={"global": {"adcm_url": "http://127.0.0.1:8000", "verification_public_key": "\n"}},
+            description="filtering test config",
+        )
+        ConfigLog.objects.create(
+            obj_ref=self.adcm.config,
+            config={"global": {"adcm_url": "http://127.0.0.1:8000", "verification_public_key": "\n"}},
+            description="second filtering test config",
+        )
+
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = (self.client.v2 / "adcm" / CONFIGS).get(query={"ordering": ordering_field})
+                self.assertListEqual(
+                    [item[ordering_field] for item in response.json()["results"]],
+                    list(
+                        ConfigLog.objects.filter(obj_ref=self.adcm.config)
+                        .order_by(model_field)
+                        .values_list(model_field, flat=True)
+                    ),
+                )
+
+                response = (self.client.v2 / "adcm" / CONFIGS).get(query={"ordering": f"-{ordering_field}"})
+                self.assertListEqual(
+                    [item[ordering_field] for item in response.json()["results"]],
+                    list(
+                        ConfigLog.objects.filter(obj_ref=self.adcm.config)
+                        .order_by(f"-{model_field}")
+                        .values_list(model_field, flat=True)
+                    ),
+                )
+
 
 class TestAttrTransformation(BaseAPITestCase):
     def test_transformation_success(self):

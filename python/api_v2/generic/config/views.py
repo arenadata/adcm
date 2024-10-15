@@ -26,6 +26,7 @@ from rest_framework.status import (
     HTTP_201_CREATED,
 )
 
+from api_v2.generic.config.filters import ConfigLogFilter
 from api_v2.generic.config.serializers import ConfigLogListSerializer, ConfigLogSerializer
 from api_v2.generic.config.utils import (
     convert_adcm_meta_to_attr,
@@ -51,7 +52,7 @@ class ConfigLogViewSet(
         "obj_ref__host__prototype",
     ).order_by("-pk")
     permission_required = [VIEW_CONFIG_PERM]
-    filter_backends = []
+    filterset_class = ConfigLogFilter
 
     def get_queryset(self, *args, **kwargs):
         parent_object = self.get_parent_object()
