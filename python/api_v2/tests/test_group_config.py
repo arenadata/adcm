@@ -43,6 +43,7 @@ class BaseClusterGroupConfigTestCase(BaseAPITestCase):
             name="group_config",
             object_type=ContentType.objects.get_for_model(self.cluster_1),
             object_id=self.cluster_1.pk,
+            description="test description",
         )
         self.host_fqdn = "host"
         self.host = self.add_host(bundle=self.provider_bundle, provider=self.provider, fqdn=self.host_fqdn)
@@ -320,6 +321,78 @@ class TestClusterGroupConfig(BaseClusterGroupConfigTestCase):
             response = self.client.v2[self.cluster_1, CONFIG_GROUPS].get()
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+    def test_filtering_success(self):
+        GroupConfig.objects.create(
+            name="second config",
+            object_type=ContentType.objects.get_for_model(self.cluster_1),
+            object_id=self.cluster_1.pk,
+            description="second description",
+        )
+        GroupConfig.objects.create(
+            name="third config",
+            object_type=ContentType.objects.get_for_model(self.cluster_1),
+            object_id=self.cluster_1.pk,
+            description="third description",
+        )
+        filters = {
+            "id": (self.cluster_1_group_config.pk, None, 0),
+            "name": (self.cluster_1_group_config.name, self.cluster_1_group_config.name[1:-3].upper(), "wrong"),
+            "description": (
+                self.cluster_1_group_config.description,
+                self.cluster_1_group_config.description[1:-3].upper(),
+                "wrong",
+            ),
+        }
+        for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
+            with self.subTest(filter_name=filter_name):
+                response = self.client.v2[self.cluster_1, CONFIG_GROUPS].get(query={filter_name: correct_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 1)
+
+                response = self.client.v2[self.cluster_1, CONFIG_GROUPS].get(query={filter_name: wrong_value})
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["count"], 0)
+
+                if partial_value:
+                    response = self.client.v2[self.cluster_1, CONFIG_GROUPS].get(query={filter_name: partial_value})
+                    self.assertEqual(response.status_code, HTTP_200_OK)
+                    self.assertEqual(response.json()["count"], 1)
+
+    def test_ordering_success(self):
+        ordering_fields = {
+            "id": "id",
+            "name": "name",
+            "description": "description",
+        }
+
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = self.client.v2[self.cluster_1, CONFIG_GROUPS].get(query={"ordering": ordering_field})
+                self.assertListEqual(
+                    [item[ordering_field] for item in response.json()["results"]],
+                    list(
+                        GroupConfig.objects.filter(
+                            object_id=self.cluster_1.pk,
+                            object_type=ContentType.objects.get_for_model(model=self.cluster_1),
+                        )
+                        .order_by(model_field)
+                        .values_list(model_field, flat=True)
+                    ),
+                )
+
+                response = self.client.v2[self.cluster_1, CONFIG_GROUPS].get(query={"ordering": f"-{ordering_field}"})
+                self.assertListEqual(
+                    [item[ordering_field] for item in response.json()["results"]],
+                    list(
+                        GroupConfig.objects.filter(
+                            object_id=self.cluster_1.pk,
+                            object_type=ContentType.objects.get_for_model(model=self.cluster_1),
+                        )
+                        .order_by(f"-{model_field}")
+                        .values_list(model_field, flat=True)
+                    ),
+                )
 
 
 class TestServiceGroupConfig(BaseServiceGroupConfigTestCase):

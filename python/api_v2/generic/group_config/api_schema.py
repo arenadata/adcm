@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -35,6 +35,30 @@ def document_group_config_viewset(object_type: str):
             summary=f"GET {object_type}'s config groups",
             description=f"Get information about {object_type}'s config-groups",
             responses={HTTP_200_OK: GroupConfigSerializer, HTTP_404_NOT_FOUND: ErrorSerializer},
+            parameters=[
+                OpenApiParameter(
+                    name="name",
+                    required=False,
+                    location=OpenApiParameter.QUERY,
+                    description="Case insensitive and partial filter by name.",
+                    type=str,
+                ),
+                OpenApiParameter(
+                    name="description",
+                    required=False,
+                    location=OpenApiParameter.QUERY,
+                    description="Case insensitive and partial filter by description.",
+                    type=str,
+                ),
+                OpenApiParameter(
+                    name="ordering",
+                    required=False,
+                    location=OpenApiParameter.QUERY,
+                    description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
+                    type=str,
+                    enum=["id", "name", "description", "-id", "-name", "-description"],
+                ),
+            ],
         ),
         retrieve=extend_schema(
             operation_id=f"get{capitalized_type}ConfigGroup",

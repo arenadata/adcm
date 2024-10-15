@@ -31,6 +31,7 @@ from rest_framework.status import (
 )
 
 from api_v2.generic.config.utils import ConfigSchemaMixin
+from api_v2.generic.group_config.filters import GroupConfigLogFilter
 from api_v2.generic.group_config.permissions import GroupConfigHostsPermissions, GroupConfigPermissions
 from api_v2.generic.group_config.serializers import GroupConfigSerializer, HostGroupConfigSerializer
 from api_v2.host.filters import HostMemberFilter
@@ -50,7 +51,7 @@ class GroupConfigViewSet(
     serializer_class = GroupConfigSerializer
     permission_classes = [GroupConfigPermissions]
     permission_required = [VIEW_GROUP_CONFIG_PERM]
-    filter_backends = []
+    filterset_class = GroupConfigLogFilter
 
     def get_queryset(self, *args, **kwargs):
         parent_object = self.get_parent_object()
