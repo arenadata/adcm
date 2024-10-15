@@ -15,6 +15,7 @@ from typing import Callable, Iterable, TypeAlias
 
 from api_v2.host.utils import create_host
 from api_v2.service.utils import bulk_add_services_to_cluster
+from core.cluster.types import HostComponentEntry
 from core.types import (
     BundleID,
     ClusterID,
@@ -30,12 +31,12 @@ from django.db.models import F
 
 from cm.api import add_cluster, add_host_provider, update_obj_config
 from cm.models import (
+    AnsibleConfig,
     Bundle,
     Cluster,
     ClusterObject,
     GroupConfig,
     Host,
-    HostComponent,
     HostProvider,
     MaintenanceMode,
     ObjectType,
@@ -43,6 +44,7 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.services.cluster import perform_host_to_cluster_map
+from cm.services.mapping import change_host_component_mapping
 from cm.services.status import notify
 from cm.services.transition.types import (
     BundleHash,
@@ -154,6 +156,9 @@ def create_cluster(cluster: ClusterInfo, bundles: BundleHashIDMap, hosts: HostNa
     cluster_prototype = Prototype.objects.get(bundle_id=bundle_id, type=ObjectType.CLUSTER)
 
     cluster_object = add_cluster(prototype=cluster_prototype, name=cluster.name, description=cluster.description)
+    AnsibleConfig.objects.filter(
+        object_id=cluster_object.id, object_type=ContentType.objects.get_for_model(Cluster)
+    ).update(value=cluster.ansible_config)
     services_to_add = Prototype.objects.filter(
         bundle_id=bundle_id, type=ObjectType.SERVICE, name__in=(service.name for service in cluster.services.values())
     )
@@ -202,21 +207,17 @@ def create_cluster(cluster: ClusterInfo, bundles: BundleHashIDMap, hosts: HostNa
         ServiceComponent.objects.filter(id__in=components_in_mm).update(_maintenance_mode=MaintenanceMode.ON)
 
     if cluster.mapping:
-        entries = deque()
-
+        mapping = deque()
         for hc_entry in cluster.mapping:
-            service_object, component_object_mapping = orm_objects[hc_entry.service]
-            component_object = component_object_mapping[hc_entry.component]
-            entries.append(
-                HostComponent(
-                    cluster_id=cluster_object.id,
-                    service_id=service_object.id,
-                    component_id=component_object.id,
+            _, component_object_mapping = orm_objects[hc_entry.service]
+            mapping.append(
+                HostComponentEntry(
+                    component_id=component_object_mapping[hc_entry.component].id,
                     host_id=hosts[hc_entry.host],
                 )
             )
 
-        HostComponent.objects.bulk_create(objs=entries)
+        change_host_component_mapping(cluster_id=cluster_object.id, bundle_id=bundle_id, flat_mapping=mapping)
 
     if config_host_groups:
         for owner, group in config_host_groups:

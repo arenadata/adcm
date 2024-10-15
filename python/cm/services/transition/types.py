@@ -98,6 +98,7 @@ class ClusterInfo:
     services: dict[ServiceName, ServiceInfo] = field(default_factory=dict)
     mapping: list[NamedMappingEntry] = field(default_factory=list)
     host_groups: list[ConfigHostGroupInfo] = field(default_factory=list)
+    ansible_config: ConfigurationDict = field(default_factory=dict)
 
 
 class TransitionPayload(BaseModel):
