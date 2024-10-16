@@ -53,6 +53,17 @@
         available: any
       config_jinja: ./config_jinja_multistate.jinja2
 
+    check_numeric_min_max_param:
+      type: job
+      script: ./actions.yaml
+      script_type: ansible
+      params:
+        ansible_tags: sleep
+      states:
+        on_success: created
+        available: any
+      config_jinja: ./config_jinja_numeric_min_max.jinja2
+
 - type: service
   name: first_service
   version: *version
