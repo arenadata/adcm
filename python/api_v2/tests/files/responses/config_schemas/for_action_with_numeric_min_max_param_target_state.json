@@ -1,0 +1,103 @@
+{
+  "name": "check_numeric_min_max_param",
+  "displayName": "check_numeric_min_max_param",
+  "startImpossibleReason": null,
+  "isAllowToTerminate": false,
+  "hostComponentMapRules": [],
+  "disclaimer": "",
+  "configuration": {
+    "configSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Configuration",
+      "description": "",
+      "readOnly": false,
+      "adcmMeta": {
+        "isAdvanced": false,
+        "isInvisible": false,
+        "activation": null,
+        "synchronization": null,
+        "nullValue": null,
+        "isSecret": false,
+        "stringExtra": null,
+        "enumExtra": null
+      },
+      "type": "object",
+      "properties": {
+        "group_name": {
+          "title": "group_name",
+          "type": "object",
+          "description": "",
+          "default": {},
+          "readOnly": false,
+          "adcmMeta": {
+            "isAdvanced": true,
+            "isInvisible": false,
+            "activation": {
+              "isAllowChange": true
+            },
+            "synchronization": null,
+            "isSecret": false,
+            "stringExtra": null,
+            "enumExtra": null
+          },
+          "additionalProperties": false,
+          "properties": {
+            "boolean_param": {
+              "title": "boolean_param",
+              "type": "boolean",
+              "description": "",
+              "default": true,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": false,
+                "stringExtra": null,
+                "enumExtra": null
+              }
+            },
+            "some_numeric_param": {
+              "title": "some_numeric_param",
+              "type": "integer",
+              "description": "",
+              "default": 5,
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": false,
+                "stringExtra": null,
+                "enumExtra": null
+              },
+              "minimum": 0,
+              "maximum": 65535
+            }
+          },
+          "required": [
+            "boolean_param",
+            "some_numeric_param"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "group_name"
+      ]
+    },
+    "config": {
+      "group_name": {
+        "boolean_param": true,
+        "some_numeric_param": 5
+      }
+    },
+    "adcmMeta": {
+      "/group_name": {
+        "isActive": true
+      }
+    }
+  }
+}
