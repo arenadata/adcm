@@ -230,6 +230,7 @@ const usersActionsSlice = createCrudSlice({
       })
       .addCase(createUser.fulfilled, (state) => {
         usersActionsSlice.caseReducers.closeCreateDialog(state);
+        state.isActionInProgress = false;
       })
       .addCase(createUser.rejected, (state) => {
         state.isActionInProgress = false;
@@ -239,6 +240,7 @@ const usersActionsSlice = createCrudSlice({
       })
       .addCase(updateUser.fulfilled, (state) => {
         usersActionsSlice.caseReducers.closeUpdateDialog(state);
+        state.isActionInProgress = false;
       })
       .addCase(updateUser.rejected, (state) => {
         state.isActionInProgress = false;
