@@ -25,7 +25,7 @@ from rbac.roles import re_apply_policy_for_jobs
 from rest_framework.status import HTTP_409_CONFLICT
 
 from cm.adcm_config.checks import check_attr
-from cm.adcm_config.config import check_config_spec, get_prototype_config, process_config_spec, process_file_type
+from cm.adcm_config.config import check_config_spec, get_prototype_config, process_config_spec
 from cm.converters import orm_object_to_action_target_type, orm_object_to_core_type
 from cm.errors import AdcmEx
 from cm.models import (
@@ -168,26 +168,40 @@ def prepare_task_for_action(
     job_repo = JobRepoImpl
     action_repo = ActionRepoImpl
     owner = CoreObjectDescriptor(id=orm_owner.id, type=orm_object_to_core_type(orm_owner))
+    orm_action = Action.objects.select_related("prototype").get(id=action)
 
-    spec, flat_spec = _process_run_config(
-        action=Action.objects.select_related("prototype").get(id=action),
-        owner=orm_owner,
-        conf=payload.conf,
-        attr=payload.attr,
-    )
+    spec, flat_spec, _, _ = get_prototype_config(prototype=orm_action.prototype, action=orm_action, obj=orm_owner)
+
+    if not spec:
+        if payload.conf:
+            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Absent config in action prototype")
+
+    elif not payload.conf:
+        raise AdcmEx("TASK_ERROR", "action config is required")
 
     action_info = action_repo.get_action(id=action)
     task = job_repo.create_task(target=target, owner=owner, action=action_info, payload=payload)
 
     if payload.conf:
         orm_task = TaskLog.objects.get(id=task.id)
+
+        _process_run_config(
+            action=orm_action,
+            owner=orm_owner,
+            task=orm_task,
+            conf=payload.conf,
+            attr=payload.attr,
+            spec=spec,
+            flat_spec=flat_spec,
+        )
+
         orm_task.config = update_configuration_for_inventory_inplace(
             configuration=payload.conf,
             attributes=payload.attr,
             specification=convert_to_flat_spec_from_proto_flat_spec(prototypes_flat_spec=flat_spec),
             config_owner=GeneralEntityDescriptor(id=task.id, type="task"),
         )
-        process_file_type(obj=orm_task, spec=spec, conf=payload.conf)
+
         orm_task.save(update_fields=["config"])
         # reread to update config
         # ! this should be reworked when "layering" will be performed
@@ -295,30 +309,20 @@ def _check_action_is_available_for_object(owner: ObjectWithAction, action: Actio
         raise AdcmEx(code="TASK_ERROR", msg="action is disabled")
 
 
-def _process_run_config(action: Action, owner: ObjectWithAction, conf: dict, attr: dict) -> tuple[dict, dict]:
-    proto = action.prototype
-    spec, flat_spec, _, _ = get_prototype_config(prototype=proto, action=action, obj=owner)
-    if not spec:
-        if conf:
-            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Absent config in action prototype")
-
-        return {}, {}
-
-    if not conf:
-        raise AdcmEx("TASK_ERROR", "action config is required")
-
-    check_attr(proto, action, attr, flat_spec)
+def _process_run_config(
+    action: Action, owner: ObjectWithAction, task: TaskLog, conf: dict, attr: dict, spec: dict, flat_spec: dict
+) -> None:
+    check_attr(action.prototype, action, attr, flat_spec)
 
     object_config = {}
+
     if owner.config is not None:
         object_config = ConfigLog.objects.get(id=owner.config.current).config
 
     process_variant(obj=owner, spec=spec, conf=object_config)
-    check_config_spec(proto=proto, obj=action, spec=spec, flat_spec=flat_spec, conf=conf, attr=attr)
+    check_config_spec(proto=action.prototype, obj=action, spec=spec, flat_spec=flat_spec, conf=conf, attr=attr)
 
-    process_config_spec(obj=owner, spec=spec, new_config=conf)
-
-    return spec, flat_spec
+    process_config_spec(obj=task, spec=spec, new_config=conf)
 
 
 def _check_hostcomponent_and_get_delta(

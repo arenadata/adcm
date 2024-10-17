@@ -48,6 +48,7 @@ from cm.models import (
     Prototype,
     PrototypeConfig,
     ServiceComponent,
+    TaskLog,
 )
 from cm.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver
 from cm.services.config.jinja import get_jinja_config
@@ -739,7 +740,7 @@ def _process_secretmap(conf: dict, key: str, subkey: str) -> None:
                 conf[key][secretmap_key] = ansible_encrypt_and_format(msg=secretmap_value)
 
 
-def process_config_spec(obj: ADCMEntity, spec: dict, new_config: dict) -> dict:
+def process_config_spec(obj: ADCMEntity | TaskLog, spec: dict, new_config: dict) -> dict:
     for cfg_key, cfg_value in new_config.items():
         spec_type = spec[cfg_key].get("type")
 
