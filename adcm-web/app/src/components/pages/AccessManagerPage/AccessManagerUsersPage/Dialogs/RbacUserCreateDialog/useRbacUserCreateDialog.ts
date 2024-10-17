@@ -1,5 +1,5 @@
 import { useDispatch, useStore, useForm } from '@hooks';
-import { closeUserCreateDialog, createUser } from '@store/adcm/users/usersActionsSlice';
+import { closeUserCreateDialog, createUser, loadRelatedData } from '@store/adcm/users/usersActionsSlice';
 import { RbacUserFormData } from '@pages/AccessManagerPage/AccessManagerUsersPage/RbacUserForm/RbacUserForm.types';
 import { useEffect } from 'react';
 import { isEmailValid, isNameUniq, required } from '@utils/validationsUtils';
@@ -53,10 +53,12 @@ export const useRbacUserCreateDialog = () => {
   }, [formData, users, authSettings, setErrors]);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      dispatch(loadRelatedData());
+    } else {
       setFormData(initialFormData);
     }
-  }, [isOpen, setFormData]);
+  }, [dispatch, isOpen, setFormData]);
 
   const handleClose = () => {
     dispatch(closeUserCreateDialog());

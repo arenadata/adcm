@@ -5,7 +5,6 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { arePromisesResolved } from '@utils/promiseUtils';
 import { getUsers, refreshUsers } from './usersSlice';
 import type { AdcmCreateUserPayload, AdcmGroup, AdcmUser, UpdateAdcmUserPayload } from '@models/adcm';
-import type { PaginationParams, SortParams } from '@models/table';
 import type { ModalState } from '@models/modal';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 
@@ -77,27 +76,6 @@ const deleteUsersWithUpdate = createAsyncThunk('adcm/usersActions/deleteUsers', 
   }
 });
 
-const openUserCreateDialog = createAsyncThunk('adcm/usersActions/openUserCreateDialog', async (arg, thunkAPI) => {
-  try {
-    thunkAPI.dispatch(loadGroups());
-  } catch (error) {
-    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-    return thunkAPI.rejectWithValue(error);
-  }
-});
-
-const openUserUpdateDialog = createAsyncThunk(
-  'adcm/usersActions/openUserUpdateDialog',
-  async (_user: AdcmUser, thunkAPI) => {
-    try {
-      thunkAPI.dispatch(loadGroups());
-    } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
 const createUser = createAsyncThunk('adcm/usersActions/createUser', async (arg: AdcmCreateUserPayload, thunkAPI) => {
   try {
     await AdcmUsersApi.createUser(arg);
@@ -128,20 +106,16 @@ const updateUser = createAsyncThunk(
   },
 );
 
-const loadGroups = createAsyncThunk('adcm/usersActions/loadGroups', async (arg, thunkAPI) => {
+const loadRelatedData = createAsyncThunk('adcm/usersActions/loadRelatedData', async (_, thunkAPI) => {
+  const {
+    adcm: {
+      usersTable: { sortParams, paginationParams },
+    },
+  } = thunkAPI.getState();
   try {
-    const sortParams: SortParams = {
-      sortBy: '',
-      sortDirection: 'asc',
-    };
-    const paginationParams: PaginationParams = {
-      pageNumber: 0,
-      perPage: 1,
-    };
-    const batch = await AdcmGroupsApi.getGroups({}, sortParams, paginationParams);
-    sortParams.sortBy = 'displayName';
-    paginationParams.perPage = batch.count;
-    return await AdcmGroupsApi.getGroups({}, sortParams, paginationParams);
+    const { count } = await AdcmGroupsApi.getGroups({}, sortParams, paginationParams);
+    const newSortParams = { ...sortParams, sortBy: 'displayName' };
+    return await AdcmGroupsApi.getGroups({}, newSortParams, { pageNumber: 0, perPage: count });
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
@@ -213,16 +187,10 @@ const usersActionsSlice = createCrudSlice({
       .addCase(unblockUsers.rejected, (state) => {
         usersActionsSlice.caseReducers.closeUnblockDialog(state);
       })
-      .addCase(openUserCreateDialog.pending, (state) => {
-        state.createDialog.isOpen = true;
-      })
-      .addCase(openUserUpdateDialog.pending, (state, action) => {
-        state.updateDialog.user = action.meta.arg;
-      })
-      .addCase(loadGroups.fulfilled, (state, action) => {
+      .addCase(loadRelatedData.fulfilled, (state, action) => {
         state.relatedData.groups = action.payload.results;
       })
-      .addCase(loadGroups.rejected, (state) => {
+      .addCase(loadRelatedData.rejected, (state) => {
         state.relatedData.groups = [];
       })
       .addCase(createUser.pending, (state) => {
@@ -252,6 +220,8 @@ export const {
   setSelectedUsersIds,
   openDeleteDialog,
   closeDeleteDialog,
+  openUpdateDialog: openUserUpdateDialog,
+  openCreateDialog: openUserCreateDialog,
   closeUpdateDialog: closeUserUpdateDialog,
   closeCreateDialog: closeUserCreateDialog,
   openUnblockDialog,
@@ -260,13 +230,5 @@ export const {
   closeBlockDialog,
 } = usersActionsSlice.actions;
 
-export {
-  deleteUsersWithUpdate,
-  blockUsers,
-  unblockUsers,
-  createUser,
-  updateUser,
-  openUserCreateDialog,
-  openUserUpdateDialog,
-};
+export { deleteUsersWithUpdate, blockUsers, unblockUsers, createUser, updateUser, loadRelatedData };
 export default usersActionsSlice.reducer;
