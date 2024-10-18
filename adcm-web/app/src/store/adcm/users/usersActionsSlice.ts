@@ -106,16 +106,15 @@ const updateUser = createAsyncThunk(
   },
 );
 
-const loadRelatedData = createAsyncThunk('adcm/usersActions/loadRelatedData', async (_, thunkAPI) => {
+const loadGroups = createAsyncThunk('adcm/usersActions/loadGroups', async (_, thunkAPI) => {
   const {
     adcm: {
-      usersTable: { sortParams, paginationParams },
+      groupsTable: { sortParams, paginationParams },
     },
   } = thunkAPI.getState();
   try {
     const { count } = await AdcmGroupsApi.getGroups({}, sortParams, paginationParams);
-    const newSortParams = { ...sortParams, sortBy: 'displayName' };
-    return await AdcmGroupsApi.getGroups({}, newSortParams, { pageNumber: 0, perPage: count });
+    return await AdcmGroupsApi.getGroups({}, sortParams, { pageNumber: 0, perPage: count });
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
@@ -187,10 +186,10 @@ const usersActionsSlice = createCrudSlice({
       .addCase(unblockUsers.rejected, (state) => {
         usersActionsSlice.caseReducers.closeUnblockDialog(state);
       })
-      .addCase(loadRelatedData.fulfilled, (state, action) => {
+      .addCase(loadGroups.fulfilled, (state, action) => {
         state.relatedData.groups = action.payload.results;
       })
-      .addCase(loadRelatedData.rejected, (state) => {
+      .addCase(loadGroups.rejected, (state) => {
         state.relatedData.groups = [];
       })
       .addCase(createUser.pending, (state) => {
@@ -230,5 +229,5 @@ export const {
   closeBlockDialog,
 } = usersActionsSlice.actions;
 
-export { deleteUsersWithUpdate, blockUsers, unblockUsers, createUser, updateUser, loadRelatedData };
+export { deleteUsersWithUpdate, blockUsers, unblockUsers, createUser, updateUser, loadGroups };
 export default usersActionsSlice.reducer;
