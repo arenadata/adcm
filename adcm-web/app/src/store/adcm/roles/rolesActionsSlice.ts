@@ -117,22 +117,6 @@ const loadRelatedData = createAsyncThunk('adcm/role/createRoleDialog/loadRelated
   await thunkAPI.dispatch(loadAllRoles());
 });
 
-const openCreateDialog = createAsyncThunk('adcm/role/createRoleDialog/open', async (arg, thunkAPI) => {
-  try {
-    thunkAPI.dispatch(loadRelatedData());
-  } catch (error) {
-    return thunkAPI.rejectWithValue(error);
-  }
-});
-
-const openUpdateDialog = createAsyncThunk('adcm/role/editRoleDialog/open', async (role: AdcmRole, thunkAPI) => {
-  try {
-    thunkAPI.dispatch(loadRelatedData());
-  } catch (error) {
-    return thunkAPI.rejectWithValue(error);
-  }
-});
-
 const rolesActionsSlice = createCrudSlice({
   name: 'adcm/rolesActions',
   entityName: 'role',
@@ -141,22 +125,10 @@ const rolesActionsSlice = createCrudSlice({
     cleanupActions() {
       return createInitialState();
     },
-    closeCreateDialog() {
-      return createInitialState();
-    },
-    closeEditDialog() {
-      return createInitialState();
-    },
   },
   extraReducers: (builder) => {
     builder.addCase(deleteRoleWithUpdate.pending, (state) => {
       rolesActionsSlice.caseReducers.closeDeleteDialog(state);
-    });
-    builder.addCase(openCreateDialog.fulfilled, (state) => {
-      state.createDialog.isOpen = true;
-    });
-    builder.addCase(openUpdateDialog.fulfilled, (state, action) => {
-      state.updateDialog.role = action.meta.arg;
     });
     builder.addCase(loadRelatedData.fulfilled, (state) => {
       state.relatedData.isLoaded = true;
@@ -176,7 +148,14 @@ const rolesActionsSlice = createCrudSlice({
   },
 });
 
-const { openDeleteDialog, closeDeleteDialog, closeCreateDialog, closeEditDialog } = rolesActionsSlice.actions;
+const {
+  openDeleteDialog,
+  openCreateDialog,
+  openUpdateDialog,
+  closeUpdateDialog,
+  closeDeleteDialog,
+  closeCreateDialog,
+} = rolesActionsSlice.actions;
 export {
   deleteRoleWithUpdate,
   openDeleteDialog,
@@ -184,8 +163,9 @@ export {
   openCreateDialog,
   closeCreateDialog,
   createRole,
-  closeEditDialog,
   openUpdateDialog,
+  closeUpdateDialog,
   updateRole,
+  loadRelatedData,
 };
 export default rolesActionsSlice.reducer;

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
 import { AdcmCreateRolePayload } from '@models/adcm';
-import { createRole, closeCreateDialog } from '@store/adcm/roles/rolesActionsSlice';
+import { createRole, closeCreateDialog, loadRelatedData } from '@store/adcm/roles/rolesActionsSlice';
 import { isNameUniq, required } from '@utils/validationsUtils';
 
 interface AdcmCreateRoleFormData extends Omit<AdcmCreateRolePayload, 'children'> {
@@ -23,10 +23,12 @@ export const useAccessManagerRoleCreateDialog = () => {
     useForm<AdcmCreateRoleFormData>(initialFormData);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      dispatch(loadRelatedData());
+    } else {
       setFormData(initialFormData);
     }
-  }, [isOpen, setFormData]);
+  }, [isOpen, dispatch, setFormData]);
 
   useEffect(() => {
     setErrors({
