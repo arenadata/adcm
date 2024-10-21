@@ -263,7 +263,8 @@ def upload_file(file) -> Path:
             if duplicate_path := _get_file_hashes(path=settings.DOWNLOAD_DIR).get(hash_):
                 tmp_path.unlink()
                 raise AdcmEx(
-                    code="BUNDLE_CONFLICT", msg=f"Bundle with the same content is already uploaded {duplicate_path}"
+                    code="BUNDLE_ERROR",
+                    msg=f"Bundle already exists: Bundle with the same content is already uploaded {duplicate_path}",
                 )
 
             # move to downloads
