@@ -7,6 +7,7 @@ import { getUsers, refreshUsers } from './usersSlice';
 import type { AdcmCreateUserPayload, AdcmGroup, AdcmUser, UpdateAdcmUserPayload } from '@models/adcm';
 import type { ModalState } from '@models/modal';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
+import { SortParams } from '@models/table';
 
 interface AdcmUsersActionState extends ModalState<AdcmUser, 'user'> {
   updateDialog: {
@@ -107,13 +108,12 @@ const updateUser = createAsyncThunk(
 );
 
 const loadGroups = createAsyncThunk('adcm/usersActions/loadGroups', async (_, thunkAPI) => {
-  const {
-    adcm: {
-      groupsTable: { sortParams, paginationParams },
-    },
-  } = thunkAPI.getState();
+  const sortParams: SortParams = {
+    sortBy: 'displayName',
+    sortDirection: 'asc',
+  };
   try {
-    const { count } = await AdcmGroupsApi.getGroups({}, sortParams, paginationParams);
+    const { count } = await AdcmGroupsApi.getGroups({}, sortParams);
     return await AdcmGroupsApi.getGroups({}, sortParams, { pageNumber: 0, perPage: count });
   } catch (error) {
     return thunkAPI.rejectWithValue(error);

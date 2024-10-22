@@ -4,7 +4,7 @@ import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { getGroups } from './groupsSlice';
 import type { AdcmGroup, AdcmUpdateGroupPayload, AdcmCreateGroupPayload, AdcmUser } from '@models/adcm';
-import type { PaginationParams, SortParams } from '@models/table';
+import type { SortParams } from '@models/table';
 import { rejectedFilter } from '@utils/promiseUtils';
 import type { ModalState } from '@models/modal';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
@@ -47,17 +47,11 @@ const updateGroup = createAsyncThunk(
 const loadUsers = createAsyncThunk('adcm/groupActions/loadUsers', async (arg, thunkAPI) => {
   try {
     const sortParams: SortParams = {
-      sortBy: '',
+      sortBy: 'username',
       sortDirection: 'asc',
     };
-    const paginationParams: PaginationParams = {
-      pageNumber: 0,
-      perPage: 1,
-    };
-    const batch = await AdcmUsersApi.getUsers({}, sortParams, paginationParams);
-    sortParams.sortBy = 'username';
-    paginationParams.perPage = batch.count;
-    return await AdcmUsersApi.getUsers({}, sortParams, paginationParams);
+    const { count } = await AdcmUsersApi.getUsers({}, sortParams);
+    return await AdcmUsersApi.getUsers({}, sortParams, { pageNumber: 0, perPage: count });
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
