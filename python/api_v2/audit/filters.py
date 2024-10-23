@@ -43,6 +43,7 @@ class AuditLogFilter(FilterSet):
     )
     time_from = DateTimeFilter(field_name="operation_time", lookup_expr="gte")
     time_to = DateTimeFilter(field_name="operation_time", lookup_expr="lte")
+    username = CharFilter(field_name="user__username", label="Username", lookup_expr="icontains")
     user_name = CharFilter(field_name="user__username", label="Username", lookup_expr="icontains")
     ordering = OrderingFilter(
         fields={
@@ -79,6 +80,7 @@ class AuditLogFilter(FilterSet):
             "time_from",
             "time_to",
             "user_name",
+            "username",
             "ordering",
         ]
 
