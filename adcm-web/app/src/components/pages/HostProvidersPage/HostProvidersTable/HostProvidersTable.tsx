@@ -21,8 +21,8 @@ const HostProviderTable = () => {
   const isLoading = useStore(({ adcm }) => isShowSpinner(adcm.hostProviders.loadState));
   const sortParams = useStore(({ adcm }) => adcm.hostProvidersTable.sortParams);
 
-  const handleDeleteAction = (id: number) => {
-    dispatch(openDeleteDialog(id));
+  const handleDeleteAction = (hostProvider: AdcmHostProvider) => {
+    dispatch(openDeleteDialog(hostProvider));
   };
 
   const handleSorting = (sortParams: SortParams) => {
@@ -64,7 +64,7 @@ const HostProviderTable = () => {
               onClick={() => handleUpgradeClick(hostProvider)}
               title={hostProvider.isUpgradable ? 'Upgrade' : 'No upgrades'}
             />
-            <IconButton icon="g1-delete" size={32} onClick={() => handleDeleteAction(hostProvider.id)} title="Delete" />
+            <IconButton icon="g1-delete" size={32} onClick={() => handleDeleteAction(hostProvider)} title="Delete" />
           </TableCell>
         </TableRow>
       ))}

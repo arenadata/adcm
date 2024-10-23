@@ -6,12 +6,12 @@ import CustomDialogControls from '@commonComponents/Dialog/CustomDialogControls/
 import LinkToLicenseText from '@commonComponents/LinkToLicenseText/LinkToLicenseText';
 
 const CreateHostProviderDialog = () => {
-  const { isOpen, relatedData, formData, isValid, errors, onCreate, onClose, onChangeFormData } =
+  const { isOpen, prototypeVersions, formData, isValid, errors, onCreate, onClose, onChangeFormData } =
     useCreateHostProviderDialog();
 
   const prototypeOptions = useMemo(
-    () => relatedData.prototypeVersions.map((item) => ({ label: item.displayName, value: item })),
-    [relatedData.prototypeVersions],
+    () => prototypeVersions.map((item) => ({ label: item.displayName, value: item })),
+    [prototypeVersions],
   );
 
   const prototypeVersionsOptions = useMemo(
