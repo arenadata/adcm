@@ -19,12 +19,13 @@ from cm.models import (
     AnsibleConfig,
     Cluster,
     ClusterObject,
+    ObjectType,
     Prototype,
     ServiceComponent,
 )
 from cm.services.status.client import FullStatusMap
 from cm.tests.mocks.task_runner import RunTaskMock
-from cm.tests.utils import gen_component, gen_host, gen_service, generate_hierarchy
+from cm.tests.utils import gen_component, gen_host, gen_prototype, gen_service, generate_hierarchy
 from django.contrib.contenttypes.models import ContentType
 from guardian.models import GroupObjectPermission
 from rbac.models import User
@@ -38,7 +39,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.config.utils import convert_adcm_meta_to_attr
+from api_v2.generic.config.utils import convert_adcm_meta_to_attr
 from api_v2.tests.base import BaseAPITestCase
 
 
@@ -338,6 +339,43 @@ class TestCluster(BaseAPITestCase):
                 "service_6_delete_with_action",
                 "service_with_bound_to",
             ],
+        )
+
+    def test_depends_on_in_service_candidates(self) -> None:
+        self.maxDiff = None
+
+        bundle = self.add_bundle(self.test_bundles_dir / "complex_dependencies")
+        cluster = self.add_cluster(bundle=bundle, name="With Deps")
+        service_proto = Prototype.objects.get(name="first_service", type="service")
+        component_proto = Prototype.objects.get(name="first_component", type="component", parent=service_proto)
+
+        candidates = self.client.v2[cluster, "service-candidates"].get().json()
+        depend_on = {entry["name"]: entry["dependOn"] for entry in candidates}
+
+        self.assertDictEqual(
+            depend_on,
+            {
+                "first_service": None,
+                "second_service": [
+                    {
+                        "servicePrototype": {
+                            "id": service_proto.id,
+                            "name": "first_service",
+                            "displayName": "first_service",
+                            "version": "1.5",
+                            "license": {"status": "absent", "text": None},
+                            "componentPrototypes": [
+                                {
+                                    "id": component_proto.id,
+                                    "name": "first_component",
+                                    "displayName": "first_component",
+                                    "version": "1.5",
+                                }
+                            ],
+                        }
+                    }
+                ],
+            },
         )
 
     def test_service_create_success(self):
@@ -772,10 +810,22 @@ class TestClusterStatuses(BaseAPITestCase, BusinessLogicMixin):
         self.cluster_1 = hierarchy_1["cluster"]
         self.service_11 = hierarchy_1["service"]
         self.component_111 = hierarchy_1["component"]
-        self.component_112 = gen_component(service=self.service_11)
-        self.service_12 = gen_service(cluster=self.cluster_1)
-        self.component_121 = gen_component(service=self.service_12)
-        self.component_122 = gen_component(service=self.service_12)
+        component_112_prototype = gen_prototype(
+            bundle=self.cluster_1.prototype.bundle, proto_type=ObjectType.COMPONENT, name="component_112"
+        )
+        self.component_112 = gen_component(service=self.service_11, prototype=component_112_prototype)
+        service_12_prototype = gen_prototype(
+            bundle=self.cluster_1.prototype.bundle, proto_type=ObjectType.SERVICE, name="service_12"
+        )
+        self.service_12 = gen_service(cluster=self.cluster_1, prototype=service_12_prototype)
+        component_121_prototype = gen_prototype(
+            bundle=self.cluster_1.prototype.bundle, proto_type=ObjectType.COMPONENT, name="component_121"
+        )
+        self.component_121 = gen_component(service=self.service_12, prototype=component_121_prototype)
+        component_122_prototype = gen_prototype(
+            bundle=self.cluster_1.prototype.bundle, proto_type=ObjectType.COMPONENT, name="component_122"
+        )
+        self.component_122 = gen_component(service=self.service_12, prototype=component_122_prototype)
         self.host_1 = hierarchy_1["host"]
         self.host_2 = gen_host(provider=hierarchy_1["provider"], cluster=self.cluster_1)
         self.set_hostcomponent(

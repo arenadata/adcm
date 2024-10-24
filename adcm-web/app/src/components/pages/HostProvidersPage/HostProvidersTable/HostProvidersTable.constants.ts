@@ -17,6 +17,7 @@ export const columns: TableColumn[] = [
   {
     label: 'State',
     name: 'state',
+    isSortable: true,
   },
   {
     label: 'Description',

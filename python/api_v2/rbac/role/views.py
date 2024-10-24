@@ -12,8 +12,14 @@
 
 from collections import defaultdict
 
-from adcm.permissions import VIEW_ROLE_PERMISSION, CustomModelPermissionsByMethod
-from audit.utils import audit
+from adcm.permissions import VIEW_ROLE_PERMISSION
+from audit.alt.api import audit_create, audit_delete, audit_update
+from audit.alt.hooks import (
+    extract_current_from_response,
+    extract_from_object,
+    extract_previous_from_object,
+    only_on_success,
+)
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ProductCategory
 from django.db.models import Prefetch
@@ -23,7 +29,6 @@ from rbac.models import ObjectType as RBACObjectType
 from rbac.models import Role, RoleTypes
 from rbac.services.role import role_create, role_update
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -38,7 +43,9 @@ from rest_framework.status import (
 
 from api_v2.api_schema import DefaultParams, ErrorSerializer
 from api_v2.rbac.role.filters import RoleFilter
+from api_v2.rbac.role.permissions import RolePermissions
 from api_v2.rbac.role.serializers import RoleCreateSerializer, RoleSerializer, RoleUpdateSerializer
+from api_v2.utils.audit import retrieve_role_children, role_from_lookup, role_from_response, update_role_name
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -153,12 +160,8 @@ class RoleViewSet(
         .exclude(type=RoleTypes.HIDDEN)
         .order_by("display_name")
     )
-    permission_classes = (CustomModelPermissionsByMethod,)
-    method_permissions_map = {
-        "patch": [(VIEW_ROLE_PERMISSION, NotFound)],
-        "delete": [(VIEW_ROLE_PERMISSION, NotFound)],
-    }
-    permission_required = ["rbac.view_role"]
+    permission_classes = (RolePermissions,)
+    permission_required = [VIEW_ROLE_PERMISSION]
     filterset_class = RoleFilter
 
     def get_serializer_class(self):
@@ -170,7 +173,7 @@ class RoleViewSet(
 
         return RoleSerializer
 
-    @audit
+    @audit_create(name="Role created", object_=role_from_response)
     def create(self, request, *args, **kwargs):  # noqa: ARG002
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -178,7 +181,20 @@ class RoleViewSet(
 
         return Response(data=RoleSerializer(instance=role).data, status=HTTP_201_CREATED)
 
-    @audit
+    @(
+        audit_update(name="Role updated", object_=role_from_lookup)
+        .attach_hooks(on_collect=only_on_success(update_role_name))
+        .track_changes(
+            before=(
+                extract_previous_from_object(Role, "name", "display_name", "description"),
+                extract_from_object(func=retrieve_role_children, section="previous"),
+            ),
+            after=(
+                extract_current_from_response("name", "display_name", "description"),
+                extract_from_object(func=retrieve_role_children, section="current"),
+            ),
+        )
+    )
     def partial_update(self, request, *args, **kwargs):  # noqa: ARG002
         instance = self.get_object()
 
@@ -191,7 +207,7 @@ class RoleViewSet(
 
         return Response(data=RoleSerializer(instance=role).data, status=HTTP_200_OK)
 
-    @audit
+    @audit_delete(name="Role deleted", object_=role_from_lookup, removed_on_success=True)
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
 

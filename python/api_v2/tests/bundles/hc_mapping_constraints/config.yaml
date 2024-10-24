@@ -32,9 +32,6 @@
 - name: service_required
   type: service
   version: *version
-  components:
-    component_in_required_service:
-      constraint: [ 0, + ]
 
 - name: service_with_component_required
   type: service

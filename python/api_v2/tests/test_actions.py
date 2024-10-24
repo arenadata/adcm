@@ -378,6 +378,7 @@ class TestActionsFiltering(BaseAPITestCase):
 
     def test_adcm_4856_action_with_several_entries_hc_success(self) -> None:
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
+        self.add_host_to_cluster(cluster=self.cluster, host=self.host_2)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
         with RunTaskMock() as run_task:
@@ -488,6 +489,35 @@ class TestActionWithJinjaConfig(BaseAPITestCase):
             {"activatable_group": {"text": "text"}, "boolean": True, "boolean1": False, "float": 2.0},
         )
         self.assertDictEqual(configuration["adcmMeta"], {"/activatable_group": {"isActive": True}})
+
+    def test_adcm_6013_jinja_config_with_min_max(self):
+        action = Action.objects.get(name="check_numeric_min_max_param", prototype=self.cluster.prototype)
+
+        response = self.client.v2[self.cluster, "actions", action].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        expected_response = json.loads(
+            (
+                self.test_files_dir / "responses" / "config_schemas" / "for_action_with_numeric_min_max_param.json"
+            ).read_text(encoding="utf-8")
+        )
+        expected_response["id"] = action.id
+        self.assertDictEqual(response.json(), expected_response)
+
+        self.cluster.set_state(state="ready_for_numeric_min_max")
+        response = self.client.v2[self.cluster, "actions", action].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        expected_response = json.loads(
+            (
+                self.test_files_dir
+                / "responses"
+                / "config_schemas"
+                / "for_action_with_numeric_min_max_param_target_state.json"
+            ).read_text(encoding="utf-8")
+        )
+        expected_response["id"] = action.id
+        self.assertDictEqual(response.json(), expected_response)
 
     def test_adcm_4703_action_retrieve_returns_500(self) -> None:
         for object_ in (self.cluster, self.service_1, self.component_1):

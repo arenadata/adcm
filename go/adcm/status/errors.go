@@ -80,6 +80,6 @@ func errOut(w http.ResponseWriter, r *http.Request, apiErr ApiErr) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(apiErr.httpCode)
 	json.NewEncoder(w).Encode(apiErr) //nolint: errcheck
-	logg.W.f("%s %s", apiErr.Code, apiErr.Msg)
-	logg.I.f("%s %s %d", r.Method, r.URL.Path, apiErr.httpCode)
+	logg.W.Printf("%s %s", apiErr.Code, apiErr.Msg)
+	logg.I.Printf("%s %s %d", r.Method, r.URL.Path, apiErr.httpCode)
 }

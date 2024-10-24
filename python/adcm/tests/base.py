@@ -20,10 +20,10 @@ import random
 import string
 import tarfile
 
-from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from api_v2.generic.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from api_v2.prototype.utils import accept_license
 from api_v2.service.utils import bulk_add_services_to_cluster
-from cm.api import add_cluster, add_hc, add_host, add_host_provider, add_host_to_cluster, update_obj_config
+from cm.api import add_cluster, add_host, add_host_provider, add_host_to_cluster, update_obj_config
 from cm.bundle import prepare_bundle, process_file
 from cm.converters import orm_object_to_core_type
 from cm.models import (
@@ -39,12 +39,15 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
+    ObjectConfig,
     ObjectType,
     Prototype,
     ServiceComponent,
 )
-from cm.services.job.prepare import prepare_task_for_action
+from cm.services.job.action import prepare_task_for_action
+from cm.services.mapping import change_host_component_mapping
 from cm.utils import deep_merge
+from core.cluster.types import HostComponentEntry
 from core.job.dto import TaskPayloadDTO
 from core.job.types import Task
 from core.rbac.dto import UserCreateDTO
@@ -109,9 +112,9 @@ class ParallelReadyTestCase:
 
 class BundleLogicMixin:
     @staticmethod
-    def prepare_bundle_file(source_dir: Path) -> str:
+    def prepare_bundle_file(source_dir: Path, target_dir: Path | None = None) -> str:
         bundle_file = f"{source_dir.name}.tar"
-        with tarfile.open(settings.DOWNLOAD_DIR / bundle_file, "w") as tar:
+        with tarfile.open((target_dir or settings.DOWNLOAD_DIR) / bundle_file, "w") as tar:
             for file in source_dir.iterdir():
                 tar.add(name=file, arcname=file.name)
 
@@ -416,6 +419,13 @@ class BaseTestCase(TestCaseWithCommonSetUpTearDown, ParallelReadyTestCase, Bundl
 
         return host
 
+    def create_new_config(self, config_data: dict) -> ObjectConfig:
+        config = ObjectConfig.objects.create(current=1, previous=0)
+        config_log = ConfigLog.objects.create(obj_ref=config, config=config_data)
+        config.current = config_log.pk
+        config.save(update_fields=["current"])
+        return config
+
     @staticmethod
     def get_hostcomponent_data(service_pk: int, host_pk: int) -> list[dict[str, int]]:
         hostcomponent_data = []
@@ -480,13 +490,14 @@ class BusinessLogicMixin(BundleLogicMixin):
 
     @staticmethod
     def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, ServiceComponent]]) -> list[HostComponent]:
-        return add_hc(
-            cluster=cluster,
-            hc_in=[
-                {"host_id": host.pk, "component_id": component.pk, "service_id": component.service_id}
-                for host, component in entries
-            ],
+        change_host_component_mapping(
+            cluster_id=cluster.id,
+            bundle_id=cluster.bundle_id,
+            flat_mapping=(
+                HostComponentEntry(host_id=host.id, component_id=component.id) for host, component in entries
+            ),
         )
+        return list(HostComponent.objects.filter(cluster_id=cluster.id))
 
     @staticmethod
     def get_non_existent_pk(model: type[ADCMEntity | ADCMModel | User | Role | Group | Policy]):
@@ -574,5 +585,5 @@ class TaskTestMixin:
         action = Action.objects.get(prototype_id=owner.prototype_id, **action_search_kwargs)
         target = owner_descriptor if not host else CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST)
         return prepare_task_for_action(
-            target=target, owner=owner_descriptor, action=action.id, payload=payload or TaskPayloadDTO()
+            target=target, orm_owner=owner, action=action.id, payload=payload or TaskPayloadDTO()
         )

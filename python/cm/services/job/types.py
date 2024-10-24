@@ -10,13 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Literal, TypeAlias
+from typing import Any, Literal, TypeAlias, TypedDict
 
-from core.types import ClusterID, ComponentID, HostID, HostProviderID, ObjectID, PrototypeID, ServiceID
+from core.types import ClusterID, ComponentID, HostID, HostProviderID, ObjectID, PrototypeID, ServiceID, ShortObjectInfo
 from pydantic import BaseModel, Field, Json
 
 Selector: TypeAlias = dict[str, dict[Literal["id", "name"], int | str]]
+ComponentComposedKey: TypeAlias = str
+ShortHostInfo: TypeAlias = ShortObjectInfo
 
 
 class ObjectWithHostGroup(BaseModel):
@@ -111,3 +114,19 @@ class JobConfig(BaseModel):
 class HcAclAction(Enum):
     ADD = "add"
     REMOVE = "remove"
+
+
+@dataclass(slots=True)
+class TaskMappingDelta:
+    add: dict[ComponentComposedKey, set[ShortHostInfo]] = field(default_factory=dict)
+    remove: dict[ComponentComposedKey, set[ShortHostInfo]] = field(default_factory=dict)
+
+    @property
+    def is_empty(self) -> bool:
+        return not (self.add or self.remove)
+
+
+class ActionHCRule(TypedDict):
+    action: Literal["add", "remove"]
+    service: str
+    component: str

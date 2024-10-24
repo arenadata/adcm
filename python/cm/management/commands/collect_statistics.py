@@ -14,9 +14,11 @@ from logging import getLogger
 from typing import NamedTuple
 from urllib.parse import urlunparse
 import os
+import shutil
 import socket
 
-from audit.utils import audit_background_task
+from audit.alt.background import audit_background_operation
+from audit.models import AuditLogOperationType
 from django.conf import settings
 from django.core.management import BaseCommand
 from django.db.models import Q
@@ -98,7 +100,7 @@ class Command(BaseCommand):
             default="archive-all",
         )
 
-    @audit_background_task(start_operation_status="launched", end_operation_status="completed")
+    @audit_background_operation(name='"Statistics collection on schedule" job', type_=AuditLogOperationType.UPDATE)
     def handle(self, *_, mode: str, **__):
         logger.debug(msg="Statistics collector: started")
         statistics_data = {
@@ -107,7 +109,7 @@ class Command(BaseCommand):
                 "version": settings.ADCM_VERSION,
                 "is_internal": is_internal(),
             },
-            "format_version": 0.2,
+            "format_version": 0.3,
         }
         logger.debug(msg="Statistics collector: RBAC data preparation")
         rbac_entries_data: dict = RBACCollector(date_format=DATE_TIME_FORMAT)().model_dump()
@@ -162,9 +164,12 @@ class Command(BaseCommand):
                 logger.debug(msg="Statistics collector: archive encoding")
                 encoder = TarFileEncoder(suffix=".enc")
                 encoded_file = encoder.encode(path_file=archive)
-                encoded_file = encoded_file.replace(STATISTIC_DIR / encoded_file.name)
+                # We use shutil here instead of Path.rename,
+                # because of possible cross-device link problem (e.g. -v /adcm/data):
+                # `OSError: [Errno 18] Cross-device link:`
+                encoded_file = shutil.move(str(encoded_file), str(STATISTIC_DIR / encoded_file.name))
 
-                self.stdout.write(f"Data saved in: {str(encoded_file.absolute())}")
+                self.stdout.write(f"Data saved in: {encoded_file}")
             case _:
                 pass
 

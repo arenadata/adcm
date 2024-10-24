@@ -44,7 +44,7 @@ git clone https://github.com/arenadata/adcm
 
 cd adcm
 
-# Run build process
+# Run build process for current architecture
 make build
 ```
 
@@ -64,7 +64,7 @@ clean                          Cleanup. Just a cleanup.
 describe                       Create .version file with output of describe
 help                           Shows that help
 build2js                       For new design and api v2: Build client side js/html/css in directory wwwroot
-build2                         For new design and api v2: Build final docker image and all depended targets except baseimage.
+build2                         For new design and api v2: Build final docker image and all depended targets except baseimage
 ```
 
 And check out the description for every operation available.

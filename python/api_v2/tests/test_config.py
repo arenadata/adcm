@@ -41,7 +41,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from api_v2.generic.config.utils import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from api_v2.tests.base import BaseAPITestCase
 
 CONFIGS = "configs"
@@ -529,13 +529,13 @@ class TestClusterGroupConfig(BaseAPITestCase):
         response = self.client.v2[self.cluster_1, "config-groups"].post(
             data={"name": "group-config-new", "description": "group-config-new"}
         )
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertDictEqual(
             response.json(),
             {
-                "code": "BAD_REQUEST",
-                "desc": f"name - Group config with name group-config-new "
-                f"already exists for cm | cluster {self.cluster_1.name};",
+                "code": "CREATE_CONFLICT",
+                "desc": f"Group config with name group-config-new "
+                f"already exists for cm | cluster {self.cluster_1.name}",
                 "level": "error",
             },
         )
@@ -2303,7 +2303,6 @@ class TestADCMConfig(BaseAPITestCase):
         self.assertDictEqual(
             data["adcmMeta"],
             {
-                "/logrotate": {"isActive": False},
                 "/ldap_integration": {"isActive": False},
                 "/statistics_collection": {"isActive": True},
             },
@@ -2315,7 +2314,6 @@ class TestADCMConfig(BaseAPITestCase):
                 "global": {"adcm_url": "http://127.0.0.1:8000", "verification_public_key": "\n"},
                 "google_oauth": {"client_id": None, "secret": None},
                 "yandex_oauth": {"client_id": None, "secret": None},
-                "logrotate": {"size": "10M", "max_history": 10, "compress": False},
                 "audit_data_retention": {
                     "log_rotation_on_fs": 365,
                     "log_rotation_in_db": 365,
@@ -2348,7 +2346,6 @@ class TestADCMConfig(BaseAPITestCase):
                 },
             },
             "adcmMeta": {
-                "/logrotate": {"isActive": False},
                 "/ldap_integration": {"isActive": False},
                 "/statistics_collection": {"isActive": False},
             },

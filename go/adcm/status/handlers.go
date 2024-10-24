@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/bouk/httprouter"
 )
@@ -37,7 +38,7 @@ type clusterDetails struct {
 func index(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprint(w, "<a href=\"api/v1/\">Status Server API</a>\n")
-	logg.I.f("%s %s %d\n", r.Method, r.URL.Path, 200)
+	logg.I.Printf("%s %s %d", r.Method, r.URL.Path, 200)
 }
 
 func apiRoot(w http.ResponseWriter, r *http.Request) {
@@ -125,7 +126,7 @@ func readConfig(h Hub, w http.ResponseWriter, r *http.Request) {
 func showLogLevel(h Hub, w http.ResponseWriter, r *http.Request) {
 	jsonOut(w, r, struct {
 		Level string `json:"level"`
-	}{Level: logg.getLogLevel()})
+	}{Level: logg.level})
 }
 
 func postLogLevel(h Hub, w http.ResponseWriter, r *http.Request) {
@@ -135,12 +136,12 @@ func postLogLevel(h Hub, w http.ResponseWriter, r *http.Request) {
 	if _, err := decodeBody(w, r, &level); err != nil {
 		return
 	}
-	intLevel, err := logg.decodeLogLevel(level.Level)
+
+	err := logg.SetLogLevel(strings.ToUpper(level.Level))
 	if err != nil {
 		ErrOut4(w, r, "LOG_ERROR", err.Error())
 		return
 	}
-	logg.set(intLevel)
 }
 
 func showHostComp(h Hub, w http.ResponseWriter, r *http.Request) {
@@ -242,9 +243,9 @@ func postEvent(h Hub, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	logg.D.f("postEvent - %+v", event)
+	logg.D.Printf("postEvent - %+v", event)
 	if !checkEvent(event, w, r) {
-		logg.W.f("POST body: '%s'", body)
+		logg.W.Printf("POST body: '%s'", body)
 		return
 	}
 	h.EventWS.send2ws(event)
@@ -336,12 +337,12 @@ func postServiceMap(h Hub, w http.ResponseWriter, r *http.Request) {
 		ErrOut4(w, r, "JSON_ERROR", err.Error())
 		return
 	}
-	logg.D.f("postServiceMap: %+v", m)
+	logg.D.Printf("postServiceMap: %+v", m)
 	if len(m.HostService) < 1 {
-		logg.W.f("%s %s", "INPUT_WARNING", "no HostService in servicemap post")
+		logg.W.Printf("%s %s", "INPUT_WARNING", "no HostService in servicemap post")
 	}
 	if len(m.Component) < 1 {
-		logg.W.f("%s %s", "INPUT_WARNING", "no Component in servicemap post")
+		logg.W.Printf("%s %s", "INPUT_WARNING", "no Component in servicemap post")
 	}
 	h.ServiceMap.init(m)
 	// h.ServiceStorage.pure()
@@ -406,7 +407,7 @@ func decodeBody(w http.ResponseWriter, r *http.Request, v interface{}) ([]byte, 
 	err = decoder.Decode(v)
 	if err != nil {
 		ErrOut4(w, r, "JSON_ERROR", err.Error())
-		logg.W.f("POST body: '%s'", body)
+		logg.W.Printf("POST body: '%s'", body)
 		return body, err
 	}
 	return body, nil
@@ -425,8 +426,8 @@ func jsonOut3(w http.ResponseWriter, r *http.Request, out interface{}, status_co
 	w.WriteHeader(status_code)
 	if out != "" {
 		if err := json.NewEncoder(w).Encode(out); err != nil {
-			logg.E.f("JSON out error: %v, (%v)", err, out)
+			logg.E.Printf("JSON out error: %v, (%v)", err, out)
 		}
 	}
-	logg.I.f("%s %s %d", r.Method, r.URL.Path, status_code)
+	logg.I.Printf("%s %s %d", r.Method, r.URL.Path, status_code)
 }

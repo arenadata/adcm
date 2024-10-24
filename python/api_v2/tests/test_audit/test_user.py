@@ -107,7 +107,7 @@ class TestUserAudit(BaseAPITestCase):
             "first_name": "new_first_name",
             "lastName": "new_last_name",
             "email": "email@new.mail",
-            "is_superuser": True,
+            "isSuperUser": True,
             "password": "new_password1",
             "groups": [self.group.pk],
         }
@@ -121,6 +121,7 @@ class TestUserAudit(BaseAPITestCase):
                 "last_name": "new_last_name",
                 "password": "******",
                 "group": ["Some group [local]"],
+                "is_superuser": True,
             },
             "previous": {
                 "email": "",
@@ -128,6 +129,7 @@ class TestUserAudit(BaseAPITestCase):
                 "last_name": "",
                 "password": "******",
                 "group": [],
+                "is_superuser": False,
             },
         }
 

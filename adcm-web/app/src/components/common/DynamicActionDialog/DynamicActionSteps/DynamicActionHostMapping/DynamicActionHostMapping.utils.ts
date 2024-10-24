@@ -6,6 +6,7 @@ import {
   type AdcmMappingComponent,
   type AdcmMappingComponentService,
   type HostId,
+  AdcmMaintenanceMode,
 } from '@models/adcm';
 import type {
   ComponentAvailabilityErrors,
@@ -66,5 +67,8 @@ export const checkHostActionsMappingAvailability = (
   disabledHosts: Set<HostId> = new Set(),
 ): string | undefined => {
   const isDisabled = !allowActions.has(AdcmHostComponentMapRuleAction.Remove) && disabledHosts.has(host.id);
-  return isDisabled ? 'Removing host is not allowed in the action configuration' : undefined;
+  const isHostInMaintenanceMode = host.maintenanceMode === AdcmMaintenanceMode.On;
+
+  if (isDisabled) return 'Removing host is not allowed in the action configuration';
+  if (isHostInMaintenanceMode) return 'The host is in the maintenance mode';
 };

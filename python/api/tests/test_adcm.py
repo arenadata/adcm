@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from adcm.tests.base import BaseTestCase
-from cm.models import ADCM, ConcernItem
+from cm.models import ADCM
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
@@ -22,7 +22,7 @@ class TestADCM(BaseTestCase):
         super().setUp()
 
         self.adcm = ADCM.objects.select_related("prototype").last()
-        self.concern = ConcernItem.objects.last()
+        self.concern = self.adcm.concerns.get()
 
     def test_list(self):
         test_data = {

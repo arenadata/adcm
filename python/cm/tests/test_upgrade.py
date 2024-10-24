@@ -10,12 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.tests.base import BaseTestCase
+from adcm.tests.base import BaseTestCase, BusinessLogicMixin
 
 from cm.adcm_config.config import save_object_config, switch_config
 from cm.api import (
     add_cluster,
-    add_hc,
     add_host,
     add_host_provider,
     add_host_to_cluster,
@@ -37,7 +36,7 @@ from cm.models import (
     Upgrade,
 )
 from cm.tests.utils import gen_cluster
-from cm.upgrade import bundle_revert, check_upgrade, do_upgrade, switch_components
+from cm.upgrade import _switch_components, bundle_revert, check_upgrade, do_upgrade
 
 
 def cook_cluster_bundle(ver):
@@ -406,7 +405,7 @@ class TestConfigUpgrade(BaseTestCase):
         self.assertEqual(new_attr, {"advance": {"active": False}})
 
 
-class TestUpgrade(BaseTestCase):
+class TestUpgrade(BusinessLogicMixin, BaseTestCase):
     def test_upgrade_with_license(self):
         bundle_1 = cook_cluster_bundle("1.0")
         bundle_2 = cook_cluster_bundle("2.0")
@@ -480,11 +479,7 @@ class TestUpgrade(BaseTestCase):
         add_host_to_cluster(cluster, host_1)
         add_host_to_cluster(cluster, host_2)
 
-        host_component = [
-            {"service_id": service.id, "host_id": host_1.id, "component_id": service_component_1.id},
-            {"service_id": service.id, "host_id": host_2.id, "component_id": service_component_2.id},
-        ]
-        add_hc(cluster, host_component)
+        self.set_hostcomponent(cluster=cluster, entries=[(host_1, service_component_1), (host_2, service_component_2)])
         host_component_1 = HostComponent.objects.get(cluster=cluster, service=service, component=service_component_2)
 
         self.assertEqual(host_component_1.component.id, service_component_2.id)
@@ -520,7 +515,7 @@ class TestUpgrade(BaseTestCase):
         self.assertEqual(service_component_12.prototype.parent, service.prototype)
 
         new_service_proto = Prototype.objects.get(type="service", name="hadoop", bundle=bundle_2)
-        switch_components(cluster, service, new_service_proto)
+        _switch_components(cluster, service, new_service_proto)
 
         new_component_prototype_1 = Prototype.objects.get(name="server", type="component", parent=new_service_proto)
         service_component_21 = ServiceComponent.objects.get(cluster=cluster, service=service, prototype__name="server")

@@ -16,14 +16,12 @@ from typing import Literal, TypedDict
 import json
 
 from adcm_version import compare_prototype_versions
-from api_v2.cluster.utils import handle_mapping_action_host_groups
-from core.cluster.operations import find_hosts_difference
-from core.types import CoreObjectDescriptor
+from core.types import ADCMCoreType, ConcernID, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
 from django.db.transaction import atomic, on_commit
-from rbac.models import Policy, re_apply_object_policy
+from rbac.models import re_apply_object_policy
 from rbac.roles import apply_policy_for_new_config
 
 from cm.adcm_config.config import (
@@ -33,17 +31,12 @@ from cm.adcm_config.config import (
     save_object_config,
 )
 from cm.adcm_config.utils import proto_ref
-from cm.converters import orm_object_to_core_type
+from cm.converters import orm_object_to_action_target_type, orm_object_to_core_type
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.issue import (
     add_concern_to_object,
-    check_bound_components,
-    check_component_constraint,
-    check_hc_requires,
-    check_service_requires,
     remove_concern_from_object,
     update_hierarchy_issues,
-    update_issues_and_flags_after_deleting,
 )
 from cm.logger import logger
 from cm.models import (
@@ -54,6 +47,7 @@ from cm.models import (
     Cluster,
     ClusterBind,
     ClusterObject,
+    ConcernCause,
     ConcernItem,
     ConcernType,
     ConfigLog,
@@ -70,14 +64,32 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from cm.services.cluster import retrieve_clusters_topology
-from cm.services.concern.flags import BuiltInFlag, raise_flag, update_hierarchy
+from cm.services.cluster import retrieve_cluster_topology
+from cm.services.concern import create_issue, delete_issue, retrieve_issue
+from cm.services.concern._operaitons import delete_concerns_of_removed_objects
+from cm.services.concern.cases import (
+    recalculate_own_concerns_on_add_clusters,
+    recalculate_own_concerns_on_add_hosts,
+    recalculate_own_concerns_on_add_services,
+)
+from cm.services.concern.checks import (
+    cluster_mapping_has_issue_orm_version,
+    object_configuration_has_issue,
+    object_imports_has_issue,
+)
+from cm.services.concern.distribution import (
+    ConcernRelatedObjects,
+    distribute_concern_on_related_objects,
+    redistribute_issues_and_flags,
+)
+from cm.services.concern.flags import BuiltInFlag, raise_flag
 from cm.services.concern.locks import get_lock_on_object
 from cm.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.status_api import (
+    notify_about_new_concern,
+    notify_about_redistributed_concerns_from_maps,
     send_config_creation_event,
     send_delete_service_event,
-    send_host_component_map_update_event,
 )
 from cm.utils import obj_ref
 
@@ -133,9 +145,12 @@ def add_cluster(prototype: Prototype, name: str, description: str = "") -> Clust
             object_type=ContentType.objects.get_for_model(Cluster),
         )
 
-        update_hierarchy_issues(cluster)
+        added, removed = {}, {}
+        if recalculate_own_concerns_on_add_clusters(cluster):
+            added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
 
     reset_hc_map()
+    notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 
     logger.info("cluster #%s %s is added", cluster.pk, cluster.name)
 
@@ -160,10 +175,26 @@ def add_host(prototype: Prototype, provider: HostProvider, fqdn: str, descriptio
         host.config = obj_conf
         host.save()
         add_concern_to_object(object_=host, concern=get_lock_on_object(object_=provider))
-        update_hierarchy_issues(host.provider)
+
+        related_objects = {}
+        concern_id = None
+        if concerns := recalculate_own_concerns_on_add_hosts(host):
+            concern_id = next(iter(concerns[ADCMCoreType.HOST][host.id]))
+            related_objects = distribute_concern_on_related_objects(
+                owner=CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST), concern_id=concern_id
+            )
+        if concern := retrieve_issue(
+            owner=CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.HOSTPROVIDER), cause=ConcernCause.CONFIG
+        ):
+            host.concerns.add(concern)
+
         re_apply_object_policy(provider)
 
     reset_hc_map()
+
+    if concern_id:
+        notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
+
     logger.info("host #%s %s is added", host.pk, host.fqdn)
 
     return host
@@ -179,7 +210,16 @@ def add_host_provider(prototype: Prototype, name: str, description: str = ""):
         obj_conf = init_object_config(prototype, provider)
         provider.config = obj_conf
         provider.save()
-        update_hierarchy_issues(provider)
+
+        provider_cod = CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.HOSTPROVIDER)
+        concern_id = None
+        if object_configuration_has_issue(provider):
+            concern = create_issue(owner=provider_cod, cause=ConcernCause.CONFIG)
+            concern_id = concern.id
+            related_objects = distribute_concern_on_related_objects(owner=provider_cod, concern_id=concern_id)
+
+    if concern_id:
+        notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
     logger.info("host provider #%s %s is added", provider.pk, provider.name)
 
@@ -219,16 +259,36 @@ def delete_host(host: Host, cancel_tasks: bool = True) -> None:
     host.delete()
     reset_hc_map()
     reset_objects_in_mm()
-    update_issues_and_flags_after_deleting()
+
     logger.info("host #%s is deleted", host_pk)
 
 
 def delete_service(service: ClusterObject) -> None:
     service_pk = service.pk
+
+    delete_concerns_of_removed_objects(
+        objects={
+            ADCMCoreType.SERVICE: (service_pk,),
+            ADCMCoreType.COMPONENT: tuple(
+                ServiceComponent.objects.values_list("id", flat=True).filter(service_id=service_pk)
+            ),
+        }
+    )
+
     service.delete()
 
-    update_issues_and_flags_after_deleting()
-    update_hierarchy_issues(service.cluster)
+    cluster = service.cluster
+    cluster_cod = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
+    concern_id = None
+    related_objects = {}
+    if not cluster_mapping_has_issue_orm_version(cluster=cluster):
+        delete_issue(
+            owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=ConcernCause.HOSTCOMPONENT
+        )
+    elif retrieve_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT) is None:
+        concern = create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
+        concern_id = concern.id
+        related_objects = distribute_concern_on_related_objects(owner=cluster_cod, concern_id=concern_id)
 
     keep_objects = defaultdict(set)
     for task in TaskLog.objects.filter(
@@ -240,10 +300,12 @@ def delete_service(service: ClusterObject) -> None:
             for log in job.logstorage_set.all():
                 keep_objects[log.__class__].add(log.pk)
 
-    re_apply_object_policy(apply_object=service.cluster, keep_objects=keep_objects)
+    re_apply_object_policy(apply_object=cluster, keep_objects=keep_objects)
 
     reset_hc_map()
     on_commit(func=partial(send_delete_service_event, service_id=service_pk))
+    if concern_id:
+        on_commit(func=partial(notify_about_new_concern, concern_id=concern_id, related_objects=related_objects))
     logger.info("service #%s is deleted", service_pk)
 
 
@@ -262,8 +324,21 @@ def delete_cluster(cluster: Cluster) -> None:
         MaintenanceMode.OFF,
         ", ".join(host_pks),
     )
+
+    delete_concerns_of_removed_objects(
+        objects={
+            ADCMCoreType.CLUSTER: (cluster.id,),
+            ADCMCoreType.SERVICE: tuple(
+                ClusterObject.objects.values_list("id", flat=True).filter(cluster_id=cluster.id)
+            ),
+            ADCMCoreType.COMPONENT: tuple(
+                ServiceComponent.objects.values_list("id", flat=True).filter(cluster_id=cluster.id)
+            ),
+        }
+    )
+
     cluster.delete()
-    update_issues_and_flags_after_deleting()
+
     reset_hc_map()
     reset_objects_in_mm()
 
@@ -289,11 +364,15 @@ def remove_host_from_cluster(host: Host) -> Host:
 
         for group in cluster.group_config.order_by("id"):
             group.hosts.remove(host)
-            update_hierarchy_issues(obj=host)
 
         # if there's no lock on cluster, nothing should be removed
         remove_concern_from_object(object_=host, concern=get_lock_on_object(object_=cluster))
-        update_hierarchy_issues(obj=cluster)
+
+        if not cluster_mapping_has_issue_orm_version(cluster):
+            delete_issue(
+                owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=ConcernCause.HOSTCOMPONENT
+            )
+
         re_apply_object_policy(apply_object=cluster)
 
     reset_hc_map()
@@ -330,10 +409,14 @@ def add_service_to_cluster(cluster: Cluster, proto: Prototype) -> ClusterObject:
         service.config = obj_conf
         service.save(update_fields=["config"])
         add_components_to_service(cluster=cluster, service=service)
-        update_hierarchy_issues(obj=cluster)
+
+        recalculate_own_concerns_on_add_services(cluster=cluster, services=(service,))
+        added, removed = redistribute_issues_and_flags(retrieve_cluster_topology(cluster.id))
+
         re_apply_object_policy(apply_object=cluster)
 
     reset_hc_map()
+    notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
     logger.info(
         "service #%s %s is added to cluster #%s %s",
         service.pk,
@@ -351,7 +434,6 @@ def add_components_to_service(cluster: Cluster, service: ClusterObject) -> None:
         obj_conf = init_object_config(proto=comp, obj=service_component)
         service_component.config = obj_conf
         service_component.save(update_fields=["config"])
-        update_hierarchy_issues(obj=service_component)
 
 
 def get_license(proto: Prototype) -> str | None:
@@ -380,7 +462,7 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
         message = f"Both `config` and `attr` should be of `dict` type, not {type(config)} and {type(attr)} respectively"
         raise TypeError(message)
 
-    obj: MainObject | ADCM | GroupConfig = obj_conf.object
+    obj = obj_conf.object
     if obj is None:
         message = "Can't update configuration that have no linked object"
         raise ValueError(message)
@@ -402,33 +484,45 @@ def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, descript
         current_attr=old_conf.attr,
     )
 
+    concern_id, related_objects = None, {}
+
     with atomic():
         config_log = save_object_config(object_config=obj_conf, config=new_conf, attr=attr, description=description)
-        update_hierarchy_issues(obj=obj)
+
+        delete_issue(
+            owner=CoreObjectDescriptor(id=obj.id, type=orm_object_to_action_target_type(object_=obj)),
+            cause=ConcernCause.CONFIG,
+        )
         # flag on ADCM can't be raised (only objects of `ADCMCoreType` are supported)
         if not isinstance(obj, ADCM):
-            raise_outdated_config_flag_if_required(object_=obj)
+            concern_id, related_objects = raise_outdated_config_flag_if_required(object_=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     send_config_creation_event(object_=obj)
+    if concern_id:
+        notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
     return config_log
 
 
-def raise_outdated_config_flag_if_required(object_: MainObject):
+def raise_outdated_config_flag_if_required(object_: MainObject) -> tuple[ConcernID | None, ConcernRelatedObjects]:
     if object_.state == "created" or not object_.prototype.flag_autogeneration.get("enable_outdated_config", False):
-        return
+        return None, {}
 
     flag = BuiltInFlag.ADCM_OUTDATED_CONFIG.value
-    flag_exists = object_.concerns.filter(name=flag.name, type=ConcernType.FLAG).exists()
+    flag_exists = object_.concerns.filter(
+        name=flag.name, type=ConcernType.FLAG, owner_id=object_.id, owner_type=object_.content_type
+    ).exists()
     # raise unconditionally here, because message should be from "default" flag
-    raise_flag(flag=flag, on_objects=[CoreObjectDescriptor(id=object_.id, type=orm_object_to_core_type(object_))])
+    owner = CoreObjectDescriptor(id=object_.id, type=orm_object_to_core_type(object_))
+    raise_flag(flag=flag, on_objects=[owner])
     if not flag_exists:
-        update_hierarchy(
-            concern=ConcernItem.objects.get(
-                name=flag.name, type=ConcernType.FLAG, owner_id=object_.id, owner_type=object_.content_type
-            )
+        concern_id = ConcernItem.objects.values_list("id", flat=True).get(
+            name=flag.name, type=ConcernType.FLAG, owner_id=object_.id, owner_type=object_.content_type
         )
+        return concern_id, distribute_concern_on_related_objects(owner=owner, concern_id=concern_id)
+
+    return None, {}
 
 
 def set_object_config_with_plugin(obj: ADCMEntity, config: dict, attr: dict) -> ConfigLog:
@@ -438,7 +532,6 @@ def set_object_config_with_plugin(obj: ADCMEntity, config: dict, attr: dict) -> 
         config_log = save_object_config(
             object_config=obj.config, config=new_conf, attr=attr, description="ansible update"
         )
-        update_hierarchy_issues(obj=obj)
         apply_policy_for_new_config(config_object=obj, config_log=config_log)
 
     return config_log
@@ -492,135 +585,6 @@ def make_host_comp_list(cluster: Cluster, hc_in: list[dict]) -> list[tuple[Clust
         host_comp_list.append((service, host, comp))
 
     return host_comp_list
-
-
-def check_hc(cluster: Cluster, hc_in: list[dict]) -> list[tuple[ClusterObject, Host, ServiceComponent]]:
-    check_sub_key(hc_in=hc_in)
-    host_comp_list = make_host_comp_list(cluster=cluster, hc_in=hc_in)
-
-    check_hc_requires(shc_list=host_comp_list)
-    check_bound_components(shc_list=host_comp_list)
-    for service in ClusterObject.objects.filter(cluster=cluster):
-        check_component_constraint(
-            cluster=cluster, service_prototype=service.prototype, hc_in=[i for i in host_comp_list if i[0] == service]
-        )
-        check_service_requires(cluster=cluster, proto=service.prototype)
-    check_maintenance_mode(cluster=cluster, host_comp_list=host_comp_list)
-
-    return host_comp_list
-
-
-def check_maintenance_mode(
-    cluster: Cluster, host_comp_list: list[tuple[ClusterObject, Host, ServiceComponent]]
-) -> None:
-    for service, host, comp in host_comp_list:
-        try:
-            HostComponent.objects.get(cluster=cluster, service=service, host=host, component=comp)
-        except HostComponent.DoesNotExist:
-            if host.maintenance_mode == MaintenanceMode.ON:
-                raise_adcm_ex("INVALID_HC_HOST_IN_MM")
-
-
-def still_existed_hc(cluster: Cluster, host_comp_list: list[tuple[ClusterObject, Host, ServiceComponent]]) -> list:
-    result = []
-    for service, host, comp in host_comp_list:
-        try:
-            existed_hc = HostComponent.objects.get(cluster=cluster, service=service, host=host, component=comp)
-            result.append(existed_hc)
-        except HostComponent.DoesNotExist:
-            continue
-
-    return result
-
-
-def save_hc(
-    cluster: Cluster, host_comp_list: list[tuple[ClusterObject, Host, ServiceComponent]]
-) -> list[HostComponent]:
-    hc_queryset = HostComponent.objects.filter(cluster=cluster).order_by("id")
-    service_set = {hc.service for hc in hc_queryset}
-    old_hosts = {i.host for i in hc_queryset.select_related("host")}
-    new_hosts = {i[1] for i in host_comp_list}
-
-    previous_topology = next(retrieve_clusters_topology(cluster_ids=(cluster.id,)))
-
-    lock = get_lock_on_object(object_=cluster)
-    if lock:
-        for removed_host in old_hosts.difference(new_hosts):
-            remove_concern_from_object(object_=removed_host, concern=lock)
-
-        for added_host in new_hosts.difference(old_hosts):
-            add_concern_to_object(object_=added_host, concern=lock)
-
-    still_hc = still_existed_hc(cluster, host_comp_list)
-    host_service_of_still_hc = {(hc.host, hc.service) for hc in still_hc}
-
-    for removed_hc in set(hc_queryset) - set(still_hc):
-        groupconfigs = GroupConfig.objects.filter(
-            object_type__model__in=["clusterobject", "servicecomponent"],
-            hosts=removed_hc.host,
-        )
-        for group_config in groupconfigs:
-            if (group_config.object_type.model == "clusterobject") and (
-                (removed_hc.host, removed_hc.service) in host_service_of_still_hc
-            ):
-                continue
-
-            group_config.hosts.remove(removed_hc.host)
-
-    hc_queryset.delete()
-    host_component_list = []
-
-    for service, host, comp in host_comp_list:
-        host_component = HostComponent(
-            cluster=cluster,
-            service=service,
-            host=host,
-            component=comp,
-        )
-        host_component.save()
-        host_component_list.append(host_component)
-
-    updated_topology = next(retrieve_clusters_topology(cluster_ids=(cluster.id,)))
-    handle_mapping_action_host_groups(
-        mapping_delta=find_hosts_difference(old_topology=previous_topology, new_topology=updated_topology).unmapped
-    )
-
-    update_hierarchy_issues(cluster)
-
-    for provider in {host.provider for host in Host.objects.filter(cluster=cluster)}:
-        update_hierarchy_issues(provider)
-
-    update_issues_and_flags_after_deleting()
-    reset_hc_map()
-    reset_objects_in_mm()
-
-    for host_component_item in host_component_list:
-        service_set.add(host_component_item.service)
-
-    if service_set:
-        service_list = list(service_set)
-        service_content_type = ContentType.objects.get_for_model(model=service_list[0])
-        for service in service_list:
-            for policy in Policy.objects.filter(
-                object__object_id=service.pk, object__content_type=service_content_type
-            ):
-                policy.apply()
-
-        for policy in Policy.objects.filter(
-            object__object_id=service_list[0].cluster.pk,
-            object__content_type=ContentType.objects.get_for_model(model=service_list[0].cluster),
-        ):
-            policy.apply()
-
-    send_host_component_map_update_event(cluster=cluster)
-    return host_component_list
-
-
-def add_hc(cluster: Cluster, hc_in: list[dict]) -> list[HostComponent]:
-    host_comp_list = check_hc(cluster=cluster, hc_in=hc_in)
-
-    with atomic():
-        return save_hc(cluster=cluster, host_comp_list=host_comp_list)
 
 
 def get_bind(
@@ -854,7 +818,13 @@ def multi_bind(cluster: Cluster, service: ClusterObject | None, bind_list: list[
         cluster_bind.save()
         logger.info("bind %s to %s", obj_ref(obj=export_obj), obj_ref(obj=import_obj))
 
-        update_hierarchy_issues(obj=cluster)
+    import_target = CoreObjectDescriptor(id=import_obj.id, type=orm_object_to_core_type(import_obj))
+    if not object_imports_has_issue(target=import_obj):
+        delete_issue(owner=import_target, cause=ConcernCause.IMPORT)
+    elif retrieve_issue(owner=import_target, cause=ConcernCause.IMPORT) is None:
+        concern = create_issue(owner=import_target, cause=ConcernCause.IMPORT)
+        related_objects = distribute_concern_on_related_objects(owner=import_target, concern_id=concern.id)
+        on_commit(func=partial(notify_about_new_concern, concern_id=concern.id, related_objects=related_objects))
 
     return get_import(cluster=cluster, service=service)
 

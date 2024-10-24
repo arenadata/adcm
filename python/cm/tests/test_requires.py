@@ -11,8 +11,9 @@
 # limitations under the License.
 
 from adcm.tests.base import BaseTestCase
+from core.cluster.types import HostComponentEntry
 
-from cm.api import add_hc, add_service_to_cluster
+from cm.api import add_service_to_cluster
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues
 from cm.models import (
@@ -24,6 +25,7 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from cm.services.mapping import change_host_component_mapping
 
 
 class TestComponent(BaseTestCase):
@@ -74,9 +76,13 @@ class TestComponent(BaseTestCase):
         )
 
         with self.assertRaisesRegex(
-            AdcmEx, 'No required service "service_2" for component "component_1_1" of service "service_1"'
+            AdcmEx, 'Services required for component "component_1_1" of service "service_1" are missing: service_2'
         ):
-            add_hc(self.cluster, [{"host_id": host.id, "service_id": service_1.id, "component_id": component_1.id}])
+            change_host_component_mapping(
+                cluster_id=self.cluster.id,
+                bundle_id=self.cluster.bundle_id,
+                flat_mapping=(HostComponentEntry(host_id=host.id, component_id=component_1.id),),
+            )
 
     def test_service_requires_issue(self):
         service_2 = ClusterObject.objects.create(prototype=self.service_proto_2, cluster=self.cluster)

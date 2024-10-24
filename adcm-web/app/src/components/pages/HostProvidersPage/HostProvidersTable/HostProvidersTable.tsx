@@ -12,6 +12,7 @@ import HostProvidersDynamicActionsIcon from '../HostProvidersDynamicActionsIcon/
 import { AdcmHostProvider } from '@models/adcm';
 import { opeHostProviderUpgradeDialog } from '@store/adcm/hostProviders/hostProviderUpgradesSlice';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
+import { isBlockingConcernPresent } from '@utils/concernUtils.ts';
 
 const HostProviderTable = () => {
   const dispatch = useDispatch();
@@ -59,7 +60,7 @@ const HostProviderTable = () => {
             <IconButton
               icon="g1-upgrade"
               size={32}
-              disabled={!hostProvider.isUpgradable}
+              disabled={!hostProvider.isUpgradable || isBlockingConcernPresent(hostProvider.concerns)}
               onClick={() => handleUpgradeClick(hostProvider)}
               title={hostProvider.isUpgradable ? 'Upgrade' : 'No upgrades'}
             />

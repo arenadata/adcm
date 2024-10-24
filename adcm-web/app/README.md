@@ -5,8 +5,8 @@ This is documentation for ADCM Frontend project part
 ## Development
 
 ### Requirements
-1. Node > v18.16.x (recommend use [NVM](https://github.com/nvm-sh/nvm))
-2. yarn > v3.5.x   ([yarn v3 install](https://yarnpkg.com/getting-started/install))
+1. Node > 20.9.x (recommend use [NVM](https://github.com/nvm-sh/nvm))
+2. yarn > v4.5.x   ([yarn v4 install](https://yarnpkg.com/getting-started/install))
 
 ### Start local Backend
 ```

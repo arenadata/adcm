@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from collections import defaultdict
+from copy import copy
 from typing import Any, Collection, Generator, Iterable, Protocol
 
 from core.cluster.rules import (
@@ -62,7 +63,7 @@ def build_clusters_topology(
     hosts_on_components: dict[ClusterID, dict[ComponentID, set[HostID]]] = {
         cluster_id: defaultdict(set) for cluster_id in cluster_ids
     }
-    if hosts_in_clusters and services_in_clusters:
+    if hosts_in_clusters:
         for cluster_id, entries in db.get_host_component_entries(cluster_ids=cluster_ids).items():
             for entry in entries:
                 hosts_on_components[cluster_id][entry.component_id].add(entry.host_id)
@@ -89,6 +90,36 @@ def build_clusters_topology(
             },
         )
         for cluster_id in cluster_ids
+    )
+
+
+def create_topology_with_new_mapping(
+    topology: ClusterTopology, new_mapping: Iterable[HostComponentEntry]
+) -> ClusterTopology:
+    """
+    If we assume that all objects from "new_mapping" are presented in topology,
+    then we can create new topology based on that input without additional information.
+    """
+    mapping: dict[ComponentID, set[HostID]] = defaultdict(set)
+    for entry in new_mapping:
+        mapping[entry.component_id].add(entry.host_id)
+
+    return ClusterTopology(
+        cluster_id=topology.cluster_id,
+        hosts=copy(topology.hosts),
+        services={
+            service_id: ServiceTopology(
+                info=service.info,
+                components={
+                    component_id: ComponentTopology(
+                        info=component.info,
+                        hosts={host_id: topology.hosts[host_id] for host_id in mapping.get(component_id, ())},
+                    )
+                    for component_id, component in service.components.items()
+                },
+            )
+            for service_id, service in topology.services.items()
+        },
     )
 
 

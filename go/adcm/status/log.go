@@ -13,176 +13,149 @@
 package status
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"sync"
 )
 
-type logger struct {
-	D        logWrapper
-	I        logWrapper
-	W        logWrapper
-	E        logWrapper
-	C        logWrapper
-	level    *int
-	levelMap map[string]int
+const DefaultLogLevel = "ERROR"
+
+type simpleLogger interface {
+	Println(v ...interface{})
+	Printf(format string, v ...interface{})
 }
 
-type logWrapper struct {
-	out     logWriter
-	log     *log.Logger
-	level   int
-	current *int
-}
-
-const (
-	DEBUG = 1
-	INFO  = 2
-	WARN  = 3
-	ERR   = 4
-	CRIT  = 5
-)
-
-var logg logger
-
-func (log *logger) decodeLogLevel(level string) (int, error) {
-	intLevel, ok := log.levelMap[level]
-	if !ok {
-		return 0, errors.New("Unknown log level: " + level)
-	}
-	return intLevel, nil
-}
-
-func (log *logger) getLogLevel() string {
-	for strLevel, intLevel := range log.levelMap {
-		if intLevel == *log.level {
-			return strLevel
-		}
-
-	}
-	return "none"
-}
-
-func (log *logger) rotate() {
-	log.E.out.ReopenLogFile()
-}
-
-func (log *logger) set(level int) {
-	*log.level = level
-	log.W.l("set log level to \"" + log.getLogLevel() + "\"")
-}
-
-func (log *logWrapper) l(v ...interface{}) {
-	if log.level < *log.current {
-		return
-	}
-	log.log.Println(v...)
-}
-
-func (log *logWrapper) f(format string, v ...interface{}) {
-	if log.level < *log.current {
-		return
-	}
-	log.log.Printf(format, v...)
-}
-
-func initLog(logFile string, level string) {
-	logg = logger{}
-	var out logWriter
-	logg.levelMap = map[string]int{
-		"DEBUG":    DEBUG,
-		"INFO":     INFO,
-		"WARNING":  WARN,
-		"ERROR":    ERR,
-		"CRITICAL": CRIT,
-	}
-	logLevel, err := logg.decodeLogLevel(level)
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
-	if logFile == "" {
-		out = newStdoutWriter()
-	} else {
-		out = newFileWriter(logFile)
-	}
-	logg.level = &logLevel
-	logg.D = newLog(out, &logLevel, DEBUG, "[DEBUG] ")
-	logg.I = newLog(out, &logLevel, INFO, "[INFO]  ")
-	logg.W = newLog(out, &logLevel, WARN, "[WARN]  ")
-	logg.E = newLog(out, &logLevel, ERR, "[ERROR] ")
-	logg.C = newLog(out, &logLevel, CRIT, "[CRITICAL] ")
-}
-
-func newLog(out logWriter, current *int, level int, tag string) logWrapper {
-	return logWrapper{
-		out:     out,
-		level:   level,
-		current: current,
-		log:     log.New(out, tag, log.Ldate|log.Lmicroseconds|log.Lshortfile),
-	}
-}
-
-type logWriter interface {
+type logHandler interface {
 	Write(output []byte) (int, error)
 	ReopenLogFile()
 }
 
-type stdoutWriter struct {
+// Logger
+
+type logger struct {
+	D       simpleLogger
+	I       simpleLogger
+	W       simpleLogger
+	E       simpleLogger
+	C       simpleLogger
+	handler logHandler
+	level   string
+}
+
+func (l *logger) ReopenLogFile() {
+	l.handler.ReopenLogFile()
+}
+
+func (l *logger) SetLogLevel(level string) error {
+	createRealLogger := func(level string) *log.Logger {
+		return log.New(
+			l.handler,
+			"["+strings.ToUpper(level)+"] ",
+			log.Ldate|log.Lmicroseconds|log.Lshortfile,
+		)
+	}
+
+	dummy := &dummyLogger{}
+
+	switch level {
+	case "DEBUG":
+		l.D = createRealLogger("DEBUG")
+		l.I = createRealLogger("INFO")
+		l.W = createRealLogger("WARNING")
+		l.E = createRealLogger("ERROR")
+		l.C = createRealLogger("CRITICAL")
+	case "INFO":
+		l.D = dummy
+		l.I = createRealLogger("INFO")
+		l.W = createRealLogger("WARNING")
+		l.E = createRealLogger("ERROR")
+		l.C = createRealLogger("CRITICAL")
+	case "WARNING":
+		l.D = dummy
+		l.I = dummy
+		l.W = createRealLogger("WARNING")
+		l.E = createRealLogger("ERROR")
+		l.C = createRealLogger("CRITICAL")
+	case "ERROR":
+		l.D = dummy
+		l.I = dummy
+		l.W = dummy
+		l.E = createRealLogger("ERROR")
+		l.C = createRealLogger("CRITICAL")
+	case "CRITICAL":
+		l.D = dummy
+		l.I = dummy
+		l.W = dummy
+		l.E = dummy
+		l.C = createRealLogger("CRITICAL")
+	default:
+		return fmt.Errorf("unknown log level: %s", level)
+	}
+	l.level = level
+	return nil
+}
+
+var logg logger
+
+func InitLog(logFile string, level string) {
+	logg = logger{}
+
+	if logFile == "" {
+		logg.handler = &stdOutHandler{fp: os.Stdout}
+	} else {
+		logg.handler = &fileHandler{filename: logFile}
+		logg.handler.ReopenLogFile()
+	}
+
+	err := logg.SetLogLevel(level)
+	if err != nil {
+		if retryErr := logg.SetLogLevel(DefaultLogLevel); retryErr != nil {
+			log.Fatalf("Failed to set level %q and fallback to default %q", level, DefaultLogLevel)
+		}
+	}
+}
+
+// Dummy Logger
+
+type dummyLogger struct{}
+
+func (dl *dummyLogger) Println(v ...interface{})                {}
+func (dll *dummyLogger) Printf(format string, v ...interface{}) {}
+
+// Handlers
+
+type stdOutHandler struct {
 	fp *os.File
 }
 
-func newStdoutWriter() *stdoutWriter {
-	return &stdoutWriter{fp: os.Stdout}
-}
-
-func (w *stdoutWriter) Write(output []byte) (int, error) {
+func (w *stdOutHandler) Write(output []byte) (int, error) {
 	return w.fp.Write(output)
 }
 
-func (w *stdoutWriter) ReopenLogFile() {
+func (w *stdOutHandler) ReopenLogFile() {
 }
 
-// File Writer
-
-type fileWriter struct {
+type fileHandler struct {
 	lock     sync.Mutex
 	filename string
 	fp       *os.File
 }
 
-func newFileWriter(filename string) *fileWriter {
-	w := fileWriter{filename: filename}
-	w.ReopenLogFile()
-	return &w
-}
-
-func (w *fileWriter) Write(output []byte) (int, error) {
+func (w *fileHandler) Write(output []byte) (int, error) {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 	return w.fp.Write(output)
 }
 
-func (w *fileWriter) ReopenLogFile() {
+func (w *fileHandler) ReopenLogFile() {
 	var err error
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
 	w.fp, err = os.OpenFile(w.filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Fatalf("error opening log file %s: %v", w.filename, err)
+		log.Fatalf("Error opening log file %s: %v", w.filename, err)
 	}
-}
-
-func GetLogLevel() string {
-	const defaultLogLevel = "ERROR"
-
-	logLevel, ok := os.LookupEnv("LOG_LEVEL")
-	if !ok {
-		return defaultLogLevel
-	}
-
-	return logLevel
 }

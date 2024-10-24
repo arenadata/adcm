@@ -180,7 +180,7 @@ func getClusterHostStatus(h Hub, clusterId int) (int, map[int]Status) {
 		}
 		status, ok := h.HostStatusStorage.get(ALL, hostId)
 		if !ok {
-			logg.D.f("getClusterHostStatus: no status for host #%v ", hostId)
+			logg.D.Printf("getClusterHostStatus: no status for host #%v ", hostId)
 			status = Status{Status: 16}
 		}
 		if status.Status != 0 {

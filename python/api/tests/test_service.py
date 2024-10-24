@@ -287,48 +287,6 @@ class TestServiceAPI(BaseTestCase):
     def test_upload_with_cyclic_requires(self):
         self.upload_and_load_bundle(path=Path(self.base_dir, "python/api/tests/files/bundle_cluster_requires.tar"))
 
-    def test_delete_service_with_requires_fail(self):
-        host = self.get_host(bundle_path="python/api/tests/files/bundle_test_provider_concern.tar")
-        cluster = self.get_cluster(bundle_path="python/api/tests/files/bundle_cluster_requires.tar")
-        self.client.post(
-            path=reverse(viewname="v1:host", kwargs={"cluster_id": cluster.pk}),
-            data={"host_id": host.pk},
-        )
-
-        service_1_prototype = Prototype.objects.get(name="service_1", type="service")
-        service_1_response: Response = self.client.post(
-            path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
-            data={"prototype_id": service_1_prototype.pk},
-        )
-        service_1 = ClusterObject.objects.get(pk=service_1_response.data["id"])
-
-        service_2_prototype = Prototype.objects.get(name="service_2", type="service")
-        service_2_response: Response = self.client.post(
-            path=reverse(viewname="v1:service", kwargs={"cluster_id": cluster.pk}),
-            data={"prototype_id": service_2_prototype.pk},
-        )
-        service_2 = ClusterObject.objects.get(pk=service_2_response.data["id"])
-
-        component_2_1 = ServiceComponent.objects.get(service=service_2, prototype__name="component_1")
-        component_1_1 = ServiceComponent.objects.get(service=service_1, prototype__name="component_1")
-
-        self.client.post(
-            path=reverse(viewname="v1:host-component", kwargs={"cluster_id": cluster.pk}),
-            data={
-                "hc": [
-                    {"service_id": service_2.pk, "component_id": component_2_1.pk, "host_id": host.pk},
-                    {"service_id": service_1.pk, "component_id": component_1_1.pk, "host_id": host.pk},
-                ],
-            },
-            content_type=APPLICATION_JSON,
-        )
-
-        response: Response = self.client.delete(
-            path=reverse(viewname="v1:service-details", kwargs={"service_id": service_1.pk})
-        )
-
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-
     def test_delete_required_fail(self):
         self.service.prototype.required = True
         self.service.prototype.save(update_fields=["required"])

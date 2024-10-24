@@ -12,7 +12,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import NamedTuple, TypeAlias
+from typing import Literal, NamedTuple, TypeAlias
 
 ObjectID: TypeAlias = int
 ClusterID: TypeAlias = ObjectID
@@ -27,10 +27,15 @@ ActionID: TypeAlias = int
 TaskID: TypeAlias = int
 
 ConfigID: TypeAlias = int
+ConcernID: TypeAlias = int
 
+HostProviderName: TypeAlias = str
 HostName: TypeAlias = str
+ClusterName: TypeAlias = str
 ServiceName: TypeAlias = str
 ComponentName: TypeAlias = str
+
+MappingDict: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], HostID | ComponentID | ServiceID]
 
 
 class ADCMCoreError(Exception):
@@ -112,3 +117,18 @@ class NamedCoreObjectWithPrototype(NamedTuple):
     prototype_id: PrototypeID
     type: ADCMCoreType
     name: str
+
+
+class ServiceNameKey(NamedTuple):
+    service: ServiceName
+
+    def __str__(self) -> str:
+        return f'service "{self.service}"'
+
+
+class ComponentNameKey(NamedTuple):
+    service: ServiceName
+    component: ComponentName
+
+    def __str__(self) -> str:
+        return f'component "{self.component}" of service "{self.service}"'

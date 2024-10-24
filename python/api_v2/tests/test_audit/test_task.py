@@ -14,10 +14,7 @@ from unittest.mock import patch
 
 from cm.models import (
     Action,
-    Cluster,
-    ClusterObject,
     JobLog,
-    JobStatus,
     ObjectType,
     Prototype,
     ServiceComponent,
@@ -47,39 +44,6 @@ class TestTaskAudit(BaseAPITestCase):
         )
         self.set_hostcomponent(cluster=self.cluster_1, entries=[(host, self.component)])
         self.component_action = Action.objects.get(prototype=self.component.prototype, name="action_1_comp_1")
-
-    def simulate_finished_task(
-        self, object_: Cluster | ClusterObject | ServiceComponent, action: Action
-    ) -> (TaskLog, JobLog):
-        with RunTaskMock() as run_task:
-            (self.client.v2[object_] / "actions" / action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
-            )
-
-        run_task.run()
-        run_task.target_task.refresh_from_db()
-
-        return run_task.target_task, run_task.target_task.joblog_set.last()
-
-    def simulate_running_task(
-        self, object_: Cluster | ClusterObject | ServiceComponent, action: Action
-    ) -> (TaskLog, JobLog):
-        with RunTaskMock() as run_task:
-            (self.client.v2[object_] / "actions" / action / "run").post(
-                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
-            )
-
-        run_task.run()
-        run_task.target_task.refresh_from_db()
-        task = run_task.target_task
-        job = task.joblog_set.last()
-        task.status = JobStatus.RUNNING
-        task.save(update_fields=["status"])
-        job.status = JobStatus.RUNNING
-        job.pid = 5_000_000
-        job.save(update_fields=["status", "pid"])
-
-        return task, job
 
     def test_run_action_success(self):
         with RunTaskMock() as run_task:
@@ -199,7 +163,6 @@ class TestTaskAudit(BaseAPITestCase):
             )
 
     def test_terminate_job_denied(self):
-        # TODO: This test discovered an issue with creating a new audit object, this needs to be fixed
         _, job = self.simulate_running_task(object_=self.component, action=self.component_action)
         self.client.login(**self.test_user_credentials)
 
@@ -211,10 +174,7 @@ class TestTaskAudit(BaseAPITestCase):
                 operation_name=f"{self.component_action.display_name} terminated",
                 operation_type="update",
                 operation_result="denied",
-                audit_object__object_id=self.component.id,
-                audit_object__object_name="component_1",  # TODO: should be "cluster_1/service_1/component_1"
-                audit_object__object_type="service component",  # TODO: should be "component"
-                audit_object__is_deleted=False,
+                **self.prepare_audit_object_arguments(expected_object=self.component),
                 user__username="test_user_username",
             )
 
@@ -244,12 +204,11 @@ class TestTaskAudit(BaseAPITestCase):
                 operation_name="Task cancelled",
                 operation_type="update",
                 operation_result="fail",
-                audit_object__isnull=True,
+                **self.prepare_audit_object_arguments(expected_object=None),
                 user__username="admin",
             )
 
     def test_terminate_task_denied(self):
-        # TODO: This test discovered an issue with creating a new audit object, this needs to be fixed
         task, _ = self.simulate_running_task(object_=self.component, action=self.component_action)
         self.client.login(**self.test_user_credentials)
 
@@ -261,9 +220,7 @@ class TestTaskAudit(BaseAPITestCase):
                 operation_name=f"{self.component_action.display_name} cancelled",
                 operation_type="update",
                 operation_result="denied",
-                audit_object__object_id=self.component.id,
-                audit_object__object_name="component_1",  # TODO: should be "cluster_1/service_1/component_1"
-                audit_object__object_type="service component",  # TODO should be "component"
+                **self.prepare_audit_object_arguments(expected_object=self.component),
                 user__username="test_user_username",
             )
 
@@ -283,7 +240,6 @@ class TestTaskAudit(BaseAPITestCase):
         )
 
     def test_terminate_finished_task_fail(self):
-        # TODO: This test discovered an issue with creating a new audit object, this needs to be fixed
         task, _ = self.simulate_finished_task(object_=self.service, action=self.service_action)
 
         with patch("cm.models.os.kill"):
@@ -294,10 +250,7 @@ class TestTaskAudit(BaseAPITestCase):
                 operation_name=f"{self.service_action.display_name} cancelled",
                 operation_type="update",
                 operation_result="fail",
-                audit_object__object_id=self.service.id,
-                audit_object__object_name="service_1",  # TODO: should be "cluster_1/service_1"
-                audit_object__object_type="cluster object",  # TODO: should be "service"
-                audit_object__is_deleted=False,
+                **self.prepare_audit_object_arguments(expected_object=self.service),
                 user__username="admin",
             )
 

@@ -265,84 +265,6 @@
         "secret"
       ]
     },
-    "logrotate": {
-      "title": "Nginx Server Logrotate",
-      "type": "object",
-      "description": "",
-      "default": {},
-      "readOnly": false,
-      "adcmMeta": {
-        "isAdvanced": false,
-        "isInvisible": true,
-        "activation": {
-          "isAllowChange": true
-        },
-        "synchronization": null,
-        "isSecret": false,
-        "stringExtra": null,
-        "enumExtra": null
-      },
-      "additionalProperties": false,
-      "properties": {
-        "size": {
-          "title": "Max file size",
-          "type": "string",
-          "description": "Specifies the allowed size the log file can reach before it is archived\n",
-          "default": "10M",
-          "readOnly": false,
-          "adcmMeta": {
-            "isAdvanced": false,
-            "isInvisible": false,
-            "activation": null,
-            "synchronization": null,
-            "isSecret": false,
-            "stringExtra": {
-              "isMultiline": false
-            },
-            "enumExtra": null
-          },
-          "minLength": 1
-        },
-        "max_history": {
-          "title": "Max files history",
-          "type": "integer",
-          "description": "Controls the maximum number of archive files to keep\n",
-          "default": 10,
-          "readOnly": false,
-          "adcmMeta": {
-            "isAdvanced": false,
-            "isInvisible": false,
-            "activation": null,
-            "synchronization": null,
-            "isSecret": false,
-            "stringExtra": null,
-            "enumExtra": null
-          },
-          "minimum": 1
-        },
-        "compress": {
-          "title": "Enable compression",
-          "type": "boolean",
-          "description": "Compress the rotated files\n",
-          "default": false,
-          "readOnly": false,
-          "adcmMeta": {
-            "isAdvanced": false,
-            "isInvisible": false,
-            "activation": null,
-            "synchronization": null,
-            "isSecret": false,
-            "stringExtra": null,
-            "enumExtra": null
-          }
-        }
-      },
-      "required": [
-        "size",
-        "max_history",
-        "compress"
-      ]
-    },
     "audit_data_retention": {
       "title": "Data retention policy",
       "type": "object",
@@ -919,7 +841,6 @@
     "statistics_collection",
     "google_oauth",
     "yandex_oauth",
-    "logrotate",
     "audit_data_retention",
     "ldap_integration",
     "auth_policy"

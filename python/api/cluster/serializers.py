@@ -12,14 +12,16 @@
 
 from adcm.serializers import EmptySerializer
 from cm.adcm_config.config import get_main_info
-from cm.api import add_cluster, add_hc, bind, multi_bind
+from cm.api import add_cluster, bind, multi_bind
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues
-from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
+from cm.models import Action, Cluster, Host, HostComponent, Prototype, ServiceComponent
 from cm.schemas import RequiresUISchema
+from cm.services.mapping import change_host_component_mapping
 from cm.status_api import get_cluster_status, get_hc_status
 from cm.upgrade import get_upgrade
 from cm.validators import ClusterUniqueValidator, StartMidEndValidator
+from core.cluster.types import HostComponentEntry
 from django.conf import settings
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
@@ -310,6 +312,8 @@ class HostComponentSaveSerializer(EmptySerializer):
         if not isinstance(hostcomponent, list):
             raise AdcmEx("INVALID_INPUT", "hc field should be a list")
 
+        added = set()
+
         for item in hostcomponent:
             for key in ("component_id", "host_id", "service_id"):
                 if key not in item:
@@ -317,12 +321,30 @@ class HostComponentSaveSerializer(EmptySerializer):
 
                     raise AdcmEx("INVALID_INPUT", msg.format(key))
 
+            entry = tuple(item.values())
+            if entry in added:
+                raise AdcmEx(
+                    "INVALID_INPUT",
+                    msg=f"duplicated entry: {item}",
+                )
+
+            added.add(entry)
+
         return hostcomponent
 
     def create(self, validated_data):
         hostcomponent = validated_data.get("hc")
+        new_mapping_entries = tuple(
+            HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"]) for entry in hostcomponent
+        )
 
-        return add_hc(self.context.get("cluster"), hostcomponent)
+        cluster = self.context.get("cluster")
+
+        change_host_component_mapping(
+            cluster_id=cluster.id, bundle_id=cluster.prototype.bundle_id, flat_mapping=new_mapping_entries
+        )
+
+        return HostComponent.objects.filter(cluster_id=cluster.id)
 
 
 class HCComponentSerializer(ComponentShortSerializer):

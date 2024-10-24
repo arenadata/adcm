@@ -10,96 +10,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Hashable
+
+from core.cluster.types import ClusterTopology, TopologyHostDiff
 
 from cm.errors import AdcmEx
-from cm.models import Action, Cluster, ClusterObject, Host, HostComponent, ServiceComponent
-from cm.services.job.types import HcAclAction
+from cm.services.job.types import ActionHCRule, TaskMappingDelta
 
 
-def get_old_hc(saved_hostcomponent: list[dict]):
-    if not saved_hostcomponent:
-        return {}
+def construct_delta_for_task(topology: ClusterTopology, host_difference: TopologyHostDiff) -> TaskMappingDelta:
+    delta = TaskMappingDelta()
 
-    old_hostcomponent = {}
-    for hostcomponent in saved_hostcomponent:
-        service = ClusterObject.objects.get(id=hostcomponent["service_id"])
-        comp = ServiceComponent.objects.get(id=hostcomponent["component_id"])
-        host = Host.objects.get(id=hostcomponent["host_id"])
-        key = _cook_comp_key(service.prototype.name, comp.prototype.name)
-        _add_to_dict(old_hostcomponent, key, host.fqdn, host)
+    if not (host_difference.mapped or host_difference.unmapped):
+        return delta
 
-    return old_hostcomponent
+    component_keys = {
+        component_id: f"{service_topology.info.name}.{component_topology.info.name}"
+        for service_id, service_topology in topology.services.items()
+        for component_id, component_topology in service_topology.components.items()
+    }
 
+    for component_id, added_hosts in host_difference.mapped.components.items():
+        key = component_keys[component_id]
+        delta.add[key] = {topology.hosts[host_id] for host_id in added_hosts}
 
-def cook_delta(
-    cluster: Cluster,
-    new_hc: list[tuple[ClusterObject, Host, ServiceComponent]],
-    action_hc: list[dict],
-    old: dict = None,
-) -> dict:
-    def add_delta(_delta, action, _key, fqdn, _host):
-        _service, _comp = _key.split(".")
-        if not _check_action_hc(action_hc, _service, _comp, action):
-            msg = (
-                f'no permission to "{action}" component "{_comp}" of ' f'service "{_service}" to/from hostcomponentmap'
-            )
-            raise AdcmEx(code="WRONG_ACTION_HC", msg=msg)
-
-        _add_to_dict(_delta[action], _key, fqdn, _host)
-
-    new = {}
-    for service, host, comp in new_hc:
-        key = _cook_comp_key(service.prototype.name, comp.prototype.name)
-        _add_to_dict(new, key, host.fqdn, host)
-
-    if old is None:
-        old = {}
-        for hostcomponent in HostComponent.objects.filter(cluster=cluster):
-            key = _cook_comp_key(hostcomponent.service.prototype.name, hostcomponent.component.prototype.name)
-            _add_to_dict(old, key, hostcomponent.host.fqdn, hostcomponent.host)
-
-    delta = {HcAclAction.ADD.value: {}, HcAclAction.REMOVE.value: {}}
-    for key, value in new.items():
-        if key in old:
-            for host in value:
-                if host not in old[key]:
-                    add_delta(_delta=delta, action=HcAclAction.ADD.value, _key=key, fqdn=host, _host=value[host])
-
-            for host in old[key]:
-                if host not in value:
-                    add_delta(_delta=delta, action=HcAclAction.REMOVE.value, _key=key, fqdn=host, _host=old[key][host])
-        else:
-            for host in value:
-                add_delta(_delta=delta, action=HcAclAction.ADD.value, _key=key, fqdn=host, _host=value[host])
-
-    for key, value in old.items():
-        if key not in new:
-            for host in value:
-                add_delta(_delta=delta, action=HcAclAction.REMOVE.value, _key=key, fqdn=host, _host=value[host])
+    for component_id, removed_hosts in host_difference.unmapped.components.items():
+        key = component_keys[component_id]
+        delta.remove[key] = {topology.hosts[host_id] for host_id in removed_hosts}
 
     return delta
 
 
-def _add_to_dict(my_dict: dict, key: Hashable, subkey: Hashable, value: Any) -> None:
-    if key not in my_dict:
-        my_dict[key] = {}
+def check_delta_is_allowed(delta: TaskMappingDelta, rules: list[ActionHCRule]) -> None:
+    if not rules:
+        return
 
-    my_dict[key][subkey] = value
+    allowed = {"add": set(), "remove": set()}
+    for rule in rules:
+        component_key = f"{rule['service']}.{rule['component']}"
+        allowed[rule["action"]].add(component_key)
 
+    disallowed_add = set(delta.add.keys()).difference(allowed["add"])
+    if disallowed_add:
+        disallowed = next(iter(disallowed_add))
+        message = f'no permission to "add" component {disallowed} to cluster mapping'
+        raise AdcmEx(code="WRONG_ACTION_HC", msg=message)
 
-def _cook_comp_key(name, subname):
-    return f"{name}.{subname}"
-
-
-def _check_action_hc(
-    action_hc: list[dict],
-    service: ClusterObject,
-    component: ServiceComponent,
-    action: Action,
-) -> bool:
-    for item in action_hc:
-        if item["service"] == service and item["component"] == component and item["action"] == action:
-            return True
-
-    return False
+    disallowed_remove = set(delta.remove.keys()).difference(allowed["remove"])
+    if disallowed_remove:
+        disallowed = next(iter(disallowed_remove))
+        message = f'no permission to "remove" component {disallowed} from cluster mapping'
+        raise AdcmEx(code="WRONG_ACTION_HC", msg=message)

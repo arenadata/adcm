@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+from cm.bundle import _get_file_hashes
 from cm.models import Action, Bundle
 from django.conf import settings
 from rest_framework.status import (
@@ -33,7 +35,8 @@ class TestBundle(BaseAPITestCase):
         self.bundle_1 = self.add_bundle(source_dir=cluster_bundle_1_path)
 
         cluster_new_bundle_path = self.test_bundles_dir / "cluster_two"
-        self.new_bundle_file = self.prepare_bundle_file(source_dir=cluster_new_bundle_path)
+
+        self.new_bundle_file = self.prepare_bundle_file(source_dir=cluster_new_bundle_path, target_dir=settings.TMP_DIR)
 
         same_names_bundle_path = self.test_bundles_dir / "cluster_identical_cluster_and_service_names"
         self.same_names_bundle = self.add_bundle(source_dir=same_names_bundle_path)
@@ -45,22 +48,31 @@ class TestBundle(BaseAPITestCase):
         self.assertEqual(response.json()["count"], 2)
 
     def test_upload_success(self):
-        with open(settings.DOWNLOAD_DIR / self.new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+        with open(settings.TMP_DIR / self.new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(Bundle.objects.filter(name="cluster_two").exists(), True)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def test_upload_duplicate_fail(self):
-        with open(settings.DOWNLOAD_DIR / self.new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
-            with open(settings.DOWNLOAD_DIR / self.new_bundle_file, encoding=settings.ENCODING_UTF_8) as f_duplicate:
+        with open(settings.TMP_DIR / self.new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+            with open(settings.TMP_DIR / self.new_bundle_file, encoding=settings.ENCODING_UTF_8) as f_duplicate:
                 (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
                 response = (self.client.v2 / "bundles").post(data={"file": f_duplicate}, format_="multipart")
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "BUNDLE_ERROR",
+                "desc": "Bundle already exists: Bundle with the same content is already "
+                f"uploaded {settings.DOWNLOAD_DIR / self.new_bundle_file}",
+                "level": "error",
+            },
+        )
 
     def test_upload_fail(self):
-        with open(settings.DOWNLOAD_DIR / self.new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+        with open(settings.TMP_DIR / self.new_bundle_file, encoding=settings.ENCODING_UTF_8) as f:
             f.readlines()
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
@@ -79,10 +91,12 @@ class TestBundle(BaseAPITestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_delete_success(self):
+        bundle_hash = self.bundle_1.hash
         response = self.client.v2[self.bundle_1].delete()
 
-        self.assertEqual(Bundle.objects.filter(pk=self.bundle_1.pk).exists(), False)
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+        self.assertEqual(Bundle.objects.filter(pk=self.bundle_1.pk).exists(), False)
+        self.assertIsNone(_get_file_hashes(path=self.directories["DOWNLOAD_DIR"]).get(bundle_hash))
 
     def test_delete_not_found_fail(self):
         response = (self.client.v2 / "bundles" / self.get_non_existent_pk(model=Bundle)).delete()
@@ -133,27 +147,33 @@ class TestBundle(BaseAPITestCase):
         self.assertEqual(Bundle.objects.count(), initial_bundles_count)
 
     def test_upload_adcm_min_old_version_success(self):
-        bundle_file = self.prepare_bundle_file(source_dir=self.test_bundles_dir / "adcm_min_version" / "old")
+        bundle_file = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "adcm_min_version" / "old", target_dir=settings.TMP_DIR
+        )
 
-        with open(settings.DOWNLOAD_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+        with open(settings.TMP_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(Bundle.objects.filter(name="cluster_adcm_min_version").exists(), True)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def test_upload_adcm_min_version_success(self):
-        bundle_file = self.prepare_bundle_file(source_dir=self.test_bundles_dir / "adcm_min_version" / "new" / "older")
+        bundle_file = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "adcm_min_version" / "new" / "older", target_dir=settings.TMP_DIR
+        )
 
-        with open(settings.DOWNLOAD_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+        with open(settings.TMP_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(Bundle.objects.filter(name="cluster_adcm_min_version").exists(), True)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def test_upload_adcm_min_version_fail(self):
-        bundle_file = self.prepare_bundle_file(source_dir=self.test_bundles_dir / "adcm_min_version" / "new" / "newer")
+        bundle_file = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "adcm_min_version" / "new" / "newer", target_dir=settings.TMP_DIR
+        )
 
-        with open(settings.DOWNLOAD_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+        with open(settings.TMP_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -167,9 +187,11 @@ class TestBundle(BaseAPITestCase):
         )
 
     def test_upload_adcm_min_version_multiple_fail(self):
-        bundle_file = self.prepare_bundle_file(source_dir=self.test_bundles_dir / "adcm_min_version" / "multiple")
+        bundle_file = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "adcm_min_version" / "multiple", target_dir=settings.TMP_DIR
+        )
 
-        with open(settings.DOWNLOAD_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+        with open(settings.TMP_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -184,10 +206,11 @@ class TestBundle(BaseAPITestCase):
 
     def test_upload_plain_scripts_and_scripts_jinja_fail(self):
         bundle_file = self.prepare_bundle_file(
-            source_dir=self.test_bundles_dir / "invalid_bundles" / "plain_scripts_and_scripts_jinja"
+            source_dir=self.test_bundles_dir / "invalid_bundles" / "plain_scripts_and_scripts_jinja",
+            target_dir=settings.TMP_DIR,
         )
 
-        with open(settings.DOWNLOAD_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+        with open(settings.TMP_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -197,10 +220,10 @@ class TestBundle(BaseAPITestCase):
 
     def test_upload_scripts_jinja_in_job_fail(self):
         bundle_file = self.prepare_bundle_file(
-            source_dir=self.test_bundles_dir / "invalid_bundles" / "scripts_jinja_in_job"
+            source_dir=self.test_bundles_dir / "invalid_bundles" / "scripts_jinja_in_job", target_dir=settings.TMP_DIR
         )
 
-        with open(settings.DOWNLOAD_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+        with open(settings.TMP_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -208,11 +231,13 @@ class TestBundle(BaseAPITestCase):
         self.assertIn('Map key "scripts_jinja" is not allowed here', response.data["desc"])
 
     def test_upload_scripts_jinja_success(self):
-        bundle_file = self.prepare_bundle_file(source_dir=self.test_bundles_dir / "actions_with_scripts_jinja")
+        bundle_file = self.prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "actions_with_scripts_jinja", target_dir=settings.TMP_DIR
+        )
 
         self.assertEqual(Action.objects.filter(scripts_jinja="").count(), Action.objects.count())
 
-        with open(settings.DOWNLOAD_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
+        with open(settings.TMP_DIR / bundle_file, encoding=settings.ENCODING_UTF_8) as f:
             response = (self.client.v2 / "bundles").post(data={"file": f}, format_="multipart")
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)

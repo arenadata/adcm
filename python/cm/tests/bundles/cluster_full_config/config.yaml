@@ -158,7 +158,13 @@
 
   components:
     all_params_component:
-      actions: *actions
+      actions:
+        <<: *actions
+        without_config_on_host:
+          <<: *job
+          allow_for_action_host_group: false
+          host_action: true
+
       config: *config
 
 - type: service

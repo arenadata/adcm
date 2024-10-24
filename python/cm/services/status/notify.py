@@ -20,7 +20,7 @@ from requests import Response
 from cm.models import Cluster, ClusterObject, Host, HostComponent, ServiceComponent
 from cm.services.cluster import (
     retrieve_clusters_objects_maintenance_mode,
-    retrieve_clusters_topology,
+    retrieve_multiple_clusters_topology,
 )
 from cm.status_api import api_request
 
@@ -74,7 +74,7 @@ def reset_objects_in_mm() -> Response | None:
 
     mm_info = retrieve_clusters_objects_maintenance_mode(cluster_ids=cluster_ids)
 
-    for topology in retrieve_clusters_topology(cluster_ids=cluster_ids):
+    for topology in retrieve_multiple_clusters_topology(cluster_ids=cluster_ids):
         cluster_objects_mm = calculate_maintenance_mode_for_cluster_objects(
             topology=topology, own_maintenance_mode=mm_info
         )

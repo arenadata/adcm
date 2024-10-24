@@ -1,0 +1,106 @@
+- type: cluster
+  name: all_concerns
+  version: 3.4
+  allow_maintenance_mode: true
+
+  flag_autogeneration:
+    enable_outdated_config: true
+
+  # no import for service
+  import: &import
+    cluster_export:
+      multibind: false
+      required: true
+
+  config: &required_config
+    - name: field
+      type: integer
+      required: true
+
+  actions: &actions
+    dummy:
+      type: job
+      script_type: ansible
+      script: ./action.yaml
+      masking:
+
+- type: service
+  name: main
+  version: 1
+  flag_autogeneration:
+    enable_outdated_config: true
+
+  config: *required_config
+
+  actions: *actions
+
+  components:
+    single:
+      constraint: [1]
+      config: *required_config
+      flag_autogeneration:
+        enable_outdated_config: true
+    free:
+      actions: *actions
+      flag_autogeneration:
+        enable_outdated_config: true
+
+- type: service
+  name: required
+  version: 2
+  required: true
+
+- type: service
+  name: dummy
+  version: 4
+
+  components:
+    same_dummy:
+
+- type: service
+  name: require_dummy_service
+  version: 3
+
+  requires:
+    - service: dummy
+
+  actions: *actions
+
+  components:
+    silent:
+    sir:
+      config: *required_config
+
+- type: service
+  name: no_components
+  version: 5
+
+  import: *import
+
+- type: service
+  name: with_multiple_imports
+  version: 2
+
+  import:
+    cluster_export:
+      multibind: false
+      required: true
+
+    service_export:
+      multibind: true
+      required: true
+
+  components:
+    component_1:
+      config: *required_config
+    component_2:
+
+- type: service
+  name: greedy
+  version: 4.3
+
+  config: *required_config
+
+  components:
+    on_all:
+      constraint: [+]

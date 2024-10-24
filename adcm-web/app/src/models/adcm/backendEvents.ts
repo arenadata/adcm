@@ -83,7 +83,7 @@ export type UpdateServiceEvent = {
   event: 'update_service';
   object: {
     id: number;
-    changes: ServiceChanges;
+    changes: Partial<ServiceChanges>;
   };
 };
 
@@ -95,7 +95,7 @@ export type UpdateComponentEvent = {
   event: 'update_component';
   object: {
     id: number;
-    changes: ComponentChanges;
+    changes: Partial<ComponentChanges>;
   };
 };
 
@@ -107,7 +107,7 @@ export type UpdateHostProviderEvent = {
   event: 'update_hostprovider';
   object: {
     id: number;
-    changes: HostProviderChanges;
+    changes: Partial<HostProviderChanges>;
   };
 };
 

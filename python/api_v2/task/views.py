@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from adcm.permissions import VIEW_TASKLOG_PERMISSION
-from audit.utils import audit
+from audit.alt.api import audit_update
 from cm.models import TaskLog
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
@@ -37,6 +37,7 @@ from api_v2.log_storage.utils import (
 from api_v2.task.filters import TaskFilter
 from api_v2.task.permissions import TaskPermissions
 from api_v2.task.serializers import TaskListSerializer
+from api_v2.utils.audit import detect_object_for_task, set_task_name
 from api_v2.views import ADCMGenericViewSet
 
 
@@ -112,7 +113,7 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMG
             queryset = queryset.exclude(object_type=ContentType.objects.get(app_label="cm", model="adcm"))
         return queryset
 
-    @audit
+    @audit_update(name="{task_name} cancelled", object_=detect_object_for_task).attach_hooks(on_collect=set_task_name)
     @action(methods=["post"], detail=True)
     def terminate(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
         task = self.get_object()

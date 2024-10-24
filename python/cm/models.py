@@ -27,6 +27,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
+from django.db.models import QuerySet
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
@@ -1135,15 +1136,11 @@ class Action(AbstractAction):
             obj = obj.object
 
         if obj.prototype.type == "adcm":
-            obj: ADCM
-
             current_configlog = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
             if not current_configlog.attr["ldap_integration"]["active"]:
                 return NO_LDAP_SETTINGS
 
         if obj.prototype.type == "cluster":
-            obj: Cluster
-
             if not self.allow_in_maintenance_mode:
                 if Host.objects.filter(cluster=obj, maintenance_mode=MaintenanceMode.ON).exists():
                     return MANY_HOSTS_IN_MM
@@ -1160,8 +1157,6 @@ class Action(AbstractAction):
                     return COMPONENT_IN_MM
 
         elif obj.prototype.type == "service":
-            obj: ClusterObject
-
             if not self.allow_in_maintenance_mode:
                 if obj.maintenance_mode == MaintenanceMode.ON:
                     return SERVICE_IN_MM
@@ -1180,8 +1175,6 @@ class Action(AbstractAction):
                     return MANY_HOSTS_IN_MM
 
         elif obj.prototype.type == "component":
-            obj: ServiceComponent
-
             if not self.allow_in_maintenance_mode:
                 if obj.maintenance_mode == MaintenanceMode.ON:
                     return COMPONENT_IN_MM
@@ -1194,9 +1187,7 @@ class Action(AbstractAction):
                 ).exists():
                     return MANY_HOSTS_IN_MM
 
-        elif obj.prototype.type == "host":
-            obj: Host
-
+        elif obj.prototype.type == "host":  # noqa: SIM102
             if not self.allow_in_maintenance_mode and obj.maintenance_mode == MaintenanceMode.ON:
                 return HOST_IN_MM
 
@@ -1644,6 +1635,17 @@ class ConcernItem(ADCMModel):
             self.host_entities.order_by("id"),
         )
 
+    @property
+    def related_querysets(self) -> Iterable[QuerySet]:
+        return (
+            self.adcm_entities,
+            self.cluster_entities,
+            self.clusterobject_entities,
+            self.servicecomponent_entities,
+            self.hostprovider_entities,
+            self.host_entities,
+        )
+
 
 class ADCMEntityStatus(models.TextChoices):
     UP = "up", "up"
@@ -1695,3 +1697,16 @@ def get_model_by_type(object_type):
         # This function should return a Model, this is necessary for the correct
         # construction of the schema.
         return Cluster
+
+
+class HostInfo(models.Model):
+    host = models.OneToOneField(Host, on_delete=models.CASCADE, null=False)
+    value = models.JSONField()
+    hash = models.CharField(max_length=255)
+    date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("host",)
+        indexes = [
+            models.Index(fields=["host"]),
+        ]
