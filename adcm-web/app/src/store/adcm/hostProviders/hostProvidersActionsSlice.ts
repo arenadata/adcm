@@ -93,11 +93,7 @@ const hostProvidersActionsSlice = createCrudSlice({
   name: 'adcm/hostProvidersActions',
   entityName: 'hostprovider',
   createInitialState,
-  reducers: {
-    cleanupHostProvidersActions() {
-      return createInitialState();
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder.addCase(createHostProviderWithUpdate.pending, (state) => {
       hostProvidersActionsSlice.caseReducers.closeCreateDialog(state);
