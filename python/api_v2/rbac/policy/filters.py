@@ -10,18 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django_filters import BooleanFilter
 from django_filters.rest_framework import CharFilter, FilterSet, OrderingFilter
 from rbac.models import Policy
 
 
 class PolicyFilter(FilterSet):
     name = CharFilter(label="Name", field_name="name", lookup_expr="icontains")
+    description = CharFilter(label="Description", field_name="description", lookup_expr="icontains")
+    built_in = BooleanFilter(label="Built in", field_name="built_in")
     ordering = OrderingFilter(
-        fields={"name": "name"},
-        field_labels={"name": "Name"},
+        fields={"name": "name", "id": "id", "description": "description", "built_in": "builtIn"},
+        field_labels={"name": "Name", "id": "ID", "description": "Description", "built_in": "Built in"},
         label="ordering",
     )
 
     class Meta:
         model = Policy
-        fields = ["id"]
+        fields = ["id", "description", "name", "built_in", "ordering"]

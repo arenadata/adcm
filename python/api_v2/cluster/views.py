@@ -77,8 +77,8 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from api_v2.cluster.depend_on import prepare_depend_on_hierarchy, retrieve_serialized_depend_on_hierarchy
 from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
+from api_v2.cluster.depend_on import prepare_depend_on_hierarchy, retrieve_serialized_depend_on_hierarchy
 from api_v2.cluster.filters import (
     ClusterFilter,
     ClusterHostFilter,

@@ -605,42 +605,33 @@ class TestUserAPI(BaseAPITestCase):
         )
 
     def test_ordering_success(self):
-        user_data = [
-            {
-                "username": "username1",
-                "password": "username1password",
-                "email": "username1@mail.ru",
-                "first_name": "username1_first_name",
-                "last_name": "username1_last_name",
-            },
-            {
-                "username": "username2",
-                "password": "username2password",
-                "email": "username2@mail.ru",
-                "first_name": "username2_first_name",
-                "last_name": "username2_last_name",
-            },
-            {
-                "username": "username3",
-                "password": "username3password",
-                "email": "username3@mail.ru",
-                "first_name": "username3_first_name",
-                "last_name": "username3_last_name",
-            },
-        ]
-        for data in user_data:
-            self.create_user(user_data=data)
+        ordering_fields = {
+            "id": "id",
+            "username": "username",
+            "type": "type",
+        }
 
-        response = (self.client.v2 / "rbac" / "users").get(query={"ordering": "-username"})
-        self.assertEqual(response.status_code, HTTP_200_OK)
+        for model_field, ordering_field in ordering_fields.items():
+            with self.subTest(ordering_field=ordering_field):
+                response = (self.client.v2 / "rbac" / "users").get(query={"ordering": ordering_field})
+                self.assertListEqual(
+                    [user[ordering_field] for user in response.json()["results"]],
+                    list(
+                        User.objects.order_by(model_field)
+                        .exclude(username__in=settings.ADCM_HIDDEN_USERS)
+                        .values_list(model_field, flat=True)
+                    ),
+                )
 
-        response_usernames = [user["username"] for user in response.json()["results"]]
-        db_usernames = list(
-            User.objects.order_by("-username")
-            .exclude(username__in=settings.ADCM_HIDDEN_USERS)
-            .values_list("username", flat=True)
-        )
-        self.assertListEqual(response_usernames, db_usernames)
+                response = (self.client.v2 / "rbac" / "users").get(query={"ordering": f"-{ordering_field}"})
+                self.assertListEqual(
+                    [user[ordering_field] for user in response.json()["results"]],
+                    list(
+                        User.objects.order_by(f"-{model_field}")
+                        .exclude(username__in=settings.ADCM_HIDDEN_USERS)
+                        .values_list(model_field, flat=True)
+                    ),
+                )
 
     def test_ordering_wrong_params_fail(self):
         response = (self.client.v2 / "rbac" / "users").get(query={"ordering": "param"})

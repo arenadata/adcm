@@ -59,10 +59,14 @@ from api_v2.views import ADCMGenericViewSet
             DefaultParams.OFFSET,
             OpenApiParameter(name="name", description="Case insensitive and partial filter by policy name."),
             OpenApiParameter(
+                name="description", description="Case insensitive and partial filter by policy description."
+            ),
+            OpenApiParameter(name="built_in", description="Filter by built_in policy."),
+            OpenApiParameter(
                 name="ordering",
                 description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
                 type=str,
-                enum=("name", "-name"),
+                enum=("name", "-name", "description", "-description", "id", "-id", "built_in", "-built_in"),
                 default="name",
             ),
         ],
