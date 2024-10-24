@@ -1,12 +1,13 @@
 import { AdcmGroupsApi, AdcmUsersApi, RequestError } from '@api';
-import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { getGroups } from './groupsSlice';
-import { AdcmGroup, AdcmUpdateGroupPayload, AdcmCreateGroupPayload, AdcmUser } from '@models/adcm';
-import { PaginationParams, SortParams } from '@models/table';
+import type { AdcmGroup, AdcmUpdateGroupPayload, AdcmCreateGroupPayload, AdcmUser } from '@models/adcm';
+import type { SortParams } from '@models/table';
 import { rejectedFilter } from '@utils/promiseUtils';
+import type { ModalState } from '@models/modal';
+import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 
 const createGroup = createAsyncThunk(
   'adcm/groupActions/createGroup',
@@ -46,17 +47,11 @@ const updateGroup = createAsyncThunk(
 const loadUsers = createAsyncThunk('adcm/groupActions/loadUsers', async (arg, thunkAPI) => {
   try {
     const sortParams: SortParams = {
-      sortBy: '',
+      sortBy: 'username',
       sortDirection: 'asc',
     };
-    const paginationParams: PaginationParams = {
-      pageNumber: 0,
-      perPage: 1,
-    };
-    const batch = await AdcmUsersApi.getUsers({}, sortParams, paginationParams);
-    sortParams.sortBy = 'username';
-    paginationParams.perPage = batch.count;
-    return await AdcmUsersApi.getUsers({}, sortParams, paginationParams);
+    const { count } = await AdcmUsersApi.getUsers({}, sortParams);
+    return await AdcmUsersApi.getUsers({}, sortParams, { pageNumber: 0, perPage: count });
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
@@ -72,25 +67,25 @@ const deleteGroupsWithUpdate = createAsyncThunk('adcm/groupActions/deleteGroups'
     }
 
     await thunkAPI.dispatch(getGroups());
-    thunkAPI.dispatch(showSuccess({ message: 'Groups have been deleted' }));
+    const message = ids.length > 1 ? 'Groups have been deleted' : 'Group has been deleted';
+    thunkAPI.dispatch(showSuccess({ message }));
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
     return error;
   }
 });
 
-interface AdcmGroupsActionsState {
+interface AdcmGroupsActionsState extends ModalState<AdcmGroup, 'group'> {
   createDialog: {
     isOpen: boolean;
   };
   updateDialog: {
     group: AdcmGroup | null;
-    isUpdating: boolean;
   };
   deleteDialog: {
-    id: number | null;
+    group: AdcmGroup | null;
   };
-  selectedItemsIds: number[];
+  selectedGroupsIds: number[];
   relatedData: {
     users: AdcmUser[];
   };
@@ -102,48 +97,29 @@ const createInitialState = (): AdcmGroupsActionsState => ({
   },
   updateDialog: {
     group: null,
-    isUpdating: false,
   },
   deleteDialog: {
-    id: null,
+    group: null,
   },
-  selectedItemsIds: [],
+  selectedGroupsIds: [],
   relatedData: {
     users: [],
   },
 });
 
-const groupsActionsSlice = createSlice({
+const groupsActionsSlice = createCrudSlice({
   name: 'adcm/groupsActions',
-  initialState: createInitialState(),
+  entityName: 'group',
+  createInitialState,
   reducers: {
     cleanupGroups() {
       return createInitialState();
     },
-    openCreateDialog(state) {
-      state.createDialog.isOpen = true;
-    },
-    closeCreateDialog(state) {
-      state.createDialog.isOpen = false;
-    },
-    openUpdateDialog(state, action) {
-      state.updateDialog.group = action.payload;
-    },
-    closeUpdateDialog(state) {
-      state.updateDialog.group = null;
-      state.updateDialog.isUpdating = false;
+    setSelectedGroupsIds(state, action) {
+      state.selectedGroupsIds = action.payload;
     },
     cleanupItemsForActions(state) {
-      state.selectedItemsIds = createInitialState().selectedItemsIds;
-    },
-    openDeleteDialog(state, action) {
-      state.deleteDialog.id = action.payload;
-    },
-    closeDeleteDialog(state) {
-      state.deleteDialog.id = null;
-    },
-    setSelectedItemsIds(state, action) {
-      state.selectedItemsIds = action.payload;
+      state.selectedGroupsIds = createInitialState().selectedGroupsIds;
     },
   },
   extraReducers: (builder) => {
@@ -152,13 +128,13 @@ const groupsActionsSlice = createSlice({
         groupsActionsSlice.caseReducers.closeCreateDialog(state);
       })
       .addCase(updateGroup.pending, (state) => {
-        state.updateDialog.isUpdating = true;
+        state.isActionInProgress = true;
       })
       .addCase(updateGroup.fulfilled, (state) => {
         groupsActionsSlice.caseReducers.closeUpdateDialog(state);
       })
       .addCase(updateGroup.rejected, (state) => {
-        state.updateDialog.isUpdating = false;
+        state.isActionInProgress = false;
       })
       .addCase(loadUsers.fulfilled, (state, action) => {
         state.relatedData.users = action.payload.results;
@@ -167,10 +143,10 @@ const groupsActionsSlice = createSlice({
         state.relatedData.users = [];
       })
       .addCase(deleteGroupsWithUpdate.pending, (state) => {
-        state.deleteDialog.id = null;
+        state.deleteDialog.group = null;
       })
       .addCase(getGroups.pending, (state) => {
-        state.selectedItemsIds = [];
+        state.selectedGroupsIds = [];
       });
   },
 });
@@ -183,7 +159,7 @@ export const {
   closeUpdateDialog,
   openDeleteDialog,
   closeDeleteDialog,
-  setSelectedItemsIds,
+  setSelectedGroupsIds,
 } = groupsActionsSlice.actions;
 export { createGroup, updateGroup, loadUsers, deleteGroupsWithUpdate };
 

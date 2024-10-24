@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
 import { AdcmUpdateRolePayload } from '@models/adcm';
-import { updateRole, closeEditDialog } from '@store/adcm/roles/rolesActionsSlice';
+import { updateRole, closeUpdateDialog, loadRelatedData } from '@store/adcm/roles/rolesActionsSlice';
 import { isNameUniq, required } from '@utils/validationsUtils';
 
 interface AdcmUpdateRoleFormData extends Omit<AdcmUpdateRolePayload, 'children'> {
@@ -24,10 +24,12 @@ export const useAccessManagerRoleUpdateDialog = () => {
     useForm<AdcmUpdateRoleFormData>(initialFormData);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      dispatch(loadRelatedData());
+    } else {
       setFormData(initialFormData);
     }
-  }, [isOpen, setFormData]);
+  }, [isOpen, dispatch, setFormData]);
 
   useEffect(() => {
     setErrors({
@@ -55,7 +57,7 @@ export const useAccessManagerRoleUpdateDialog = () => {
   }, [role, setFormData]);
 
   const handleClose = () => {
-    dispatch(closeEditDialog());
+    dispatch(closeUpdateDialog());
   };
 
   const handleUpdate = () => {

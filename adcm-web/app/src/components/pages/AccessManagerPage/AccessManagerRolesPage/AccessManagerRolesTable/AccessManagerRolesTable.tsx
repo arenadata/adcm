@@ -27,8 +27,8 @@ const AccessManagerRolesTable = () => {
     });
   };
 
-  const handleDeleteClick = (id: number) => () => {
-    dispatch(openDeleteDialog(id));
+  const handleDeleteClick = (role: AdcmRole) => () => {
+    dispatch(openDeleteDialog(role));
   };
 
   const handleSorting = (sortParams: SortParams) => {
@@ -84,7 +84,7 @@ const AccessManagerRolesTable = () => {
               <IconButton
                 icon="g1-delete"
                 size={32}
-                onClick={handleDeleteClick(role.id)}
+                onClick={handleDeleteClick(role)}
                 title="Delete"
                 disabled={role.isBuiltIn}
               />

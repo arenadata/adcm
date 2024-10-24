@@ -1,5 +1,5 @@
 import { useDispatch, useStore, useForm } from '@hooks';
-import { closeUserCreateDialog, createUser } from '@store/adcm/users/usersActionsSlice';
+import { closeUserCreateDialog, createUser, loadGroups } from '@store/adcm/users/usersActionsSlice';
 import { RbacUserFormData } from '@pages/AccessManagerPage/AccessManagerUsersPage/RbacUserForm/RbacUserForm.types';
 import { useEffect } from 'react';
 import { isEmailValid, isNameUniq, required } from '@utils/validationsUtils';
@@ -19,7 +19,7 @@ export const useRbacUserCreateDialog = () => {
   const dispatch = useDispatch();
   const users = useStore((s) => s.adcm.users.users);
   const isOpen = useStore((s) => s.adcm.usersActions.createDialog.isOpen);
-  const isCreating = useStore((s) => s.adcm.usersActions.createDialog.isCreating);
+  const isCreating = useStore((s) => s.adcm.usersActions.isActionInProgress);
   const groups = useStore((s) => s.adcm.usersActions.relatedData.groups);
   const authSettings = useStore((s) => s.auth.profile.authSettings);
   const isCurrentUserSuperUser = useStore((s) => s.auth.profile.isSuperUser);
@@ -53,10 +53,12 @@ export const useRbacUserCreateDialog = () => {
   }, [formData, users, authSettings, setErrors]);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      dispatch(loadGroups());
+    } else {
       setFormData(initialFormData);
     }
-  }, [isOpen, setFormData]);
+  }, [dispatch, isOpen, setFormData]);
 
   const handleClose = () => {
     dispatch(closeUserCreateDialog());
