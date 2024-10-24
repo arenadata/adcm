@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from adcm.permissions import VIEW_JOBLOG_PERMISSION
 from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
@@ -29,6 +30,7 @@ from rest_framework.status import (
 )
 
 from api_v2.api_schema import DefaultParams, ErrorSerializer
+from api_v2.job.filters import JobFilter
 from api_v2.job.permissions import JobPermissions
 from api_v2.job.serializers import JobRetrieveSerializer
 from api_v2.task.serializers import JobListSerializer
@@ -50,6 +52,15 @@ from api_v2.views import ADCMGenericViewSet
                 location=OpenApiParameter.QUERY,
                 description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
                 type=str,
+                enum=["id", "status", "-id", "-status", "startTime", "-startTime", "endTime", "-endTime"],
+            ),
+            OpenApiParameter(
+                name="status",
+                required=False,
+                location=OpenApiParameter.QUERY,
+                description="Job status.",
+                type=str,
+                enum=["created", "running", "success", "failed", "terminated", "cancelled"],
             ),
         ],
     ),
@@ -74,7 +85,7 @@ from api_v2.views import ADCMGenericViewSet
 )
 class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
     queryset = JobLog.objects.select_related("task__action").order_by("pk")
-    filter_backends = []
+    filterset_class = JobFilter
     permission_classes = [JobPermissions]
     permission_required = [VIEW_JOBLOG_PERMISSION]
 
