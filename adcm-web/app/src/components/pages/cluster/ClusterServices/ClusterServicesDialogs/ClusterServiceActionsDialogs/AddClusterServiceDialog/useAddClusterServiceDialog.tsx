@@ -2,7 +2,7 @@ import { useDispatch, useForm, useStore } from '@hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   addServicesWithUpdate,
-  closeAddServicesDialog,
+  closeCreateDialog,
   getServiceCandidates,
 } from '@store/adcm/cluster/services/servicesActionsSlice';
 import { AddClusterServicesFormData, AddServiceStepKey } from './AddClusterServiceDialog.types';
@@ -19,7 +19,7 @@ export const useAddClusterServiceDialog = () => {
 
   const { formData, handleChangeFormData, setFormData } = useForm<AddClusterServicesFormData>(getInitialFormData());
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
-  const isOpen = useStore(({ adcm }) => adcm.servicesActions.addServicesDialog.isOpen);
+  const isOpen = useStore(({ adcm }) => adcm.servicesActions.createDialog.isOpen);
   const serviceCandidates = useStore(({ adcm }) => adcm.servicesActions.relatedData.serviceCandidates);
 
   const [currentStep, setCurrentStep] = useState(AddServiceStepKey.SelectServices);
@@ -39,7 +39,7 @@ export const useAddClusterServiceDialog = () => {
   const handleClose = useCallback(() => {
     setCurrentStep(AddServiceStepKey.SelectServices);
     setFormData(getInitialFormData());
-    dispatch(closeAddServicesDialog());
+    dispatch(closeCreateDialog());
   }, [setFormData, setCurrentStep, dispatch]);
 
   const switchToLicenseStep = () => {
