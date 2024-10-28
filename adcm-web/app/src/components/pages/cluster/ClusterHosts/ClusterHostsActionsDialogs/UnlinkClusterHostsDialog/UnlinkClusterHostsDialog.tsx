@@ -6,28 +6,16 @@ import { closeUnlinkDialog, unlinkHostWithUpdate } from '@store/adcm/cluster/hos
 const UnlinkClusterHostsDialog: React.FC = () => {
   const dispatch = useDispatch();
 
-  const unlinkableHost = useStore(
-    ({
-      adcm: {
-        clusterHosts: { hosts },
-        clusterHostsActions: {
-          unlinkDialog: { id: unlinkableId },
-        },
-      },
-    }) => {
-      if (!unlinkableId) return null;
-      return hosts.find(({ id }) => id === unlinkableId) ?? null;
-    },
-  );
+  const clusterHost = useStore(({ adcm }) => adcm.clusterHostsActions.unlinkDialog.clusterHost);
 
-  const isOpenUnlink = !!unlinkableHost;
+  const isOpenUnlink = !!clusterHost;
 
   const handleCloseDialog = () => {
     dispatch(closeUnlinkDialog());
   };
 
   const handleConfirmDialog = () => {
-    const { id: hostId, cluster } = unlinkableHost ?? {};
+    const { id: hostId, cluster } = clusterHost ?? {};
     if (hostId && cluster?.id) {
       dispatch(unlinkHostWithUpdate({ hostId, clusterId: cluster.id }));
     }
