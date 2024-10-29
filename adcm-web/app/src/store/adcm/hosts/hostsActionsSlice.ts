@@ -249,6 +249,9 @@ const hostsActionsSlice = createCrudSlice({
     builder.addCase(createHost.fulfilled, (state) => {
       hostsActionsSlice.caseReducers.closeCreateDialog(state);
     });
+    builder.addCase(deleteHost.pending, (state) => {
+      hostsActionsSlice.caseReducers.closeDeleteDialog(state);
+    });
     builder.addCase(updateHost.fulfilled, () => {
       return createInitialState();
     });
