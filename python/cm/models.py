@@ -669,9 +669,7 @@ class Service(ADCMEntity):
 class Component(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE, related_name="components")
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="components")
-    prototype = models.ForeignKey(
-        Prototype, on_delete=models.CASCADE, null=True, default=None, related_name="components"
-    )
+    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
     config_host_group = GenericRelation(
         "ConfigHostGroup",
         object_id_field="object_id",
