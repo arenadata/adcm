@@ -193,7 +193,7 @@ roles:
     any_category: true
     init_params:
       app_name: cm
-      model: service
+      model: Service
     child:
       - Get service object
       - View service config
@@ -229,7 +229,7 @@ roles:
     any_category: true
     init_params:
       app_name: cm
-      model: ServiceComponent
+      model: Component
     child:
       - Get service object
       - Get component object
@@ -416,7 +416,7 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: service
+      model: Service
     apps:
       - label: cm
         models:
@@ -434,7 +434,7 @@ roles:
     any_category: true
     init_params:
       app_name: cm
-      model: service
+      model: Service
     child:
       - Get service object
       - View service config
@@ -450,7 +450,7 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: ServiceComponent
+      model: Component
     apps:
       - label: cm
         models:
@@ -469,7 +469,7 @@ roles:
     any_category: true
     init_params:
       app_name: cm
-      model: ServiceComponent
+      model: Component
     child:
       - Get component object
       - View component config
@@ -570,7 +570,7 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: service
+      model: Service
     apps:
       - label: cm
         models:
@@ -657,7 +657,7 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: service
+      model: Service
     apps:
       - label: cm
         models:
@@ -733,7 +733,7 @@ roles:
     class_name: ObjectRole
     init_params:
       app_name: cm
-      model: service
+      model: Service
     any_category: true
     apps:
       - label: cm
@@ -1384,7 +1384,7 @@ roles:
       - service
     init_params:
       app_name: cm
-      model: service
+      model: Service
     apps:
       - label: cm
         models:
@@ -1414,7 +1414,7 @@ roles:
       - component
     init_params:
       app_name: cm
-      model: ServiceComponent
+      model: Component
     apps:
       - label: cm
         models:
@@ -1465,7 +1465,7 @@ roles:
       - service
     init_params:
       app_name: cm
-      model: service
+      model: Service
     module_name: rbac.roles
     class_name: ParentRole
     child:
