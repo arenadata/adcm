@@ -2,15 +2,15 @@ import { Button } from '@uikit';
 import ClusterServicesFilters from './ClusterServicesTableFilters';
 import TableToolbar from '@commonComponents/Table/TableToolbar/TableToolbar';
 import { useDispatch, useStore } from '@hooks';
-import { openAddServicesDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
+import { openCreateDialog } from '@store/adcm/cluster/services/servicesActionsSlice';
 
 const ClustersTableHeader = () => {
   const dispatch = useDispatch();
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
-  const isAddingServices = useStore(({ adcm }) => adcm.servicesActions.isAddingServices);
+  const isAddingServices = useStore(({ adcm }) => adcm.servicesActions.isActionInProgress);
 
   const handleAddClusterServiceClick = () => {
-    dispatch(openAddServicesDialog());
+    dispatch(openCreateDialog());
   };
 
   return (
