@@ -160,6 +160,14 @@ const updateHost = createAsyncThunk('adcm/hostsActions/updateHost', async ({ id,
   }
 });
 
+const updateHostWithUpdate = createAsyncThunk(
+  'adcm/hostsActions/updateHostWithUpdate',
+  async (arg: AdcmRenameArgs, thunkAPI) => {
+    await thunkAPI.dispatch(updateHost(arg)).unwrap();
+    thunkAPI.dispatch(getHosts());
+  },
+);
+
 interface AdcmHostsActionsState extends ModalState<AdcmHost, 'host'> {
   createDialog: {
     isOpen: boolean;
@@ -300,7 +308,7 @@ export {
   deleteHost,
   deleteHostWithUpdate,
   toggleMaintenanceMode,
-  updateHost,
+  updateHostWithUpdate as updateHost,
 };
 
 export default hostsActionsSlice.reducer;
