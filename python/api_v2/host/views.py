@@ -23,7 +23,7 @@ from audit.alt.api import audit_create, audit_delete, audit_update
 from audit.alt.hooks import extract_current_from_response, extract_previous_from_object, only_on_success
 from cm.api import delete_host
 from cm.errors import AdcmEx
-from cm.models import Cluster, ConcernType, Host, Provider, Prototype
+from cm.models import Cluster, ConcernType, Host, Prototype, Provider
 from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view

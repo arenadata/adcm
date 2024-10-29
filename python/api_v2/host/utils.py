@@ -24,7 +24,7 @@ from cm.services.concern import retrieve_issue
 from cm.services.concern.locks import get_lock_on_object
 from cm.services.maintenance_mode import get_maintenance_mode_response
 from cm.services.status.notify import reset_hc_map
-from core.types import ADCMCoreType, BundleID, CoreObjectDescriptor, HostProviderID
+from core.types import ADCMCoreType, BundleID, CoreObjectDescriptor, ProviderID
 from rbac.models import re_apply_object_policy
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -33,7 +33,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
 
 
-def create_host(bundle_id: BundleID, provider_id: HostProviderID, fqdn: str, cluster: Cluster | None) -> Host:
+def create_host(bundle_id: BundleID, provider_id: ProviderID, fqdn: str, cluster: Cluster | None) -> Host:
     host_prototype = Prototype.objects.get(type=ObjectType.HOST, bundle_id=bundle_id)
     check_license(prototype=host_prototype)
 
