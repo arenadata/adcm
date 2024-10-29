@@ -3,21 +3,22 @@ import { createAsyncThunk } from '@store/redux';
 import { refreshClusters } from './clustersSlice';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
-import { createSlice } from '@reduxjs/toolkit';
 import {
-  AdcmCluster,
   AdcmPrototypeType,
-  AdcmPrototypeVersions,
-  CreateAdcmClusterPayload,
-  AdcmRenameArgs,
+  type AdcmCluster,
+  type AdcmPrototypeVersions,
+  type CreateAdcmClusterPayload,
+  type AdcmRenameArgs,
 } from '@models/adcm';
+import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
+import type { ModalState } from '@models/modal';
 
-interface AdcmClusterActionsState {
-  cluster: AdcmCluster | undefined;
-  isCreateClusterDialogOpen: boolean;
-  isUpgradeClusterDialogOpen: boolean;
-  deletableId: {
-    id: number | null;
+interface AdcmClusterActionsState extends ModalState<AdcmCluster, 'cluster'> {
+  createDialog: {
+    isOpen: boolean;
+  };
+  deleteDialog: {
+    cluster: AdcmCluster | null;
   };
   updateDialog: {
     cluster: AdcmCluster | null;
@@ -65,18 +66,6 @@ const loadPrototypesRelatedData = createAsyncThunk('adcm/clustersActions/loadRel
   await thunkAPI.dispatch(loadPrototypeVersions());
 });
 
-const openClusterCreateDialog = createAsyncThunk(
-  'adcm/clustersActions/openClusterCreateDialog',
-  async (arg, thunkAPI) => {
-    try {
-      thunkAPI.dispatch(loadPrototypesRelatedData());
-    } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
 const deleteClusterWithUpdate = createAsyncThunk(
   'adcm/clustersActions/deleteClusterWithUpdate',
   async (clusterId: number, thunkAPI) => {
@@ -91,48 +80,42 @@ const deleteClusterWithUpdate = createAsyncThunk(
   },
 );
 
-const renameCluster = createAsyncThunk(
-  'adcm/clustersActions/renameCluster',
+const renameClusterWithUpdate = createAsyncThunk(
+  'adcm/clustersActions/renameClusterWithUpdate',
   async ({ id, name }: AdcmRenameArgs, thunkAPI) => {
     try {
-      return await AdcmClustersApi.patchCluster(id, { name });
+      await AdcmClustersApi.patchCluster(id, { name });
+      await thunkAPI.dispatch(refreshClusters());
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
-    } finally {
-      thunkAPI.dispatch(refreshClusters());
     }
   },
 );
 
 const createInitialState = (): AdcmClusterActionsState => ({
-  cluster: undefined,
-  isCreateClusterDialogOpen: false,
-  isUpgradeClusterDialogOpen: false,
-  relatedData: {
-    prototypeVersions: [],
-    isLoaded: false,
-  },
-  deletableId: {
-    id: null,
+  createDialog: {
+    isOpen: false,
   },
   updateDialog: {
     cluster: null,
   },
+  deleteDialog: {
+    cluster: null,
+  },
+  relatedData: {
+    prototypeVersions: [],
+    isLoaded: false,
+  },
 });
 
-const clustersActionsSlice = createSlice({
+const clustersActionsSlice = createCrudSlice({
   name: 'adcm/clustersActions',
-  initialState: createInitialState(),
+  entityName: 'cluster',
+  createInitialState,
   reducers: {
     cleanupClustersActions() {
       return createInitialState();
-    },
-    openClusterDeleteDialog(state, action) {
-      state.deletableId.id = action.payload;
-    },
-    closeClusterDeleteDialog(state) {
-      state.deletableId.id = null;
     },
     openClusterRenameDialog(state, action) {
       state.updateDialog.cluster = action.payload;
@@ -142,9 +125,6 @@ const clustersActionsSlice = createSlice({
     },
   },
   extraReducers(builder) {
-    builder.addCase(openClusterCreateDialog.fulfilled, (state) => {
-      state.isCreateClusterDialogOpen = true;
-    });
     builder.addCase(loadPrototypesRelatedData.fulfilled, (state) => {
       state.relatedData.isLoaded = true;
     });
@@ -154,31 +134,35 @@ const clustersActionsSlice = createSlice({
     builder.addCase(createCluster.fulfilled, () => {
       return createInitialState();
     });
-    builder.addCase(renameCluster.fulfilled, () => {
+    builder.addCase(renameClusterWithUpdate.fulfilled, () => {
       return createInitialState();
     });
     builder.addCase(deleteClusterWithUpdate.pending, (state) => {
-      clustersActionsSlice.caseReducers.closeClusterDeleteDialog(state);
+      clustersActionsSlice.caseReducers.closeDeleteDialog(state);
     });
   },
 });
 
 const {
-  openClusterDeleteDialog,
-  closeClusterDeleteDialog,
   cleanupClustersActions,
   openClusterRenameDialog,
   closeClusterRenameDialog,
+  openCreateDialog,
+  openUpdateDialog,
+  openDeleteDialog,
+  closeDeleteDialog,
 } = clustersActionsSlice.actions;
 export {
   createCluster,
-  renameCluster,
-  openClusterCreateDialog,
+  renameClusterWithUpdate as renameCluster,
   deleteClusterWithUpdate,
-  openClusterDeleteDialog,
-  closeClusterDeleteDialog,
   cleanupClustersActions,
   openClusterRenameDialog,
   closeClusterRenameDialog,
+  openCreateDialog,
+  openUpdateDialog,
+  openDeleteDialog,
+  closeDeleteDialog,
+  loadPrototypesRelatedData,
 };
 export default clustersActionsSlice.reducer;
